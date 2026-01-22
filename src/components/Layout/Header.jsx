@@ -33,7 +33,7 @@ const Header = () => {
             {/* Logo */}
             <div className="flex-shrink-0">
               <h1 className="text-2xl md:text-3xl font-semibold tracking-tight" style={{ color: '#0f172a' }}>
-                Guidexpert
+                GuideXpert
               </h1>
             </div>
 

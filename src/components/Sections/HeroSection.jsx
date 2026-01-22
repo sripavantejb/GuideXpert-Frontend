@@ -110,8 +110,8 @@ const HeroSection = () => {
           </div>
 
           {/* Right Side - Form */}
-          <div className="lg:sticky lg:top-24">
-            <div className="bg-white rounded-xl shadow-sm p-6 md:p-8 border border-gray-200">
+          <div className="lg:sticky lg:top-24 flex justify-end">
+            <div className="w-full max-w-md bg-gradient-to-br from-white via-blue-50/30 to-blue-50/50 rounded-xl shadow-lg p-6 md:p-8 border border-gray-200/50">
               {/* Progress Indicator */}
               <div className="mb-6">
                 <div className="flex items-center justify-between mb-2">

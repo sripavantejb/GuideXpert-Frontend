@@ -28,26 +28,44 @@ const Footer = () => {
   ];
 
   return (
-    <footer className="bg-gray-900 text-gray-300">
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
-          {/* Logo Section */}
-          <div>
-            <h2 className="text-2xl font-bold text-white mb-4">GuideXpert</h2>
-            <p className="text-gray-400">
-              Empowering students to find their dream careers.
-            </p>
+    <footer className="bg-gray-900 text-white">
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-16">
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-12 lg:gap-16">
+          {/* Left Section - Logo, Tagline, and Contact */}
+          <div className="space-y-6">
+            <div>
+              <h2 className="text-3xl font-bold text-white mb-3 tracking-tight">GuideXpert</h2>
+              <p className="text-gray-300 text-sm leading-relaxed">
+                Empowering students to find their dream careers.
+              </p>
+            </div>
+            
+            {/* Contact Information */}
+            <div className="pt-4">
+              <h3 className="text-white font-bold text-base mb-4">Contact</h3>
+              <div className="space-y-2.5 text-sm text-gray-300">
+                <p>
+                  <span className="font-semibold text-white">Address:</span> 123 Education Street, City, State 12345
+                </p>
+                <p>
+                  <span className="font-semibold text-white">Email:</span> info@guidexpert.com
+                </p>
+                <p>
+                  <span className="font-semibold text-white">Phone:</span> +1 (555) 123-4567
+                </p>
+              </div>
+            </div>
           </div>
 
-          {/* Company Links */}
+          {/* Middle Section - Company Links */}
           <div>
-            <h3 className="text-white font-semibold mb-4">Company</h3>
-            <ul className="space-y-2">
+            <h3 className="text-white font-bold text-base mb-5">Company</h3>
+            <ul className="space-y-3">
               {companyLinks.map((link) => (
                 <li key={link.name}>
                   <a
                     href={link.href}
-                    className="hover:text-white transition-colors"
+                    className="text-gray-300 hover:text-white transition-colors duration-200 text-sm"
                   >
                     {link.name}
                   </a>
@@ -56,15 +74,15 @@ const Footer = () => {
             </ul>
           </div>
 
-          {/* Quick Links */}
+          {/* Right Section - Quick Links */}
           <div>
-            <h3 className="text-white font-semibold mb-4">Quick Links</h3>
-            <ul className="space-y-2">
+            <h3 className="text-white font-bold text-base mb-5">Quick Links</h3>
+            <ul className="space-y-3">
               {quickLinks.map((link) => (
                 <li key={link.name}>
                   <a
                     href={link.href}
-                    className="hover:text-white transition-colors"
+                    className="text-gray-300 hover:text-white transition-colors duration-200 text-sm"
                   >
                     {link.name}
                   </a>
@@ -72,30 +90,14 @@ const Footer = () => {
               ))}
             </ul>
           </div>
-
-          {/* Contact Information */}
-          <div className="md:col-span-3 lg:col-span-1">
-            <h3 className="text-white font-semibold mb-4">Contact</h3>
-            <div className="space-y-2">
-              <p>
-                <span className="font-medium">Address:</span> 123 Education Street, City, State 12345
-              </p>
-              <p>
-                <span className="font-medium">Email:</span> info@guidexpert.com
-              </p>
-              <p>
-                <span className="font-medium">Phone:</span> +1 (555) 123-4567
-              </p>
-            </div>
-          </div>
         </div>
 
-        {/* Social Media & Copyright */}
-        <div className="mt-8 pt-8 border-t border-gray-800 flex flex-col md:flex-row justify-between items-center">
+        {/* Bottom Bar - Copyright & Social Media */}
+        <div className="mt-12 pt-8 border-t border-gray-800 flex flex-col md:flex-row justify-between items-center">
           <p className="text-gray-400 text-sm mb-4 md:mb-0">
             © {new Date().getFullYear()} GuideXpert. All rights reserved.
           </p>
-          <div className="flex space-x-4">
+          <div className="flex space-x-5">
             {socialLinks.map((social) => {
               const Icon = social.icon;
               return (
@@ -103,7 +105,7 @@ const Footer = () => {
                   key={social.label}
                   href={social.href}
                   aria-label={social.label}
-                  className="text-gray-400 hover:text-white transition-colors"
+                  className="text-white hover:text-gray-300 transition-colors duration-200"
                 >
                   <Icon className="w-5 h-5" />
                 </a>
