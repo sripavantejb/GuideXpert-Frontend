@@ -127,6 +127,7 @@ const HeroSection = () => {
       description: '₹9 Lakhs/year potential',
       iconBg: 'bg-yellow-50',
       customColor: '#d97706',
+      cardClass: 'feature-card-earnings',
     },
     {
       icon: FaGraduationCap,
@@ -134,6 +135,7 @@ const HeroSection = () => {
       description: 'Become a trusted, certified counselor',
       iconBg: 'bg-blue-50',
       customColor: '#1e3a8a',
+      cardClass: 'feature-card-training',
     },
     {
       icon: FaHome,
@@ -141,6 +143,7 @@ const HeroSection = () => {
       description: 'Flexible, work-from-home model',
       iconBg: 'bg-green-50',
       customColor: '#15803d',
+      cardClass: 'feature-card-work',
     },
     {
       icon: FaUsers,
@@ -148,6 +151,7 @@ const HeroSection = () => {
       description: "Backed by GuideXpert's central team",
       iconBg: 'bg-blue-50',
       customColor: '#1e3a8a',
+      cardClass: 'feature-card-support',
     },
   ];
 
@@ -275,8 +279,14 @@ const HeroSection = () => {
             </div>
 
             <div className="space-y-6">
-              <h1 className="text-4xl md:text-5xl lg:text-6xl font-bold leading-tight tracking-tight font-santhosi" style={{ color: '#0f172a' }}>
-                Become a Certified Elite Counselor
+              <h1 className="text-4xl md:text-5xl lg:text-6xl font-bold leading-tight tracking-tight font-satoshi" style={{ color: '#0f172a' }}>
+                Become a Certified{' '}
+                <span className="curved-underline">
+                  Elite Counselor
+                  <svg viewBox="0 0 500 20" preserveAspectRatio="none">
+                    <path d="M 0,12 Q 125,2 250,8 T 500,8" />
+                  </svg>
+                </span>
               </h1>
               <p className="text-base md:text-lg text-gray-700 leading-relaxed max-w-xl font-santhosi">
                 Work from home. Guide students with confidence. Earn income while transforming lives.
@@ -288,11 +298,21 @@ const HeroSection = () => {
               {metrics.map((metric, index) => (
                 <div
                   key={index}
-                  className="text-center p-4 bg-white rounded-lg border border-gray-200 font-santhosi"
+                  className={`metric-card metric-card-${index} text-center p-6 rounded-xl border border-gray-200 font-santhosi`}
+                  style={{
+                    boxShadow: '0 4px 12px rgba(15, 23, 42, 0.08), 0 2px 4px rgba(15, 23, 42, 0.05)',
+                  }}
                 >
                   <div 
-                    className={`text-2xl md:text-3xl font-bold font-santhosi ${metric.isGreen ? 'text-green-700' : ''}`} 
-                    style={!metric.isGreen ? { color: '#0f172a', fontWeight: '700' } : { fontWeight: '700' }}
+                    className={`text-2xl md:text-3xl font-bold font-santhosi transition-all duration-300 ${metric.isGreen ? 'text-green-700' : ''}`} 
+                    style={!metric.isGreen ? { 
+                      color: '#0f172a', 
+                      fontWeight: '700',
+                      letterSpacing: '-0.02em'
+                    } : { 
+                      fontWeight: '700',
+                      letterSpacing: '-0.02em'
+                    }}
                   >
                     {metric.isText ? (
                       metric.value
@@ -304,7 +324,11 @@ const HeroSection = () => {
                       </>
                     )}
                   </div>
-                  <div className="text-xs md:text-sm mt-2 font-medium font-santhosi" style={{ color: '#475569', fontWeight: '600' }}>
+                  <div className="text-xs md:text-sm mt-2.5 font-semibold font-santhosi transition-all duration-300 uppercase tracking-wide" style={{ 
+                    color: '#475569', 
+                    fontWeight: '600',
+                    letterSpacing: '0.05em'
+                  }}>
                     {metric.label}
                   </div>
                 </div>
@@ -457,26 +481,68 @@ const HeroSection = () => {
           </div>
         </div>
 
-        {/* Feature Cards */}
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mt-24 relative z-10">
-          {features.map((feature, index) => {
-            const Icon = feature.icon;
-            return (
-              <div
-                key={index}
-                className="bg-white rounded-lg p-6 text-center border border-gray-200 hover:border-gray-300 transition-colors duration-300 font-santhosi"
-              >
-                <div className={`${feature.iconBg} w-14 h-14 rounded-lg flex items-center justify-center mx-auto mb-4`}>
-                  <Icon 
-                    className="text-xl" 
-                    style={{ color: feature.customColor }}
-                  />
+        {/* Feature Cards with Right-to-Left Animation */}
+        <div className="mt-24 relative z-10 overflow-hidden py-4">
+          <div className="scroll-animation flex gap-6" style={{ width: 'fit-content' }}>
+            {/* Duplicate cards for seamless loop */}
+            {[...features, ...features, ...features].map((feature, index) => {
+              const Icon = feature.icon;
+              return (
+                <div
+                  key={`${index}-${Math.floor(index / features.length)}`}
+                  className={`feature-card ${feature.cardClass} bg-white rounded-xl p-8 text-center border border-gray-200 font-santhosi flex-shrink-0 relative overflow-hidden`}
+                  style={{
+                    width: '300px',
+                    boxShadow: '0 8px 20px rgba(15, 23, 42, 0.1), 0 4px 8px rgba(15, 23, 42, 0.06)',
+                  }}
+                  onMouseEnter={(e) => {
+                    const iconContainer = e.currentTarget.querySelector('.icon-container');
+                    const icon = e.currentTarget.querySelector('.icon-element');
+                    if (iconContainer && icon) {
+                      iconContainer.style.transform = 'scale(1.1)';
+                      iconContainer.style.boxShadow = `0 8px 24px ${feature.customColor}40`;
+                      icon.style.transform = 'rotate(5deg) scale(1.1)';
+                    }
+                  }}
+                  onMouseLeave={(e) => {
+                    const iconContainer = e.currentTarget.querySelector('.icon-container');
+                    const icon = e.currentTarget.querySelector('.icon-element');
+                    if (iconContainer && icon) {
+                      iconContainer.style.transform = 'scale(1)';
+                      iconContainer.style.boxShadow = `0 4px 12px ${feature.customColor}20`;
+                      icon.style.transform = 'rotate(0deg) scale(1)';
+                    }
+                  }}
+                >
+                  <div 
+                    className={`icon-container ${feature.iconBg} w-18 h-18 rounded-xl flex items-center justify-center mx-auto mb-5 transition-all duration-300`}
+                    style={{
+                      width: '72px',
+                      height: '72px',
+                      boxShadow: `0 4px 12px ${feature.customColor}15, 0 2px 4px ${feature.customColor}10`,
+                    }}
+                  >
+                    <Icon 
+                      className="icon-element text-2xl transition-all duration-300" 
+                      style={{ color: feature.customColor }}
+                    />
+                  </div>
+                  <h3 className="font-bold mb-3 text-lg leading-tight font-santhosi transition-colors duration-300" style={{ 
+                    color: '#0f172a',
+                    fontWeight: '700'
+                  }}>
+                    {feature.title}
+                  </h3>
+                  <p className="text-sm leading-relaxed font-santhosi transition-colors duration-300" style={{ 
+                    color: '#475569',
+                    fontWeight: '500'
+                  }}>
+                    {feature.description}
+                  </p>
                 </div>
-                <h3 className="font-semibold mb-2 text-base leading-tight font-santhosi" style={{ color: '#0f172a' }}>{feature.title}</h3>
-                <p className="text-sm leading-relaxed font-santhosi" style={{ color: '#475569' }}>{feature.description}</p>
-              </div>
-            );
-          })}
+              );
+            })}
+          </div>
         </div>
       </div>
     </section>

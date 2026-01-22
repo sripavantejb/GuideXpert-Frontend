@@ -8,6 +8,7 @@ import {
 } from 'react-icons/fi';
 import Button from '../UI/Button';
 import Card from '../UI/Card';
+import ScrollStack, { ScrollStackItem } from '../UI/ScrollStack';
 
 const WhyBecomeSection = () => {
   const reasons = [
@@ -46,37 +47,62 @@ const WhyBecomeSection = () => {
           </p>
         </div>
 
-        {/* Reasons Cards */}
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-12">
-          {reasons.map((reason, index) => {
-            const Icon = reason.icon;
-            return (
-              <Card
-                key={index}
-                icon={Icon}
-                title={reason.title}
-                description={reason.description}
-              />
-            );
-          })}
+        {/* Reasons Cards - Scroll Stack Animation */}
+        <div style={{ minHeight: '200vh', position: 'relative', marginBottom: '1.5rem' }}>
+          <ScrollStack
+            itemDistance={150}
+            itemScale={0.05}
+            itemStackDistance={0}
+            stackPosition="50%"
+            scaleEndPosition="10%"
+            baseScale={0.90}
+            rotationAmount={0}
+            blurAmount={0}
+            useWindowScroll={true}
+          >
+            {reasons.map((reason, index) => {
+              const Icon = reason.icon;
+              return (
+                <ScrollStackItem key={index}>
+                  <Card
+                    icon={Icon}
+                    title={reason.title}
+                    description={reason.description}
+                  />
+                </ScrollStackItem>
+              );
+            })}
+          </ScrollStack>
         </div>
 
         {/* Statistics */}
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8" style={{ marginTop: '-170px' }}>
           {stats.map((stat, index) => {
             const Icon = stat.icon;
             return (
               <div
                 key={index}
-                className="bg-blue-50 rounded-lg p-6 text-center"
+                className="bg-gradient-to-br from-blue-50 to-white rounded-2xl p-8 text-center border border-blue-100 transition-all duration-300 hover:shadow-lg"
+                style={{
+                  boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06)',
+                }}
               >
-                <div className="text-primary-blue-600 text-4xl mb-4 flex justify-center">
+                <div className="text-blue-600 text-5xl mb-5 flex justify-center">
                   <Icon />
                 </div>
-                <div className="text-3xl font-bold text-gray-900 mb-2">
+                <div className="text-4xl md:text-5xl font-bold text-gray-900 mb-3" style={{
+                  fontWeight: '700',
+                  letterSpacing: '-0.02em',
+                  lineHeight: '1.1'
+                }}>
                   {stat.value}
                 </div>
-                <div className="text-gray-600">{stat.label}</div>
+                <div className="text-base font-semibold text-gray-600 uppercase tracking-wider" style={{
+                  fontWeight: '600',
+                  letterSpacing: '0.05em'
+                }}>
+                  {stat.label}
+                </div>
               </div>
             );
           })}
