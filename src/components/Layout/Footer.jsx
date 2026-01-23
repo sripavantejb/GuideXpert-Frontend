@@ -34,7 +34,11 @@ const Footer = () => {
           {/* Left Section - Logo, Tagline, and Contact */}
           <div className="space-y-6">
           <div>
-              <h2 className="text-3xl font-bold text-white mb-3 tracking-tight">GuideXpert</h2>
+              <img
+                src="https://res.cloudinary.com/dqataciy5/image/upload/v1769173121/guidexpert-logo-3Ifn2ZP2_ljlxlc.png"
+                alt="GuideXpert Logo"
+                className="h-16 md:h-40 mb-3 object-contain"
+              />
               <p className="text-gray-300 text-sm leading-relaxed">
               Empowering students to find their dream careers.
             </p>

@@ -217,6 +217,7 @@ const HowToBecomeSection = () => {
 
   return (
     <section 
+      id="journey"
       ref={sectionRef}
       className="bg-white relative"
       style={{ 

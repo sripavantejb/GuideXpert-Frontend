@@ -58,7 +58,7 @@ const WhyBecomeSection = () => {
   ];
 
   return (
-    <section className="py-20 md:py-28 relative overflow-hidden" style={{
+    <section id="why" className="py-20 md:py-28 relative overflow-hidden" style={{
       background: 'linear-gradient(180deg, #ffffff 0%, rgba(248, 250, 252, 0.5) 50%, #ffffff 100%)'
     }}>
       {/* Pastel Pink Sphere - Top Left */}

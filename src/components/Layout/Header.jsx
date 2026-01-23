@@ -20,9 +20,24 @@ const Header = () => {
     if (href.startsWith('#')) {
       const element = document.querySelector(href);
       if (element) {
-        element.scrollIntoView({ behavior: 'smooth' });
+        // Get header height to account for sticky header
+        const header = document.querySelector('header');
+        const headerHeight = header ? header.offsetHeight : 80;
+        
+        // Calculate the position with offset
+        const elementPosition = element.getBoundingClientRect().top + window.pageYOffset;
+        const offsetPosition = elementPosition - headerHeight - 20; // 20px extra padding
+        
+        window.scrollTo({
+          top: offsetPosition,
+          behavior: 'smooth'
+        });
       }
     }
+  };
+
+  const scrollToTop = () => {
+    window.scrollTo({ top: 0, behavior: 'smooth' });
   };
 
   return (
@@ -32,9 +47,17 @@ const Header = () => {
           <div className="flex justify-between items-center h-16 md:h-20">
             {/* Logo */}
             <div className="flex-shrink-0">
-              <h1 className="text-2xl md:text-3xl font-semibold tracking-tight" style={{ color: '#0f172a' }}>
-                GuideXpert
-              </h1>
+              <button
+                onClick={scrollToTop}
+                className="flex items-center focus:outline-none transition-opacity duration-200 hover:opacity-80"
+                aria-label="Go to top"
+              >
+                <img
+                  src="https://res.cloudinary.com/dqataciy5/image/upload/v1769173121/guidexpert-logo-3Ifn2ZP2_ljlxlc.png"
+                  alt="GuideXpert Logo"
+                  className="h-16 md:h-40 object-contain"
+                />
+              </button>
             </div>
 
             {/* Desktop Navigation */}
