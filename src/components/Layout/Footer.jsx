@@ -33,13 +33,13 @@ const Footer = () => {
         <div className="grid grid-cols-1 md:grid-cols-3 gap-12 lg:gap-16">
           {/* Left Section - Logo, Tagline, and Contact */}
           <div className="space-y-6">
-            <div>
+          <div>
               <h2 className="text-3xl font-bold text-white mb-3 tracking-tight">GuideXpert</h2>
               <p className="text-gray-300 text-sm leading-relaxed">
-                Empowering students to find their dream careers.
-              </p>
-            </div>
-            
+              Empowering students to find their dream careers.
+            </p>
+          </div>
+
             {/* Contact Information */}
             <div className="pt-4">
               <h3 className="text-white font-bold text-base mb-4">Contact</h3>

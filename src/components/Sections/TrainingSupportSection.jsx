@@ -88,7 +88,7 @@ const TrainingSupportSection = () => {
                     {/* Subtle step number indicator */}
                     <div className="mt-2.5">
                       <span className="inline-block w-6 h-6 bg-gray-100 rounded-full flex items-center justify-center text-xs font-semibold text-gray-600">
-                        {step.number}
+                      {step.number}
                       </span>
                     </div>
                   </div>

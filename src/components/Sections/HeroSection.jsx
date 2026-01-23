@@ -314,14 +314,7 @@ const HeroSection = () => {
 
           {/* Right Side - Form */}
           <div className="lg:sticky lg:top-24 flex justify-end">
-<<<<<<< HEAD
             <div className="w-full max-w-md bg-gradient-to-br from-white via-blue-50/30 to-blue-50/50 rounded-xl shadow-lg p-6 md:p-8 border border-gray-200/50">
-=======
-            <div className="bg-white rounded-xl p-6 md:p-8 border border-gray-200 font-santhosi w-full max-w-md" style={{
-              boxShadow: '0 10px 40px rgba(0, 0, 0, 0.12), 0 4px 15px rgba(0, 0, 0, 0.08)',
-              backgroundColor: '#fafafa',
-            }}>
->>>>>>> origin/venkat
               {/* Progress Indicator */}
               <div className="mb-6 font-santhosi">
                 <div className="flex items-center justify-between mb-2">
