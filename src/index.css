@@ -165,6 +165,224 @@
     font-family: 'SantHosi', -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', sans-serif;
   }
 
+  .font-satoshi {
+    font-family: 'Satoshi', -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', sans-serif;
+  }
+
+  /* Curved underline animation */
+  @keyframes curvedUnderline {
+    0% {
+      stroke-dashoffset: 1000;
+    }
+    100% {
+      stroke-dashoffset: 0;
+    }
+  }
+
+  .curved-underline {
+    position: relative;
+    display: inline-block;
+  }
+
+  .curved-underline svg {
+    position: absolute;
+    bottom: -10px;
+    left: 0;
+    width: 100%;
+    height: 16px;
+    overflow: visible;
+    pointer-events: none;
+  }
+
+  .curved-underline svg path {
+    stroke: #2563eb;
+    stroke-width: 3.5;
+    fill: none;
+    stroke-linecap: round;
+    stroke-dasharray: 1000;
+    stroke-dashoffset: 1000;
+    animation: curvedUnderline 1.5s ease-out forwards;
+    animation-delay: 0.5s;
+  }
+
+  @media (max-width: 768px) {
+    .curved-underline svg {
+      bottom: -8px;
+      height: 12px;
+    }
+    
+    .curved-underline svg path {
+      stroke-width: 2.5;
+    }
+  }
+
+  /* Right to left scroll animation */
+  @keyframes scrollRightToLeft {
+    0% {
+      transform: translateX(0);
+    }
+    100% {
+      transform: translateX(calc(-33.333% - 1.5rem));
+    }
+  }
+
+  .scroll-animation {
+    animation: scrollRightToLeft 40s linear infinite;
+    will-change: transform;
+  }
+
+  .scroll-animation:hover {
+    animation-play-state: paused;
+  }
+
+  /* Enhanced card hover effects - Professional Theme */
+  .metric-card {
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    cursor: pointer;
+    position: relative;
+    background: #ffffff;
+    border-top: 3px solid transparent;
+  }
+
+  .metric-card::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    height: 3px;
+    background: linear-gradient(90deg, #2563eb 0%, #1e40af 100%);
+    opacity: 0;
+    transition: opacity 0.3s ease;
+  }
+
+  .metric-card:hover::before {
+    opacity: 1;
+  }
+
+  .metric-card:hover {
+    transform: translateY(-6px);
+    box-shadow: 0 12px 32px rgba(15, 23, 42, 0.12), 0 4px 12px rgba(15, 23, 42, 0.08);
+    border-color: rgba(37, 99, 235, 0.2);
+  }
+
+  /* Metric card specific accent colors */
+  .metric-card-0::before {
+    background: linear-gradient(90deg, #d97706 0%, #b45309 100%);
+  }
+
+  .metric-card-1::before {
+    background: linear-gradient(90deg, #2563eb 0%, #1e40af 100%);
+  }
+
+  .metric-card-2::before {
+    background: linear-gradient(90deg, #15803d 0%, #166534 100%);
+  }
+
+  .feature-card {
+    transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+    cursor: pointer;
+    position: relative;
+    background: #ffffff;
+    border-top: 3px solid transparent;
+  }
+
+  .feature-card::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    height: 3px;
+    background: linear-gradient(90deg, #2563eb 0%, #1e40af 100%);
+    opacity: 0;
+    transition: opacity 0.4s ease;
+    border-radius: 0.75rem 0.75rem 0 0;
+  }
+
+  .feature-card:hover::before {
+    opacity: 1;
+  }
+
+  .feature-card::after {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: linear-gradient(135deg, rgba(37, 99, 235, 0.02) 0%, rgba(255, 255, 255, 0) 100%);
+    opacity: 0;
+    transition: opacity 0.4s ease;
+    pointer-events: none;
+    border-radius: 0.75rem;
+  }
+
+  .feature-card:hover::after {
+    opacity: 1;
+  }
+
+  .feature-card:hover {
+    transform: translateY(-8px);
+    box-shadow: 0 16px 40px rgba(15, 23, 42, 0.14), 0 6px 16px rgba(15, 23, 42, 0.1);
+    border-color: rgba(37, 99, 235, 0.25);
+  }
+
+  /* Feature card specific accent colors */
+  .feature-card-earnings::before {
+    background: linear-gradient(90deg, #d97706 0%, #b45309 100%);
+  }
+
+  .feature-card-training::before {
+    background: linear-gradient(90deg, #2563eb 0%, #1e40af 100%);
+  }
+
+  .feature-card-work::before {
+    background: linear-gradient(90deg, #15803d 0%, #166534 100%);
+  }
+
+  .feature-card-support::before {
+    background: linear-gradient(90deg, #2563eb 0%, #1e40af 100%);
+  }
+
+  /* Why Become Section - Professional Card Styles */
+  .why-become-reason-card {
+    position: relative;
+    overflow: hidden;
+  }
+
+  /* Hover effects removed for animation cards */
+
+  .why-become-stat-card {
+    position: relative;
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    cursor: pointer;
+  }
+
+  .why-become-stat-card::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    height: 3px;
+    background: linear-gradient(90deg, #2563eb 0%, #1e40af 100%);
+    opacity: 0;
+    transition: opacity 0.3s ease;
+    border-radius: 0.75rem 0.75rem 0 0;
+  }
+
+  .why-become-stat-card:hover::before {
+    opacity: 1;
+  }
+
+  .why-become-stat-card:hover {
+    transform: translateY(-4px);
+    box-shadow: 0 12px 32px rgba(15, 23, 42, 0.1), 0 4px 12px rgba(15, 23, 42, 0.06);
+    border-color: rgba(37, 99, 235, 0.3);
+    background: linear-gradient(135deg, #eff6ff 0%, #dbeafe 100%);
+  }
+
   /* Mobile and Tablet Gradient Background */
   @media (max-width: 1023px) {
     .hero-mobile-gradient {

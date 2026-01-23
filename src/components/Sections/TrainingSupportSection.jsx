@@ -113,4 +113,3 @@ const TrainingSupportSection = () => {
 };
 
 export default TrainingSupportSection;
-
