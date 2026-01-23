@@ -19,8 +19,6 @@ const LegacySection = () => {
       label: 'Students Guided', 
       key: 'students', 
       color: '#1e3a8a', 
-      bgColor: 'bg-blue-50',
-      bgGradient: 'linear-gradient(135deg, rgba(176, 224, 230, 0.15) 0%, rgba(255, 255, 255, 0.9) 100%)',
     },
     { 
       icon: FiStar, 
@@ -29,8 +27,6 @@ const LegacySection = () => {
       label: 'Success Stories', 
       key: 'success', 
       color: '#d97706', 
-      bgColor: 'bg-yellow-50',
-      bgGradient: 'linear-gradient(135deg, rgba(255, 182, 193, 0.15) 0%, rgba(255, 255, 255, 0.9) 100%)',
     },
     { 
       icon: FiAward, 
@@ -39,8 +35,6 @@ const LegacySection = () => {
       label: 'Certified Counselors', 
       key: 'counselors', 
       color: '#15803d', 
-      bgColor: 'bg-green-50',
-      bgGradient: 'linear-gradient(135deg, rgba(221, 160, 221, 0.15) 0%, rgba(255, 255, 255, 0.9) 100%)',
     },
   ];
 
@@ -181,85 +175,60 @@ const LegacySection = () => {
           </p>
         </div>
 
-        {/* Statistics Grid - Liquid Glass Cards */}
+        {/* Statistics Grid - Professional Cards */}
         <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-16" ref={statsRef}>
           {stats.map((stat, index) => {
             const Icon = stat.icon;
             return (
               <div
                 key={index}
-                className="group relative"
+                className="group relative bg-white rounded-xl p-10 text-center border border-gray-200 transition-all duration-300 hover:-translate-y-2"
                 style={{
+                  boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.05), 0 2px 4px -1px rgba(0, 0, 0, 0.03)',
                   animation: `fadeInUp 0.6s ease-out ${index * 0.15}s both`
                 }}
+                onMouseEnter={(e) => {
+                  e.currentTarget.style.boxShadow = `0 12px 24px ${stat.color}20, 0 4px 8px ${stat.color}10`;
+                  e.currentTarget.style.borderColor = `${stat.color}30`;
+                }}
+                onMouseLeave={(e) => {
+                  e.currentTarget.style.boxShadow = '0 4px 6px -1px rgba(0, 0, 0, 0.05), 0 2px 4px -1px rgba(0, 0, 0, 0.03)';
+                  e.currentTarget.style.borderColor = '#e5e7eb';
+                }}
               >
-                {/* Subtle Glow Effect on Hover */}
+                {/* Icon */}
+                <div className="mb-5 flex justify-center">
+                  <div 
+                    className="text-5xl transition-transform duration-300 group-hover:scale-110"
+                    style={{ color: stat.color }}
+                  >
+                    <Icon />
+                  </div>
+                </div>
+
+                {/* Animated Number */}
                 <div 
-                  className="absolute -inset-0.5 rounded-xl opacity-0 group-hover:opacity-100 blur-xl transition-opacity duration-500"
+                  className="text-4xl md:text-5xl font-bold mb-3 font-santhosi"
                   style={{
-                    background: `${stat.color}20`
-                  }}
-                />
-                
-                {/* Liquid Glass Card */}
-                <div
-                  className="relative rounded-xl p-10 text-center border border-gray-200 transition-all duration-300 group-hover:-translate-y-2 overflow-hidden"
-                  style={{
-                    background: stat.bgGradient,
-                    backdropFilter: 'blur(10px)',
-                    WebkitBackdropFilter: 'blur(10px)',
-                    boxShadow: '0 8px 20px rgba(15, 23, 42, 0.1), 0 4px 8px rgba(15, 23, 42, 0.06)',
-                  }}
-                  onMouseEnter={(e) => {
-                    e.currentTarget.style.boxShadow = `0 20px 40px ${stat.color}20, 0 8px 16px ${stat.color}10`;
-                  }}
-                  onMouseLeave={(e) => {
-                    e.currentTarget.style.boxShadow = '0 8px 20px rgba(15, 23, 42, 0.1), 0 4px 8px rgba(15, 23, 42, 0.06)';
+                    fontWeight: '700',
+                    letterSpacing: '-0.02em',
+                    lineHeight: '1.1',
+                    color: '#0f172a'
                   }}
                 >
-                  {/* Icon Container */}
-                  <div className="mb-6 flex justify-center">
-                    <div 
-                      className={`w-18 h-18 rounded-xl ${stat.bgColor} flex items-center justify-center transition-all duration-300 group-hover:scale-110 group-hover:rotate-3`}
-                      style={{
-                        width: '72px',
-                        height: '72px',
-                        boxShadow: `0 4px 12px ${stat.color}15, 0 2px 4px ${stat.color}10`,
-                      }}
-                    >
-                      <Icon 
-                        className="w-10 h-10" 
-                        style={{ strokeWidth: '2.5', color: stat.color }} 
-                      />
-                    </div>
-                  </div>
+                  {animatedStats[stat.key].toLocaleString()}{stat.suffix}
+                </div>
 
-                  {/* Animated Number */}
-                  <div className="mb-3">
-                    <span 
-                      className="text-5xl md:text-6xl font-bold inline-block font-santhosi"
-                      style={{
-                        fontWeight: '700',
-                        letterSpacing: '-0.02em',
-                        lineHeight: '1',
-                        color: '#0f172a'
-                      }}
-                    >
-                      {animatedStats[stat.key].toLocaleString()}{stat.suffix}
-                    </span>
-                  </div>
-
-                  {/* Label */}
-                  <div 
-                    className="text-sm font-semibold uppercase tracking-wider font-santhosi"
-                    style={{
-                      fontWeight: '500',
-                      color: '#64748b',
-                      letterSpacing: '0.05em'
-                    }}
-                  >
-                    {stat.label}
-                  </div>
+                {/* Label */}
+                <div 
+                  className="text-base font-semibold uppercase tracking-wider font-santhosi"
+                  style={{
+                    fontWeight: '600',
+                    color: '#64748b',
+                    letterSpacing: '0.05em'
+                  }}
+                >
+                  {stat.label}
                 </div>
               </div>
             );

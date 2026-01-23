@@ -22,8 +22,13 @@ import Button from '../UI/Button';
 
 const HowToBecomeSection = () => {
   const sectionRef = useRef(null);
+  const progressBarContainerRef = useRef(null);
+  const stepsContainerRef = useRef(null);
+  const stepRefs = useRef([]);
+  const iconRefs = useRef([]);
   const [activeStep, setActiveStep] = useState(0);
   const [scrollProgress, setScrollProgress] = useState(0);
+  const [progressBarHeight, setProgressBarHeight] = useState(0);
 
   // Six steps matching the original structure
   const steps = [
@@ -102,16 +107,28 @@ const HowToBecomeSection = () => {
       const sectionHeight = rect.height;
       
       // Calculate scroll progress within section (0 to 1)
-      // Start tracking when section top reaches viewport
+      // Works in both scroll directions (forward and reverse)
       let progress = 0;
-      if (sectionTop <= windowHeight * 0.3) {
-        // Section has entered the trigger zone
-        const scrollableHeight = sectionHeight - windowHeight * 0.7;
-        const scrolled = Math.max(0, windowHeight * 0.3 - sectionTop);
-        progress = Math.min(1, scrolled / Math.max(scrollableHeight, 1));
-      } else if (sectionTop < 0) {
-        // Section has been scrolled past
-        progress = 1;
+      
+      // Define trigger point where progress tracking starts
+      const triggerPoint = windowHeight * 0.3;
+      
+      // Calculate scrollable height (total distance we can scroll through)
+      const scrollableHeight = sectionHeight - windowHeight * 0.7;
+      
+      if (scrollableHeight > 0) {
+        // Calculate how much has been scrolled based on section position
+        // When sectionTop decreases (scrolling down), scrolled increases
+        // When sectionTop increases (scrolling up), scrolled decreases
+        const scrolled = Math.max(0, triggerPoint - sectionTop);
+        progress = Math.min(1, Math.max(0, scrolled / scrollableHeight));
+      } else {
+        // If section is smaller than viewport, set progress based on visibility
+        if (sectionTop <= triggerPoint && sectionTop >= -sectionHeight + windowHeight) {
+          progress = 1;
+        } else {
+          progress = 0;
+        }
       }
 
       setScrollProgress(progress);
@@ -156,6 +173,48 @@ const HowToBecomeSection = () => {
     };
   }, []);
 
+  // Update progress bar height when activeStep changes or on resize
+  useEffect(() => {
+    const updateProgressBarHeight = () => {
+      // Use requestAnimationFrame to ensure DOM is ready
+      requestAnimationFrame(() => {
+        if (progressBarContainerRef.current && iconRefs.current[activeStep]) {
+          const containerRect = progressBarContainerRef.current.getBoundingClientRect();
+          const iconRect = iconRefs.current[activeStep].getBoundingClientRect();
+          
+          // Calculate icon center position relative to progress bar container
+          const iconCenterY = iconRect.top + (iconRect.height / 2) - containerRect.top;
+          setProgressBarHeight(Math.max(16, iconCenterY));
+        } else if (progressBarContainerRef.current && stepRefs.current[activeStep]) {
+          // Fallback: calculate based on card position if icon ref not available
+          const containerRect = progressBarContainerRef.current.getBoundingClientRect();
+          const stepCardRect = stepRefs.current[activeStep].getBoundingClientRect();
+          // Icon is at top-8 (32px) from card top, icon is 64px (w-16 h-16)
+          const iconCenterOffset = 32 + 32; // top-8 + half icon height
+          const stepTop = stepCardRect.top - containerRect.top;
+          const iconCenterY = stepTop + iconCenterOffset;
+          setProgressBarHeight(Math.max(16, iconCenterY));
+        }
+      });
+    };
+
+    // Initial calculation with delay to ensure refs are populated
+    const timeoutId = setTimeout(updateProgressBarHeight, 150);
+
+    // Update on resize and scroll (to handle sticky positioning changes)
+    const handleResize = () => updateProgressBarHeight();
+    const handleScroll = () => updateProgressBarHeight();
+    
+    window.addEventListener('resize', handleResize);
+    window.addEventListener('scroll', handleScroll, { passive: true });
+    
+    return () => {
+      clearTimeout(timeoutId);
+      window.removeEventListener('resize', handleResize);
+      window.removeEventListener('scroll', handleScroll);
+    };
+  }, [activeStep]);
+
   return (
     <section 
       ref={sectionRef}
@@ -174,7 +233,8 @@ const HowToBecomeSection = () => {
             className="lg:w-2/5 flex flex-col justify-center"
             style={{
               position: 'sticky',
-              top: '10vh',
+              top: '50vh',
+              transform: 'translateY(-50%)',
               alignSelf: 'flex-start',
               height: 'fit-content'
             }}
@@ -226,7 +286,7 @@ const HowToBecomeSection = () => {
               paddingBottom: '0'
             }}
           >
-            <div className="relative">
+            <div ref={progressBarContainerRef} className="relative">
               {/* Connecting Line Background (Full Height) */}
               <div 
                 className="absolute left-8 top-0 w-0.5 transition-all duration-500"
@@ -242,13 +302,17 @@ const HowToBecomeSection = () => {
                 className="absolute left-8 top-0 w-0.5 transition-all duration-500"
                 style={{
                   backgroundColor: '#7c3aed',
-                  height: `${((activeStep + 1) / steps.length) * 100}%`,
+                  height: progressBarHeight > 0 ? `${progressBarHeight}px` : '16px',
                   zIndex: 1,
                   minHeight: '16px' // At least show the first step's connection
                 }}
               />
               
-              <div className="space-y-24 relative z-10" style={{ paddingBottom: '0', marginBottom: '0' }}>
+              <div 
+                ref={stepsContainerRef}
+                className="space-y-24 relative z-10" 
+                style={{ paddingBottom: '0', marginBottom: '0' }}
+              >
                 {steps.map((step, index) => {
                   const Icon = step.icon;
                   const isActive = activeStep === index;
@@ -291,6 +355,9 @@ const HowToBecomeSection = () => {
                   return (
                     <div
                       key={index}
+                      ref={(el) => {
+                        if (el) stepRefs.current[index] = el;
+                      }}
                       className="relative"
                     >
                       {/* Step Card */}
@@ -309,6 +376,9 @@ const HowToBecomeSection = () => {
                       >
                     {/* Step Icon Circle - Positioned on the line */}
                     <div 
+                      ref={(el) => {
+                        if (el) iconRefs.current[index] = el;
+                      }}
                       className="absolute left-0 top-8 w-16 h-16 rounded-full flex items-center justify-center text-white font-bold transition-all duration-500 border-4 border-white z-20"
                       style={{
                         backgroundColor: isActive || isPast 

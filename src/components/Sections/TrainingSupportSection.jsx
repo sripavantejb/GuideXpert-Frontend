@@ -73,29 +73,40 @@ const TrainingSupportSection = () => {
           <h3 className="text-2xl md:text-3xl font-bold text-gray-900 text-center mb-14">
             Complete Training Journey
           </h3>
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-8 lg:gap-10 relative">
-            {/* Connecting line for desktop */}
-            <div className="hidden md:block absolute top-14 left-[15%] right-[15%] h-px bg-gray-200 -z-10"></div>
-            
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-6 lg:gap-8">
             {journeySteps.map((step, index) => {
               const Icon = step.icon;
               return (
-                <div key={step.number} className="text-center relative">
-                  <div className="mb-5">
-                    <div className="w-16 h-16 bg-primary-blue-800 rounded-full flex items-center justify-center mx-auto shadow-sm">
+                <div
+                  key={step.number}
+                  className="bg-white rounded-xl p-8 border border-gray-200 hover:border-gray-300 hover:shadow-lg transition-all duration-200 text-center"
+                  style={{
+                    boxShadow: '0 4px 12px rgba(15, 23, 42, 0.08), 0 2px 4px rgba(15, 23, 42, 0.05)',
+                  }}
+                >
+                  <div className="mb-6">
+                    <div className="w-16 h-16 bg-primary-blue-800 rounded-full flex items-center justify-center mx-auto shadow-sm mb-3">
                       <Icon className="w-8 h-8 text-white" />
                     </div>
-                    {/* Subtle step number indicator */}
-                    <div className="mt-2.5">
-                      <span className="inline-block w-6 h-6 bg-gray-100 rounded-full flex items-center justify-center text-xs font-semibold text-gray-600">
-                      {step.number}
+                    {/* Step number indicator */}
+                    <div className="flex justify-center">
+                      <span className="w-7 h-7 bg-gray-100 rounded-full flex items-center justify-center text-xs font-semibold text-gray-700">
+                        {step.number}
                       </span>
                     </div>
                   </div>
-                  <h4 className="text-base font-semibold text-gray-900 mb-2">
+                  <h4 className="text-lg font-semibold text-gray-900 mb-3" style={{
+                    fontWeight: '600',
+                    color: '#0f172a'
+                  }}>
                     {step.title}
                   </h4>
-                  <p className="text-sm text-gray-600 leading-relaxed">{step.description}</p>
+                  <p className="text-sm text-gray-600 leading-relaxed" style={{
+                    color: '#475569',
+                    lineHeight: '1.6'
+                  }}>
+                    {step.description}
+                  </p>
                 </div>
               );
             })}

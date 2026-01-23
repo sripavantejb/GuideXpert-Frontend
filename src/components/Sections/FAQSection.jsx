@@ -33,8 +33,8 @@ const FAQSection = () => {
     <section 
       className="bg-white relative"
       style={{
-        marginTop: '-700px',
-        paddingTop: '700px',
+        marginTop: '-50rem',
+        paddingTop: '0',
         paddingBottom: '5rem',
         zIndex: 10
       }}
