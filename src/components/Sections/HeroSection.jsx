@@ -334,7 +334,7 @@ const HeroSection = () => {
                 </div>
               ))}
             </div>
-          </div>
+            </div>
 
           {/* Right Side - Form */}
           <div className="lg:sticky lg:top-24 flex justify-end">
@@ -348,15 +348,15 @@ const HeroSection = () => {
                   <div className="bg-primary-blue-700 h-2 rounded-full transition-all duration-300" style={{ width: '33.33%' }}></div>
                 </div>
                 <p className="text-sm font-bold text-gray-800 mt-2.5 font-santhosi" style={{ fontWeight: '700', color: '#1f2937' }}>Contact Info</p>
-              </div>
+                      </div>
 
               {/* Form Title */}
               <div className="flex items-center space-x-2.5 mb-2">
                 <div className="p-2 bg-blue-50 rounded-lg">
                   <FaPaperPlane className="text-primary-blue-700 text-sm" />
-                </div>
+                      </div>
                 <h2 className="text-xl font-bold text-gray-900 font-santhosi" style={{ fontWeight: '700' }}>Apply Now</h2>
-              </div>
+                    </div>
               <p className="text-sm text-gray-700 mb-6 leading-relaxed font-santhosi" style={{ fontWeight: '600', color: '#374151' }}>Start your journey as a certified counselor.</p>
 
               {/* Form */}
@@ -390,7 +390,7 @@ const HeroSection = () => {
                     }}
                     placeholder="Enter your full name"
                   />
-                </div>
+                  </div>
 
                 <div>
                   <label htmlFor="email" className="block text-sm font-bold text-gray-900 mb-2.5 font-santhosi" style={{ fontWeight: '700', color: '#111827' }}>
@@ -421,7 +421,7 @@ const HeroSection = () => {
                     }}
                     placeholder="your.email@example.com"
                   />
-                </div>
+            </div>
 
                 <div>
                   <label htmlFor="phone" className="block text-sm font-bold text-gray-900 mb-2.5 font-santhosi" style={{ fontWeight: '700', color: '#111827' }}>
@@ -452,7 +452,7 @@ const HeroSection = () => {
                     }}
                     placeholder="9876543210"
                   />
-                </div>
+          </div>
 
                 <button
                   type="submit"
