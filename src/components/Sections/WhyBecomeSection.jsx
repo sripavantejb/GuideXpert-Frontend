@@ -7,90 +7,61 @@ import {
   FiMapPin,
   FiArrowRight
 } from 'react-icons/fi';
+import { useApplyModal } from '../../contexts/useApplyModal';
 
 const WhyBecomeSection = () => {
+  const { openApplyModal } = useApplyModal();
   const reasons = [
     {
       icon: FiTrendingUp,
       title: 'Help students achieve their career goals',
       description: 'Guide students towards successful career paths with personalized counseling and expert insights.',
-      iconBg: 'bg-blue-50',
-      customColor: '#1e3a8a',
-      bgGradient: 'linear-gradient(135deg, rgba(176, 224, 230, 0.15) 0%, rgba(255, 255, 255, 0.9) 100%)',
     },
     {
       icon: FiRefreshCw,
       title: 'Be the trusted advisor for students and parents',
       description: 'Build meaningful relationships and provide expert guidance that shapes futures.',
-      iconBg: 'bg-pink-50',
-      customColor: '#d97706',
-      bgGradient: 'linear-gradient(135deg, rgba(255, 182, 193, 0.15) 0%, rgba(255, 255, 255, 0.9) 100%)',
     },
     {
       icon: FiSearch,
       title: "Contribute to GuideXpert's mission of empowering students",
       description: 'Be part of a movement that transforms lives and creates lasting impact.',
-      iconBg: 'bg-green-50',
-      customColor: '#15803d',
-      bgGradient: 'linear-gradient(135deg, rgba(221, 160, 221, 0.15) 0%, rgba(255, 255, 255, 0.9) 100%)',
     },
   ];
 
   const stats = [
-    { 
-      icon: FiUser, 
-      value: '121+', 
-      label: 'Active Counselors',
-      customColor: '#1e3a8a',
-    },
-    { 
-      icon: FiDollarSign, 
-      value: '₹75L', 
-      label: 'Earning Potential',
-      customColor: '#d97706',
-    },
-    { 
-      icon: FiMapPin, 
-      value: 'PAN-India', 
-      label: 'Presence',
-      customColor: '#15803d',
-    },
+    { icon: FiUser, value: '121+', label: 'Active Counselors' },
+    { icon: FiDollarSign, value: '₹75L', label: 'Earning Potential' },
+    { icon: FiMapPin, value: 'PAN-India', label: 'Presence' },
   ];
 
   return (
     <section id="why" className="py-20 md:py-28 relative overflow-hidden" style={{
       background: 'linear-gradient(180deg, #ffffff 0%, rgba(248, 250, 252, 0.5) 50%, #ffffff 100%)'
     }}>
-      {/* Pastel Pink Sphere - Top Left */}
-      <div 
-        className="absolute rounded-full opacity-40 blur-3xl"
+      {/* Subtle ambient accent - Top Left */}
+      <div
+        className="absolute rounded-full blur-3xl pointer-events-none"
         style={{
-          top: '5%',
-          left: '5%',
-          width: '300px',
-          height: '300px',
-          background: 'radial-gradient(circle, rgba(255, 182, 193, 0.4) 0%, rgba(255, 192, 203, 0.3) 35%, rgba(255, 192, 203, 0.15) 60%, transparent 100%)',
-          pointerEvents: 'none',
+          top: '2%', left: '2%', width: '280px', height: '280px',
+          background: 'radial-gradient(circle, rgba(0, 51, 102, 0.06) 0%, transparent 65%)',
+          opacity: 0.9,
         }}
       />
-      
-      {/* Pastel Blue/Purple Sphere - Bottom Right */}
-      <div 
-        className="absolute rounded-full opacity-40 blur-3xl"
+      {/* Subtle ambient accent - Bottom Right */}
+      <div
+        className="absolute rounded-full blur-3xl pointer-events-none"
         style={{
-          bottom: '5%',
-          right: '5%',
-          width: '320px',
-          height: '320px',
-          background: 'radial-gradient(circle, rgba(176, 224, 230, 0.4) 0%, rgba(221, 160, 221, 0.3) 40%, rgba(176, 224, 230, 0.15) 65%, transparent 100%)',
-          pointerEvents: 'none',
+          bottom: '2%', right: '2%', width: '260px', height: '260px',
+          background: 'radial-gradient(circle, rgba(0, 51, 102, 0.05) 0%, transparent 65%)',
+          opacity: 0.9,
         }}
       />
 
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 relative z-10">
         {/* Header */}
         <div className="text-center mb-16">
-          <div className="inline-flex items-center gap-2 px-3 py-1.5 mb-6 rounded-full border border-blue-100 bg-blue-50">
+          <div className="inline-flex items-center gap-2 px-3 py-1.5 mb-6 rounded-full border border-primary-blue-100 bg-primary-blue-50">
             <FiTrendingUp className="text-primary-blue-700 text-sm" />
             <span className="text-xs font-semibold uppercase tracking-wide text-primary-blue-800 font-santhosi">
               Why Join Us
@@ -100,7 +71,7 @@ const WhyBecomeSection = () => {
           <h2 className="text-4xl md:text-5xl lg:text-6xl font-bold mb-6 font-satoshi" style={{
             fontWeight: '800',
             letterSpacing: '-0.03em',
-            color: '#0f172a',
+            color: '#003366',
             lineHeight: '1.1'
           }}>
             Why Become a GuideXpert Counselor?
@@ -114,7 +85,7 @@ const WhyBecomeSection = () => {
           </p>
         </div>
 
-        {/* Liquid Glass Cards - Properly Aligned Grid */}
+        {/* Benefit cards - unified navy accent */}
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 lg:gap-8 mb-16">
           {reasons.map((reason, index) => {
             const Icon = reason.icon;
@@ -122,72 +93,44 @@ const WhyBecomeSection = () => {
               <div
                 key={index}
                 className="group relative"
-                style={{
-                  animation: `fadeInUp 0.6s ease-out ${index * 0.15}s both`
-                }}
+                style={{ animation: `fadeInUp 0.6s ease-out ${index * 0.12}s both` }}
               >
-                {/* Subtle Glow Effect on Hover */}
-                <div 
-                  className="absolute -inset-0.5 rounded-xl opacity-0 group-hover:opacity-100 blur-xl transition-opacity duration-500"
-                  style={{
-                    background: `${reason.customColor}20`
-                  }}
-                />
-                
-                {/* Liquid Glass Card */}
                 <div
-                  className="relative h-full rounded-xl p-8 border border-gray-200 transition-all duration-300 group-hover:-translate-y-2 overflow-hidden"
+                  className="relative h-full rounded-xl p-8 bg-white border border-gray-100 transition-all duration-300 group-hover:-translate-y-1 overflow-hidden"
                   style={{
-                    background: reason.bgGradient,
-                    backdropFilter: 'blur(10px)',
-                    WebkitBackdropFilter: 'blur(10px)',
-                    boxShadow: '0 8px 20px rgba(15, 23, 42, 0.1), 0 4px 8px rgba(15, 23, 42, 0.06)',
+                    boxShadow: '0 1px 3px rgba(0,0,0,0.04), 0 4px 12px rgba(15,23,42,0.06)',
                   }}
                   onMouseEnter={(e) => {
-                    e.currentTarget.style.boxShadow = `0 20px 40px ${reason.customColor}20, 0 8px 16px ${reason.customColor}10`;
+                    e.currentTarget.style.boxShadow = '0 12px 28px rgba(0,51,102,0.08), 0 4px 12px rgba(15,23,42,0.06)';
+                    e.currentTarget.style.borderColor = 'rgba(0,51,102,0.15)';
                   }}
                   onMouseLeave={(e) => {
-                    e.currentTarget.style.boxShadow = '0 8px 20px rgba(15, 23, 42, 0.1), 0 4px 8px rgba(15, 23, 42, 0.06)';
+                    e.currentTarget.style.boxShadow = '0 1px 3px rgba(0,0,0,0.04), 0 4px 12px rgba(15,23,42,0.06)';
+                    e.currentTarget.style.borderColor = '#f3f4f6';
                   }}
                 >
-                  {/* Content */}
                   <div className="relative z-10">
-                    {/* Icon Container */}
                     <div className="mb-6">
-                      <div 
-                        className={`inline-flex w-18 h-18 rounded-xl ${reason.iconBg} items-center justify-center transition-all duration-300 group-hover:scale-110 group-hover:rotate-3`}
+                      <div
+                        className="inline-flex items-center justify-center rounded-xl bg-primary-blue-50 transition-transform duration-300 group-hover:scale-105"
                         style={{
-                          width: '72px',
-                          height: '72px',
-                          boxShadow: `0 4px 12px ${reason.customColor}15, 0 2px 4px ${reason.customColor}10`,
+                          width: '56px',
+                          height: '56px',
+                          boxShadow: '0 2px 8px rgba(0,51,102,0.08)',
                         }}
                       >
-                        <Icon 
-                          className="text-2xl transition-all duration-300" 
-                          style={{ color: reason.customColor }}
-                        />
+                        <Icon className="text-xl" style={{ color: '#003366' }} />
                       </div>
                     </div>
-
-                    {/* Title */}
-                    <h3 
-                      className="text-lg font-bold mb-3 leading-tight font-santhosi transition-colors duration-300"
-                      style={{
-                        fontWeight: '700',
-                        color: '#0f172a'
-                      }}
+                    <h3
+                      className="text-lg font-bold mb-3 leading-tight font-santhosi"
+                      style={{ color: '#003366', fontWeight: '700' }}
                     >
                       {reason.title}
                     </h3>
-
-                    {/* Description */}
-                    <p 
-                      className="text-sm leading-relaxed font-santhosi transition-colors duration-300"
-                      style={{
-                        fontWeight: '500',
-                        color: '#475569',
-                        lineHeight: '1.7'
-                      }}
+                    <p
+                      className="text-sm leading-relaxed font-santhosi"
+                      style={{ color: '#475569', fontWeight: '500', lineHeight: '1.7' }}
                     >
                       {reason.description}
                     </p>
@@ -198,58 +141,41 @@ const WhyBecomeSection = () => {
           })}
         </div>
 
-        {/* Statistics - Theme Matching Style */}
+        {/* Statistics - unified navy accent */}
         <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-12">
           {stats.map((stat, index) => {
             const Icon = stat.icon;
             return (
               <div
                 key={index}
-                className="group relative bg-white rounded-xl p-10 text-center border border-gray-200 transition-all duration-300 hover:-translate-y-2"
+                className="group relative bg-white rounded-xl p-10 text-center border border-gray-100 transition-all duration-300 hover:-translate-y-1"
                 style={{
-                  boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.05), 0 2px 4px -1px rgba(0, 0, 0, 0.03)',
-                  animation: `fadeInUp 0.6s ease-out ${(index + 3) * 0.15}s both`
+                  boxShadow: '0 1px 3px rgba(0,0,0,0.04), 0 4px 12px rgba(15,23,42,0.06)',
+                  animation: `fadeInUp 0.6s ease-out ${(index + 3) * 0.12}s both`,
                 }}
                 onMouseEnter={(e) => {
-                  e.currentTarget.style.boxShadow = `0 12px 24px ${stat.customColor}20, 0 4px 8px ${stat.customColor}10`;
-                  e.currentTarget.style.borderColor = `${stat.customColor}30`;
+                  e.currentTarget.style.boxShadow = '0 12px 28px rgba(0,51,102,0.08), 0 4px 12px rgba(15,23,42,0.06)';
+                  e.currentTarget.style.borderColor = 'rgba(0,51,102,0.15)';
                 }}
                 onMouseLeave={(e) => {
-                  e.currentTarget.style.boxShadow = '0 4px 6px -1px rgba(0, 0, 0, 0.05), 0 2px 4px -1px rgba(0, 0, 0, 0.03)';
-                  e.currentTarget.style.borderColor = '#e5e7eb';
+                  e.currentTarget.style.boxShadow = '0 1px 3px rgba(0,0,0,0.04), 0 4px 12px rgba(15,23,42,0.06)';
+                  e.currentTarget.style.borderColor = '#f3f4f6';
                 }}
               >
-                {/* Icon */}
                 <div className="mb-5 flex justify-center">
-                  <div 
-                    className="text-5xl transition-transform duration-300 group-hover:scale-110"
-                    style={{ color: stat.customColor }}
-                  >
+                  <div className="text-4xl transition-transform duration-300 group-hover:scale-105" style={{ color: '#003366' }}>
                     <Icon />
                   </div>
                 </div>
-
-                {/* Value */}
-                <div 
-                  className="text-4xl md:text-5xl font-bold mb-3 font-santhosi"
-                  style={{
-                    fontWeight: '700',
-                    letterSpacing: '-0.02em',
-                    lineHeight: '1.1',
-                    color: '#0f172a'
-                  }}
+                <div
+                  className="text-3xl md:text-4xl font-bold mb-3 font-santhosi"
+                  style={{ fontWeight: '700', letterSpacing: '-0.02em', lineHeight: '1.1', color: '#003366' }}
                 >
                   {stat.value}
                 </div>
-
-                {/* Label */}
-                <div 
-                  className="text-base font-semibold uppercase tracking-wider font-santhosi"
-                  style={{
-                    fontWeight: '600',
-                    color: '#64748b',
-                    letterSpacing: '0.05em'
-                  }}
+                <div
+                  className="text-sm font-semibold uppercase tracking-wider font-santhosi"
+                  style={{ fontWeight: '600', color: '#64748b', letterSpacing: '0.05em' }}
                 >
                   {stat.label}
                 </div>
@@ -261,17 +187,19 @@ const WhyBecomeSection = () => {
         {/* CTA Button */}
         <div className="text-center">
           <button
+            type="button"
+            onClick={openApplyModal}
             className="inline-flex items-center gap-2 px-8 py-4 bg-primary-blue-800 hover:bg-primary-blue-900 text-white rounded-md text-base font-bold transition-all duration-200 font-santhosi"
             style={{
-              boxShadow: '0 4px 14px rgba(30, 64, 175, 0.4), 0 2px 6px rgba(0, 0, 0, 0.1)',
+              boxShadow: '0 4px 14px rgba(0,51,102,0.25), 0 2px 6px rgba(0,0,0,0.08)',
               fontWeight: '700',
             }}
             onMouseEnter={(e) => {
-              e.target.style.boxShadow = '0 6px 20px rgba(30, 64, 175, 0.5), 0 3px 8px rgba(0, 0, 0, 0.15)';
+              e.target.style.boxShadow = '0 6px 20px rgba(0,51,102,0.3), 0 3px 8px rgba(0,0,0,0.1)';
               e.target.style.transform = 'translateY(-2px)';
             }}
             onMouseLeave={(e) => {
-              e.target.style.boxShadow = '0 4px 14px rgba(30, 64, 175, 0.4), 0 2px 6px rgba(0, 0, 0, 0.1)';
+              e.target.style.boxShadow = '0 4px 14px rgba(0,51,102,0.25), 0 2px 6px rgba(0,0,0,0.08)';
               e.target.style.transform = 'translateY(0)';
             }}
           >

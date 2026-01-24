@@ -18,9 +18,11 @@ import {
   FiTrendingUp,
   FiShield
 } from 'react-icons/fi';
-import Button from '../UI/Button';
+import { useApplyModal } from '../../contexts/useApplyModal';
+import ShinyText from '../UI/ShinyText';
 
 const HowToBecomeSection = () => {
+  const { openApplyModal } = useApplyModal();
   const sectionRef = useRef(null);
   const progressBarContainerRef = useRef(null);
   const stepsContainerRef = useRef(null);
@@ -265,7 +267,7 @@ const HowToBecomeSection = () => {
             <h2 className="text-3xl md:text-4xl lg:text-5xl font-bold text-gray-900 mb-4" style={{
               fontWeight: '700',
               letterSpacing: '-0.02em',
-              color: '#0f172a',
+              color: '#003366',
               lineHeight: '1.2'
             }}>
               Get Ready for Your Counseling Career in 6 Steps
@@ -280,20 +282,41 @@ const HowToBecomeSection = () => {
             </p>
             <div className="flex flex-col sm:flex-row gap-3 md:gap-4">
               <button
-                className="px-6 md:px-8 py-2.5 md:py-3 rounded-lg font-semibold text-white transition-all duration-200 hover:opacity-90 focus:outline-none focus:ring-2 focus:ring-offset-2 text-sm md:text-base"
+                type="button"
+                onClick={openApplyModal}
+                className="px-6 md:px-8 py-2.5 md:py-3 rounded-lg font-bold text-white transition-all duration-200 hover:opacity-90 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-[#003366] text-sm md:text-base"
                 style={{
-                  backgroundColor: '#7c3aed',
-                  focusRingColor: '#7c3aed'
+                  backgroundColor: '#003366',
                 }}
               >
-                Apply Now
+                <ShinyText
+                  text="Apply Now"
+                  speed={2}
+                  delay={0}
+                  color="#ffffff"
+                  shineColor="#e0ebff"
+                  spread={120}
+                  direction="left"
+                  yoyo={false}
+                  pauseOnHover={false}
+                  disabled={false}
+                />
               </button>
               <button
-                className="px-6 md:px-8 py-2.5 md:py-3 rounded-lg font-semibold border-2 transition-all duration-200 hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 text-sm md:text-base"
+                type="button"
+                onClick={() => {
+                  const el = document.querySelector('#why');
+                  if (el) {
+                    const header = document.querySelector('header');
+                    const h = header?.offsetHeight ?? 80;
+                    const y = el.getBoundingClientRect().top + window.pageYOffset - h - 20;
+                    window.scrollTo({ top: y, behavior: 'smooth' });
+                  }
+                }}
+                className="px-6 md:px-8 py-2.5 md:py-3 rounded-lg font-semibold border-2 transition-all duration-200 hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-[#003366] text-sm md:text-base"
                 style={{
-                  borderColor: '#7c3aed',
-                  color: '#7c3aed',
-                  focusRingColor: '#7c3aed'
+                  borderColor: '#003366',
+                  color: '#003366',
                 }}
               >
                 Learn More
@@ -325,7 +348,7 @@ const HowToBecomeSection = () => {
               <div 
                 className="absolute top-0 w-0.5 transition-all duration-500"
                 style={{
-                  backgroundColor: '#7c3aed',
+                  backgroundColor: '#003366',
                   height: isLargeScreen 
                     ? (progressBarHeight > 0 ? `${progressBarHeight}px` : '16px')
                     : '100%', // Full height on mobile
@@ -411,7 +434,7 @@ const HowToBecomeSection = () => {
                           opacity,
                           transform: `translateY(${translateY}px) scale(${scale})`,
                           borderColor: isLargeScreen 
-                            ? (isActive ? '#7c3aed' : '#e5e7eb')
+                            ? (isActive ? '#003366' : '#e5e7eb')
                             : '#e5e7eb',
                           borderWidth: isLargeScreen 
                             ? (isActive ? '2px' : '1px')
@@ -432,11 +455,11 @@ const HowToBecomeSection = () => {
                         marginLeft: isLargeScreen ? '-2rem' : '-1.25rem',
                         backgroundColor: isLargeScreen
                           ? (isActive || isPast 
-                              ? '#7c3aed' 
+                              ? '#003366' 
                               : clampedProgress > 0.3 
-                                ? `rgba(124, 58, 237, ${0.5 + clampedProgress * 0.5})`
+                                ? `rgba(0, 51, 102, ${0.5 + clampedProgress * 0.5})`
                                 : '#9ca3af')
-                          : '#7c3aed',
+                          : '#003366',
                         transform: isLargeScreen
                           ? (isActive 
                               ? 'scale(1.1)' 
@@ -466,13 +489,13 @@ const HowToBecomeSection = () => {
                             fontWeight: '700',
                             color: isLargeScreen
                               ? (isActive 
-                                  ? '#0f172a' 
+                                  ? '#003366' 
                                   : isPast 
                                     ? '#4b5563' 
                                     : clampedProgress > 0.3 
-                                      ? `rgba(15, 23, 42, ${0.4 + clampedProgress * 0.6})`
+                                      ? `rgba(0, 51, 102, ${0.4 + clampedProgress * 0.6})`
                                       : '#9ca3af')
-                              : '#0f172a',
+                              : '#003366',
                             letterSpacing: '-0.02em',
                             lineHeight: '1.2'
                           }}
@@ -506,7 +529,7 @@ const HowToBecomeSection = () => {
                       {step.details.duration && (
                         <div style={{ marginBottom: isLargeScreen ? '1rem' : '0.5rem' }}>
                           <p className="font-semibold text-gray-900 mb-1" style={{ 
-                            color: '#0f172a',
+                            color: '#003366',
                             fontSize: isLargeScreen ? '0.875rem' : '0.75rem'
                           }}>
                             Duration: <span className="font-normal text-gray-600">{step.details.duration}</span>
@@ -532,7 +555,7 @@ const HowToBecomeSection = () => {
                       {step.details.support && (
                         <div style={{ marginBottom: isLargeScreen ? '1rem' : '0.5rem' }}>
                           <p className="font-semibold text-gray-900 mb-2" style={{ 
-                            color: '#0f172a',
+                            color: '#003366',
                             fontSize: isLargeScreen ? '0.875rem' : '0.75rem'
                           }}>
                             {step.details.support}

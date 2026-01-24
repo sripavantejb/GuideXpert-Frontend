@@ -39,13 +39,13 @@ const ShapeCareersSection = () => {
   ];
 
   return (
-    <section id="about" className="py-20 md:py-28 bg-gradient-to-b from-white to-blue-50">
+    <section id="about" className="py-20 md:py-28 bg-gradient-to-b from-white to-primary-blue-50">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="text-center mb-16">
           <h2 className="text-4xl md:text-5xl font-bold text-gray-900 mb-6" style={{
             fontWeight: '700',
             letterSpacing: '-0.02em',
-            color: '#0f172a',
+            color: '#003366',
             lineHeight: '1.1'
           }}>
             Shape Careers, Build Yours Too
@@ -79,7 +79,7 @@ const ShapeCareersSection = () => {
           <h3 className="text-3xl md:text-4xl font-bold text-gray-900 text-center mb-12" style={{
             fontWeight: '700',
             letterSpacing: '-0.02em',
-            color: '#0f172a',
+            color: '#003366',
             lineHeight: '1.1'
           }}>
             Earning Potential Snapshots
@@ -88,7 +88,7 @@ const ShapeCareersSection = () => {
             {earningTiers.map((tier, index) => (
               <div
                 key={index}
-                className="bg-gradient-to-br from-white to-blue-50 rounded-2xl p-8 text-center border border-blue-100 transition-all duration-300 hover:shadow-lg"
+                className="bg-gradient-to-br from-white to-primary-blue-50 rounded-2xl p-8 text-center border border-primary-blue-100 transition-all duration-300 hover:shadow-lg"
                 style={{
                   boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06)',
                 }}

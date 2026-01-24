@@ -1,8 +1,13 @@
-import { useState } from 'react';
+import { useState, useRef, useEffect, useCallback } from 'react';
 import { IoClose } from 'react-icons/io5';
 import Button from './Button';
 
+const FOCUSABLE_SELECTOR = 'button:not([disabled]), input:not([disabled]), select, textarea, [href], [tabindex]:not([tabindex="-1"])';
+
 const ApplyFormModal = ({ isOpen, onClose, title = 'Apply Now' }) => {
+  const dialogRef = useRef(null);
+  const previouslyFocusedRef = useRef(null);
+
   const [formData, setFormData] = useState({
     name: '',
     email: '',
@@ -18,11 +23,18 @@ const ApplyFormModal = ({ isOpen, onClose, title = 'Apply Now' }) => {
     });
   };
 
+  const handleClose = useCallback(() => {
+    onClose();
+    setTimeout(() => {
+      previouslyFocusedRef.current?.focus?.();
+    }, 0);
+  }, [onClose]);
+
   const handleSubmit = (e) => {
     e.preventDefault();
     // UI-only form handling
     console.log('Form submitted:', formData);
-    onClose();
+    handleClose();
     // Reset form
     setFormData({
       name: '',
@@ -33,25 +45,70 @@ const ApplyFormModal = ({ isOpen, onClose, title = 'Apply Now' }) => {
     });
   };
 
+  // Escape to close, focus on open, focus trap
+  useEffect(() => {
+    if (!isOpen || !dialogRef.current) return;
+    previouslyFocusedRef.current = document.activeElement;
+    const first = dialogRef.current.querySelector(FOCUSABLE_SELECTOR);
+    if (first) {
+      const t = setTimeout(() => first.focus(), 0);
+      return () => clearTimeout(t);
+    }
+  }, [isOpen]);
+
+  useEffect(() => {
+    if (!isOpen) return;
+    const onKeyDown = (e) => {
+      if (e.key === 'Escape') {
+        e.preventDefault();
+        handleClose();
+        return;
+      }
+      if (e.key !== 'Tab' || !dialogRef.current) return;
+      const focusables = Array.from(dialogRef.current.querySelectorAll(FOCUSABLE_SELECTOR)).filter(
+        (el) => typeof el.focus === 'function'
+      );
+      if (focusables.length === 0) return;
+      const i = focusables.indexOf(document.activeElement);
+      if (i === -1) return;
+      if (!e.shiftKey && i === focusables.length - 1) {
+        e.preventDefault();
+        focusables[0].focus();
+      } else if (e.shiftKey && i === 0) {
+        e.preventDefault();
+        focusables[focusables.length - 1].focus();
+      }
+    };
+    document.addEventListener('keydown', onKeyDown);
+    return () => document.removeEventListener('keydown', onKeyDown);
+  }, [isOpen, handleClose]);
+
   if (!isOpen) return null;
 
   return (
     <div
       className="fixed inset-0 bg-black bg-opacity-50 z-50 flex items-center justify-center p-4"
-      onClick={onClose}
+      onClick={handleClose}
     >
       <div
-        className="bg-white rounded-lg shadow-xl max-w-md w-full p-6 relative"
+        ref={dialogRef}
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby="apply-modal-title"
+        className="bg-white rounded-xl max-w-md w-full p-6 relative"
+        style={{ boxShadow: '0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04)' }}
         onClick={(e) => e.stopPropagation()}
       >
         <button
-          onClick={onClose}
+          type="button"
+          onClick={handleClose}
           className="absolute top-4 right-4 text-gray-400 hover:text-gray-600 transition-colors"
+          aria-label="Close"
         >
           <IoClose className="w-6 h-6" />
         </button>
 
-        <h2 className="text-2xl font-bold text-gray-900 mb-6">{title}</h2>
+        <h2 id="apply-modal-title" className="text-2xl font-bold text-gray-900 mb-6">{title}</h2>
 
         <form onSubmit={handleSubmit} className="space-y-4">
           <div>

@@ -1,8 +1,9 @@
 import { Suspense, lazy } from 'react';
 import Header from './components/Layout/Header';
 import Footer from './components/Layout/Footer';
-import HeroSection from './components/Sections/HeroSection';
+import ApplySection from './components/Sections/ApplySection';
 import LoadingFallback from './components/UI/LoadingFallback';
+import { ApplyModalProvider } from './contexts/ApplyModalContext';
 
 // Lazy load all sections below the fold
 const WhyBecomeSection = lazy(() => import('./components/Sections/WhyBecomeSection'));
@@ -13,15 +14,15 @@ const ToolsSection = lazy(() => import('./components/Sections/ToolsSection'));
 const HowToBecomeSection = lazy(() => import('./components/Sections/HowToBecomeSection'));
 const FAQSection = lazy(() => import('./components/Sections/FAQSection'));
 const LegacySection = lazy(() => import('./components/Sections/LegacySection'));
-const ApplySection = lazy(() => import('./components/Sections/ApplySection'));
 
 function App() {
   return (
-    <div className="min-h-screen flex flex-col">
-      <Header />
-      <main className="flex-grow">
+    <ApplyModalProvider>
+      <div className="min-h-screen flex flex-col">
+        <Header />
+        <main className="flex-grow">
         {/* Hero section loads immediately (above the fold) */}
-        <HeroSection />
+        <ApplySection />
         
         {/* All other sections are lazy loaded */}
         <Suspense fallback={<LoadingFallback />}>
@@ -55,13 +56,10 @@ function App() {
         <Suspense fallback={<LoadingFallback />}>
           <LegacySection />
         </Suspense>
-        
-        <Suspense fallback={<LoadingFallback />}>
-          <ApplySection />
-        </Suspense>
       </main>
-      <Footer />
-    </div>
+        <Footer />
+      </div>
+    </ApplyModalProvider>
   );
 }
 

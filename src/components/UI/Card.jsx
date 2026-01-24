@@ -10,7 +10,7 @@ const Card = ({ children, className = '', icon: Icon, title, description, ...pro
       {Icon && (
         <div className="mb-6 text-primary-blue-600 flex justify-center" style={{
           fontSize: '3rem',
-          color: '#2563eb'
+          color: '#003366'
         }}>
           <Icon />
         </div>
@@ -18,7 +18,7 @@ const Card = ({ children, className = '', icon: Icon, title, description, ...pro
       {title && (
         <h3 className="text-xl md:text-2xl font-bold text-gray-900 mb-3 font-satoshi" style={{
           fontWeight: '700',
-          color: '#0f172a',
+          color: '#003366',
           letterSpacing: '-0.01em',
           lineHeight: '1.3'
         }}>

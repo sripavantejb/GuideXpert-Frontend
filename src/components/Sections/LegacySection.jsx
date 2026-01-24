@@ -18,7 +18,7 @@ const LegacySection = () => {
       suffix: '+', 
       label: 'Students Guided', 
       key: 'students', 
-      color: '#1e3a8a', 
+      color: '#003366', 
     },
     { 
       icon: FiStar, 
@@ -151,7 +151,7 @@ const LegacySection = () => {
         {/* Header Section */}
         <div className="text-center mb-16">
           {/* Overline Badge */}
-          <div className="inline-flex items-center gap-2 px-3 py-1.5 mb-6 rounded-full border border-blue-100 bg-blue-50">
+          <div className="inline-flex items-center gap-2 px-3 py-1.5 mb-6 rounded-full border border-primary-blue-100 bg-primary-blue-50">
             <FiShield className="text-primary-blue-700 text-sm" />
             <span className="text-xs font-semibold uppercase tracking-wide text-primary-blue-800 font-santhosi">
               Our Legacy
@@ -161,7 +161,7 @@ const LegacySection = () => {
           <h2 className="text-4xl md:text-5xl lg:text-6xl font-bold mb-6 font-satoshi" style={{
             fontWeight: '800',
             letterSpacing: '-0.03em',
-            color: '#0f172a',
+            color: '#003366',
             lineHeight: '1.1'
           }}>
             Built on a Legacy of Proven Success
@@ -213,7 +213,7 @@ const LegacySection = () => {
                     fontWeight: '700',
                     letterSpacing: '-0.02em',
                     lineHeight: '1.1',
-                    color: '#0f172a'
+                    color: '#003366'
                   }}
                 >
                   {animatedStats[stat.key].toLocaleString()}{stat.suffix}
@@ -251,7 +251,7 @@ const LegacySection = () => {
             <div 
               className="md:w-2/5 p-8 md:p-10 flex flex-col justify-center"
               style={{
-                background: 'linear-gradient(135deg, #1e3a8a 0%, #1e40af 100%)'
+                background: 'linear-gradient(135deg, #003366 0%, #003366 100%)'
               }}
             >
               <div className="mb-6">
@@ -270,7 +270,7 @@ const LegacySection = () => {
                 }}>
                   Powered by Industry Veterans
                 </h3>
-                <p className="text-base text-blue-50 leading-relaxed font-santhosi" style={{
+                <p className="text-base text-primary-blue-50 leading-relaxed font-santhosi" style={{
                   fontWeight: '400',
                   lineHeight: '1.7',
                   fontSize: '16px'
@@ -288,7 +288,7 @@ const LegacySection = () => {
                   return (
                     <div 
                       key={index} 
-                      className="flex items-start gap-4 p-4 rounded-lg bg-white bg-opacity-60 border border-gray-100 transition-all duration-200 hover:bg-opacity-100 hover:border-blue-200 hover:shadow-md"
+                      className="flex items-start gap-4 p-4 rounded-lg bg-white bg-opacity-60 border border-gray-100 transition-all duration-200 hover:bg-opacity-100 hover:border-primary-blue-200 hover:shadow-md"
                       style={{
                         borderRadius: '0.5rem',
                         backdropFilter: 'blur(5px)',
@@ -301,7 +301,7 @@ const LegacySection = () => {
                       <span className="text-base text-gray-900 font-medium leading-snug font-santhosi" style={{
                         fontSize: '15px',
                         fontWeight: '500',
-                        color: '#0f172a',
+                        color: '#003366',
                         lineHeight: '1.5'
                       }}>
                         {achievement.text}
@@ -319,15 +319,15 @@ const LegacySection = () => {
           <button
             className="inline-flex items-center gap-2 px-8 py-4 bg-primary-blue-800 hover:bg-primary-blue-900 text-white rounded-md text-base font-bold transition-all duration-200 font-santhosi"
             style={{
-              boxShadow: '0 4px 14px rgba(30, 64, 175, 0.4), 0 2px 6px rgba(0, 0, 0, 0.1)',
+              boxShadow: '0 4px 14px rgba(0, 51, 102, 0.4), 0 2px 6px rgba(0, 0, 0, 0.1)',
               fontWeight: '700',
             }}
             onMouseEnter={(e) => {
-              e.target.style.boxShadow = '0 6px 20px rgba(30, 64, 175, 0.5), 0 3px 8px rgba(0, 0, 0, 0.15)';
+              e.target.style.boxShadow = '0 6px 20px rgba(0, 51, 102, 0.5), 0 3px 8px rgba(0, 0, 0, 0.15)';
               e.target.style.transform = 'translateY(-2px)';
             }}
             onMouseLeave={(e) => {
-              e.target.style.boxShadow = '0 4px 14px rgba(30, 64, 175, 0.4), 0 2px 6px rgba(0, 0, 0, 0.1)';
+              e.target.style.boxShadow = '0 4px 14px rgba(0, 51, 102, 0.4), 0 2px 6px rgba(0, 0, 0, 0.1)';
               e.target.style.transform = 'translateY(0)';
             }}
           >

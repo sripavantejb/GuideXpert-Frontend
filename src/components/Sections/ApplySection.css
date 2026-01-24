@@ -1,0 +1,403 @@
+/* Apply Section - Two-column layout matching certified counselor application UI */
+
+.apply-section {
+  position: relative;
+  background: linear-gradient(135deg, #e8f2fc 0%, #f2f6fc 50%, #fafcff 100%);
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+  align-items: stretch;
+  padding-top: 1.5rem;
+  padding-bottom: 2rem;
+}
+
+/* Section-level pale yellow glow from bottom-right corner, behind all content */
+.apply-section::before {
+  content: '';
+  position: absolute;
+  bottom: 0;
+  right: 0;
+  width: 90%;
+  height: 78%;
+  background: radial-gradient(
+    ellipse 110% 100% at 100% 100%,
+    rgba(255, 252, 240, 0.32) 0%,
+    rgba(255, 253, 245, 0.14) 35%,
+    rgba(255, 254, 250, 0.05) 60%,
+    transparent 88%
+  );
+  pointer-events: none;
+  z-index: 0;
+  filter: blur(28px);
+}
+
+@media (min-width: 768px) {
+  .apply-section {
+    padding-top: 2rem;
+    padding-bottom: 2.5rem;
+  }
+}
+
+.apply-section-inner {
+  position: relative;
+  z-index: 1;
+  display: flex;
+  flex-wrap: wrap;
+  width: 100%;
+  max-width: 1280px;
+  margin: 0 auto;
+  min-height: 100vh;
+}
+
+.apply-left {
+  flex: 1 1 55%;
+  min-width: 280px;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  padding: 1rem 1.5rem 11rem 2rem;
+}
+
+.apply-right {
+  flex: 0 1 45%;
+  min-width: 320px;
+  display: flex;
+  align-items: flex-start;
+  justify-content: flex-start;
+  padding: 1rem 1.5rem 2rem 1.5rem;
+  overflow: visible;
+}
+
+/* Left: Join the Movement */
+.apply-join {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  margin-bottom: 1.5rem;
+  padding: 0.5rem 0.75rem;
+  width: fit-content;
+  background: #ffffff;
+  border-radius: 9999px;
+  font-size: 0.95rem;
+  font-weight: 400;
+  color: #4b5563;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.06);
+}
+
+.apply-join-icon {
+  color: #003366;
+  font-size: 1.1rem;
+}
+
+/* Main heading - "Become a Certified" and "Counselor" grey, "Elite" blue */
+.apply-heading {
+  font-size: clamp(2rem, 4.5vw, 3.25rem);
+  font-weight: 700;
+  line-height: 1.15;
+  letter-spacing: -0.02em;
+  margin-bottom: 1.25rem;
+}
+
+.apply-heading-grey {
+  color: #1f2937;
+}
+
+.apply-heading-elite {
+  color: #003366;
+}
+
+/* Description */
+.apply-desc {
+  font-size: 1.05rem;
+  font-weight: 400;
+  color: #6b7280;
+  line-height: 1.6;
+  margin-bottom: 2.5rem;
+  max-width: 28rem;
+}
+
+/* Stats row */
+.apply-stats {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 2rem 2.5rem;
+}
+
+.apply-stat {
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+}
+
+.apply-stat-value {
+  font-size: 1.5rem;
+  font-weight: 700;
+  line-height: 1.2;
+}
+
+.apply-stat-value-blue {
+  color: #003366;
+}
+
+.apply-stat-value-gold {
+  color: #b45309;
+}
+
+.apply-stat-value-green {
+  color: #166534;
+}
+
+.apply-stat-label {
+  font-size: 0.9rem;
+  font-weight: 400;
+  color: #4b5563;
+}
+
+/* Feature cards row - below hero */
+.apply-feature-cards {
+  position: relative;
+  z-index: 1;
+  width: 100%;
+  max-width: 1280px;
+  margin: 0 auto;
+  padding: 2rem 1.5rem 2.5rem;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 1rem 1.5rem;
+  justify-content: center;
+}
+
+.apply-feature-card {
+  flex: 1 1 200px;
+  max-width: 280px;
+  background: #ffffff;
+  border-radius: 0.75rem;
+  padding: 1.25rem 1.25rem 1.5rem;
+  box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.06), 0 2px 4px -1px rgba(0, 0, 0, 0.04);
+  border: 1px solid rgba(0, 0, 0, 0.06);
+}
+
+.apply-feature-card-icon {
+  width: 2.5rem;
+  height: 2.5rem;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin-bottom: 0.75rem;
+}
+
+.apply-feature-card-icon-svg {
+  width: 1.15rem;
+  height: 1.15rem;
+  color: #ffffff;
+}
+
+.apply-card-icon-gold {
+  background: #b45309;
+}
+
+.apply-card-icon-blue {
+  background: #003366;
+}
+
+.apply-card-icon-green {
+  background: #166534;
+}
+
+.apply-feature-card-title {
+  font-size: 1rem;
+  font-weight: 700;
+  color: #1f2937;
+  margin-bottom: 0.35rem;
+  line-height: 1.3;
+}
+
+.apply-feature-card-subtitle {
+  font-size: 0.875rem;
+  color: #6b7280;
+  line-height: 1.45;
+  margin: 0;
+}
+
+/* Right: Form card */
+.apply-form-card {
+  position: relative;
+  width: 100%;
+  max-width: 420px;
+  background: #ffffff;
+  border-radius: 0.75rem;
+  overflow: visible;
+  box-shadow:
+    0 10px 40px -10px rgba(0, 0, 0, 0.12),
+    0 4px 16px -4px rgba(0, 0, 0, 0.08);
+  padding: 1.75rem 2rem 2rem;
+}
+
+/* Progress */
+.apply-progress {
+  margin-bottom: 1.5rem;
+}
+
+.apply-progress-top {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 0.5rem;
+}
+
+.apply-progress-step {
+  font-size: 0.8rem;
+  color: #9ca3af;
+}
+
+.apply-progress-label {
+  font-size: 0.8rem;
+  font-weight: 500;
+  color: #374151;
+}
+
+.apply-progress-bar {
+  height: 4px;
+  background: #e5e7eb;
+  border-radius: 2px;
+  overflow: hidden;
+}
+
+.apply-progress-fill {
+  height: 100%;
+  width: 33.333%;
+  background: #003366;
+  border-radius: 2px;
+  transition: width 0.2s ease;
+}
+
+/* Form title */
+.apply-form-title-wrap {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  margin-bottom: 0.35rem;
+}
+
+.apply-form-title-icon {
+  color: #003366;
+  font-size: 1.25rem;
+}
+
+.apply-form-title {
+  font-size: 1.35rem;
+  font-weight: 800;
+  color: #003366;
+}
+
+.apply-form-sub {
+  font-size: 0.9rem;
+  color: #6b7280;
+  text-align: center;
+  margin-bottom: 1.5rem;
+}
+
+/* Form fields */
+.apply-form {
+  display: flex;
+  flex-direction: column;
+  gap: 1.1rem;
+}
+
+.apply-field label {
+  display: block;
+  font-size: 0.9rem;
+  font-weight: 500;
+  color: #374151;
+  margin-bottom: 0.4rem;
+}
+
+.apply-field label span {
+  color: #dc2626;
+}
+
+.apply-field input {
+  width: 100%;
+  padding: 0.65rem 0.9rem;
+  font-size: 0.95rem;
+  color: #1f2937;
+  background: #ffffff;
+  border: 1px solid #e5e7eb;
+  border-radius: 0.5rem;
+  outline: none;
+  transition: border-color 0.2s, box-shadow 0.2s;
+}
+
+.apply-field input::placeholder {
+  color: #9ca3af;
+}
+
+.apply-field input:focus {
+  border-color: #003366;
+  box-shadow: 0 0 0 3px rgba(0, 51, 102, 0.15);
+}
+
+/* Get OTP button */
+.apply-otp-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  width: 100%;
+  padding: 0.75rem 1rem;
+  margin-top: 0.5rem;
+  font-size: 1rem;
+  font-weight: 600;
+  color: #ffffff;
+  background: #003366;
+  border: none;
+  border-radius: 0.5rem;
+  cursor: pointer;
+  transition: background 0.2s, transform 0.05s;
+}
+
+.apply-otp-btn:hover {
+  background: #002244;
+}
+
+.apply-otp-btn:active {
+  transform: scale(0.99);
+}
+
+.apply-otp-btn svg {
+  flex-shrink: 0;
+  font-size: 1.1rem;
+}
+
+/* Responsive: stack on small screens */
+@media (max-width: 900px) {
+  .apply-section-inner {
+    flex-direction: column;
+  }
+
+  .apply-left {
+    padding: 1.5rem 1.5rem 1.5rem;
+    min-height: auto;
+  }
+
+  .apply-right {
+    padding: 0 1.5rem 1.5rem;
+    min-width: 100%;
+  }
+
+  .apply-form-card {
+    max-width: 100%;
+  }
+}
+
+@media (max-width: 480px) {
+  .apply-stats {
+    gap: 1.5rem;
+  }
+
+  .apply-stat-value {
+    font-size: 1.25rem;
+  }
+}

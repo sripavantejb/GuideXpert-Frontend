@@ -1,21 +1,7 @@
-import { useState, useEffect } from 'react';
 import Accordion from '../UI/Accordion';
 import Button from '../UI/Button';
 
 const FAQSection = () => {
-  const [isLargeScreen, setIsLargeScreen] = useState(typeof window !== 'undefined' ? window.innerWidth >= 1024 : true);
-
-  useEffect(() => {
-    const handleResize = () => {
-      setIsLargeScreen(window.innerWidth >= 1024);
-    };
-
-    window.addEventListener('resize', handleResize);
-    handleResize();
-
-    return () => window.removeEventListener('resize', handleResize);
-  }, []);
-
   const faqItems = [
     {
       title: 'What are the eligibility criteria?',
@@ -44,21 +30,13 @@ const FAQSection = () => {
   ];
 
   return (
-    <section 
-      className="bg-white relative"
-      style={{
-        marginTop: isLargeScreen ? '-50rem' : '0',
-        paddingTop: isLargeScreen ? '0' : '3rem',
-        paddingBottom: '5rem',
-        zIndex: 10
-      }}
-    >
+    <section className="bg-white relative py-20 md:py-28">
       <div className="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="text-center mb-16">
           <h2 className="text-4xl md:text-5xl font-bold text-gray-900 mb-6" style={{
             fontWeight: '700',
             letterSpacing: '-0.02em',
-            color: '#0f172a',
+            color: '#003366',
             lineHeight: '1.1'
           }}>
             Got Questions?

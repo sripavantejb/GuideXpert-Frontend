@@ -1,18 +1,19 @@
 import { useState } from 'react';
 import { HiMenu, HiX } from 'react-icons/hi';
 import Button from '../UI/Button';
-import ApplyFormModal from '../UI/ApplyFormModal';
+import ShinyText from '../UI/ShinyText';
+import { useApplyModal } from '../../contexts/useApplyModal';
 
 const Header = () => {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
-  const [isModalOpen, setIsModalOpen] = useState(false);
+  const { openApplyModal } = useApplyModal();
 
   const navLinks = [
     { name: 'Home', href: '#home' },
     { name: 'About', href: '#about' },
     { name: 'Your Journey', href: '#journey' },
     { name: 'Why GuideXpert?', href: '#why' },
-    { name: 'College Predictor', href: '#predictor' },
+    { name: 'Tools', href: '#predictor' },
   ];
 
   const scrollToSection = (href) => {
@@ -55,7 +56,7 @@ const Header = () => {
                 <img
                   src="https://res.cloudinary.com/dqataciy5/image/upload/v1769173121/guidexpert-logo-3Ifn2ZP2_ljlxlc.png"
                   alt="GuideXpert Logo"
-                  className="h-16 md:h-40 object-contain"
+                  className="h-24 md:h-32 object-contain"
                 />
               </button>
             </div>
@@ -76,10 +77,21 @@ const Header = () => {
                 </a>
               ))}
               <Button 
-                onClick={() => setIsModalOpen(true)} 
-                className="bg-primary-blue-800 hover:bg-primary-blue-900 text-white px-5 py-2.5 rounded-md text-sm font-medium shadow-sm transition-all duration-300"
+                onClick={openApplyModal} 
+                className="bg-primary-blue-800 hover:bg-primary-blue-900 text-white px-5 py-2.5 rounded-md text-sm font-bold shadow-sm transition-all duration-300"
               >
-                Apply Now
+                <ShinyText
+                  text="Apply Now"
+                  speed={2}
+                  delay={0}
+                  color="#ffffff"
+                  shineColor="#e0ebff"
+                  spread={120}
+                  direction="left"
+                  yoyo={false}
+                  pauseOnHover={false}
+                  disabled={false}
+                />
               </Button>
             </nav>
 
@@ -116,23 +128,29 @@ const Header = () => {
               <div className="flex flex-col space-y-2 pt-4 border-t border-gray-200">
                 <Button 
                   onClick={() => {
-                    setIsModalOpen(true);
+                    openApplyModal();
                     setIsMenuOpen(false);
                   }}
-                  className="bg-primary-blue-800 hover:bg-primary-blue-900 text-white px-5 py-2.5 rounded-md text-sm font-medium shadow-sm"
+                  className="bg-primary-blue-800 hover:bg-primary-blue-900 text-white px-5 py-2.5 rounded-md text-sm font-bold shadow-sm"
                 >
-                  Apply Now
+                  <ShinyText
+                    text="Apply Now"
+                    speed={2}
+                    delay={0}
+                    color="#ffffff"
+                    shineColor="#e0ebff"
+                    spread={120}
+                    direction="left"
+                    yoyo={false}
+                    pauseOnHover={false}
+                    disabled={false}
+                  />
                 </Button>
               </div>
             </div>
           )}
         </div>
       </header>
-
-      <ApplyFormModal
-        isOpen={isModalOpen}
-        onClose={() => setIsModalOpen(false)}
-      />
     </>
   );
 };

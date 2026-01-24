@@ -54,8 +54,8 @@ const TrainingSupportSection = () => {
                 key={index}
                 className="bg-white rounded-lg p-6 border border-gray-200 hover:border-gray-300 hover:shadow-sm transition-all duration-200"
               >
-                <div className="bg-blue-50/50 w-12 h-12 rounded-lg flex items-center justify-center mb-4">
-                  <Icon className="text-lg" style={{ color: '#1e3a8a' }} />
+                <div className="bg-primary-blue-50/50 w-12 h-12 rounded-lg flex items-center justify-center mb-4">
+                  <Icon className="text-lg" style={{ color: '#003366' }} />
                 </div>
                 <h3 className="text-base font-semibold text-gray-900 mb-2.5">
                   {support.title}
@@ -97,7 +97,7 @@ const TrainingSupportSection = () => {
                   </div>
                   <h4 className="text-lg font-semibold text-gray-900 mb-3" style={{
                     fontWeight: '600',
-                    color: '#0f172a'
+                    color: '#003366'
                   }}>
                     {step.title}
                   </h4>

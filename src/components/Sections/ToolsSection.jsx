@@ -108,7 +108,7 @@ const ToolsSection = () => {
   ];
 
   const dashboardTools = [
-    { icon: FiUsers, title: 'Student Management', color: 'bg-blue-50' },
+    { icon: FiUsers, title: 'Student Management', color: 'bg-primary-blue-50' },
     { icon: FiFileText, title: 'Assessment Tools', color: 'bg-green-50' },
     { icon: FiCalendar, title: 'Session Scheduler', color: 'bg-purple-50' },
     { icon: FiLayers, title: 'Resource Library', color: 'bg-amber-50' },
@@ -121,7 +121,7 @@ const ToolsSection = () => {
           <h2 className="text-4xl md:text-5xl font-bold text-gray-900 mb-6" style={{
             fontWeight: '700',
             letterSpacing: '-0.02em',
-            color: '#0f172a',
+            color: '#003366',
             lineHeight: '1.1'
           }}>
             Tools to Help You Succeed
@@ -137,13 +137,13 @@ const ToolsSection = () => {
 
         {/* Dashboard Portal Mockup */}
         <div className="mb-16">
-          <div className="bg-white rounded-2xl shadow-2xl overflow-hidden" style={{
-            boxShadow: '0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04)',
+          <div className="bg-white rounded-xl overflow-hidden" style={{
+            boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.08), 0 2px 4px -1px rgba(0, 0, 0, 0.04)',
           }}>
             <div className="flex flex-col md:flex-row md:min-h-[500px]">
               {/* Sidebar - Vibrant Blue */}
               <div className="w-full md:w-64 p-4 md:p-6 rounded-t-lg md:rounded-tl-lg md:rounded-tr-none md:rounded-bl-lg md:rounded-br-none" style={{
-                background: 'linear-gradient(180deg, #2563eb 0%, #1e40af 100%)'
+                background: 'linear-gradient(180deg, #003366 0%, #003366 100%)'
               }}>
                 <div className="mb-6 md:mb-8">
                   <h3 className="text-white text-lg md:text-xl font-bold" style={{
@@ -160,8 +160,8 @@ const ToolsSection = () => {
                         key={index}
                         className={`flex items-center space-x-2 md:space-x-3 px-3 md:px-4 py-2 md:py-3 rounded-lg cursor-pointer transition-all duration-200 ${
                           item.active 
-                            ? 'bg-blue-400 bg-opacity-30 text-white' 
-                            : 'text-blue-100 hover:bg-blue-400 hover:bg-opacity-20'
+                            ? 'bg-primary-blue-400 bg-opacity-30 text-white' 
+                            : 'text-primary-blue-100 hover:bg-primary-blue-400 hover:bg-opacity-20'
                         }`}
                       >
                         <Icon className="w-4 h-4 md:w-5 md:h-5 flex-shrink-0" />
@@ -177,7 +177,7 @@ const ToolsSection = () => {
                 <div className="mb-4 md:mb-6">
                   <h3 className="text-xl md:text-2xl font-bold text-gray-900 mb-1 md:mb-2" style={{
                     fontWeight: '700',
-                    color: '#0f172a'
+                    color: '#003366'
                   }}>
                     Professional Tools Portal
                   </h3>
@@ -202,12 +202,12 @@ const ToolsSection = () => {
                       >
                         <div className="flex items-center space-x-3 md:space-x-4">
                           <div className="w-10 h-10 md:w-12 md:h-12 bg-white rounded-lg flex items-center justify-center shadow-sm flex-shrink-0">
-                            <Icon className="w-5 h-5 md:w-6 md:h-6 text-blue-600" />
+                            <Icon className="w-5 h-5 md:w-6 md:h-6 text-primary-blue-600" />
                           </div>
                           <div className="min-w-0 flex-1">
                             <h4 className="text-sm md:text-base font-semibold text-gray-900 break-words" style={{
                               fontWeight: '600',
-                              color: '#0f172a'
+                              color: '#003366'
                             }}>
                               {tool.title}
                             </h4>
@@ -229,19 +229,19 @@ const ToolsSection = () => {
             return (
               <div
                 key={index}
-                className="bg-white rounded-2xl p-8 border border-gray-200 transition-all duration-300 hover:shadow-lg"
+                className="bg-white rounded-xl p-8 border border-gray-200 transition-all duration-300 hover:shadow-lg"
                 style={{
-                  boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06)',
+                  boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.08), 0 2px 4px -1px rgba(0, 0, 0, 0.04)',
                 }}
               >
-                <div className="text-blue-600 text-5xl mb-6 flex justify-center" style={{
-                  color: '#2563eb'
+                <div className="text-primary-blue-600 text-5xl mb-6 flex justify-center" style={{
+                  color: '#003366'
                 }}>
                   <Icon />
                 </div>
                 <h3 className="text-xl md:text-2xl font-bold text-gray-900 mb-4 text-center" style={{
                   fontWeight: '700',
-                  color: '#0f172a',
+                  color: '#003366',
                   letterSpacing: '-0.01em',
                   lineHeight: '1.3'
                 }}>
@@ -265,7 +265,7 @@ const ToolsSection = () => {
             <h3 className="text-3xl md:text-4xl font-bold text-gray-900 mb-4" style={{
               fontWeight: '700',
               letterSpacing: '-0.02em',
-              color: '#0f172a',
+              color: '#003366',
               lineHeight: '1.2'
             }}>
               What Counselors Say

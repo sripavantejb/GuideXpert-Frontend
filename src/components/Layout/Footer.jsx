@@ -8,8 +8,8 @@ import {
 const Footer = () => {
   const companyLinks = [
     { name: 'About Us', href: '#about' },
-    { name: 'Careers', href: '#careers' },
-    { name: 'Blog', href: '#blog' },
+    { name: 'Careers', href: '#' },
+    { name: 'Blog', href: '#' },
     { name: 'Contact Us', href: '#contact' },
   ];
 
@@ -37,7 +37,7 @@ const Footer = () => {
               <img
                 src="https://res.cloudinary.com/dqataciy5/image/upload/v1769173121/guidexpert-logo-3Ifn2ZP2_ljlxlc.png"
                 alt="GuideXpert Logo"
-                className="h-16 md:h-40 mb-3 object-contain"
+                className="h-24 md:h-32 mb-3 object-contain"
               />
               <p className="text-gray-300 text-sm leading-relaxed">
               Empowering students to find their dream careers.
@@ -49,13 +49,16 @@ const Footer = () => {
               <h3 className="text-white font-bold text-base mb-4">Contact</h3>
               <div className="space-y-2.5 text-sm text-gray-300">
                 <p>
-                  <span className="font-semibold text-white">Address:</span> 123 Education Street, City, State 12345
+                  <span className="font-semibold text-white">Address:</span>{' '}
+                  <a href="#" className="hover:text-white transition-colors">To be announced</a>
                 </p>
                 <p>
-                  <span className="font-semibold text-white">Email:</span> info@guidexpert.com
+                  <span className="font-semibold text-white">Email:</span>{' '}
+                  <a href="mailto:info@guidexpert.com" className="hover:text-white transition-colors">info@guidexpert.com</a>
                 </p>
                 <p>
-                  <span className="font-semibold text-white">Phone:</span> +1 (555) 123-4567
+                  <span className="font-semibold text-white">Phone:</span>{' '}
+                  <a href="#" className="hover:text-white transition-colors">To be announced</a>
                 </p>
               </div>
             </div>
@@ -96,11 +99,16 @@ const Footer = () => {
           </div>
         </div>
 
-        {/* Bottom Bar - Copyright & Social Media */}
-        <div className="mt-12 pt-8 border-t border-gray-800 flex flex-col md:flex-row justify-between items-center">
-          <p className="text-gray-400 text-sm mb-4 md:mb-0">
-            © {new Date().getFullYear()} GuideXpert. All rights reserved.
-          </p>
+        {/* Bottom Bar - Copyright, Back to top & Social Media */}
+        <div className="mt-12 pt-8 border-t border-gray-800 flex flex-col md:flex-row justify-between items-center gap-4">
+          <div className="flex flex-col sm:flex-row items-center gap-2 sm:gap-6">
+            <p className="text-gray-400 text-sm">
+              © {new Date().getFullYear()} GuideXpert. All rights reserved.
+            </p>
+            <a href="#home" className="text-gray-400 hover:text-white text-sm transition-colors duration-200">
+              Back to top
+            </a>
+          </div>
           <div className="flex space-x-5">
             {socialLinks.map((social) => {
               const Icon = social.icon;
