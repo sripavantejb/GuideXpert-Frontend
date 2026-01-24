@@ -264,12 +264,7 @@ const HowToBecomeSection = () => {
               height: 'fit-content'
             }}
           >
-            <h2 className="text-3xl md:text-4xl lg:text-5xl font-bold text-gray-900 mb-4" style={{
-              fontWeight: '700',
-              letterSpacing: '-0.02em',
-              color: '#003366',
-              lineHeight: '1.2'
-            }}>
+            <h2 className="mb-4">
               Get Ready for Your Counseling Career in 6 Steps
             </h2>
             <p className="text-base md:text-lg text-gray-600 mb-6 md:mb-8" style={{
@@ -483,9 +478,9 @@ const HowToBecomeSection = () => {
                           Step {step.number}
                         </div>
                         <h3 
-                          className="font-bold transition-colors duration-500"
+                          className="heading-subsection font-bold transition-colors duration-500"
                           style={{
-                            fontSize: isLargeScreen ? '1.875rem' : '1.125rem',
+                            fontSize: !isLargeScreen ? '1.125rem' : undefined,
                             fontWeight: '700',
                             color: isLargeScreen
                               ? (isActive 

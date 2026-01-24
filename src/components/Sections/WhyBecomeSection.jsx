@@ -36,9 +36,7 @@ const WhyBecomeSection = () => {
   ];
 
   return (
-    <section id="why" className="py-20 md:py-28 relative overflow-hidden" style={{
-      background: 'linear-gradient(180deg, #ffffff 0%, rgba(248, 250, 252, 0.5) 50%, #ffffff 100%)'
-    }}>
+    <section id="why" className="py-20 md:py-28 relative overflow-hidden bg-gray-50">
       {/* Subtle ambient accent - Top Left */}
       <div
         className="absolute rounded-full blur-3xl pointer-events-none"
@@ -68,12 +66,7 @@ const WhyBecomeSection = () => {
             </span>
           </div>
           
-          <h2 className="text-4xl md:text-5xl lg:text-6xl font-bold mb-6 font-satoshi" style={{
-            fontWeight: '800',
-            letterSpacing: '-0.03em',
-            color: '#003366',
-            lineHeight: '1.1'
-          }}>
+          <h2 className="mb-6">
             Why Become a GuideXpert Counselor?
           </h2>
           <p className="text-lg md:text-xl max-w-3xl mx-auto leading-relaxed font-santhosi" style={{
@@ -122,10 +115,7 @@ const WhyBecomeSection = () => {
                         <Icon className="text-xl" style={{ color: '#003366' }} />
                       </div>
                     </div>
-                    <h3
-                      className="text-lg font-bold mb-3 leading-tight font-santhosi"
-                      style={{ color: '#003366', fontWeight: '700' }}
-                    >
+                    <h3 className="mb-3 leading-tight">
                       {reason.title}
                     </h3>
                     <p

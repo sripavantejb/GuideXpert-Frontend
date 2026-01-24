@@ -30,15 +30,10 @@ const FAQSection = () => {
   ];
 
   return (
-    <section className="bg-white relative py-20 md:py-28">
+    <section className="bg-gray-50 relative py-20 md:py-28">
       <div className="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="text-center mb-16">
-          <h2 className="text-4xl md:text-5xl font-bold text-gray-900 mb-6" style={{
-            fontWeight: '700',
-            letterSpacing: '-0.02em',
-            color: '#003366',
-            lineHeight: '1.1'
-          }}>
+          <h2 className="mb-6">
             Got Questions?
           </h2>
           <p className="text-lg md:text-xl text-gray-700 max-w-2xl mx-auto" style={{

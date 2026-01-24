@@ -114,39 +114,7 @@ const LegacySection = () => {
   };
 
   return (
-    <section 
-      className="py-20 md:py-28 relative overflow-hidden"
-      style={{
-        background: 'linear-gradient(180deg, #ffffff 0%, rgba(248, 250, 252, 0.5) 50%, #ffffff 100%)',
-        position: 'relative'
-      }}
-    >
-      {/* Pastel Pink Sphere - Top Left */}
-      <div 
-        className="absolute rounded-full opacity-40 blur-3xl"
-        style={{
-          top: '10%',
-          left: '5%',
-          width: '350px',
-          height: '350px',
-          background: 'radial-gradient(circle, rgba(255, 182, 193, 0.5) 0%, rgba(255, 192, 203, 0.35) 35%, rgba(255, 192, 203, 0.2) 60%, transparent 100%)',
-          pointerEvents: 'none',
-        }}
-      />
-      
-      {/* Pastel Blue/Purple Sphere - Bottom Right */}
-      <div 
-        className="absolute rounded-full opacity-40 blur-3xl"
-        style={{
-          bottom: '10%',
-          right: '5%',
-          width: '380px',
-          height: '380px',
-          background: 'radial-gradient(circle, rgba(176, 224, 230, 0.5) 0%, rgba(221, 160, 221, 0.35) 40%, rgba(176, 224, 230, 0.2) 65%, transparent 100%)',
-          pointerEvents: 'none',
-        }}
-      />
-
+    <section className="py-20 md:py-28 relative overflow-hidden bg-white">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 relative z-10">
         {/* Header Section */}
         <div className="text-center mb-16">
@@ -158,12 +126,7 @@ const LegacySection = () => {
             </span>
           </div>
 
-          <h2 className="text-4xl md:text-5xl lg:text-6xl font-bold mb-6 font-satoshi" style={{
-            fontWeight: '800',
-            letterSpacing: '-0.03em',
-            color: '#003366',
-            lineHeight: '1.1'
-          }}>
+          <h2 className="mb-6">
             Built on a Legacy of Proven Success
           </h2>
           <p className="text-lg md:text-xl max-w-3xl mx-auto leading-relaxed font-santhosi" style={{
@@ -263,11 +226,7 @@ const LegacySection = () => {
                 >
                   <FiCheckCircle className="w-8 h-8 text-white" style={{ strokeWidth: '2.5' }} />
                 </div>
-                <h3 className="text-3xl md:text-4xl font-bold text-white mb-4 font-satoshi" style={{
-                  fontWeight: '700',
-                  letterSpacing: '-0.02em',
-                  lineHeight: '1.2'
-                }}>
+                <h3 className="heading-subsection text-white mb-4">
                   Powered by Industry Veterans
                 </h3>
                 <p className="text-base text-primary-blue-50 leading-relaxed font-santhosi" style={{

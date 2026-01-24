@@ -115,15 +115,10 @@ const ToolsSection = () => {
   ];
 
   return (
-    <section id="predictor" className="py-20 md:py-28 bg-white">
+    <section id="predictor" className="py-20 md:py-28 bg-gray-50">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="text-center mb-16">
-          <h2 className="text-4xl md:text-5xl font-bold text-gray-900 mb-6" style={{
-            fontWeight: '700',
-            letterSpacing: '-0.02em',
-            color: '#003366',
-            lineHeight: '1.1'
-          }}>
+          <h2 className="mb-6">
             Tools to Help You Succeed
           </h2>
           <p className="text-lg md:text-xl text-gray-700 max-w-3xl mx-auto" style={{
@@ -146,9 +141,7 @@ const ToolsSection = () => {
                 background: 'linear-gradient(180deg, #003366 0%, #003366 100%)'
               }}>
                 <div className="mb-6 md:mb-8">
-                  <h3 className="text-white text-lg md:text-xl font-bold" style={{
-                    fontWeight: '700'
-                  }}>
+                  <h3 className="text-white text-base">
                     GuideXpert
                   </h3>
                 </div>
@@ -175,10 +168,7 @@ const ToolsSection = () => {
               {/* Main Content Area */}
               <div className="flex-1 bg-gray-50 p-4 md:p-8">
                 <div className="mb-4 md:mb-6">
-                  <h3 className="text-xl md:text-2xl font-bold text-gray-900 mb-1 md:mb-2" style={{
-                    fontWeight: '700',
-                    color: '#003366'
-                  }}>
+                  <h3 className="mb-1 md:mb-2">
                     Professional Tools Portal
                   </h3>
                   <p className="text-xs md:text-sm text-gray-600" style={{
@@ -205,10 +195,7 @@ const ToolsSection = () => {
                             <Icon className="w-5 h-5 md:w-6 md:h-6 text-primary-blue-600" />
                           </div>
                           <div className="min-w-0 flex-1">
-                            <h4 className="text-sm md:text-base font-semibold text-gray-900 break-words" style={{
-                              fontWeight: '600',
-                              color: '#003366'
-                            }}>
+                            <h4 className="heading-compact font-semibold text-gray-900 break-words">
                               {tool.title}
                             </h4>
                           </div>
@@ -239,12 +226,7 @@ const ToolsSection = () => {
                 }}>
                   <Icon />
                 </div>
-                <h3 className="text-xl md:text-2xl font-bold text-gray-900 mb-4 text-center" style={{
-                  fontWeight: '700',
-                  color: '#003366',
-                  letterSpacing: '-0.01em',
-                  lineHeight: '1.3'
-                }}>
+                <h3 className="mb-4 text-center">
                   {tool.title}
                 </h3>
                 <p className="text-base text-gray-700 text-center leading-relaxed" style={{
@@ -262,12 +244,7 @@ const ToolsSection = () => {
         {/* Reviews Scrolling Rows */}
         <div className="mb-16">
           <div className="text-center mb-12">
-            <h3 className="text-3xl md:text-4xl font-bold text-gray-900 mb-4" style={{
-              fontWeight: '700',
-              letterSpacing: '-0.02em',
-              color: '#003366',
-              lineHeight: '1.2'
-            }}>
+            <h3 className="heading-subsection mb-4">
               What Counselors Say
             </h3>
             <p className="text-lg text-gray-600 max-w-2xl mx-auto" style={{

@@ -56,7 +56,7 @@ const Header = () => {
                 <img
                   src="https://res.cloudinary.com/dqataciy5/image/upload/v1769173121/guidexpert-logo-3Ifn2ZP2_ljlxlc.png"
                   alt="GuideXpert Logo"
-                  className="h-24 md:h-32 object-contain"
+                  className="h-28 md:h-40 object-contain"
                 />
               </button>
             </div>

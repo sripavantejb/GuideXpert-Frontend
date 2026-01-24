@@ -16,12 +16,7 @@ const Card = ({ children, className = '', icon: Icon, title, description, ...pro
         </div>
       )}
       {title && (
-        <h3 className="text-xl md:text-2xl font-bold text-gray-900 mb-3 font-satoshi" style={{
-          fontWeight: '700',
-          color: '#003366',
-          letterSpacing: '-0.01em',
-          lineHeight: '1.3'
-        }}>
+        <h3 className="mb-3">
           {title}
         </h3>
       )}

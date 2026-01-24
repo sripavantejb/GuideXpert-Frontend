@@ -34,10 +34,10 @@ const TrainingSupportSection = () => {
   ];
 
   return (
-    <section className="py-24 md:py-32 bg-gradient-to-b from-gray-50 to-white">
+    <section className="py-24 md:py-32 bg-white">
       <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="text-center mb-20">
-          <h2 className="text-3xl md:text-4xl lg:text-5xl font-bold text-gray-900 mb-6 leading-[1.1] tracking-tight">
+          <h2 className="mb-6">
             Training & Support That Empowers You
           </h2>
           <p className="text-base md:text-lg text-gray-600 max-w-2xl mx-auto leading-relaxed font-normal">
@@ -70,7 +70,7 @@ const TrainingSupportSection = () => {
 
         {/* Training Journey */}
         <div className="mb-20">
-          <h3 className="text-2xl md:text-3xl font-bold text-gray-900 text-center mb-14">
+          <h3 className="heading-subsection text-center mb-14">
             Complete Training Journey
           </h3>
           <div className="grid grid-cols-1 md:grid-cols-3 gap-6 lg:gap-8">
@@ -95,10 +95,7 @@ const TrainingSupportSection = () => {
                       </span>
                     </div>
                   </div>
-                  <h4 className="text-lg font-semibold text-gray-900 mb-3" style={{
-                    fontWeight: '600',
-                    color: '#003366'
-                  }}>
+                  <h4 className="mb-3">
                     {step.title}
                   </h4>
                   <p className="text-sm text-gray-600 leading-relaxed" style={{
