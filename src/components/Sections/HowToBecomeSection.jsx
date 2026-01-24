@@ -29,6 +29,8 @@ const HowToBecomeSection = () => {
   const [activeStep, setActiveStep] = useState(0);
   const [scrollProgress, setScrollProgress] = useState(0);
   const [progressBarHeight, setProgressBarHeight] = useState(0);
+  const [isLargeScreen, setIsLargeScreen] = useState(typeof window !== 'undefined' ? window.innerWidth >= 1024 : true);
+  const [isMediumScreen, setIsMediumScreen] = useState(typeof window !== 'undefined' ? window.innerWidth >= 768 : true);
 
   // Six steps matching the original structure
   const steps = [
@@ -94,9 +96,29 @@ const HowToBecomeSection = () => {
     }
   ];
 
+  // Handle window resize for responsive behavior
+  useEffect(() => {
+    const handleResize = () => {
+      setIsLargeScreen(window.innerWidth >= 1024);
+      setIsMediumScreen(window.innerWidth >= 768);
+    };
+
+    window.addEventListener('resize', handleResize);
+    handleResize(); // Initial check
+
+    return () => window.removeEventListener('resize', handleResize);
+  }, []);
+
   useEffect(() => {
     const handleScroll = () => {
       if (!sectionRef.current) return;
+      
+      // On mobile, disable scroll-based animations
+      if (window.innerWidth < 1024) {
+        setScrollProgress(0);
+        setActiveStep(0); // Keep first step active or all visible
+        return;
+      }
 
       const section = sectionRef.current;
       const rect = section.getBoundingClientRect();
@@ -221,26 +243,26 @@ const HowToBecomeSection = () => {
       ref={sectionRef}
       className="bg-white relative"
       style={{ 
-        minHeight: '500vh',
-        paddingTop: '5rem',
-        paddingBottom: '0rem'
+        minHeight: isLargeScreen ? '500vh' : 'auto',
+        paddingTop: isLargeScreen ? '5rem' : '2.5rem',
+        paddingBottom: isLargeScreen ? '7rem' : '3rem'
       }}
     >
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         {/* Two-Column Layout */}
-        <div className="flex flex-col lg:flex-row gap-12 lg:gap-8 relative">
+        <div className="flex flex-col lg:flex-row gap-6 lg:gap-8 relative">
           {/* Left Column: Sticky Heading and CTAs */}
           <div 
-            className="lg:w-2/5 flex flex-col justify-center"
+            className="lg:w-2/5 flex flex-col justify-center mb-4 lg:mb-0"
             style={{
-              position: 'sticky',
-              top: '50vh',
-              transform: 'translateY(-50%)',
+              position: isLargeScreen ? 'sticky' : 'relative',
+              top: isLargeScreen ? '50vh' : 'auto',
+              transform: isLargeScreen ? 'translateY(-50%)' : 'none',
               alignSelf: 'flex-start',
               height: 'fit-content'
             }}
           >
-            <h2 className="text-4xl md:text-5xl font-bold text-gray-900 mb-4" style={{
+            <h2 className="text-3xl md:text-4xl lg:text-5xl font-bold text-gray-900 mb-4" style={{
               fontWeight: '700',
               letterSpacing: '-0.02em',
               color: '#0f172a',
@@ -248,17 +270,17 @@ const HowToBecomeSection = () => {
             }}>
               Get Ready for Your Counseling Career in 6 Steps
             </h2>
-            <p className="text-lg text-gray-600 mb-8" style={{
+            <p className="text-base md:text-lg text-gray-600 mb-6 md:mb-8" style={{
               fontWeight: '500',
               lineHeight: '1.6',
               color: '#64748b',
-              fontSize: '18px'
+              fontSize: isMediumScreen ? '18px' : '16px'
             }}>
               Launch your counseling career today.
             </p>
-            <div className="flex flex-col sm:flex-row gap-4">
+            <div className="flex flex-col sm:flex-row gap-3 md:gap-4">
               <button
-                className="px-8 py-3 rounded-lg font-semibold text-white transition-all duration-200 hover:opacity-90 focus:outline-none focus:ring-2 focus:ring-offset-2"
+                className="px-6 md:px-8 py-2.5 md:py-3 rounded-lg font-semibold text-white transition-all duration-200 hover:opacity-90 focus:outline-none focus:ring-2 focus:ring-offset-2 text-sm md:text-base"
                 style={{
                   backgroundColor: '#7c3aed',
                   focusRingColor: '#7c3aed'
@@ -267,7 +289,7 @@ const HowToBecomeSection = () => {
                 Apply Now
               </button>
               <button
-                className="px-8 py-3 rounded-lg font-semibold border-2 transition-all duration-200 hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2"
+                className="px-6 md:px-8 py-2.5 md:py-3 rounded-lg font-semibold border-2 transition-all duration-200 hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 text-sm md:text-base"
                 style={{
                   borderColor: '#7c3aed',
                   color: '#7c3aed',
@@ -281,44 +303,52 @@ const HowToBecomeSection = () => {
 
           {/* Right Column: Scrolling Steps */}
           <div 
-            className="lg:w-3/5"
+            className="lg:w-3/5 w-full"
             style={{
-              paddingTop: '10vh',
+              paddingTop: isLargeScreen ? '10vh' : '0',
               paddingBottom: '0'
             }}
           >
             <div ref={progressBarContainerRef} className="relative">
               {/* Connecting Line Background (Full Height) */}
               <div 
-                className="absolute left-8 top-0 w-0.5 transition-all duration-500"
+                className="absolute top-0 w-0.5 transition-all duration-500"
                 style={{
                   backgroundColor: '#e5e7eb',
                   height: '100%',
-                  zIndex: 0
+                  zIndex: 0,
+                  left: isLargeScreen ? '2rem' : '1.25rem'
                 }}
               />
               
               {/* Connecting Line Progress (Filled Portion) */}
               <div 
-                className="absolute left-8 top-0 w-0.5 transition-all duration-500"
+                className="absolute top-0 w-0.5 transition-all duration-500"
                 style={{
                   backgroundColor: '#7c3aed',
-                  height: progressBarHeight > 0 ? `${progressBarHeight}px` : '16px',
+                  height: isLargeScreen 
+                    ? (progressBarHeight > 0 ? `${progressBarHeight}px` : '16px')
+                    : '100%', // Full height on mobile
                   zIndex: 1,
-                  minHeight: '16px' // At least show the first step's connection
+                  minHeight: '16px',
+                  left: isLargeScreen ? '2rem' : '1.25rem'
                 }}
               />
               
               <div 
                 ref={stepsContainerRef}
-                className="space-y-24 relative z-10" 
-                style={{ paddingBottom: '0', marginBottom: '0' }}
+                className="relative z-10" 
+                style={{ 
+                  display: 'flex',
+                  flexDirection: 'column',
+                  gap: isLargeScreen ? '6rem' : '1.5rem',
+                  paddingBottom: isLargeScreen ? '0' : '2rem'
+                }}
               >
                 {steps.map((step, index) => {
                   const Icon = step.icon;
                   const isActive = activeStep === index;
                   const isPast = activeStep > index;
-                  const isFuture = activeStep < index;
                   
                   // Calculate individual step progress for smoother transitions
                   // Each step gets a range of 0-1 as it becomes active
@@ -326,32 +356,37 @@ const HowToBecomeSection = () => {
                   const clampedProgress = Math.max(0, Math.min(1, stepProgress));
                   
                   // Smooth opacity transition based on progress
-                  let opacity = 0.4; // Base opacity for future steps
-                  if (isActive) {
-                    // Active step: full opacity
-                    opacity = 1;
-                  } else if (isPast) {
-                    // Past steps: slightly dimmed but visible
-                    opacity = 0.7;
-                  } else {
-                    // Future steps: gradually increase opacity as they approach
-                    // When stepProgress is between 0 and 1, smoothly transition
-                    opacity = 0.4 + (clampedProgress * 0.6); // 0.4 to 1.0
+                  // On mobile, all cards are fully visible
+                  let opacity = 1; // Default full opacity for mobile
+                  
+                  if (isLargeScreen) {
+                    // Only apply scroll-based opacity on large screens
+                    if (isActive) {
+                      opacity = 1;
+                    } else if (isPast) {
+                      opacity = 0.7;
+                    } else {
+                      opacity = 0.4 + (clampedProgress * 0.6);
+                    }
                   }
                   
-                  // Scale: Smoothly transition based on progress
-                  const scale = isActive 
-                    ? 1 
-                    : isPast 
-                      ? 0.97 
-                      : 0.92 + (clampedProgress * 0.08); // 0.92 to 1.0
+                  // Scale: Smoothly transition based on progress (disable on mobile)
+                  const scale = isLargeScreen 
+                    ? (isActive 
+                        ? 1 
+                        : isPast 
+                          ? 0.97 
+                          : 0.92 + (clampedProgress * 0.08)) // 0.92 to 1.0
+                    : 1; // Always 1 on mobile
                   
-                  // Translate: Smoothly transition based on progress
-                  const translateY = isActive 
-                    ? 0 
-                    : isPast 
-                      ? 10 
-                      : 30 - (clampedProgress * 30); // 30 to 0
+                  // Translate: Smoothly transition based on progress (reduce on mobile)
+                  const translateY = isLargeScreen 
+                    ? (isActive 
+                        ? 0 
+                        : isPast 
+                          ? 10 
+                          : 30 - (clampedProgress * 30)) // 30 to 0
+                    : 0; // No translation on mobile
 
                   return (
                     <div
@@ -363,16 +398,24 @@ const HowToBecomeSection = () => {
                     >
                       {/* Step Card */}
                       <div
-                        className="bg-white rounded-xl p-8 border border-gray-200 transition-all duration-500 ml-12"
+                        className="bg-white rounded-xl border transition-all duration-500"
                         style={{
-                          boxShadow: isActive 
-                            ? '0 8px 24px rgba(0, 0, 0, 0.12)' 
+                          marginLeft: isLargeScreen ? '3rem' : '3rem',
+                          padding: isLargeScreen ? '2rem' : '1rem',
+                          boxShadow: isLargeScreen 
+                            ? (isActive 
+                                ? '0 8px 24px rgba(0, 0, 0, 0.12)' 
+                                : '0 2px 8px rgba(0, 0, 0, 0.08)')
                             : '0 2px 8px rgba(0, 0, 0, 0.08)',
                           borderRadius: '0.75rem',
                           opacity,
                           transform: `translateY(${translateY}px) scale(${scale})`,
-                          borderColor: isActive ? '#7c3aed' : '#e5e7eb',
-                          borderWidth: isActive ? '2px' : '1px'
+                          borderColor: isLargeScreen 
+                            ? (isActive ? '#7c3aed' : '#e5e7eb')
+                            : '#e5e7eb',
+                          borderWidth: isLargeScreen 
+                            ? (isActive ? '2px' : '1px')
+                            : '1px'
                         }}
                       >
                     {/* Step Icon Circle - Positioned on the line */}
@@ -380,46 +423,58 @@ const HowToBecomeSection = () => {
                       ref={(el) => {
                         if (el) iconRefs.current[index] = el;
                       }}
-                      className="absolute left-0 top-8 w-16 h-16 rounded-full flex items-center justify-center text-white font-bold transition-all duration-500 border-4 border-white z-20"
+                      className="absolute rounded-full flex items-center justify-center text-white font-bold transition-all duration-500 border-4 border-white z-20"
                       style={{
-                        backgroundColor: isActive || isPast 
-                          ? '#7c3aed' 
-                          : clampedProgress > 0.3 
-                            ? `rgba(124, 58, 237, ${0.5 + clampedProgress * 0.5})` // Smooth transition to purple
-                            : '#9ca3af',
-                        transform: isActive 
-                          ? 'scale(1.1)' 
-                          : clampedProgress > 0.5 
-                            ? `scale(${1 + (clampedProgress - 0.5) * 0.2})` // Scale up as it approaches
-                            : 'scale(1)',
-                        marginLeft: '-2rem'
+                        left: 0,
+                        top: isLargeScreen ? '2rem' : '1rem',
+                        width: isLargeScreen ? '4rem' : '2.5rem',
+                        height: isLargeScreen ? '4rem' : '2.5rem',
+                        marginLeft: isLargeScreen ? '-2rem' : '-1.25rem',
+                        backgroundColor: isLargeScreen
+                          ? (isActive || isPast 
+                              ? '#7c3aed' 
+                              : clampedProgress > 0.3 
+                                ? `rgba(124, 58, 237, ${0.5 + clampedProgress * 0.5})`
+                                : '#9ca3af')
+                          : '#7c3aed',
+                        transform: isLargeScreen
+                          ? (isActive 
+                              ? 'scale(1.1)' 
+                              : clampedProgress > 0.5 
+                                ? `scale(${1 + (clampedProgress - 0.5) * 0.2})`
+                                : 'scale(1)')
+                          : 'scale(1)'
                       }}
                     >
-                      <Icon className="w-8 h-8" />
+                      <Icon style={{ width: isLargeScreen ? '2rem' : '1.25rem', height: isLargeScreen ? '2rem' : '1.25rem' }} />
                     </div>
 
-                    <div className="flex items-center gap-4 mb-6">
+                    <div className="flex items-center gap-2 mb-3" style={{ marginBottom: isLargeScreen ? '1.5rem' : '0.75rem' }}>
                       <div>
-                        <div className="text-sm font-semibold text-gray-500 mb-1" style={{
+                        <div className="font-semibold text-gray-500 mb-1" style={{
                           color: '#6b7280',
                           textTransform: 'uppercase',
                           letterSpacing: '0.05em',
-                          fontSize: '12px'
+                          fontSize: isLargeScreen ? '12px' : '10px'
                         }}>
                           Step {step.number}
                         </div>
                         <h3 
-                          className="text-3xl font-bold transition-colors duration-500"
+                          className="font-bold transition-colors duration-500"
                           style={{
+                            fontSize: isLargeScreen ? '1.875rem' : '1.125rem',
                             fontWeight: '700',
-                            color: isActive 
-                              ? '#0f172a' 
-                              : isPast 
-                                ? '#4b5563' 
-                                : clampedProgress > 0.3 
-                                  ? `rgba(15, 23, 42, ${0.4 + clampedProgress * 0.6})` // Smooth color transition
-                                  : '#9ca3af',
-                            letterSpacing: '-0.02em'
+                            color: isLargeScreen
+                              ? (isActive 
+                                  ? '#0f172a' 
+                                  : isPast 
+                                    ? '#4b5563' 
+                                    : clampedProgress > 0.3 
+                                      ? `rgba(15, 23, 42, ${0.4 + clampedProgress * 0.6})`
+                                      : '#9ca3af')
+                              : '#0f172a',
+                            letterSpacing: '-0.02em',
+                            lineHeight: '1.2'
                           }}
                         >
                           {step.title}
@@ -428,49 +483,70 @@ const HowToBecomeSection = () => {
                     </div>
 
                     <p 
-                      className="text-lg text-gray-700 mb-6 transition-opacity duration-500"
+                      className="text-gray-700 transition-opacity duration-500"
                       style={{
+                        fontSize: isLargeScreen ? '1.125rem' : '0.875rem',
                         color: '#374151',
                         lineHeight: '1.6',
-                        opacity: isActive 
-                          ? 1 
-                          : isPast 
-                            ? 0.8 
-                            : 0.5 + (clampedProgress * 0.5) // Smooth opacity transition
+                        marginBottom: isLargeScreen ? '1.5rem' : '0.75rem',
+                        opacity: isLargeScreen
+                          ? (isActive 
+                              ? 1 
+                              : isPast 
+                                ? 0.8 
+                                : 0.5 + (clampedProgress * 0.5))
+                          : 1
                       }}
                     >
                       {step.description}
                     </p>
 
                     {/* Step Details */}
-                    <div className="bg-gray-50 rounded-lg p-6 border border-gray-200">
+                    <div className="bg-gray-50 rounded-lg border border-gray-200" style={{ padding: isLargeScreen ? '1.5rem' : '0.75rem' }}>
                       {step.details.duration && (
-                        <div className="mb-4">
-                          <p className="text-sm font-semibold text-gray-900 mb-1" style={{ color: '#0f172a' }}>
+                        <div style={{ marginBottom: isLargeScreen ? '1rem' : '0.5rem' }}>
+                          <p className="font-semibold text-gray-900 mb-1" style={{ 
+                            color: '#0f172a',
+                            fontSize: isLargeScreen ? '0.875rem' : '0.75rem'
+                          }}>
                             Duration: <span className="font-normal text-gray-600">{step.details.duration}</span>
                           </p>
                           {step.details.process && (
-                            <p className="text-sm text-gray-600" style={{ color: '#64748b' }}>
+                            <p className="text-gray-600" style={{ 
+                              color: '#64748b',
+                              fontSize: isLargeScreen ? '0.875rem' : '0.75rem'
+                            }}>
                               {step.details.process}
                             </p>
                           )}
                           {step.details.format && (
-                            <p className="text-sm text-gray-600" style={{ color: '#64748b' }}>
+                            <p className="text-gray-600" style={{ 
+                              color: '#64748b',
+                              fontSize: isLargeScreen ? '0.875rem' : '0.75rem'
+                            }}>
                               Format: {step.details.format}
                             </p>
                           )}
                         </div>
                       )}
                       {step.details.support && (
-                        <div className="mb-4">
-                          <p className="text-sm font-semibold text-gray-900 mb-2" style={{ color: '#0f172a' }}>
+                        <div style={{ marginBottom: isLargeScreen ? '1rem' : '0.5rem' }}>
+                          <p className="font-semibold text-gray-900 mb-2" style={{ 
+                            color: '#0f172a',
+                            fontSize: isLargeScreen ? '0.875rem' : '0.75rem'
+                          }}>
                             {step.details.support}
                           </p>
                           {step.details.features && (
-                            <ul className="space-y-2">
+                            <ul style={{ display: 'flex', flexDirection: 'column', gap: isLargeScreen ? '0.5rem' : '0.375rem' }}>
                               {step.details.features.map((feature, idx) => (
-                                <li key={idx} className="flex items-center gap-2 text-sm text-gray-600">
-                                  <FiCheckCircle className="w-4 h-4 text-green-600 flex-shrink-0" />
+                                <li key={idx} className="flex items-center gap-2 text-gray-600" style={{
+                                  fontSize: isLargeScreen ? '0.875rem' : '0.75rem'
+                                }}>
+                                  <FiCheckCircle className="text-green-600 flex-shrink-0" style={{
+                                    width: isLargeScreen ? '1rem' : '0.875rem',
+                                    height: isLargeScreen ? '1rem' : '0.875rem'
+                                  }} />
                                   <span>{feature}</span>
                                 </li>
                               ))}

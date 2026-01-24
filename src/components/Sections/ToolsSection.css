@@ -99,3 +99,12 @@
     animation-duration: 40s;
   }
 }
+
+/* Smaller screens */
+@media (max-width: 640px) {
+  .review-card {
+    width: 260px;
+    height: 140px;
+    padding: 1rem;
+  }
+}

@@ -140,33 +140,32 @@ const ToolsSection = () => {
           <div className="bg-white rounded-2xl shadow-2xl overflow-hidden" style={{
             boxShadow: '0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04)',
           }}>
-            <div className="flex min-h-[500px]">
+            <div className="flex flex-col md:flex-row md:min-h-[500px]">
               {/* Sidebar - Vibrant Blue */}
-              <div className="w-64 p-6" style={{
-                background: 'linear-gradient(180deg, #2563eb 0%, #1e40af 100%)',
-                borderRadius: '0.5rem 0 0 0.5rem'
+              <div className="w-full md:w-64 p-4 md:p-6 rounded-t-lg md:rounded-tl-lg md:rounded-tr-none md:rounded-bl-lg md:rounded-br-none" style={{
+                background: 'linear-gradient(180deg, #2563eb 0%, #1e40af 100%)'
               }}>
-                <div className="mb-8">
-                  <h3 className="text-white text-xl font-bold" style={{
+                <div className="mb-6 md:mb-8">
+                  <h3 className="text-white text-lg md:text-xl font-bold" style={{
                     fontWeight: '700'
                   }}>
                     GuideXpert
                   </h3>
                 </div>
-                <div className="space-y-2">
+                <div className="space-y-2 grid grid-cols-2 md:grid-cols-1 gap-2 md:gap-0 md:space-y-2">
                   {navItems.map((item, index) => {
                     const Icon = item.icon;
                     return (
                       <div
                         key={index}
-                        className={`flex items-center space-x-3 px-4 py-3 rounded-lg cursor-pointer transition-all duration-200 ${
+                        className={`flex items-center space-x-2 md:space-x-3 px-3 md:px-4 py-2 md:py-3 rounded-lg cursor-pointer transition-all duration-200 ${
                           item.active 
                             ? 'bg-blue-400 bg-opacity-30 text-white' 
                             : 'text-blue-100 hover:bg-blue-400 hover:bg-opacity-20'
                         }`}
                       >
-                        <Icon className="w-5 h-5" />
-                        <span className="text-sm font-medium">{item.label}</span>
+                        <Icon className="w-4 h-4 md:w-5 md:h-5 flex-shrink-0" />
+                        <span className="text-xs md:text-sm font-medium truncate">{item.label}</span>
                       </div>
                     );
                   })}
@@ -174,15 +173,15 @@ const ToolsSection = () => {
               </div>
 
               {/* Main Content Area */}
-              <div className="flex-1 bg-gray-50 p-8">
-                <div className="mb-6">
-                  <h3 className="text-2xl font-bold text-gray-900 mb-2" style={{
+              <div className="flex-1 bg-gray-50 p-4 md:p-8">
+                <div className="mb-4 md:mb-6">
+                  <h3 className="text-xl md:text-2xl font-bold text-gray-900 mb-1 md:mb-2" style={{
                     fontWeight: '700',
                     color: '#0f172a'
                   }}>
                     Professional Tools Portal
                   </h3>
-                  <p className="text-sm text-gray-600" style={{
+                  <p className="text-xs md:text-sm text-gray-600" style={{
                     color: '#64748b'
                   }}>
                     Manage your counseling practice efficiently
@@ -190,23 +189,23 @@ const ToolsSection = () => {
                 </div>
 
                 {/* Tools Grid */}
-                <div className="grid grid-cols-2 gap-4">
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 md:gap-4">
                   {dashboardTools.map((tool, index) => {
                     const Icon = tool.icon;
                     return (
                       <div
                         key={index}
-                        className={`${tool.color} p-6 rounded-xl border border-gray-200 transition-all duration-300 hover:shadow-lg`}
+                        className={`${tool.color} p-4 md:p-6 rounded-xl border border-gray-200 transition-all duration-300 hover:shadow-lg`}
                         style={{
                           boxShadow: '0 1px 3px rgba(0, 0, 0, 0.1)',
                         }}
                       >
-                        <div className="flex items-center space-x-4">
-                          <div className="w-12 h-12 bg-white rounded-lg flex items-center justify-center shadow-sm">
-                            <Icon className="w-6 h-6 text-blue-600" />
+                        <div className="flex items-center space-x-3 md:space-x-4">
+                          <div className="w-10 h-10 md:w-12 md:h-12 bg-white rounded-lg flex items-center justify-center shadow-sm flex-shrink-0">
+                            <Icon className="w-5 h-5 md:w-6 md:h-6 text-blue-600" />
                           </div>
-                          <div>
-                            <h4 className="text-base font-semibold text-gray-900" style={{
+                          <div className="min-w-0 flex-1">
+                            <h4 className="text-sm md:text-base font-semibold text-gray-900 break-words" style={{
                               fontWeight: '600',
                               color: '#0f172a'
                             }}>

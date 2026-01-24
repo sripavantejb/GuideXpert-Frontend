@@ -1,7 +1,21 @@
+import { useState, useEffect } from 'react';
 import Accordion from '../UI/Accordion';
 import Button from '../UI/Button';
 
 const FAQSection = () => {
+  const [isLargeScreen, setIsLargeScreen] = useState(typeof window !== 'undefined' ? window.innerWidth >= 1024 : true);
+
+  useEffect(() => {
+    const handleResize = () => {
+      setIsLargeScreen(window.innerWidth >= 1024);
+    };
+
+    window.addEventListener('resize', handleResize);
+    handleResize();
+
+    return () => window.removeEventListener('resize', handleResize);
+  }, []);
+
   const faqItems = [
     {
       title: 'What are the eligibility criteria?',
@@ -33,8 +47,8 @@ const FAQSection = () => {
     <section 
       className="bg-white relative"
       style={{
-        marginTop: '-50rem',
-        paddingTop: '0',
+        marginTop: isLargeScreen ? '-50rem' : '0',
+        paddingTop: isLargeScreen ? '0' : '3rem',
         paddingBottom: '5rem',
         zIndex: 10
       }}
