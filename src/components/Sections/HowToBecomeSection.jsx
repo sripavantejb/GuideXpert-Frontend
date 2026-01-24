@@ -433,7 +433,10 @@ const HowToBecomeSection = () => {
                             : '#e5e7eb',
                           borderWidth: isLargeScreen 
                             ? (isActive ? '2px' : '1px')
-                            : '1px'
+                            : '1px',
+                          ...(isActive && {
+                            background: 'linear-gradient(to top left, #f7f4eb 0%, #fefbea 25%, #fefdeb 50%, #eef6fd 75%, #e3effe 100%)'
+                          })
                         }}
                       >
                     {/* Step Icon Circle - Positioned on the line */}
