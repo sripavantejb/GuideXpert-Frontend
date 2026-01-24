@@ -373,33 +373,109 @@
   font-size: 1.1rem;
 }
 
-/* Responsive: stack on small screens */
+/* Responsive: stack on small/medium (form first, then marketing) */
 @media (max-width: 900px) {
   .apply-section-inner {
     flex-direction: column;
+    min-height: auto;
   }
 
   .apply-left {
+    order: 0;
     padding: 1.5rem 1.5rem 1.5rem;
     min-height: auto;
   }
 
   .apply-right {
-    padding: 0 1.5rem 1.5rem;
+    order: -1;
+    padding: 2rem 1.5rem 1.5rem;
     min-width: 100%;
   }
 
   .apply-form-card {
     max-width: 100%;
+    transform: none;
+  }
+
+  .apply-desc {
+    max-width: 100%;
   }
 }
 
+/* Responsive: extra-small (current order: form → marketing → feature cards) */
 @media (max-width: 480px) {
+  .apply-section {
+    padding-top: 1.25rem;
+    padding-bottom: 1.5rem;
+  }
+
+  .apply-left {
+    padding: 1rem 1rem 1rem;
+  }
+
+  .apply-right {
+    padding: 1.5rem 1rem 1.5rem;
+  }
+
+  .apply-heading {
+    font-size: 1.875rem;
+    margin-bottom: 1rem;
+  }
+
+  .apply-desc {
+    font-size: 1rem;
+    margin-bottom: 2rem;
+  }
+
+  .apply-join {
+    font-size: 0.875rem;
+    padding: 0.4rem 0.6rem;
+    margin-bottom: 1.25rem;
+  }
+
+  .apply-form-card {
+    padding: 1.25rem 1.5rem 1.5rem;
+  }
+
+  .apply-progress {
+    margin-bottom: 1.25rem;
+  }
+
+  .apply-form-sub {
+    font-size: 0.85rem;
+    margin-bottom: 1.25rem;
+  }
+
+  .apply-form {
+    gap: 1rem;
+  }
+
   .apply-stats {
-    gap: 1.5rem;
+    gap: 1.25rem;
   }
 
   .apply-stat-value {
     font-size: 1.25rem;
+  }
+
+  .apply-stat-label {
+    font-size: 0.8rem;
+  }
+
+  .apply-feature-cards {
+    padding: 1.5rem 1rem 2rem;
+    gap: 1rem;
+  }
+
+  .apply-feature-card {
+    padding: 1rem 1rem 1.25rem;
+  }
+
+  .apply-feature-card-title {
+    font-size: 0.95rem;
+  }
+
+  .apply-feature-card-subtitle {
+    font-size: 0.8125rem;
   }
 }

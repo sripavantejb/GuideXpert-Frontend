@@ -1,5 +1,6 @@
 import { useState, useEffect, useRef } from 'react';
 import { FiUser, FiStar, FiAward, FiCheckCircle, FiTrendingUp, FiShield } from 'react-icons/fi';
+import Button from '../UI/Button';
 
 const LegacySection = () => {
   const [animatedStats, setAnimatedStats] = useState({
@@ -198,15 +199,11 @@ const LegacySection = () => {
           })}
         </div>
 
-        {/* Industry Veterans Card - Liquid Glass Design */}
+        {/* Industry Veterans Card */}
         <div 
-          className="max-w-5xl mx-auto rounded-2xl overflow-hidden border border-gray-200"
+          className="max-w-5xl mx-auto rounded-2xl overflow-hidden border border-gray-200 bg-white"
           style={{
-            background: 'linear-gradient(135deg, rgba(176, 224, 230, 0.08) 0%, rgba(255, 255, 255, 0.95) 100%)',
-            backdropFilter: 'blur(10px)',
-            WebkitBackdropFilter: 'blur(10px)',
-            boxShadow: '0 8px 20px rgba(15, 23, 42, 0.1), 0 4px 8px rgba(15, 23, 42, 0.06)',
-            borderRadius: '1rem'
+            boxShadow: '0 6px 12px -2px rgba(0, 0, 0, 0.08), 0 2px 6px -2px rgba(0, 0, 0, 0.05)'
           }}
         >
           <div className="flex flex-col md:flex-row">
@@ -219,14 +216,11 @@ const LegacySection = () => {
             >
               <div className="mb-6">
                 <div 
-                  className="w-16 h-16 bg-white bg-opacity-20 backdrop-blur-sm rounded-xl flex items-center justify-center mb-6"
-                  style={{
-                    borderRadius: '0.75rem'
-                  }}
+                  className="w-16 h-16 rounded-full bg-white/25 flex items-center justify-center mb-6"
                 >
-                  <FiCheckCircle className="w-8 h-8 text-white" style={{ strokeWidth: '2.5' }} />
+                  <FiAward className="w-8 h-8 text-white" style={{ strokeWidth: '2.5' }} aria-hidden />
                 </div>
-                <h3 className="heading-subsection text-white mb-4">
+                <h3 className="font-satoshi heading-subsection text-white mb-4">
                   Powered by Industry Veterans
                 </h3>
                 <p className="text-base text-primary-blue-50 leading-relaxed font-santhosi" style={{
@@ -247,15 +241,10 @@ const LegacySection = () => {
                   return (
                     <div 
                       key={index} 
-                      className="flex items-start gap-4 p-4 rounded-lg bg-white bg-opacity-60 border border-gray-100 transition-all duration-200 hover:bg-opacity-100 hover:border-primary-blue-200 hover:shadow-md"
-                      style={{
-                        borderRadius: '0.5rem',
-                        backdropFilter: 'blur(5px)',
-                        WebkitBackdropFilter: 'blur(5px)',
-                      }}
+                      className="flex items-start gap-4 p-4 rounded-xl bg-white border border-gray-200 transition-all duration-200 hover:border-primary-blue-200 hover:shadow-md hover:bg-primary-blue-50/30"
                     >
-                      <div className="flex-shrink-0 w-6 h-6 bg-primary-blue-800 rounded-full flex items-center justify-center mt-0.5">
-                        <Icon className="w-4 h-4 text-white" style={{ strokeWidth: '2.5' }} />
+                      <div className="shrink-0 w-10 h-10 rounded-full bg-primary-blue-800 flex items-center justify-center mt-0.5">
+                        <Icon className="w-5 h-5 text-white" style={{ strokeWidth: '2.5' }} aria-hidden />
                       </div>
                       <span className="text-base text-gray-900 font-medium leading-snug font-santhosi" style={{
                         fontSize: '15px',
@@ -275,20 +264,9 @@ const LegacySection = () => {
 
         {/* CTA Button */}
         <div className="text-center mt-16">
-          <button
-            className="inline-flex items-center gap-2 px-8 py-4 bg-primary-blue-800 hover:bg-primary-blue-900 text-white rounded-md text-base font-bold transition-all duration-200 font-santhosi"
-            style={{
-              boxShadow: '0 4px 14px rgba(0, 51, 102, 0.4), 0 2px 6px rgba(0, 0, 0, 0.1)',
-              fontWeight: '700',
-            }}
-            onMouseEnter={(e) => {
-              e.target.style.boxShadow = '0 6px 20px rgba(0, 51, 102, 0.5), 0 3px 8px rgba(0, 0, 0, 0.15)';
-              e.target.style.transform = 'translateY(-2px)';
-            }}
-            onMouseLeave={(e) => {
-              e.target.style.boxShadow = '0 4px 14px rgba(0, 51, 102, 0.4), 0 2px 6px rgba(0, 0, 0, 0.1)';
-              e.target.style.transform = 'translateY(0)';
-            }}
+          <Button
+            type="button"
+            className="inline-flex items-center gap-2 px-8 py-4 bg-primary-blue-800 hover:bg-primary-blue-900 text-white rounded-lg text-base font-bold transition-all duration-200 hover:-translate-y-0.5"
           >
             <span>Learn More</span>
             <svg 
@@ -296,10 +274,11 @@ const LegacySection = () => {
               fill="none" 
               stroke="currentColor" 
               viewBox="0 0 24 24"
+              aria-hidden
             >
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M17 8l4 4m0 0l-4 4m4-4H3" />
             </svg>
-          </button>
+          </Button>
         </div>
       </div>
 

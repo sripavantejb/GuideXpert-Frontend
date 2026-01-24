@@ -245,9 +245,9 @@ const HowToBecomeSection = () => {
       ref={sectionRef}
       className="bg-white relative"
       style={{ 
-        minHeight: isLargeScreen ? '500vh' : 'auto',
+        minHeight: 'auto',
         paddingTop: isLargeScreen ? '5rem' : '2.5rem',
-        paddingBottom: isLargeScreen ? '7rem' : '3rem'
+        paddingBottom: isLargeScreen ? '5rem' : '3rem'
       }}
     >
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
