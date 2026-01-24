@@ -67,7 +67,7 @@ const WhyBecomeSection = () => {
           </div>
           
           <h2 className="mb-6">
-            Why Become a GuideXpert Counselor?
+            Why Become a <strong className="font-extrabold">GuideXpert</strong> Counselor?
           </h2>
           <p className="text-lg md:text-xl max-w-3xl mx-auto leading-relaxed font-santhosi" style={{
             fontWeight: '500',
@@ -112,7 +112,12 @@ const WhyBecomeSection = () => {
                           boxShadow: '0 2px 8px rgba(0,51,102,0.08)',
                         }}
                       >
-                        <Icon className="text-xl" style={{ color: '#003366' }} />
+                        <Icon
+                          size={24}
+                          strokeWidth={2}
+                          style={{ color: '#003366', flexShrink: 0 }}
+                          aria-hidden
+                        />
                       </div>
                     </div>
                     <h3 className="mb-3 leading-tight">

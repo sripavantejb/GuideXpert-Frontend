@@ -6,7 +6,7 @@ import {
   FiAward
 } from 'react-icons/fi';
 import Button from '../UI/Button';
-import Card from '../UI/Card';
+import './ShapeCareersSection.css';
 
 const ShapeCareersSection = () => {
   const features = [
@@ -14,21 +14,25 @@ const ShapeCareersSection = () => {
       icon: FiUser,
       title: 'Continuous Learning & Growth',
       description: 'Expand your knowledge and skills continuously',
+      accent: 'learning',
     },
     {
       icon: FiCalendar,
       title: 'Flexible Work Hours',
       description: 'Work according to your schedule',
+      accent: 'flexible',
     },
     {
       icon: FiDollarSign,
       title: 'High Earning Potential',
       description: 'Build a financially rewarding career',
+      accent: 'earning',
     },
     {
       icon: FiUsers,
       title: 'Strong Community & Support',
       description: 'Join a network of experienced counselors',
+      accent: 'community',
     },
   ];
 
@@ -55,54 +59,40 @@ const ShapeCareersSection = () => {
         </div>
 
         {/* Features Grid */}
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8 mb-20">
+        <div className="shape-careers-grid">
           {features.map((feature, index) => {
             const Icon = feature.icon;
             return (
-              <Card
+              <div
                 key={index}
-                icon={Icon}
-                title={feature.title}
-                description={feature.description}
-              />
+                className={`shape-careers-card shape-careers-card-${feature.accent}`}
+              >
+                <div className="shape-careers-card-icon">
+                  <Icon aria-hidden />
+                </div>
+                <h3 className="shape-careers-card-title">{feature.title}</h3>
+                <p className="shape-careers-card-desc">{feature.description}</p>
+              </div>
             );
           })}
         </div>
 
         {/* Earning Potential */}
-        <div className="mb-16">
+        <div className="mb-10">
           <h3 className="heading-subsection text-center mb-12">
             Earning Potential Snapshots
           </h3>
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
+          <div className="shape-careers-earning-grid">
             {earningTiers.map((tier, index) => (
               <div
                 key={index}
-                className="bg-gradient-to-br from-white to-primary-blue-50 rounded-2xl p-8 text-center border border-primary-blue-100 transition-all duration-300 hover:shadow-lg"
-                style={{
-                  boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06)',
-                }}
+                className={`shape-careers-earning-card shape-careers-earning-card-${tier.medal}`}
               >
-                <div className="mb-6">
-                  <FiAward className={`w-16 h-16 mx-auto ${
-                    tier.medal === 'gold' ? 'text-yellow-500' :
-                    tier.medal === 'silver' ? 'text-gray-400' :
-                    'text-amber-600'
-                  }`} />
+                <div className="shape-careers-earning-icon">
+                  <FiAward aria-hidden />
                 </div>
-                <div className="text-3xl md:text-4xl font-bold text-gray-900 mb-3" style={{
-                  fontWeight: '700',
-                  letterSpacing: '-0.02em',
-                  lineHeight: '1.1'
-                }}>
-                  {tier.amount}
-                </div>
-                <div className="text-base font-semibold text-gray-600 uppercase tracking-wider" style={{
-                  fontWeight: '600',
-                  letterSpacing: '0.05em'
-                }}>
-                  {tier.level}
-                </div>
+                <div className="shape-careers-earning-amount">{tier.amount}</div>
+                <div className="shape-careers-earning-level">{tier.level}</div>
               </div>
             ))}
           </div>

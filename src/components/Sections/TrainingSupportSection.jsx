@@ -7,6 +7,7 @@ import {
   FaStar
 } from 'react-icons/fa';
 import Button from '../UI/Button';
+import './TrainingSupportSection.css';
 
 const TrainingSupportSection = () => {
   const supportTypes = [
@@ -14,28 +15,31 @@ const TrainingSupportSection = () => {
       icon: FaDesktop,
       title: 'Online Training',
       description: 'Comprehensive online training modules accessible anytime',
+      accent: 'online',
     },
     {
       icon: FaWrench,
       title: 'Counselor Toolkit',
       description: 'Access to professional tools and resources',
+      accent: 'toolkit',
     },
     {
       icon: FaHeadphones,
       title: 'Ongoing Support',
       description: 'Continuous support throughout your counseling journey',
+      accent: 'support',
     },
   ];
 
   const journeySteps = [
-    { number: 1, icon: FaUser, title: 'Enroll', description: 'Sign up for the certification program' },
-    { number: 2, icon: FaBook, title: 'Learn', description: 'Complete comprehensive training modules' },
-    { number: 3, icon: FaStar, title: 'Achieve', description: 'Get certified and start counseling' },
+    { number: 1, icon: FaUser, title: 'Enroll', description: 'Sign up for the certification program', accent: 'enroll' },
+    { number: 2, icon: FaBook, title: 'Learn', description: 'Complete comprehensive training modules', accent: 'learn' },
+    { number: 3, icon: FaStar, title: 'Achieve', description: 'Get certified and start counseling', accent: 'achieve' },
   ];
 
   return (
-    <section className="py-24 md:py-32 bg-white">
-      <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8">
+    <section className="training-support-section py-24 md:py-32">
+      <div className="training-support-section-inner max-w-6xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="text-center mb-20">
           <h2 className="mb-6">
             Training & Support That Empowers You
@@ -46,23 +50,19 @@ const TrainingSupportSection = () => {
         </div>
 
         {/* Support Types */}
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-20">
+        <div className="training-support-cards">
           {supportTypes.map((support, index) => {
             const Icon = support.icon;
             return (
               <div
                 key={index}
-                className="bg-white rounded-lg p-6 border border-gray-200 hover:border-gray-300 hover:shadow-sm transition-all duration-200"
+                className={`training-support-card training-support-card-${support.accent}`}
               >
-                <div className="bg-primary-blue-50/50 w-12 h-12 rounded-lg flex items-center justify-center mb-4">
-                  <Icon className="text-lg" style={{ color: '#003366' }} />
+                <div className="training-support-card-icon">
+                  <Icon aria-hidden />
                 </div>
-                <h3 className="text-base font-semibold text-gray-900 mb-2.5">
-                  {support.title}
-                </h3>
-                <p className="text-sm text-gray-600 leading-relaxed">
-                  {support.description}
-                </p>
+                <h3 className="training-support-card-title">{support.title}</h3>
+                <p className="training-support-card-desc">{support.description}</p>
               </div>
             );
           })}
@@ -73,37 +73,20 @@ const TrainingSupportSection = () => {
           <h3 className="heading-subsection text-center mb-14">
             Complete Training Journey
           </h3>
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-6 lg:gap-8">
-            {journeySteps.map((step, index) => {
+          <div className="training-journey-cards">
+            {journeySteps.map((step) => {
               const Icon = step.icon;
               return (
                 <div
                   key={step.number}
-                  className="bg-white rounded-xl p-8 border border-gray-200 hover:border-gray-300 hover:shadow-lg transition-all duration-200 text-center"
-                  style={{
-                    boxShadow: '0 4px 12px rgba(15, 23, 42, 0.08), 0 2px 4px rgba(15, 23, 42, 0.05)',
-                  }}
+                  className={`training-journey-card training-journey-card-${step.accent}`}
                 >
-                  <div className="mb-6">
-                    <div className="w-16 h-16 bg-primary-blue-800 rounded-full flex items-center justify-center mx-auto shadow-sm mb-3">
-                      <Icon className="w-8 h-8 text-white" />
-                    </div>
-                    {/* Step number indicator */}
-                    <div className="flex justify-center">
-                      <span className="w-7 h-7 bg-gray-100 rounded-full flex items-center justify-center text-xs font-semibold text-gray-700">
-                        {step.number}
-                      </span>
-                    </div>
+                  <div className="training-journey-card-icon">
+                    <Icon aria-hidden />
                   </div>
-                  <h4 className="mb-3">
-                    {step.title}
-                  </h4>
-                  <p className="text-sm text-gray-600 leading-relaxed" style={{
-                    color: '#475569',
-                    lineHeight: '1.6'
-                  }}>
-                    {step.description}
-                  </p>
+                  <div className="training-journey-step">{step.number}</div>
+                  <h4 className="training-journey-card-title">{step.title}</h4>
+                  <p className="training-journey-card-desc">{step.description}</p>
                 </div>
               );
             })}
