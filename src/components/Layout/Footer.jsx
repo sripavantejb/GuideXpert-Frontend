@@ -2,7 +2,7 @@ import { FiMail, FiPhone } from 'react-icons/fi';
 import { FaWhatsapp } from 'react-icons/fa';
 
 const linkClass =
-  'text-gray-300 hover:text-primary-blue-300 transition-colors duration-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary-blue-400 focus-visible:ring-offset-2 focus-visible:ring-offset-[#001a2c] rounded';
+  'text-gray-300 hover:text-white transition-colors duration-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary-blue-400 focus-visible:ring-offset-2 focus-visible:ring-offset-[#001a2c] rounded';
 
 const Footer = () => {
   const quickLinks = [
@@ -15,24 +15,24 @@ const Footer = () => {
   return (
     <footer
       role="contentinfo"
-      className="border-t-2 border-primary-blue-800 bg-[#001a2c] text-white"
+      className="border-t border-primary-blue-800/50 bg-[#001a2c] text-white"
     >
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-14 lg:py-16">
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-10 lg:gap-16">
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12 lg:py-14">
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-12 lg:gap-16 mb-10">
           {/* Left — Branding and Mission */}
           <div className="md:max-w-xs">
             <a
               href="#home"
-              className="inline-block focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary-blue-400 focus-visible:ring-offset-2 focus-visible:ring-offset-[#001a2c] rounded"
+              className="inline-block mb-5 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary-blue-400 focus-visible:ring-offset-2 focus-visible:ring-offset-[#001a2c] rounded transition-opacity hover:opacity-90"
               aria-label="GuideXpert home"
             >
               <img
-                src="https://res.cloudinary.com/dqataciy5/image/upload/v1769173121/guidexpert-logo-3Ifn2ZP2_ljlxlc.png"
+                src="https://res.cloudinary.com/dqataciy5/image/upload/v1769258985/Gemini_Generated_Image_ybdgvrybdgvrybdg_fgmdnj.png"
                 alt="GuideXpert"
-                className="h-14 md:h-16 object-contain"
+                className="h-12 md:h-14 object-contain"
               />
             </a>
-            <p className="mt-4 text-gray-300 text-sm leading-relaxed tracking-tight">
+            <p className="text-gray-300 text-sm leading-relaxed">
               Making college and course selection transparent, personalized, and
               future-ready. Empowering counselors to guide students towards
               successful careers.
@@ -41,49 +41,49 @@ const Footer = () => {
 
           {/* Middle — Contact Us */}
           <div>
-            <h3 className="font-satoshi font-bold text-base text-white uppercase tracking-wider mb-6">
+            <h3 className="font-satoshi font-semibold text-sm text-white uppercase tracking-wider mb-6">
               Contact Us
             </h3>
-            <ul className="space-y-5" role="list">
-              <li className="flex gap-4">
-                <span className="flex h-5 w-5 shrink-0 items-center justify-center text-gray-400" aria-hidden>
-                  <FiMail className="h-4.5 w-4.5" />
+            <ul className="space-y-4" role="list">
+              <li className="flex items-start gap-3">
+                <span className="flex h-5 w-5 shrink-0 items-center justify-center text-primary-blue-400 mt-0.5" aria-hidden>
+                  <FiMail className="h-4 w-4" />
                 </span>
-                <div className="min-w-0">
-                  <p className="font-medium text-white text-sm">Email Support</p>
+                <div className="min-w-0 flex-1">
+                  <p className="font-medium text-white text-sm mb-1">Email Support</p>
                   <a
                     href="mailto:support@guidexpert.co.in"
-                    className={`text-sm mt-0.5 inline-block ${linkClass}`}
+                    className={`text-sm ${linkClass}`}
                   >
                     support@guidexpert.co.in
                   </a>
                 </div>
               </li>
-              <li className="flex gap-4">
-                <span className="flex h-5 w-5 shrink-0 items-center justify-center text-gray-400" aria-hidden>
-                  <FiPhone className="h-4.5 w-4.5" />
+              <li className="flex items-start gap-3">
+                <span className="flex h-5 w-5 shrink-0 items-center justify-center text-primary-blue-400 mt-0.5" aria-hidden>
+                  <FiPhone className="h-4 w-4" />
                 </span>
-                <div className="min-w-0">
-                  <p className="font-medium text-white text-sm">Phone Support</p>
+                <div className="min-w-0 flex-1">
+                  <p className="font-medium text-white text-sm mb-1">Phone Support</p>
                   <a
                     href="tel:+918143266699"
-                    className={`text-sm mt-0.5 inline-block ${linkClass}`}
+                    className={`text-sm ${linkClass}`}
                   >
                     +91 81432 66699
                   </a>
                 </div>
               </li>
-              <li className="flex gap-4">
-                <span className="flex h-5 w-5 shrink-0 items-center justify-center text-gray-400" aria-hidden>
-                  <FaWhatsapp className="h-4.5 w-4.5" />
+              <li className="flex items-start gap-3">
+                <span className="flex h-5 w-5 shrink-0 items-center justify-center text-primary-blue-400 mt-0.5" aria-hidden>
+                  <FaWhatsapp className="h-4 w-4" />
                 </span>
-                <div className="min-w-0">
-                  <p className="font-medium text-white text-sm">WhatsApp</p>
+                <div className="min-w-0 flex-1">
+                  <p className="font-medium text-white text-sm mb-1">WhatsApp</p>
                   <a
                     href="https://wa.me/918143266699"
                     target="_blank"
                     rel="noopener noreferrer"
-                    className={`text-sm mt-0.5 inline-block ${linkClass}`}
+                    className={`text-sm ${linkClass}`}
                   >
                     +91 81432 66699
                   </a>
@@ -94,13 +94,13 @@ const Footer = () => {
 
           {/* Right — Quick Links */}
           <div>
-            <h3 className="font-satoshi font-bold text-base text-white uppercase tracking-wider mb-6">
+            <h3 className="font-satoshi font-semibold text-sm text-white uppercase tracking-wider mb-6">
               Quick Links
             </h3>
-            <ul className="space-y-3.5" role="list">
+            <ul className="space-y-3" role="list">
               {quickLinks.map((link) => (
                 <li key={link.name}>
-                  <a href={link.href} className={`text-sm ${linkClass}`}>
+                  <a href={link.href} className={`text-sm ${linkClass} inline-block`}>
                     {link.name}
                   </a>
                 </li>
@@ -110,22 +110,14 @@ const Footer = () => {
         </div>
 
         {/* Bottom bar — Copyright and features */}
-        <div className="mt-12 pt-6 border-t border-white/8 flex flex-col md:flex-row md:items-center md:justify-between gap-4">
-          <p className="text-gray-500 text-xs tracking-tight">
+        <div className="pt-6 border-t border-white/10 flex flex-col md:flex-row md:items-center md:justify-between gap-3">
+          <p className="text-gray-400 text-xs">
             © {new Date().getFullYear()} GuideXpert. All rights reserved.
           </p>
-          <p className="text-gray-500 text-xs tracking-wide text-center md:text-right">
+          <p className="text-gray-400 text-xs text-center md:text-right">
             Trusted by thousands of counselors · PAN‑India presence · Professional certification
           </p>
         </div>
-
-        {/* Quote / positioning statement */}
-        <blockquote className="mt-8 rounded-r-lg border-l-4 border-primary-blue-500 bg-[#252d3a] pl-5 pr-6 py-4">
-          <p className="text-gray-200 text-sm md:text-base italic leading-relaxed m-0">
-            Empowering counselors to transform student lives through transparent,
-            personalized career guidance that shapes successful futures.
-          </p>
-        </blockquote>
       </div>
     </footer>
   );

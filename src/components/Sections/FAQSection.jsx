@@ -1,5 +1,6 @@
 import Accordion from '../UI/Accordion';
 import Button from '../UI/Button';
+import AnimatedElement from '../UI/AnimatedElement';
 
 const FAQSection = () => {
   const faqItems = [
@@ -33,27 +34,35 @@ const FAQSection = () => {
     <section className="bg-gray-50 relative py-20 md:py-28">
       <div className="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="text-center mb-16">
-          <h2 className="mb-6">
-            Got Questions?
-          </h2>
-          <p className="text-lg md:text-xl text-gray-700 max-w-2xl mx-auto" style={{
-            fontWeight: '500',
-            lineHeight: '1.6',
-            color: '#475569'
-          }}>
-            Find answers to common questions about becoming a GuideXpert Counselor.
-          </p>
+          <AnimatedElement variant="slideUp" delay={0} duration={0.5}>
+            <h2 className="mb-6">
+              Got Questions?
+            </h2>
+          </AnimatedElement>
+          <AnimatedElement variant="slideUp" delay={0.1} duration={0.5}>
+            <p className="text-lg md:text-xl text-gray-700 max-w-2xl mx-auto" style={{
+              fontWeight: '500',
+              lineHeight: '1.6',
+              color: '#475569'
+            }}>
+              Find answers to common questions about becoming a GuideXpert Counselor.
+            </p>
+          </AnimatedElement>
         </div>
 
-        <div className="space-y-4 mb-12">
-          <Accordion items={faqItems} />
-        </div>
+        <AnimatedElement variant="fadeInUp" delay={0.2} duration={0.6}>
+          <div className="space-y-4 mb-12">
+            <Accordion items={faqItems} />
+          </div>
+        </AnimatedElement>
 
-        <div className="text-center">
-          <Button variant="outline" className="px-8 py-3">
-            View All FAQs
-          </Button>
-        </div>
+        <AnimatedElement variant="fadeInUp" delay={0.3} duration={0.6}>
+          <div className="text-center">
+            <Button variant="outline" className="px-8 py-3">
+              View All FAQs
+            </Button>
+          </div>
+        </AnimatedElement>
       </div>
     </section>
   );

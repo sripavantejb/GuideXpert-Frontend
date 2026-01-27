@@ -8,6 +8,7 @@ import {
   FiArrowRight
 } from 'react-icons/fi';
 import { useApplyModal } from '../../contexts/useApplyModal';
+import AnimatedElement from '../UI/AnimatedElement';
 
 const WhyBecomeSection = () => {
   const { openApplyModal } = useApplyModal();
@@ -59,23 +60,29 @@ const WhyBecomeSection = () => {
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 relative z-10">
         {/* Header */}
         <div className="text-center mb-16">
-          <div className="inline-flex items-center gap-2 px-3 py-1.5 mb-6 rounded-full border border-primary-blue-100 bg-primary-blue-50">
-            <FiTrendingUp className="text-primary-blue-700 text-sm" />
-            <span className="text-xs font-semibold uppercase tracking-wide text-primary-blue-800 font-santhosi">
-              Why Join Us
-            </span>
-          </div>
+          <AnimatedElement variant="fadeInUp" delay={0} duration={0.5}>
+            <div className="inline-flex items-center gap-2 px-3 py-1.5 mb-6 rounded-full border border-primary-blue-100 bg-primary-blue-50">
+              <FiTrendingUp className="text-primary-blue-700 text-sm" />
+              <span className="text-xs font-semibold uppercase tracking-wide text-primary-blue-800 font-santhosi">
+                Why Join Us
+              </span>
+            </div>
+          </AnimatedElement>
           
-          <h2 className="mb-6">
-            Why Become a <strong className="font-extrabold">GuideXpert</strong> Counselor?
-          </h2>
-          <p className="text-lg md:text-xl max-w-3xl mx-auto leading-relaxed font-santhosi" style={{
-            fontWeight: '500',
-            lineHeight: '1.7',
-            color: '#475569'
-          }}>
-            With GuideXpert, you can make a real difference in students' lives while building a rewarding career for yourself.
-          </p>
+          <AnimatedElement variant="slideUp" delay={0.1} duration={0.5}>
+            <h2 className="mb-6">
+              Why Become a <strong className="font-extrabold">GuideXpert</strong> Counselor?
+            </h2>
+          </AnimatedElement>
+          <AnimatedElement variant="slideUp" delay={0.2} duration={0.5}>
+            <p className="text-lg md:text-xl max-w-3xl mx-auto leading-relaxed font-santhosi" style={{
+              fontWeight: '500',
+              lineHeight: '1.7',
+              color: '#475569'
+            }}>
+              With GuideXpert, you can make a real difference in students' lives while building a rewarding career for yourself.
+            </p>
+          </AnimatedElement>
         </div>
 
         {/* Benefit cards - unified navy accent */}
@@ -83,10 +90,12 @@ const WhyBecomeSection = () => {
           {reasons.map((reason, index) => {
             const Icon = reason.icon;
             return (
-              <div
+              <AnimatedElement
                 key={index}
+                variant="fadeInUp"
+                delay={index * 0.1}
+                duration={0.6}
                 className="group relative"
-                style={{ animation: `fadeInUp 0.6s ease-out ${index * 0.12}s both` }}
               >
                 <div
                   className="relative h-full rounded-xl p-8 bg-white border border-gray-100 transition-all duration-300 group-hover:-translate-y-1 overflow-hidden"
@@ -131,7 +140,7 @@ const WhyBecomeSection = () => {
                     </p>
                   </div>
                 </div>
-              </div>
+              </AnimatedElement>
             );
           })}
         </div>
@@ -141,12 +150,14 @@ const WhyBecomeSection = () => {
           {stats.map((stat, index) => {
             const Icon = stat.icon;
             return (
-              <div
+              <AnimatedElement
                 key={index}
+                variant="fadeInUp"
+                delay={(index + 3) * 0.1}
+                duration={0.6}
                 className="group relative bg-white rounded-xl p-10 text-center border border-gray-100 transition-all duration-300 hover:-translate-y-1"
                 style={{
                   boxShadow: '0 1px 3px rgba(0,0,0,0.04), 0 4px 12px rgba(15,23,42,0.06)',
-                  animation: `fadeInUp 0.6s ease-out ${(index + 3) * 0.12}s both`,
                 }}
                 onMouseEnter={(e) => {
                   e.currentTarget.style.boxShadow = '0 12px 28px rgba(0,51,102,0.08), 0 4px 12px rgba(15,23,42,0.06)';
@@ -174,48 +185,37 @@ const WhyBecomeSection = () => {
                 >
                   {stat.label}
                 </div>
-              </div>
+              </AnimatedElement>
             );
           })}
         </div>
 
         {/* CTA Button */}
-        <div className="text-center">
-          <button
-            type="button"
-            onClick={openApplyModal}
-            className="inline-flex items-center gap-2 px-8 py-4 bg-primary-blue-800 hover:bg-primary-blue-900 text-white rounded-md text-base font-bold transition-all duration-200 font-santhosi"
-            style={{
-              boxShadow: '0 4px 14px rgba(0,51,102,0.25), 0 2px 6px rgba(0,0,0,0.08)',
-              fontWeight: '700',
-            }}
-            onMouseEnter={(e) => {
-              e.target.style.boxShadow = '0 6px 20px rgba(0,51,102,0.3), 0 3px 8px rgba(0,0,0,0.1)';
-              e.target.style.transform = 'translateY(-2px)';
-            }}
-            onMouseLeave={(e) => {
-              e.target.style.boxShadow = '0 4px 14px rgba(0,51,102,0.25), 0 2px 6px rgba(0,0,0,0.08)';
-              e.target.style.transform = 'translateY(0)';
-            }}
-          >
-            <span>Join as a Counselor</span>
-            <FiArrowRight className="w-5 h-5" />
-          </button>
-        </div>
+        <AnimatedElement variant="fadeInUp" delay={0.6} duration={0.6}>
+          <div className="text-center">
+            <button
+              type="button"
+              onClick={openApplyModal}
+              className="inline-flex items-center gap-2 px-8 py-4 bg-primary-blue-800 hover:bg-primary-blue-900 text-white rounded-md text-base font-bold transition-all duration-200 font-santhosi"
+              style={{
+                boxShadow: '0 4px 14px rgba(0,51,102,0.25), 0 2px 6px rgba(0,0,0,0.08)',
+                fontWeight: '700',
+              }}
+              onMouseEnter={(e) => {
+                e.target.style.boxShadow = '0 6px 20px rgba(0,51,102,0.3), 0 3px 8px rgba(0,0,0,0.1)';
+                e.target.style.transform = 'translateY(-2px)';
+              }}
+              onMouseLeave={(e) => {
+                e.target.style.boxShadow = '0 4px 14px rgba(0,51,102,0.25), 0 2px 6px rgba(0,0,0,0.08)';
+                e.target.style.transform = 'translateY(0)';
+              }}
+            >
+              <span>Join as a Counselor</span>
+              <FiArrowRight className="w-5 h-5" />
+            </button>
+          </div>
+        </AnimatedElement>
       </div>
-
-      <style>{`
-        @keyframes fadeInUp {
-          from {
-            opacity: 0;
-            transform: translateY(30px);
-          }
-          to {
-            opacity: 1;
-            transform: translateY(0);
-          }
-        }
-      `}</style>
     </section>
   );
 };

@@ -168,16 +168,21 @@
   flex-wrap: wrap;
   gap: 1rem 1.5rem;
   justify-content: center;
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
+  scroll-snap-type: x proximity;
 }
 
 .apply-feature-card {
   flex: 1 1 200px;
+  min-width: 200px;
   max-width: 280px;
   background: #ffffff;
   border-radius: 0.75rem;
   padding: 1.25rem 1.25rem 1.5rem;
   box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.06), 0 2px 4px -1px rgba(0, 0, 0, 0.04);
   border: 1px solid rgba(0, 0, 0, 0.06);
+  scroll-snap-align: start;
 }
 
 .apply-feature-card-icon {
@@ -452,6 +457,7 @@
 
   .apply-stats {
     gap: 1.25rem;
+    flex-direction: column;
   }
 
   .apply-stat-value {
@@ -465,10 +471,17 @@
   .apply-feature-cards {
     padding: 1.5rem 1rem 2rem;
     gap: 1rem;
+    justify-content: flex-start;
+    overflow-x: auto;
+    scroll-snap-type: x mandatory;
+    -webkit-overflow-scrolling: touch;
   }
 
   .apply-feature-card {
     padding: 1rem 1rem 1.25rem;
+    min-width: 85vw;
+    max-width: 85vw;
+    flex: 0 0 85vw;
   }
 
   .apply-feature-card-title {

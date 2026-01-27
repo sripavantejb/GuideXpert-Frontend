@@ -413,4 +413,108 @@
     background: linear-gradient(135deg, #eff6ff 0%, #dbeafe 100%);
   }
 
+  /* Scroll Animation Keyframes - Apple Style Easing */
+  @keyframes fadeInUp {
+    from {
+      opacity: 0;
+      transform: translateY(30px);
+    }
+    to {
+      opacity: 1;
+      transform: translateY(0);
+    }
+  }
+
+  @keyframes fadeIn {
+    from {
+      opacity: 0;
+    }
+    to {
+      opacity: 1;
+    }
+  }
+
+  @keyframes slideUp {
+    from {
+      opacity: 0;
+      transform: translateY(20px);
+    }
+    to {
+      opacity: 1;
+      transform: translateY(0);
+    }
+  }
+
+  @keyframes scaleIn {
+    from {
+      opacity: 0;
+      transform: scale(0.95);
+    }
+    to {
+      opacity: 1;
+      transform: scale(1);
+    }
+  }
+
+  /* Initial states (hidden before animation) */
+  .animate-fadeInUp-initial {
+    opacity: 0;
+    transform: translateY(30px);
+  }
+
+  .animate-fadeIn-initial {
+    opacity: 0;
+  }
+
+  .animate-slideUp-initial {
+    opacity: 0;
+    transform: translateY(20px);
+  }
+
+  .animate-scaleIn-initial {
+    opacity: 0;
+    transform: scale(0.95);
+  }
+
+  /* Active animation states */
+  .animate-fadeInUp {
+    animation: fadeInUp 0.6s cubic-bezier(0.25, 0.1, 0.25, 1) forwards;
+    will-change: transform, opacity;
+  }
+
+  .animate-fadeIn {
+    animation: fadeIn 0.5s cubic-bezier(0.25, 0.1, 0.25, 1) forwards;
+    will-change: opacity;
+  }
+
+  .animate-slideUp {
+    animation: slideUp 0.5s cubic-bezier(0.25, 0.1, 0.25, 1) forwards;
+    will-change: transform, opacity;
+  }
+
+  .animate-scaleIn {
+    animation: scaleIn 0.5s cubic-bezier(0.25, 0.1, 0.25, 1) forwards;
+    will-change: transform, opacity;
+  }
+
+  /* Respect reduced motion preference */
+  @media (prefers-reduced-motion: reduce) {
+    .animate-fadeInUp,
+    .animate-fadeIn,
+    .animate-slideUp,
+    .animate-scaleIn {
+      animation: none;
+      opacity: 1;
+      transform: none;
+    }
+
+    .animate-fadeInUp-initial,
+    .animate-fadeIn-initial,
+    .animate-slideUp-initial,
+    .animate-scaleIn-initial {
+      opacity: 1;
+      transform: none;
+    }
+  }
+
 }

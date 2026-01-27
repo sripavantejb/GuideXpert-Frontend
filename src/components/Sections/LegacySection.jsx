@@ -1,6 +1,7 @@
 import { useState, useEffect, useRef } from 'react';
 import { FiUser, FiStar, FiAward, FiCheckCircle, FiTrendingUp, FiShield } from 'react-icons/fi';
 import Button from '../UI/Button';
+import AnimatedElement from '../UI/AnimatedElement';
 
 const LegacySection = () => {
   const [animatedStats, setAnimatedStats] = useState({
@@ -120,23 +121,29 @@ const LegacySection = () => {
         {/* Header Section */}
         <div className="text-center mb-16">
           {/* Overline Badge */}
-          <div className="inline-flex items-center gap-2 px-3 py-1.5 mb-6 rounded-full border border-primary-blue-100 bg-primary-blue-50">
-            <FiShield className="text-primary-blue-700 text-sm" />
-            <span className="text-xs font-semibold uppercase tracking-wide text-primary-blue-800 font-santhosi">
-              Our Legacy
-            </span>
-          </div>
+          <AnimatedElement variant="fadeInUp" delay={0} duration={0.5}>
+            <div className="inline-flex items-center gap-2 px-3 py-1.5 mb-6 rounded-full border border-primary-blue-100 bg-primary-blue-50">
+              <FiShield className="text-primary-blue-700 text-sm" />
+              <span className="text-xs font-semibold uppercase tracking-wide text-primary-blue-800 font-santhosi">
+                Our Legacy
+              </span>
+            </div>
+          </AnimatedElement>
 
-          <h2 className="mb-6">
-            Built on a Legacy of Proven Success
-          </h2>
-          <p className="text-lg md:text-xl max-w-3xl mx-auto leading-relaxed font-santhosi" style={{
-            fontWeight: '500',
-            lineHeight: '1.7',
-            color: '#475569'
-          }}>
-            GuideXpert has a strong track record of empowering students and counselors alike, with a legacy built on trust, innovation, and measurable excellence.
-          </p>
+          <AnimatedElement variant="slideUp" delay={0.1} duration={0.5}>
+            <h2 className="mb-6">
+              Built on a Legacy of Proven Success
+            </h2>
+          </AnimatedElement>
+          <AnimatedElement variant="slideUp" delay={0.2} duration={0.5}>
+            <p className="text-lg md:text-xl max-w-3xl mx-auto leading-relaxed font-santhosi" style={{
+              fontWeight: '500',
+              lineHeight: '1.7',
+              color: '#475569'
+            }}>
+              GuideXpert has a strong track record of empowering students and counselors alike, with a legacy built on trust, innovation, and measurable excellence.
+            </p>
+          </AnimatedElement>
         </div>
 
         {/* Statistics Grid - Professional Cards */}
@@ -144,12 +151,14 @@ const LegacySection = () => {
           {stats.map((stat, index) => {
             const Icon = stat.icon;
             return (
-              <div
+              <AnimatedElement
                 key={index}
+                variant="fadeInUp"
+                delay={0.3 + index * 0.1}
+                duration={0.6}
                 className="group relative bg-white rounded-xl p-10 text-center border border-gray-200 transition-all duration-300 hover:-translate-y-2"
                 style={{
                   boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.05), 0 2px 4px -1px rgba(0, 0, 0, 0.03)',
-                  animation: `fadeInUp 0.6s ease-out ${index * 0.15}s both`
                 }}
                 onMouseEnter={(e) => {
                   e.currentTarget.style.boxShadow = `0 12px 24px ${stat.color}20, 0 4px 8px ${stat.color}10`;
@@ -194,18 +203,19 @@ const LegacySection = () => {
                 >
                   {stat.label}
                 </div>
-              </div>
+              </AnimatedElement>
             );
           })}
         </div>
 
         {/* Industry Veterans Card */}
-        <div 
-          className="max-w-5xl mx-auto rounded-2xl overflow-hidden border border-gray-200 bg-white"
-          style={{
-            boxShadow: '0 6px 12px -2px rgba(0, 0, 0, 0.08), 0 2px 6px -2px rgba(0, 0, 0, 0.05)'
-          }}
-        >
+        <AnimatedElement variant="fadeInUp" delay={0.6} duration={0.6}>
+          <div 
+            className="max-w-5xl mx-auto rounded-2xl overflow-hidden border border-gray-200 bg-white"
+            style={{
+              boxShadow: '0 6px 12px -2px rgba(0, 0, 0, 0.08), 0 2px 6px -2px rgba(0, 0, 0, 0.05)'
+            }}
+          >
           <div className="flex flex-col md:flex-row">
             {/* Left Side - Gradient Panel */}
             <div 
@@ -239,8 +249,11 @@ const LegacySection = () => {
                 {achievements.map((achievement, index) => {
                   const Icon = achievement.icon;
                   return (
-                    <div 
-                      key={index} 
+                    <AnimatedElement
+                      key={index}
+                      variant="fadeInUp"
+                      delay={0.7 + index * 0.1}
+                      duration={0.6}
                       className="flex items-start gap-4 p-4 rounded-xl bg-white border border-gray-200 transition-all duration-200 hover:border-primary-blue-200 hover:shadow-md hover:bg-primary-blue-50/30"
                     >
                       <div className="shrink-0 w-10 h-10 rounded-full bg-primary-blue-800 flex items-center justify-center mt-0.5">
@@ -254,46 +267,36 @@ const LegacySection = () => {
                       }}>
                         {achievement.text}
                       </span>
-                    </div>
+                    </AnimatedElement>
                   );
                 })}
               </div>
             </div>
           </div>
-        </div>
+          </div>
+        </AnimatedElement>
 
         {/* CTA Button */}
-        <div className="text-center mt-16">
-          <Button
-            type="button"
-            className="inline-flex items-center gap-2 px-8 py-4 bg-primary-blue-800 hover:bg-primary-blue-900 text-white rounded-lg text-base font-bold transition-all duration-200 hover:-translate-y-0.5"
-          >
-            <span>Learn More</span>
-            <svg 
-              className="w-5 h-5" 
-              fill="none" 
-              stroke="currentColor" 
-              viewBox="0 0 24 24"
-              aria-hidden
+        <AnimatedElement variant="fadeInUp" delay={1.1} duration={0.6}>
+          <div className="text-center mt-16">
+            <Button
+              type="button"
+              className="inline-flex items-center gap-2 px-8 py-4 bg-primary-blue-800 hover:bg-primary-blue-900 text-white rounded-lg text-base font-bold transition-all duration-200 hover:-translate-y-0.5"
             >
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M17 8l4 4m0 0l-4 4m4-4H3" />
-            </svg>
-          </Button>
-        </div>
+              <span>Learn More</span>
+              <svg 
+                className="w-5 h-5" 
+                fill="none" 
+                stroke="currentColor" 
+                viewBox="0 0 24 24"
+                aria-hidden
+              >
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M17 8l4 4m0 0l-4 4m4-4H3" />
+              </svg>
+            </Button>
+          </div>
+        </AnimatedElement>
       </div>
-
-      <style>{`
-        @keyframes fadeInUp {
-          from {
-            opacity: 0;
-            transform: translateY(30px);
-          }
-          to {
-            opacity: 1;
-            transform: translateY(0);
-          }
-        }
-      `}</style>
     </section>
   );
 };

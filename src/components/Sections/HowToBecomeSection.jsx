@@ -135,10 +135,10 @@ const HowToBecomeSection = () => {
       let progress = 0;
       
       // Define trigger point where progress tracking starts
-      const triggerPoint = windowHeight * 0.3;
+      const triggerPoint = windowHeight * 0.5; // Center of viewport
       
       // Calculate scrollable height (total distance we can scroll through)
-      const scrollableHeight = sectionHeight - windowHeight * 0.7;
+      const scrollableHeight = sectionHeight - windowHeight * 0.5; // Match trigger point
       
       if (scrollableHeight > 0) {
         // Calculate how much has been scrolled based on section position
@@ -157,25 +157,48 @@ const HowToBecomeSection = () => {
 
       setScrollProgress(progress);
 
-      // Determine active step based on progress
-      // Each step gets ~16.67% of scroll progress (100% / 6 steps)
-      // Trigger at 40% of previous card scroll (faster highlighting)
-      const stepProgress = progress * 6; // 6 steps
-      if (stepProgress < 0.4) {
-        setActiveStep(0);
-      } else if (stepProgress < 1.4) {
-        setActiveStep(1);
-      } else if (stepProgress < 2.4) {
-        setActiveStep(2);
-      } else if (stepProgress < 3.4) {
-        setActiveStep(3);
-      } else if (stepProgress < 4.4) {
-        setActiveStep(4);
-      } else if (stepProgress < 5.4) {
-        setActiveStep(5);
-      } else {
-        setActiveStep(5); // Stay on last step
+      // Determine active step by checking which card is closest to viewport center
+      // This ensures accurate activation, especially for step 0
+      const viewportCenter = windowHeight * 0.5;
+      let closestStep = 0;
+      let minDistance = Infinity;
+
+      // Check each step card's position relative to viewport center
+      stepRefs.current.forEach((cardRef, index) => {
+        if (cardRef) {
+          const cardRect = cardRef.getBoundingClientRect();
+          const cardCenter = cardRect.top + (cardRect.height / 2);
+          const distance = Math.abs(cardCenter - viewportCenter);
+          
+          // Only consider cards that are in the viewport
+          if (cardRect.top < windowHeight && cardRect.bottom > 0) {
+            if (distance < minDistance) {
+              minDistance = distance;
+              closestStep = index;
+            }
+          }
+        }
+      });
+
+      // Fallback to progress-based calculation if no cards are in viewport
+      if (minDistance === Infinity) {
+        const stepProgress = progress * 6; // 6 steps
+        if (stepProgress >= 0.5 && stepProgress < 1.5) {
+          closestStep = 1;
+        } else if (stepProgress >= 1.5 && stepProgress < 2.5) {
+          closestStep = 2;
+        } else if (stepProgress >= 2.5 && stepProgress < 3.5) {
+          closestStep = 3;
+        } else if (stepProgress >= 3.5 && stepProgress < 4.5) {
+          closestStep = 4;
+        } else if (stepProgress >= 4.5) {
+          closestStep = 5;
+        } else {
+          closestStep = 0;
+        }
       }
+      
+      setActiveStep(closestStep);
     };
 
     // Use requestAnimationFrame for smooth updates
@@ -189,9 +212,17 @@ const HowToBecomeSection = () => {
     };
 
     window.addEventListener('scroll', onScroll, { passive: true });
-    handleScroll(); // Initial call
+    
+    // Initial call with a small delay to ensure DOM is ready
+    const initialTimeout = setTimeout(() => {
+      handleScroll();
+    }, 100);
+    
+    // Also call immediately
+    handleScroll();
 
     return () => {
+      clearTimeout(initialTimeout);
       window.removeEventListener('scroll', onScroll);
       if (rafId) cancelAnimationFrame(rafId);
     };
@@ -255,7 +286,7 @@ const HowToBecomeSection = () => {
         <div className="flex flex-col lg:flex-row gap-6 lg:gap-8 relative">
           {/* Left Column: Sticky Heading and CTAs */}
           <div 
-            className="lg:w-2/5 flex flex-col justify-center mb-4 lg:mb-0"
+            className="lg:w-2/5 flex flex-col justify-center mb-4 lg:mb-0 px-2 sm:px-0"
             style={{
               position: isLargeScreen ? 'sticky' : 'relative',
               top: isLargeScreen ? '50vh' : 'auto',
@@ -264,22 +295,21 @@ const HowToBecomeSection = () => {
               height: 'fit-content'
             }}
           >
-            <h2 className="mb-4">
+            <h2 className="mb-4 text-2xl sm:text-3xl md:text-4xl lg:text-5xl">
               Get Ready for Your Counseling Career in 6 Steps
             </h2>
-            <p className="text-base md:text-lg text-gray-600 mb-6 md:mb-8" style={{
+            <p className="text-sm sm:text-base md:text-lg text-gray-600 mb-6 md:mb-8" style={{
               fontWeight: '500',
               lineHeight: '1.6',
-              color: '#64748b',
-              fontSize: isMediumScreen ? '18px' : '16px'
+              color: '#64748b'
             }}>
               Launch your counseling career today.
             </p>
-            <div className="flex flex-col sm:flex-row gap-3 md:gap-4">
+            <div className="flex flex-col sm:flex-row gap-3 md:gap-4 w-full sm:w-auto">
               <button
                 type="button"
                 onClick={openApplyModal}
-                className="px-6 md:px-8 py-2.5 md:py-3 rounded-lg font-bold text-white transition-all duration-200 hover:opacity-90 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-[#003366] text-sm md:text-base"
+                className="w-full sm:w-auto px-6 md:px-8 py-2.5 md:py-3 rounded-lg font-bold text-white transition-all duration-200 hover:opacity-90 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-[#003366] text-sm md:text-base"
                 style={{
                   backgroundColor: '#003366',
                 }}
@@ -308,7 +338,7 @@ const HowToBecomeSection = () => {
                     window.scrollTo({ top: y, behavior: 'smooth' });
                   }
                 }}
-                className="px-6 md:px-8 py-2.5 md:py-3 rounded-lg font-semibold border-2 transition-all duration-200 hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-[#003366] text-sm md:text-base"
+                className="w-full sm:w-auto px-6 md:px-8 py-2.5 md:py-3 rounded-lg font-semibold border-2 transition-all duration-200 hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-[#003366] text-sm md:text-base"
                 style={{
                   borderColor: '#003366',
                   color: '#003366',
@@ -335,7 +365,7 @@ const HowToBecomeSection = () => {
                   backgroundColor: '#e5e7eb',
                   height: '100%',
                   zIndex: 0,
-                  left: isLargeScreen ? '2rem' : '1.25rem'
+                  left: isLargeScreen ? '2rem' : '1rem'
                 }}
               />
               
@@ -349,7 +379,7 @@ const HowToBecomeSection = () => {
                     : '100%', // Full height on mobile
                   zIndex: 1,
                   minHeight: '16px',
-                  left: isLargeScreen ? '2rem' : '1.25rem'
+                  left: isLargeScreen ? '2rem' : '1rem'
                 }}
               />
               
@@ -418,8 +448,8 @@ const HowToBecomeSection = () => {
                       <div
                         className="bg-white rounded-xl border transition-all duration-500"
                         style={{
-                          marginLeft: isLargeScreen ? '3rem' : '3rem',
-                          padding: isLargeScreen ? '2rem' : '1rem',
+                          marginLeft: isLargeScreen ? '3rem' : '2.5rem',
+                          padding: isLargeScreen ? '2rem' : '0.875rem',
                           boxShadow: isLargeScreen 
                             ? (isActive 
                                 ? '0 8px 24px rgba(0, 0, 0, 0.12)' 
@@ -447,10 +477,10 @@ const HowToBecomeSection = () => {
                       className="absolute rounded-full flex items-center justify-center text-white font-bold transition-all duration-500 border-4 border-white z-20"
                       style={{
                         left: 0,
-                        top: isLargeScreen ? '2rem' : '1rem',
-                        width: isLargeScreen ? '4rem' : '2.5rem',
-                        height: isLargeScreen ? '4rem' : '2.5rem',
-                        marginLeft: isLargeScreen ? '-2rem' : '-1.25rem',
+                        top: isLargeScreen ? '2rem' : '0.875rem',
+                        width: isLargeScreen ? '4rem' : '2rem',
+                        height: isLargeScreen ? '4rem' : '2rem',
+                        marginLeft: isLargeScreen ? '-2rem' : '-1rem',
                         backgroundColor: isLargeScreen
                           ? (isActive || isPast 
                               ? '#003366' 
