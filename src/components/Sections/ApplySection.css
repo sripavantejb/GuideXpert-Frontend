@@ -379,6 +379,7 @@
 }
 
 .apply-otp-btn:disabled {
+<<<<<<< HEAD
   opacity: 0.6;
   cursor: not-allowed;
 }
@@ -581,6 +582,48 @@
 .apply-step-nav .apply-otp-btn {
   flex: 1;
   margin-top: 0;
+=======
+  opacity: 0.7;
+  cursor: not-allowed;
+}
+
+.apply-otp-secondary {
+  background: #e5e7eb;
+  color: #111827;
+}
+
+.apply-otp-secondary:hover {
+  background: #d1d5db;
+}
+
+.apply-error-box {
+  color: #7f1d1d;
+  background: #fee2e2;
+  border: 1px solid #fecaca;
+  padding: 0.6rem 0.75rem;
+  border-radius: 0.5rem;
+  font-size: 0.9rem;
+}
+
+.apply-radio {
+  display: grid;
+  gap: 0.6rem;
+}
+
+.apply-radio label {
+  display: flex;
+  gap: 0.5rem;
+  align-items: center;
+  font-size: 0.95rem;
+  color: #374151;
+}
+
+.apply-success {
+  display: grid;
+  gap: 1rem;
+  text-align: center;
+  padding: 0.5rem 0;
+>>>>>>> 6ac9c7316de046d05c434607f3987b15f50a193c
 }
 
 /* Responsive: stack on small/medium (form first, then marketing) */
