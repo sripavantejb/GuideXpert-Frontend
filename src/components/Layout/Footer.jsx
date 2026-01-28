@@ -12,6 +12,9 @@ const Footer = () => {
     { name: 'About GuideXpert', href: '#about' },
   ];
 
+
+
+  
   return (
     <footer
       role="contentinfo"

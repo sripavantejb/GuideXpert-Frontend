@@ -277,7 +277,7 @@
   width: 33.333%;
   background: #003366;
   border-radius: 2px;
-  transition: width 0.2s ease;
+  transition: width 0.3s ease;
 }
 
 /* Form title */
@@ -376,6 +376,211 @@
 .apply-otp-btn svg {
   flex-shrink: 0;
   font-size: 1.1rem;
+}
+
+.apply-otp-btn:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+/* OTP Verification Styles */
+.apply-otp-wrapper {
+  margin: 1.5rem 0;
+}
+
+.apply-otp-instruction {
+  text-align: center;
+  font-size: 0.9rem;
+  color: #6b7280;
+  margin-bottom: 1.25rem;
+}
+
+.apply-otp-container {
+  display: flex;
+  gap: 0.75rem;
+  justify-content: center;
+  margin-bottom: 1rem;
+}
+
+.apply-otp-input {
+  width: 3rem;
+  height: 3.5rem;
+  text-align: center;
+  font-size: 1.5rem;
+  font-weight: 600;
+  color: #1f2937;
+  border: 2px solid #e5e7eb;
+  border-radius: 0.5rem;
+  background: #ffffff;
+  transition: border-color 0.2s, box-shadow 0.2s;
+  outline: none;
+}
+
+.apply-otp-input:focus {
+  border-color: #003366;
+  box-shadow: 0 0 0 3px rgba(0, 51, 102, 0.15);
+}
+
+.apply-error-message {
+  text-align: center;
+  color: #dc2626;
+  font-size: 0.875rem;
+  margin-top: 0.5rem;
+}
+
+.apply-error-message-global {
+  background: #fef2f2;
+  border: 1px solid #fecaca;
+  color: #dc2626;
+  padding: 0.75rem 1rem;
+  border-radius: 0.5rem;
+  font-size: 0.875rem;
+  margin-bottom: 1rem;
+  text-align: center;
+}
+
+.apply-success-message {
+  background: #f0fdf4;
+  border: 1px solid #bbf7d0;
+  color: #15803d;
+  padding: 0.75rem 1rem;
+  border-radius: 0.5rem;
+  font-size: 0.875rem;
+  margin-bottom: 1rem;
+  text-align: center;
+}
+
+.apply-resend-otp {
+  text-align: center;
+  margin-top: 1rem;
+}
+
+.apply-resend-link {
+  background: none;
+  border: none;
+  color: #003366;
+  font-size: 0.9rem;
+  font-weight: 500;
+  cursor: pointer;
+  text-decoration: underline;
+  transition: color 0.2s;
+}
+
+.apply-resend-link:hover {
+  color: #002244;
+}
+
+.apply-resend-link:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+/* Radio Button Styles */
+.apply-question-label {
+  display: block;
+  font-size: 1rem;
+  font-weight: 600;
+  color: #1f2937;
+  margin-bottom: 0.5rem;
+}
+
+.apply-slot-subtitle {
+  font-size: 0.875rem;
+  color: #6b7280;
+  margin-bottom: 1rem;
+}
+
+.apply-radio-group {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+  margin: 1rem 0;
+}
+
+.apply-radio-option {
+  display: flex;
+  align-items: center;
+  padding: 0.875rem 1rem;
+  border: 2px solid #e5e7eb;
+  border-radius: 0.5rem;
+  cursor: pointer;
+  transition: all 0.2s;
+  background: #ffffff;
+}
+
+.apply-radio-option:hover {
+  border-color: #003366;
+  background: #f0f7ff;
+}
+
+.apply-radio-option input[type="radio"] {
+  margin-right: 0.75rem;
+  width: 1.25rem;
+  height: 1.25rem;
+  cursor: pointer;
+  accent-color: #003366;
+  flex-shrink: 0;
+}
+
+.apply-radio-option input[type="radio"]:checked {
+  border-color: #003366;
+}
+
+.apply-radio-option:has(input[type="radio"]:checked),
+.apply-radio-option.apply-radio-checked {
+  border-color: #003366;
+  background: #f0f7ff;
+}
+
+.apply-radio-option span {
+  color: #374151;
+  font-size: 0.95rem;
+  transition: color 0.2s, font-weight 0.2s;
+}
+
+.apply-radio-option:has(input[type="radio"]:checked) span,
+.apply-radio-option.apply-radio-checked span {
+  color: #003366;
+  font-weight: 600;
+}
+
+/* Step Navigation */
+.apply-step-nav {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-top: 1.5rem;
+  gap: 1rem;
+}
+
+.apply-back-btn {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.625rem 1.25rem;
+  background: transparent;
+  border: 2px solid #e5e7eb;
+  color: #6b7280;
+  border-radius: 0.5rem;
+  cursor: pointer;
+  font-weight: 500;
+  font-size: 0.95rem;
+  transition: all 0.2s;
+}
+
+.apply-back-btn:hover {
+  border-color: #003366;
+  color: #003366;
+  background: #f9fafb;
+}
+
+.apply-back-btn svg {
+  font-size: 1rem;
+}
+
+.apply-step-nav .apply-otp-btn {
+  flex: 1;
+  margin-top: 0;
 }
 
 /* Responsive: stack on small/medium (form first, then marketing) */
@@ -490,5 +695,36 @@
 
   .apply-feature-card-subtitle {
     font-size: 0.8125rem;
+  }
+
+  .apply-otp-container {
+    gap: 0.5rem;
+  }
+
+  .apply-otp-input {
+    width: 2.5rem;
+    height: 3rem;
+    font-size: 1.25rem;
+  }
+
+  .apply-step-nav {
+    flex-direction: column;
+  }
+
+  .apply-back-btn {
+    width: 100%;
+    justify-content: center;
+  }
+
+  .apply-step-nav .apply-otp-btn {
+    width: 100%;
+  }
+
+  .apply-radio-option {
+    padding: 0.75rem 0.875rem;
+  }
+
+  .apply-radio-option span {
+    font-size: 0.875rem;
   }
 }
