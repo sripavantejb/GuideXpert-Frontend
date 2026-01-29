@@ -2,7 +2,7 @@
 
 .certification-section {
   position: relative;
-  background: linear-gradient(to top left, #f7f4eb 0%, #fefbea 25%, #fefdeb 50%, #eef6fd 75%, #e3effe 100%);
+  background: linear-gradient(145deg, #f7f4eb 0%, #f5f4f2 22%, #f2f4f8 45%, #eef4fa 70%, #e8f0fa 100%);
 }
 
 .certification-section::before {
@@ -11,7 +11,7 @@
   inset: 0;
   z-index: 0;
   pointer-events: none;
-  background: linear-gradient(to top left, #f7f4eb 0%, #fefbea 25%, #fefdeb 50%, #eef6fd 75%, #e3effe 100%);
+  background: linear-gradient(145deg, #f7f4eb 0%, #f5f4f2 22%, #f2f4f8 45%, #eef4fa 70%, #e8f0fa 100%);
 }
 
 .certification-section-inner {

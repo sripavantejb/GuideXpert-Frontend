@@ -157,48 +157,23 @@ const HowToBecomeSection = () => {
 
       setScrollProgress(progress);
 
-      // Determine active step by checking which card is closest to viewport center
-      // This ensures accurate activation, especially for step 0
-      const viewportCenter = windowHeight * 0.5;
-      let closestStep = 0;
-      let minDistance = Infinity;
-
-      // Check each step card's position relative to viewport center
-      stepRefs.current.forEach((cardRef, index) => {
-        if (cardRef) {
-          const cardRect = cardRef.getBoundingClientRect();
-          const cardCenter = cardRect.top + (cardRect.height / 2);
-          const distance = Math.abs(cardCenter - viewportCenter);
-          
-          // Only consider cards that are in the viewport
-          if (cardRect.top < windowHeight && cardRect.bottom > 0) {
-            if (distance < minDistance) {
-              minDistance = distance;
-              closestStep = index;
-            }
-          }
-        }
-      });
-
-      // Fallback to progress-based calculation if no cards are in viewport
-      if (minDistance === Infinity) {
-        const stepProgress = progress * 6; // 6 steps
-        if (stepProgress >= 0.5 && stepProgress < 1.5) {
-          closestStep = 1;
-        } else if (stepProgress >= 1.5 && stepProgress < 2.5) {
-          closestStep = 2;
-        } else if (stepProgress >= 2.5 && stepProgress < 3.5) {
-          closestStep = 3;
-        } else if (stepProgress >= 3.5 && stepProgress < 4.5) {
-          closestStep = 4;
-        } else if (stepProgress >= 4.5) {
-          closestStep = 5;
-        } else {
-          closestStep = 0;
-        }
+      // Determine active step based on progress
+      // Each step gets ~16.67% of scroll progress (100% / 6 steps)
+      // Trigger at center (50%) when card reaches middle of viewport
+      const stepProgress = progress * 6; // 6 steps
+      if (stepProgress < 0.5) {
+        setActiveStep(0);
+      } else if (stepProgress < 1.5) {
+        setActiveStep(1);
+      } else if (stepProgress < 2.5) {
+        setActiveStep(2);
+      } else if (stepProgress < 3.5) {
+        setActiveStep(3);
+      } else if (stepProgress < 4.5) {
+        setActiveStep(4);
+      } else {
+        setActiveStep(5);
       }
-      
-      setActiveStep(closestStep);
     };
 
     // Use requestAnimationFrame for smooth updates
@@ -212,17 +187,9 @@ const HowToBecomeSection = () => {
     };
 
     window.addEventListener('scroll', onScroll, { passive: true });
-    
-    // Initial call with a small delay to ensure DOM is ready
-    const initialTimeout = setTimeout(() => {
-      handleScroll();
-    }, 100);
-    
-    // Also call immediately
-    handleScroll();
+    handleScroll(); // Initial call
 
     return () => {
-      clearTimeout(initialTimeout);
       window.removeEventListener('scroll', onScroll);
       if (rafId) cancelAnimationFrame(rafId);
     };
@@ -465,7 +432,7 @@ const HowToBecomeSection = () => {
                             ? (isActive ? '2px' : '1px')
                             : '1px',
                           ...(isActive && {
-                            background: 'linear-gradient(to top left, #f7f4eb 0%, #fefbea 25%, #fefdeb 50%, #eef6fd 75%, #e3effe 100%)'
+                            background: 'linear-gradient(145deg, #f7f4eb 0%, #f5f4f2 22%, #f2f4f8 45%, #eef4fa 70%, #e8f0fa 100%)'
                           })
                         }}
                       >

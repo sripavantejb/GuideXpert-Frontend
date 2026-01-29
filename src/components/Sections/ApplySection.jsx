@@ -1,6 +1,6 @@
 import { useState, useRef, useEffect } from 'react';
 import { FaRocket } from 'react-icons/fa';
-import { FiSend, FiPhone, FiDollarSign, FiAward, FiHome, FiUsers, FiArrowLeft, FiCalendar } from 'react-icons/fi';
+import { FiSend, FiPhone, FiDollarSign, FiAward, FiHome, FiUsers, FiArrowLeft } from 'react-icons/fi';
 import ShinyText from '../UI/ShinyText';
 import SuccessPopup from '../UI/SuccessPopup';
 import { sendOtp, verifyOtp, submitApplication, saveStep1, saveStep2, saveStep3, checkRegistrationStatus, savePostRegistrationData } from '../../utils/api';
@@ -74,15 +74,21 @@ const ApplySection = () => {
     return `${dayName}, ${months[date.getMonth()]} ${date.getDate()} | ${timeStr}`;
   };
 
-  // Format slot for professional card display: { dayName, shortDate, time }
-  const formatSlotCard = (date) => {
+  // Date heading as in reference: "Saturday (31-01-2026)"
+  const formatSlotDateHeading = (date) => {
     const days = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
-    const months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
-    return {
-      dayName: days[date.getDay()],
-      shortDate: `${months[date.getMonth()]} ${date.getDate()}`,
-      time: date.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit', hour12: true }),
-    };
+    const d = date.getDate().toString().padStart(2, '0');
+    const m = (date.getMonth() + 1).toString().padStart(2, '0');
+    const y = date.getFullYear();
+    return `${days[date.getDay()]} (${d}-${m}-${y})`;
+  };
+
+  // Time range for slot: "7:00 PM - 8:00 PM" (1hr window)
+  const formatSlotTimeRange = (startDate) => {
+    const endDate = new Date(startDate.getTime() + 60 * 60 * 1000);
+    const start = startDate.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit', hour12: true });
+    const end = endDate.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit', hour12: true });
+    return `${start} - ${end}`;
   };
 
   const saturdaySlot = calculateNearestSaturday();
@@ -825,55 +831,50 @@ const ApplySection = () => {
               </form>
             )}
 
-            {/* Step 3: Slot Booking */}
+            {/* Step 3: Slot Booking - layout: date heading, then time slots indented underneath */}
             {currentStep === 3 && (
               <form className="apply-form" onSubmit={handleSubmit}>
                 <div className="apply-field">
                   <label className="apply-question-label">
-                    Book Your Demo Slot
+                    Preferred Demo Slot
                   </label>
-                  <p className="apply-slot-subtitle">Pick a time that works best for you</p>
-                  <div className="apply-slot-options">
-                    <label className={`apply-slot-card ${formData.timeSlot === 'saturday' ? 'apply-slot-card-selected' : ''}`}>
-                      <input
-                        type="radio"
-                        name="timeSlot"
-                        value="saturday"
-                        checked={formData.timeSlot === 'saturday'}
-                        onChange={handleChange}
-                        required
-                        className="apply-slot-card-input"
-                      />
-                      <div className="apply-slot-card-icon">
-                        <FiCalendar aria-hidden />
+                  <div className="apply-slot-by-date">
+                    {/* Saturday group */}
+                    <div className="apply-slot-date-group">
+                      <p className="apply-slot-date-heading">{formatSlotDateHeading(saturdaySlot)}</p>
+                      <div className="apply-slot-day-options">
+                        <label className={`apply-slot-option ${formData.timeSlot === 'saturday' ? 'apply-slot-option-selected' : ''}`}>
+                          <input
+                            type="radio"
+                            name="timeSlot"
+                            value="saturday"
+                            checked={formData.timeSlot === 'saturday'}
+                            onChange={handleChange}
+                            required
+                            className="apply-slot-option-input"
+                          />
+                          <span className="apply-slot-option-label">{formatSlotTimeRange(saturdaySlot)}</span>
+                        </label>
                       </div>
-                      <div className="apply-slot-card-content">
-                        <span className="apply-slot-card-day">{formatSlotCard(saturdaySlot).dayName}</span>
-                        <span className="apply-slot-card-datetime">
-                          {formatSlotCard(saturdaySlot).shortDate} · {formatSlotCard(saturdaySlot).time}
-                        </span>
+                    </div>
+                    {/* Sunday group */}
+                    <div className="apply-slot-date-group">
+                      <p className="apply-slot-date-heading">{formatSlotDateHeading(sundaySlot)}</p>
+                      <div className="apply-slot-day-options">
+                        <label className={`apply-slot-option ${formData.timeSlot === 'sunday' ? 'apply-slot-option-selected' : ''}`}>
+                          <input
+                            type="radio"
+                            name="timeSlot"
+                            value="sunday"
+                            checked={formData.timeSlot === 'sunday'}
+                            onChange={handleChange}
+                            required
+                            className="apply-slot-option-input"
+                          />
+                          <span className="apply-slot-option-label">{formatSlotTimeRange(sundaySlot)}</span>
+                        </label>
                       </div>
-                    </label>
-                    <label className={`apply-slot-card ${formData.timeSlot === 'sunday' ? 'apply-slot-card-selected' : ''}`}>
-                      <input
-                        type="radio"
-                        name="timeSlot"
-                        value="sunday"
-                        checked={formData.timeSlot === 'sunday'}
-                        onChange={handleChange}
-                        required
-                        className="apply-slot-card-input"
-                      />
-                      <div className="apply-slot-card-icon">
-                        <FiCalendar aria-hidden />
-                      </div>
-                      <div className="apply-slot-card-content">
-                        <span className="apply-slot-card-day">{formatSlotCard(sundaySlot).dayName}</span>
-                        <span className="apply-slot-card-datetime">
-                          {formatSlotCard(sundaySlot).shortDate} · {formatSlotCard(sundaySlot).time}
-                        </span>
-                      </div>
-                    </label>
+                    </div>
                   </div>
                 </div>
 
