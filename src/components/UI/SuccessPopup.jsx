@@ -2,9 +2,10 @@ import { useEffect, useState } from 'react';
 import { FiCheck } from 'react-icons/fi';
 import './SuccessPopup.css';
 
-const SuccessPopup = ({ isOpen, onClose, slotInfo }) => {
+const SuccessPopup = ({ isOpen, onClose, slotInfo, variant = 'slot' }) => {
   const [isVisible, setIsVisible] = useState(false);
   const [checkmarkVisible, setCheckmarkVisible] = useState(false);
+  const isPostRegistration = variant === 'postRegistration';
 
   useEffect(() => {
     if (isOpen) {
@@ -66,9 +67,11 @@ const SuccessPopup = ({ isOpen, onClose, slotInfo }) => {
             </div>
           </div>
           
-          <h2 className="success-popup-title">Slot Booked Successfully!</h2>
+          <h2 className="success-popup-title">
+            {isPostRegistration ? 'Registration Complete!' : 'Slot Booked Successfully!'}
+          </h2>
           
-          {slotInfo && (
+          {!isPostRegistration && slotInfo && (
             <div className="success-slot-info">
               <p className="success-slot-label">Your booked slot:</p>
               <p className="success-slot-value">
@@ -83,7 +86,9 @@ const SuccessPopup = ({ isOpen, onClose, slotInfo }) => {
           )}
           
           <p className="success-popup-message">
-            We'll send you a reminder before your demo session.
+            {isPostRegistration
+              ? "We'll send the meeting link and updates to your email."
+              : "We'll send you a reminder before your demo session."}
           </p>
         </div>
       </div>

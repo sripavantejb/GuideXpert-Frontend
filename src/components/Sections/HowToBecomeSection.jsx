@@ -432,7 +432,7 @@ const HowToBecomeSection = () => {
                             ? (isActive ? '2px' : '1px')
                             : '1px',
                           ...(isActive && {
-                            background: 'linear-gradient(145deg, #f7f4eb 0%, #f5f4f2 22%, #f2f4f8 45%, #eef4fa 70%, #e8f0fa 100%)'
+                            background: 'linear-gradient(to bottom right, #e8f0fa 0%, #eef4fa 25%, #f2f4f8 50%, #f5f4f2 75%, #f7f4eb 100%)'
                           })
                         }}
                       >

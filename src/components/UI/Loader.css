@@ -1,0 +1,58 @@
+/* Themed loader – uses primary navy from theme */
+.loader {
+  --loader-color: var(--color-primary-navy, #003366);
+  display: inline-block;
+  position: relative;
+  flex-shrink: 0;
+}
+
+.loader-spinner {
+  width: 100%;
+  height: 100%;
+  border: 2px solid transparent;
+  border-top-color: var(--loader-color);
+  border-radius: 50%;
+  animation: loader-spin 0.7s linear infinite;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .loader-spinner {
+    animation: none;
+    border-top-color: var(--loader-color);
+    border-right-color: var(--loader-color);
+    opacity: 0.8;
+  }
+}
+
+@keyframes loader-spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+.loader--small {
+  width: 18px;
+  height: 18px;
+}
+
+.loader--small .loader-spinner {
+  border-width: 2px;
+}
+
+.loader--medium {
+  width: 32px;
+  height: 32px;
+}
+
+.loader--medium .loader-spinner {
+  border-width: 3px;
+}
+
+.loader--large {
+  width: 64px;
+  height: 64px;
+}
+
+.loader--large .loader-spinner {
+  border-width: 4px;
+}

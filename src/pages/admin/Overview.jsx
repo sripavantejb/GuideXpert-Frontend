@@ -1,0 +1,133 @@
+import { useState, useEffect } from 'react';
+import { Link } from 'react-router-dom';
+import { getAdminStats, getAdminLeads, getStoredToken } from '../../utils/adminApi';
+import { useAuth } from '../../contexts/AuthContext';
+
+function formatDate(d) {
+  if (!d) return '—';
+  const date = new Date(d);
+  return date.toLocaleDateString('en-IN', { dateStyle: 'short' }) + ' ' + date.toLocaleTimeString('en-IN', { timeStyle: 'short' });
+}
+
+export default function Overview() {
+  const { logout } = useAuth();
+  const [stats, setStats] = useState(null);
+  const [recent, setRecent] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState('');
+
+  useEffect(() => {
+    let cancelled = false;
+    setLoading(true);
+    setError('');
+    Promise.all([
+      getAdminStats(getStoredToken()),
+      getAdminLeads({ page: 1, limit: 10 }, getStoredToken())
+    ]).then(([statsRes, leadsRes]) => {
+      if (cancelled) return;
+      if (!statsRes.success) {
+        if (statsRes.status === 401) {
+          logout();
+          window.location.href = '/admin/login';
+          return;
+        }
+        setError(statsRes.message || 'Failed to load stats');
+        setLoading(false);
+        return;
+      }
+      setStats(statsRes.data?.data || null);
+      if (leadsRes.success && leadsRes.data?.data) {
+        setRecent(leadsRes.data.data);
+      }
+      setLoading(false);
+    });
+    return () => { cancelled = true; };
+  }, [logout]);
+
+  if (loading) {
+    return (
+      <div className="max-w-6xl mx-auto">
+        <p className="text-gray-500">Loading overview…</p>
+      </div>
+    );
+  }
+
+  if (error) {
+    return (
+      <div className="max-w-6xl mx-auto">
+        <p className="text-red-600" role="alert">{error}</p>
+      </div>
+    );
+  }
+
+  const cards = [
+    { label: 'Total leads', value: stats?.total ?? 0, color: 'primary-navy' },
+    { label: 'In progress', value: stats?.inProgress ?? 0 },
+    { label: 'Registered', value: stats?.registered ?? 0 },
+    { label: 'Completed', value: stats?.completed ?? 0 },
+    { label: 'OTP verified', value: stats?.otpVerified ?? 0 },
+    { label: 'Slot booked', value: stats?.slotBooked ?? 0 },
+  ];
+
+  return (
+    <div className="max-w-6xl mx-auto">
+      <h2 className="text-xl font-semibold text-gray-800 mb-6">Overview</h2>
+
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 mb-8">
+        {cards.map(({ label, value, color }) => (
+          <div
+            key={label}
+            className="bg-white rounded-lg border border-gray-200 shadow-sm p-5"
+          >
+            <p className="text-sm text-gray-500 mb-1">{label}</p>
+            <p className={`text-2xl font-bold ${color ? 'text-primary-navy' : 'text-gray-800'}`}>
+              {value}
+            </p>
+          </div>
+        ))}
+      </div>
+
+      <div className="bg-white rounded-lg border border-gray-200 shadow-sm overflow-hidden">
+        <div className="px-4 py-3 border-b border-gray-200 flex items-center justify-between">
+          <h3 className="font-semibold text-gray-800">Recent leads</h3>
+          <Link
+            to="/admin/leads"
+            className="text-sm text-primary-navy hover:underline font-medium"
+          >
+            View all
+          </Link>
+        </div>
+        <div className="overflow-x-auto">
+          <table className="min-w-[500px] w-full text-left text-sm">
+            <thead className="bg-gray-50 border-b border-gray-200">
+              <tr>
+                <th className="px-4 py-2 font-semibold text-gray-700 align-middle">Name</th>
+                <th className="px-4 py-2 font-semibold text-gray-700 align-middle">Phone</th>
+                <th className="px-4 py-2 font-semibold text-gray-700 align-middle">Status</th>
+                <th className="px-4 py-2 font-semibold text-gray-700 align-middle whitespace-nowrap">Created</th>
+              </tr>
+            </thead>
+            <tbody>
+              {recent.length === 0 ? (
+                <tr>
+                  <td colSpan={4} className="px-4 py-6 text-center text-gray-500 align-middle">
+                    No leads yet
+                  </td>
+                </tr>
+              ) : (
+                recent.map((lead) => (
+                  <tr key={lead.id} className="border-b border-gray-100 hover:bg-gray-50">
+                    <td className="px-4 py-2 align-middle">{lead.fullName || '—'}</td>
+                    <td className="px-4 py-2 align-middle">{lead.phone || '—'}</td>
+                    <td className="px-4 py-2 align-middle">{lead.applicationStatus || '—'}</td>
+                    <td className="px-4 py-2 align-middle whitespace-nowrap">{formatDate(lead.createdAt)}</td>
+                  </tr>
+                ))
+              )}
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+  );
+}

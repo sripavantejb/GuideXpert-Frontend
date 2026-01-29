@@ -2,7 +2,7 @@
 
 .apply-section {
   position: relative;
-  background: linear-gradient(145deg, #f7f4eb 0%, #f5f4f2 22%, #f2f4f8 45%, #eef4fa 70%, #e8f0fa 100%);
+  background: linear-gradient(to bottom right, #e8f0fa 0%, #eef4fa 25%, #f2f4f8 50%, #f5f4f2 75%, #f7f4eb 100%);
   min-height: 100vh;
   display: flex;
   flex-direction: column;
@@ -18,7 +18,7 @@
   inset: 0;
   z-index: 0;
   pointer-events: none;
-  background: linear-gradient(145deg, #f7f4eb 0%, #f5f4f2 22%, #f2f4f8 45%, #eef4fa 70%, #e8f0fa 100%);
+  background: linear-gradient(to bottom right, #e8f0fa 0%, #eef4fa 25%, #f2f4f8 50%, #f5f4f2 75%, #f7f4eb 100%);
 }
 
 @media (min-width: 768px) {
@@ -227,14 +227,16 @@
   margin: 0;
 }
 
-/* Right: Form card */
+/* Right: Form card – fixed max height, scroll inside */
 .apply-form-card {
   position: relative;
   width: 100%;
   max-width: 420px;
+  max-height: calc(100vh - 4rem);
   background: #ffffff;
   border-radius: 0.75rem;
-  overflow: visible;
+  overflow-x: hidden;
+  overflow-y: auto;
   transform: translateY(-2.5rem);
   box-shadow:
     0 10px 40px -10px rgba(0, 0, 0, 0.12),
@@ -322,7 +324,7 @@
 }
 
 .apply-field label span {
-  color: #dc2626;
+  color: #003366;
 }
 
 .apply-field input {
@@ -423,15 +425,15 @@
 
 .apply-error-message {
   text-align: center;
-  color: #dc2626;
+  color: #003366;
   font-size: 0.875rem;
   margin-top: 0.5rem;
 }
 
 .apply-error-message-global {
-  background: #fef2f2;
-  border: 1px solid #fecaca;
-  color: #dc2626;
+  background: #f0f7ff;
+  border: 1px solid #bfdbfe;
+  color: #003366;
   padding: 0.75rem 1rem;
   border-radius: 0.5rem;
   font-size: 0.875rem;
@@ -488,6 +490,82 @@
   font-size: 0.875rem;
   color: #6b7280;
   margin-bottom: 1rem;
+}
+
+/* Step 3: Slot booking by date (Today / Tomorrow / Day after tomorrow) */
+.apply-slot-by-date {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+  margin-top: 0.5rem;
+}
+
+.apply-slot-date-group {
+  border: 2px solid #e5e7eb;
+  border-radius: 12px;
+  padding: 1rem 1.25rem;
+  background: #ffffff;
+  transition: border-color 0.2s ease, background-color 0.2s ease, box-shadow 0.2s ease;
+}
+
+.apply-slot-date-group:hover {
+  border-color: #cbd5e1;
+  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.05);
+}
+
+.apply-slot-date-heading {
+  font-size: 1rem;
+  font-weight: 600;
+  color: #1e293b;
+  margin: 0 0 0.75rem 0;
+  letter-spacing: -0.01em;
+}
+
+.apply-slot-day-options {
+  display: flex;
+  flex-direction: column;
+  gap: 0.875rem;
+}
+
+.apply-slot-option {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  padding: 0.75rem 1rem;
+  border-radius: 8px;
+  cursor: pointer;
+  transition: background-color 0.2s ease, border-color 0.2s ease;
+  border: 2px solid transparent;
+  background: #f8fafc;
+}
+
+.apply-slot-option:hover {
+  background: #f1f5f9;
+}
+
+.apply-slot-option-selected,
+.apply-slot-option:has(.apply-slot-option-input:checked) {
+  border-color: #003366;
+  background: #f0f7ff;
+  box-shadow: 0 0 0 2px rgba(0, 51, 102, 0.1);
+}
+
+.apply-slot-option-input {
+  width: 1.125rem;
+  height: 1.125rem;
+  accent-color: #003366;
+  flex-shrink: 0;
+}
+
+.apply-slot-option-label {
+  font-size: 0.9375rem;
+  font-weight: 500;
+  color: #374151;
+}
+
+.apply-slot-option-selected .apply-slot-option-label,
+.apply-slot-option:has(.apply-slot-option-input:checked) .apply-slot-option-label {
+  color: #003366;
 }
 
 /* Professional slot cards (Step 3) */
@@ -682,7 +760,7 @@
   margin-top: 0;
 }
 
-/* Responsive: stack on small/medium (form first, then marketing) */
+/* Responsive: stack on small/medium (marketing first, then form) */
 @media (max-width: 900px) {
   .apply-section-inner {
     flex-direction: column;
@@ -690,15 +768,16 @@
   }
 
   .apply-left {
-    order: 0;
+    order: -1;
     padding: 1.5rem 1.5rem 1.5rem;
     min-height: auto;
   }
 
   .apply-right {
-    order: -1;
+    order: 0;
     padding: 2rem 1.5rem 1.5rem;
     min-width: 100%;
+    justify-content: center;
   }
 
   .apply-form-card {
@@ -709,9 +788,13 @@
   .apply-desc {
     max-width: 100%;
   }
+
+  .apply-stats {
+    display: none;
+  }
 }
 
-/* Responsive: extra-small (current order: form → marketing → feature cards) */
+/* Responsive: extra-small (current order: marketing → form → feature cards) */
 @media (max-width: 480px) {
   .apply-section {
     padding-top: 1.25rem;
@@ -775,7 +858,7 @@
   .apply-feature-cards {
     padding: 1.5rem 1rem 2rem;
     gap: 1rem;
-    justify-content: flex-start;
+    justify-content: center;
     overflow-x: auto;
     scroll-snap-type: x mandatory;
     -webkit-overflow-scrolling: touch;
@@ -844,6 +927,23 @@
 
   .apply-slot-card-datetime {
     font-size: 0.9375rem;
+  }
+
+  .apply-slot-date-group {
+    padding: 0.875rem 1rem;
+  }
+
+  .apply-slot-date-heading {
+    font-size: 0.9375rem;
+    margin-bottom: 0.625rem;
+  }
+
+  .apply-slot-option {
+    padding: 0.625rem 0.875rem;
+  }
+
+  .apply-slot-option-label {
+    font-size: 0.875rem;
   }
 }
 
@@ -1173,8 +1273,8 @@
   }
 }
 
-/* Step 4 - Interest Level Options */
-.apply-interest-option-title {
+/* Step 4 - Interest Level Options (professional black theme; override .apply-field label span) */
+.apply-radio-option .apply-interest-option-title {
   display: block;
   font-weight: 600;
   color: #1f2937;
@@ -1182,10 +1282,10 @@
   font-size: 0.95rem;
 }
 
-.apply-interest-option-desc {
+.apply-radio-option .apply-interest-option-desc {
   display: block;
   font-size: 0.875rem;
-  color: #6b7280;
+  color: #374151;
   font-weight: 400;
 }
 
@@ -1196,7 +1296,7 @@
 
 .apply-radio-option:has(input[type="radio"]:checked) .apply-interest-option-desc,
 .apply-radio-option.apply-radio-checked .apply-interest-option-desc {
-  color: #4b5563;
+  color: #1f2937;
 }
 
 /* Step 4 Email Field */

@@ -1,8 +1,9 @@
 import { useState, useRef, useEffect } from 'react';
 import { FaRocket } from 'react-icons/fa';
-import { FiSend, FiPhone, FiDollarSign, FiAward, FiHome, FiUsers, FiArrowLeft } from 'react-icons/fi';
+import { FiSend, FiPhone, FiDollarSign, FiAward, FiHome, FiUsers, FiArrowLeft, FiCalendar, FiCheck } from 'react-icons/fi';
 import ShinyText from '../UI/ShinyText';
 import SuccessPopup from '../UI/SuccessPopup';
+import Loader from '../UI/Loader';
 import { sendOtp, verifyOtp, submitApplication, saveStep1, saveStep2, saveStep3, checkRegistrationStatus, savePostRegistrationData } from '../../utils/api';
 import './ApplySection.css';
 
@@ -29,70 +30,57 @@ const ApplySection = () => {
   const [registeredPhone, setRegisteredPhone] = useState('');
   const [registeredSlotInfo, setRegisteredSlotInfo] = useState(null);
   const [postRegistrationCompleted, setPostRegistrationCompleted] = useState(false);
+  const [showPostRegistrationSuccessPopup, setShowPostRegistrationSuccessPopup] = useState(false);
   const [postRegistrationData, setPostRegistrationData] = useState({
     interestLevel: '',
     email: ''
   });
   const otpInputRefs = useRef([]);
 
-  // Calculate nearest Saturday 7pm
-  const calculateNearestSaturday = () => {
-    const today = new Date();
-    const dayOfWeek = today.getDay(); // 0 = Sunday, 6 = Saturday
-    let daysUntilSaturday = (6 - dayOfWeek + 7) % 7;
-    // If today is Saturday, get next Saturday
-    if (daysUntilSaturday === 0) {
-      daysUntilSaturday = 7;
+  // 6 PM cutoff: before 6 PM show Today + Day after tomorrow; after 6 PM show Tomorrow + Day after tomorrow
+  const now = new Date();
+  const isBefore6PM = now.getHours() < 18;
+
+  // Slot 1: before 6 PM = today 7 PM, else tomorrow 7 PM
+  const slot1Date = (() => {
+    const d = new Date();
+    if (isBefore6PM) {
+      d.setHours(19, 0, 0, 0);
+    } else {
+      d.setDate(d.getDate() + 1);
+      d.setHours(19, 0, 0, 0);
     }
-    const saturday = new Date(today);
-    saturday.setDate(today.getDate() + daysUntilSaturday);
-    saturday.setHours(19, 0, 0, 0); // 7pm
-    return saturday;
-  };
+    return d;
+  })();
 
-  // Calculate nearest Sunday 3pm
-  const calculateNearestSunday = () => {
-    const today = new Date();
-    const dayOfWeek = today.getDay(); // 0 = Sunday
-    let daysUntilSunday = (7 - dayOfWeek) % 7;
-    // If today is Sunday, get next Sunday
-    if (daysUntilSunday === 0) {
-      daysUntilSunday = 7;
-    }
-    const sunday = new Date(today);
-    sunday.setDate(today.getDate() + daysUntilSunday);
-    sunday.setHours(15, 0, 0, 0); // 3pm
-    return sunday;
-  };
+  // Slot 2: always day after tomorrow 3 PM
+  const slot2Date = (() => {
+    const d = new Date();
+    d.setDate(d.getDate() + 2);
+    d.setHours(15, 0, 0, 0);
+    return d;
+  })();
 
-  // Format slot date (full string for display)
-  const formatSlotDate = (date) => {
-    const days = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
-    const months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
-    const dayName = days[date.getDay()];
-    const timeStr = date.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit', hour12: true });
-    return `${dayName}, ${months[date.getMonth()]} ${date.getDate()} | ${timeStr}`;
-  };
-
-  // Date heading as in reference: "Saturday (31-01-2026)"
-  const formatSlotDateHeading = (date) => {
-    const days = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
+  // DD-MM-YYYY for professional date display
+  const formatDateDDMMYYYY = (date) => {
     const d = date.getDate().toString().padStart(2, '0');
     const m = (date.getMonth() + 1).toString().padStart(2, '0');
     const y = date.getFullYear();
-    return `${days[date.getDay()]} (${d}-${m}-${y})`;
+    return `${d}-${m}-${y}`;
   };
 
-  // Time range for slot: "7:00 PM - 8:00 PM" (1hr window)
+  // Day label for slot heading: Today / Tomorrow / Day after tomorrow
+  const slot1DayLabel = isBefore6PM ? 'Today' : 'Tomorrow';
+  const slot2DayLabel = 'Day after tomorrow';
+  const formatSlotDayHeading = (dayLabel, date) => `${dayLabel} (${formatDateDDMMYYYY(date)})`;
+
+  // Time range for slot: "7:00 PM – 8:00 PM" (1hr window)
   const formatSlotTimeRange = (startDate) => {
     const endDate = new Date(startDate.getTime() + 60 * 60 * 1000);
     const start = startDate.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit', hour12: true });
     const end = endDate.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit', hour12: true });
-    return `${start} - ${end}`;
+    return `${start} – ${end}`;
   };
-
-  const saturdaySlot = calculateNearestSaturday();
-  const sundaySlot = calculateNearestSunday();
 
   // localStorage functions
   const saveRegistrationToLocalStorage = (phone) => {
@@ -433,9 +421,9 @@ const ApplySection = () => {
     
     console.log('[Submit Application] Using verified phone:', normalizedPhone);
     
-    // Determine selected slot and date
+    // Determine selected slot and date (saturday = first option, sunday = second option)
     const selectedSlot = formData.timeSlot === 'saturday' ? 'SATURDAY_7PM' : 'SUNDAY_3PM';
-    const slotDate = formData.timeSlot === 'saturday' ? saturdaySlot : sundaySlot;
+    const slotDate = formData.timeSlot === 'saturday' ? slot1Date : slot2Date;
 
     // Log submission data
     console.log('[Submit Application] Request:', {
@@ -496,8 +484,8 @@ const ApplySection = () => {
     // Save to localStorage
     saveRegistrationToLocalStorage(cleanPhone);
     
-    // Return to form (step 1) with "Already registered" on top
-    setCurrentStep(1);
+    // Go to post-registration step (interest + email questions)
+    setCurrentStep(4);
     setBookedSlotInfo(null);
     setSuccessMessage('');
     // Reset form fields so they see a fresh form
@@ -511,6 +499,12 @@ const ApplySection = () => {
     });
     setIsPhoneVerified(false);
     setVerifiedPhone('');
+  };
+
+  const handlePostRegistrationSuccessPopupClose = () => {
+    setShowPostRegistrationSuccessPopup(false);
+    setCurrentStep(1);
+    setPostRegistrationData({ interestLevel: '', email: '' });
   };
 
   const handleBack = () => {
@@ -562,26 +556,7 @@ const ApplySection = () => {
 
       if (result.success) {
         setPostRegistrationCompleted(true);
-        setSuccessMessage('Registration completed successfully!');
-        // Reset form after a delay
-        setTimeout(() => {
-          setFormData({
-            fullName: '',
-            whatsappNumber: '',
-            occupation: '',
-            otp: ['', '', '', '', '', ''],
-            demoPreference: '',
-            timeSlot: '',
-          });
-          setPostRegistrationData({
-            interestLevel: '',
-            email: ''
-          });
-          setIsPhoneVerified(false);
-          setVerifiedPhone('');
-          setCurrentStep(1);
-          setSuccessMessage('');
-        }, 3000);
+        setShowPostRegistrationSuccessPopup(true);
       } else {
         const errorMessage = result.message || result.data?.message || 'Failed to save information. Please try again.';
         setError(errorMessage);
@@ -767,7 +742,7 @@ const ApplySection = () => {
                 </div>
 
                 <button type="submit" className="apply-otp-btn" disabled={isLoading}>
-                  <FiPhone aria-hidden />
+                  {isLoading ? <Loader size="small" aria-hidden /> : <FiPhone aria-hidden />}
                   {isLoading ? 'Sending OTP...' : 'Get OTP'}
                 </button>
               </form>
@@ -814,6 +789,7 @@ const ApplySection = () => {
                     className="apply-otp-btn"
                     disabled={isVerifying || isLoading}
                   >
+                    {isVerifying ? <Loader size="small" aria-hidden /> : null}
                     {isVerifying ? 'Verifying...' : 'Verify OTP'}
                   </button>
                 </div>
@@ -825,53 +801,72 @@ const ApplySection = () => {
                     className="apply-resend-link"
                     disabled={isLoading}
                   >
+                    {isLoading ? <Loader size="small" aria-hidden /> : null}
                     {isLoading ? 'Resending...' : 'Resend OTP'}
                   </button>
                 </div>
               </form>
             )}
 
-            {/* Step 3: Slot Booking - layout: date heading, then time slots indented underneath */}
+            {/* Step 3: Slot Booking - time-based dates with Today / Tomorrow / Day after tomorrow */}
             {currentStep === 3 && (
               <form className="apply-form" onSubmit={handleSubmit}>
                 <div className="apply-field">
                   <label className="apply-question-label">
-                    Preferred Demo Slot
+                    Choose your demo session
                   </label>
                   <div className="apply-slot-by-date">
-                    {/* Saturday group */}
                     <div className="apply-slot-date-group">
-                      <p className="apply-slot-date-heading">{formatSlotDateHeading(saturdaySlot)}</p>
+                      <p className="apply-slot-date-heading">{formatSlotDayHeading(slot1DayLabel, slot1Date)}</p>
                       <div className="apply-slot-day-options">
-                        <label className={`apply-slot-option ${formData.timeSlot === 'saturday' ? 'apply-slot-option-selected' : ''}`}>
+                        <label
+                          htmlFor="apply-slot-saturday"
+                          className={`apply-slot-card ${formData.timeSlot === 'saturday' ? 'apply-slot-card-selected' : ''}`}
+                        >
                           <input
                             type="radio"
+                            id="apply-slot-saturday"
                             name="timeSlot"
                             value="saturday"
                             checked={formData.timeSlot === 'saturday'}
                             onChange={handleChange}
                             required
-                            className="apply-slot-option-input"
+                            className="apply-slot-card-input"
                           />
-                          <span className="apply-slot-option-label">{formatSlotTimeRange(saturdaySlot)}</span>
+                          <span className="apply-slot-card-icon" aria-hidden="true">
+                            {formData.timeSlot === 'saturday' ? <FiCheck /> : <FiCalendar />}
+                          </span>
+                          <div className="apply-slot-card-content">
+                            <span className="apply-slot-card-day">{slot1DayLabel}</span>
+                            <span className="apply-slot-card-datetime">{formatSlotTimeRange(slot1Date)}</span>
+                          </div>
                         </label>
                       </div>
                     </div>
-                    {/* Sunday group */}
                     <div className="apply-slot-date-group">
-                      <p className="apply-slot-date-heading">{formatSlotDateHeading(sundaySlot)}</p>
+                      <p className="apply-slot-date-heading">{formatSlotDayHeading(slot2DayLabel, slot2Date)}</p>
                       <div className="apply-slot-day-options">
-                        <label className={`apply-slot-option ${formData.timeSlot === 'sunday' ? 'apply-slot-option-selected' : ''}`}>
+                        <label
+                          htmlFor="apply-slot-sunday"
+                          className={`apply-slot-card ${formData.timeSlot === 'sunday' ? 'apply-slot-card-selected' : ''}`}
+                        >
                           <input
                             type="radio"
+                            id="apply-slot-sunday"
                             name="timeSlot"
                             value="sunday"
                             checked={formData.timeSlot === 'sunday'}
                             onChange={handleChange}
                             required
-                            className="apply-slot-option-input"
+                            className="apply-slot-card-input"
                           />
-                          <span className="apply-slot-option-label">{formatSlotTimeRange(sundaySlot)}</span>
+                          <span className="apply-slot-card-icon" aria-hidden="true">
+                            {formData.timeSlot === 'sunday' ? <FiCheck /> : <FiCalendar />}
+                          </span>
+                          <div className="apply-slot-card-content">
+                            <span className="apply-slot-card-day">{slot2DayLabel}</span>
+                            <span className="apply-slot-card-datetime">{formatSlotTimeRange(slot2Date)}</span>
+                          </div>
                         </label>
                       </div>
                     </div>
@@ -888,6 +883,7 @@ const ApplySection = () => {
                     Back
                   </button>
                   <button type="submit" className="apply-otp-btn" disabled={isLoading}>
+                    {isLoading ? <Loader size="small" aria-hidden /> : null}
                     {isLoading ? 'Booking...' : 'Book Slot'}
                   </button>
                 </div>
@@ -949,7 +945,7 @@ const ApplySection = () => {
 
                 <div className="apply-field">
                   <label htmlFor="email">
-                    Provide your email so we can send the meet link to you <span>*</span>
+                    Provide your email so we can send the meeting link directly and updates <span>*</span>
                   </label>
                   <input
                     type="email"
@@ -978,6 +974,7 @@ const ApplySection = () => {
                     Back
                   </button>
                   <button type="submit" className="apply-otp-btn" disabled={isLoading}>
+                    {isLoading ? <Loader size="small" aria-hidden /> : null}
                     {isLoading ? 'Saving...' : 'Complete Registration'}
                   </button>
                 </div>
@@ -989,9 +986,10 @@ const ApplySection = () => {
       
       {/* Success Popup */}
       <SuccessPopup
-        isOpen={showSuccessPopup}
-        onClose={handleSuccessPopupClose}
-        slotInfo={bookedSlotInfo}
+        isOpen={showSuccessPopup || showPostRegistrationSuccessPopup}
+        onClose={showPostRegistrationSuccessPopup ? handlePostRegistrationSuccessPopupClose : handleSuccessPopupClose}
+        slotInfo={showSuccessPopup ? bookedSlotInfo : null}
+        variant={showPostRegistrationSuccessPopup ? 'postRegistration' : 'slot'}
       />
       
       <div className="apply-feature-cards">
