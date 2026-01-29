@@ -1,8 +1,9 @@
 import { useState, useRef, useEffect } from 'react';
 import { FaRocket } from 'react-icons/fa';
-import { FiSend, FiPhone, FiDollarSign, FiAward, FiHome, FiUsers, FiArrowLeft } from 'react-icons/fi';
+import { FiSend, FiPhone, FiDollarSign, FiAward, FiHome, FiUsers, FiArrowLeft, FiCheckCircle } from 'react-icons/fi';
 import ShinyText from '../UI/ShinyText';
-import { sendOtp, verifyOtp, submitApplication } from '../../utils/api';
+import SuccessPopup from '../UI/SuccessPopup';
+import { sendOtp, verifyOtp, submitApplication, saveStep1, saveStep2, saveStep3, checkRegistrationStatus, savePostRegistrationData } from '../../utils/api';
 import './ApplySection.css';
 
 const ApplySection = () => {
@@ -22,6 +23,16 @@ const ApplySection = () => {
   const [successMessage, setSuccessMessage] = useState('');
   const [isPhoneVerified, setIsPhoneVerified] = useState(false);
   const [verifiedPhone, setVerifiedPhone] = useState('');
+  const [showSuccessPopup, setShowSuccessPopup] = useState(false);
+  const [bookedSlotInfo, setBookedSlotInfo] = useState(null);
+  const [isRegistered, setIsRegistered] = useState(false);
+  const [registeredPhone, setRegisteredPhone] = useState('');
+  const [registeredSlotInfo, setRegisteredSlotInfo] = useState(null);
+  const [postRegistrationCompleted, setPostRegistrationCompleted] = useState(false);
+  const [postRegistrationData, setPostRegistrationData] = useState({
+    interestLevel: '',
+    email: ''
+  });
   const otpInputRefs = useRef([]);
 
   // Calculate nearest Saturday 7pm
@@ -66,14 +77,67 @@ const ApplySection = () => {
   const saturdaySlot = calculateNearestSaturday();
   const sundaySlot = calculateNearestSunday();
 
+  // localStorage functions
+  const saveRegistrationToLocalStorage = (phone) => {
+    try {
+      const registrationData = {
+        phone,
+        isRegistered: true,
+        registeredAt: Date.now()
+      };
+      localStorage.setItem('guidexpert_registration', JSON.stringify(registrationData));
+    } catch (error) {
+      console.error('[localStorage] Failed to save registration:', error);
+    }
+  };
+
+  const getRegistrationFromLocalStorage = () => {
+    try {
+      const data = localStorage.getItem('guidexpert_registration');
+      if (data) {
+        return JSON.parse(data);
+      }
+    } catch (error) {
+      console.error('[localStorage] Failed to get registration:', error);
+    }
+    return null;
+  };
+
+  // Check registration status on mount
+  useEffect(() => {
+    const checkRegistration = async () => {
+      const localData = getRegistrationFromLocalStorage();
+      if (localData && localData.phone) {
+        try {
+          const result = await checkRegistrationStatus(localData.phone);
+          if (result.success && result.data?.isRegistered) {
+            setIsRegistered(true);
+            setRegisteredPhone(localData.phone);
+            setRegisteredSlotInfo(result.data.slotInfo);
+            setPostRegistrationCompleted(result.data.postRegistrationCompleted || false);
+            
+            // If post-registration not completed, show Step 4
+            if (!result.data.postRegistrationCompleted) {
+              setCurrentStep(4);
+            }
+          }
+        } catch (error) {
+          console.error('[Check Registration] Error:', error);
+          // Fall back to localStorage if API fails
+          if (localData.isRegistered) {
+            setIsRegistered(true);
+            setRegisteredPhone(localData.phone);
+          }
+        }
+      }
+    };
+    
+    checkRegistration();
+  }, []);
+
   const handleChange = (e) => {
     const { name, value } = e.target;
-    // Clear time slot if user selects "Maybe later"
-    if (name === 'demoPreference' && value === 'maybe') {
-      setFormData({ ...formData, [name]: value, timeSlot: '' });
-    } else {
-      setFormData({ ...formData, [name]: value });
-    }
+    setFormData({ ...formData, [name]: value });
     // Clear errors when user makes changes
     if (error) setError('');
     if (otpError) setOtpError('');
@@ -90,7 +154,7 @@ const ApplySection = () => {
         option.classList.remove('apply-radio-checked');
       }
     });
-  }, [formData.demoPreference, formData.timeSlot]);
+  }, [formData.timeSlot]);
 
   const handleOtpChange = (index, value) => {
     if (!/^\d*$/.test(value)) return; // Only allow digits
@@ -165,6 +229,25 @@ const ApplySection = () => {
 
       if (result.success) {
         setSuccessMessage('OTP sent successfully to your WhatsApp number');
+        
+        // Save Step 1 data to MongoDB
+        try {
+          const saveResult = await saveStep1(
+            formData.fullName.trim(),
+            cleanPhone,
+            formData.occupation.trim()
+          );
+          if (saveResult.success) {
+            console.log('[Save Step 1] Successfully saved to MongoDB');
+          } else {
+            console.error('[Save Step 1] Failed to save:', saveResult.message);
+            // Don't block user flow if save fails
+          }
+        } catch (saveErr) {
+          console.error('[Save Step 1] Exception:', saveErr);
+          // Don't block user flow if save fails
+        }
+        
         setCurrentStep(2);
         // Focus first OTP input after state update
         setTimeout(() => otpInputRefs.current[0]?.focus(), 100);
@@ -232,6 +315,21 @@ const ApplySection = () => {
         setVerifiedPhone(normalizedPhone); // Store normalized phone for consistency
         console.log('[Verify OTP] Phone verified and stored:', normalizedPhone);
         setSuccessMessage('OTP verified successfully');
+        
+        // Save Step 2 data to MongoDB
+        try {
+          const saveResult = await saveStep2(normalizedPhone);
+          if (saveResult.success) {
+            console.log('[Save Step 2] Successfully saved to MongoDB');
+          } else {
+            console.error('[Save Step 2] Failed to save:', saveResult.message);
+            // Don't block user flow if save fails
+          }
+        } catch (saveErr) {
+          console.error('[Save Step 2] Exception:', saveErr);
+          // Don't block user flow if save fails
+        }
+        
         setCurrentStep(3);
       } else {
         // Log error details
@@ -304,13 +402,8 @@ const ApplySection = () => {
       return;
     }
     
-    if (!formData.demoPreference) {
-      setError('Please select your demo preference');
-      return;
-    }
-    
-    // Time slot is required only if user wants to attend demo
-    if (formData.demoPreference === 'yes' && !formData.timeSlot) {
+    // Time slot is required
+    if (!formData.timeSlot) {
       setError('Please select a time slot');
       return;
     }
@@ -325,47 +418,35 @@ const ApplySection = () => {
     
     console.log('[Submit Application] Using verified phone:', normalizedPhone);
     
-    // Map frontend data to backend format
-    // Backend accepts both 'phone' and 'whatsappNumber', send both for compatibility
-    const submissionData = {
-      fullName: formData.fullName.trim(),
-      phone: normalizedPhone, // Use 'phone' for consistency with verifyOtp
-      whatsappNumber: normalizedPhone, // Also send whatsappNumber as fallback
-      occupation: formData.occupation.trim(),
-      demoInterest: formData.demoPreference === 'yes' ? 'YES_SOON' : 'MAYBE_LATER',
-    };
-    
-    // Add selectedSlot only if user wants to attend demo
-    if (formData.demoPreference === 'yes') {
-      submissionData.selectedSlot = formData.timeSlot === 'saturday' ? 'SATURDAY_7PM' : 'SUNDAY_3PM';
-    }
+    // Determine selected slot and date
+    const selectedSlot = formData.timeSlot === 'saturday' ? 'SATURDAY_7PM' : 'SUNDAY_3PM';
+    const slotDate = formData.timeSlot === 'saturday' ? saturdaySlot : sundaySlot;
 
     // Log submission data
-    console.log('[Submit Application] Request:', submissionData);
+    console.log('[Submit Application] Request:', {
+      phone: normalizedPhone,
+      selectedSlot,
+      slotDate: slotDate.toISOString()
+    });
 
     try {
-      const result = await submitApplication(submissionData);
+      // Save Step 3 data to MongoDB
+      const result = await saveStep3(normalizedPhone, selectedSlot, slotDate.toISOString());
 
       // Log full response for debugging
       console.log('[Submit Application] Response:', result);
 
       if (result.success) {
-        setSuccessMessage('Application submitted successfully!');
-        // Reset form after successful submission
-        setTimeout(() => {
-          setFormData({
-            fullName: '',
-            whatsappNumber: '',
-            occupation: '',
-            otp: ['', '', '', '', '', ''],
-            demoPreference: '',
-            timeSlot: '',
-          });
-          setIsPhoneVerified(false);
-          setVerifiedPhone('');
-          setCurrentStep(1);
-          setSuccessMessage('');
-        }, 3000);
+        // Store booked slot info for popup
+        setBookedSlotInfo({
+          selectedSlot,
+          slotDate: slotDate.toISOString()
+        });
+        
+        // Show success popup
+        setShowSuccessPopup(true);
+        
+        // Reset form after popup closes (handled by popup close callback)
       } else {
         // Log error details
         console.error('[Submit Application] Failed:', {
@@ -386,8 +467,28 @@ const ApplySection = () => {
     }
   };
 
+  const handleSuccessPopupClose = () => {
+    setShowSuccessPopup(false);
+    
+    // Mark user as registered
+    const normalizedPhone = verifiedPhone || formData.whatsappNumber.replace(/\D/g, '');
+    const cleanPhone = normalizedPhone.length >= 10 ? normalizedPhone.slice(-10) : normalizedPhone;
+    
+    setIsRegistered(true);
+    setRegisteredPhone(cleanPhone);
+    setRegisteredSlotInfo(bookedSlotInfo);
+    
+    // Save to localStorage
+    saveRegistrationToLocalStorage(cleanPhone);
+    
+    // Move to Step 4 (post-registration questions)
+    setCurrentStep(4);
+    setBookedSlotInfo(null);
+    setSuccessMessage('');
+  };
+
   const handleBack = () => {
-    if (currentStep > 1) {
+    if (currentStep > 1 && currentStep !== 4) {
       setError('');
       setSuccessMessage('');
       setOtpError('');
@@ -396,13 +497,85 @@ const ApplySection = () => {
     }
   };
 
+  const handlePostRegistrationChange = (e) => {
+    const { name, value } = e.target;
+    setPostRegistrationData({ ...postRegistrationData, [name]: value });
+    if (error) setError('');
+  };
+
+  const handlePostRegistrationSubmit = async (e) => {
+    e.preventDefault();
+    setError('');
+    setSuccessMessage('');
+
+    if (!postRegistrationData.interestLevel) {
+      setError('Please select your interest level');
+      return;
+    }
+
+    if (!postRegistrationData.email || !postRegistrationData.email.trim()) {
+      setError('Please provide your email address');
+      return;
+    }
+
+    // Basic email validation
+    const emailRegex = /^\S+@\S+\.\S+$/;
+    if (!emailRegex.test(postRegistrationData.email.trim())) {
+      setError('Please enter a valid email address');
+      return;
+    }
+
+    setIsLoading(true);
+
+    try {
+      const result = await savePostRegistrationData(
+        registeredPhone,
+        postRegistrationData.interestLevel,
+        postRegistrationData.email.trim()
+      );
+
+      if (result.success) {
+        setPostRegistrationCompleted(true);
+        setSuccessMessage('Registration completed successfully!');
+        // Reset form after a delay
+        setTimeout(() => {
+          setFormData({
+            fullName: '',
+            whatsappNumber: '',
+            occupation: '',
+            otp: ['', '', '', '', '', ''],
+            demoPreference: '',
+            timeSlot: '',
+          });
+          setPostRegistrationData({
+            interestLevel: '',
+            email: ''
+          });
+          setIsPhoneVerified(false);
+          setVerifiedPhone('');
+          setCurrentStep(1);
+          setSuccessMessage('');
+        }, 3000);
+      } else {
+        const errorMessage = result.message || result.data?.message || 'Failed to save information. Please try again.';
+        setError(errorMessage);
+      }
+    } catch (err) {
+      console.error('[Post Registration] Exception:', err);
+      setError('Network error. Please check your connection and try again.');
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
   const stepLabels = {
     1: '',
     2: 'OTP Verification',
     3: 'Slot Booking',
+    4: 'Additional Information',
   };
 
-  const progressPercentage = (currentStep / 3) * 100;
+  const progressPercentage = (currentStep / 4) * 100;
 
   return (
     <section id="home" className="apply-section">
@@ -454,11 +627,11 @@ const ApplySection = () => {
         {/* Right column: form card */}
         <div className="apply-right">
           <div className="apply-form-card">
-            {/* Progress indicator - hidden on step 1 */}
-            {currentStep >= 2 && (
+            {/* Progress indicator - hidden on step 1 and registered state */}
+            {currentStep >= 2 && !(isRegistered && currentStep !== 4) && (
               <div className="apply-progress">
                 <div className="apply-progress-top">
-                  <span className="apply-progress-step">Step {currentStep} of 3</span>
+                  <span className="apply-progress-step">Step {currentStep} of 4</span>
                   <span className="apply-progress-label">{stepLabels[currentStep]}</span>
                 </div>
                 <div className="apply-progress-bar">
@@ -471,24 +644,29 @@ const ApplySection = () => {
               </div>
             )}
 
-            <div className="apply-form-title-wrap">
-              <FiSend className="apply-form-title-icon" aria-hidden />
-              <h3 className="apply-form-title">
-                <ShinyText
-                  text="Apply Now"
-                  speed={2}
-                  delay={0}
-                  color="#003366"
-                  shineColor="#ffffff"
-                  spread={120}
-                  direction="left"
-                  yoyo={false}
-                  pauseOnHover={false}
-                  disabled={false}
-                />
-              </h3>
-            </div>
-            <p className="apply-form-sub">Start your journey as a certified counselor</p>
+            {/* Form title - hidden when registered */}
+            {!(isRegistered && currentStep !== 4) && (
+              <>
+                <div className="apply-form-title-wrap">
+                  <FiSend className="apply-form-title-icon" aria-hidden />
+                  <h3 className="apply-form-title">
+                    <ShinyText
+                      text="Apply Now"
+                      speed={2}
+                      delay={0}
+                      color="#003366"
+                      shineColor="#ffffff"
+                      spread={120}
+                      direction="left"
+                      yoyo={false}
+                      pauseOnHover={false}
+                      disabled={false}
+                    />
+                  </h3>
+                </div>
+                <p className="apply-form-sub">Start your journey as a certified counselor</p>
+              </>
+            )}
 
             {/* Error Message */}
             {error && <div className="apply-error-message-global">{error}</div>}
@@ -616,70 +794,38 @@ const ApplySection = () => {
               <form className="apply-form" onSubmit={handleSubmit}>
                 <div className="apply-field">
                   <label className="apply-question-label">
-                    Would you like to attend a demo?
+                    Book Your Demo Slot
                   </label>
+                  <p className="apply-slot-subtitle">Pick a time that works best for you</p>
                   <div className="apply-radio-group">
                     <label className="apply-radio-option">
                       <input
                         type="radio"
-                        name="demoPreference"
-                        value="yes"
-                        checked={formData.demoPreference === 'yes'}
+                        name="timeSlot"
+                        value="saturday"
+                        checked={formData.timeSlot === 'saturday'}
                         onChange={handleChange}
                         required
                       />
-                      <span>Yes, I'd like to attend shortly</span>
+                      <div>
+                        <span>Slot 1 — {formatSlotDate(saturdaySlot)}</span>
+                      </div>
                     </label>
                     <label className="apply-radio-option">
                       <input
                         type="radio"
-                        name="demoPreference"
-                        value="maybe"
-                        checked={formData.demoPreference === 'maybe'}
+                        name="timeSlot"
+                        value="sunday"
+                        checked={formData.timeSlot === 'sunday'}
                         onChange={handleChange}
                         required
                       />
-                      <span>Maybe later</span>
+                      <div>
+                        <span>Slot 2 — {formatSlotDate(sundaySlot)}</span>
+                      </div>
                     </label>
                   </div>
                 </div>
-
-                {formData.demoPreference === 'yes' && (
-                  <div className="apply-field">
-                    <label className="apply-question-label">
-                      Preferred Time Slot
-                    </label>
-                    <p className="apply-slot-subtitle">Pick a time that works best for you</p>
-                    <div className="apply-radio-group">
-                      <label className="apply-radio-option">
-                        <input
-                          type="radio"
-                          name="timeSlot"
-                          value="saturday"
-                          checked={formData.timeSlot === 'saturday'}
-                          onChange={handleChange}
-                          required
-                        />
-                        <div>
-                          <span>Slot 1 — {formatSlotDate(saturdaySlot)}</span>
-                        </div>
-                      </label>
-                      <label className="apply-radio-option">
-                        <input
-                          type="radio"
-                          name="timeSlot"
-                          value="sunday"
-                          checked={formData.timeSlot === 'sunday'}
-                          onChange={handleChange}
-                          required
-                        />
-                        <div>
-                          <span>Slot 2 — {formatSlotDate(sundaySlot)}</span>
-                        </div>
-                      </label>
-                    </div>
-                  </div>
-                )}
 
                 <div className="apply-step-nav">
                   <button
@@ -691,7 +837,147 @@ const ApplySection = () => {
                     Back
                   </button>
                   <button type="submit" className="apply-otp-btn" disabled={isLoading}>
-                    {isLoading ? 'Submitting...' : 'Submit Application'}
+                    {isLoading ? 'Booking...' : 'Book Slot'}
+                  </button>
+                </div>
+              </form>
+            )}
+
+            {/* Registered State UI */}
+            {isRegistered && currentStep !== 4 && (
+              <div className="apply-registered-state">
+                <div className="apply-registered-badge">
+                  <div className="apply-registered-icon-wrapper">
+                    <FiCheckCircle className="apply-registered-icon" />
+                  </div>
+                  <h3 className="apply-registered-title">You're Registered!</h3>
+                  <p className="apply-registered-subtitle">Your registration has been confirmed successfully</p>
+                </div>
+                {registeredSlotInfo && (
+                  <div className="apply-registered-slot">
+                    <div className="apply-registered-slot-header">
+                      <p className="apply-registered-slot-label">YOUR BOOKED SLOT</p>
+                    </div>
+                    <div className="apply-registered-slot-content">
+                      <p className="apply-registered-slot-value">
+                        {registeredSlotInfo.selectedSlot === 'SATURDAY_7PM' ? 'Saturday 7:00 PM' : 'Sunday 3:00 PM'}
+                      </p>
+                      {registeredSlotInfo.slotDate && (
+                        <p className="apply-registered-slot-date">
+                          {formatSlotDate(new Date(registeredSlotInfo.slotDate))}
+                        </p>
+                      )}
+                    </div>
+                  </div>
+                )}
+                {!postRegistrationCompleted && (
+                  <div className="apply-registered-action">
+                    <button
+                      type="button"
+                      onClick={() => setCurrentStep(4)}
+                      className="apply-otp-btn"
+                    >
+                      Complete Your Profile
+                    </button>
+                  </div>
+                )}
+                {postRegistrationCompleted && (
+                  <div className="apply-registration-complete">
+                    <div className="apply-registration-complete-icon">
+                      <FiCheckCircle />
+                    </div>
+                    <p className="apply-registration-complete-text">Registration Complete</p>
+                    <p className="apply-registration-complete-subtext">We'll send you the meet link via email.</p>
+                  </div>
+                )}
+              </div>
+            )}
+
+            {/* Step 4: Post-Registration Questions */}
+            {currentStep === 4 && (
+              <form className="apply-form" onSubmit={handlePostRegistrationSubmit}>
+                <div className="apply-field">
+                  <label className="apply-question-label">
+                    How interested are you in becoming a counselor?
+                  </label>
+                  <div className="apply-radio-group">
+                    <label className="apply-radio-option">
+                      <input
+                        type="radio"
+                        name="interestLevel"
+                        value="VERY_INTERESTED"
+                        checked={postRegistrationData.interestLevel === 'VERY_INTERESTED'}
+                        onChange={handlePostRegistrationChange}
+                        required
+                      />
+                      <div>
+                        <span className="apply-interest-option-title">Very Interested</span>
+                        <span className="apply-interest-option-desc">I'm ready to start my counseling journey soon</span>
+                      </div>
+                    </label>
+                    <label className="apply-radio-option">
+                      <input
+                        type="radio"
+                        name="interestLevel"
+                        value="SOMEWHAT_INTERESTED"
+                        checked={postRegistrationData.interestLevel === 'SOMEWHAT_INTERESTED'}
+                        onChange={handlePostRegistrationChange}
+                        required
+                      />
+                      <div>
+                        <span className="apply-interest-option-title">Somewhat Interested</span>
+                        <span className="apply-interest-option-desc">I'm exploring this as an option</span>
+                      </div>
+                    </label>
+                    <label className="apply-radio-option">
+                      <input
+                        type="radio"
+                        name="interestLevel"
+                        value="EXPLORING"
+                        checked={postRegistrationData.interestLevel === 'EXPLORING'}
+                        onChange={handlePostRegistrationChange}
+                        required
+                      />
+                      <div>
+                        <span className="apply-interest-option-title">Just Exploring</span>
+                        <span className="apply-interest-option-desc">I want to learn more before deciding</span>
+                      </div>
+                    </label>
+                  </div>
+                </div>
+
+                <div className="apply-field">
+                  <label htmlFor="email">
+                    Provide your email so we can send the meet link to you <span>*</span>
+                  </label>
+                  <input
+                    type="email"
+                    id="email"
+                    name="email"
+                    value={postRegistrationData.email}
+                    onChange={handlePostRegistrationChange}
+                    placeholder="your.email@example.com"
+                    required
+                  />
+                </div>
+
+                <div className="apply-step-nav">
+                  <button
+                    type="button"
+                    onClick={() => {
+                      if (isRegistered) {
+                        setCurrentStep(1);
+                      } else {
+                        handleBack();
+                      }
+                    }}
+                    className="apply-back-btn"
+                  >
+                    <FiArrowLeft aria-hidden />
+                    Back
+                  </button>
+                  <button type="submit" className="apply-otp-btn" disabled={isLoading}>
+                    {isLoading ? 'Saving...' : 'Complete Registration'}
                   </button>
                 </div>
               </form>
@@ -699,6 +985,14 @@ const ApplySection = () => {
           </div>
         </div>
       </div>
+      
+      {/* Success Popup */}
+      <SuccessPopup
+        isOpen={showSuccessPopup}
+        onClose={handleSuccessPopupClose}
+        slotInfo={bookedSlotInfo}
+      />
+      
       <div className="apply-feature-cards">
         {[
           {

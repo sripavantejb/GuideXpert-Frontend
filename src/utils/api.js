@@ -109,6 +109,86 @@ export const verifyOtp = async (phone, otp) => {
 };
 
 /**
+ * Save Step 1 data to MongoDB
+ * @param {string} fullName - User's full name
+ * @param {string} whatsappNumber - WhatsApp phone number
+ * @param {string} occupation - User's occupation
+ * @returns {Promise<{success: boolean, message?: string, status?: number}>}
+ */
+export const saveStep1 = async (fullName, whatsappNumber, occupation) => {
+  return apiRequest('/save-step1', {
+    method: 'POST',
+    body: JSON.stringify({
+      fullName,
+      whatsappNumber,
+      occupation,
+      phone: whatsappNumber,
+    }),
+  });
+};
+
+/**
+ * Save Step 2 data to MongoDB (OTP verification)
+ * @param {string} phone - Phone number
+ * @returns {Promise<{success: boolean, message?: string, status?: number}>}
+ */
+export const saveStep2 = async (phone) => {
+  return apiRequest('/save-step2', {
+    method: 'POST',
+    body: JSON.stringify({
+      phone,
+    }),
+  });
+};
+
+/**
+ * Save Step 3 data to MongoDB (Slot booking)
+ * @param {string} phone - Phone number
+ * @param {string} selectedSlot - 'SATURDAY_7PM' or 'SUNDAY_3PM'
+ * @param {string|Date} slotDate - ISO date string or Date object for the slot
+ * @returns {Promise<{success: boolean, message?: string, data?: {selectedSlot: string, slotDate: Date}, status?: number}>}
+ */
+export const saveStep3 = async (phone, selectedSlot, slotDate) => {
+  return apiRequest('/save-step3', {
+    method: 'POST',
+    body: JSON.stringify({
+      phone,
+      selectedSlot,
+      slotDate: slotDate instanceof Date ? slotDate.toISOString() : slotDate,
+    }),
+  });
+};
+
+/**
+ * Check registration status by phone number
+ * @param {string} phone - Phone number
+ * @returns {Promise<{success: boolean, isRegistered?: boolean, registeredAt?: Date, slotInfo?: Object, status?: number}>}
+ */
+export const checkRegistrationStatus = async (phone) => {
+  return apiRequest(`/check-registration/${phone}`, {
+    method: 'GET',
+  });
+};
+
+/**
+ * Save post-registration data (interest level and email)
+ * @param {string} phone - Phone number
+ * @param {string} interestLevel - 'VERY_INTERESTED', 'SOMEWHAT_INTERESTED', or 'EXPLORING'
+ * @param {string} email - User's email address
+ * @returns {Promise<{success: boolean, message?: string, status?: number}>}
+ */
+export const savePostRegistrationData = async (phone, interestLevel, email) => {
+  return apiRequest('/save-post-registration', {
+    method: 'POST',
+    body: JSON.stringify({
+      phone,
+      interestLevel,
+      email,
+    }),
+  });
+};
+
+/**
  * Submit application form
  * @param {Object} formData - Application form data
  * @param {string} formData.fullName - User's full name

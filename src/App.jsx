@@ -15,6 +15,10 @@ const HowToBecomeSection = lazy(() => import('./components/Sections/HowToBecomeS
 const FAQSection = lazy(() => import('./components/Sections/FAQSection'));
 const LegacySection = lazy(() => import('./components/Sections/LegacySection'));
 
+
+
+
+
 function App() {
   return (
     <ApplyModalProvider>
