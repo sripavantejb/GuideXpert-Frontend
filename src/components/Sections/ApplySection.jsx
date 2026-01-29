@@ -1,6 +1,6 @@
 import { useState, useRef, useEffect } from 'react';
 import { FaRocket } from 'react-icons/fa';
-import { FiSend, FiPhone, FiDollarSign, FiAward, FiHome, FiUsers, FiArrowLeft, FiCheckCircle } from 'react-icons/fi';
+import { FiSend, FiPhone, FiDollarSign, FiAward, FiHome, FiUsers, FiArrowLeft, FiCalendar } from 'react-icons/fi';
 import ShinyText from '../UI/ShinyText';
 import SuccessPopup from '../UI/SuccessPopup';
 import { sendOtp, verifyOtp, submitApplication, saveStep1, saveStep2, saveStep3, checkRegistrationStatus, savePostRegistrationData } from '../../utils/api';
@@ -65,13 +65,24 @@ const ApplySection = () => {
     return sunday;
   };
 
-  // Format slot date
+  // Format slot date (full string for display)
   const formatSlotDate = (date) => {
     const days = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
     const months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
     const dayName = days[date.getDay()];
     const timeStr = date.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit', hour12: true });
     return `${dayName}, ${months[date.getMonth()]} ${date.getDate()} | ${timeStr}`;
+  };
+
+  // Format slot for professional card display: { dayName, shortDate, time }
+  const formatSlotCard = (date) => {
+    const days = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
+    const months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+    return {
+      dayName: days[date.getDay()],
+      shortDate: `${months[date.getMonth()]} ${date.getDate()}`,
+      time: date.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit', hour12: true }),
+    };
   };
 
   const saturdaySlot = calculateNearestSaturday();
@@ -116,10 +127,8 @@ const ApplySection = () => {
             setRegisteredSlotInfo(result.data.slotInfo);
             setPostRegistrationCompleted(result.data.postRegistrationCompleted || false);
             
-            // If post-registration not completed, show Step 4
-            if (!result.data.postRegistrationCompleted) {
-              setCurrentStep(4);
-            }
+            // Return to form (step 1) with "Already registered" on top
+            setCurrentStep(1);
           }
         } catch (error) {
           console.error('[Check Registration] Error:', error);
@@ -481,10 +490,21 @@ const ApplySection = () => {
     // Save to localStorage
     saveRegistrationToLocalStorage(cleanPhone);
     
-    // Move to Step 4 (post-registration questions)
-    setCurrentStep(4);
+    // Return to form (step 1) with "Already registered" on top
+    setCurrentStep(1);
     setBookedSlotInfo(null);
     setSuccessMessage('');
+    // Reset form fields so they see a fresh form
+    setFormData({
+      fullName: '',
+      whatsappNumber: '',
+      occupation: '',
+      otp: ['', '', '', '', '', ''],
+      demoPreference: '',
+      timeSlot: '',
+    });
+    setIsPhoneVerified(false);
+    setVerifiedPhone('');
   };
 
   const handleBack = () => {
@@ -627,8 +647,24 @@ const ApplySection = () => {
         {/* Right column: form card */}
         <div className="apply-right">
           <div className="apply-form-card">
-            {/* Progress indicator - hidden on step 1 and registered state */}
-            {currentStep >= 2 && !(isRegistered && currentStep !== 4) && (
+            {/* Already registered banner - on top of form */}
+            {isRegistered && (
+              <div className="apply-already-registered">
+                <span className="apply-already-registered-text">Already registered</span>
+                {!postRegistrationCompleted && (
+                  <button
+                    type="button"
+                    onClick={() => setCurrentStep(4)}
+                    className="apply-complete-profile-link"
+                  >
+                    Complete your profile
+                  </button>
+                )}
+              </div>
+            )}
+
+            {/* Progress indicator - hidden on step 1 */}
+            {currentStep >= 2 && (
               <div className="apply-progress">
                 <div className="apply-progress-top">
                   <span className="apply-progress-step">Step {currentStep} of 4</span>
@@ -644,8 +680,8 @@ const ApplySection = () => {
               </div>
             )}
 
-            {/* Form title - hidden when registered */}
-            {!(isRegistered && currentStep !== 4) && (
+            {/* Form title - shown on steps 1–3 */}
+            {currentStep !== 4 && (
               <>
                 <div className="apply-form-title-wrap">
                   <FiSend className="apply-form-title-icon" aria-hidden />
@@ -797,8 +833,8 @@ const ApplySection = () => {
                     Book Your Demo Slot
                   </label>
                   <p className="apply-slot-subtitle">Pick a time that works best for you</p>
-                  <div className="apply-radio-group">
-                    <label className="apply-radio-option">
+                  <div className="apply-slot-options">
+                    <label className={`apply-slot-card ${formData.timeSlot === 'saturday' ? 'apply-slot-card-selected' : ''}`}>
                       <input
                         type="radio"
                         name="timeSlot"
@@ -806,12 +842,19 @@ const ApplySection = () => {
                         checked={formData.timeSlot === 'saturday'}
                         onChange={handleChange}
                         required
+                        className="apply-slot-card-input"
                       />
-                      <div>
-                        <span>Slot 1 — {formatSlotDate(saturdaySlot)}</span>
+                      <div className="apply-slot-card-icon">
+                        <FiCalendar aria-hidden />
+                      </div>
+                      <div className="apply-slot-card-content">
+                        <span className="apply-slot-card-day">{formatSlotCard(saturdaySlot).dayName}</span>
+                        <span className="apply-slot-card-datetime">
+                          {formatSlotCard(saturdaySlot).shortDate} · {formatSlotCard(saturdaySlot).time}
+                        </span>
                       </div>
                     </label>
-                    <label className="apply-radio-option">
+                    <label className={`apply-slot-card ${formData.timeSlot === 'sunday' ? 'apply-slot-card-selected' : ''}`}>
                       <input
                         type="radio"
                         name="timeSlot"
@@ -819,9 +862,16 @@ const ApplySection = () => {
                         checked={formData.timeSlot === 'sunday'}
                         onChange={handleChange}
                         required
+                        className="apply-slot-card-input"
                       />
-                      <div>
-                        <span>Slot 2 — {formatSlotDate(sundaySlot)}</span>
+                      <div className="apply-slot-card-icon">
+                        <FiCalendar aria-hidden />
+                      </div>
+                      <div className="apply-slot-card-content">
+                        <span className="apply-slot-card-day">{formatSlotCard(sundaySlot).dayName}</span>
+                        <span className="apply-slot-card-datetime">
+                          {formatSlotCard(sundaySlot).shortDate} · {formatSlotCard(sundaySlot).time}
+                        </span>
                       </div>
                     </label>
                   </div>
@@ -841,56 +891,6 @@ const ApplySection = () => {
                   </button>
                 </div>
               </form>
-            )}
-
-            {/* Registered State UI */}
-            {isRegistered && currentStep !== 4 && (
-              <div className="apply-registered-state">
-                <div className="apply-registered-badge">
-                  <div className="apply-registered-icon-wrapper">
-                    <FiCheckCircle className="apply-registered-icon" />
-                  </div>
-                  <h3 className="apply-registered-title">You're Registered!</h3>
-                  <p className="apply-registered-subtitle">Your registration has been confirmed successfully</p>
-                </div>
-                {registeredSlotInfo && (
-                  <div className="apply-registered-slot">
-                    <div className="apply-registered-slot-header">
-                      <p className="apply-registered-slot-label">YOUR BOOKED SLOT</p>
-                    </div>
-                    <div className="apply-registered-slot-content">
-                      <p className="apply-registered-slot-value">
-                        {registeredSlotInfo.selectedSlot === 'SATURDAY_7PM' ? 'Saturday 7:00 PM' : 'Sunday 3:00 PM'}
-                      </p>
-                      {registeredSlotInfo.slotDate && (
-                        <p className="apply-registered-slot-date">
-                          {formatSlotDate(new Date(registeredSlotInfo.slotDate))}
-                        </p>
-                      )}
-                    </div>
-                  </div>
-                )}
-                {!postRegistrationCompleted && (
-                  <div className="apply-registered-action">
-                    <button
-                      type="button"
-                      onClick={() => setCurrentStep(4)}
-                      className="apply-otp-btn"
-                    >
-                      Complete Your Profile
-                    </button>
-                  </div>
-                )}
-                {postRegistrationCompleted && (
-                  <div className="apply-registration-complete">
-                    <div className="apply-registration-complete-icon">
-                      <FiCheckCircle />
-                    </div>
-                    <p className="apply-registration-complete-text">Registration Complete</p>
-                    <p className="apply-registration-complete-subtext">We'll send you the meet link via email.</p>
-                  </div>
-                )}
-              </div>
             )}
 
             {/* Step 4: Post-Registration Questions */}

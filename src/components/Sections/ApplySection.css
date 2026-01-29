@@ -490,6 +490,105 @@
   margin-bottom: 1rem;
 }
 
+/* Professional slot cards (Step 3) */
+.apply-slot-options {
+  display: flex;
+  flex-direction: column;
+  gap: 0.875rem;
+  margin: 1rem 0;
+}
+
+.apply-slot-card {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  padding: 1rem 1.25rem;
+  border: 2px solid #e5e7eb;
+  border-radius: 12px;
+  cursor: pointer;
+  transition: border-color 0.2s ease, background-color 0.2s ease, box-shadow 0.2s ease;
+  background: #ffffff;
+  position: relative;
+}
+
+.apply-slot-card:hover {
+  border-color: #94a3b8;
+  background: #f8fafc;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.06);
+}
+
+.apply-slot-card-selected,
+.apply-slot-card:has(.apply-slot-card-input:checked) {
+  border-color: #003366;
+  background: #f0f7ff;
+  box-shadow: 0 0 0 3px rgba(0, 51, 102, 0.12);
+}
+
+.apply-slot-card-input {
+  position: absolute;
+  opacity: 0;
+  pointer-events: none;
+  width: 0;
+  height: 0;
+}
+
+.apply-slot-card-icon {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 44px;
+  height: 44px;
+  border-radius: 10px;
+  background: #f1f5f9;
+  color: #475569;
+  flex-shrink: 0;
+  transition: background-color 0.2s ease, color 0.2s ease;
+}
+
+.apply-slot-card-selected .apply-slot-card-icon,
+.apply-slot-card:has(.apply-slot-card-input:checked) .apply-slot-card-icon {
+  background: #003366;
+  color: #ffffff;
+}
+
+.apply-slot-card-icon svg {
+  width: 22px;
+  height: 22px;
+}
+
+.apply-slot-card-content {
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+}
+
+.apply-slot-card-day {
+  font-size: 0.8125rem;
+  font-weight: 600;
+  color: #64748b;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  transition: color 0.2s ease;
+}
+
+.apply-slot-card-selected .apply-slot-card-day,
+.apply-slot-card:has(.apply-slot-card-input:checked) .apply-slot-card-day {
+  color: #003366;
+}
+
+.apply-slot-card-datetime {
+  font-size: 1rem;
+  font-weight: 600;
+  color: #1e293b;
+  letter-spacing: -0.01em;
+  transition: color 0.2s ease;
+}
+
+.apply-slot-card-selected .apply-slot-card-datetime,
+.apply-slot-card:has(.apply-slot-card-input:checked) .apply-slot-card-datetime {
+  color: #002244;
+}
+
 .apply-radio-group {
   display: flex;
   flex-direction: column;
@@ -727,9 +826,63 @@
   .apply-radio-option span {
     font-size: 0.875rem;
   }
+
+  .apply-slot-card {
+    padding: 0.875rem 1rem;
+    gap: 0.875rem;
+  }
+
+  .apply-slot-card-icon {
+    width: 40px;
+    height: 40px;
+  }
+
+  .apply-slot-card-icon svg {
+    width: 20px;
+    height: 20px;
+  }
+
+  .apply-slot-card-datetime {
+    font-size: 0.9375rem;
+  }
 }
 
-/* Registered State UI */
+/* Already registered banner - on top of form */
+.apply-already-registered {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  padding: 0.5rem 0.75rem;
+  margin-bottom: 0.75rem;
+  background: #ecfdf5;
+  border: 1px solid #a7f3d0;
+  border-radius: 10px;
+}
+
+.apply-already-registered-text {
+  font-size: 0.9375rem;
+  font-weight: 600;
+  color: #059669;
+}
+
+.apply-complete-profile-link {
+  background: none;
+  border: none;
+  font-size: 0.875rem;
+  font-weight: 500;
+  color: #047857;
+  text-decoration: underline;
+  cursor: pointer;
+  padding: 0;
+}
+
+.apply-complete-profile-link:hover {
+  color: #065f46;
+}
+
+/* Registered State UI (legacy - large card removed in favor of popup only) */
 .apply-registered-state {
   text-align: center;
   padding: 0.5rem 0;
