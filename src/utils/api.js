@@ -173,7 +173,7 @@ export const checkRegistrationStatus = async (phone) => {
 /**
  * Save post-registration data (interest level and email)
  * @param {string} phone - Phone number
- * @param {string} interestLevel - 'VERY_INTERESTED', 'SOMEWHAT_INTERESTED', or 'EXPLORING'
+ * @param {number} interestLevel - Interest level from 1 to 5
  * @param {string} email - User's email address
  * @returns {Promise<{success: boolean, message?: string, status?: number}>}
  */

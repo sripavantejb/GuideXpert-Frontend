@@ -211,7 +211,7 @@ const ApplySection = () => {
       console.log('[Send OTP] Response:', result);
 
       if (result.success) {
-        setSuccessMessage('OTP sent successfully to your WhatsApp number');
+        setSuccessMessage('OTP sent successfully to your mobile number');
         
         // Save Step 1 data to MongoDB
         try {
@@ -509,14 +509,6 @@ const ApplySection = () => {
     if (error) setError('');
   };
 
-  const interestLevelToBackend = {
-    1: 'EXPLORING',
-    2: 'EXPLORING',
-    3: 'SOMEWHAT_INTERESTED',
-    4: 'VERY_INTERESTED',
-    5: 'VERY_INTERESTED',
-  };
-
   const handlePostRegistrationSubmit = async (e) => {
     e.preventDefault();
     setError('');
@@ -542,12 +534,10 @@ const ApplySection = () => {
 
     setIsLoading(true);
 
-    const backendInterestLevel = interestLevelToBackend[interestValue];
-
     try {
       const result = await savePostRegistrationData(
         registeredPhone,
-        backendInterestLevel,
+        interestValue,
         postRegistrationData.email.trim()
       );
 
