@@ -38,9 +38,9 @@ const ShapeCareersSection = () => {
   ];
 
   const earningTiers = [
-    { level: 'Beginner Counselor', amount: '₹1,00,000', medal: 'bronze' },
-    { level: 'Intermediate Counselor', amount: '₹5,00,000', medal: 'silver' },
-    { level: 'Elite Counselor', amount: '₹10,00,000', medal: 'gold' },
+    { level: 'Beginner Counselor', amount: '₹2,00,000', medal: 'bronze' },
+    { level: 'Intermediate Counselor', amount: '₹4,00,000', medal: 'silver' },
+    { level: 'Elite Counselor', amount: '₹6,00,000', medal: 'gold' },
   ];
 
   return (

@@ -70,7 +70,7 @@ const HowToBecomeSection = () => {
       number: 4,
       title: "25-Hour Training",
       icon: FiClock,
-      description: "Complete our comprehensive 25-hour training program.",
+      description: "Complete our comprehensive 8-hour training program.",
       details: {
         duration: "25 Hours",
         format: "Online + Practical sessions"

@@ -32,7 +32,7 @@ const WhyBecomeSection = () => {
 
   const stats = [
     { icon: FiUser, value: '121+', label: 'Active Counselors' },
-    { icon: FiDollarSign, value: '₹75L', label: 'Earning Potential' },
+    { icon: FiDollarSign, value: '₹6L', label: 'Earning Potential' },
     { icon: FiMapPin, value: 'PAN-India', label: 'Presence' },
   ];
 

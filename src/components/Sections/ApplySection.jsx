@@ -602,7 +602,7 @@ const ApplySection = () => {
               <span className="apply-stat-label">Students Annually</span>
             </div>
             <div className="apply-stat">
-              <span className="apply-stat-value apply-stat-value-gold">₹9L</span>
+              <span className="apply-stat-value apply-stat-value-gold">₹6L</span>
               <span className="apply-stat-label">Earning Potential</span>
             </div>
             <div className="apply-stat">
