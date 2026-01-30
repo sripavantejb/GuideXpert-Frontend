@@ -60,7 +60,7 @@ const WhyBecomeSection = () => {
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 relative z-10">
         {/* Header */}
         <div className="text-center mb-16">
-          <AnimatedElement variant="fadeInUp" delay={0} duration={0.5}>
+          <AnimatedElement variant="fadeInUp" delay={0} duration={0.35}>
             <div className="inline-flex items-center gap-2 px-3 py-1.5 mb-6 rounded-full border border-primary-blue-100 bg-primary-blue-50">
               <FiTrendingUp className="text-primary-blue-700 text-sm" />
               <span className="text-xs font-semibold uppercase tracking-wide text-primary-blue-800 font-santhosi">
@@ -69,12 +69,12 @@ const WhyBecomeSection = () => {
             </div>
           </AnimatedElement>
           
-          <AnimatedElement variant="slideUp" delay={0.1} duration={0.5}>
+          <AnimatedElement variant="slideUp" delay={0.1} duration={0.35}>
             <h2 className="mb-6">
               Why Become a <strong className="font-extrabold">GuideXpert</strong> Counselor?
             </h2>
           </AnimatedElement>
-          <AnimatedElement variant="slideUp" delay={0.2} duration={0.5}>
+          <AnimatedElement variant="slideUp" delay={0.2} duration={0.35}>
             <p className="text-lg md:text-xl max-w-3xl mx-auto leading-relaxed font-santhosi" style={{
               fontWeight: '500',
               lineHeight: '1.7',
@@ -94,7 +94,7 @@ const WhyBecomeSection = () => {
                 key={index}
                 variant="fadeInUp"
                 delay={index * 0.1}
-                duration={0.6}
+                duration={0.4}
                 className="group relative"
               >
                 <div
@@ -154,7 +154,7 @@ const WhyBecomeSection = () => {
                 key={index}
                 variant="fadeInUp"
                 delay={(index + 3) * 0.1}
-                duration={0.6}
+                duration={0.4}
                 className="group relative bg-white rounded-xl p-10 text-center border border-gray-100 transition-all duration-300 hover:-translate-y-1"
                 style={{
                   boxShadow: '0 1px 3px rgba(0,0,0,0.04), 0 4px 12px rgba(15,23,42,0.06)',
@@ -191,7 +191,7 @@ const WhyBecomeSection = () => {
         </div>
 
         {/* CTA Button */}
-        <AnimatedElement variant="fadeInUp" delay={0.6} duration={0.6}>
+        <AnimatedElement variant="fadeInUp" delay={0.6} duration={0.4}>
           <div className="text-center">
             <button
               type="button"

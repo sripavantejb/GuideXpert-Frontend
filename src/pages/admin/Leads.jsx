@@ -87,95 +87,125 @@ export default function Leads() {
   };
 
   return (
-    <div className="max-w-[1400px] mx-auto">
-      <h2 className="text-xl font-semibold text-gray-800 mb-6">Leads</h2>
+    <div className="max-w-[1400px] mx-auto px-1">
+      <h2 className="text-xl font-semibold text-gray-800 mb-4 tracking-tight">Leads</h2>
 
-      <div className="mb-4 flex flex-wrap items-center gap-3">
-        <input
-          type="search"
-          placeholder="Search name, phone, email…"
-          value={searchInput}
-          onChange={(e) => setSearchInput(e.target.value)}
-          className="h-10 px-3 py-0 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-blue-500 focus:border-primary-blue-500 outline-none min-w-[200px] box-border"
-        />
-        <select
-          value={filters.applicationStatus}
-          onChange={(e) => handleFilterChange('applicationStatus', e.target.value)}
-          className="h-10 px-3 py-0 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-blue-500 outline-none box-border"
-        >
-          <option value="">All statuses</option>
-          <option value="in_progress">In progress</option>
-          <option value="registered">Registered</option>
-          <option value="completed">Completed</option>
-        </select>
-        <select
-          value={filters.otpVerified}
-          onChange={(e) => handleFilterChange('otpVerified', e.target.value)}
-          className="h-10 px-3 py-0 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-blue-500 outline-none box-border"
-        >
-          <option value="">OTP: Any</option>
-          <option value="true">OTP verified</option>
-          <option value="false">OTP not verified</option>
-        </select>
-        <select
-          value={filters.slotBooked}
-          onChange={(e) => handleFilterChange('slotBooked', e.target.value)}
-          className="h-10 px-3 py-0 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-blue-500 outline-none box-border"
-        >
-          <option value="">Slot: Any</option>
-          <option value="true">Slot booked</option>
-          <option value="false">Slot not booked</option>
-        </select>
+      {/* Search & filters – stacked */}
+      <div className="bg-white border border-gray-200 rounded-lg shadow-sm p-4 mb-4">
+        <div className="space-y-3">
+          <input
+            type="search"
+            placeholder="Search name, phone, email…"
+            value={searchInput}
+            onChange={(e) => setSearchInput(e.target.value)}
+            className="w-full h-9 px-3 rounded-lg border border-gray-300 focus:ring-2 focus:ring-primary-blue-500 focus:border-primary-blue-500 outline-none text-sm"
+          />
+          <div className="flex flex-wrap items-center gap-3">
+            <select
+              value={filters.applicationStatus}
+              onChange={(e) => handleFilterChange('applicationStatus', e.target.value)}
+              className="h-9 px-3 rounded-lg border border-gray-300 focus:ring-2 focus:ring-primary-blue-500 outline-none text-sm min-w-[120px]"
+            >
+              <option value="">All statuses</option>
+              <option value="in_progress">In progress</option>
+              <option value="registered">Registered</option>
+              <option value="completed">Completed</option>
+            </select>
+            <select
+              value={filters.otpVerified}
+              onChange={(e) => handleFilterChange('otpVerified', e.target.value)}
+              className="h-9 px-3 rounded-lg border border-gray-300 focus:ring-2 focus:ring-primary-blue-500 outline-none text-sm min-w-[100px]"
+            >
+              <option value="">OTP: Any</option>
+              <option value="true">OTP verified</option>
+              <option value="false">OTP not verified</option>
+            </select>
+            <fieldset className="border border-gray-200 rounded-lg p-2 inline-flex items-center gap-4">
+              <legend className="sr-only">Slot filter</legend>
+              <span className="text-sm font-medium text-gray-700 mr-1" aria-hidden="true">Slot</span>
+              {['', 'true', 'false'].map((val) => (
+                <label key={val || 'any'} className="inline-flex items-center gap-1.5 cursor-pointer text-sm text-gray-700">
+                  <input
+                    type="radio"
+                    name="slotFilter"
+                    value={val}
+                    checked={filters.slotBooked === val}
+                    onChange={() => handleFilterChange('slotBooked', val)}
+                    className="text-primary-blue-500 border-gray-300 focus:ring-primary-blue-500"
+                  />
+                  {val === '' ? 'Any' : val === 'true' ? 'Booked' : 'Not booked'}
+                </label>
+              ))}
+            </fieldset>
+          </div>
+        </div>
       </div>
 
       {error && (
-        <p className="text-red-600 text-sm mb-3" role="alert">
+        <p className="text-red-600 text-sm mb-4 py-2 px-3 bg-red-50 rounded-lg border border-red-100" role="alert">
           {error}
         </p>
       )}
 
       {loading ? (
-        <p className="text-gray-500">Loading leads…</p>
+        <div className="py-12 text-center">
+          <p className="text-gray-500 text-sm">Loading leads…</p>
+        </div>
       ) : (
         <>
-          <div className="overflow-x-auto rounded-lg border border-gray-200 bg-white shadow">
+          <div className="overflow-x-auto rounded-lg border border-gray-200 bg-white shadow-sm mb-4">
             <table className="min-w-[900px] w-full text-left text-sm">
-              <thead className="bg-gray-100 border-b border-gray-200">
-                <tr>
-                  <th className="px-3 py-2 font-semibold text-gray-700 align-middle">Name</th>
-                  <th className="px-3 py-2 font-semibold text-gray-700 align-middle">Phone</th>
-                  <th className="px-3 py-2 font-semibold text-gray-700 align-middle">Occupation</th>
-                  <th className="px-3 py-2 font-semibold text-gray-700 align-middle text-center">OTP Verified</th>
-                  <th className="px-3 py-2 font-semibold text-gray-700 align-middle text-center whitespace-nowrap">Slot Booked</th>
-                  <th className="px-3 py-2 font-semibold text-gray-700 align-middle">Status</th>
-                  <th className="px-3 py-2 font-semibold text-gray-700 align-middle text-center">Step</th>
-                  <th className="px-3 py-2 font-semibold text-gray-700 align-middle">Email</th>
-                  <th className="px-3 py-2 font-semibold text-gray-700 align-middle">Interest</th>
-                  <th className="px-3 py-2 font-semibold text-gray-700 align-middle whitespace-nowrap">Created</th>
-                  <th className="px-3 py-2 font-semibold text-gray-700 align-middle whitespace-nowrap">Updated</th>
+              <thead>
+                <tr className="bg-gray-50 border-b border-gray-200">
+                  <th className="px-3 py-2 font-semibold text-gray-700 text-xs uppercase tracking-wider">Name</th>
+                  <th className="px-3 py-2 font-semibold text-gray-700 text-xs uppercase tracking-wider">Phone</th>
+                  <th className="px-3 py-2 font-semibold text-gray-700 text-xs uppercase tracking-wider">Occupation</th>
+                  <th className="px-3 py-2 font-semibold text-gray-700 text-xs uppercase tracking-wider text-center">OTP</th>
+                  <th className="px-3 py-2 font-semibold text-gray-700 text-xs uppercase tracking-wider text-center whitespace-nowrap">Slot</th>
+                  <th className="px-3 py-2 font-semibold text-gray-700 text-xs uppercase tracking-wider">Status</th>
+                  <th className="px-3 py-2 font-semibold text-gray-700 text-xs uppercase tracking-wider text-center">Step</th>
+                  <th className="px-3 py-2 font-semibold text-gray-700 text-xs uppercase tracking-wider">Email</th>
+                  <th className="px-3 py-2 font-semibold text-gray-700 text-xs uppercase tracking-wider">Interest</th>
+                  <th className="px-3 py-2 font-semibold text-gray-700 text-xs uppercase tracking-wider whitespace-nowrap">Created</th>
+                  <th className="px-3 py-2 font-semibold text-gray-700 text-xs uppercase tracking-wider whitespace-nowrap">Updated</th>
                 </tr>
               </thead>
-              <tbody>
+              <tbody className="divide-y divide-gray-100">
                 {leads.length === 0 ? (
                   <tr>
-                    <td colSpan={11} className="px-3 py-6 text-center text-gray-500 align-middle">
+                    <td colSpan={11} className="px-3 py-8 text-center text-gray-500 text-sm">
                       No leads found
                     </td>
                   </tr>
                 ) : (
-                  leads.map((lead) => (
-                    <tr key={lead.id} className="border-b border-gray-100 hover:bg-gray-50">
-                      <td className="px-3 py-2 align-middle">{lead.fullName || '—'}</td>
-                      <td className="px-3 py-2 align-middle">{lead.phone || '—'}</td>
-                      <td className="px-3 py-2 align-middle">{lead.occupation || '—'}</td>
-                      <td className="px-3 py-2 align-middle text-center">{lead.otpVerified ? 'Yes' : 'No'}</td>
-                      <td className="px-3 py-2 align-middle text-center whitespace-nowrap">{slotLabel(lead)}</td>
-                      <td className="px-3 py-2 align-middle">{lead.applicationStatus || '—'}</td>
-                      <td className="px-3 py-2 align-middle text-center">{lead.currentStep ?? '—'}</td>
-                      <td className="px-3 py-2 align-middle">{lead.email || '—'}</td>
-                      <td className="px-3 py-2 align-middle">{lead.interestLevel || '—'}</td>
-                      <td className="px-3 py-2 align-middle whitespace-nowrap">{formatDate(lead.createdAt)}</td>
-                      <td className="px-3 py-2 align-middle whitespace-nowrap">{formatDate(lead.updatedAt)}</td>
+                  leads.map((lead, i) => (
+                    <tr
+                      key={lead.id}
+                      className={`hover:bg-primary-blue-50/50 transition-colors ${i % 2 === 0 ? 'bg-white' : 'bg-gray-50/60'}`}
+                    >
+                      <td className="px-3 py-2 align-middle min-w-[120px] text-sm">{lead.fullName || '—'}</td>
+                      <td className="px-3 py-2 align-middle whitespace-nowrap text-sm">{lead.phone || '—'}</td>
+                      <td className="px-3 py-2 align-middle min-w-[100px] text-sm">{lead.occupation || '—'}</td>
+                      <td className="px-3 py-2 align-middle text-center text-sm">{lead.otpVerified ? 'Yes' : 'No'}</td>
+                      <td className="px-3 py-2 align-middle text-center whitespace-nowrap text-gray-600 text-sm">{slotLabel(lead)}</td>
+                      <td className="px-3 py-2 align-middle">
+                        {lead.applicationStatus ? (
+                          <span className={`inline-flex px-2 py-0.5 rounded text-xs font-medium ${
+                            lead.applicationStatus === 'completed' ? 'bg-green-100 text-green-800' :
+                            lead.applicationStatus === 'registered' ? 'bg-blue-100 text-blue-800' :
+                            'bg-amber-100 text-amber-800'
+                          }`}>
+                            {lead.applicationStatus}
+                          </span>
+                        ) : (
+                          '—'
+                        )}
+                      </td>
+                      <td className="px-3 py-2 align-middle text-center text-gray-600 text-sm">{lead.currentStep ?? '—'}</td>
+                      <td className="px-3 py-2 align-middle text-gray-600 max-w-[160px] truncate text-sm" title={lead.email || ''}>{lead.email || '—'}</td>
+                      <td className="px-3 py-2 align-middle text-gray-600 text-sm">{lead.interestLevel || '—'}</td>
+                      <td className="px-3 py-2 align-middle whitespace-nowrap text-gray-600 text-xs">{formatDate(lead.createdAt)}</td>
+                      <td className="px-3 py-2 align-middle whitespace-nowrap text-gray-600 text-xs">{formatDate(lead.updatedAt)}</td>
                     </tr>
                   ))
                 )}
@@ -183,28 +213,28 @@ export default function Leads() {
             </table>
           </div>
 
-          <div className="mt-4 flex items-center justify-between">
+          <div className="flex flex-wrap items-center justify-between gap-3 py-3 px-1">
             <p className="text-sm text-gray-500">
               Showing {(pagination.page - 1) * pagination.limit + 1}–
               {Math.min(pagination.page * pagination.limit, pagination.total)} of {pagination.total}
             </p>
-            <div className="flex items-center gap-2">
+            <div className="flex items-center gap-3">
               <button
                 type="button"
                 onClick={() => goToPage(pagination.page - 1)}
                 disabled={pagination.page <= 1}
-                className="px-3 py-1.5 rounded border border-gray-300 disabled:opacity-50 disabled:cursor-not-allowed hover:bg-gray-100"
+                className="px-4 py-2 rounded-lg border border-gray-300 text-sm font-medium disabled:opacity-50 disabled:cursor-not-allowed hover:bg-gray-100 transition-colors"
               >
                 Previous
               </button>
-              <span className="text-sm text-gray-600">
+              <span className="text-sm text-gray-600 min-w-[100px] text-center">
                 Page {pagination.page} of {pagination.totalPages || 1}
               </span>
               <button
                 type="button"
                 onClick={() => goToPage(pagination.page + 1)}
                 disabled={pagination.page >= pagination.totalPages}
-                className="px-3 py-1.5 rounded border border-gray-300 disabled:opacity-50 disabled:cursor-not-allowed hover:bg-gray-100"
+                className="px-4 py-2 rounded-lg border border-gray-300 text-sm font-medium disabled:opacity-50 disabled:cursor-not-allowed hover:bg-gray-100 transition-colors"
               >
                 Next
               </button>

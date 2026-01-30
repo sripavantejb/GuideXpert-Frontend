@@ -327,7 +327,7 @@ const HowToBecomeSection = () => {
             <div ref={progressBarContainerRef} className="relative">
               {/* Connecting Line Background (Full Height) */}
               <div 
-                className="absolute top-0 w-0.5 transition-all duration-500"
+                className="absolute top-0 w-0.5 transition-all duration-300"
                 style={{
                   backgroundColor: '#e5e7eb',
                   height: '100%',
@@ -338,7 +338,7 @@ const HowToBecomeSection = () => {
               
               {/* Connecting Line Progress (Filled Portion) */}
               <div 
-                className="absolute top-0 w-0.5 transition-all duration-500"
+                className="absolute top-0 w-0.5 transition-all duration-300"
                 style={{
                   backgroundColor: '#003366',
                   height: isLargeScreen 
@@ -413,7 +413,7 @@ const HowToBecomeSection = () => {
                     >
                       {/* Step Card */}
                       <div
-                        className="bg-white rounded-xl border transition-all duration-500"
+                        className="bg-white rounded-xl border transition-all duration-300"
                         style={{
                           marginLeft: isLargeScreen ? '3rem' : '2.5rem',
                           padding: isLargeScreen ? '2rem' : '0.875rem',
@@ -441,7 +441,7 @@ const HowToBecomeSection = () => {
                       ref={(el) => {
                         if (el) iconRefs.current[index] = el;
                       }}
-                      className="absolute rounded-full flex items-center justify-center text-white font-bold transition-all duration-500 border-4 border-white z-20"
+                      className="absolute rounded-full flex items-center justify-center text-white font-bold transition-all duration-300 border-4 border-white z-20"
                       style={{
                         left: 0,
                         top: isLargeScreen ? '2rem' : '0.875rem',
@@ -478,7 +478,7 @@ const HowToBecomeSection = () => {
                           Step {step.number}
                         </div>
                         <h3 
-                          className="heading-subsection font-bold transition-colors duration-500"
+                          className="heading-subsection font-bold transition-colors duration-300"
                           style={{
                             fontSize: !isLargeScreen ? '1.125rem' : undefined,
                             fontWeight: '700',
@@ -501,7 +501,7 @@ const HowToBecomeSection = () => {
                     </div>
 
                     <p 
-                      className="text-gray-700 transition-opacity duration-500"
+                      className="text-gray-700 transition-opacity duration-300"
                       style={{
                         fontSize: isLargeScreen ? '1.125rem' : '0.875rem',
                         color: '#374151',

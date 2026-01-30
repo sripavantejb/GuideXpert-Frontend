@@ -12,7 +12,7 @@
   border: 2px solid transparent;
   border-top-color: var(--loader-color);
   border-radius: 50%;
-  animation: loader-spin 0.7s linear infinite;
+  animation: loader-spin 0.55s linear infinite;
 }
 
 @media (prefers-reduced-motion: reduce) {

@@ -32,7 +32,7 @@ const ApplySection = () => {
   const [postRegistrationCompleted, setPostRegistrationCompleted] = useState(false);
   const [showPostRegistrationSuccessPopup, setShowPostRegistrationSuccessPopup] = useState(false);
   const [postRegistrationData, setPostRegistrationData] = useState({
-    interestLevel: '',
+    interestLevel: 1,
     email: ''
   });
   const otpInputRefs = useRef([]);
@@ -504,7 +504,7 @@ const ApplySection = () => {
   const handlePostRegistrationSuccessPopupClose = () => {
     setShowPostRegistrationSuccessPopup(false);
     setCurrentStep(1);
-    setPostRegistrationData({ interestLevel: '', email: '' });
+    setPostRegistrationData({ interestLevel: 1, email: '' });
   };
 
   const handleBack = () => {
@@ -523,13 +523,28 @@ const ApplySection = () => {
     if (error) setError('');
   };
 
+  const handleInterestSliderChange = (e) => {
+    const value = parseInt(e.target.value, 10);
+    setPostRegistrationData({ ...postRegistrationData, interestLevel: value });
+    if (error) setError('');
+  };
+
+  const interestLevelToBackend = {
+    1: 'EXPLORING',
+    2: 'EXPLORING',
+    3: 'SOMEWHAT_INTERESTED',
+    4: 'VERY_INTERESTED',
+    5: 'VERY_INTERESTED',
+  };
+
   const handlePostRegistrationSubmit = async (e) => {
     e.preventDefault();
     setError('');
     setSuccessMessage('');
 
-    if (!postRegistrationData.interestLevel) {
-      setError('Please select your interest level');
+    const interestValue = postRegistrationData.interestLevel;
+    if (!interestValue || interestValue < 1 || interestValue > 5) {
+      setError('Please rate your interest level (drag the slider)');
       return;
     }
 
@@ -547,10 +562,12 @@ const ApplySection = () => {
 
     setIsLoading(true);
 
+    const backendInterestLevel = interestLevelToBackend[interestValue];
+
     try {
       const result = await savePostRegistrationData(
         registeredPhone,
-        postRegistrationData.interestLevel,
+        backendInterestLevel,
         postRegistrationData.email.trim()
       );
 
@@ -628,8 +645,8 @@ const ApplySection = () => {
         {/* Right column: form card */}
         <div className="apply-right">
           <div className="apply-form-card">
-            {/* Already registered banner - on top of form */}
-            {isRegistered && (
+            {/* Already registered banner - shown only on steps 1 and 2 */}
+            {isRegistered && currentStep <= 2 && (
               <div className="apply-already-registered">
                 <span className="apply-already-registered-text">Already registered</span>
                 {!postRegistrationCompleted && (
@@ -661,8 +678,8 @@ const ApplySection = () => {
               </div>
             )}
 
-            {/* Form title - shown on steps 1–3 */}
-            {currentStep !== 4 && (
+            {/* Form title - shown only on steps 1 and 2 */}
+            {currentStep <= 2 && (
               <>
                 <div className="apply-form-title-wrap">
                   <FiSend className="apply-form-title-icon" aria-hidden />
@@ -688,8 +705,10 @@ const ApplySection = () => {
             {/* Error Message */}
             {error && <div className="apply-error-message-global">{error}</div>}
             
-            {/* Success Message */}
-            {successMessage && <div className="apply-success-message">{successMessage}</div>}
+            {/* Success Message - shown only on steps 1 and 2 */}
+            {successMessage && currentStep <= 2 && (
+              <div className="apply-success-message">{successMessage}</div>
+            )}
 
             {/* Step 1: Contact Details */}
             {currentStep === 1 && (
@@ -811,7 +830,7 @@ const ApplySection = () => {
             {/* Step 3: Slot Booking - time-based dates with Today / Tomorrow / Day after tomorrow */}
             {currentStep === 3 && (
               <form className="apply-form" onSubmit={handleSubmit}>
-                <div className="apply-field">
+                <div className="apply-field apply-slot-step">
                   <label className="apply-question-label">
                     Choose your demo session
                   </label>
@@ -894,52 +913,35 @@ const ApplySection = () => {
             {currentStep === 4 && (
               <form className="apply-form" onSubmit={handlePostRegistrationSubmit}>
                 <div className="apply-field">
-                  <label className="apply-question-label">
+                  <label className="apply-question-label" htmlFor="interest-slider">
                     How interested are you in becoming a counselor?
                   </label>
-                  <div className="apply-radio-group">
-                    <label className="apply-radio-option">
-                      <input
-                        type="radio"
-                        name="interestLevel"
-                        value="VERY_INTERESTED"
-                        checked={postRegistrationData.interestLevel === 'VERY_INTERESTED'}
-                        onChange={handlePostRegistrationChange}
-                        required
-                      />
-                      <div>
-                        <span className="apply-interest-option-title">Very Interested</span>
-                        <span className="apply-interest-option-desc">I'm ready to start my counseling journey soon</span>
-                      </div>
-                    </label>
-                    <label className="apply-radio-option">
-                      <input
-                        type="radio"
-                        name="interestLevel"
-                        value="SOMEWHAT_INTERESTED"
-                        checked={postRegistrationData.interestLevel === 'SOMEWHAT_INTERESTED'}
-                        onChange={handlePostRegistrationChange}
-                        required
-                      />
-                      <div>
-                        <span className="apply-interest-option-title">Somewhat Interested</span>
-                        <span className="apply-interest-option-desc">I'm exploring this as an option</span>
-                      </div>
-                    </label>
-                    <label className="apply-radio-option">
-                      <input
-                        type="radio"
-                        name="interestLevel"
-                        value="EXPLORING"
-                        checked={postRegistrationData.interestLevel === 'EXPLORING'}
-                        onChange={handlePostRegistrationChange}
-                        required
-                      />
-                      <div>
-                        <span className="apply-interest-option-title">Just Exploring</span>
-                        <span className="apply-interest-option-desc">I want to learn more before deciding</span>
-                      </div>
-                    </label>
+                  <div className="apply-slider-container">
+                    <input
+                      type="range"
+                      id="interest-slider"
+                      name="interestLevel"
+                      min="1"
+                      max="5"
+                      step="1"
+                      value={postRegistrationData.interestLevel}
+                      onChange={handleInterestSliderChange}
+                      className="apply-slider-track"
+                      style={{
+                        '--slider-progress': `${(postRegistrationData.interestLevel / 5) * 100}%`,
+                      }}
+                      aria-valuemin={1}
+                      aria-valuemax={5}
+                      aria-valuenow={postRegistrationData.interestLevel}
+                      aria-label="Rate your interest in becoming a counselor from 1 to 5"
+                    />
+                    <div className="apply-slider-labels">
+                      {[1, 2, 3, 4, 5].map((n) => (
+                        <span key={n} className="apply-slider-label">
+                          {n}
+                        </span>
+                      ))}
+                    </div>
                   </div>
                 </div>
 

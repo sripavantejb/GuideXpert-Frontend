@@ -119,12 +119,12 @@ const ToolsSection = () => {
     <section id="predictor" className="py-20 md:py-28 bg-gray-50">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="text-center mb-16">
-          <AnimatedElement variant="slideUp" delay={0} duration={0.5}>
+          <AnimatedElement variant="slideUp" delay={0} duration={0.35}>
             <h2 className="mb-6">
               Tools to Help You Succeed
             </h2>
           </AnimatedElement>
-          <AnimatedElement variant="slideUp" delay={0.1} duration={0.5}>
+          <AnimatedElement variant="slideUp" delay={0.1} duration={0.35}>
             <p className="text-lg md:text-xl text-gray-700 max-w-3xl mx-auto" style={{
               fontWeight: '500',
               lineHeight: '1.6',
@@ -136,7 +136,7 @@ const ToolsSection = () => {
         </div>
 
         {/* Dashboard Portal Mockup */}
-        <AnimatedElement variant="fadeInUp" delay={0.2} duration={0.6}>
+        <AnimatedElement variant="fadeInUp" delay={0.2} duration={0.4}>
           <div className="mb-16">
             <div className="bg-white rounded-xl overflow-hidden" style={{
               boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.08), 0 2px 4px -1px rgba(0, 0, 0, 0.04)',
@@ -193,7 +193,7 @@ const ToolsSection = () => {
                         key={index}
                         variant="fadeInUp"
                         delay={0.3 + index * 0.1}
-                        duration={0.6}
+                        duration={0.4}
                         className={`${tool.color} p-3 sm:p-4 md:p-6 rounded-xl border border-gray-200 transition-all duration-300 hover:shadow-lg`}
                         style={{
                           boxShadow: '0 1px 3px rgba(0, 0, 0, 0.1)',
@@ -228,7 +228,7 @@ const ToolsSection = () => {
                 key={index}
                 variant="fadeInUp"
                 delay={0.7 + index * 0.1}
-                duration={0.6}
+                duration={0.4}
                 className="bg-white rounded-xl p-8 border border-gray-200 transition-all duration-300 hover:shadow-lg"
                 style={{
                   boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.08), 0 2px 4px -1px rgba(0, 0, 0, 0.04)',
@@ -256,7 +256,7 @@ const ToolsSection = () => {
 
         {/* Reviews Scrolling Rows */}
         <div className="mb-16">
-          <AnimatedElement variant="slideUp" delay={1.0} duration={0.5}>
+          <AnimatedElement variant="slideUp" delay={1.0} duration={0.35}>
             <div className="text-center mb-12">
               <h3 className="heading-subsection mb-4">
                 What Counselors Say
@@ -370,7 +370,7 @@ const ToolsSection = () => {
           </div>
         </div>
 
-        <AnimatedElement variant="fadeInUp" delay={1.1} duration={0.6}>
+        <AnimatedElement variant="fadeInUp" delay={1.1} duration={0.4}>
           <div className="text-center">
             <Button variant="secondary">
               Explore Tools

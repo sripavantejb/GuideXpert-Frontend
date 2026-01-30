@@ -5,7 +5,7 @@ import { useScrollAnimation } from '../../hooks/useScrollAnimation';
  * AnimatedElement - Wrapper component for scroll-triggered animations
  * @param {string} variant - Animation variant: 'fadeIn', 'slideUp', 'scaleIn', 'fadeInUp'
  * @param {number} delay - Animation delay in seconds, default 0
- * @param {number} duration - Animation duration in seconds, default 0.6
+ * @param {number} duration - Animation duration in seconds, default 0.4
  * @param {React.ReactNode} children - Child elements to animate
  * @param {string} className - Additional CSS classes
  * @param {Object} style - Additional inline styles
@@ -15,7 +15,7 @@ import { useScrollAnimation } from '../../hooks/useScrollAnimation';
 const AnimatedElement = ({
   variant = 'fadeInUp',
   delay = 0,
-  duration = 0.6,
+  duration = 0.4,
   children,
   className = '',
   style = {},

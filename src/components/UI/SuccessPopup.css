@@ -12,8 +12,8 @@
   -webkit-backdrop-filter: blur(8px);
   opacity: 0;
   visibility: hidden;
-  transition: opacity 0.3s cubic-bezier(0.4, 0, 0.2, 1),
-              visibility 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  transition: opacity 0.25s cubic-bezier(0.4, 0, 0.2, 1),
+              visibility 0.25s cubic-bezier(0.4, 0, 0.2, 1);
   padding: 1rem;
 }
 
@@ -32,8 +32,8 @@
   padding: 2.5rem 2rem;
   transform: scale(0.85) translateY(20px);
   opacity: 0;
-  transition: transform 0.4s cubic-bezier(0.34, 1.56, 0.64, 1),
-              opacity 0.4s cubic-bezier(0.34, 1.56, 0.64, 1);
+  transition: transform 0.3s cubic-bezier(0.34, 1.56, 0.64, 1),
+              opacity 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
   position: relative;
   overflow: hidden;
 }
@@ -47,7 +47,7 @@
   height: 4px;
   background: linear-gradient(90deg, #34d399 0%, #10b981 50%, #059669 100%);
   opacity: 0;
-  transition: opacity 0.3s ease-in-out 0.2s;
+  transition: opacity 0.25s ease-in-out 0.2s;
 }
 
 .success-popup-container.success-popup-container-visible {
@@ -85,12 +85,12 @@
   box-shadow: 0 4px 20px rgba(16, 185, 129, 0.4),
               0 0 0 8px rgba(16, 185, 129, 0.1);
   transform: scale(0);
-  transition: transform 0.5s cubic-bezier(0.34, 1.56, 0.64, 1);
+  transition: transform 0.35s cubic-bezier(0.34, 1.56, 0.64, 1);
 }
 
 .success-checkmark-wrapper.success-checkmark-animated .success-checkmark-circle {
   transform: scale(1);
-  animation: success-bounce 0.6s cubic-bezier(0.34, 1.56, 0.64, 1) 0.1s;
+  animation: success-bounce 0.45s cubic-bezier(0.34, 1.56, 0.64, 1) 0.1s;
 }
 
 @keyframes success-bounce {
@@ -115,8 +115,8 @@
   stroke-width: 3.5;
   opacity: 0;
   transform: scale(0) rotate(-45deg);
-  transition: opacity 0.3s ease-in-out 0.3s,
-              transform 0.4s cubic-bezier(0.34, 1.56, 0.64, 1) 0.3s;
+  transition: opacity 0.25s ease-in-out 0.3s,
+              transform 0.3s cubic-bezier(0.34, 1.56, 0.64, 1) 0.3s;
 }
 
 .success-checkmark-wrapper.success-checkmark-animated .success-checkmark-icon {
@@ -133,8 +133,8 @@
   line-height: 1.2;
   opacity: 0;
   transform: translateY(10px);
-  transition: opacity 0.4s ease-out 0.2s,
-              transform 0.4s cubic-bezier(0.34, 1.56, 0.64, 1) 0.2s;
+  transition: opacity 0.3s ease-out 0.2s,
+              transform 0.3s cubic-bezier(0.34, 1.56, 0.64, 1) 0.2s;
 }
 
 .success-popup-container.success-popup-container-visible .success-popup-title {
@@ -150,8 +150,8 @@
   width: 100%;
   opacity: 0;
   transform: translateY(10px);
-  transition: opacity 0.4s ease-out 0.35s,
-              transform 0.4s cubic-bezier(0.34, 1.56, 0.64, 1) 0.35s;
+  transition: opacity 0.3s ease-out 0.35s,
+              transform 0.3s cubic-bezier(0.34, 1.56, 0.64, 1) 0.35s;
 }
 
 .success-popup-container.success-popup-container-visible .success-slot-info {
@@ -189,8 +189,8 @@
   line-height: 1.5;
   opacity: 0;
   transform: translateY(10px);
-  transition: opacity 0.4s ease-out 0.5s,
-              transform 0.4s cubic-bezier(0.34, 1.56, 0.64, 1) 0.5s;
+  transition: opacity 0.3s ease-out 0.5s,
+              transform 0.3s cubic-bezier(0.34, 1.56, 0.64, 1) 0.5s;
 }
 
 .success-popup-container.success-popup-container-visible .success-popup-message {

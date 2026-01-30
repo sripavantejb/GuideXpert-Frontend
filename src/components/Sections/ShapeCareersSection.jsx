@@ -47,12 +47,12 @@ const ShapeCareersSection = () => {
     <section id="about" className="py-20 md:py-28 bg-white">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="text-center mb-16">
-          <AnimatedElement variant="slideUp" delay={0} duration={0.5}>
+          <AnimatedElement variant="slideUp" delay={0} duration={0.35}>
             <h2 className="mb-6">
               Shape Careers, Build Yours Too
             </h2>
           </AnimatedElement>
-          <AnimatedElement variant="slideUp" delay={0.1} duration={0.5}>
+          <AnimatedElement variant="slideUp" delay={0.1} duration={0.35}>
             <p className="text-lg md:text-xl text-gray-700 max-w-3xl mx-auto" style={{
               fontWeight: '500',
               lineHeight: '1.6',
@@ -72,7 +72,7 @@ const ShapeCareersSection = () => {
                 key={index}
                 variant="fadeInUp"
                 delay={index * 0.1}
-                duration={0.6}
+                duration={0.4}
                 className={`shape-careers-card shape-careers-card-${feature.accent}`}
               >
                 <div className="shape-careers-card-icon">
@@ -87,7 +87,7 @@ const ShapeCareersSection = () => {
 
         {/* Earning Potential */}
         <div className="mb-10">
-          <AnimatedElement variant="slideUp" delay={0.4} duration={0.5}>
+          <AnimatedElement variant="slideUp" delay={0.4} duration={0.35}>
             <h3 className="heading-subsection text-center mb-12">
               Earning Potential Snapshots
             </h3>
@@ -98,7 +98,7 @@ const ShapeCareersSection = () => {
                 key={index}
                 variant="fadeInUp"
                 delay={0.5 + index * 0.1}
-                duration={0.6}
+                duration={0.4}
                 className={`shape-careers-earning-card shape-careers-earning-card-${tier.medal}`}
               >
                 <div className="shape-careers-earning-icon">
@@ -111,7 +111,7 @@ const ShapeCareersSection = () => {
           </div>
         </div>
 
-        <AnimatedElement variant="fadeInUp" delay={0.8} duration={0.6}>
+        <AnimatedElement variant="fadeInUp" delay={0.8} duration={0.4}>
           <div className="text-center">
             <Button variant="secondary">
               Become a Counselor

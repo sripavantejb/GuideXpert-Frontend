@@ -57,11 +57,11 @@
 }
 
 .scroll-left {
-  animation: scroll-left 50s linear infinite;
+  animation: scroll-left 40s linear infinite;
 }
 
 .scroll-right {
-  animation: scroll-right 50s linear infinite;
+  animation: scroll-right 40s linear infinite;
 }
 
 /* Smooth scrolling with hardware acceleration */
@@ -88,11 +88,11 @@
   }
   
   .scroll-left {
-    animation-duration: 40s;
+    animation-duration: 32s;
   }
   
   .scroll-right {
-    animation-duration: 40s;
+    animation-duration: 32s;
   }
 }
 

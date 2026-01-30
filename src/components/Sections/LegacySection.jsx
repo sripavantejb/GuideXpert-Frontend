@@ -121,7 +121,7 @@ const LegacySection = () => {
         {/* Header Section */}
         <div className="text-center mb-16">
           {/* Overline Badge */}
-          <AnimatedElement variant="fadeInUp" delay={0} duration={0.5}>
+          <AnimatedElement variant="fadeInUp" delay={0} duration={0.35}>
             <div className="inline-flex items-center gap-2 px-3 py-1.5 mb-6 rounded-full border border-primary-blue-100 bg-primary-blue-50">
               <FiShield className="text-primary-blue-700 text-sm" />
               <span className="text-xs font-semibold uppercase tracking-wide text-primary-blue-800 font-santhosi">
@@ -130,12 +130,12 @@ const LegacySection = () => {
             </div>
           </AnimatedElement>
 
-          <AnimatedElement variant="slideUp" delay={0.1} duration={0.5}>
+          <AnimatedElement variant="slideUp" delay={0.1} duration={0.35}>
             <h2 className="mb-6">
               Built on a Legacy of Proven Success
             </h2>
           </AnimatedElement>
-          <AnimatedElement variant="slideUp" delay={0.2} duration={0.5}>
+          <AnimatedElement variant="slideUp" delay={0.2} duration={0.35}>
             <p className="text-lg md:text-xl max-w-3xl mx-auto leading-relaxed font-santhosi" style={{
               fontWeight: '500',
               lineHeight: '1.7',
@@ -155,7 +155,7 @@ const LegacySection = () => {
                 key={index}
                 variant="fadeInUp"
                 delay={0.3 + index * 0.1}
-                duration={0.6}
+                duration={0.4}
                 className="group relative bg-white rounded-xl p-10 text-center border border-gray-200 transition-all duration-300 hover:-translate-y-2"
                 style={{
                   boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.05), 0 2px 4px -1px rgba(0, 0, 0, 0.03)',
@@ -209,7 +209,7 @@ const LegacySection = () => {
         </div>
 
         {/* Industry Veterans Card */}
-        <AnimatedElement variant="fadeInUp" delay={0.6} duration={0.6}>
+        <AnimatedElement variant="fadeInUp" delay={0.6} duration={0.4}>
           <div 
             className="max-w-5xl mx-auto rounded-2xl overflow-hidden border border-gray-200 bg-white"
             style={{
@@ -253,7 +253,7 @@ const LegacySection = () => {
                       key={index}
                       variant="fadeInUp"
                       delay={0.7 + index * 0.1}
-                      duration={0.6}
+                      duration={0.4}
                       className="flex items-start gap-4 p-4 rounded-xl bg-white border border-gray-200 transition-all duration-200 hover:border-primary-blue-200 hover:shadow-md hover:bg-primary-blue-50/30"
                     >
                       <div className="shrink-0 w-10 h-10 rounded-full bg-primary-blue-800 flex items-center justify-center mt-0.5">
@@ -277,7 +277,7 @@ const LegacySection = () => {
         </AnimatedElement>
 
         {/* CTA Button */}
-        <AnimatedElement variant="fadeInUp" delay={1.1} duration={0.6}>
+        <AnimatedElement variant="fadeInUp" delay={1.1} duration={0.4}>
           <div className="text-center mt-16">
             <Button
               type="button"

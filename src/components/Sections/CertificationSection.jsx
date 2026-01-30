@@ -15,12 +15,12 @@ const CertificationSection = () => {
     <section className="certification-section py-16 md:py-24">
       <div className="certification-section-inner max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="text-center mb-12">
-          <AnimatedElement variant="slideUp" delay={0} duration={0.5}>
+          <AnimatedElement variant="slideUp" delay={0} duration={0.35}>
             <h2 className="mb-4">
               Become a Certified GuideXpert Counselor
             </h2>
           </AnimatedElement>
-          <AnimatedElement variant="slideUp" delay={0.1} duration={0.5}>
+          <AnimatedElement variant="slideUp" delay={0.1} duration={0.35}>
             <p className="text-lg text-gray-700 max-w-3xl mx-auto" style={{
               fontWeight: '500',
               lineHeight: '1.6',
@@ -39,7 +39,7 @@ const CertificationSection = () => {
                 key={index}
                 variant="fadeInUp"
                 delay={0.2 + index * 0.1}
-                duration={0.6}
+                duration={0.4}
                 className="flex items-start space-x-4"
               >
                 <div className="shrink-0 w-10 h-10 bg-primary-blue-600 rounded-full flex items-center justify-center" style={{
@@ -60,7 +60,7 @@ const CertificationSection = () => {
           </div>
 
           {/* Right Side - Certificate Preview */}
-          <AnimatedElement variant="scaleIn" delay={0.6} duration={0.6}>
+          <AnimatedElement variant="scaleIn" delay={0.6} duration={0.4}>
             <div className="flex justify-center">
               <div className="bg-white rounded-lg shadow-xl p-0 max-w-lg w-full overflow-hidden relative" style={{
                 boxShadow: '0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04)',
