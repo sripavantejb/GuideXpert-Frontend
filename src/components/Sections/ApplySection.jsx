@@ -4,7 +4,7 @@ import { FiSend, FiPhone, FiDollarSign, FiAward, FiHome, FiUsers, FiArrowLeft, F
 import ShinyText from '../UI/ShinyText';
 import SuccessPopup from '../UI/SuccessPopup';
 import Loader from '../UI/Loader';
-import { sendOtp, verifyOtp, submitApplication, saveStep1, saveStep2, saveStep3, checkRegistrationStatus, savePostRegistrationData } from '../../utils/api';
+import { sendOtp, verifyOtp, submitApplication, saveStep1, saveStep2, saveStep3, savePostRegistrationData } from '../../utils/api';
 import './ApplySection.css';
 
 const ApplySection = () => {
@@ -108,34 +108,14 @@ const ApplySection = () => {
     return null;
   };
 
-  // Check registration status on mount
+  // Restore "already registered" state from localStorage only (no initial API call)
   useEffect(() => {
-    const checkRegistration = async () => {
-      const localData = getRegistrationFromLocalStorage();
-      if (localData && localData.phone) {
-        try {
-          const result = await checkRegistrationStatus(localData.phone);
-          if (result.success && result.data?.isRegistered) {
-            setIsRegistered(true);
-            setRegisteredPhone(localData.phone);
-            setRegisteredSlotInfo(result.data.slotInfo);
-            setPostRegistrationCompleted(result.data.postRegistrationCompleted || false);
-            
-            // Return to form (step 1) with "Already registered" on top
-            setCurrentStep(1);
-          }
-        } catch (error) {
-          console.error('[Check Registration] Error:', error);
-          // Fall back to localStorage if API fails
-          if (localData.isRegistered) {
-            setIsRegistered(true);
-            setRegisteredPhone(localData.phone);
-          }
-        }
-      }
-    };
-    
-    checkRegistration();
+    const localData = getRegistrationFromLocalStorage();
+    if (localData && localData.phone && localData.isRegistered) {
+      setIsRegistered(true);
+      setRegisteredPhone(localData.phone);
+      setCurrentStep(1);
+    }
   }, []);
 
   const handleChange = (e) => {
