@@ -629,15 +629,6 @@ const ApplySection = () => {
             {isRegistered && currentStep <= 2 && (
               <div className="apply-already-registered">
                 <span className="apply-already-registered-text">Already registered</span>
-                {!postRegistrationCompleted && (
-                  <button
-                    type="button"
-                    onClick={() => setCurrentStep(4)}
-                    className="apply-complete-profile-link"
-                  >
-                    Complete your profile
-                  </button>
-                )}
               </div>
             )}
 
