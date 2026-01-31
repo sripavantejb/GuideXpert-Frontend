@@ -1,6 +1,6 @@
 import { getStoredToken } from './adminApi';
 
-const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000/api';
+const API_BASE_URL = import.meta.env.VITE_API_URL || 'https://guide-xpert-backend.vercel.app/api';
 
 /**
  * Get Meet entries with optional filter and pagination
