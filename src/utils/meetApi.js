@@ -45,15 +45,20 @@ export const verifyMeetOtp = async (mobile, otp) => {
     const data = await response.json();
 
     if (!response.ok) {
-      throw new Error(data.message || 'Failed to verify OTP');
+      const err = new Error(data.message || 'Failed to verify OTP');
+      err.status = response.status;
+      throw err;
     }
 
     return { success: true, data };
   } catch (error) {
     console.error('Error verifying OTP:', error);
+    const status = error.status;
+    const message = error.message || 'Failed to verify OTP. Please try again.';
     return {
       success: false,
-      message: error.message || 'Failed to verify OTP. Please try again.',
+      message,
+      status,
     };
   }
 };

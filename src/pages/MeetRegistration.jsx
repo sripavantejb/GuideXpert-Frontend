@@ -164,7 +164,12 @@ const MeetRegistration = () => {
       setStep(3);
       setRedirectCountdown(3);
     } else {
-      setError(result.message || 'Invalid OTP. Please try again.');
+      // For 500 server errors, suggest requesting a new OTP (fixes corrupted/stale data)
+      const isServerError = result.status === 500;
+      const errorMsg = isServerError
+        ? 'Something went wrong on our side. Please click "Resend OTP" below to get a new code, then try again.'
+        : (result.message || 'Invalid OTP. Please try again.');
+      setError(errorMsg);
       // Clear OTP inputs on error
       setOtp(['', '', '', '', '', '']);
       setTimeout(() => otpInputRefs.current[0]?.focus(), 100);
