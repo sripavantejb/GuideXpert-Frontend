@@ -31,6 +31,7 @@ export const sendMeetOtp = async (name, email, mobile) => {
 
 /**
  * Verify OTP and register for Google Meet
+ * Returns { success, data? } on success, or { success: false, message, status? } on failure.
  */
 export const verifyMeetOtp = async (mobile, otp) => {
   try {
@@ -42,23 +43,29 @@ export const verifyMeetOtp = async (mobile, otp) => {
       body: JSON.stringify({ mobile, otp }),
     });
 
-    const data = await response.json();
+    let data;
+    try {
+      data = await response.json();
+    } catch (_) {
+      data = {};
+    }
 
     if (!response.ok) {
-      const err = new Error(data.message || 'Failed to verify OTP');
-      err.status = response.status;
-      throw err;
+      console.error('Error verifying OTP:', response.status, data);
+      return {
+        success: false,
+        message: data.message || 'Failed to verify OTP. Please try again.',
+        status: response.status,
+      };
     }
 
     return { success: true, data };
   } catch (error) {
     console.error('Error verifying OTP:', error);
-    const status = error.status;
-    const message = error.message || 'Failed to verify OTP. Please try again.';
     return {
       success: false,
-      message,
-      status,
+      message: error.message || 'Failed to verify OTP. Please try again.',
+      status: undefined,
     };
   }
 };
