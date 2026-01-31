@@ -38,6 +38,7 @@ const ApplySection = () => {
   const [slots, setSlots] = useState([]);
   const [slotsLoading, setSlotsLoading] = useState(false);
   const otpInputRefs = useRef([]);
+  const prevStepRef = useRef(currentStep);
 
   // DD-MM-YYYY for professional date display
   const formatDateDDMMYYYY = (date) => {
@@ -81,6 +82,14 @@ const ApplySection = () => {
       });
     return () => { cancelled = true; };
   }, []);
+
+  // Clear slot selection when entering step 3 (prevents stale/default selection)
+  useEffect(() => {
+    if (prevStepRef.current !== 3 && currentStep === 3) {
+      setFormData((prev) => ({ ...prev, timeSlot: '' }));
+    }
+    prevStepRef.current = currentStep;
+  }, [currentStep]);
 
   // localStorage functions
   const saveRegistrationToLocalStorage = (phone) => {
@@ -797,7 +806,7 @@ const ApplySection = () => {
 
             {/* Step 3: Slot Booking - dynamic slots from API */}
             {currentStep === 3 && (
-              <form className="apply-form" onSubmit={handleSubmit}>
+              <form className="apply-form" onSubmit={handleSubmit} autoComplete="off">
                 <div className="apply-field apply-slot-step">
                   <label className="apply-question-label">
                     Choose your demo session
@@ -842,7 +851,7 @@ const ApplySection = () => {
                                 <div className="apply-slot-card-content">
                                   <span className="apply-slot-card-day">{slot.label.split(' — ')[0]}</span>
                                   <span className="apply-slot-card-datetime">
-                                    {isDisabled ? 'Slots completed' : timeRange}
+                                    {isDisabled ? 'Slots filled' : timeRange}
                                   </span>
                                 </div>
                               </label>
