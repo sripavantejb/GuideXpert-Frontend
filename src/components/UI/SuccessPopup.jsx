@@ -46,8 +46,15 @@ const SuccessPopup = ({ isOpen, onClose, slotInfo, variant = 'slot' }) => {
   };
 
   const getSlotLabel = (slot) => {
-    if (slot === 'SATURDAY_7PM') return 'Saturday 7:00 PM';
-    if (slot === 'SUNDAY_3PM') return 'Sunday 3:00 PM';
+    if (!slot || typeof slot !== 'string') return slot || '';
+    const dayTimeMatch = slot.match(/^(MONDAY|TUESDAY|WEDNESDAY|THURSDAY|FRIDAY|SATURDAY|SUNDAY)_(7PM|11AM|3PM)$/i);
+    if (dayTimeMatch) {
+      const day = dayTimeMatch[1];
+      const time = dayTimeMatch[2];
+      const dayNames = { MONDAY: 'Mon', TUESDAY: 'Tue', WEDNESDAY: 'Wed', THURSDAY: 'Thu', FRIDAY: 'Fri', SATURDAY: 'Sat', SUNDAY: 'Sun' };
+      const timeLabel = time === '7PM' ? '7:00 PM' : time === '11AM' ? '11:00 AM' : '3:00 PM';
+      return `${dayNames[day] || day} ${timeLabel}`;
+    }
     return slot;
   };
 

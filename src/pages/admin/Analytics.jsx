@@ -53,10 +53,20 @@ export default function Analytics() {
     { label: 'Completed', value: stats?.completed ?? 0, key: 'completed' },
   ];
   const maxStatus = Math.max(...statusData.map((d) => d.value), 1);
-  const slotData = [
-    { label: 'Sat 7PM', value: stats?.bySlot?.SATURDAY_7PM ?? 0 },
-    { label: 'Sun 3PM', value: stats?.bySlot?.SUNDAY_3PM ?? 0 },
-  ];
+  const formatSlotIdForDisplay = (slotId) => {
+    if (!slotId || typeof slotId !== 'string') return slotId || '';
+    const match = slotId.match(/^(MONDAY|TUESDAY|WEDNESDAY|THURSDAY|FRIDAY|SATURDAY|SUNDAY)_(7PM|11AM|3PM)$/i);
+    if (match) {
+      const dayNames = { MONDAY: 'Mon', TUESDAY: 'Tue', WEDNESDAY: 'Wed', THURSDAY: 'Thu', FRIDAY: 'Fri', SATURDAY: 'Sat', SUNDAY: 'Sun' };
+      return `${dayNames[match[1]] || match[1]} ${match[2]}`;
+    }
+    return slotId;
+  };
+  const slotData = Object.entries(stats?.bySlot ?? {}).map(([id, value]) => ({
+    id,
+    label: formatSlotIdForDisplay(id),
+    value,
+  }));
   const maxSlot = Math.max(...slotData.map((d) => d.value), 1);
   const signupsOverTime = stats?.signupsOverTime ?? [];
 
@@ -86,8 +96,8 @@ export default function Analytics() {
         <section className="bg-white rounded-lg border border-gray-200 shadow-sm p-6">
           <h3 className="font-semibold text-gray-800 mb-4">Slot distribution</h3>
           <div className="space-y-3">
-            {slotData.map(({ label, value }) => (
-              <div key={label} className="flex items-center gap-3">
+            {slotData.map(({ id, label, value }) => (
+              <div key={id} className="flex items-center gap-3">
                 <span className="w-28 text-sm text-gray-600">{label}</span>
                 <div className="flex-1 h-6 bg-gray-100 rounded overflow-hidden">
                   <div

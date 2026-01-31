@@ -6,6 +6,7 @@ import AdminLayout from './components/Admin/AdminLayout';
 import Overview from './pages/admin/Overview';
 import Leads from './pages/admin/Leads';
 import Analytics from './pages/admin/Analytics';
+import Slots from './pages/admin/Slots';
 import Export from './pages/admin/Export';
 import Settings from './pages/admin/Settings';
 
@@ -36,6 +37,7 @@ function App() {
             <Route path="dashboard" element={<Overview />} />
             <Route path="leads" element={<Leads />} />
             <Route path="analytics" element={<Analytics />} />
+            <Route path="slots" element={<Slots />} />
             <Route path="export" element={<Export />} />
             <Route path="settings" element={<Settings />} />
           </Route>

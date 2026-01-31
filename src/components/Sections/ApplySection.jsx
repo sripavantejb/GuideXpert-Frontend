@@ -4,7 +4,7 @@ import { FiSend, FiPhone, FiDollarSign, FiAward, FiHome, FiUsers, FiArrowLeft, F
 import ShinyText from '../UI/ShinyText';
 import SuccessPopup from '../UI/SuccessPopup';
 import Loader from '../UI/Loader';
-import { sendOtp, verifyOtp, submitApplication, saveStep1, saveStep2, saveStep3, savePostRegistrationData } from '../../utils/api';
+import { sendOtp, verifyOtp, getDemoSlots, submitApplication, saveStep1, saveStep2, saveStep3, savePostRegistrationData } from '../../utils/api';
 import './ApplySection.css';
 
 const ApplySection = () => {
@@ -35,31 +35,9 @@ const ApplySection = () => {
     interestLevel: 1,
     email: ''
   });
+  const [slots, setSlots] = useState([]);
+  const [slotsLoading, setSlotsLoading] = useState(false);
   const otpInputRefs = useRef([]);
-
-  // 6 PM cutoff: before 6 PM show Today + Day after tomorrow; after 6 PM show Tomorrow + Day after tomorrow
-  const now = new Date();
-  const isBefore6PM = now.getHours() < 18;
-
-  // Slot 1: before 6 PM = today 7 PM, else tomorrow 7 PM
-  const slot1Date = (() => {
-    const d = new Date();
-    if (isBefore6PM) {
-      d.setHours(19, 0, 0, 0);
-    } else {
-      d.setDate(d.getDate() + 1);
-      d.setHours(19, 0, 0, 0);
-    }
-    return d;
-  })();
-
-  // Slot 2: always day after tomorrow 3 PM
-  const slot2Date = (() => {
-    const d = new Date();
-    d.setDate(d.getDate() + 2);
-    d.setHours(15, 0, 0, 0);
-    return d;
-  })();
 
   // DD-MM-YYYY for professional date display
   const formatDateDDMMYYYY = (date) => {
@@ -69,10 +47,10 @@ const ApplySection = () => {
     return `${d}-${m}-${y}`;
   };
 
-  // Day label for slot heading: Today / Tomorrow / Day after tomorrow
-  const slot1DayLabel = isBefore6PM ? 'Today' : 'Tomorrow';
-  const slot2DayLabel = 'Day after tomorrow';
-  const formatSlotDayHeading = (dayLabel, date) => `${dayLabel} (${formatDateDDMMYYYY(date)})`;
+  const formatSlotDayHeading = (date) => {
+    const dayLabel = date.toLocaleDateString('en-US', { weekday: 'long' });
+    return `${dayLabel} (${formatDateDDMMYYYY(date)})`;
+  };
 
   // Time range for slot: "7:00 PM – 8:00 PM" (1hr window)
   const formatSlotTimeRange = (startDate) => {
@@ -81,6 +59,28 @@ const ApplySection = () => {
     const end = endDate.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit', hour12: true });
     return `${start} – ${end}`;
   };
+
+  // Fetch demo slots from API on mount
+  useEffect(() => {
+    let cancelled = false;
+    setSlotsLoading(true);
+    getDemoSlots()
+      .then((res) => {
+        if (cancelled) return;
+        if (res.success && res.data?.slots) {
+          setSlots(res.data.slots);
+        } else {
+          setSlots([]);
+        }
+      })
+      .catch(() => {
+        if (!cancelled) setSlots([]);
+      })
+      .finally(() => {
+        if (!cancelled) setSlotsLoading(false);
+      });
+    return () => { cancelled = true; };
+  }, []);
 
   // localStorage functions
   const saveRegistrationToLocalStorage = (phone) => {
@@ -401,20 +401,21 @@ const ApplySection = () => {
     
     console.log('[Submit Application] Using verified phone:', normalizedPhone);
     
-    // Determine selected slot and date (saturday = first option, sunday = second option)
-    const selectedSlot = formData.timeSlot === 'saturday' ? 'SATURDAY_7PM' : 'SUNDAY_3PM';
-    const slotDate = formData.timeSlot === 'saturday' ? slot1Date : slot2Date;
+    // Selected slot ID and date from API slots
+    const selectedSlot = formData.timeSlot;
+    const selectedSlotData = slots.find((s) => s.id === selectedSlot);
+    const slotDate = selectedSlotData?.date || new Date().toISOString();
 
     // Log submission data
     console.log('[Submit Application] Request:', {
       phone: normalizedPhone,
       selectedSlot,
-      slotDate: slotDate.toISOString()
+      slotDate
     });
 
     try {
       // Save Step 3 data to MongoDB
-      const result = await saveStep3(normalizedPhone, selectedSlot, slotDate.toISOString());
+      const result = await saveStep3(normalizedPhone, selectedSlot, slotDate);
 
       // Log full response for debugging
       console.log('[Submit Application] Response:', result);
@@ -423,7 +424,7 @@ const ApplySection = () => {
         // Store booked slot info for popup
         setBookedSlotInfo({
           selectedSlot,
-          slotDate: slotDate.toISOString()
+          slotDate: typeof slotDate === 'string' ? slotDate : new Date(slotDate).toISOString()
         });
         
         // Show success popup
@@ -788,69 +789,59 @@ const ApplySection = () => {
               </form>
             )}
 
-            {/* Step 3: Slot Booking - time-based dates with Today / Tomorrow / Day after tomorrow */}
+            {/* Step 3: Slot Booking - dynamic slots from API */}
             {currentStep === 3 && (
               <form className="apply-form" onSubmit={handleSubmit}>
                 <div className="apply-field apply-slot-step">
                   <label className="apply-question-label">
                     Choose your demo session
                   </label>
-                  <div className="apply-slot-by-date">
-                    <div className="apply-slot-date-group">
-                      <p className="apply-slot-date-heading">{formatSlotDayHeading(slot1DayLabel, slot1Date)}</p>
-                      <div className="apply-slot-day-options">
-                        <label
-                          htmlFor="apply-slot-saturday"
-                          className={`apply-slot-card ${formData.timeSlot === 'saturday' ? 'apply-slot-card-selected' : ''}`}
-                        >
-                          <input
-                            type="radio"
-                            id="apply-slot-saturday"
-                            name="timeSlot"
-                            value="saturday"
-                            checked={formData.timeSlot === 'saturday'}
-                            onChange={handleChange}
-                            required
-                            className="apply-slot-card-input"
-                          />
-                          <span className="apply-slot-card-icon" aria-hidden="true">
-                            {formData.timeSlot === 'saturday' ? <FiCheck /> : <FiCalendar />}
-                          </span>
-                          <div className="apply-slot-card-content">
-                            <span className="apply-slot-card-day">{slot1DayLabel}</span>
-                            <span className="apply-slot-card-datetime">{formatSlotTimeRange(slot1Date)}</span>
-                          </div>
-                        </label>
-                      </div>
+                  {slotsLoading ? (
+                    <div className="apply-slot-loading">
+                      <Loader size="small" aria-hidden />
+                      <span>Loading available slots...</span>
                     </div>
-                    <div className="apply-slot-date-group">
-                      <p className="apply-slot-date-heading">{formatSlotDayHeading(slot2DayLabel, slot2Date)}</p>
-                      <div className="apply-slot-day-options">
-                        <label
-                          htmlFor="apply-slot-sunday"
-                          className={`apply-slot-card ${formData.timeSlot === 'sunday' ? 'apply-slot-card-selected' : ''}`}
-                        >
-                          <input
-                            type="radio"
-                            id="apply-slot-sunday"
-                            name="timeSlot"
-                            value="sunday"
-                            checked={formData.timeSlot === 'sunday'}
-                            onChange={handleChange}
-                            required
-                            className="apply-slot-card-input"
-                          />
-                          <span className="apply-slot-card-icon" aria-hidden="true">
-                            {formData.timeSlot === 'sunday' ? <FiCheck /> : <FiCalendar />}
-                          </span>
-                          <div className="apply-slot-card-content">
-                            <span className="apply-slot-card-day">{slot2DayLabel}</span>
-                            <span className="apply-slot-card-datetime">{formatSlotTimeRange(slot2Date)}</span>
+                  ) : slots.length === 0 ? (
+                    <p className="apply-slot-error">No slots available at the moment. Please try again later.</p>
+                  ) : (
+                    <div className="apply-slot-by-date">
+                      {slots.map((slot) => {
+                        const slotDateObj = new Date(slot.date);
+                        const dayHeading = formatSlotDayHeading(slotDateObj);
+                        const timeRange = formatSlotTimeRange(slotDateObj);
+                        const isSelected = formData.timeSlot === slot.id;
+                        return (
+                          <div key={slot.id} className="apply-slot-date-group">
+                            <p className="apply-slot-date-heading">{dayHeading}</p>
+                            <div className="apply-slot-day-options">
+                              <label
+                                htmlFor={`apply-slot-${slot.id}`}
+                                className={`apply-slot-card ${isSelected ? 'apply-slot-card-selected' : ''}`}
+                              >
+                                <input
+                                  type="radio"
+                                  id={`apply-slot-${slot.id}`}
+                                  name="timeSlot"
+                                  value={slot.id}
+                                  checked={isSelected}
+                                  onChange={handleChange}
+                                  required
+                                  className="apply-slot-card-input"
+                                />
+                                <span className="apply-slot-card-icon" aria-hidden="true">
+                                  {isSelected ? <FiCheck /> : <FiCalendar />}
+                                </span>
+                                <div className="apply-slot-card-content">
+                                  <span className="apply-slot-card-day">{slot.label.split(' — ')[0]}</span>
+                                  <span className="apply-slot-card-datetime">{timeRange}</span>
+                                </div>
+                              </label>
+                            </div>
                           </div>
-                        </label>
-                      </div>
+                        );
+                      })}
                     </div>
-                  </div>
+                  )}
                 </div>
 
                 <div className="apply-step-nav">
@@ -862,7 +853,7 @@ const ApplySection = () => {
                     <FiArrowLeft aria-hidden />
                     Back
                   </button>
-                  <button type="submit" className="apply-otp-btn" disabled={isLoading}>
+                  <button type="submit" className="apply-otp-btn" disabled={isLoading || slotsLoading || slots.length === 0}>
                     {isLoading ? <Loader size="small" aria-hidden /> : null}
                     {isLoading ? 'Booking...' : 'Book Slot'}
                   </button>

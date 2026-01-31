@@ -74,6 +74,17 @@ export const getAdminStats = async (token = getStoredToken()) => {
   return adminRequest('/stats', { method: 'GET' }, token);
 };
 
+export const getSlotConfigs = async (token = getStoredToken()) => {
+  return adminRequest('/slots', { method: 'GET' }, token);
+};
+
+export const updateSlotConfig = async (slotId, enabled, token = getStoredToken()) => {
+  return adminRequest(`/slots/${slotId}`, {
+    method: 'PUT',
+    body: JSON.stringify({ enabled }),
+  }, token);
+};
+
 export async function getAdminLeadsExport(params = {}, token = getStoredToken()) {
   const search = new URLSearchParams();
   if (params.from) search.set('from', params.from);

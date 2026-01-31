@@ -8,9 +8,19 @@ function formatDate(d) {
   return date.toLocaleDateString('en-IN', { dateStyle: 'short' }) + ' ' + date.toLocaleTimeString('en-IN', { timeStyle: 'short' });
 }
 
+function formatSlotIdForDisplay(slotId) {
+  if (!slotId || typeof slotId !== 'string') return slotId || '';
+  const match = slotId.match(/^(MONDAY|TUESDAY|WEDNESDAY|THURSDAY|FRIDAY|SATURDAY|SUNDAY)_(7PM|11AM|3PM)$/i);
+  if (match) {
+    const dayNames = { MONDAY: 'Mon', TUESDAY: 'Tue', WEDNESDAY: 'Wed', THURSDAY: 'Thu', FRIDAY: 'Fri', SATURDAY: 'Sat', SUNDAY: 'Sun' };
+    return `${dayNames[match[1]] || match[1]} ${match[2]}`;
+  }
+  return slotId;
+}
+
 function slotLabel(lead) {
   if (!lead.slotBooked) return 'No';
-  const slot = lead.selectedSlot === 'SATURDAY_7PM' ? 'Sat 7PM' : lead.selectedSlot === 'SUNDAY_3PM' ? 'Sun 3PM' : lead.selectedSlot || '';
+  const slot = formatSlotIdForDisplay(lead.selectedSlot) || lead.selectedSlot || '';
   const date = lead.slotDate ? formatDate(lead.slotDate) : '';
   return date ? `Yes – ${slot}, ${date}` : `Yes – ${slot}`;
 }

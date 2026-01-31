@@ -128,6 +128,16 @@ export const saveStep1 = async (fullName, whatsappNumber, occupation) => {
 };
 
 /**
+ * Fetch available demo slots (dynamic by day/time in IST)
+ * @returns {Promise<{success: boolean, data?: {slots: Array<{id: string, label: string, date: string}>}, status?: number}>}
+ */
+export const getDemoSlots = async () => {
+  return apiRequest('/demo-slots', {
+    method: 'GET',
+  });
+};
+
+/**
  * Save Step 2 data to MongoDB (OTP verification)
  * @param {string} phone - Phone number
  * @returns {Promise<{success: boolean, message?: string, status?: number}>}
