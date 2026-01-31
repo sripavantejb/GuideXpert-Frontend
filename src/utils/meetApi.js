@@ -1,7 +1,44 @@
 const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000/api';
 
 /**
- * Send OTP for Google Meet registration
+ * Register for Google Meet (single step, no OTP)
+ */
+export const registerMeet = async ({ name, email, mobile }) => {
+  try {
+    const response = await fetch(`${API_BASE_URL}/meet/register`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({ name, email, mobile }),
+    });
+
+    let data;
+    try {
+      data = await response.json();
+    } catch (_) {
+      data = {};
+    }
+
+    if (!response.ok) {
+      return {
+        success: false,
+        message: data.message || 'Registration failed. Please try again.',
+      };
+    }
+
+    return { success: true, data };
+  } catch (error) {
+    console.error('Error registering for meet:', error);
+    return {
+      success: false,
+      message: error.message || 'Registration failed. Please try again.',
+    };
+  }
+};
+
+/**
+ * Send OTP for Google Meet registration (legacy, not used in meet flow)
  */
 export const sendMeetOtp = async (name, email, mobile) => {
   try {
