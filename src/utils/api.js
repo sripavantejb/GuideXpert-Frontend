@@ -214,3 +214,16 @@ export const submitApplication = async (formData) => {
     body: JSON.stringify(formData),
   });
 };
+
+/**
+ * Register for meeting (saves name and mobile, then redirect to Meet link on success)
+ * @param {string} name - User's full name
+ * @param {string} mobileNumber - 10-digit mobile number
+ * @returns {Promise<{success: boolean, message?: string, data?: Object, status?: number}>}
+ */
+export const registerForMeeting = async (name, mobileNumber) => {
+  return apiRequest('/meeting/register', {
+    method: 'POST',
+    body: JSON.stringify({ name, mobileNumber }),
+  });
+};

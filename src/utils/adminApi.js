@@ -87,6 +87,14 @@ export const updateSlotConfig = async (slotId, enabled, token = getStoredToken()
   }, token);
 };
 
+export const getMeetingAttendance = async (params = {}, token = getStoredToken()) => {
+  const search = new URLSearchParams();
+  if (params.page != null) search.set('page', params.page);
+  if (params.limit != null) search.set('limit', params.limit);
+  const query = search.toString();
+  return adminRequest(`/meeting-attendance${query ? `?${query}` : ''}`, { method: 'GET' }, token);
+};
+
 export async function getAdminLeadsExport(params = {}, token = getStoredToken()) {
   const search = new URLSearchParams();
   if (params.from) search.set('from', params.from);
