@@ -1,6 +1,6 @@
 import { useState, useRef, useEffect } from 'react';
 import { FaRocket } from 'react-icons/fa';
-import { FiSend, FiPhone, FiDollarSign, FiAward, FiHome, FiUsers, FiArrowLeft, FiCalendar, FiCheck } from 'react-icons/fi';
+import { FiSend, FiPhone, FiDollarSign, FiAward, FiHome, FiUsers, FiArrowLeft, FiCalendar, FiCheck, FiX } from 'react-icons/fi';
 import ShinyText from '../UI/ShinyText';
 import SuccessPopup from '../UI/SuccessPopup';
 import Loader from '../UI/Loader';
@@ -391,6 +391,13 @@ const ApplySection = () => {
       return;
     }
 
+    // Reject disabled slots (e.g. if form state was tampered)
+    const selectedSlotData = slots.find((s) => s.id === formData.timeSlot);
+    if (selectedSlotData && selectedSlotData.enabled === false) {
+      setError('This slot is no longer available. Please choose another.');
+      return;
+    }
+
     setIsLoading(true);
     
     // Use the verified phone number to ensure exact match with backend
@@ -401,9 +408,8 @@ const ApplySection = () => {
     
     console.log('[Submit Application] Using verified phone:', normalizedPhone);
     
-    // Selected slot ID and date from API slots
+    // Selected slot ID and date from API slots (selectedSlotData already validated as enabled above)
     const selectedSlot = formData.timeSlot;
-    const selectedSlotData = slots.find((s) => s.id === selectedSlot);
     const slotDate = selectedSlotData?.date || new Date().toISOString();
 
     // Log submission data
@@ -810,13 +816,14 @@ const ApplySection = () => {
                         const dayHeading = formatSlotDayHeading(slotDateObj);
                         const timeRange = formatSlotTimeRange(slotDateObj);
                         const isSelected = formData.timeSlot === slot.id;
+                        const isDisabled = slot.enabled === false;
                         return (
                           <div key={slot.id} className="apply-slot-date-group">
                             <p className="apply-slot-date-heading">{dayHeading}</p>
                             <div className="apply-slot-day-options">
                               <label
                                 htmlFor={`apply-slot-${slot.id}`}
-                                className={`apply-slot-card ${isSelected ? 'apply-slot-card-selected' : ''}`}
+                                className={`apply-slot-card ${isSelected ? 'apply-slot-card-selected' : ''} ${isDisabled ? 'apply-slot-card-disabled' : ''}`}
                               >
                                 <input
                                   type="radio"
@@ -825,15 +832,18 @@ const ApplySection = () => {
                                   value={slot.id}
                                   checked={isSelected}
                                   onChange={handleChange}
-                                  required
+                                  required={!slots.some((s) => s.enabled !== false)}
+                                  disabled={isDisabled}
                                   className="apply-slot-card-input"
                                 />
                                 <span className="apply-slot-card-icon" aria-hidden="true">
-                                  {isSelected ? <FiCheck /> : <FiCalendar />}
+                                  {isDisabled ? <FiX /> : (isSelected ? <FiCheck /> : <FiCalendar />)}
                                 </span>
                                 <div className="apply-slot-card-content">
                                   <span className="apply-slot-card-day">{slot.label.split(' — ')[0]}</span>
-                                  <span className="apply-slot-card-datetime">{timeRange}</span>
+                                  <span className="apply-slot-card-datetime">
+                                    {isDisabled ? 'Slots completed' : timeRange}
+                                  </span>
                                 </div>
                               </label>
                             </div>
@@ -853,7 +863,7 @@ const ApplySection = () => {
                     <FiArrowLeft aria-hidden />
                     Back
                   </button>
-                  <button type="submit" className="apply-otp-btn" disabled={isLoading || slotsLoading || slots.length === 0}>
+                  <button type="submit" className="apply-otp-btn" disabled={isLoading || slotsLoading || slots.length === 0 || !slots.some((s) => s.enabled !== false)}>
                     {isLoading ? <Loader size="small" aria-hidden /> : null}
                     {isLoading ? 'Booking...' : 'Book Slot'}
                   </button>
