@@ -32,7 +32,9 @@ export const getMeetEntries = async (filter = 'all', search = '', sortBy = 'regi
     const data = await response.json();
 
     if (!response.ok) {
-      throw new Error(data.message || 'Failed to fetch meet entries');
+      const err = new Error(data.message || 'Failed to fetch meet entries');
+      err.status = response.status;
+      throw err;
     }
 
     return {
@@ -49,6 +51,7 @@ export const getMeetEntries = async (filter = 'all', search = '', sortBy = 'regi
     return {
       success: false,
       message: error.message || 'Failed to fetch meet entries',
+      status: error.status,
       data: [],
       count: 0,
       totalCount: 0,
@@ -77,7 +80,9 @@ export const getMeetStats = async () => {
     const data = await response.json();
 
     if (!response.ok) {
-      throw new Error(data.message || 'Failed to fetch statistics');
+      const err = new Error(data.message || 'Failed to fetch statistics');
+      err.status = response.status;
+      throw err;
     }
 
     return { success: true, data: data.data };
@@ -86,6 +91,7 @@ export const getMeetStats = async () => {
     return {
       success: false,
       message: error.message || 'Failed to fetch statistics',
+      status: error.status,
       data: {
         totalRegistered: 0,
         totalJoined: 0,

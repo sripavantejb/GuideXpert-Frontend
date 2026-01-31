@@ -49,7 +49,13 @@ export default function MeetAttendance() {
     ]);
 
     if (!entriesResult.success) {
-      if (entriesResult.message?.includes('401') || entriesResult.message?.includes('Unauthorized')) {
+      const isUnauthorized = entriesResult.status === 401 ||
+        entriesResult.message?.includes('401') ||
+        entriesResult.message?.includes('Unauthorized') ||
+        entriesResult.message?.includes('Invalid token') ||
+        entriesResult.message?.includes('Token expired') ||
+        entriesResult.message?.includes('Authentication required');
+      if (isUnauthorized) {
         logout();
         window.location.href = '/admin/login';
         return;
@@ -61,7 +67,17 @@ export default function MeetAttendance() {
       setTotalPages(entriesResult.totalPages ?? 1);
     }
 
-    if (statsResult.success) {
+    if (!statsResult.success) {
+      const statsUnauthorized = statsResult.status === 401 ||
+        statsResult.message?.includes('Invalid token') ||
+        statsResult.message?.includes('Token expired') ||
+        statsResult.message?.includes('Authentication required');
+      if (statsUnauthorized) {
+        logout();
+        window.location.href = '/admin/login';
+        return;
+      }
+    } else {
       setStats(statsResult.data);
     }
 
