@@ -8,12 +8,28 @@ function formatDate(d) {
   return date.toLocaleDateString('en-IN', { dateStyle: 'short' }) + ' ' + date.toLocaleTimeString('en-IN', { timeStyle: 'short' });
 }
 
+const ALL_SLOT_IDS = [
+  'MONDAY_7PM', 'TUESDAY_7PM', 'WEDNESDAY_7PM', 'THURSDAY_7PM',
+  'FRIDAY_7PM', 'SATURDAY_7PM', 'SUNDAY_7PM', 'SUNDAY_11AM'
+];
+
 function formatSlotIdForDisplay(slotId) {
   if (!slotId || typeof slotId !== 'string') return slotId || '';
   const match = slotId.match(/^(MONDAY|TUESDAY|WEDNESDAY|THURSDAY|FRIDAY|SATURDAY|SUNDAY)_(7PM|11AM|3PM)$/i);
   if (match) {
     const dayNames = { MONDAY: 'Mon', TUESDAY: 'Tue', WEDNESDAY: 'Wed', THURSDAY: 'Thu', FRIDAY: 'Fri', SATURDAY: 'Sat', SUNDAY: 'Sun' };
     return `${dayNames[match[1]] || match[1]} ${match[2]}`;
+  }
+  return slotId;
+}
+
+function formatSlotIdForDropdown(slotId) {
+  if (!slotId || typeof slotId !== 'string') return slotId || '';
+  const match = slotId.match(/^(MONDAY|TUESDAY|WEDNESDAY|THURSDAY|FRIDAY|SATURDAY|SUNDAY)_(7PM|11AM|3PM)$/i);
+  if (match) {
+    const dayNames = { MONDAY: 'Monday', TUESDAY: 'Tuesday', WEDNESDAY: 'Wednesday', THURSDAY: 'Thursday', FRIDAY: 'Friday', SATURDAY: 'Saturday', SUNDAY: 'Sunday' };
+    const time = match[2].replace(/(\d+)(AM|PM)/i, '$1 $2');
+    return `${dayNames[match[1]] || match[1]} ${time}`;
   }
   return slotId;
 }
@@ -35,10 +51,12 @@ export default function Leads() {
     applicationStatus: '',
     otpVerified: '',
     slotBooked: '',
+    selectedSlot: '',
     q: '',
   });
   const [searchInput, setSearchInput] = useState('');
   const cancelledRef = useRef(false);
+  const requestIdRef = useRef(0);
 
   useEffect(() => {
     const t = setTimeout(() => {
@@ -50,6 +68,8 @@ export default function Leads() {
 
   useEffect(() => {
     cancelledRef.current = false;
+    requestIdRef.current += 1;
+    const thisRequestId = requestIdRef.current;
     const page = pagination.page;
     const params = {
       page,
@@ -57,6 +77,7 @@ export default function Leads() {
       ...(filters.applicationStatus && { applicationStatus: filters.applicationStatus }),
       ...(filters.otpVerified !== '' && filters.otpVerified !== undefined && { otpVerified: filters.otpVerified }),
       ...(filters.slotBooked !== '' && filters.slotBooked !== undefined && { slotBooked: filters.slotBooked }),
+      ...(filters.selectedSlot && { selectedSlot: filters.selectedSlot }),
       ...(filters.q && { q: filters.q }),
     };
     const tick = queueMicrotask || ((fn) => setTimeout(fn, 0));
@@ -68,6 +89,7 @@ export default function Leads() {
     });
     getAdminLeads(params, getStoredToken()).then((result) => {
       if (cancelledRef.current) return;
+      if (thisRequestId !== requestIdRef.current) return;
       setLoading(false);
       if (!result.success) {
         if (result.status === 401) {
@@ -84,7 +106,7 @@ export default function Leads() {
     return () => {
       cancelledRef.current = true;
     };
-  }, [pagination.page, filters.applicationStatus, filters.otpVerified, filters.slotBooked, filters.q, logout]);
+  }, [pagination.page, filters.applicationStatus, filters.otpVerified, filters.slotBooked, filters.selectedSlot, filters.q, logout]);
 
   const goToPage = (p) => {
     const next = Math.max(1, Math.min(p, pagination.totalPages));
@@ -147,6 +169,19 @@ export default function Leads() {
                 </label>
               ))}
             </fieldset>
+            <select
+              value={filters.selectedSlot}
+              onChange={(e) => handleFilterChange('selectedSlot', e.target.value)}
+              className="h-9 px-3 rounded-lg border border-gray-300 focus:ring-2 focus:ring-primary-blue-500 outline-none text-sm min-w-[140px]"
+              aria-label="Filter by specific slot"
+            >
+              <option value="">All slots</option>
+              {ALL_SLOT_IDS.map((slotId) => (
+                <option key={slotId} value={slotId}>
+                  {formatSlotIdForDropdown(slotId)}
+                </option>
+              ))}
+            </select>
           </div>
         </div>
       </div>

@@ -65,9 +65,11 @@ export const getAdminLeads = async (params = {}, token = getStoredToken()) => {
   if (params.applicationStatus) search.set('applicationStatus', params.applicationStatus);
   if (params.otpVerified !== undefined && params.otpVerified !== '') search.set('otpVerified', String(params.otpVerified));
   if (params.slotBooked !== undefined && params.slotBooked !== '') search.set('slotBooked', String(params.slotBooked));
+  if (params.selectedSlot) search.set('selectedSlot', params.selectedSlot);
   if (params.q) search.set('q', params.q);
+  search.set('_t', String(Date.now()));
   const query = search.toString();
-  return adminRequest(`/leads${query ? `?${query}` : ''}`, { method: 'GET' }, token);
+  return adminRequest(`/leads?${query}`, { method: 'GET' }, token);
 };
 
 export const getAdminStats = async (token = getStoredToken()) => {
@@ -89,6 +91,7 @@ export async function getAdminLeadsExport(params = {}, token = getStoredToken())
   const search = new URLSearchParams();
   if (params.from) search.set('from', params.from);
   if (params.to) search.set('to', params.to);
+  if (params.selectedSlot) search.set('selectedSlot', params.selectedSlot);
   const query = search.toString();
   const url = `${API_BASE_URL}/admin/leads/export${query ? `?${query}` : ''}`;
   const headers = {};

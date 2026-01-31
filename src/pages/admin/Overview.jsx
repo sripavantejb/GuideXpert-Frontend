@@ -3,6 +3,22 @@ import { Link } from 'react-router-dom';
 import { getAdminStats, getAdminLeads, getStoredToken } from '../../utils/adminApi';
 import { useAuth } from '../../contexts/AuthContext';
 
+const ALL_SLOT_IDS = [
+  'MONDAY_7PM', 'TUESDAY_7PM', 'WEDNESDAY_7PM', 'THURSDAY_7PM',
+  'FRIDAY_7PM', 'SATURDAY_7PM', 'SUNDAY_7PM', 'SUNDAY_11AM'
+];
+
+function formatSlotIdForDropdown(slotId) {
+  if (!slotId || typeof slotId !== 'string') return slotId || '';
+  const match = slotId.match(/^(MONDAY|TUESDAY|WEDNESDAY|THURSDAY|FRIDAY|SATURDAY|SUNDAY)_(7PM|11AM|3PM)$/i);
+  if (match) {
+    const dayNames = { MONDAY: 'Monday', TUESDAY: 'Tuesday', WEDNESDAY: 'Wednesday', THURSDAY: 'Thursday', FRIDAY: 'Friday', SATURDAY: 'Saturday', SUNDAY: 'Sunday' };
+    const time = match[2].replace(/(\d+)(AM|PM)/i, '$1 $2');
+    return `${dayNames[match[1]] || match[1]} ${time}`;
+  }
+  return slotId;
+}
+
 function formatDate(d) {
   if (!d) return '—';
   const date = new Date(d);
@@ -15,14 +31,17 @@ export default function Overview() {
   const [recent, setRecent] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
+  const [selectedSlot, setSelectedSlot] = useState('');
 
   useEffect(() => {
     let cancelled = false;
     setLoading(true);
     setError('');
+    const leadsParams = { page: 1, limit: 10 };
+    if (selectedSlot) leadsParams.selectedSlot = selectedSlot;
     Promise.all([
       getAdminStats(getStoredToken()),
-      getAdminLeads({ page: 1, limit: 10 }, getStoredToken())
+      getAdminLeads(leadsParams, getStoredToken())
     ]).then(([statsRes, leadsRes]) => {
       if (cancelled) return;
       if (!statsRes.success) {
@@ -42,7 +61,7 @@ export default function Overview() {
       setLoading(false);
     });
     return () => { cancelled = true; };
-  }, [logout]);
+  }, [logout, selectedSlot]);
 
   if (loading) {
     return (
@@ -88,14 +107,38 @@ export default function Overview() {
       </div>
 
       <div className="bg-white rounded-lg border border-gray-200 shadow-sm overflow-hidden">
-        <div className="px-4 py-3 border-b border-gray-200 flex items-center justify-between">
+        <div className="px-4 py-3 border-b border-gray-200 flex flex-wrap items-center justify-between gap-3">
           <h3 className="font-semibold text-gray-800">Recent leads</h3>
-          <Link
-            to="/admin/leads"
-            className="text-sm text-primary-navy hover:underline font-medium"
-          >
-            View all
-          </Link>
+          <div className="flex flex-wrap items-center gap-2">
+            <select
+              value={selectedSlot}
+              onChange={(e) => setSelectedSlot(e.target.value)}
+              className="h-9 px-3 rounded-lg border border-gray-300 focus:ring-2 focus:ring-primary-blue-500 outline-none text-sm min-w-[140px]"
+              aria-label="Filter recent leads by slot"
+            >
+              <option value="">All slots</option>
+              {ALL_SLOT_IDS.map((slotId) => (
+                <option key={slotId} value={slotId}>
+                  {formatSlotIdForDropdown(slotId)}
+                </option>
+              ))}
+            </select>
+            {selectedSlot && (
+              <button
+                type="button"
+                onClick={() => setSelectedSlot('')}
+                className="text-sm text-gray-600 hover:text-gray-800 underline"
+              >
+                Clear filter
+              </button>
+            )}
+            <Link
+              to="/admin/leads"
+              className="text-sm text-primary-navy hover:underline font-medium"
+            >
+              View all
+            </Link>
+          </div>
         </div>
         <div className="overflow-x-auto">
           <table className="min-w-[500px] w-full text-left text-sm">
