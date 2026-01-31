@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { sendMeetOtp, verifyMeetOtp, markUserJoined } from '../utils/meetApi';
 import Button from '../components/UI/Button';
 import { IoCheckmarkCircle } from 'react-icons/io5';
@@ -10,12 +10,13 @@ const MeetRegistration = () => {
     email: '',
     mobile: '',
   });
-  const [otp, setOtp] = useState('');
+  const [otp, setOtp] = useState(['', '', '', '', '', '']);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
   const [resendCountdown, setResendCountdown] = useState(0);
   const [meetLink, setMeetLink] = useState('');
   const [redirectCountdown, setRedirectCountdown] = useState(3);
+  const otpInputRefs = useRef([]);
 
   // Countdown for resend OTP
   useEffect(() => {
@@ -44,6 +45,42 @@ const MeetRegistration = () => {
       [e.target.name]: e.target.value,
     });
     setError('');
+  };
+
+  // Handle OTP digit change
+  const handleOtpChange = (index, value) => {
+    if (!/^\d*$/.test(value)) return; // Only allow digits
+
+    const newOtp = [...otp];
+    newOtp[index] = value.slice(-1); // Only take last character
+    setOtp(newOtp);
+    setError('');
+
+    // Auto-focus next input
+    if (value && index < 5) {
+      otpInputRefs.current[index + 1]?.focus();
+    }
+  };
+
+  // Handle backspace navigation
+  const handleOtpKeyDown = (index, e) => {
+    if (e.key === 'Backspace' && !otp[index] && index > 0) {
+      otpInputRefs.current[index - 1]?.focus();
+    }
+  };
+
+  // Handle paste of 6-digit OTP
+  const handleOtpPaste = (e) => {
+    e.preventDefault();
+    const pastedData = e.clipboardData.getData('text').slice(0, 6);
+    if (!/^\d+$/.test(pastedData)) return;
+
+    const newOtp = pastedData.split('').concat(Array(6 - pastedData.length).fill(''));
+    setOtp(newOtp);
+
+    // Focus last filled input or first empty
+    const lastIndex = Math.min(pastedData.length - 1, 5);
+    otpInputRefs.current[lastIndex]?.focus();
   };
 
   const handleSendOtp = async (e) => {
@@ -77,6 +114,8 @@ const MeetRegistration = () => {
     if (result.success) {
       setStep(2);
       setResendCountdown(30);
+      // Focus first OTP input
+      setTimeout(() => otpInputRefs.current[0]?.focus(), 100);
     } else {
       setError(result.message || 'Failed to send OTP. Please try again.');
     }
@@ -89,12 +128,14 @@ const MeetRegistration = () => {
 
     setError('');
     setLoading(true);
+    setOtp(['', '', '', '', '', '']); // Clear all boxes
 
     const result = await sendMeetOtp(formData.name, formData.email, formData.mobile);
 
     if (result.success) {
       setResendCountdown(30);
-      setOtp('');
+      // Focus first OTP input after resend
+      setTimeout(() => otpInputRefs.current[0]?.focus(), 100);
     } else {
       setError(result.message || 'Failed to resend OTP. Please try again.');
     }
@@ -107,13 +148,16 @@ const MeetRegistration = () => {
     setError('');
     setLoading(true);
 
-    if (!/^\d{6}$/.test(otp)) {
-      setError('Please enter a valid 6-digit OTP');
+    // Join array to string
+    const otpString = otp.join('');
+
+    if (otpString.length !== 6) {
+      setError('Please enter all 6 digits');
       setLoading(false);
       return;
     }
 
-    const result = await verifyMeetOtp(formData.mobile, otp);
+    const result = await verifyMeetOtp(formData.mobile, otpString);
 
     if (result.success) {
       setMeetLink(result.data?.data?.meetLink || '');
@@ -121,6 +165,9 @@ const MeetRegistration = () => {
       setRedirectCountdown(3);
     } else {
       setError(result.message || 'Invalid OTP. Please try again.');
+      // Clear OTP inputs on error
+      setOtp(['', '', '', '', '', '']);
+      setTimeout(() => otpInputRefs.current[0]?.focus(), 100);
     }
 
     setLoading(false);
@@ -223,26 +270,28 @@ const MeetRegistration = () => {
               </p>
 
               <form onSubmit={handleVerifyOtp} className="space-y-4">
-                {/* OTP Field */}
+                {/* OTP Field - 6 individual boxes */}
                 <div>
-                  <label htmlFor="otp" className="block text-sm font-semibold text-gray-700 mb-2">
+                  <label className="block text-sm font-semibold text-gray-700 mb-2">
                     OTP Code <span className="text-red-500">*</span>
                   </label>
-                  <input
-                    type="text"
-                    id="otp"
-                    name="otp"
-                    value={otp}
-                    onChange={(e) => {
-                      setOtp(e.target.value.replace(/\D/g, '').slice(0, 6));
-                      setError('');
-                    }}
-                    required
-                    maxLength="6"
-                    className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-blue-500 focus:border-primary-blue-500 outline-none transition-all text-center text-2xl tracking-widest font-semibold"
-                    placeholder="000000"
-                    autoComplete="one-time-code"
-                  />
+                  <div className="flex gap-3 justify-center mb-4">
+                    {otp.map((digit, index) => (
+                      <input
+                        key={index}
+                        ref={(el) => (otpInputRefs.current[index] = el)}
+                        type="text"
+                        inputMode="numeric"
+                        maxLength="1"
+                        value={digit}
+                        onChange={(e) => handleOtpChange(index, e.target.value)}
+                        onKeyDown={(e) => handleOtpKeyDown(index, e)}
+                        onPaste={handleOtpPaste}
+                        className="w-12 h-14 text-center text-2xl font-semibold border-2 border-gray-300 rounded-lg focus:border-primary-blue-500 focus:ring-2 focus:ring-primary-blue-500 focus:outline-none transition-all"
+                        aria-label={`OTP digit ${index + 1}`}
+                      />
+                    ))}
+                  </div>
                 </div>
 
                 {/* Resend OTP */}
@@ -276,7 +325,7 @@ const MeetRegistration = () => {
                     type="submit"
                     variant="primary"
                     className="w-full py-3 text-lg font-semibold"
-                    disabled={loading || otp.length !== 6}
+                    disabled={loading || otp.join('').length !== 6}
                   >
                     {loading ? 'Verifying...' : 'Verify & Join Meet'}
                   </Button>
@@ -285,7 +334,7 @@ const MeetRegistration = () => {
                     type="button"
                     onClick={() => {
                       setStep(1);
-                      setOtp('');
+                      setOtp(['', '', '', '', '', '']);
                       setError('');
                     }}
                     className="w-full py-3 text-gray-600 hover:text-gray-800 font-semibold transition-colors"
