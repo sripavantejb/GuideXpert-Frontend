@@ -1,11 +1,6 @@
-const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000/api';
+import { getStoredToken } from './adminApi';
 
-/**
- * Get authentication token from localStorage
- */
-const getAuthToken = () => {
-  return localStorage.getItem('adminToken');
-};
+const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000/api';
 
 /**
  * Get Meet entries with optional filter and pagination
@@ -18,7 +13,7 @@ const getAuthToken = () => {
  */
 export const getMeetEntries = async (filter = 'all', search = '', sortBy = 'registeredAt', sortOrder = 'desc', page = 1, limit = 50) => {
   try {
-    const token = getAuthToken();
+    const token = getStoredToken();
     const params = new URLSearchParams({ filter, search, sortBy, sortOrder, page: String(page), limit: String(limit) });
 
     const response = await fetch(`${API_BASE_URL}/meet/entries?${params}`, {
@@ -67,7 +62,7 @@ export const getMeetEntries = async (filter = 'all', search = '', sortBy = 'regi
  */
 export const getMeetStats = async () => {
   try {
-    const token = getAuthToken();
+    const token = getStoredToken();
 
     const response = await fetch(`${API_BASE_URL}/meet/stats`, {
       method: 'GET',
