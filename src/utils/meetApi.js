@@ -21,6 +21,10 @@ export const registerMeet = async ({ name, email, mobile }) => {
     }
 
     if (!response.ok) {
+      // Log backend message so you can see 500/503 cause in console
+      if (response.status >= 500) {
+        console.error('[Meet API]', response.status, data.message || data);
+      }
       return {
         success: false,
         message: data.message || 'Registration failed. Please try again.',
