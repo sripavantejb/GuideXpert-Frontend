@@ -138,7 +138,7 @@ export default function MeetingRegistration() {
             disabled={loading}
             className="w-full py-3 px-4 bg-blue-700 hover:bg-blue-800 text-white font-medium rounded-lg transition disabled:opacity-60 disabled:cursor-not-allowed"
           >
-            {loading ? 'Joining…' : 'Join Meeting'}
+            {loading ? 'Joining…' : 'Join the Meet'}
           </button>
         </form>
 
