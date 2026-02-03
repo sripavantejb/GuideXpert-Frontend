@@ -440,10 +440,10 @@ Making college and course selection transparent, personalized, and future-ready.
 - support@guidexpert.co.in
 
 **Phone Support**
-- +91 81432 66699
+- +91 6304-153659
 
 **WhatsApp**
-- +91 81432 66699
+- +91 6304-153659
 
 ### Quick Links
 - Privacy Policy

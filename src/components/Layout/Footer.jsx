@@ -72,7 +72,7 @@ const Footer = () => {
                     href="tel:+918143266699"
                     className={`text-sm ${linkClass}`}
                   >
-                    +91 81432 66699
+                    +91 6304-153659
                   </a>
                 </div>
               </li>
@@ -88,7 +88,7 @@ const Footer = () => {
                     rel="noopener noreferrer"
                     className={`text-sm ${linkClass}`}
                   >
-                    +91 81432 66699
+                    +91 6304-153659
                   </a>
                 </div>
               </li>
