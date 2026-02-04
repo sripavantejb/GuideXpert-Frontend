@@ -1,12 +1,13 @@
 import { useState } from 'react';
 import { NavLink, Outlet } from 'react-router-dom';
-import { FiLayout, FiUsers, FiBarChart2, FiDownload, FiSettings, FiCalendar, FiVideo, FiLink } from 'react-icons/fi';
+import { FiLayout, FiUsers, FiUserCheck, FiBarChart2, FiDownload, FiSettings, FiCalendar, FiVideo, FiLink } from 'react-icons/fi';
 import { HiMenu as HiMenuIcon, HiX as HiXIcon } from 'react-icons/hi';
 import { useAuth } from '../../contexts/AuthContext';
 
 const navItems = [
   { to: '/admin/dashboard', label: 'Overview', icon: FiLayout },
   { to: '/admin/leads', label: 'Leads', icon: FiUsers },
+  { to: '/admin/lead-status', label: 'Lead Status', icon: FiUserCheck },
   { to: '/admin/analytics', label: 'Analytics', icon: FiBarChart2 },
   { to: '/admin/slots', label: 'Slots', icon: FiCalendar },
   { to: '/admin/export', label: 'Export', icon: FiDownload },

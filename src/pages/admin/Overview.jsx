@@ -40,7 +40,7 @@ export default function Overview() {
     const leadsParams = { page: 1, limit: 10 };
     if (selectedSlot) leadsParams.selectedSlot = selectedSlot;
     Promise.all([
-      getAdminStats(getStoredToken()),
+      getAdminStats({}, getStoredToken()),
       getAdminLeads(leadsParams, getStoredToken())
     ]).then(([statsRes, leadsRes]) => {
       if (cancelled) return;
@@ -88,9 +88,34 @@ export default function Overview() {
     { label: 'Slot booked', value: stats?.slotBooked ?? 0 },
   ];
 
+  const signupsOverTime = stats?.signupsOverTime ?? [];
+  const maxSignups = Math.max(...signupsOverTime.map((d) => d.count), 1);
+
   return (
     <div className="max-w-6xl mx-auto">
       <h2 className="text-xl font-semibold text-gray-800 mb-6">Overview</h2>
+
+      {/* Quick actions */}
+      <div className="flex flex-wrap gap-3 mb-6">
+        <Link
+          to="/admin/leads?applicationStatus=in_progress"
+          className="inline-flex items-center gap-2 px-4 py-2 rounded-lg border border-gray-200 bg-white text-gray-700 text-sm font-medium hover:bg-gray-50 hover:border-gray-300 transition-colors"
+        >
+          View incomplete leads
+        </Link>
+        <Link
+          to="/admin/export"
+          className="inline-flex items-center gap-2 px-4 py-2 rounded-lg border border-gray-200 bg-white text-gray-700 text-sm font-medium hover:bg-gray-50 hover:border-gray-300 transition-colors"
+        >
+          Export data
+        </Link>
+        <Link
+          to="/admin/analytics"
+          className="inline-flex items-center gap-2 px-4 py-2 rounded-lg border border-gray-200 bg-white text-gray-700 text-sm font-medium hover:bg-gray-50 hover:border-gray-300 transition-colors"
+        >
+          View analytics
+        </Link>
+      </div>
 
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 mb-8">
         {cards.map(({ label, value, color }) => (
@@ -105,6 +130,28 @@ export default function Overview() {
           </div>
         ))}
       </div>
+
+      {/* Signups over time (last 30 days) */}
+      {signupsOverTime.length > 0 && (
+        <div className="bg-white rounded-lg border border-gray-200 shadow-sm p-6 mb-8">
+          <h3 className="font-semibold text-gray-800 mb-4">Signups (last 30 days)</h3>
+          <div className="flex items-end gap-1 h-32" role="img" aria-label="Bar chart of signups per day">
+            {signupsOverTime.map((d) => (
+              <div
+                key={d.date}
+                className="flex-1 min-w-0 flex flex-col items-center group"
+                title={`${d.date}: ${d.count} signup${d.count !== 1 ? 's' : ''}`}
+              >
+                <div
+                  className="w-full bg-primary-navy rounded-t transition-all hover:opacity-90"
+                  style={{ height: `${Math.max(4, (d.count / maxSignups) * 100)}%` }}
+                />
+                <span className="text-[10px] text-gray-500 mt-1 truncate w-full text-center">{d.date.slice(5)}</span>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
 
       <div className="bg-white rounded-lg border border-gray-200 shadow-sm overflow-hidden">
         <div className="px-4 py-3 border-b border-gray-200 flex flex-wrap items-center justify-between gap-3">

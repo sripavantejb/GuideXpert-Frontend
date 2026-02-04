@@ -70,13 +70,43 @@ export const getAdminLeads = async (params = {}, token = getStoredToken()) => {
   if (params.slotBooked !== undefined && params.slotBooked !== '') search.set('slotBooked', String(params.slotBooked));
   if (params.selectedSlot) search.set('selectedSlot', params.selectedSlot);
   if (params.q) search.set('q', params.q);
+  if (params.utm_content) search.set('utm_content', params.utm_content);
   search.set('_t', String(Date.now()));
   const query = search.toString();
   return adminRequest(`/leads?${query}`, { method: 'GET' }, token);
 };
 
-export const getAdminStats = async (token = getStoredToken()) => {
-  return adminRequest('/stats', { method: 'GET' }, token);
+export const getAdminStats = async (params = {}, token = getStoredToken()) => {
+  const search = new URLSearchParams();
+  if (params.from) search.set('from', params.from);
+  if (params.to) search.set('to', params.to);
+  const query = search.toString();
+  return adminRequest(`/stats${query ? `?${query}` : ''}`, { method: 'GET' }, token);
+};
+
+export const getLead = async (id, token = getStoredToken()) => {
+  return adminRequest(`/leads/${encodeURIComponent(id)}`, { method: 'GET' }, token);
+};
+
+export const updateLeadNotes = async (id, adminNotes, token = getStoredToken()) => {
+  return adminRequest(`/leads/${encodeURIComponent(id)}`, {
+    method: 'PATCH',
+    body: JSON.stringify({ adminNotes: adminNotes ?? '' }),
+  }, token);
+};
+
+/**
+ * Partial update for a lead. Payload may include adminNotes, leadStatus, leadDescription.
+ */
+export const updateLead = async (id, payload, token = getStoredToken()) => {
+  const body = {};
+  if (payload.adminNotes !== undefined) body.adminNotes = payload.adminNotes ?? '';
+  if (payload.leadStatus !== undefined) body.leadStatus = payload.leadStatus ?? '';
+  if (payload.leadDescription !== undefined) body.leadDescription = payload.leadDescription ?? '';
+  return adminRequest(`/leads/${encodeURIComponent(id)}`, {
+    method: 'PATCH',
+    body: JSON.stringify(body),
+  }, token);
 };
 
 export const getSlotConfigs = async (token = getStoredToken()) => {
@@ -132,6 +162,10 @@ export const getInfluencerLinks = async (token = getStoredToken()) => {
   return influencerRequest('/influencer-links', { method: 'GET' }, token);
 };
 
+export const deleteInfluencerLink = async (id, token = getStoredToken()) => {
+  return influencerRequest(`/influencer-links/${id}`, { method: 'DELETE' }, token);
+};
+
 export const getInfluencerAnalytics = async (params = {}, token = getStoredToken()) => {
   const search = new URLSearchParams();
   if (params.from) search.set('from', params.from);
@@ -146,6 +180,7 @@ export async function getAdminLeadsExport(params = {}, token = getStoredToken())
   if (params.from) search.set('from', params.from);
   if (params.to) search.set('to', params.to);
   if (params.selectedSlot) search.set('selectedSlot', params.selectedSlot);
+  if (params.utm_content) search.set('utm_content', params.utm_content);
   const query = search.toString();
   const url = `${API_BASE_URL}/admin/leads/export${query ? `?${query}` : ''}`;
   const headers = {};

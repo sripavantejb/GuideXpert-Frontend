@@ -12,6 +12,7 @@ import Export from './pages/admin/Export';
 import Settings from './pages/admin/Settings';
 import MeetingAttendance from './pages/admin/MeetingAttendance';
 import InfluencerTracking from './pages/admin/InfluencerTracking';
+import LeadStatus from './pages/admin/LeadStatus';
 
 function ProtectedAdmin({ children }) {
   const { isAuthenticated } = useAuth();
@@ -41,6 +42,7 @@ function App() {
             <Route index element={<Navigate to="/admin/dashboard" replace />} />
             <Route path="dashboard" element={<Overview />} />
             <Route path="leads" element={<Leads />} />
+            <Route path="lead-status" element={<LeadStatus />} />
             <Route path="analytics" element={<Analytics />} />
             <Route path="slots" element={<Slots />} />
             <Route path="export" element={<Export />} />

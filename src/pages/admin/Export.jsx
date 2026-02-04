@@ -21,6 +21,7 @@ export default function Export() {
   const [from, setFrom] = useState('');
   const [to, setTo] = useState('');
   const [selectedSlot, setSelectedSlot] = useState('');
+  const [utm_content, setUtm_content] = useState('');
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
   const [success, setSuccess] = useState(false);
@@ -34,6 +35,7 @@ export default function Export() {
     if (from) params.from = from;
     if (to) params.to = to;
     if (selectedSlot) params.selectedSlot = selectedSlot;
+    if (utm_content) params.utm_content = utm_content;
     const result = await getAdminLeadsExport(params, getStoredToken());
     setLoading(false);
     if (result.success) {
@@ -49,7 +51,7 @@ export default function Export() {
 
       <div className="bg-white rounded-lg border border-gray-200 shadow-sm p-6">
         <p className="text-sm text-gray-600 mb-4">
-          Download all leads as a CSV file. Optionally filter by date range (created date) or by slot.
+          Download all leads as a CSV file (includes UTM/Influencer columns). Optionally filter by date range, slot, or influencer.
         </p>
 
         <form onSubmit={handleExport} className="space-y-4">
@@ -96,6 +98,19 @@ export default function Export() {
                 </option>
               ))}
             </select>
+          </div>
+          <div>
+            <label htmlFor="export-utm-content" className="block text-sm font-medium text-gray-700 mb-1">
+              Influencer (utm_content, optional)
+            </label>
+            <input
+              id="export-utm-content"
+              type="text"
+              value={utm_content}
+              onChange={(e) => setUtm_content(e.target.value)}
+              placeholder="e.g. Venkatesh"
+              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-blue-500 focus:border-primary-blue-500 outline-none"
+            />
           </div>
 
           {error && (
