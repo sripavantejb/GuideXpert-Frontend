@@ -1,3 +1,5 @@
+import { getStoredUtm } from './utm';
+
 const API_BASE_URL = import.meta.env.VITE_API_URL || 'https://guide-xpert-backend.vercel.app/api';
 
 /**
@@ -113,17 +115,25 @@ export const verifyOtp = async (phone, otp) => {
  * @param {string} fullName - User's full name
  * @param {string} whatsappNumber - WhatsApp phone number
  * @param {string} occupation - User's occupation
+ * @param {{ utm_source?: string, utm_medium?: string, utm_campaign?: string, utm_content?: string }} [utm] - Optional first-touch UTM data
  * @returns {Promise<{success: boolean, message?: string, status?: number}>}
  */
-export const saveStep1 = async (fullName, whatsappNumber, occupation) => {
+export const saveStep1 = async (fullName, whatsappNumber, occupation, utm) => {
+  const payload = {
+    fullName,
+    whatsappNumber,
+    occupation,
+    phone: whatsappNumber,
+  };
+  if (utm && typeof utm === 'object') {
+    if (utm.utm_source != null) payload.utm_source = utm.utm_source;
+    if (utm.utm_medium != null) payload.utm_medium = utm.utm_medium;
+    if (utm.utm_campaign != null) payload.utm_campaign = utm.utm_campaign;
+    if (utm.utm_content != null) payload.utm_content = utm.utm_content;
+  }
   return apiRequest('/save-step1', {
     method: 'POST',
-    body: JSON.stringify({
-      fullName,
-      whatsappNumber,
-      occupation,
-      phone: whatsappNumber,
-    }),
+    body: JSON.stringify(payload),
   });
 };
 
@@ -140,14 +150,20 @@ export const getDemoSlots = async () => {
 /**
  * Save Step 2 data to MongoDB (OTP verification)
  * @param {string} phone - Phone number
+ * @param {{ utm_source?: string, utm_medium?: string, utm_campaign?: string, utm_content?: string }} [utm] - Optional first-touch UTM data
  * @returns {Promise<{success: boolean, message?: string, status?: number}>}
  */
-export const saveStep2 = async (phone) => {
+export const saveStep2 = async (phone, utm) => {
+  const payload = { phone };
+  if (utm && typeof utm === 'object') {
+    if (utm.utm_source != null) payload.utm_source = utm.utm_source;
+    if (utm.utm_medium != null) payload.utm_medium = utm.utm_medium;
+    if (utm.utm_campaign != null) payload.utm_campaign = utm.utm_campaign;
+    if (utm.utm_content != null) payload.utm_content = utm.utm_content;
+  }
   return apiRequest('/save-step2', {
     method: 'POST',
-    body: JSON.stringify({
-      phone,
-    }),
+    body: JSON.stringify(payload),
   });
 };
 
@@ -156,16 +172,24 @@ export const saveStep2 = async (phone) => {
  * @param {string} phone - Phone number
  * @param {string} selectedSlot - 'SATURDAY_7PM' or 'SUNDAY_3PM'
  * @param {string|Date} slotDate - ISO date string or Date object for the slot
+ * @param {{ utm_source?: string, utm_medium?: string, utm_campaign?: string, utm_content?: string }} [utm] - Optional first-touch UTM data
  * @returns {Promise<{success: boolean, message?: string, data?: {selectedSlot: string, slotDate: Date}, status?: number}>}
  */
-export const saveStep3 = async (phone, selectedSlot, slotDate) => {
+export const saveStep3 = async (phone, selectedSlot, slotDate, utm) => {
+  const payload = {
+    phone,
+    selectedSlot,
+    slotDate: slotDate instanceof Date ? slotDate.toISOString() : slotDate,
+  };
+  if (utm && typeof utm === 'object') {
+    if (utm.utm_source != null) payload.utm_source = utm.utm_source;
+    if (utm.utm_medium != null) payload.utm_medium = utm.utm_medium;
+    if (utm.utm_campaign != null) payload.utm_campaign = utm.utm_campaign;
+    if (utm.utm_content != null) payload.utm_content = utm.utm_content;
+  }
   return apiRequest('/save-step3', {
     method: 'POST',
-    body: JSON.stringify({
-      phone,
-      selectedSlot,
-      slotDate: slotDate instanceof Date ? slotDate.toISOString() : slotDate,
-    }),
+    body: JSON.stringify(payload),
   });
 };
 
@@ -185,22 +209,26 @@ export const checkRegistrationStatus = async (phone) => {
  * @param {string} phone - Phone number
  * @param {number} interestLevel - Interest level from 1 to 5
  * @param {string} email - User's email address
+ * @param {{ utm_source?: string, utm_medium?: string, utm_campaign?: string, utm_content?: string }} [utm] - Optional first-touch UTM data
  * @returns {Promise<{success: boolean, message?: string, status?: number}>}
  */
-export const savePostRegistrationData = async (phone, interestLevel, email) => {
+export const savePostRegistrationData = async (phone, interestLevel, email, utm) => {
+  const payload = { phone, interestLevel, email };
+  if (utm && typeof utm === 'object') {
+    if (utm.utm_source != null) payload.utm_source = utm.utm_source;
+    if (utm.utm_medium != null) payload.utm_medium = utm.utm_medium;
+    if (utm.utm_campaign != null) payload.utm_campaign = utm.utm_campaign;
+    if (utm.utm_content != null) payload.utm_content = utm.utm_content;
+  }
   return apiRequest('/save-post-registration', {
     method: 'POST',
-    body: JSON.stringify({
-      phone,
-      interestLevel,
-      email,
-    }),
+    body: JSON.stringify(payload),
   });
 };
 
 /**
  * Submit application form
- * @param {Object} formData - Application form data
+ * @param {Object} formData - Application form data (may include utm_source, utm_medium, utm_campaign, utm_content)
  * @param {string} formData.fullName - User's full name
  * @param {string} formData.whatsappNumber - WhatsApp phone number
  * @param {string} formData.occupation - User's occupation
@@ -209,9 +237,17 @@ export const savePostRegistrationData = async (phone, interestLevel, email) => {
  * @returns {Promise<{success: boolean, message?: string, status?: number}>}
  */
 export const submitApplication = async (formData) => {
+  const payload = { ...formData };
+  const utm = getStoredUtm();
+  if (utm) {
+    if (payload.utm_source == null) payload.utm_source = utm.utm_source;
+    if (payload.utm_medium == null) payload.utm_medium = utm.utm_medium;
+    if (payload.utm_campaign == null) payload.utm_campaign = utm.utm_campaign;
+    if (payload.utm_content == null) payload.utm_content = utm.utm_content;
+  }
   return apiRequest('/submit-application', {
     method: 'POST',
-    body: JSON.stringify(formData),
+    body: JSON.stringify(payload),
   });
 };
 

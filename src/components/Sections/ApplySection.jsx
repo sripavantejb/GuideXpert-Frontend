@@ -5,6 +5,7 @@ import ShinyText from '../UI/ShinyText';
 import SuccessPopup from '../UI/SuccessPopup';
 import Loader from '../UI/Loader';
 import { sendOtp, verifyOtp, getDemoSlots, submitApplication, saveStep1, saveStep2, saveStep3, savePostRegistrationData } from '../../utils/api';
+import { captureUtmFirstTouch, getStoredUtm } from '../../utils/utm';
 import './ApplySection.css';
 
 const ApplySection = () => {
@@ -117,6 +118,11 @@ const ApplySection = () => {
     return null;
   };
 
+  // First-touch UTM capture on registration page load
+  useEffect(() => {
+    captureUtmFirstTouch();
+  }, []);
+
   // Restore "already registered" state from localStorage only (no initial API call)
   useEffect(() => {
     const localData = getRegistrationFromLocalStorage();
@@ -227,7 +233,8 @@ const ApplySection = () => {
           const saveResult = await saveStep1(
             formData.fullName.trim(),
             cleanPhone,
-            formData.occupation.trim()
+            formData.occupation.trim(),
+            getStoredUtm() ?? undefined
           );
           if (saveResult.success) {
             console.log('[Save Step 1] Successfully saved to MongoDB');
@@ -310,7 +317,7 @@ const ApplySection = () => {
         
         // Save Step 2 data to MongoDB
         try {
-          const saveResult = await saveStep2(normalizedPhone);
+          const saveResult = await saveStep2(normalizedPhone, getStoredUtm() ?? undefined);
           if (saveResult.success) {
             console.log('[Save Step 2] Successfully saved to MongoDB');
           } else {
@@ -430,7 +437,7 @@ const ApplySection = () => {
 
     try {
       // Save Step 3 data to MongoDB
-      const result = await saveStep3(normalizedPhone, selectedSlot, slotDate);
+      const result = await saveStep3(normalizedPhone, selectedSlot, slotDate, getStoredUtm() ?? undefined);
 
       // Log full response for debugging
       console.log('[Submit Application] Response:', result);
@@ -554,7 +561,8 @@ const ApplySection = () => {
       const result = await savePostRegistrationData(
         registeredPhone,
         interestValue,
-        postRegistrationData.email.trim()
+        postRegistrationData.email.trim(),
+        getStoredUtm() ?? undefined
       );
 
       if (result.success) {

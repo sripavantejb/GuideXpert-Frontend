@@ -11,6 +11,7 @@ import Slots from './pages/admin/Slots';
 import Export from './pages/admin/Export';
 import Settings from './pages/admin/Settings';
 import MeetingAttendance from './pages/admin/MeetingAttendance';
+import InfluencerTracking from './pages/admin/InfluencerTracking';
 
 function ProtectedAdmin({ children }) {
   const { isAuthenticated } = useAuth();
@@ -26,6 +27,7 @@ function App() {
       <AuthProvider>
         <Routes>
           <Route path="/" element={<LandingPage />} />
+          <Route path="/register" element={<LandingPage />} />
           <Route path="/meet" element={<MeetingRegistration />} />
           <Route path="/admin/login" element={<AdminLogin />} />
           <Route
@@ -44,6 +46,7 @@ function App() {
             <Route path="export" element={<Export />} />
             <Route path="settings" element={<Settings />} />
             <Route path="meeting-attendance" element={<MeetingAttendance />} />
+            <Route path="influencer-tracking" element={<InfluencerTracking />} />
           </Route>
           <Route path="*" element={<Navigate to="/" replace />} />
         </Routes>

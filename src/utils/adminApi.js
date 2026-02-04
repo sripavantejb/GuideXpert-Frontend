@@ -95,6 +95,49 @@ export const getMeetingAttendance = async (params = {}, token = getStoredToken()
   return adminRequest(`/meeting-attendance${query ? `?${query}` : ''}`, { method: 'GET' }, token);
 };
 
+/** Request to /api/influencer-links and /api/influencer-analytics (admin auth, no /admin prefix). */
+async function influencerRequest(path, options = {}, token = getStoredToken()) {
+  const url = `${API_BASE_URL}${path}`;
+  const headers = { 'Content-Type': 'application/json', ...options.headers };
+  if (token) headers.Authorization = `Bearer ${token}`;
+  try {
+    const response = await fetch(url, { ...options, headers });
+    let data;
+    try {
+      data = await response.json();
+    } catch {
+      data = { message: 'Invalid response' };
+    }
+    if (!response.ok) {
+      return { success: false, message: data.message || 'Request failed', status: response.status, data };
+    }
+    return { success: true, data, status: response.status };
+  } catch (error) {
+    const message = error.message === 'Failed to fetch' ? 'Cannot reach server.' : (error.message || 'Network error');
+    return { success: false, message, status: 0, error };
+  }
+}
+
+export const createInfluencerLink = async (payload, save = false, token = getStoredToken()) => {
+  return influencerRequest('/influencer-links', {
+    method: 'POST',
+    body: JSON.stringify({ ...payload, save }),
+  }, token);
+};
+
+export const getInfluencerLinks = async (token = getStoredToken()) => {
+  return influencerRequest('/influencer-links', { method: 'GET' }, token);
+};
+
+export const getInfluencerAnalytics = async (params = {}, token = getStoredToken()) => {
+  const search = new URLSearchParams();
+  if (params.from) search.set('from', params.from);
+  if (params.to) search.set('to', params.to);
+  if (params.sort) search.set('sort', params.sort);
+  const query = search.toString();
+  return influencerRequest(`/influencer-analytics${query ? `?${query}` : ''}`, { method: 'GET' }, token);
+};
+
 export async function getAdminLeadsExport(params = {}, token = getStoredToken()) {
   const search = new URLSearchParams();
   if (params.from) search.set('from', params.from);
