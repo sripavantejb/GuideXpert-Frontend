@@ -120,6 +120,26 @@ export const updateSlotConfig = async (slotId, enabled, token = getStoredToken()
   }, token);
 };
 
+/** GET /admin/slots/overrides?from=YYYY-MM-DD&to=YYYY-MM-DD */
+export const getSlotOverrides = async (from, to, token = getStoredToken()) => {
+  const params = new URLSearchParams({ from, to });
+  return adminRequest(`/slots/overrides?${params}`, { method: 'GET' }, token);
+};
+
+/** PUT /admin/slots/overrides — body: { date, slotId, enabled } */
+export const setSlotOverride = async (date, slotId, enabled, token = getStoredToken()) => {
+  return adminRequest('/slots/overrides', {
+    method: 'PUT',
+    body: JSON.stringify({ date, slotId, enabled }),
+  }, token);
+};
+
+/** GET /admin/slots/booking-counts?from=YYYY-MM-DD&to=YYYY-MM-DD — per-date counts */
+export const getSlotBookingCounts = async (from, to, token = getStoredToken()) => {
+  const params = new URLSearchParams({ from, to });
+  return adminRequest(`/slots/booking-counts?${params}`, { method: 'GET' }, token);
+};
+
 export const getMeetingAttendance = async (params = {}, token = getStoredToken()) => {
   const search = new URLSearchParams();
   if (params.page != null) search.set('page', params.page);
