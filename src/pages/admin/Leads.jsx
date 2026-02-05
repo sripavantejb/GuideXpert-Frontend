@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect, useRef, useMemo } from 'react';
 import { useSearchParams } from 'react-router-dom';
 import { FiEye, FiCopy } from 'react-icons/fi';
 import { getAdminLeads, getLead, updateLeadNotes, getStoredToken } from '../../utils/adminApi';
@@ -14,6 +14,38 @@ const ALL_SLOT_IDS = [
   'MONDAY_7PM', 'TUESDAY_7PM', 'WEDNESDAY_7PM', 'THURSDAY_7PM',
   'FRIDAY_7PM', 'SATURDAY_7PM', 'SUNDAY_7PM', 'SUNDAY_11AM'
 ];
+
+const DAY_BY_DOW = ['SUNDAY', 'MONDAY', 'TUESDAY', 'WEDNESDAY', 'THURSDAY', 'FRIDAY', 'SATURDAY'];
+const TIME_ROWS = ['11AM', '7PM'];
+const WEEKDAY_HEADER = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
+const MONTH_NAMES = ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December'];
+
+function slotIdFor(day, timeKey) {
+  return `${day}_${timeKey}`;
+}
+
+function toYYYYMMDD(date) {
+  const d = new Date(date);
+  const y = d.getFullYear();
+  const m = String(d.getMonth() + 1).padStart(2, '0');
+  const day = String(d.getDate()).padStart(2, '0');
+  return `${y}-${m}-${day}`;
+}
+
+function buildMonthGrid(year, month) {
+  const first = new Date(year, month, 1);
+  const last = new Date(year, month + 1, 0);
+  const startBlank = first.getDay();
+  const daysInMonth = last.getDate();
+  const cells = [];
+  for (let i = 0; i < startBlank; i++) cells.push(null);
+  for (let d = 1; d <= daysInMonth; d++) cells.push(d);
+  const total = 42;
+  while (cells.length < total) cells.push(null);
+  const rows = [];
+  for (let r = 0; r < 6; r++) rows.push(cells.slice(r * 7, (r + 1) * 7));
+  return rows;
+}
 
 function formatSlotIdForDisplay(slotId) {
   if (!slotId || typeof slotId !== 'string') return slotId || '';
@@ -54,11 +86,13 @@ export default function Leads() {
     const status = searchParams.get('applicationStatus') || '';
     const slot = searchParams.get('selectedSlot') || '';
     const utm = searchParams.get('utm_content') || '';
+    const slotDate = searchParams.get('slotDate') || '';
     return {
       applicationStatus: ['in_progress', 'registered', 'completed'].includes(status) ? status : '',
       otpVerified: '',
       slotBooked: '',
       selectedSlot: slot,
+      slotDate,
       utm_content: utm,
       q: '',
     };
@@ -72,15 +106,24 @@ export default function Leads() {
   const cancelledRef = useRef(false);
   const requestIdRef = useRef(0);
 
+  const [viewYear, setViewYear] = useState(() => new Date().getFullYear());
+  const [viewMonth, setViewMonth] = useState(() => new Date().getMonth());
+  const [selectedCalendarDate, setSelectedCalendarDate] = useState(null);
+  const [leadsForSelectedDate, setLeadsForSelectedDate] = useState([]);
+  const [leadsForDateLoading, setLeadsForDateLoading] = useState(false);
+  const [leadsForDateError, setLeadsForDateError] = useState('');
+
   // Sync filters from URL when landing from quick links (e.g. /admin/leads?applicationStatus=in_progress)
   useEffect(() => {
     const status = searchParams.get('applicationStatus') || '';
     const slot = searchParams.get('selectedSlot') || '';
     const utm = searchParams.get('utm_content') || '';
+    const slotDate = searchParams.get('slotDate') || '';
     setFilters((prev) => ({
       ...prev,
       applicationStatus: ['in_progress', 'registered', 'completed'].includes(status) ? status : prev.applicationStatus,
       selectedSlot: slot || prev.selectedSlot,
+      slotDate: slotDate || prev.slotDate,
       utm_content: utm || prev.utm_content,
     }));
     setPagination((prev) => ({ ...prev, page: 1 }));
@@ -147,6 +190,7 @@ export default function Leads() {
       ...(filters.otpVerified !== '' && filters.otpVerified !== undefined && { otpVerified: filters.otpVerified }),
       ...(filters.slotBooked !== '' && filters.slotBooked !== undefined && { slotBooked: filters.slotBooked }),
       ...(filters.selectedSlot && { selectedSlot: filters.selectedSlot }),
+      ...(filters.slotDate && { slotDate: filters.slotDate }),
       ...(filters.utm_content && { utm_content: filters.utm_content }),
       ...(filters.q && { q: filters.q }),
     };
@@ -176,7 +220,37 @@ export default function Leads() {
     return () => {
       cancelledRef.current = true;
     };
-  }, [pagination.page, filters.applicationStatus, filters.otpVerified, filters.slotBooked, filters.selectedSlot, filters.utm_content, filters.q, logout]);
+  }, [pagination.page, filters.applicationStatus, filters.otpVerified, filters.slotBooked, filters.selectedSlot, filters.slotDate, filters.utm_content, filters.q, logout]);
+
+  useEffect(() => {
+    if (!selectedCalendarDate) {
+      setLeadsForSelectedDate([]);
+      setLeadsForDateError('');
+      return;
+    }
+    const dateStr = toYYYYMMDD(selectedCalendarDate);
+    setLeadsForDateLoading(true);
+    setLeadsForDateError('');
+    getAdminLeads(
+      { slotDate: dateStr, slotBooked: 'true', page: 1, limit: 200 },
+      getStoredToken()
+    ).then((result) => {
+      setLeadsForDateLoading(false);
+      if (!result.success) {
+        if (result.status === 401) {
+          logout();
+          window.location.href = '/admin/login';
+          return;
+        }
+        setLeadsForDateError(result.message || 'Failed to load leads');
+        setLeadsForSelectedDate([]);
+        return;
+      }
+      setLeadsForSelectedDate(result.data?.data ?? []);
+    });
+  }, [selectedCalendarDate, logout]);
+
+  const monthGrid = useMemo(() => buildMonthGrid(viewYear, viewMonth), [viewYear, viewMonth]);
 
   const goToPage = (p) => {
     const next = Math.max(1, Math.min(p, pagination.totalPages));
@@ -252,6 +326,13 @@ export default function Leads() {
                 </option>
               ))}
             </select>
+            <input
+              type="date"
+              value={filters.slotDate}
+              onChange={(e) => handleFilterChange('slotDate', e.target.value)}
+              className="h-9 px-3 rounded-lg border border-gray-300 focus:ring-2 focus:ring-primary-blue-500 outline-none text-sm min-w-[140px]"
+              aria-label="Filter by slot date"
+            />
             <input
               type="text"
               placeholder="Influencer (utm_content)"
@@ -451,6 +532,166 @@ export default function Leads() {
           </div>
         </>
       )}
+
+      {/* Leads by date – calendar and slot-wise */}
+      <section className="mt-8">
+        <h2 className="text-sm font-semibold text-gray-700 uppercase tracking-wider mb-3">Leads by date</h2>
+        <p className="text-sm text-gray-500 mb-4">
+          Click a date to see leads for that day grouped by slot.
+        </p>
+        <div className="bg-white rounded-xl border border-gray-200 shadow-sm overflow-hidden">
+          <div className="flex items-center justify-between px-4 py-3 border-b border-gray-200">
+            <button
+              type="button"
+              onClick={() => {
+                if (viewMonth === 0) {
+                  setViewMonth(11);
+                  setViewYear((y) => y - 1);
+                } else {
+                  setViewMonth((m) => m - 1);
+                }
+              }}
+              className="p-2 rounded-lg hover:bg-gray-100 text-gray-600"
+              aria-label="Previous month"
+            >
+              <span className="text-lg font-medium">←</span>
+            </button>
+            <span className="text-base font-semibold text-gray-900">
+              {MONTH_NAMES[viewMonth]} {viewYear}
+            </span>
+            <button
+              type="button"
+              onClick={() => {
+                if (viewMonth === 11) {
+                  setViewMonth(0);
+                  setViewYear((y) => y + 1);
+                } else {
+                  setViewMonth((m) => m + 1);
+                }
+              }}
+              className="p-2 rounded-lg hover:bg-gray-100 text-gray-600"
+              aria-label="Next month"
+            >
+              <span className="text-lg font-medium">→</span>
+            </button>
+          </div>
+          <div className="p-4">
+            <table className="w-full border-collapse">
+              <thead>
+                <tr>
+                  {WEEKDAY_HEADER.map((day) => (
+                    <th key={day} className="text-center text-xs font-semibold text-gray-500 py-2">
+                      {day}
+                    </th>
+                  ))}
+                </tr>
+              </thead>
+              <tbody>
+                {monthGrid.map((row, ri) => (
+                  <tr key={ri}>
+                    {row.map((dayNum, ci) => {
+                      if (dayNum === null) {
+                        return <td key={`${ri}-${ci}`} className="p-1" />;
+                      }
+                      const date = new Date(viewYear, viewMonth, dayNum);
+                      const dateStr = toYYYYMMDD(date);
+                      const isSelected = selectedCalendarDate && toYYYYMMDD(selectedCalendarDate) === dateStr;
+                      return (
+                        <td key={`${ri}-${ci}`} className="p-1">
+                          <button
+                            type="button"
+                            onClick={() => setSelectedCalendarDate(date)}
+                            className={`w-full py-2 rounded-lg text-sm font-medium transition-colors ${
+                              isSelected ? 'bg-primary-blue-600 text-white' : 'hover:bg-gray-100 text-gray-700'
+                            }`}
+                          >
+                            {dayNum}
+                          </button>
+                        </td>
+                      );
+                    })}
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+
+          {selectedCalendarDate && (
+            <div className="border-t border-gray-200 px-4 py-4 bg-gray-50/50">
+              <div className="flex items-center justify-between mb-3">
+                <h3 className="text-sm font-semibold text-gray-900">
+                  {selectedCalendarDate.toLocaleDateString('en-IN', { weekday: 'long', month: 'short', day: 'numeric', year: 'numeric' })}
+                </h3>
+                <button
+                  type="button"
+                  onClick={() => setSelectedCalendarDate(null)}
+                  className="text-sm text-gray-500 hover:text-gray-700"
+                >
+                  Close
+                </button>
+              </div>
+              {leadsForDateLoading ? (
+                <p className="text-sm text-gray-500">Loading…</p>
+              ) : leadsForDateError ? (
+                <p className="text-sm text-red-600" role="alert">{leadsForDateError}</p>
+              ) : (
+                <>
+                  {leadsForSelectedDate.length === 0 && (
+                    <p className="text-sm text-gray-600 mb-3 pb-3 border-b border-gray-200">
+                      No leads have a booked slot on this date (IST). Try another date or use the table above to filter by date.
+                    </p>
+                  )}
+                  <ul className="space-y-3">
+                  {(() => {
+                    const dayName = DAY_BY_DOW[selectedCalendarDate.getDay()];
+                    const slotIds = TIME_ROWS.map((t) => slotIdFor(dayName, t)).filter((id) => ALL_SLOT_IDS.includes(id));
+                    return slotIds.map((slotId) => {
+                      const slotLeads = leadsForSelectedDate.filter((l) => l.selectedSlot === slotId);
+                      return (
+                        <li key={slotId} className="rounded-lg bg-white border border-gray-200 overflow-hidden">
+                          <div className="px-4 py-2 bg-gray-50 border-b border-gray-200 flex items-center justify-between">
+                            <span className="text-sm font-medium text-gray-900">{formatSlotIdForDropdown(slotId)}</span>
+                            <span
+                              className={`inline-flex items-center px-2.5 py-0.5 rounded-md text-xs font-medium ${
+                                slotLeads.length > 0 ? 'bg-primary-blue-100 text-primary-blue-600' : 'bg-gray-100 text-gray-500'
+                              }`}
+                            >
+                              {slotLeads.length} {slotLeads.length === 1 ? 'lead' : 'leads'}
+                            </span>
+                          </div>
+                          <ul className="divide-y divide-gray-100">
+                            {slotLeads.length === 0 ? (
+                              <li className="px-4 py-3 text-sm text-gray-500">No leads with a booked slot on this date for this time.</li>
+                            ) : (
+                              slotLeads.map((lead) => (
+                                <li key={lead.id} className="px-4 py-2 flex items-center justify-between gap-3">
+                                  <div className="min-w-0">
+                                    <span className="text-sm font-medium text-gray-900 truncate block">{lead.fullName || '—'}</span>
+                                    <span className="text-xs text-gray-500">{lead.phone || '—'}</span>
+                                  </div>
+                                  <button
+                                    type="button"
+                                    onClick={() => openLeadDetail(lead.id)}
+                                    className="inline-flex items-center gap-1 text-primary-navy hover:underline text-sm font-medium shrink-0"
+                                    aria-label={`View details for ${lead.fullName || 'lead'}`}
+                                  >
+                                    <FiEye className="w-4 h-4" /> View
+                                  </button>
+                                </li>
+                              ))
+                            )}
+                          </ul>
+                        </li>
+                      );
+                    });
+                  })()}
+                </ul>
+                </>
+              )}
+            </div>
+          )}
+        </div>
+      </section>
     </div>
   );
 }

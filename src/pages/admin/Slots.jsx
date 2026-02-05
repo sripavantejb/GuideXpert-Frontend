@@ -222,71 +222,8 @@ export default function Slots() {
         </p>
       </div>
 
-      {/* Recurring weekly slots */}
-      <section className="mb-10">
-        <h2 className="text-sm font-semibold text-gray-700 uppercase tracking-wider mb-3">Recurring weekly slots</h2>
-        <div className="bg-white rounded-xl border border-gray-200 shadow-sm overflow-hidden">
-          {slots.length === 0 ? (
-            <div className="px-8 py-16 text-center">
-              <p className="text-gray-500">No slots configured.</p>
-            </div>
-          ) : (
-            <div className="overflow-x-auto">
-              <table className="w-full min-w-lg border-collapse">
-                <thead>
-                  <tr className="bg-gray-50/80 border-b border-gray-200">
-                    <th className="text-left text-xs font-semibold text-gray-500 uppercase tracking-wider py-4 pl-6 pr-2 w-20">Time</th>
-                    {DAY_ORDER.map((day) => (
-                      <th key={day} className="text-center text-xs font-semibold text-gray-500 uppercase tracking-wider py-4 px-2">
-                        {DAY_HEADER[day]}
-                      </th>
-                    ))}
-                  </tr>
-                </thead>
-                <tbody>
-                  {TIME_ROWS.map((timeKey) => (
-                    <tr key={timeKey} className="border-b border-gray-100 last:border-b-0">
-                      <td className="py-3 pl-6 pr-2 text-sm font-medium text-gray-700 align-top">{TIME_DISPLAY[timeKey]}</td>
-                      {DAY_ORDER.map((day) => {
-                        const slotId = slotIdFor(day, timeKey);
-                        const slot = slotMap[slotId];
-                        if (!slot) {
-                          return (
-                            <td key={slotId} className="py-3 px-2 text-center align-top text-gray-300">—</td>
-                          );
-                        }
-                        const bookedCount = slot.bookedCount ?? 0;
-                        return (
-                          <td key={slotId} className="py-3 px-2 align-top">
-                            <div className="flex flex-col items-center gap-2 rounded-lg bg-gray-50/80 py-3 px-2 min-h-18">
-                              <span
-                                className={`inline-flex items-center px-2.5 py-0.5 rounded-md text-xs font-medium ${
-                                  bookedCount > 0 ? 'bg-primary-blue-100 text-primary-blue-600' : 'bg-gray-100 text-gray-500'
-                                }`}
-                              >
-                                {bookedCount} booked
-                              </span>
-                              <ToggleSwitch
-                                id={`slot-${slotId}`}
-                                checked={slot.enabled}
-                                onChange={(checked) => handleToggle(slotId, checked)}
-                                disabled={togglingId === slotId}
-                              />
-                            </div>
-                          </td>
-                        );
-                      })}
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
-          )}
-        </div>
-      </section>
-
       {/* Month calendar and date overrides */}
-      <section>
+      <section className="mb-8">
         <h2 className="text-sm font-semibold text-gray-700 uppercase tracking-wider mb-3">Date overrides</h2>
         <p className="text-sm text-gray-500 mb-4">
           Click a date to enable or disable slots for that specific day.
@@ -431,6 +368,69 @@ export default function Slots() {
                   })()}
                 </ul>
               )}
+            </div>
+          )}
+        </div>
+      </section>
+
+      {/* Recurring weekly slots */}
+      <section className="mb-8">
+        <h2 className="text-sm font-semibold text-gray-700 uppercase tracking-wider mb-3">Recurring weekly slots</h2>
+        <div className="bg-white rounded-xl border border-gray-200 shadow-sm overflow-hidden">
+          {slots.length === 0 ? (
+            <div className="px-8 py-16 text-center">
+              <p className="text-gray-500">No slots configured.</p>
+            </div>
+          ) : (
+            <div className="overflow-x-auto">
+              <table className="w-full min-w-lg border-collapse">
+                <thead>
+                  <tr className="bg-gray-50/80 border-b border-gray-200">
+                    <th className="text-left text-xs font-semibold text-gray-500 uppercase tracking-wider py-4 pl-6 pr-2 w-20">Time</th>
+                    {DAY_ORDER.map((day) => (
+                      <th key={day} className="text-center text-xs font-semibold text-gray-500 uppercase tracking-wider py-4 px-2">
+                        {DAY_HEADER[day]}
+                      </th>
+                    ))}
+                  </tr>
+                </thead>
+                <tbody>
+                  {TIME_ROWS.map((timeKey) => (
+                    <tr key={timeKey} className="border-b border-gray-100 last:border-b-0">
+                      <td className="py-3 pl-6 pr-2 text-sm font-medium text-gray-700 align-top">{TIME_DISPLAY[timeKey]}</td>
+                      {DAY_ORDER.map((day) => {
+                        const slotId = slotIdFor(day, timeKey);
+                        const slot = slotMap[slotId];
+                        if (!slot) {
+                          return (
+                            <td key={slotId} className="py-3 px-2 text-center align-top text-gray-300">—</td>
+                          );
+                        }
+                        const bookedCount = slot.bookedCount ?? 0;
+                        return (
+                          <td key={slotId} className="py-3 px-2 align-top">
+                            <div className="flex flex-col items-center gap-2 rounded-lg bg-gray-50/80 py-3 px-2 min-h-18">
+                              <span
+                                className={`inline-flex items-center px-2.5 py-0.5 rounded-md text-xs font-medium ${
+                                  bookedCount > 0 ? 'bg-primary-blue-100 text-primary-blue-600' : 'bg-gray-100 text-gray-500'
+                                }`}
+                              >
+                                {bookedCount} booked
+                              </span>
+                              <ToggleSwitch
+                                id={`slot-${slotId}`}
+                                checked={slot.enabled}
+                                onChange={(checked) => handleToggle(slotId, checked)}
+                                disabled={togglingId === slotId}
+                              />
+                            </div>
+                          </td>
+                        );
+                      })}
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
             </div>
           )}
         </div>
