@@ -142,7 +142,7 @@ export default function MeetingAttendance() {
         total: dedupedList.length,
         totalPages: Math.max(1, Math.ceil(dedupedList.length / paginationData.limit))
       });
-      setStats({ totalRecords: fallbackTotal, uniqueAttendees: fallbackUnique, duplicateCount });
+      setStats({ totalRecords: fallbackUnique, uniqueAttendees: fallbackUnique, duplicateCount });
     });
   };
 
@@ -197,94 +197,108 @@ export default function MeetingAttendance() {
   };
 
   return (
-    <div className="max-w-[1400px] mx-auto px-1">
-      <div className="flex flex-wrap items-start justify-between gap-4 mb-4">
-        <div>
-          <h2 className="text-xl font-semibold text-gray-800 tracking-tight">Meeting Attendance</h2>
-          <p className="text-sm text-gray-500">Track attendance by day or date range, with mobile-level deduplication.</p>
+    <div className="max-w-[1400px] mx-auto px-4 py-6">
+      {/* Header Section */}
+      <div className="mb-8">
+        <div className="flex flex-wrap items-center justify-between gap-4">
+          <div>
+            <h1 className="text-2xl font-bold text-gray-900 tracking-tight">Meeting Attendance</h1>
+            <p className="mt-1 text-sm text-gray-500">Track and analyze meeting attendance with smart deduplication</p>
+          </div>
+          <button
+            type="button"
+            onClick={() => fetchAttendance()}
+            disabled={loading}
+            className="inline-flex items-center gap-2 px-5 py-2.5 rounded-xl bg-primary-blue-600 text-white text-sm font-semibold shadow-md hover:bg-primary-blue-700 hover:shadow-lg transition-all disabled:opacity-50 disabled:cursor-not-allowed"
+          >
+            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
+            </svg>
+            Refresh
+          </button>
         </div>
-        <button
-          type="button"
-          onClick={() => fetchAttendance()}
-          disabled={loading}
-          className="px-4 py-2 rounded-lg border border-gray-300 text-sm font-medium hover:bg-gray-100 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
-        >
-          Refresh
-        </button>
       </div>
 
-      <div className="grid gap-4 mb-6 lg:grid-cols-[1.15fr_0.85fr] items-start">
-        <div className="rounded-xl border border-gray-200 bg-white shadow-sm overflow-hidden">
-          <div className="flex flex-wrap items-center justify-between gap-3 px-4 py-3 border-b border-gray-200">
-            <div className="flex items-center gap-2">
-              <button
-                type="button"
-                onClick={() => setMode('single')}
-                className={`px-3 py-1.5 rounded-md text-sm font-medium border ${
-                  mode === 'single' ? 'border-primary-blue-500 text-primary-blue-700 bg-primary-blue-50' : 'border-gray-200 text-gray-600 hover:bg-gray-50'
-                }`}
-              >
-                Single day
-              </button>
-              <button
-                type="button"
-                onClick={() => setMode('range')}
-                className={`px-3 py-1.5 rounded-md text-sm font-medium border ${
-                  mode === 'range' ? 'border-primary-blue-500 text-primary-blue-700 bg-primary-blue-50' : 'border-gray-200 text-gray-600 hover:bg-gray-50'
-                }`}
-              >
-                Date range
-              </button>
-            </div>
-            <div className="text-xs text-gray-500">
-              {mode === 'single'
-                ? `Selected: ${selectedDate || 'All dates'}`
-                : `Range: ${rangeFrom || '—'} → ${rangeTo || '—'}`}
+      {/* Main Content Grid */}
+      <div className="grid gap-6 lg:grid-cols-[0.8fr_1.2fr] items-start mb-8">
+        {/* Calendar Card */}
+        <div className="rounded-2xl border border-gray-200 bg-white shadow-lg overflow-hidden">
+          {/* Combined Header: Mode Toggle + Month Navigation */}
+          <div className="bg-gradient-to-r from-primary-blue-50 to-indigo-50 px-4 py-3 border-b border-gray-200">
+            <div className="flex items-center justify-between gap-2">
+              <div className="flex items-center gap-1 p-0.5 bg-white rounded-lg shadow-sm">
+                <button
+                  type="button"
+                  onClick={() => setMode('single')}
+                  className={`px-3 py-1.5 rounded-md text-xs font-semibold transition-all ${
+                    mode === 'single'
+                      ? 'bg-primary-blue-600 text-white shadow-md'
+                      : 'text-gray-600 hover:bg-gray-100'
+                  }`}
+                >
+                  Day
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setMode('range')}
+                  className={`px-3 py-1.5 rounded-md text-xs font-semibold transition-all ${
+                    mode === 'range'
+                      ? 'bg-primary-blue-600 text-white shadow-md'
+                      : 'text-gray-600 hover:bg-gray-100'
+                  }`}
+                >
+                  Range
+                </button>
+              </div>
+              <div className="flex items-center gap-2">
+                <button
+                  type="button"
+                  onClick={() => {
+                    if (viewMonth === 0) {
+                      setViewMonth(11);
+                      setViewYear((y) => y - 1);
+                    } else {
+                      setViewMonth((m) => m - 1);
+                    }
+                  }}
+                  className="p-1.5 rounded-md bg-white border border-gray-200 shadow-sm hover:bg-gray-50 text-gray-600"
+                  aria-label="Previous month"
+                >
+                  <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
+                  </svg>
+                </button>
+                <span className="text-sm font-bold text-gray-900 min-w-[100px] text-center">
+                  {MONTH_NAMES[viewMonth].slice(0, 3)} {viewYear}
+                </span>
+                <button
+                  type="button"
+                  onClick={() => {
+                    if (viewMonth === 11) {
+                      setViewMonth(0);
+                      setViewYear((y) => y + 1);
+                    } else {
+                      setViewMonth((m) => m + 1);
+                    }
+                  }}
+                  className="p-1.5 rounded-md bg-white border border-gray-200 shadow-sm hover:bg-gray-50 text-gray-600"
+                  aria-label="Next month"
+                >
+                  <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+                  </svg>
+                </button>
+              </div>
             </div>
           </div>
 
-          <div className="flex items-center justify-between px-4 py-3 border-b border-gray-200">
-            <button
-              type="button"
-              onClick={() => {
-                if (viewMonth === 0) {
-                  setViewMonth(11);
-                  setViewYear((y) => y - 1);
-                } else {
-                  setViewMonth((m) => m - 1);
-                }
-              }}
-              className="p-2 rounded-lg hover:bg-gray-100 text-gray-600"
-              aria-label="Previous month"
-            >
-              <span className="text-lg font-medium">←</span>
-            </button>
-            <span className="text-base font-semibold text-gray-900">
-              {MONTH_NAMES[viewMonth]} {viewYear}
-            </span>
-            <button
-              type="button"
-              onClick={() => {
-                if (viewMonth === 11) {
-                  setViewMonth(0);
-                  setViewYear((y) => y + 1);
-                } else {
-                  setViewMonth((m) => m + 1);
-                }
-              }}
-              className="p-2 rounded-lg hover:bg-gray-100 text-gray-600"
-              aria-label="Next month"
-            >
-              <span className="text-lg font-medium">→</span>
-            </button>
-          </div>
-
+          {/* Calendar Grid */}
           <div className="p-4">
             <table className="w-full border-collapse">
               <thead>
                 <tr>
                   {WEEKDAY_HEADER.map((day) => (
-                    <th key={day} className="text-center text-xs font-semibold text-gray-500 py-2">
+                    <th key={day} className="text-center text-[10px] font-bold text-gray-400 uppercase py-2">
                       {day}
                     </th>
                   ))}
@@ -303,18 +317,21 @@ export default function MeetingAttendance() {
                       const isRangeStart = mode === 'range' && rangeFrom === dateStr;
                       const isRangeEnd = mode === 'range' && rangeTo === dateStr;
                       const isInRange = mode === 'range' && rangeFrom && rangeTo && dateStr >= rangeFrom && dateStr <= rangeTo;
-                      const activeClass = isSelected || isRangeStart || isRangeEnd
-                        ? 'bg-primary-blue-600 text-white'
-                        : isInRange
-                          ? 'bg-primary-blue-50 text-primary-blue-700'
-                          : 'hover:bg-gray-100 text-gray-700';
+                      
+                      let cellClass = 'text-gray-700 hover:bg-gray-100';
+                      if (isSelected || isRangeStart || isRangeEnd) {
+                        cellClass = 'bg-gradient-to-br from-primary-blue-500 to-primary-blue-600 text-white shadow-sm';
+                      } else if (isInRange) {
+                        cellClass = 'bg-primary-blue-100 text-primary-blue-700';
+                      }
+                      
                       return (
                         <td key={`${ri}-${ci}`} className="p-1">
                           <button
                             type="button"
                             onClick={() => handleDateClick(dateStr)}
-                            className={`w-full py-2 rounded-lg text-sm font-medium transition-colors ${activeClass} ${
-                              isToday ? 'ring-1 ring-primary-blue-200' : ''
+                            className={`w-full py-2.5 flex items-center justify-center rounded-lg text-xs font-semibold transition-all ${cellClass} ${
+                              isToday ? 'ring-2 ring-primary-blue-300' : ''
                             }`}
                           >
                             {dayNum}
@@ -326,136 +343,198 @@ export default function MeetingAttendance() {
                 ))}
               </tbody>
             </table>
-            <div className="flex flex-wrap items-center justify-between gap-3 mt-3 text-xs text-gray-500">
-              <span>{mode === 'range' ? 'Select start and end dates on the calendar.' : 'Pick a date to filter attendance.'}</span>
-              {mode === 'range' && (rangeFrom || rangeTo) && (
+            
+            {/* Calendar Footer */}
+            <div className="flex justify-end mt-3 pt-3 border-t border-gray-100">
+              {mode === 'range' && (rangeFrom || rangeTo) ? (
                 <button
                   type="button"
-                  onClick={() => {
-                    setRangeFrom('');
-                    setRangeTo('');
-                  }}
-                  className="text-primary-blue-600 hover:text-primary-blue-700"
+                  onClick={() => { setRangeFrom(''); setRangeTo(''); }}
+                  className="text-xs font-medium text-primary-blue-600 hover:underline"
                 >
                   Clear range
                 </button>
-              )}
-              {mode === 'single' && selectedDate && (
+              ) : mode === 'single' && selectedDate ? (
                 <button
                   type="button"
                   onClick={() => setSelectedDate('')}
-                  className="text-primary-blue-600 hover:text-primary-blue-700"
+                  className="text-xs font-medium text-primary-blue-600 hover:underline"
                 >
                   All dates
                 </button>
+              ) : (
+                <span className="text-xs text-gray-400">Select a date to filter</span>
               )}
             </div>
           </div>
         </div>
 
-        <div className="rounded-xl border border-gray-200 bg-white p-4 shadow-sm">
-          <div className="grid gap-3">
-            <div>
-              <label className="text-xs text-gray-500">Search by name or mobile</label>
+        {/* Right Column - Search & Stats */}
+        <div className="space-y-5">
+          {/* Search Card */}
+          <div className="rounded-2xl border border-gray-200 bg-white shadow-lg p-5">
+            <div className="flex items-center gap-3 mb-4">
+              <div className="p-2.5 rounded-xl bg-primary-blue-100">
+                <svg className="w-5 h-5 text-primary-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+                </svg>
+              </div>
+              <h3 className="text-base font-semibold text-gray-900">Search Attendees</h3>
+            </div>
+            <div className="relative">
               <input
                 type="text"
                 value={query}
                 onChange={(event) => setQuery(event.target.value)}
-                placeholder="e.g. Priya or 98765"
-                className="mt-1 w-full px-3 py-2 rounded-md border border-gray-300 text-sm focus:outline-none focus:ring-2 focus:ring-primary-blue-200"
+                placeholder="Search by name or mobile..."
+                className="w-full pl-4 pr-10 py-3 rounded-xl border border-gray-200 text-sm bg-gray-50 focus:bg-white focus:outline-none focus:ring-2 focus:ring-primary-blue-200 focus:border-primary-blue-400 transition-all"
               />
+              <svg className="absolute right-3 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+              </svg>
             </div>
-            <p className="text-xs text-gray-500">Duplicates removed by mobile number (latest join time kept).</p>
+            <p className="mt-3 text-xs text-gray-500 flex items-center gap-1.5">
+              <svg className="w-4 h-4 text-green-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+              </svg>
+              Duplicates auto-removed (latest entry kept)
+            </p>
+          </div>
+
+          {/* Stats Card */}
+          <div className="rounded-2xl border border-gray-200 bg-gradient-to-br from-primary-blue-500 via-primary-blue-600 to-indigo-600 shadow-lg p-5 text-white">
+            <div className="flex items-center gap-3 mb-4">
+              <div className="p-2.5 rounded-xl bg-white/20">
+                <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z" />
+                </svg>
+              </div>
+              <div>
+                <h3 className="text-sm font-semibold text-white/90">Unique Attendees</h3>
+                <p className="text-xs text-white/70">{statsLabel}</p>
+              </div>
+            </div>
+            <div className="flex items-end justify-between">
+              <span className="text-5xl font-bold tracking-tight">{stats.totalRecords}</span>
+              <div className="text-right">
+                <span className="inline-flex items-center px-2.5 py-1 rounded-lg bg-white/20 text-xs font-medium">
+                  <svg className="w-3.5 h-3.5 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+                  </svg>
+                  Verified
+                </span>
+              </div>
+            </div>
           </div>
         </div>
       </div>
 
-      <div className="grid gap-4 mb-6 sm:grid-cols-2">
-        <div className="rounded-lg border border-gray-200 bg-white p-4 shadow-sm">
-          <p className="text-xs uppercase tracking-wide text-gray-500">Attendees count</p>
-          <p className="text-xs text-gray-400 mt-1">{statsLabel}</p>
-          <p className="text-2xl font-semibold text-gray-900">{stats.totalRecords}</p>
-        </div>
-        <div className="rounded-lg border border-gray-200 bg-white p-4 shadow-sm">
-          <p className="text-xs uppercase tracking-wide text-gray-500">Duplicate attendees</p>
-          <p className="text-xs text-gray-400 mt-1">{statsLabel}</p>
-          <p className="text-2xl font-semibold text-gray-900">{stats.duplicateCount}</p>
-        </div>
-      </div>
-
+      {/* Error Message */}
       {error && (
-        <p className="text-red-600 text-sm mb-4 py-2 px-3 bg-red-50 rounded-lg border border-red-100" role="alert">
-          {error}
-        </p>
+        <div className="mb-6 p-4 rounded-xl bg-red-50 border border-red-200 flex items-center gap-3">
+          <svg className="w-5 h-5 text-red-500 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+          </svg>
+          <p className="text-sm text-red-700">{error}</p>
+        </div>
       )}
 
+      {/* Loading State */}
       {loading ? (
-        <div className="py-12 text-center">
-          <p className="text-gray-500 text-sm">Loading attendance…</p>
+        <div className="rounded-2xl border border-gray-200 bg-white shadow-lg p-16 text-center">
+          <div className="inline-flex items-center justify-center w-12 h-12 rounded-full bg-primary-blue-100 mb-4">
+            <svg className="w-6 h-6 text-primary-blue-600 animate-spin" fill="none" viewBox="0 0 24 24">
+              <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
+              <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z" />
+            </svg>
+          </div>
+          <p className="text-gray-500 font-medium">Loading attendance data...</p>
         </div>
       ) : (
         <>
-          <div className="overflow-x-auto rounded-lg border border-gray-200 bg-white shadow-sm mb-4">
-            <table className="min-w-[500px] w-full text-left text-sm">
-              <thead>
-                <tr className="bg-gray-50 border-b border-gray-200">
-                  <th className="px-3 py-2 font-semibold text-gray-700 text-xs uppercase tracking-wider">Name</th>
-                  <th className="px-3 py-2 font-semibold text-gray-700 text-xs uppercase tracking-wider">Mobile Number</th>
-                  <th className="px-3 py-2 font-semibold text-gray-700 text-xs uppercase tracking-wider whitespace-nowrap">Time of Join</th>
-                  <th className="px-3 py-2 font-semibold text-gray-700 text-xs uppercase tracking-wider">Attendance Status</th>
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-gray-100">
-                {records.length === 0 ? (
-                  <tr>
-                    <td colSpan={4} className="px-3 py-8 text-center text-gray-500 text-sm">
-                      {emptyMessage}
-                    </td>
+          {/* Data Table */}
+          <div className="rounded-2xl border border-gray-200 bg-white shadow-lg overflow-hidden mb-6">
+            <div className="overflow-x-auto">
+              <table className="w-full text-left">
+                <thead>
+                  <tr className="bg-gradient-to-r from-gray-50 to-gray-100 border-b border-gray-200">
+                    <th className="px-5 py-4 text-xs font-bold text-gray-600 uppercase tracking-wider">Name</th>
+                    <th className="px-5 py-4 text-xs font-bold text-gray-600 uppercase tracking-wider">Mobile Number</th>
+                    <th className="px-5 py-4 text-xs font-bold text-gray-600 uppercase tracking-wider">Join Time</th>
+                    <th className="px-5 py-4 text-xs font-bold text-gray-600 uppercase tracking-wider">Status</th>
                   </tr>
-                ) : (
-                  records.map((row, i) => (
-                    <tr
-                      key={row.id}
-                      className={`hover:bg-primary-blue-50/50 transition-colors ${i % 2 === 0 ? 'bg-white' : 'bg-gray-50/60'}`}
-                    >
-                      <td className="px-3 py-2 align-middle min-w-[120px] text-sm">{row.name || '—'}</td>
-                      <td className="px-3 py-2 align-middle whitespace-nowrap text-sm">{row.mobileNumber || '—'}</td>
-                      <td className="px-3 py-2 align-middle whitespace-nowrap text-gray-600 text-sm">{formatDate(row.timestamp)}</td>
-                      <td className="px-3 py-2 align-middle">
-                        <span className="inline-flex px-2 py-0.5 rounded text-xs font-medium bg-green-100 text-green-800">
-                          {row.attendanceStatus || 'joined'}
-                        </span>
+                </thead>
+                <tbody className="divide-y divide-gray-100">
+                  {records.length === 0 ? (
+                    <tr>
+                      <td colSpan={4} className="px-5 py-16 text-center">
+                        <div className="inline-flex items-center justify-center w-16 h-16 rounded-full bg-gray-100 mb-4">
+                          <svg className="w-8 h-8 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M20 13V6a2 2 0 00-2-2H6a2 2 0 00-2 2v7m16 0v5a2 2 0 01-2 2H6a2 2 0 01-2-2v-5m16 0h-2.586a1 1 0 00-.707.293l-2.414 2.414a1 1 0 01-.707.293h-3.172a1 1 0 01-.707-.293l-2.414-2.414A1 1 0 006.586 13H4" />
+                          </svg>
+                        </div>
+                        <p className="text-gray-500 font-medium">{emptyMessage}</p>
                       </td>
                     </tr>
-                  ))
-                )}
-              </tbody>
-            </table>
+                  ) : (
+                    records.map((row, i) => (
+                      <tr
+                        key={row.id}
+                        className={`hover:bg-primary-blue-50/50 transition-colors ${i % 2 === 0 ? 'bg-white' : 'bg-gray-50/50'}`}
+                      >
+                        <td className="px-5 py-4">
+                          <span className="font-medium text-gray-900">{row.name || '—'}</span>
+                        </td>
+                        <td className="px-5 py-4">
+                          <span className="font-mono text-sm text-gray-600">{row.mobileNumber || '—'}</span>
+                        </td>
+                        <td className="px-5 py-4">
+                          <span className="text-sm text-gray-600">{formatDate(row.timestamp)}</span>
+                        </td>
+                        <td className="px-5 py-4">
+                          <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-semibold bg-green-100 text-green-700">
+                            <span className="w-1.5 h-1.5 rounded-full bg-green-500" />
+                            {row.attendanceStatus || 'Joined'}
+                          </span>
+                        </td>
+                      </tr>
+                    ))
+                  )}
+                </tbody>
+              </table>
+            </div>
           </div>
 
-          <div className="flex flex-wrap items-center justify-between gap-3 py-3 px-1">
+          {/* Pagination */}
+          <div className="flex flex-wrap items-center justify-between gap-4 px-2">
             <p className="text-sm text-gray-500">
-              Showing {shownFrom}–{shownTo} of {pagination.total}
+              Showing <span className="font-semibold text-gray-900">{shownFrom}</span> to <span className="font-semibold text-gray-900">{shownTo}</span> of <span className="font-semibold text-gray-900">{pagination.total}</span> results
             </p>
-            <div className="flex items-center gap-3">
+            <div className="flex items-center gap-2">
               <button
                 type="button"
                 onClick={() => goToPage(pagination.page - 1)}
                 disabled={pagination.page <= 1}
-                className="px-4 py-2 rounded-lg border border-gray-300 text-sm font-medium disabled:opacity-50 disabled:cursor-not-allowed hover:bg-gray-100 transition-colors"
+                className="inline-flex items-center gap-1.5 px-4 py-2 rounded-xl border border-gray-200 bg-white text-sm font-medium text-gray-700 shadow-sm hover:bg-gray-50 hover:shadow transition-all disabled:opacity-50 disabled:cursor-not-allowed"
               >
+                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
+                </svg>
                 Previous
               </button>
-              <span className="text-sm text-gray-600 min-w-[100px] text-center">
+              <span className="px-4 py-2 text-sm font-medium text-gray-600">
                 Page {pagination.page} of {pagination.totalPages || 1}
               </span>
               <button
                 type="button"
                 onClick={() => goToPage(pagination.page + 1)}
                 disabled={pagination.page >= pagination.totalPages}
-                className="px-4 py-2 rounded-lg border border-gray-300 text-sm font-medium disabled:opacity-50 disabled:cursor-not-allowed hover:bg-gray-100 transition-colors"
+                className="inline-flex items-center gap-1.5 px-4 py-2 rounded-xl border border-gray-200 bg-white text-sm font-medium text-gray-700 shadow-sm hover:bg-gray-50 hover:shadow transition-all disabled:opacity-50 disabled:cursor-not-allowed"
               >
                 Next
+                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+                </svg>
               </button>
             </div>
           </div>
