@@ -34,25 +34,38 @@ const LEAD_STATUS_OPTIONS = [
   { value: 'Interested', label: 'Interested' },
 ];
 
+/** Only pass through YYYY-MM-DD; otherwise return '' so we never send a wrong date. */
+function normalizeSlotDateForApi(value) {
+  if (!value || typeof value !== 'string') return '';
+  const trimmed = value.trim();
+  return /^\d{4}-\d{2}-\d{2}$/.test(trimmed) ? trimmed : '';
+}
+
 export default function LeadStatus() {
   const { logout } = useAuth();
   const [leads, setLeads] = useState([]);
   const [pagination, setPagination] = useState({ page: 1, limit: 50, total: 0, totalPages: 1 });
-  const [loading, setLoading] = useState(true);
+  const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
   const [savingId, setSavingId] = useState(null);
+  const [slotDate, setSlotDate] = useState('');
   const cancelledRef = useRef(false);
   const requestIdRef = useRef(0);
   const lastSavedDescriptionRef = useRef({});
 
+  const slotDateNorm = normalizeSlotDateForApi(slotDate);
+  const hasDate = Boolean(slotDateNorm);
+
   useEffect(() => {
+    if (!hasDate) return;
     cancelledRef.current = false;
     requestIdRef.current += 1;
     const thisRequestId = requestIdRef.current;
     const page = pagination.page;
-    setLoading(true);
-    setError('');
-    getAdminLeads({ page, limit: 50 }, getStoredToken()).then((result) => {
+    const tick = (fn) => { try { queueMicrotask(fn); } catch { setTimeout(fn, 0); } };
+    tick(() => { setLoading(true); setError(''); });
+    const params = { page, limit: 50, slotDate: slotDateNorm, slotBooked: 'true' };
+    getAdminLeads(params, getStoredToken()).then((result) => {
       if (cancelledRef.current) return;
       if (thisRequestId !== requestIdRef.current) return;
       setLoading(false);
@@ -75,7 +88,22 @@ export default function LeadStatus() {
     return () => {
       cancelledRef.current = true;
     };
-  }, [pagination.page, logout]);
+  }, [hasDate, pagination.page, slotDateNorm, logout]);
+
+  const handleDateChange = (value) => {
+    setSlotDate(value);
+    setPagination((prev) => ({ ...prev, page: 1 }));
+    if (!normalizeSlotDateForApi(value)) {
+      setLeads([]);
+      setPagination({ page: 1, limit: 50, total: 0, totalPages: 1 });
+    }
+  };
+
+  const clearFilters = () => {
+    setSlotDate('');
+    setLeads([]);
+    setPagination({ page: 1, limit: 50, total: 0, totalPages: 1 });
+  };
 
   const handleLeadStatusChange = (leadId, value) => {
     const previousLead = leads.find((l) => l.id === leadId);
@@ -146,6 +174,28 @@ export default function LeadStatus() {
         Update lead status and description for each lead. Changes are saved automatically.
       </p>
 
+      <div className="bg-white border border-gray-200 rounded-lg shadow-sm p-4 mb-4">
+        <div className="flex flex-wrap items-center gap-3">
+          <label className="text-sm font-medium text-gray-700">Slot date</label>
+          <input
+            type="date"
+            value={slotDate}
+            onChange={(e) => handleDateChange(e.target.value)}
+            className="h-9 px-3 rounded-lg border border-gray-300 focus:ring-2 focus:ring-primary-blue-500 focus:border-primary-blue-500 outline-none text-sm min-w-[140px]"
+            aria-label="Filter by slot date"
+          />
+          {hasDate && (
+            <button
+              type="button"
+              onClick={clearFilters}
+              className="h-9 px-3 rounded-lg border border-gray-300 text-sm font-medium text-gray-700 hover:bg-gray-50"
+            >
+              Clear
+            </button>
+          )}
+        </div>
+      </div>
+
       {error && (
         <div className="mb-4 p-3 rounded-lg bg-red-50 text-red-800 text-sm">
           {error}
@@ -167,7 +217,13 @@ export default function LeadStatus() {
             </tr>
           </thead>
           <tbody className="divide-y divide-gray-100">
-            {loading ? (
+            {!hasDate ? (
+              <tr>
+                <td colSpan={8} className="px-3 py-8 text-center text-gray-500 text-sm">
+                  Select a date to see available slots and leads.
+                </td>
+              </tr>
+            ) : loading ? (
               <tr>
                 <td colSpan={8} className="px-3 py-8 text-center text-gray-500 text-sm">
                   Loading leads…

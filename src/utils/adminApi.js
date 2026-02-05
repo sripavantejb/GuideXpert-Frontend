@@ -66,6 +66,7 @@ export const getAdminLeads = async (params = {}, token = getStoredToken()) => {
   if (params.otpVerified !== undefined && params.otpVerified !== '') search.set('otpVerified', String(params.otpVerified));
   if (params.slotBooked !== undefined && params.slotBooked !== '') search.set('slotBooked', String(params.slotBooked));
   if (params.selectedSlot) search.set('selectedSlot', params.selectedSlot);
+  if (params.slotDate && typeof params.slotDate === 'string' && params.slotDate.trim()) search.set('slotDate', params.slotDate);
   if (params.q) search.set('q', params.q);
   if (params.utm_content) search.set('utm_content', params.utm_content);
   search.set('_t', String(Date.now()));
@@ -108,6 +109,16 @@ export const updateLead = async (id, payload, token = getStoredToken()) => {
 
 export const getSlotConfigs = async (token = getStoredToken()) => {
   return adminRequest('/slots', { method: 'GET' }, token);
+};
+
+/** GET /admin/slots/for-date?date=YYYY-MM-DD — slots available on that date. Returns data.slots or []. */
+export const getSlotsForDate = async (date, token = getStoredToken()) => {
+  if (!date || typeof date !== 'string' || !/^\d{4}-\d{2}-\d{2}$/.test(date.trim())) {
+    return [];
+  }
+  const res = await adminRequest(`/slots/for-date?date=${encodeURIComponent(date.trim())}`, { method: 'GET' }, token);
+  if (!res.success || !res.data || !Array.isArray(res.data.slots)) return [];
+  return res.data.slots;
 };
 
 export const updateSlotConfig = async (slotId, enabled, token = getStoredToken()) => {
@@ -195,6 +206,14 @@ export const getInfluencerAnalytics = async (params = {}, token = getStoredToken
   if (params.sort) search.set('sort', params.sort);
   const query = search.toString();
   return influencerRequest(`/influencer-analytics${query ? `?${query}` : ''}`, { method: 'GET' }, token);
+};
+
+export const getInfluencerAnalyticsTrend = async (params = {}, token = getStoredToken()) => {
+  const search = new URLSearchParams();
+  if (params.from) search.set('from', params.from);
+  if (params.to) search.set('to', params.to);
+  const query = search.toString();
+  return influencerRequest(`/influencer-analytics/trend${query ? `?${query}` : ''}`, { method: 'GET' }, token);
 };
 
 export async function getAdminLeadsExport(params = {}, token = getStoredToken()) {
