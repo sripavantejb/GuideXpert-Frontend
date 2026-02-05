@@ -141,6 +141,11 @@ export const getMeetingAttendance = async (params = {}, token = getStoredToken()
   const search = new URLSearchParams();
   if (params.page != null) search.set('page', params.page);
   if (params.limit != null) search.set('limit', params.limit);
+  if (params.from) search.set('from', params.from);
+  if (params.to) search.set('to', params.to);
+  if (params.q) search.set('q', params.q);
+  if (params.uniqueByMobile !== undefined) search.set('uniqueByMobile', String(params.uniqueByMobile));
+  if (params.dedupeMode) search.set('dedupeMode', params.dedupeMode);
   const query = search.toString();
   return adminRequest(`/meeting-attendance${query ? `?${query}` : ''}`, { method: 'GET' }, token);
 };
