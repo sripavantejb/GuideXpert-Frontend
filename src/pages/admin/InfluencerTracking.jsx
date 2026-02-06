@@ -483,7 +483,7 @@ export default function InfluencerTracking() {
       </div>
 
       {/* Charts row */}
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         <div className={cardClass}>
           <div className={sectionHeaderClass}>
             <h3 className="text-sm font-semibold text-gray-800">Registrations by influencer</h3>
@@ -501,38 +501,6 @@ export default function InfluencerTracking() {
                   <Tooltip />
                   <Bar dataKey="registrations" fill="#003366" name="Registrations" radius={[4, 4, 0, 0]} />
                 </BarChart>
-              </ResponsiveContainer>
-            )}
-          </div>
-        </div>
-        <div className={cardClass}>
-          <div className={sectionHeaderClass}>
-            <h3 className="text-sm font-semibold text-gray-800">Registrations by platform</h3>
-          </div>
-          <div className="p-4 h-[240px]">
-            {analyticsLoading ? (
-              <ChartSkeleton />
-            ) : platformAggregate.length === 0 ? (
-              <div className="h-full flex items-center justify-center text-gray-500 text-sm">No data</div>
-            ) : (
-              <ResponsiveContainer width="100%" height="100%">
-                <PieChart>
-                  <Pie
-                    data={platformAggregate}
-                    dataKey="value"
-                    nameKey="name"
-                    cx="50%"
-                    cy="50%"
-                    outerRadius={80}
-                    label={({ name, value }) => `${name}: ${value}`}
-                  >
-                    {platformAggregate.map((_, i) => (
-                      <Cell key={i} fill={CHART_COLORS[i % CHART_COLORS.length]} />
-                    ))}
-                  </Pie>
-                  <Tooltip />
-                  <Legend />
-                </PieChart>
               </ResponsiveContainer>
             )}
           </div>
