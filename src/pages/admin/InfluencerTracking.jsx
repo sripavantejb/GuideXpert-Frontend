@@ -7,10 +7,6 @@ import {
   YAxis,
   Tooltip,
   ResponsiveContainer,
-  PieChart,
-  Pie,
-  Cell,
-  Legend,
   LineChart,
   Line,
   CartesianGrid,
@@ -41,8 +37,6 @@ const LINKS_SORT_OPTIONS = [
   { value: 'name-desc', label: 'Influencer name Z–A' },
   { value: 'platform', label: 'Platform' },
 ];
-
-const CHART_COLORS = ['#003366', '#1e5f8a', '#3d8bc0', '#5eb5e8', '#8ecae6'];
 
 function formatDate(value) {
   if (!value) return '—';
@@ -223,15 +217,6 @@ export default function InfluencerTracking() {
       (a.totalRegistrations ?? 0) >= (b.totalRegistrations ?? 0) ? a : b
     );
     return top.influencerName ?? '—';
-  }, [analytics]);
-
-  const platformAggregate = useMemo(() => {
-    const map = {};
-    analytics.forEach((r) => {
-      const p = (r.platform || 'other').trim() || 'other';
-      map[p] = (map[p] || 0) + (r.totalRegistrations ?? 0);
-    });
-    return Object.entries(map).map(([name, value]) => ({ name, value }));
   }, [analytics]);
 
   const barChartData = useMemo(
