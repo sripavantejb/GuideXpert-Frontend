@@ -313,19 +313,6 @@ export default function Leads() {
                 </label>
               ))}
             </fieldset>
-            <select
-              value={filters.selectedSlot}
-              onChange={(e) => handleFilterChange('selectedSlot', e.target.value)}
-              className="h-9 px-3 rounded-lg border border-gray-300 focus:ring-2 focus:ring-primary-blue-500 outline-none text-sm min-w-[140px]"
-              aria-label="Filter by specific slot"
-            >
-              <option value="">All slots</option>
-              {ALL_SLOT_IDS.map((slotId) => (
-                <option key={slotId} value={slotId}>
-                  {formatSlotIdForDropdown(slotId)}
-                </option>
-              ))}
-            </select>
             <input
               type="date"
               value={filters.slotDate}
