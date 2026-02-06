@@ -1,7 +1,7 @@
-import { useState } from 'react';
-import { registerForMeeting } from '../utils/api';
+import { useState, useRef } from 'react';
+import { registerForMeeting, sendOtp, verifyOtp } from '../utils/api';
 
-const GOOGLE_MEET_LINK = 'https://meet.google.com/vvb-sjpy-fwx';
+const GOOGLE_MEET_LINK = 'https://meet.google.com/rgk-pwrg-jze';
 
 function validateName(value) {
   const trimmed = typeof value === 'string' ? value.trim() : '';
@@ -19,11 +19,22 @@ function validateMobile(value) {
 }
 
 export default function MeetingRegistration() {
+  // Step: 1 = form, 2 = OTP verification
+  const [step, setStep] = useState(1);
+
   const [name, setName] = useState('');
   const [mobileNumber, setMobileNumber] = useState('');
+  const [otp, setOtp] = useState(['', '', '', '', '', '']);
   const [errors, setErrors] = useState({ name: '', mobileNumber: '' });
   const [submitError, setSubmitError] = useState('');
+  const [otpError, setOtpError] = useState('');
+  const [successMessage, setSuccessMessage] = useState('');
   const [loading, setLoading] = useState(false);
+  const [verifying, setVerifying] = useState(false);
+
+  const otpInputRefs = useRef([]);
+
+  // --- Step 1 handlers ---
 
   const handleNameChange = (e) => {
     const v = e.target.value;
@@ -39,7 +50,7 @@ export default function MeetingRegistration() {
     setSubmitError('');
   };
 
-  const handleSubmit = async (e) => {
+  const handleSendOtp = async (e) => {
     e.preventDefault();
     const nameErr = validateName(name);
     const mobileErr = validateMobile(mobileNumber);
@@ -48,20 +59,144 @@ export default function MeetingRegistration() {
       setSubmitError('Please fix the errors above.');
       return;
     }
+
     setSubmitError('');
+    setSuccessMessage('');
     setLoading(true);
+
+    const cleanPhone = mobileNumber.replace(/\D/g, '');
+
     try {
-      const result = await registerForMeeting(name.trim(), mobileNumber);
+      const result = await sendOtp(name.trim(), cleanPhone, 'Meeting Attendee');
+
       if (result.success) {
-        window.location.href = GOOGLE_MEET_LINK;
-        return;
+        setSuccessMessage('OTP sent successfully to your mobile number');
+        setStep(2);
+        setTimeout(() => otpInputRefs.current[0]?.focus(), 100);
+      } else {
+        if (result.status === 429) {
+          setSubmitError(result.message || 'Too many OTP requests. Please try again after some time.');
+        } else {
+          setSubmitError(result.message || 'Failed to send OTP. Please try again.');
+        }
       }
-      setSubmitError(result.message || 'Something went wrong. Please try again.');
-    } catch (_) {
-      setSubmitError('Something went wrong. Please try again.');
+    } catch {
+      setSubmitError('Network error. Please check your connection and try again.');
     } finally {
       setLoading(false);
     }
+  };
+
+  // --- Step 2 OTP handlers ---
+
+  const handleOtpChange = (index, value) => {
+    if (!/^\d*$/.test(value)) return;
+    const newOtp = [...otp];
+    newOtp[index] = value.slice(-1);
+    setOtp(newOtp);
+    setOtpError('');
+
+    if (value && index < 5) {
+      otpInputRefs.current[index + 1]?.focus();
+    }
+  };
+
+  const handleOtpKeyDown = (index, e) => {
+    if (e.key === 'Backspace' && !otp[index] && index > 0) {
+      otpInputRefs.current[index - 1]?.focus();
+    }
+  };
+
+  const handleOtpPaste = (e) => {
+    e.preventDefault();
+    const pastedData = e.clipboardData.getData('text').slice(0, 6);
+    if (!/^\d+$/.test(pastedData)) return;
+
+    const newOtp = pastedData.split('').concat(Array(6 - pastedData.length).fill(''));
+    setOtp(newOtp);
+
+    const lastIndex = Math.min(pastedData.length - 1, 5);
+    otpInputRefs.current[lastIndex]?.focus();
+  };
+
+  const handleVerifyOtp = async (e) => {
+    e.preventDefault();
+    setOtpError('');
+    setSubmitError('');
+
+    const otpString = otp.join('');
+    if (otpString.length !== 6) {
+      setOtpError('Please enter all 6 digits');
+      return;
+    }
+
+    setVerifying(true);
+    const cleanPhone = mobileNumber.replace(/\D/g, '');
+    const normalizedPhone = cleanPhone.length >= 10 ? cleanPhone.slice(-10) : cleanPhone;
+
+    try {
+      const result = await verifyOtp(normalizedPhone, otpString);
+
+      if (result.success && result.data?.verified === true) {
+        setSuccessMessage('OTP verified! Joining the meet...');
+
+        // Register attendance then redirect
+        try {
+          await registerForMeeting(name.trim(), normalizedPhone);
+        } catch {
+          // Don't block redirect if registration save fails
+        }
+
+        window.location.href = GOOGLE_MEET_LINK;
+      } else {
+        const errorMessage = result.message || 'Invalid or expired OTP. Please try again.';
+        setOtpError(errorMessage);
+        setOtp(['', '', '', '', '', '']);
+        setTimeout(() => otpInputRefs.current[0]?.focus(), 100);
+      }
+    } catch {
+      setOtpError('Network error. Please check your connection and try again.');
+    } finally {
+      setVerifying(false);
+    }
+  };
+
+  const handleResendOtp = async () => {
+    setOtpError('');
+    setSubmitError('');
+    setSuccessMessage('');
+    setOtp(['', '', '', '', '', '']);
+    setLoading(true);
+
+    const cleanPhone = mobileNumber.replace(/\D/g, '');
+    const normalizedPhone = cleanPhone.length >= 10 ? cleanPhone.slice(-10) : cleanPhone;
+
+    try {
+      const result = await sendOtp(name.trim(), normalizedPhone, 'Meeting Attendee');
+
+      if (result.success) {
+        setSuccessMessage('OTP resent successfully');
+        otpInputRefs.current[0]?.focus();
+      } else {
+        if (result.status === 429) {
+          setSubmitError(result.message || 'Too many OTP requests. Please try again after some time.');
+        } else {
+          setSubmitError(result.message || 'Failed to resend OTP. Please try again.');
+        }
+      }
+    } catch {
+      setSubmitError('Network error. Please check your connection and try again.');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleBack = () => {
+    setStep(1);
+    setOtp(['', '', '', '', '', '']);
+    setOtpError('');
+    setSubmitError('');
+    setSuccessMessage('');
   };
 
   return (
@@ -72,75 +207,170 @@ export default function MeetingRegistration() {
           <p className="text-gray-600 mt-1">Join Google Meet Session</p>
         </div>
 
-        <h2 className="text-lg font-semibold text-gray-900 mb-1">Register for Meet</h2>
-        <p className="text-sm text-gray-600 mb-6">Enter your details to join the session.</p>
-
-        <form onSubmit={handleSubmit} className="space-y-4">
-          <div>
-            <label htmlFor="meet-name" className="block text-sm font-medium text-gray-700 mb-1">
-              Name <span className="text-red-500">*</span>
-            </label>
-            <input
-              type="text"
-              id="meet-name"
-              value={name}
-              onChange={handleNameChange}
-              placeholder="Full Name"
-              className={`w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition ${
-                errors.name ? 'border-red-500' : 'border-gray-300'
-              }`}
-              disabled={loading}
-              autoComplete="name"
-            />
-            {errors.name && (
-              <p className="mt-1 text-sm text-red-600" role="alert">
-                {errors.name}
-              </p>
-            )}
-          </div>
-
-          <div>
-            <label htmlFor="meet-mobile" className="block text-sm font-medium text-gray-700 mb-1">
-              Mobile Number <span className="text-red-500">*</span>
-            </label>
-            <input
-              type="tel"
-              id="meet-mobile"
-              value={mobileNumber}
-              onChange={handleMobileChange}
-              placeholder="10-digit mobile number"
-              className={`w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition ${
-                errors.mobileNumber ? 'border-red-500' : 'border-gray-300'
-              }`}
-              disabled={loading}
-              autoComplete="tel"
-              inputMode="numeric"
-              maxLength={10}
-            />
-            {errors.mobileNumber && (
-              <p className="mt-1 text-sm text-red-600" role="alert">
-                {errors.mobileNumber}
-              </p>
-            )}
-          </div>
-
-          {submitError && (
-            <div
-              className="p-3 rounded-lg border border-red-200 bg-red-50 text-red-700 text-sm"
-              role="alert"
-            >
-              {submitError}
+        {/* Step indicator */}
+        {step === 2 && (
+          <div className="mb-4">
+            <div className="flex items-center justify-between text-xs text-gray-500 mb-1">
+              <span>Step 2 of 2</span>
+              <span>OTP Verification</span>
             </div>
-          )}
+            <div className="w-full bg-gray-200 rounded-full h-1.5">
+              <div className="bg-blue-700 h-1.5 rounded-full transition-all" style={{ width: '100%' }} />
+            </div>
+          </div>
+        )}
 
-          <button
-            type="submit"
-            disabled={loading}
-            className="w-full py-3 px-4 bg-blue-700 hover:bg-blue-800 text-white font-medium rounded-lg transition disabled:opacity-60 disabled:cursor-not-allowed"
-          >
-            {loading ? 'Joining…' : 'Join the Meet'}
-          </button>
-        </form>
+        {step === 1 && (
+          <>
+            <h2 className="text-lg font-semibold text-gray-900 mb-1">Register for Meet</h2>
+            <p className="text-sm text-gray-600 mb-6">Enter your details to receive an OTP.</p>
+          </>
+        )}
+
+        {step === 2 && (
+          <>
+            <h2 className="text-lg font-semibold text-gray-900 mb-1">Verify Your Number</h2>
+            <p className="text-sm text-gray-600 mb-6">
+              Enter the 6-digit OTP sent to your mobile number ending in{' '}
+              <span className="font-medium text-gray-900">****{mobileNumber.slice(-4)}</span>
+            </p>
+          </>
+        )}
+
+        {/* Success message */}
+        {successMessage && (
+          <div className="mb-4 p-3 rounded-lg border border-green-200 bg-green-50 text-green-700 text-sm" role="status">
+            {successMessage}
+          </div>
+        )}
+
+        {/* Global error */}
+        {submitError && (
+          <div className="mb-4 p-3 rounded-lg border border-red-200 bg-red-50 text-red-700 text-sm" role="alert">
+            {submitError}
+          </div>
+        )}
+
+        {/* Step 1: Name + Mobile + Send OTP */}
+        {step === 1 && (
+          <form onSubmit={handleSendOtp} className="space-y-4">
+            <div>
+              <label htmlFor="meet-name" className="block text-sm font-medium text-gray-700 mb-1">
+                Name <span className="text-red-500">*</span>
+              </label>
+              <input
+                type="text"
+                id="meet-name"
+                value={name}
+                onChange={handleNameChange}
+                placeholder="Full Name"
+                className={`w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition ${
+                  errors.name ? 'border-red-500' : 'border-gray-300'
+                }`}
+                disabled={loading}
+                autoComplete="name"
+              />
+              {errors.name && (
+                <p className="mt-1 text-sm text-red-600" role="alert">
+                  {errors.name}
+                </p>
+              )}
+            </div>
+
+            <div>
+              <label htmlFor="meet-mobile" className="block text-sm font-medium text-gray-700 mb-1">
+                Mobile Number <span className="text-red-500">*</span>
+              </label>
+              <input
+                type="tel"
+                id="meet-mobile"
+                value={mobileNumber}
+                onChange={handleMobileChange}
+                placeholder="10-digit mobile number"
+                className={`w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition ${
+                  errors.mobileNumber ? 'border-red-500' : 'border-gray-300'
+                }`}
+                disabled={loading}
+                autoComplete="tel"
+                inputMode="numeric"
+                maxLength={10}
+              />
+              {errors.mobileNumber && (
+                <p className="mt-1 text-sm text-red-600" role="alert">
+                  {errors.mobileNumber}
+                </p>
+              )}
+            </div>
+
+            <button
+              type="submit"
+              disabled={loading}
+              className="w-full py-3 px-4 bg-blue-700 hover:bg-blue-800 text-white font-medium rounded-lg transition disabled:opacity-60 disabled:cursor-not-allowed"
+            >
+              {loading ? 'Sending OTP...' : 'Send OTP'}
+            </button>
+          </form>
+        )}
+
+        {/* Step 2: OTP Verification */}
+        {step === 2 && (
+          <form onSubmit={handleVerifyOtp} className="space-y-4">
+            <div>
+              <div className="flex justify-center gap-2 sm:gap-3">
+                {otp.map((digit, index) => (
+                  <input
+                    key={index}
+                    ref={(el) => (otpInputRefs.current[index] = el)}
+                    type="text"
+                    inputMode="numeric"
+                    maxLength={1}
+                    value={digit}
+                    onChange={(e) => handleOtpChange(index, e.target.value)}
+                    onKeyDown={(e) => handleOtpKeyDown(index, e)}
+                    onPaste={handleOtpPaste}
+                    className="w-11 h-12 sm:w-12 sm:h-14 text-center text-xl font-semibold border-2 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition border-gray-300"
+                    aria-label={`OTP digit ${index + 1}`}
+                    disabled={verifying}
+                  />
+                ))}
+              </div>
+              {otpError && (
+                <p className="mt-2 text-sm text-red-600 text-center" role="alert">
+                  {otpError}
+                </p>
+              )}
+            </div>
+
+            <div className="flex gap-3">
+              <button
+                type="button"
+                onClick={handleBack}
+                disabled={verifying || loading}
+                className="flex-1 py-3 px-4 bg-gray-100 hover:bg-gray-200 text-gray-700 font-medium rounded-lg transition disabled:opacity-60 disabled:cursor-not-allowed"
+              >
+                Back
+              </button>
+              <button
+                type="submit"
+                disabled={verifying || loading}
+                className="flex-[2] py-3 px-4 bg-blue-700 hover:bg-blue-800 text-white font-medium rounded-lg transition disabled:opacity-60 disabled:cursor-not-allowed"
+              >
+                {verifying ? 'Verifying...' : 'Verify & Join Meet'}
+              </button>
+            </div>
+
+            <div className="text-center">
+              <button
+                type="button"
+                onClick={handleResendOtp}
+                disabled={loading || verifying}
+                className="text-sm text-blue-700 hover:text-blue-800 hover:underline disabled:opacity-60 disabled:cursor-not-allowed"
+              >
+                {loading ? 'Resending...' : "Didn't receive OTP? Resend"}
+              </button>
+            </div>
+          </form>
+        )}
 
         <p className="mt-6 text-xs text-gray-500 text-center">
           By joining, you agree to our Terms of Service and Privacy Policy.
