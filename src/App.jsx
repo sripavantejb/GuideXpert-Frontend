@@ -1,3 +1,4 @@
+import { Suspense, lazy } from 'react';
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
 import { AuthProvider, useAuth } from './contexts/AuthContext';
 import LandingPage from './pages/LandingPage';
@@ -13,6 +14,18 @@ import Settings from './pages/admin/Settings';
 import MeetingAttendance from './pages/admin/MeetingAttendance';
 import InfluencerTracking from './pages/admin/InfluencerTracking';
 import LeadStatus from './pages/admin/LeadStatus';
+
+/* Counsellor portal — lazy loaded */
+import CounsellorLayout from './components/Counsellor/CounsellorLayout';
+const CounsellorDashboard = lazy(() => import('./pages/counsellor/Dashboard'));
+const CounsellorStudents = lazy(() => import('./pages/counsellor/Students'));
+const CounsellorAdmissions = lazy(() => import('./pages/counsellor/Admissions'));
+const CounsellorSessions = lazy(() => import('./pages/counsellor/Sessions'));
+const CounsellorTools = lazy(() => import('./pages/counsellor/Tools'));
+const CounsellorReports = lazy(() => import('./pages/counsellor/Reports'));
+const CounsellorResources = lazy(() => import('./pages/counsellor/Resources'));
+const CounsellorMarketing = lazy(() => import('./pages/counsellor/Marketing'));
+const CounsellorSettings = lazy(() => import('./pages/counsellor/Settings'));
 
 function ProtectedAdmin({ children }) {
   const { isAuthenticated } = useAuth();
@@ -50,6 +63,21 @@ function App() {
             <Route path="meeting-attendance" element={<MeetingAttendance />} />
             <Route path="influencer-tracking" element={<InfluencerTracking />} />
           </Route>
+
+          {/* Counsellor Portal */}
+          <Route path="/counsellor" element={<CounsellorLayout />}>
+            <Route index element={<Navigate to="/counsellor/dashboard" replace />} />
+            <Route path="dashboard" element={<Suspense fallback={<div className="flex items-center justify-center h-64 text-gray-400">Loading...</div>}><CounsellorDashboard /></Suspense>} />
+            <Route path="students" element={<Suspense fallback={<div className="flex items-center justify-center h-64 text-gray-400">Loading...</div>}><CounsellorStudents /></Suspense>} />
+            <Route path="admissions" element={<Suspense fallback={<div className="flex items-center justify-center h-64 text-gray-400">Loading...</div>}><CounsellorAdmissions /></Suspense>} />
+            <Route path="sessions" element={<Suspense fallback={<div className="flex items-center justify-center h-64 text-gray-400">Loading...</div>}><CounsellorSessions /></Suspense>} />
+            <Route path="tools" element={<Suspense fallback={<div className="flex items-center justify-center h-64 text-gray-400">Loading...</div>}><CounsellorTools /></Suspense>} />
+            <Route path="reports" element={<Suspense fallback={<div className="flex items-center justify-center h-64 text-gray-400">Loading...</div>}><CounsellorReports /></Suspense>} />
+            <Route path="resources" element={<Suspense fallback={<div className="flex items-center justify-center h-64 text-gray-400">Loading...</div>}><CounsellorResources /></Suspense>} />
+            <Route path="marketing" element={<Suspense fallback={<div className="flex items-center justify-center h-64 text-gray-400">Loading...</div>}><CounsellorMarketing /></Suspense>} />
+            <Route path="settings" element={<Suspense fallback={<div className="flex items-center justify-center h-64 text-gray-400">Loading...</div>}><CounsellorSettings /></Suspense>} />
+          </Route>
+
           <Route path="*" element={<Navigate to="/" replace />} />
         </Routes>
       </AuthProvider>
