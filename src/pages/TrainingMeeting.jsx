@@ -1,4 +1,4 @@
-import { useState, useRef, useEffect } from 'react';
+import { useState, useRef } from 'react';
 import { registerForTraining, sendOtp, verifyOtp } from '../utils/api';
 
 const TRAINING_MEET_LINK = 'https://meet.google.com/nhb-csvx-sju';
@@ -32,7 +32,7 @@ export default function TrainingMeeting() {
   const [verifying, setVerifying] = useState(false);
 
   const otpInputRefs = useRef([]);
-  const successRef = useRef(false);
+  const navigatingRef = useRef(false);
 
   const handleNameChange = (e) => {
     const v = e.target.value;
@@ -136,9 +136,18 @@ export default function TrainingMeeting() {
       const verified = result.data?.verified === true || result.verified === true;
       if (result.success && verified) {
         registerForTraining(name.trim(), normalizedPhone).catch(() => {});
-        successRef.current = true;
-        setVerifying(false);
-        setStep(3);
+        navigatingRef.current = true;
+        window.location.replace(TRAINING_MEET_LINK);
+        // Fallback: some environments block replace(); try simulated link click
+        setTimeout(() => {
+          const a = document.createElement('a');
+          a.href = TRAINING_MEET_LINK;
+          a.rel = 'noopener noreferrer';
+          a.target = '_self';
+          document.body.appendChild(a);
+          a.click();
+          a.remove();
+        }, 150);
       } else {
         const errorMessage = result.message || 'Invalid or expired OTP. Please try again.';
         setOtpError(errorMessage);
@@ -148,7 +157,7 @@ export default function TrainingMeeting() {
     } catch {
       setOtpError('Network error. Please check your connection and try again.');
     } finally {
-      if (!successRef.current) {
+      if (!navigatingRef.current) {
         setVerifying(false);
       }
     }
@@ -192,15 +201,6 @@ export default function TrainingMeeting() {
     setSuccessMessage('');
   };
 
-  // Optional auto-redirect when on success step (fallback if user does not click the link)
-  useEffect(() => {
-    if (step !== 3) return;
-    const t = setTimeout(() => {
-      window.location.href = TRAINING_MEET_LINK;
-    }, 3000);
-    return () => clearTimeout(t);
-  }, [step]);
-
   return (
     <div className="min-h-screen bg-gray-50 flex flex-col items-center justify-center p-4">
       <div className="bg-white rounded-xl shadow-lg max-w-md w-full p-6 sm:p-8">
@@ -209,14 +209,14 @@ export default function TrainingMeeting() {
           <p className="text-gray-600 mt-1">Join Training Google Meet</p>
         </div>
 
-        {(step === 2 || step === 3) && (
+        {step === 2 && (
           <div className="mb-4">
             <div className="flex items-center justify-between text-xs text-gray-500 mb-1">
-              <span>Step {step} of 3</span>
-              <span>{step === 2 ? 'OTP Verification' : 'Join Meet'}</span>
+              <span>Step 2 of 2</span>
+              <span>OTP Verification</span>
             </div>
             <div className="w-full bg-gray-200 rounded-full h-1.5">
-              <div className="bg-blue-700 h-1.5 rounded-full transition-all" style={{ width: `${(step / 3) * 100}%` }} />
+              <div className="bg-blue-700 h-1.5 rounded-full transition-all" style={{ width: '100%' }} />
             </div>
           </div>
         )}
@@ -235,22 +235,6 @@ export default function TrainingMeeting() {
               Enter the 6-digit OTP sent to your mobile number ending in{' '}
               <span className="font-medium text-gray-900">****{mobileNumber.slice(-4)}</span>
             </p>
-          </>
-        )}
-
-        {step === 3 && (
-          <>
-            <h2 className="text-lg font-semibold text-gray-900 mb-1">You're verified</h2>
-            <p className="text-sm text-gray-600 mb-6">Click below to join the training meet.</p>
-            <a
-              href={TRAINING_MEET_LINK}
-              target="_self"
-              rel="noopener noreferrer"
-              className="w-full inline-block text-center py-3 px-4 bg-blue-700 hover:bg-blue-800 text-white font-medium rounded-lg transition no-underline"
-            >
-              Join Training Meet
-            </a>
-            <p className="mt-3 text-xs text-gray-500 text-center">Redirecting in a few seconds if you don&apos;t click.</p>
           </>
         )}
 
