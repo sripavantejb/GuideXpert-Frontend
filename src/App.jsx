@@ -1,6 +1,7 @@
 import { Suspense, lazy } from 'react';
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
 import { AuthProvider, useAuth } from './contexts/AuthContext';
+import { CounsellorAuthProvider } from './contexts/CounsellorAuthContext';
 import { CounsellorProfileProvider } from './contexts/CounsellorProfileContext';
 import LandingPage from './pages/LandingPage';
 import AdminLogin from './pages/AdminLogin';
@@ -40,6 +41,7 @@ function App() {
   return (
     <BrowserRouter>
       <AuthProvider>
+        <CounsellorAuthProvider>
         <Routes>
           <Route path="/" element={<LandingPage />} />
           <Route path="/register" element={<LandingPage />} />
@@ -81,6 +83,7 @@ function App() {
 
           <Route path="*" element={<Navigate to="/" replace />} />
         </Routes>
+        </CounsellorAuthProvider>
       </AuthProvider>
     </BrowserRouter>
   );

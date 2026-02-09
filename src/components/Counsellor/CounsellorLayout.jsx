@@ -1,5 +1,6 @@
 import { useState } from 'react';
-import { Link, NavLink, Outlet, useLocation } from 'react-router-dom';
+import { Link, NavLink, Outlet, useLocation, useNavigate } from 'react-router-dom';
+import { useCounsellorAuth } from '../../contexts/CounsellorAuthContext';
 import {
   FiLayout,
   FiUsers,
@@ -50,9 +51,20 @@ export default function CounsellorLayout() {
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [profileOpen, setProfileOpen] = useState(false);
   const location = useLocation();
-  const { displayName, email, initials } = useCounsellorProfile();
+  const navigate = useNavigate();
+  const { user, logout } = useCounsellorAuth();
+  const { displayName: profileName, email: profileEmail, initials: profileInitials } = useCounsellorProfile();
+  const displayName = profileName || user?.name || 'Counsellor';
+  const displayEmail = profileEmail || user?.email || '';
+  const initials = profileInitials || displayName.split(/\s+/).map((n) => n[0]).slice(0, 2).join('').toUpperCase() || 'C';
 
   const currentPage = pageMeta[location.pathname] || { title: 'Counsellor Portal', subtitle: '' };
+
+  const handleLogout = () => {
+    setProfileOpen(false);
+    logout();
+    navigate('/counsellor/login', { replace: true });
+  };
 
   return (
     <div className="min-h-screen h-screen overflow-hidden bg-[#f1f5f9] flex">
@@ -296,7 +308,7 @@ export default function CounsellorLayout() {
                   <div className="absolute right-0 top-full mt-1.5 w-52 bg-white rounded-xl py-1.5 z-40" style={{ boxShadow: '0 4px 24px rgba(0,0,0,0.12), 0 1px 4px rgba(0,0,0,0.08)' }}>
                     <div className="px-3 py-2 border-b border-gray-100 mb-1">
                       <p className="text-sm font-semibold text-gray-900">{displayName}</p>
-                      <p className="text-xs text-gray-500">{email}</p>
+                      <p className="text-xs text-gray-500">{displayEmail || '—'}</p>
                     </div>
                     <button className="w-full flex items-center gap-2.5 px-3 py-2 text-sm text-gray-700 hover:bg-gray-50 transition-colors">
                       <FiUser className="w-4 h-4 text-gray-400" /> My Profile
@@ -307,10 +319,14 @@ export default function CounsellorLayout() {
                     <button className="w-full flex items-center gap-2.5 px-3 py-2 text-sm text-gray-700 hover:bg-gray-50 transition-colors">
                       <FiHelpCircle className="w-4 h-4 text-gray-400" /> Help & Support
                     </button>
-                    <div className="border-t border-gray-100 my-1" />
-                    <button className="w-full flex items-center gap-2.5 px-3 py-2 text-sm text-red-600 hover:bg-red-50 transition-colors">
-                      <FiLogOut className="w-4 h-4" /> Sign Out
-                    </button>
+                    {user && (
+                      <>
+                        <div className="border-t border-gray-100 my-1" />
+                        <button type="button" onClick={handleLogout} className="w-full flex items-center gap-2.5 px-3 py-2 text-sm text-red-600 hover:bg-red-50 transition-colors">
+                          <FiLogOut className="w-4 h-4" /> Sign Out
+                        </button>
+                      </>
+                    )}
                   </div>
                 </>
               )}
