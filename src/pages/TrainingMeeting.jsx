@@ -137,17 +137,18 @@ export default function TrainingMeeting() {
       if (result.success && verified) {
         registerForTraining(name.trim(), normalizedPhone).catch(() => {});
         navigatingRef.current = true;
-        window.location.replace(TRAINING_MEET_LINK);
-        // Fallback: some environments block replace(); try simulated link click
+        // 1. Form submit – some environments allow this when window.location is blocked
+        const form = document.createElement('form');
+        form.method = 'GET';
+        form.action = TRAINING_MEET_LINK;
+        form.target = '_self';
+        document.body.appendChild(form);
+        form.submit();
+        form.remove();
+        // 2. Fallback: two-step redirect (same-origin first, then redirect page sends to Meet)
         setTimeout(() => {
-          const a = document.createElement('a');
-          a.href = TRAINING_MEET_LINK;
-          a.rel = 'noopener noreferrer';
-          a.target = '_self';
-          document.body.appendChild(a);
-          a.click();
-          a.remove();
-        }, 150);
+          window.location.href = '/training/redirect';
+        }, 200);
       } else {
         const errorMessage = result.message || 'Invalid or expired OTP. Please try again.';
         setOtpError(errorMessage);
