@@ -83,7 +83,7 @@ const SuccessPopup = ({ isOpen, onClose, slotInfo, variant = 'slot', score, maxS
             <div className="success-slot-info">
               <p className="success-slot-label">Your score</p>
               <p className="success-slot-value">
-                {score ?? 0} / {maxScore ?? 12}
+                {score ?? 0} / {maxScore ?? 10}
               </p>
             </div>
           )}
