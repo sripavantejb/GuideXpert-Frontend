@@ -32,7 +32,6 @@ export default function TrainingMeeting() {
   const [verifying, setVerifying] = useState(false);
 
   const otpInputRefs = useRef([]);
-  const navigatingRef = useRef(false);
 
   const handleNameChange = (e) => {
     const v = e.target.value;
@@ -133,22 +132,16 @@ export default function TrainingMeeting() {
     try {
       const result = await verifyOtp(normalizedPhone, otpString);
 
-      const verified = result.data?.verified === true || result.verified === true;
-      if (result.success && verified) {
-        registerForTraining(name.trim(), normalizedPhone).catch(() => {});
-        navigatingRef.current = true;
-        // 1. Form submit – some environments allow this when window.location is blocked
-        const form = document.createElement('form');
-        form.method = 'GET';
-        form.action = TRAINING_MEET_LINK;
-        form.target = '_self';
-        document.body.appendChild(form);
-        form.submit();
-        form.remove();
-        // 2. Fallback: two-step redirect (same-origin first, then redirect page sends to Meet)
-        setTimeout(() => {
-          window.location.href = '/training/redirect';
-        }, 200);
+      if (result.success && result.data?.verified === true) {
+        setSuccessMessage('OTP verified! Joining the training meet...');
+
+        try {
+          await registerForTraining(name.trim(), normalizedPhone);
+        } catch {
+          // Don't block redirect if registration save fails
+        }
+
+        window.location.href = TRAINING_MEET_LINK;
       } else {
         const errorMessage = result.message || 'Invalid or expired OTP. Please try again.';
         setOtpError(errorMessage);
@@ -158,9 +151,7 @@ export default function TrainingMeeting() {
     } catch {
       setOtpError('Network error. Please check your connection and try again.');
     } finally {
-      if (!navigatingRef.current) {
-        setVerifying(false);
-      }
+      setVerifying(false);
     }
   };
 

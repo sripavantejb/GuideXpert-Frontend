@@ -7,7 +7,6 @@ import LandingPage from './pages/LandingPage';
 import AdminLogin from './pages/AdminLogin';
 import MeetingRegistration from './pages/MeetingRegistration';
 import TrainingMeeting from './pages/TrainingMeeting';
-import TrainingRedirect from './pages/TrainingRedirect';
 import AssessmentForm from './pages/AssessmentForm';
 import AdminLayout from './components/Admin/AdminLayout';
 import Overview from './pages/admin/Overview';
@@ -51,7 +50,6 @@ function App() {
           <Route path="/register" element={<LandingPage />} />
           <Route path="/meet" element={<MeetingRegistration />} />
           <Route path="/training" element={<TrainingMeeting />} />
-          <Route path="/training/redirect" element={<TrainingRedirect />} />
           <Route path="/assessment" element={<AssessmentForm />} />
           <Route path="/admin/login" element={<AdminLogin />} />
           <Route
