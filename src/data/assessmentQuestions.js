@@ -1,6 +1,6 @@
 /**
  * Counsellor assessment: sections and questions (MCQ + short answer).
- * Question ids match backend scoring (q1, q2, q3, q5, q6, q7, q9, q10, q11, q12, q13).
+ * Question ids match backend scoring (q1, q2, q3, q5, q6, q7, q9, q10, q12, q13).
  */
 export const ASSESSMENT_SECTIONS = [
   {
@@ -103,12 +103,6 @@ export const ASSESSMENT_SECTIONS = [
           'Build rapport and understand needs',
           'Discuss fees immediately'
         ]
-      },
-      {
-        id: 'q11',
-        type: 'short',
-        text: 'List any TWO ethical lead sources you will use.',
-        points: 2
       }
     ]
   },

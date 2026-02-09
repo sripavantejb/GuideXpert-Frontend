@@ -92,7 +92,7 @@ export default function AssessmentResults() {
                     </td>
                     <td className="px-3 py-2 text-center whitespace-nowrap">
                       <span className="font-medium text-[#003366]">
-                        {row.score ?? 0} / {row.maxScore ?? 12}
+                        {row.score ?? 0} / {row.maxScore ?? 10}
                       </span>
                     </td>
                     <td className="px-3 py-2 text-gray-600 whitespace-nowrap">

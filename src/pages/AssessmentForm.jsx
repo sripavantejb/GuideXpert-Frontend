@@ -197,7 +197,7 @@ export default function AssessmentForm() {
       if (result.success) {
         setSubmittedResult({
           score: result.data?.score ?? 0,
-          maxScore: result.data?.maxScore ?? 12
+          maxScore: result.data?.maxScore ?? 10
         });
         setShowSuccessPopup(true);
       } else {
@@ -499,7 +499,7 @@ export default function AssessmentForm() {
         onClose={() => setShowSuccessPopup(false)}
         variant="assessment"
         score={submittedResult?.score ?? 0}
-        maxScore={submittedResult?.maxScore ?? 12}
+        maxScore={submittedResult?.maxScore ?? 10}
       />
     </div>
   );
