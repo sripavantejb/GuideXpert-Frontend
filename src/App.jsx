@@ -6,6 +6,7 @@ import { CounsellorProfileProvider } from './contexts/CounsellorProfileContext';
 import LandingPage from './pages/LandingPage';
 import AdminLogin from './pages/AdminLogin';
 import MeetingRegistration from './pages/MeetingRegistration';
+import TrainingMeeting from './pages/TrainingMeeting';
 import AdminLayout from './components/Admin/AdminLayout';
 import Overview from './pages/admin/Overview';
 import Leads from './pages/admin/Leads';
@@ -46,6 +47,7 @@ function App() {
           <Route path="/" element={<LandingPage />} />
           <Route path="/register" element={<LandingPage />} />
           <Route path="/meet" element={<MeetingRegistration />} />
+          <Route path="/training" element={<TrainingMeeting />} />
           <Route path="/admin/login" element={<AdminLogin />} />
           <Route
             path="/admin"

@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef } from 'react';
-import { getMeetingAttendance, getStoredToken } from '../../utils/adminApi';
+import { getMeetingAttendance, getTrainingAttendance, getStoredToken } from '../../utils/adminApi';
 import { useAuth } from '../../contexts/AuthContext';
 
 function formatDate(d) {
@@ -42,10 +42,13 @@ function buildMonthGrid(year, month) {
   return rows;
 }
 
-function getEmptyMessage({ mode, selectedDate, rangeFrom, rangeTo, query }) {
+function getEmptyMessage({ mode, selectedDate, rangeFrom, rangeTo, query, attendanceType }) {
   const hasFilter = Boolean(query)
     || (mode === 'single' && selectedDate)
     || (mode === 'range' && (rangeFrom || rangeTo));
+  if (attendanceType === 'training') {
+    return hasFilter ? 'No training attendance found for the selected filters' : 'Training attendance data will appear here once configured.';
+  }
   return hasFilter ? 'No attendance found for the selected filters' : 'No attendance records yet';
 }
 
@@ -63,6 +66,7 @@ export default function MeetingAttendance() {
   const [query, setQuery] = useState('');
   const [viewYear, setViewYear] = useState(() => new Date().getFullYear());
   const [viewMonth, setViewMonth] = useState(() => new Date().getMonth());
+  const [attendanceType, setAttendanceType] = useState('demo');
   const cancelledRef = useRef(false);
   const requestIdRef = useRef(0);
   const filtersRef = useRef('');
@@ -87,9 +91,15 @@ export default function MeetingAttendance() {
       if (rangeFrom) params.from = rangeFrom;
       if (rangeTo) params.to = rangeTo;
     }
+
     setLoading(true);
     setError('');
-    getMeetingAttendance(params, getStoredToken()).then((result) => {
+
+    const apiCall = attendanceType === 'training'
+      ? getTrainingAttendance(params, getStoredToken())
+      : getMeetingAttendance(params, getStoredToken());
+
+    apiCall.then((result) => {
       if (cancelledRef.current) return;
       if (thisRequestId !== requestIdRef.current) return;
       setLoading(false);
@@ -99,7 +109,7 @@ export default function MeetingAttendance() {
           window.location.href = '/admin/login';
           return;
         }
-        setError(result.message || 'Failed to load meeting attendance');
+        setError(result.message || (attendanceType === 'training' ? 'Failed to load training attendance' : 'Failed to load meeting attendance'));
         return;
       }
       const dataList = result.data.data || [];
@@ -147,7 +157,7 @@ export default function MeetingAttendance() {
   };
 
   useEffect(() => {
-    const filtersKey = `${mode}|${selectedDate}|${rangeFrom}|${rangeTo}|${query}`;
+    const filtersKey = `${attendanceType}|${mode}|${selectedDate}|${rangeFrom}|${rangeTo}|${query}`;
     const filtersChanged = filtersRef.current !== filtersKey;
     if (filtersChanged) {
       filtersRef.current = filtersKey;
@@ -162,14 +172,14 @@ export default function MeetingAttendance() {
     return () => {
       cancelledRef.current = true;
     };
-  }, [pagination.page, mode, selectedDate, rangeFrom, rangeTo, query]);
+  }, [attendanceType, pagination.page, mode, selectedDate, rangeFrom, rangeTo, query]);
 
   const goToPage = (p) => {
     const next = Math.max(1, Math.min(p, pagination.totalPages));
     setPagination((prev) => ({ ...prev, page: next }));
   };
 
-  const emptyMessage = getEmptyMessage({ mode, selectedDate, rangeFrom, rangeTo, query });
+  const emptyMessage = getEmptyMessage({ mode, selectedDate, rangeFrom, rangeTo, query, attendanceType });
   const shownFrom = pagination.total === 0 ? 0 : (pagination.page - 1) * pagination.limit + 1;
   const shownTo = pagination.total === 0 ? 0 : Math.min(pagination.page * pagination.limit, pagination.total);
   const todayStr = getTodayInputValue();
@@ -203,7 +213,33 @@ export default function MeetingAttendance() {
         <div className="flex flex-wrap items-center justify-between gap-4">
           <div>
             <h1 className="text-2xl font-bold text-gray-900 tracking-tight">Meeting Attendance</h1>
-            <p className="mt-1 text-sm text-gray-500">Track and analyze meeting attendance with smart deduplication</p>
+            <p className="mt-1 text-sm text-gray-500">
+              Track and analyze {attendanceType === 'demo' ? 'demo' : 'training'} meeting attendance with smart deduplication
+            </p>
+            <div className="mt-3 flex items-center gap-1 p-0.5 bg-gray-100 rounded-lg shadow-sm w-fit">
+              <button
+                type="button"
+                onClick={() => setAttendanceType('demo')}
+                className={`px-3 py-1.5 rounded-md text-xs font-semibold transition-all ${
+                  attendanceType === 'demo'
+                    ? 'bg-primary-blue-600 text-white shadow-md'
+                    : 'text-gray-600 hover:bg-gray-200'
+                }`}
+              >
+                Demo
+              </button>
+              <button
+                type="button"
+                onClick={() => setAttendanceType('training')}
+                className={`px-3 py-1.5 rounded-md text-xs font-semibold transition-all ${
+                  attendanceType === 'training'
+                    ? 'bg-primary-blue-600 text-white shadow-md'
+                    : 'text-gray-600 hover:bg-gray-200'
+                }`}
+              >
+                Training
+              </button>
+            </div>
           </div>
           <button
             type="button"
@@ -218,6 +254,15 @@ export default function MeetingAttendance() {
           </button>
         </div>
       </div>
+
+      {attendanceType === 'training' && !loading && records.length === 0 && !query && !(mode === 'single' && selectedDate) && !(mode === 'range' && (rangeFrom || rangeTo)) && (
+        <div className="mb-6 p-4 rounded-xl bg-primary-blue-50 border border-primary-blue-200 flex items-center gap-3">
+          <svg className="w-5 h-5 text-primary-blue-600 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+          </svg>
+          <p className="text-sm text-primary-blue-800">Training attendance data will appear here once users register via the training page.</p>
+        </div>
+      )}
 
       {/* Main Content Grid */}
       <div className="grid gap-6 lg:grid-cols-[0.8fr_1.2fr] items-start mb-8">
