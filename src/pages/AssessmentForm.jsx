@@ -397,32 +397,49 @@ export default function AssessmentForm() {
               )}
 
               <form onSubmit={handleSubmitAssessment} className="space-y-6">
-                {(() => {
-                  const q = flatQuestions[questionIndex];
-                  if (!q) return null;
-                  return (
-                    <div key={q.id}>
-                      <h3 className="text-base font-semibold mb-4 flex items-center gap-2" style={{ color: '#003366' }}>
-                        <span className="inline-block w-2 h-2 rounded-full bg-[#003366]" />
-                        {q.sectionTitle}
-                      </h3>
-                      <div className="pl-4">
-                        <p className="text-sm font-medium text-gray-900 mb-3">{q.text}</p>
+                <div className="rounded-2xl bg-white border border-gray-100 border-l-4 border-l-[#003366] shadow-lg overflow-hidden p-6 sm:p-8">
+                  {(() => {
+                    const q = flatQuestions[questionIndex];
+                    if (!q) return null;
+                    return (
+                      <div key={q.id}>
+                        <h3 className="text-sm font-semibold uppercase tracking-wide text-[#003366] mb-4">
+                          {q.sectionTitle}
+                        </h3>
+                        <p className="text-lg font-semibold text-gray-900 mb-6">{q.text}</p>
                         {q.type === 'mcq' ? (
-                          <div className="space-y-2">
-                            {q.options.map((opt) => (
-                              <label key={opt} className="flex items-start gap-2 cursor-pointer">
-                                <input
-                                  type="radio"
-                                  name={q.id}
-                                  value={opt}
-                                  checked={(answers[q.id] || '') === opt}
-                                  onChange={() => setAnswer(q.id, opt)}
-                                  className="mt-1 text-[#003366] border-gray-300 focus:ring-[#003366]"
-                                />
-                                <span className="text-sm text-gray-700">{opt}</span>
-                              </label>
-                            ))}
+                          <div className="space-y-4">
+                            {q.options.map((opt, idx) => {
+                              const letter = String.fromCharCode(65 + idx);
+                              const isSelected = (answers[q.id] || '') === opt;
+                              return (
+                                <label
+                                  key={opt}
+                                  className={`flex items-center gap-4 w-full rounded-xl border-2 py-4 px-4 transition-colors cursor-pointer ${
+                                    isSelected
+                                      ? 'border-[#003366] bg-[#003366]/10'
+                                      : 'border-gray-200 bg-gray-50/50 hover:border-[#003366]/30 hover:bg-[#003366]/5'
+                                  }`}
+                                >
+                                  <input
+                                    type="radio"
+                                    name={q.id}
+                                    value={opt}
+                                    checked={isSelected}
+                                    onChange={() => setAnswer(q.id, opt)}
+                                    className="sr-only"
+                                  />
+                                  <span
+                                    className={`shrink-0 w-9 h-9 rounded-full flex items-center justify-center text-sm font-bold ${
+                                      isSelected ? 'bg-[#003366] text-white' : 'bg-[#003366]/10 text-[#003366]'
+                                    }`}
+                                  >
+                                    {letter}
+                                  </span>
+                                  <span className="text-sm font-medium text-gray-800">{opt}</span>
+                                </label>
+                              );
+                            })}
                           </div>
                         ) : (
                           <div>
@@ -431,7 +448,7 @@ export default function AssessmentForm() {
                               value={answers[q.id] || ''}
                               onChange={(e) => setAnswer(q.id, e.target.value)}
                               placeholder="Type your answer here (e.g. two ethical lead sources)"
-                              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#003366]/20 focus:border-[#003366] outline-none text-sm"
+                              className="w-full px-3 py-2 border border-slate-200 rounded-lg focus:ring-2 focus:ring-[#003366]/20 focus:border-[#003366] outline-none text-sm text-slate-800"
                             />
                             {q.points && (
                               <p className="mt-1 text-xs text-gray-500">Points: {q.points}</p>
@@ -439,11 +456,11 @@ export default function AssessmentForm() {
                           </div>
                         )}
                       </div>
-                    </div>
-                  );
-                })()}
+                    );
+                  })()}
+                </div>
 
-                <div className="flex gap-3 pt-4">
+                <div className="flex gap-3 pt-6">
                   <button
                     type="button"
                     onClick={() => (questionIndex > 0 ? setQuestionIndex((i) => i - 1) : handleBackToOtp())}
