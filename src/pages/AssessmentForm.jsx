@@ -188,6 +188,17 @@ export default function AssessmentForm() {
     setAnswers((prev) => ({ ...prev, [questionId]: value }));
   };
 
+  const handleAssessmentFormKeyDown = (e) => {
+    if (e.key !== 'Enter') return;
+    const target = e.target;
+    const isRadio = target.type === 'radio';
+    const isInsideOptionLabel = target.closest('label')?.querySelector('input[type="radio"]');
+    if (isRadio || isInsideOptionLabel) {
+      e.preventDefault();
+      e.stopPropagation();
+    }
+  };
+
   const handleSubmitAssessment = async (e) => {
     e.preventDefault();
     setSubmitError('');
@@ -396,7 +407,7 @@ export default function AssessmentForm() {
                 </div>
               )}
 
-              <form onSubmit={handleSubmitAssessment} className="space-y-6">
+              <form onSubmit={handleSubmitAssessment} onKeyDown={handleAssessmentFormKeyDown} className="space-y-6">
                 <div className="rounded-2xl bg-white border border-gray-100 border-l-4 border-l-[#003366] shadow-lg overflow-hidden p-6 sm:p-8">
                   {(() => {
                     const q = flatQuestions[questionIndex];
