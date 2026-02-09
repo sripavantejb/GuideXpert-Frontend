@@ -18,6 +18,7 @@ import {
   FiSearch,
 } from 'react-icons/fi';
 import { HiMenu as HiMenuIcon, HiX as HiXIcon } from 'react-icons/hi';
+import { useCounsellorProfile } from '../../contexts/CounsellorProfileContext';
 
 const primaryNav = [
   { to: '/counsellor/dashboard', label: 'Dashboard', icon: FiLayout },
@@ -49,6 +50,7 @@ export default function CounsellorLayout() {
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [profileOpen, setProfileOpen] = useState(false);
   const location = useLocation();
+  const { displayName, email, initials } = useCounsellorProfile();
 
   const currentPage = pageMeta[location.pathname] || { title: 'Counsellor Portal', subtitle: '' };
 
@@ -192,10 +194,10 @@ export default function CounsellorLayout() {
             }}
           >
             <div className="w-10 h-10 rounded-full bg-gradient-to-br from-[#1d4ed8] to-[#003366] flex items-center justify-center shrink-0 ring-2 ring-white/10">
-              <span className="text-white text-sm font-bold">DC</span>
+              <span className="text-white text-sm font-bold">{initials}</span>
             </div>
             <div className="flex-1 min-w-0">
-              <p className="text-sm font-semibold text-white truncate">Dr. Counsellor</p>
+              <p className="text-sm font-semibold text-white truncate">{displayName}</p>
               <span className="inline-flex items-center gap-1.5 mt-0.5 px-2 py-0.5 rounded-lg bg-emerald-500/15 text-[0.625rem] font-semibold text-emerald-400 uppercase tracking-wider">
                 <span className="w-1.5 h-1.5 rounded-full bg-emerald-400" />
                 Certified
@@ -275,10 +277,10 @@ export default function CounsellorLayout() {
                 className="flex items-center gap-2.5 px-2 py-1.5 rounded-lg hover:bg-gray-50 transition-colors"
               >
                 <div className="w-9 h-9 rounded-full bg-[#003366] flex items-center justify-center ring-2 ring-gray-100">
-                  <span className="text-white text-xs font-bold">DC</span>
+                  <span className="text-white text-xs font-bold">{initials}</span>
                 </div>
                 <div className="hidden md:block text-left">
-                  <p className="text-sm font-semibold text-gray-800 leading-tight">Dr. Counsellor</p>
+                  <p className="text-sm font-semibold text-gray-800 leading-tight">{displayName}</p>
                   <div className="flex items-center gap-1 mt-0.5">
                     <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 inline-block" />
                     <span className="text-[0.6875rem] text-emerald-600 font-semibold">Certified</span>
@@ -293,8 +295,8 @@ export default function CounsellorLayout() {
                   <div className="fixed inset-0 z-30" onClick={() => setProfileOpen(false)} />
                   <div className="absolute right-0 top-full mt-1.5 w-52 bg-white rounded-xl py-1.5 z-40" style={{ boxShadow: '0 4px 24px rgba(0,0,0,0.12), 0 1px 4px rgba(0,0,0,0.08)' }}>
                     <div className="px-3 py-2 border-b border-gray-100 mb-1">
-                      <p className="text-sm font-semibold text-gray-900">Dr. Counsellor</p>
-                      <p className="text-xs text-gray-500">counsellor@guidexpert.com</p>
+                      <p className="text-sm font-semibold text-gray-900">{displayName}</p>
+                      <p className="text-xs text-gray-500">{email}</p>
                     </div>
                     <button className="w-full flex items-center gap-2.5 px-3 py-2 text-sm text-gray-700 hover:bg-gray-50 transition-colors">
                       <FiUser className="w-4 h-4 text-gray-400" /> My Profile

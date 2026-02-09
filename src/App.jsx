@@ -1,6 +1,7 @@
 import { Suspense, lazy } from 'react';
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
 import { AuthProvider, useAuth } from './contexts/AuthContext';
+import { CounsellorProfileProvider } from './contexts/CounsellorProfileContext';
 import LandingPage from './pages/LandingPage';
 import AdminLogin from './pages/AdminLogin';
 import MeetingRegistration from './pages/MeetingRegistration';
@@ -65,7 +66,7 @@ function App() {
           </Route>
 
           {/* Counsellor Portal */}
-          <Route path="/counsellor" element={<CounsellorLayout />}>
+          <Route path="/counsellor" element={<CounsellorProfileProvider><CounsellorLayout /></CounsellorProfileProvider>}>
             <Route index element={<Navigate to="/counsellor/dashboard" replace />} />
             <Route path="dashboard" element={<Suspense fallback={<div className="flex items-center justify-center h-64 text-gray-400">Loading...</div>}><CounsellorDashboard /></Suspense>} />
             <Route path="students" element={<Suspense fallback={<div className="flex items-center justify-center h-64 text-gray-400">Loading...</div>}><CounsellorStudents /></Suspense>} />
