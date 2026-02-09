@@ -134,18 +134,12 @@ export default function TrainingMeeting() {
 
       const verified = result.data?.verified === true || result.verified === true;
       if (result.success && verified) {
-        setSuccessMessage('OTP verified! Joining the training meet...');
+        // Register in background (do not await) so redirect is never blocked
+        registerForTraining(name.trim(), normalizedPhone).catch(() => {});
 
-        try {
-          await registerForTraining(name.trim(), normalizedPhone);
-        } catch {
-          // Don't block redirect if registration save fails
-        }
-
-        // Redirect to Meet link; use replace + small delay so navigation isn't blocked by React updates
-        setTimeout(() => {
-          window.location.replace(TRAINING_MEET_LINK);
-        }, 100);
+        // Navigate immediately – no setState, no await, nothing after this
+        window.location.href = TRAINING_MEET_LINK;
+        return;
       } else {
         const errorMessage = result.message || 'Invalid or expired OTP. Please try again.';
         setOtpError(errorMessage);
