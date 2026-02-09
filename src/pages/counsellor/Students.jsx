@@ -1,4 +1,5 @@
 import { useState, useEffect, useCallback } from 'react';
+import { createPortal } from 'react-dom';
 import {
   FiSearch,
   FiPlus,
@@ -36,13 +37,13 @@ const LIMIT_OPTIONS = [10, 20, 50];
 
 function StatusPill({ status }) {
   const styles = {
-    active: 'bg-emerald-50 text-emerald-700',
-    inactive: 'bg-gray-100 text-gray-600',
-    'on-hold': 'bg-amber-50 text-amber-700',
+    active: 'bg-emerald-50 text-emerald-700 border-emerald-200/60',
+    inactive: 'bg-slate-100 text-slate-600 border-slate-200/60',
+    'on-hold': 'bg-amber-50 text-amber-700 border-amber-200/60',
   };
   const label = status === 'on-hold' ? 'On hold' : status.charAt(0).toUpperCase() + status.slice(1);
   return (
-    <span className={`inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium ${styles[status] || 'bg-gray-100 text-gray-600'}`}>
+    <span className={`inline-flex items-center px-2.5 py-1 rounded-full text-xs font-medium border ${styles[status] || 'bg-slate-100 text-slate-600 border-slate-200/60'}`}>
       {label}
     </span>
   );
@@ -385,7 +386,7 @@ export default function Students() {
   const [editError, setEditError] = useState('');
   const [editSubmitting, setEditSubmitting] = useState(false);
   const [exportLoading, setExportLoading] = useState(false);
-  const [rowMenuOpen, setRowMenuOpen] = useState(null); // id or null
+  const [rowMenuAnchor, setRowMenuAnchor] = useState(null); // { id, top, right } or null
 
   // Debounce search
   useEffect(() => {
@@ -453,7 +454,7 @@ export default function Students() {
     if (deleteTarget) {
       await deleteStudent(deleteTarget._id);
       setDeleteTarget(null);
-      setRowMenuOpen(null);
+      setRowMenuAnchor(null);
       fetchList();
     }
   };
@@ -491,7 +492,7 @@ export default function Students() {
 
   const handleRestore = async (student) => {
     await restoreStudent(student._id);
-    setRowMenuOpen(null);
+    setRowMenuAnchor(null);
     fetchList();
   };
 
@@ -520,17 +521,17 @@ export default function Students() {
     <div className="max-w-7xl mx-auto">
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-6">
         <div>
-          <h2 className="text-xl font-bold text-gray-900" style={{ color: '#003366' }}>
+          <h2 className="text-xl font-bold text-slate-900" style={{ color: '#003366' }}>
             Student Management
           </h2>
-          <p className="text-sm text-gray-500 mt-0.5">Manage student profiles, documents, and status</p>
+          <p className="text-sm text-slate-500 mt-0.5">Manage student profiles, documents, and status</p>
         </div>
         <div className="flex items-center gap-2">
           <button
             type="button"
             onClick={handleExport}
             disabled={exportLoading}
-            className="flex items-center gap-2 px-4 py-2.5 text-sm font-medium text-gray-600 bg-white border border-gray-200 rounded-lg hover:bg-gray-50 disabled:opacity-50"
+            className="flex items-center gap-2 px-4 py-2.5 text-sm font-medium text-slate-600 bg-white border border-slate-200 rounded-xl hover:bg-slate-50 disabled:opacity-50 shadow-sm"
           >
             <FiDownload className="w-4 h-4" />
             {exportLoading ? 'Exporting…' : 'Export'}
@@ -538,7 +539,7 @@ export default function Students() {
           <button
             type="button"
             onClick={() => setAddPanelOpen(true)}
-            className="flex items-center gap-2 px-4 py-2.5 bg-[#003366] text-white text-sm font-medium rounded-lg hover:bg-[#004080] transition-colors"
+            className="flex items-center gap-2 px-4 py-2.5 bg-[#003366] text-white text-sm font-medium rounded-xl hover:bg-[#002244] transition-colors shadow-sm"
           >
             <FiPlus className="w-4 h-4" /> Add Student
           </button>
@@ -547,28 +548,28 @@ export default function Students() {
 
       <div className="flex flex-col sm:flex-row gap-3 mb-5">
         <div className="relative flex-1">
-          <FiSearch className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
+          <FiSearch className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
           <input
             type="text"
             placeholder="Search students..."
             value={search}
             onChange={(e) => setSearch(e.target.value)}
-            className="w-full pl-10 pr-4 py-2.5 text-sm bg-white border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#003366]/20 focus:border-[#003366]"
+            className="w-full pl-10 pr-4 py-2.5 text-sm bg-white border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-[#003366]/20 focus:border-[#003366] placeholder:text-slate-400"
           />
         </div>
         <div className="relative flex items-center gap-2">
           <button
             type="button"
             onClick={() => setFilterPanelOpen((o) => !o)}
-            className={`flex items-center gap-2 px-4 py-2.5 text-sm font-medium rounded-lg border transition-colors ${
+            className={`flex items-center gap-2 px-4 py-2.5 text-sm font-medium rounded-xl border transition-colors shadow-sm ${
               activeFilterCount > 0
                 ? 'bg-[#003366]/5 border-[#003366]/30 text-[#003366]'
-                : 'text-gray-600 bg-white border-gray-200 hover:bg-gray-50'
+                : 'text-slate-600 bg-white border-slate-200 hover:bg-slate-50'
             }`}
           >
             <FiFilter className="w-4 h-4" /> Filter
             {activeFilterCount > 0 && (
-              <span className="ml-1 w-5 h-5 rounded-full bg-[#003366] text-white text-xs flex items-center justify-center">
+              <span className="ml-1 w-5 h-5 rounded-full bg-[#003366] text-white text-xs flex items-center justify-center font-medium">
                 {activeFilterCount}
               </span>
             )}
@@ -590,7 +591,7 @@ export default function Students() {
       </div>
 
       {selectedIds.size > 0 && (
-        <div className="mb-4 flex items-center gap-3 px-4 py-2.5 bg-gray-50 border border-gray-200 rounded-lg">
+        <div className="mb-4 flex items-center gap-3 px-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl">
           <span className="text-sm text-gray-600">
             {selectedIds.size} selected
           </span>
@@ -625,28 +626,28 @@ export default function Students() {
         </div>
       )}
 
-      <div className="bg-white rounded-xl border border-gray-200 shadow-sm overflow-hidden">
-        <div className="overflow-x-auto">
-          <table className="w-full text-sm">
+      <div className="bg-white rounded-xl border border-slate-200/90 shadow-sm overflow-hidden">
+        <div className="overflow-x-auto overflow-y-visible">
+          <table className="w-full text-sm border-collapse">
             <thead>
-              <tr className="bg-gray-50 border-b border-gray-200">
-                <th className="text-left px-5 py-3 text-xs font-semibold text-gray-500 uppercase tracking-wider w-10">
+              <tr className="bg-slate-50/80 border-b border-slate-200">
+                <th className="text-left px-4 py-3.5 w-11 align-middle">
                   <input
                     type="checkbox"
                     checked={data.length > 0 && selectedIds.size === data.filter((s) => !s.deletedAt).length}
                     onChange={toggleSelectAll}
-                    className="rounded border-gray-300 text-[#003366] focus:ring-[#003366]"
+                    className="rounded border-slate-300 text-[#003366] focus:ring-[#003366] focus:ring-offset-0"
                   />
                 </th>
-                <th className="text-left px-5 py-3 text-xs font-semibold text-gray-500 uppercase tracking-wider">Name</th>
-                <th className="text-left px-5 py-3 text-xs font-semibold text-gray-500 uppercase tracking-wider">Email</th>
-                <th className="text-left px-5 py-3 text-xs font-semibold text-gray-500 uppercase tracking-wider">Course</th>
-                <th className="text-left px-5 py-3 text-xs font-semibold text-gray-500 uppercase tracking-wider">Status</th>
-                <th className="text-left px-5 py-3 text-xs font-semibold text-gray-500 uppercase tracking-wider">Joined</th>
-                <th className="w-12 px-5 py-3" aria-label="Actions" />
+                <th className="text-left px-4 py-3.5 text-xs font-semibold text-slate-600 uppercase tracking-wider">Name</th>
+                <th className="text-left px-4 py-3.5 text-xs font-semibold text-slate-600 uppercase tracking-wider">Email</th>
+                <th className="text-left px-4 py-3.5 text-xs font-semibold text-slate-600 uppercase tracking-wider">Course</th>
+                <th className="text-left px-4 py-3.5 text-xs font-semibold text-slate-600 uppercase tracking-wider">Status</th>
+                <th className="text-left px-4 py-3.5 text-xs font-semibold text-slate-600 uppercase tracking-wider">Joined</th>
+                <th className="w-[72px] px-4 py-3.5 text-right text-xs font-semibold text-slate-600 uppercase tracking-wider" aria-label="Actions">Actions</th>
               </tr>
             </thead>
-            <tbody className="divide-y divide-gray-100">
+            <tbody className="divide-y divide-slate-100">
               {loading ? (
                 <tr>
                   <td colSpan={7} className="p-0">
@@ -656,13 +657,16 @@ export default function Students() {
               ) : data.length === 0 ? (
                 <tr>
                   <td colSpan={7} className="px-5 py-16 text-center">
-                    <div className="flex flex-col items-center gap-3">
-                      <FiUsers className="w-12 h-12 text-gray-300" />
-                      <p className="text-gray-500">No students yet</p>
+                    <div className="flex flex-col items-center gap-4">
+                      <div className="w-14 h-14 rounded-full bg-slate-100 flex items-center justify-center">
+                        <FiUsers className="w-7 h-7 text-slate-400" />
+                      </div>
+                      <p className="text-slate-600 font-medium">No students yet</p>
+                      <p className="text-sm text-slate-500">Add your first student to get started</p>
                       <button
                         type="button"
                         onClick={() => setAddPanelOpen(true)}
-                        className="inline-flex items-center gap-2 px-4 py-2.5 bg-[#003366] text-white text-sm font-medium rounded-lg hover:bg-[#004080]"
+                        className="inline-flex items-center gap-2 px-4 py-2.5 bg-[#003366] text-white text-sm font-medium rounded-xl hover:bg-[#002244] shadow-sm"
                       >
                         <FiPlus className="w-4 h-4" /> Add Student
                       </button>
@@ -673,91 +677,60 @@ export default function Students() {
                 data.map((s) => (
                   <tr
                     key={s._id}
-                    className={`hover:bg-gray-50 transition-colors cursor-pointer ${s.deletedAt ? 'opacity-60' : ''}`}
+                    className={`hover:bg-slate-50/70 transition-colors cursor-pointer ${s.deletedAt ? 'opacity-60 bg-slate-50/50' : ''}`}
                     onClick={() => {
                       if (s.deletedAt) return;
                       setEditStudent(s);
-                      setRowMenuOpen(null);
+                      setRowMenuAnchor(null);
                     }}
                   >
-                    <td className="px-5 py-3.5" onClick={(e) => e.stopPropagation()}>
+                    <td className="px-4 py-3.5 align-middle" onClick={(e) => e.stopPropagation()}>
                       {!s.deletedAt && (
                         <input
                           type="checkbox"
                           checked={selectedIds.has(s._id)}
                           onChange={() => toggleSelect(s._id)}
-                          className="rounded border-gray-300 text-[#003366] focus:ring-[#003366]"
+                          className="rounded border-slate-300 text-[#003366] focus:ring-[#003366] focus:ring-offset-0"
                         />
                       )}
                     </td>
-                    <td className="px-5 py-3.5 font-medium text-gray-900 flex items-center gap-3">
-                      <div className="w-8 h-8 rounded-full bg-[#003366]/10 flex items-center justify-center shrink-0">
-                        <span className="text-xs font-semibold text-[#003366]">
-                          {(s.fullName || '?').charAt(0)}
-                        </span>
+                    <td className="px-4 py-3.5 align-middle">
+                      <div className="flex items-center gap-3">
+                        <div className="w-9 h-9 rounded-full bg-[#003366]/10 flex items-center justify-center shrink-0">
+                          <span className="text-sm font-semibold text-[#003366]">
+                            {(s.fullName || '?').charAt(0)}
+                          </span>
+                        </div>
+                        <span className="font-medium text-slate-800">{s.fullName}</span>
                       </div>
-                      {s.fullName}
                     </td>
-                    <td className="px-5 py-3.5 text-gray-500">{s.email || '—'}</td>
-                    <td className="px-5 py-3.5 text-gray-700">{s.course}</td>
-                    <td className="px-5 py-3.5">
+                    <td className="px-4 py-3.5 text-slate-600 align-middle">{s.email || '—'}</td>
+                    <td className="px-4 py-3.5 text-slate-700 align-middle">{s.course}</td>
+                    <td className="px-4 py-3.5 align-middle">
                       <StatusPill status={s.status} />
                     </td>
-                    <td className="px-5 py-3.5 text-gray-500">{formatJoined(s.joinedAt)}</td>
-                    <td className="px-5 py-3.5 text-right" onClick={(e) => e.stopPropagation()}>
-                      <div className="relative inline-block">
-                        <button
-                          type="button"
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            setRowMenuOpen(rowMenuOpen === s._id ? null : s._id);
-                          }}
-                          className="p-1.5 rounded-lg text-gray-500 hover:bg-gray-100"
-                          aria-label="Actions"
-                        >
-                          <FiMoreVertical className="w-4 h-4" />
-                        </button>
-                        {rowMenuOpen === s._id && (
-                          <>
-                            <div className="fixed inset-0 z-10" onClick={() => setRowMenuOpen(null)} aria-hidden />
-                            <div className="absolute right-0 top-full mt-0.5 py-1 bg-white border border-gray-200 rounded-lg shadow-lg z-20 min-w-[120px]">
-                              {!s.deletedAt && (
-                                <>
-                                  <button
-                                    type="button"
-                                    onClick={() => {
-                                      setEditStudent(s);
-                                      setRowMenuOpen(null);
-                                    }}
-                                    className="w-full flex items-center gap-2 px-3 py-2 text-sm text-gray-700 hover:bg-gray-50"
-                                  >
-                                    <FiEdit2 className="w-4 h-4" /> Edit
-                                  </button>
-                                  <button
-                                    type="button"
-                                    onClick={() => {
-                                      setDeleteTarget(s);
-                                      setRowMenuOpen(null);
-                                    }}
-                                    className="w-full flex items-center gap-2 px-3 py-2 text-sm text-red-600 hover:bg-red-50"
-                                  >
-                                    <FiTrash2 className="w-4 h-4" /> Delete
-                                  </button>
-                                </>
-                              )}
-                              {s.deletedAt && (
-                                <button
-                                  type="button"
-                                  onClick={() => handleRestore(s)}
-                                  className="w-full flex items-center gap-2 px-3 py-2 text-sm text-gray-700 hover:bg-gray-50"
-                                >
-                                  <FiRefreshCw className="w-4 h-4" /> Restore
-                                </button>
-                              )}
-                            </div>
-                          </>
-                        )}
-                      </div>
+                    <td className="px-4 py-3.5 text-slate-500 align-middle tabular-nums">{formatJoined(s.joinedAt)}</td>
+                    <td className="px-4 py-3.5 text-right align-middle w-[72px]" onClick={(e) => e.stopPropagation()}>
+                      <button
+                        type="button"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          const rect = e.currentTarget.getBoundingClientRect();
+                          if (rowMenuAnchor?.id === s._id) {
+                            setRowMenuAnchor(null);
+                          } else {
+                            setRowMenuAnchor({
+                              id: s._id,
+                              top: rect.bottom + 6,
+                              right: window.innerWidth - rect.right,
+                            });
+                          }
+                        }}
+                        className="p-2 rounded-lg text-slate-500 hover:bg-slate-100 hover:text-slate-700 transition-colors"
+                        aria-label="Row actions"
+                      >
+                        <FiMoreVertical className="w-4 h-4" />
+                      </button>
                     </td>
                   </tr>
                 ))
@@ -767,15 +740,15 @@ export default function Students() {
         </div>
 
         {!loading && total > 0 && (
-          <div className="flex items-center justify-between px-5 py-3 border-t border-gray-200 bg-gray-50">
-            <p className="text-xs text-gray-500">
-              Showing {(page - 1) * limit + 1}–{Math.min(page * limit, total)} of {total}
+          <div className="flex flex-wrap items-center justify-between gap-3 px-4 py-3 border-t border-slate-200 bg-slate-50/70">
+            <p className="text-xs text-slate-600">
+              Showing <span className="font-medium text-slate-800">{(page - 1) * limit + 1}–{Math.min(page * limit, total)}</span> of <span className="font-medium text-slate-800">{total}</span>
             </p>
             <div className="flex items-center gap-2">
               <select
                 value={limit}
                 onChange={(e) => { setLimit(Number(e.target.value)); setPage(1); }}
-                className="text-xs border border-gray-200 rounded px-2 py-1"
+                className="text-xs border border-slate-200 rounded-lg px-2.5 py-1.5 bg-white text-slate-700 focus:ring-2 focus:ring-[#003366]/20 focus:border-[#003366]"
               >
                 {LIMIT_OPTIONS.map((n) => (
                   <option key={n} value={n}>{n} per page</option>
@@ -785,16 +758,16 @@ export default function Students() {
                 type="button"
                 onClick={() => setPage((p) => Math.max(1, p - 1))}
                 disabled={page <= 1}
-                className="px-2 py-1 text-xs border border-gray-200 rounded disabled:opacity-50"
+                className="px-2.5 py-1.5 text-xs font-medium border border-slate-200 rounded-lg bg-white text-slate-600 hover:bg-slate-50 disabled:opacity-50 disabled:cursor-not-allowed"
               >
                 Previous
               </button>
-              <span className="text-xs text-gray-500">Page {page}</span>
+              <span className="text-xs text-slate-500 min-w-[4rem] text-center">Page {page}</span>
               <button
                 type="button"
                 onClick={() => setPage((p) => p + 1)}
                 disabled={page * limit >= total}
-                className="px-2 py-1 text-xs border border-gray-200 rounded disabled:opacity-50"
+                className="px-2.5 py-1.5 text-xs font-medium border border-slate-200 rounded-lg bg-white text-slate-600 hover:bg-slate-50 disabled:opacity-50 disabled:cursor-not-allowed"
               >
                 Next
               </button>
@@ -802,6 +775,62 @@ export default function Students() {
           </div>
         )}
       </div>
+
+      {rowMenuAnchor && (() => {
+        const menuStudent = data.find((d) => d._id === rowMenuAnchor.id);
+        if (!menuStudent) return null;
+        return createPortal(
+          <>
+            <div
+              className="fixed inset-0 z-[100]"
+              aria-hidden
+              onClick={() => setRowMenuAnchor(null)}
+            />
+            <div
+              className="fixed z-[101] min-w-[140px] py-1 bg-white rounded-xl border border-slate-200 shadow-xl shadow-slate-900/10"
+              style={{
+                top: rowMenuAnchor.top,
+                right: rowMenuAnchor.right,
+                left: 'auto',
+              }}
+            >
+              {!menuStudent.deletedAt ? (
+                <>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setEditStudent(menuStudent);
+                      setRowMenuAnchor(null);
+                    }}
+                    className="w-full flex items-center gap-2.5 px-4 py-2.5 text-sm text-slate-700 hover:bg-slate-50 text-left transition-colors first:rounded-t-xl"
+                  >
+                    <FiEdit2 className="w-4 h-4 text-slate-500 shrink-0" /> Edit
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setDeleteTarget(menuStudent);
+                      setRowMenuAnchor(null);
+                    }}
+                    className="w-full flex items-center gap-2.5 px-4 py-2.5 text-sm text-red-600 hover:bg-red-50 text-left transition-colors last:rounded-b-xl"
+                  >
+                    <FiTrash2 className="w-4 h-4 shrink-0" /> Delete
+                  </button>
+                </>
+              ) : (
+                <button
+                  type="button"
+                  onClick={() => handleRestore(menuStudent)}
+                  className="w-full flex items-center gap-2.5 px-4 py-2.5 text-sm text-slate-700 hover:bg-slate-50 text-left transition-colors rounded-xl"
+                >
+                  <FiRefreshCw className="w-4 h-4 text-slate-500 shrink-0" /> Restore
+                </button>
+              )}
+            </div>
+          </>,
+          document.body
+        );
+      })()}
 
       <SlideOverPanel
         title="Add Student"
