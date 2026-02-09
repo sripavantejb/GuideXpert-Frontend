@@ -1,6 +1,7 @@
 import { Suspense, lazy } from 'react';
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
 import { AuthProvider, useAuth } from './contexts/AuthContext';
+import { CounsellorAuthProvider } from './contexts/CounsellorAuthContext';
 import LandingPage from './pages/LandingPage';
 import AdminLogin from './pages/AdminLogin';
 import MeetingRegistration from './pages/MeetingRegistration';
@@ -39,6 +40,7 @@ function App() {
   return (
     <BrowserRouter>
       <AuthProvider>
+        <CounsellorAuthProvider>
         <Routes>
           <Route path="/" element={<LandingPage />} />
           <Route path="/register" element={<LandingPage />} />
@@ -64,7 +66,7 @@ function App() {
             <Route path="influencer-tracking" element={<InfluencerTracking />} />
           </Route>
 
-          {/* Counsellor Portal */}
+          {/* Counsellor Portal — no login required for now */}
           <Route path="/counsellor" element={<CounsellorLayout />}>
             <Route index element={<Navigate to="/counsellor/dashboard" replace />} />
             <Route path="dashboard" element={<Suspense fallback={<div className="flex items-center justify-center h-64 text-gray-400">Loading...</div>}><CounsellorDashboard /></Suspense>} />
@@ -80,6 +82,7 @@ function App() {
 
           <Route path="*" element={<Navigate to="/" replace />} />
         </Routes>
+        </CounsellorAuthProvider>
       </AuthProvider>
     </BrowserRouter>
   );
