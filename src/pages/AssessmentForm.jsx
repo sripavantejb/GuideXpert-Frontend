@@ -1,6 +1,7 @@
 import { useState, useRef, useMemo } from 'react';
 import { sendOtp, verifyOtp, submitAssessment } from '../utils/api';
 import { ASSESSMENT_SECTIONS } from '../data/assessmentQuestions';
+import SuccessPopup from '../components/UI/SuccessPopup';
 
 function validateName(value) {
   const trimmed = typeof value === 'string' ? value.trim() : '';
@@ -41,6 +42,7 @@ export default function AssessmentForm() {
   const [answers, setAnswers] = useState(getInitialAnswers);
   const [submitting, setSubmitting] = useState(false);
   const [submittedResult, setSubmittedResult] = useState(null);
+  const [showSuccessPopup, setShowSuccessPopup] = useState(false);
   const [questionIndex, setQuestionIndex] = useState(0);
 
   const otpInputRefs = useRef([]);
@@ -197,6 +199,7 @@ export default function AssessmentForm() {
           score: result.data?.score ?? 0,
           maxScore: result.data?.maxScore ?? 12
         });
+        setShowSuccessPopup(true);
       } else {
         const message =
           result.status === 404
@@ -490,6 +493,14 @@ export default function AssessmentForm() {
           )}
         </div>
       </div>
+
+      <SuccessPopup
+        isOpen={showSuccessPopup}
+        onClose={() => setShowSuccessPopup(false)}
+        variant="assessment"
+        score={submittedResult?.score ?? 0}
+        maxScore={submittedResult?.maxScore ?? 12}
+      />
     </div>
   );
 }
