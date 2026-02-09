@@ -19,6 +19,7 @@ import {
   FiSearch,
 } from 'react-icons/fi';
 import { HiMenu as HiMenuIcon, HiX as HiXIcon } from 'react-icons/hi';
+import { useCounsellorProfile } from '../../contexts/CounsellorProfileContext';
 
 const primaryNav = [
   { to: '/counsellor/dashboard', label: 'Dashboard', icon: FiLayout },
@@ -52,9 +53,10 @@ export default function CounsellorLayout() {
   const location = useLocation();
   const navigate = useNavigate();
   const { user, logout } = useCounsellorAuth();
-  const displayName = user?.name || 'Counsellor';
-  const displayEmail = user?.email || '';
-  const initials = displayName.split(/\s+/).map((n) => n[0]).slice(0, 2).join('').toUpperCase() || 'C';
+  const { displayName: profileName, email: profileEmail, initials: profileInitials } = useCounsellorProfile();
+  const displayName = profileName || user?.name || 'Counsellor';
+  const displayEmail = profileEmail || user?.email || '';
+  const initials = profileInitials || displayName.split(/\s+/).map((n) => n[0]).slice(0, 2).join('').toUpperCase() || 'C';
 
   const currentPage = pageMeta[location.pathname] || { title: 'Counsellor Portal', subtitle: '' };
 
