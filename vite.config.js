@@ -7,10 +7,11 @@ export default defineConfig({
   plugins: [react(), tailwindcss()],
   server: {
     proxy: {
-      // In dev, requests to /api/* go to the backend so you don't need VITE_API_URL set
+      // In dev, proxy /api to the deployed backend (override with VITE_API_URL for local backend)
       '/api': {
-        target: 'http://localhost:5000',
+        target: 'https://guide-xpert-backend.vercel.app',
         changeOrigin: true,
+        secure: true,
       },
     },
   },

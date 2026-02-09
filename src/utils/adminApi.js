@@ -174,6 +174,12 @@ export const getTrainingAttendance = async (params = {}, token = getStoredToken(
   return adminRequest(`/training-attendance${query ? `?${query}` : ''}`, { method: 'GET' }, token);
 };
 
+/** GET /admin/assessment-submissions — list with pagination. Returns { submissions, total }. */
+export const getAssessmentSubmissions = async (page = 1, limit = 50, token = getStoredToken()) => {
+  const params = new URLSearchParams({ page: String(page), limit: String(limit) });
+  return adminRequest(`/assessment-submissions?${params}`, { method: 'GET' }, token);
+};
+
 /** Request to /api/influencer-links and /api/influencer-analytics (admin auth, no /admin prefix). */
 async function influencerRequest(path, options = {}, token = getStoredToken()) {
   const url = `${API_BASE_URL}${path}`;

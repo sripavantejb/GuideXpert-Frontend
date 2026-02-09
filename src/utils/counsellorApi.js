@@ -1,14 +1,5 @@
-// Base URL for API: in dev with no env, use relative /api (Vite proxy forwards to backend)
-const rawBase =
-  import.meta.env.VITE_API_URL !== undefined && String(import.meta.env.VITE_API_URL).trim() !== ''
-    ? String(import.meta.env.VITE_API_URL).trim()
-    : import.meta.env.DEV
-      ? ''
-      : 'https://guide-xpert-backend.vercel.app/api';
-const normalized = rawBase.replace(/\/+$/, '');
-const API_BASE_URL = normalized === '' || normalized.endsWith('/api')
-  ? (normalized === '' ? '/api' : normalized)
-  : `${normalized}/api`;
+// Use deployed backend by default (same as api.js and adminApi.js)
+const API_BASE_URL = import.meta.env.VITE_API_URL || 'https://guide-xpert-backend.vercel.app/api';
 
 const COUNSELLOR_TOKEN_KEY = 'guidexpert_counsellor_token';
 const COUNSELLOR_USER_KEY = 'guidexpert_counsellor_user';

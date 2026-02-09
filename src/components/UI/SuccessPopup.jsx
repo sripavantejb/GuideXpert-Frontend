@@ -2,10 +2,11 @@ import { useEffect, useState } from 'react';
 import { FiCheck } from 'react-icons/fi';
 import './SuccessPopup.css';
 
-const SuccessPopup = ({ isOpen, onClose, slotInfo, variant = 'slot' }) => {
+const SuccessPopup = ({ isOpen, onClose, slotInfo, variant = 'slot', score, maxScore }) => {
   const [isVisible, setIsVisible] = useState(false);
   const [checkmarkVisible, setCheckmarkVisible] = useState(false);
   const isPostRegistration = variant === 'postRegistration';
+  const isAssessment = variant === 'assessment';
 
   useEffect(() => {
     if (isOpen) {
@@ -75,10 +76,18 @@ const SuccessPopup = ({ isOpen, onClose, slotInfo, variant = 'slot' }) => {
           </div>
           
           <h2 className="success-popup-title">
-            {isPostRegistration ? 'Registration Complete!' : 'Slot Booked Successfully!'}
+            {isPostRegistration ? 'Registration Complete!' : isAssessment ? 'Assessment submitted successfully!' : 'Slot Booked Successfully!'}
           </h2>
           
-          {!isPostRegistration && slotInfo && (
+          {isAssessment && (
+            <div className="success-slot-info">
+              <p className="success-slot-label">Your score</p>
+              <p className="success-slot-value">
+                {score ?? 0} / {maxScore ?? 12}
+              </p>
+            </div>
+          )}
+          {!isPostRegistration && !isAssessment && slotInfo && (
             <div className="success-slot-info">
               <p className="success-slot-label">Your booked slot:</p>
               <p className="success-slot-value">
@@ -93,9 +102,11 @@ const SuccessPopup = ({ isOpen, onClose, slotInfo, variant = 'slot' }) => {
           )}
           
           <p className="success-popup-message">
-            {isPostRegistration
-              ? "We'll send the meeting link and updates to your email."
-              : "We'll send you a reminder before your demo session."}
+            {isAssessment
+              ? 'Thank you for completing the counsellor assessment.'
+              : isPostRegistration
+                ? "We'll send the meeting link and updates to your email."
+                : "We'll send you a reminder before your demo session."}
           </p>
         </div>
       </div>
