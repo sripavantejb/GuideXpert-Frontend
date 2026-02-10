@@ -234,6 +234,21 @@ export default function AssessmentForm() {
     }
   };
 
+  const handleWriteAgain = () => {
+    setStep(1);
+    setSubmittedResult(null);
+    setAnswers(getInitialAnswers());
+    setQuestionIndex(0);
+    setShowSuccessPopup(false);
+    setSubmitError('');
+    setOtpError('');
+    setSuccessMessage('');
+    setName('');
+    setMobileNumber('');
+    setOtp(['', '', '', '', '', '']);
+    setErrors({ name: '', mobileNumber: '' });
+  };
+
   return (
     <div className="min-h-screen bg-gray-50 py-8 px-4">
       <div className="max-w-2xl mx-auto">
@@ -512,48 +527,70 @@ export default function AssessmentForm() {
           )}
 
           {step === 3 && submittedResult && (
-            <div className="py-6 p-4 rounded-xl border border-[#003366]/20 bg-[#003366]/5">
-              <div className="text-center">
-                <div className="inline-flex items-center justify-center w-16 h-16 rounded-full bg-[#003366]/10 mb-4" style={{ color: '#003366' }}>
-                  <svg className="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
-                  </svg>
+            <div className="rounded-2xl border border-gray-200 border-l-4 border-l-[#003366] bg-white shadow-sm overflow-hidden">
+              <div className="p-6 sm:p-8">
+                <div className="text-center">
+                  <div className="inline-flex items-center justify-center w-14 h-14 rounded-full bg-[#003366]/10 text-[#003366] mb-5">
+                    <svg className="w-7 h-7" fill="none" stroke="currentColor" strokeWidth={2} viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
+                    </svg>
+                  </div>
+                  <h2 className="text-xl font-semibold tracking-tight text-[#003366]">Assessment submitted successfully</h2>
+                  <p className="mt-4 text-xs font-medium uppercase tracking-wider text-gray-500">Your score</p>
+                  <p className="mt-1 text-3xl font-bold text-[#003366] tabular-nums">
+                    {submittedResult.score} / {submittedResult.maxScore}
+                  </p>
+                  <p className="mt-4 text-sm text-gray-600">
+                    {submittedResult.score === submittedResult.maxScore
+                      ? 'Well done! All answers correct.'
+                      : 'Review the suggestions below to improve.'}
+                  </p>
+                  <p className="mt-3 text-sm text-gray-500">
+                    Thank you for completing the counsellor assessment.
+                  </p>
                 </div>
-                <h2 className="text-xl font-semibold mb-2" style={{ color: '#003366' }}>Assessment submitted successfully</h2>
-                <p className="text-gray-600 mb-2">Your score</p>
-                <p className="text-3xl font-bold" style={{ color: '#003366' }}>
-                  {submittedResult.score} / {submittedResult.maxScore}
-                </p>
-                <p className="mt-3 text-sm text-gray-600">
-                  {submittedResult.score === submittedResult.maxScore
-                    ? 'Well done! All answers correct.'
-                    : 'Review the questions below to improve.'}
-                </p>
-                <p className="mt-4 text-sm text-gray-500">
-                  Thank you for completing the counsellor assessment.
-                </p>
-              </div>
-              <div className="mt-6 pt-6 border-t border-[#003366]/20">
-                <h3 className="text-sm font-semibold text-gray-800 mb-3" style={{ color: '#003366' }}>Detailed report</h3>
-                {(!submittedResult.questionResults || submittedResult.questionResults.length === 0) ? (
-                  <p className="text-sm text-gray-600">Report not available.</p>
-                ) : (() => {
-                  const incorrect = submittedResult.questionResults.filter((r) => !r.correct);
-                  if (incorrect.length === 0) {
-                    return <p className="text-sm text-gray-600">All answers correct.</p>;
-                  }
-                  return (
-                    <ul className="space-y-4">
-                      {incorrect.map((r) => (
-                        <li key={r.questionId} className="p-3 rounded-lg bg-white border border-gray-200 text-left">
-                          <p className="text-sm font-medium text-gray-800 mb-1.5">{questionTextMap[r.questionId] ?? r.questionId}</p>
-                          <p className="text-xs text-red-600"><span className="font-medium">Your answer:</span> {r.userAnswer || '—'}</p>
-                          <p className="text-xs text-green-700 mt-0.5"><span className="font-medium">Correct answer:</span> {r.correctAnswer}</p>
-                        </li>
-                      ))}
-                    </ul>
-                  );
-                })()}
+
+                <div className="mt-8 rounded-xl border-l-4 border-l-[#003366] bg-primary-blue-50 p-4 sm:p-5">
+                  <p className="text-xs font-semibold uppercase tracking-wider text-[#003366]">Suggestion</p>
+                  <p className="mt-2 text-sm text-gray-700 leading-relaxed">
+                    Focus on listening to the student&apos;s goals before suggesting options—it builds trust and leads to better outcomes.
+                  </p>
+                </div>
+
+                <div className="mt-8 pt-8 border-t border-gray-200">
+                  <h3 className="text-sm font-semibold uppercase tracking-wider text-[#003366]">Detailed report</h3>
+                  {(!submittedResult.questionResults || submittedResult.questionResults.length === 0) ? (
+                    <p className="mt-3 text-sm text-gray-500">Report not available.</p>
+                  ) : (() => {
+                    const incorrect = submittedResult.questionResults.filter((r) => !r.correct);
+                    if (incorrect.length === 0) {
+                      return <p className="mt-3 text-sm text-gray-600">All answers correct.</p>;
+                    }
+                    return (
+                      <ul className="mt-4 space-y-3">
+                        {incorrect.map((r) => (
+                          <li key={r.questionId} className="rounded-xl border border-gray-200 bg-gray-50/50 p-4 text-left">
+                            <p className="text-sm font-medium text-gray-900">{questionTextMap[r.questionId] ?? r.questionId}</p>
+                            <p className="mt-2 text-xs font-medium uppercase tracking-wider text-gray-500">Your answer</p>
+                            <p className="mt-0.5 text-sm text-[#991b1b]">{r.userAnswer || '—'}</p>
+                            <p className="mt-2 text-xs font-medium uppercase tracking-wider text-gray-500">Correct answer</p>
+                            <p className="mt-0.5 text-sm text-[#15803d]">{r.correctAnswer}</p>
+                          </li>
+                        ))}
+                      </ul>
+                    );
+                  })()}
+                </div>
+
+                <div className="mt-8 pt-8 border-t border-gray-200 text-center">
+                  <button
+                    type="button"
+                    onClick={handleWriteAgain}
+                    className="inline-flex items-center justify-center rounded-lg border-2 border-[#003366] px-6 py-2.5 text-sm font-semibold text-[#003366] transition-colors hover:bg-[#003366] hover:text-white"
+                  >
+                    Write again
+                  </button>
+                </div>
               </div>
             </div>
           )}
