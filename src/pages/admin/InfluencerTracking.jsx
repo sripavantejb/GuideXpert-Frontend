@@ -51,6 +51,14 @@ function formatDate(value) {
   });
 }
 
+function formatChartDate(isoDateStr) {
+  if (!isoDateStr) return '—';
+  const [y, m, d] = String(isoDateStr).split('-');
+  if (!y || !m || !d) return isoDateStr;
+  const date = new Date(Date.UTC(parseInt(y, 10), parseInt(m, 10) - 1, parseInt(d, 10)));
+  return date.toLocaleDateString('en-IN', { day: '2-digit', month: 'short', year: 'numeric' });
+}
+
 function getDatePresetRange(preset) {
   const today = new Date();
   today.setHours(23, 59, 59, 999);
@@ -207,6 +215,28 @@ export default function InfluencerTracking() {
     return () => clearTimeout(t);
   }, [fetchTrend]);
 
+  // Refetch when user returns to this tab (e.g. after deleting data in MongoDB) so data stays live
+  useEffect(() => {
+    const onFocus = () => {
+      fetchLinks();
+      fetchAnalytics();
+      fetchTrend();
+    };
+    window.addEventListener('focus', onFocus);
+    return () => window.removeEventListener('focus', onFocus);
+  }, [fetchLinks, fetchAnalytics, fetchTrend]);
+
+  // Poll analytics/trend every 60s while tab is visible so MongoDB changes show up live
+  useEffect(() => {
+    const interval = setInterval(() => {
+      if (typeof document !== 'undefined' && document.visibilityState === 'visible') {
+        fetchAnalytics();
+        fetchTrend();
+      }
+    }, 60000);
+    return () => clearInterval(interval);
+  }, [fetchAnalytics, fetchTrend]);
+
   const totalRegistrations = useMemo(
     () => analytics.reduce((sum, r) => sum + (r.totalRegistrations ?? 0), 0),
     [analytics]
@@ -219,14 +249,25 @@ export default function InfluencerTracking() {
     return top.influencerName ?? '—';
   }, [analytics]);
 
-  const barChartData = useMemo(
-    () =>
-      analytics.slice(0, 10).map((r) => ({
-        name: (r.influencerName || '').length > 12 ? (r.influencerName || '').slice(0, 12) + '…' : (r.influencerName || '—'),
-        registrations: r.totalRegistrations ?? 0,
-      })),
-    [analytics]
-  );
+  // Bar chart: always top 10 by registration count (crystal-clear, accurate)
+  const barChartData = useMemo(() => {
+    const byCount = [...analytics].sort((a, b) => (b.totalRegistrations ?? 0) - (a.totalRegistrations ?? 0));
+    return byCount.slice(0, 10).map((r) => ({
+      name: (r.influencerName || '').length > 14 ? (r.influencerName || '').slice(0, 14) + '…' : (r.influencerName || '—'),
+      fullName: r.influencerName || '—',
+      registrations: r.totalRegistrations ?? 0,
+    }));
+  }, [analytics]);
+
+  // Lookup analytics for saved links only (same key as backend: normalized name + platform)
+  const analyticsByLinkKey = useMemo(() => {
+    const map = new Map();
+    for (const r of analytics) {
+      const key = `${(r.influencerName || '').trim().toLowerCase()}|${(r.platform || '').trim().toLowerCase()}`;
+      map.set(key, { totalRegistrations: r.totalRegistrations ?? 0, latestRegistration: r.latestRegistration ?? null });
+    }
+    return map;
+  }, [analytics]);
 
   const filteredSavedLinks = useMemo(() => {
     let list = savedLinks;
@@ -362,6 +403,8 @@ export default function InfluencerTracking() {
       return;
     }
     fetchLinks();
+    fetchAnalytics();
+    fetchTrend();
   };
 
   const handleBulkDeleteConfirm = async () => {
@@ -377,6 +420,8 @@ export default function InfluencerTracking() {
     setSelectedLinkIds(new Set());
     setBulkDeleteConfirm(false);
     fetchLinks();
+    fetchAnalytics();
+    fetchTrend();
   };
 
   const toggleSelectLink = (id) => {
@@ -487,6 +532,7 @@ export default function InfluencerTracking() {
         <div className={cardClass}>
           <div className={sectionHeaderClass}>
             <h3 className="text-sm font-semibold text-gray-800">Registrations by influencer</h3>
+            <p className="text-xs text-gray-500 mt-0.5">Top 10 by registration count (current date range)</p>
           </div>
           <div className="p-4 h-[240px]">
             {analyticsLoading ? (
@@ -498,7 +544,11 @@ export default function InfluencerTracking() {
                 <BarChart data={barChartData} margin={{ top: 8, right: 8, left: 0, bottom: 0 }}>
                   <XAxis dataKey="name" tick={{ fontSize: 11 }} />
                   <YAxis allowDecimals={false} tick={{ fontSize: 11 }} />
-                  <Tooltip />
+                  <Tooltip
+                    formatter={(value) => [value, 'Registrations']}
+                    labelFormatter={(_, payload) => payload?.[0]?.payload?.fullName ?? ''}
+                    contentStyle={{ fontSize: 12 }}
+                  />
                   <Bar dataKey="registrations" fill="#003366" name="Registrations" radius={[4, 4, 0, 0]} />
                 </BarChart>
               </ResponsiveContainer>
@@ -508,6 +558,7 @@ export default function InfluencerTracking() {
         <div className={cardClass}>
           <div className={sectionHeaderClass}>
             <h3 className="text-sm font-semibold text-gray-800">Registrations over time</h3>
+            <p className="text-xs text-gray-500 mt-0.5">Daily count (IST), current date range</p>
           </div>
           <div className="p-4 h-[240px]">
             {trendLoading ? (
@@ -518,9 +569,13 @@ export default function InfluencerTracking() {
               <ResponsiveContainer width="100%" height="100%">
                 <LineChart data={trendData} margin={{ top: 8, right: 8, left: 0, bottom: 0 }}>
                   <CartesianGrid strokeDasharray="3 3" stroke="#eee" />
-                  <XAxis dataKey="date" tick={{ fontSize: 11 }} />
+                  <XAxis dataKey="date" tick={{ fontSize: 11 }} tickFormatter={(v) => (v && v.length >= 10 ? `${v.slice(8, 10)}/${v.slice(5, 7)}` : v)} />
                   <YAxis allowDecimals={false} tick={{ fontSize: 11 }} />
-                  <Tooltip />
+                  <Tooltip
+                    formatter={(value) => [value, 'Registrations']}
+                    labelFormatter={(label) => (label ? formatChartDate(label) : '')}
+                    contentStyle={{ fontSize: 12 }}
+                  />
                   <Line type="monotone" dataKey="count" stroke="#003366" strokeWidth={2} name="Registrations" dot={{ r: 3 }} />
                 </LineChart>
               </ResponsiveContainer>
@@ -660,7 +715,7 @@ export default function InfluencerTracking() {
           )}
         </div>
         {linksLoading ? (
-          <div className="px-6 py-8"><TableSkeleton rows={8} cols={6} /></div>
+          <div className="px-6 py-8"><TableSkeleton rows={8} cols={9} /></div>
         ) : linksError ? (
           <div className="px-6 py-6"><p className="text-red-600 text-sm" role="alert">{linksError}</p></div>
         ) : filteredSavedLinks.length === 0 ? (
@@ -687,11 +742,16 @@ export default function InfluencerTracking() {
                     <th className="px-6 py-3 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">Campaign</th>
                     <th className="px-6 py-3 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">UTM Link</th>
                     <th className="px-6 py-3 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">Date created</th>
+                    <th className="px-6 py-3 text-right text-xs font-semibold text-gray-600 uppercase tracking-wider">Registrations</th>
+                    <th className="px-6 py-3 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">Latest registration</th>
                     <th className="px-6 py-3 text-right text-xs font-semibold text-gray-600 uppercase tracking-wider">Actions</th>
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-gray-100">
-                  {paginatedLinks.map((link, i) => (
+                  {paginatedLinks.map((link, i) => {
+                    const linkKey = `${(link.influencerName || '').trim().toLowerCase()}|${(link.platform || '').trim().toLowerCase()}`;
+                    const stats = analyticsByLinkKey.get(linkKey);
+                    return (
                     <tr key={link.id} className={i % 2 === 0 ? 'bg-white' : 'bg-gray-50/60 hover:bg-primary-blue-50/30'}>
                       <td className="px-4 py-3">
                         <input
@@ -710,6 +770,8 @@ export default function InfluencerTracking() {
                         </a>
                       </td>
                       <td className="px-6 py-3 text-sm text-gray-500">{formatDate(link.createdAt)}</td>
+                      <td className="px-6 py-3 text-sm text-gray-900 text-right font-medium">{stats ? stats.totalRegistrations : 0}</td>
+                      <td className="px-6 py-3 text-sm text-gray-500">{stats?.latestRegistration ? formatDate(stats.latestRegistration) : '—'}</td>
                       <td className="px-6 py-3 text-right">
                         <div className="flex items-center justify-end gap-2">
                           <button
@@ -730,7 +792,7 @@ export default function InfluencerTracking() {
                         </div>
                       </td>
                     </tr>
-                  ))}
+                  ); })}
                 </tbody>
               </table>
             </div>
@@ -753,6 +815,7 @@ export default function InfluencerTracking() {
           <div>
             <h2 className="text-base font-semibold text-gray-800">Influencer Analytics</h2>
             <p className="text-sm text-gray-500 mt-0.5">Registrations attributed to each influencer (slot booking completed).</p>
+            <p className="text-xs text-gray-500 mt-0.5">Only influencers with a saved link are shown.</p>
           </div>
           <div className="flex flex-wrap items-center gap-2">
             {['7', '30', 'month', ''].map((preset) => (

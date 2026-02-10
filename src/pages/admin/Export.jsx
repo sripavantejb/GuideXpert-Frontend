@@ -108,7 +108,7 @@ export default function Export() {
               type="text"
               value={utm_content}
               onChange={(e) => setUtm_content(e.target.value)}
-              placeholder="e.g. Venkatesh"
+              placeholder="e.g. Influencer name"
               className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-blue-500 focus:border-primary-blue-500 outline-none"
             />
           </div>

@@ -119,6 +119,21 @@ export const bulkDeleteStudents = async (ids, token = getCounsellorToken()) => {
   }, token);
 };
 
+/**
+ * Get predicted colleges from NW College Predictor API (proxied by backend).
+ * @param {{ offset: number, limit: number, entrance_exam_name_enum: string, admission_category_name_enum: string, cutoff_from: number, cutoff_to: number, reservation_category_code: string, branch_codes?: string[], districts?: string[], sort_order?: string }} params
+ * @param {string} [token]
+ * @returns {Promise<{ success: boolean, data?: { total_no_of_colleges: number, admission_category_name: string, colleges: object[] }, status?: number, message?: string, data?: object }>}
+ */
+export const getPredictedColleges = async (params = {}, token = getCounsellorToken()) => {
+  const { offset = 0, limit = 10, ...body } = params;
+  const query = new URLSearchParams({ offset: String(offset), limit: String(limit) });
+  return counsellorRequest(`/college-predictor/colleges?${query.toString()}`, {
+    method: 'POST',
+    body: JSON.stringify(body),
+  }, token);
+};
+
 export const exportStudents = async (params = {}, token = getCounsellorToken()) => {
   const search = new URLSearchParams();
   if (params.q) search.set('q', params.q);
