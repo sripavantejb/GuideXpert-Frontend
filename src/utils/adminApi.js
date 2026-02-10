@@ -186,6 +186,16 @@ export const getAssessment2Submissions = async (page = 1, limit = 50, token = ge
   return adminRequest(`/assessment-2-submissions?${params}`, { method: 'GET' }, token);
 };
 
+/** GET /admin/assessment-submissions/:id — single submission with questionResults. */
+export const getAssessmentSubmissionById = async (id, token = getStoredToken()) => {
+  return adminRequest(`/assessment-submissions/${encodeURIComponent(id)}`, { method: 'GET' }, token);
+};
+
+/** GET /admin/assessment-2-submissions/:id — single submission with questionResults. */
+export const getAssessment2SubmissionById = async (id, token = getStoredToken()) => {
+  return adminRequest(`/assessment-2-submissions/${encodeURIComponent(id)}`, { method: 'GET' }, token);
+};
+
 /** Request to /api/influencer-links and /api/influencer-analytics (admin auth, no /admin prefix). */
 async function influencerRequest(path, options = {}, token = getStoredToken()) {
   const url = `${API_BASE_URL}${path}`;

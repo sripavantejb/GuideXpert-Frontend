@@ -1,6 +1,7 @@
-import { useState, useEffect, useRef } from 'react';
-import { getAssessment2Submissions, getStoredToken } from '../../utils/adminApi';
+import { useState, useEffect, useRef, useMemo } from 'react';
+import { getAssessment2Submissions, getAssessment2SubmissionById, getStoredToken } from '../../utils/adminApi';
 import { useAuth } from '../../contexts/AuthContext';
+import { ASSESSMENT_SECTIONS_2 } from '../../data/assessmentQuestions2';
 
 function formatDate(d) {
   if (!d) return '—';
@@ -17,6 +18,18 @@ export default function Assessment2Results() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
   const cancelledRef = useRef(false);
+  const [detailOpen, setDetailOpen] = useState(false);
+  const [detailSubmission, setDetailSubmission] = useState(null);
+  const [detailLoading, setDetailLoading] = useState(false);
+  const [detailError, setDetailError] = useState('');
+
+  const questionTextMap = useMemo(() => {
+    const map = {};
+    ASSESSMENT_SECTIONS_2.forEach((s) => {
+      s.questions.forEach((q) => { map[q.id] = q.text; });
+    });
+    return map;
+  }, []);
 
   useEffect(() => {
     cancelledRef.current = false;
@@ -41,6 +54,28 @@ export default function Assessment2Results() {
   }, [page, logout]);
 
   const totalPages = Math.max(1, Math.ceil(total / limit));
+
+  const openDetail = (row) => {
+    if (!row._id) return;
+    setDetailOpen(true);
+    setDetailSubmission(null);
+    setDetailError('');
+    setDetailLoading(true);
+    getAssessment2SubmissionById(row._id, getStoredToken()).then((result) => {
+      setDetailLoading(false);
+      if (!result.success) {
+        setDetailError(result.message || 'Failed to load submission details');
+        return;
+      }
+      setDetailSubmission(result.data?.submission ?? null);
+    });
+  };
+
+  const closeDetail = () => {
+    setDetailOpen(false);
+    setDetailSubmission(null);
+    setDetailError('');
+  };
 
   return (
     <div>
@@ -79,6 +114,9 @@ export default function Assessment2Results() {
                   <th scope="col" className="px-3 py-2 font-semibold text-gray-700 text-xs uppercase tracking-wider">
                     Submitted at
                   </th>
+                  <th scope="col" className="px-3 py-2 font-semibold text-gray-700 text-xs uppercase tracking-wider">
+                    Actions
+                  </th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-gray-100">
@@ -97,6 +135,15 @@ export default function Assessment2Results() {
                     </td>
                     <td className="px-3 py-2 text-gray-600 whitespace-nowrap">
                       {formatDate(row.submittedAt)}
+                    </td>
+                    <td className="px-3 py-2 whitespace-nowrap">
+                      <button
+                        type="button"
+                        onClick={() => openDetail(row)}
+                        className="text-sm font-medium text-[#003366] hover:underline"
+                      >
+                        View details
+                      </button>
                     </td>
                   </tr>
                 ))}
@@ -130,6 +177,51 @@ export default function Assessment2Results() {
             </div>
           )}
         </>
+      )}
+
+      {detailOpen && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50" onClick={closeDetail} role="dialog" aria-modal="true" aria-labelledby="detail-modal-title">
+          <div className="bg-white rounded-xl shadow-xl max-w-lg w-full max-h-[90vh] overflow-hidden flex flex-col" onClick={(e) => e.stopPropagation()}>
+            <div className="px-4 py-3 border-b border-gray-200 flex items-center justify-between">
+              <h2 id="detail-modal-title" className="text-lg font-semibold" style={{ color: '#003366' }}>Submission details</h2>
+              <button type="button" onClick={closeDetail} className="p-1 rounded hover:bg-gray-100 text-gray-600" aria-label="Close">×</button>
+            </div>
+            <div className="p-4 overflow-y-auto flex-1">
+              {detailLoading && <div className="py-8 text-center text-gray-500">Loading...</div>}
+              {detailError && <div className="p-3 rounded-lg border border-red-200 bg-red-50 text-red-700 text-sm">{detailError}</div>}
+              {!detailLoading && !detailError && detailSubmission && (
+                <>
+                  <dl className="grid grid-cols-1 gap-2 text-sm mb-4">
+                    <div><dt className="text-gray-500">Name</dt><dd className="font-medium text-gray-900">{detailSubmission.fullName || '—'}</dd></div>
+                    <div><dt className="text-gray-500">Phone</dt><dd className="font-medium text-gray-900">{detailSubmission.phone || '—'}</dd></div>
+                    <div><dt className="text-gray-500">Score</dt><dd className="font-medium text-[#003366]">{detailSubmission.score ?? 0} / {detailSubmission.maxScore ?? 15}</dd></div>
+                    <div><dt className="text-gray-500">Submitted at</dt><dd className="font-medium text-gray-900">{formatDate(detailSubmission.submittedAt)}</dd></div>
+                  </dl>
+                  <h3 className="text-sm font-semibold text-gray-800 mb-2" style={{ color: '#003366' }}>Incorrect answers</h3>
+                  {(!detailSubmission.questionResults || detailSubmission.questionResults.length === 0) ? (
+                    <p className="text-sm text-gray-600">No question breakdown available.</p>
+                  ) : (() => {
+                    const incorrect = detailSubmission.questionResults.filter((r) => !r.correct);
+                    if (incorrect.length === 0) {
+                      return <p className="text-sm text-gray-600">All answers correct.</p>;
+                    }
+                    return (
+                      <ul className="space-y-3">
+                        {incorrect.map((r) => (
+                          <li key={r.questionId} className="p-3 rounded-lg border border-gray-200 text-left">
+                            <p className="text-sm font-medium text-gray-800 mb-1">{questionTextMap[r.questionId] ?? r.questionId}</p>
+                            <p className="text-xs text-red-600"><span className="font-medium">User answer:</span> {r.userAnswer || '—'}</p>
+                            <p className="text-xs text-green-700 mt-0.5"><span className="font-medium">Correct answer:</span> {r.correctAnswer}</p>
+                          </li>
+                        ))}
+                      </ul>
+                    );
+                  })()}
+                </>
+              )}
+            </div>
+          </div>
+        </div>
       )}
     </div>
   );

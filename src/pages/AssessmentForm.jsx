@@ -55,6 +55,14 @@ export default function AssessmentForm() {
     []
   );
 
+  const questionTextMap = useMemo(() => {
+    const map = {};
+    ASSESSMENT_SECTIONS.forEach((s) => {
+      s.questions.forEach((q) => { map[q.id] = q.text; });
+    });
+    return map;
+  }, []);
+
   const normalizedPhone = useMemo(() => {
     const digits = (mobileNumber || '').replace(/\D/g, '');
     return digits.length >= 10 ? digits.slice(-10) : digits;
@@ -208,7 +216,8 @@ export default function AssessmentForm() {
       if (result.success) {
         setSubmittedResult({
           score: result.data?.score ?? 0,
-          maxScore: result.data?.maxScore ?? 10
+          maxScore: result.data?.maxScore ?? 10,
+          questionResults: result.data?.questionResults ?? []
         });
         setShowSuccessPopup(true);
       } else {
@@ -503,20 +512,49 @@ export default function AssessmentForm() {
           )}
 
           {step === 3 && submittedResult && (
-            <div className="text-center py-6 p-4 rounded-xl border border-[#003366]/20 bg-[#003366]/5">
-              <div className="inline-flex items-center justify-center w-16 h-16 rounded-full bg-[#003366]/10 mb-4" style={{ color: '#003366' }}>
-                <svg className="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
-                </svg>
+            <div className="py-6 p-4 rounded-xl border border-[#003366]/20 bg-[#003366]/5">
+              <div className="text-center">
+                <div className="inline-flex items-center justify-center w-16 h-16 rounded-full bg-[#003366]/10 mb-4" style={{ color: '#003366' }}>
+                  <svg className="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                  </svg>
+                </div>
+                <h2 className="text-xl font-semibold mb-2" style={{ color: '#003366' }}>Assessment submitted successfully</h2>
+                <p className="text-gray-600 mb-2">Your score</p>
+                <p className="text-3xl font-bold" style={{ color: '#003366' }}>
+                  {submittedResult.score} / {submittedResult.maxScore}
+                </p>
+                <p className="mt-3 text-sm text-gray-600">
+                  {submittedResult.score === submittedResult.maxScore
+                    ? 'Well done! All answers correct.'
+                    : 'Review the questions below to improve.'}
+                </p>
+                <p className="mt-4 text-sm text-gray-500">
+                  Thank you for completing the counsellor assessment.
+                </p>
               </div>
-              <h2 className="text-xl font-semibold mb-2" style={{ color: '#003366' }}>Assessment submitted successfully</h2>
-              <p className="text-gray-600 mb-2">Your score</p>
-              <p className="text-3xl font-bold" style={{ color: '#003366' }}>
-                {submittedResult.score} / {submittedResult.maxScore}
-              </p>
-              <p className="mt-4 text-sm text-gray-500">
-                Thank you for completing the counsellor assessment.
-              </p>
+              <div className="mt-6 pt-6 border-t border-[#003366]/20">
+                <h3 className="text-sm font-semibold text-gray-800 mb-3" style={{ color: '#003366' }}>Detailed report</h3>
+                {(!submittedResult.questionResults || submittedResult.questionResults.length === 0) ? (
+                  <p className="text-sm text-gray-600">Report not available.</p>
+                ) : (() => {
+                  const incorrect = submittedResult.questionResults.filter((r) => !r.correct);
+                  if (incorrect.length === 0) {
+                    return <p className="text-sm text-gray-600">All answers correct.</p>;
+                  }
+                  return (
+                    <ul className="space-y-4">
+                      {incorrect.map((r) => (
+                        <li key={r.questionId} className="p-3 rounded-lg bg-white border border-gray-200 text-left">
+                          <p className="text-sm font-medium text-gray-800 mb-1.5">{questionTextMap[r.questionId] ?? r.questionId}</p>
+                          <p className="text-xs text-red-600"><span className="font-medium">Your answer:</span> {r.userAnswer || '—'}</p>
+                          <p className="text-xs text-green-700 mt-0.5"><span className="font-medium">Correct answer:</span> {r.correctAnswer}</p>
+                        </li>
+                      ))}
+                    </ul>
+                  );
+                })()}
+              </div>
             </div>
           )}
         </div>
