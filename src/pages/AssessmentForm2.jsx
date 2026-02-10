@@ -1,4 +1,4 @@
-import { useState, useRef, useMemo } from 'react';
+import { useState, useRef, useMemo, useEffect } from 'react';
 import { sendOtp, verifyOtp, submitAssessment2 } from '../utils/api';
 import { ASSESSMENT_SECTIONS_2 } from '../data/assessmentQuestions2';
 import SuccessPopup from '../components/UI/SuccessPopup';
@@ -46,6 +46,7 @@ export default function AssessmentForm2() {
   const [submittedResult, setSubmittedResult] = useState(null);
   const [showSuccessPopup, setShowSuccessPopup] = useState(false);
   const [questionIndex, setQuestionIndex] = useState(0);
+  const [submitUnlocked, setSubmitUnlocked] = useState(false);
 
   const otpInputRefs = useRef([]);
 
@@ -56,6 +57,17 @@ export default function AssessmentForm2() {
       ),
     []
   );
+
+  // Unlock Submit button only after a short delay on the last question so double-clicking "Next" doesn't submit
+  const isOnLastQuestion = questionIndex === flatQuestions.length - 1;
+  useEffect(() => {
+    if (isOnLastQuestion) {
+      const t = setTimeout(() => setSubmitUnlocked(true), 600);
+      return () => clearTimeout(t);
+    } else {
+      setSubmitUnlocked(false);
+    }
+  }, [isOnLastQuestion]);
 
   const normalizedPhone = useMemo(() => {
     const digits = (mobileNumber || '').replace(/\D/g, '');
@@ -481,10 +493,10 @@ export default function AssessmentForm2() {
                   ) : (
                     <button
                       type="submit"
-                      disabled={submitting}
+                      disabled={submitting || !submitUnlocked}
                       className="flex-1 py-3 px-4 bg-[#003366] hover:bg-[#004080] text-white font-medium rounded-lg transition disabled:opacity-60 disabled:cursor-not-allowed"
                     >
-                      {submitting ? 'Submitting...' : 'Submit Assessment'}
+                      {submitting ? 'Submitting...' : !submitUnlocked ? 'Please wait...' : 'Submit Assessment'}
                     </button>
                   )}
                 </div>
