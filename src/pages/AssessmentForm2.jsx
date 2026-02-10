@@ -192,11 +192,12 @@ export default function AssessmentForm2() {
 
   const handleAssessmentFormKeyDown = (e) => {
     if (e.key !== 'Enter') return;
+    // Prevent Enter from submitting the form so submission only happens on explicit "Submit Assessment" click
+    e.preventDefault();
     const target = e.target;
     const isRadio = target.type === 'radio';
     const isInsideOptionLabel = target.closest('label')?.querySelector('input[type="radio"]');
     if (isRadio || isInsideOptionLabel) {
-      e.preventDefault();
       e.stopPropagation();
     }
   };
