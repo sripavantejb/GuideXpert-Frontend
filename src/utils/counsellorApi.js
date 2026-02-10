@@ -65,6 +65,47 @@ export const counsellorLogin = async (email, password) => {
   }, null);
 };
 
+export const sendCounsellorOtp = async (phone) => {
+  return counsellorRequest('/send-otp', {
+    method: 'POST',
+    body: JSON.stringify({ phone }),
+  }, null);
+};
+
+export const loginWithOtp = async (phone, otp) => {
+  return counsellorRequest('/verify-otp', {
+    method: 'POST',
+    body: JSON.stringify({ phone, otp }),
+  }, null);
+};
+
+export const getSessions = async (params = {}, token = getCounsellorToken()) => {
+  const search = new URLSearchParams();
+  if (params.status) search.set('status', params.status);
+  if (params.from) search.set('from', params.from);
+  if (params.to) search.set('to', params.to);
+  const query = search.toString();
+  return counsellorRequest(`/sessions${query ? `?${query}` : ''}`, { method: 'GET' }, token);
+};
+
+export const createSession = async (payload, token = getCounsellorToken()) => {
+  return counsellorRequest('/sessions', {
+    method: 'POST',
+    body: JSON.stringify(payload),
+  }, token);
+};
+
+export const updateSession = async (id, payload, token = getCounsellorToken()) => {
+  return counsellorRequest(`/sessions/${encodeURIComponent(id)}`, {
+    method: 'PATCH',
+    body: JSON.stringify(payload),
+  }, token);
+};
+
+export const deleteSession = async (id, token = getCounsellorToken()) => {
+  return counsellorRequest(`/sessions/${encodeURIComponent(id)}`, { method: 'DELETE' }, token);
+};
+
 export const getStudents = async (params = {}, token = getCounsellorToken()) => {
   const search = new URLSearchParams();
   if (params.page != null) search.set('page', params.page);

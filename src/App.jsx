@@ -23,6 +23,8 @@ import AssessmentResults from './pages/admin/AssessmentResults';
 import Assessment2Results from './pages/admin/Assessment2Results';
 
 /* Counsellor portal — lazy loaded */
+import { useCounsellorAuth } from './contexts/CounsellorAuthContext';
+import CounsellorLogin from './pages/counsellor/CounsellorLogin';
 import CounsellorLayout from './components/Counsellor/CounsellorLayout';
 const CounsellorDashboard = lazy(() => import('./pages/counsellor/Dashboard'));
 const CounsellorStudents = lazy(() => import('./pages/counsellor/Students'));
@@ -38,6 +40,14 @@ function ProtectedAdmin({ children }) {
   const { isAuthenticated } = useAuth();
   if (!isAuthenticated) {
     return <Navigate to="/admin/login" replace />;
+  }
+  return children;
+}
+
+function ProtectedCounsellor({ children }) {
+  const { isAuthenticated } = useCounsellorAuth();
+  if (!isAuthenticated) {
+    return <Navigate to="/counsellor/login" replace />;
   }
   return children;
 }
@@ -77,8 +87,10 @@ function App() {
             <Route path="assessment-2-results" element={<Assessment2Results />} />
           </Route>
 
-          {/* Counsellor Portal */}
-          <Route path="/counsellor" element={<CounsellorProfileProvider><CounsellorLayout /></CounsellorProfileProvider>}>
+          {/* Counsellor Login (public) */}
+          <Route path="/counsellor/login" element={<CounsellorLogin />} />
+          {/* Counsellor Portal (protected) */}
+          <Route path="/counsellor" element={<ProtectedCounsellor><CounsellorProfileProvider><CounsellorLayout /></CounsellorProfileProvider></ProtectedCounsellor>}>
             <Route index element={<Navigate to="/counsellor/dashboard" replace />} />
             <Route path="dashboard" element={<Suspense fallback={<div className="flex items-center justify-center h-64 text-gray-400">Loading...</div>}><CounsellorDashboard /></Suspense>} />
             <Route path="students" element={<Suspense fallback={<div className="flex items-center justify-center h-64 text-gray-400">Loading...</div>}><CounsellorStudents /></Suspense>} />
