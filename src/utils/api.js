@@ -290,3 +290,17 @@ export const submitAssessment = async (name, phone, answers) => {
     body: JSON.stringify({ name, phone, answers }),
   });
 };
+
+/**
+ * Submit counsellor assessment 2 (after OTP verification).
+ * @param {string} name - User's full name
+ * @param {string} phone - 10-digit phone number
+ * @param {Object} answers - Map of question id to answer (q1–q15)
+ * @returns {Promise<{success: boolean, message?: string, data?: { score, maxScore }, status?: number}>}
+ */
+export const submitAssessment2 = async (name, phone, answers) => {
+  return apiRequest('/assessment-2/submit', {
+    method: 'POST',
+    body: JSON.stringify({ name, phone, answers }),
+  });
+};

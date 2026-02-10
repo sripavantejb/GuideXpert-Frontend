@@ -14,6 +14,7 @@ const navItems = [
   { to: '/admin/meeting-attendance', label: 'Meeting Attendance', icon: FiVideo },
   { to: '/admin/influencer-tracking', label: 'Influencer Tracking', icon: FiLink },
   { to: '/admin/assessment-results', label: 'Assessment Results', icon: FiAward },
+  { to: '/admin/assessment-2-results', label: 'Assessment 2 Results', icon: FiAward },
   { to: '/admin/settings', label: 'Settings', icon: FiSettings },
 ];
 

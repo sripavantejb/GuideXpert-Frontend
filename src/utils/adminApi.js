@@ -180,6 +180,12 @@ export const getAssessmentSubmissions = async (page = 1, limit = 50, token = get
   return adminRequest(`/assessment-submissions?${params}`, { method: 'GET' }, token);
 };
 
+/** GET /admin/assessment-2-submissions — list with pagination. Returns { submissions, total }. */
+export const getAssessment2Submissions = async (page = 1, limit = 50, token = getStoredToken()) => {
+  const params = new URLSearchParams({ page: String(page), limit: String(limit) });
+  return adminRequest(`/assessment-2-submissions?${params}`, { method: 'GET' }, token);
+};
+
 /** Request to /api/influencer-links and /api/influencer-analytics (admin auth, no /admin prefix). */
 async function influencerRequest(path, options = {}, token = getStoredToken()) {
   const url = `${API_BASE_URL}${path}`;

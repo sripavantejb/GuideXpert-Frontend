@@ -1,41 +1,8 @@
 import { useState, useCallback } from 'react';
-import { FiTarget, FiBarChart2, FiZap, FiClock, FiArrowRight, FiX, FiChevronLeft, FiChevronRight } from 'react-icons/fi';
+import { FiChevronLeft, FiChevronRight, FiAlertCircle, FiSearch } from 'react-icons/fi';
 import { getPredictedColleges } from '../../utils/counsellorApi';
 
-const tools = [
-  {
-    id: 'college-predictor',
-    title: 'College Predictor',
-    desc: 'Suggest colleges based on rank, region, budget and student preferences. Powered by historical data analysis.',
-    icon: FiTarget,
-    accuracy: '92%',
-    features: ['Rank-based filtering', 'Region & budget preferences', 'Cut-off trend analysis'],
-  },
-  {
-    id: 'rank-predictor',
-    title: 'Rank Predictor',
-    desc: 'Predict expected rank from exam performance scores using statistical models.',
-    icon: FiBarChart2,
-    accuracy: '88%',
-    features: ['Multi-exam support', 'Percentile mapping', 'Historical accuracy data'],
-  },
-  {
-    id: 'exam-predictor',
-    title: 'Exam Predictor',
-    desc: 'Suggest suitable competitive exams based on student profile, academic strengths, and career goals.',
-    icon: FiZap,
-    accuracy: '85%',
-    features: ['Profile-based matching', 'Difficulty assessment', 'Preparation timeline'],
-  },
-  {
-    id: 'deadline-manager',
-    title: 'Deadline Manager',
-    desc: 'Track all important exam registrations, admission deadlines, and counseling round dates.',
-    icon: FiClock,
-    accuracy: null,
-    features: ['Auto-reminders', 'Calendar sync', 'Priority tagging'],
-  },
-];
+const inputClass = 'w-full rounded-lg border border-gray-300 px-3 py-2 text-sm focus:ring-2 focus:ring-primary-navy/30 focus:border-primary-navy outline-none';
 
 const DEFAULT_LIMIT = 10;
 const LIMIT_OPTIONS = [10, 20, 50];
@@ -52,7 +19,6 @@ const initialForm = {
 };
 
 export default function Tools() {
-  const [activeTool, setActiveTool] = useState(null);
   const [form, setForm] = useState(initialForm);
   const [result, setResult] = useState(null);
   const [loading, setLoading] = useState(false);
@@ -126,71 +92,24 @@ export default function Tools() {
   const canPrev = offset > 0;
   const canNext = offset + colleges.length < totalColleges;
 
+  const totalPages = Math.max(1, Math.ceil(totalColleges / limit));
+  const currentPage = Math.floor(offset / limit) + 1;
+
   return (
     <div className="max-w-7xl mx-auto">
       <div className="mb-6">
-        <h2 className="text-xl font-bold text-gray-900" style={{ fontSize: '1.25rem', color: '#003366' }}>
-          Assessment & Prediction Tools
+        <h2 className="text-xl font-bold text-primary-navy">
+          College Predictor
         </h2>
-        <p className="text-sm text-gray-500 mt-0.5">Comprehensive tools for data-driven counseling decisions</p>
+        <p className="text-sm text-gray-500 mt-0.5">Search colleges by entrance exam, cutoff range, and filters</p>
       </div>
 
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        {tools.map((t) => (
-          <div key={t.title} className="bg-white rounded-xl border border-gray-200 shadow-sm p-6 hover:shadow-lg transition-shadow">
-            <div className="flex items-start justify-between mb-4">
-              <div className="w-12 h-12 rounded-xl bg-[#003366]/5 flex items-center justify-center">
-                <t.icon className="w-6 h-6 text-[#003366]" />
-              </div>
-              {t.accuracy && (
-                <span className="text-xs font-medium text-emerald-700 bg-emerald-50 px-2.5 py-1 rounded-full">
-                  {t.accuracy} accuracy
-                </span>
-              )}
-            </div>
-            <h3 className="text-lg font-semibold text-gray-900 mb-1" style={{ fontSize: '1.05rem' }}>{t.title}</h3>
-            <p className="text-sm text-gray-500 mb-4">{t.desc}</p>
-            <ul className="space-y-1.5 mb-5">
-              {t.features.map((f) => (
-                <li key={f} className="flex items-center gap-2 text-sm text-gray-600">
-                  <span className="w-1.5 h-1.5 rounded-full bg-[#003366]" /> {f}
-                </li>
-              ))}
-            </ul>
-            <button
-              type="button"
-              onClick={() => {
-                if (t.id === 'college-predictor') {
-                  setActiveTool('college-predictor');
-                  setError(null);
-                  setResult(null);
-                } else {
-                  setActiveTool(null);
-                }
-              }}
-              className="flex items-center gap-2 px-4 py-2.5 bg-[#003366] text-white text-sm font-medium rounded-lg hover:bg-[#004080] transition-colors"
-            >
-              Launch Tool <FiArrowRight className="w-4 h-4" />
-            </button>
-          </div>
-        ))}
-      </div>
-
-      {activeTool === 'college-predictor' && (
-        <div className="mt-8 bg-white rounded-xl border border-gray-200 shadow-sm p-6">
-          <div className="flex justify-between items-center mb-4">
-            <h3 className="text-lg font-semibold text-gray-900" style={{ color: '#003366' }}>College Predictor</h3>
-            <button
-              type="button"
-              onClick={() => { setActiveTool(null); setError(null); setResult(null); }}
-              className="p-2 text-gray-500 hover:text-gray-700 rounded-lg hover:bg-gray-100"
-              aria-label="Close"
-            >
-              <FiX className="w-5 h-5" />
-            </button>
-          </div>
-
-          <form onSubmit={handleSubmit} className="space-y-4 mb-6">
+      <div className="bg-white rounded-xl border border-gray-200 shadow-sm overflow-hidden">
+        <div className="px-6 py-4 border-b border-gray-200 bg-gray-50/80 border-l-4 border-l-primary-navy rounded-t-xl">
+          <h3 className="text-lg font-semibold text-primary-navy">Search criteria</h3>
+        </div>
+        <div className="p-6">
+          <form onSubmit={handleSubmit} className="space-y-6 mb-6">
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-1">Entrance exam</label>
@@ -199,7 +118,7 @@ export default function Tools() {
                   value={form.entrance_exam_name_enum}
                   onChange={(e) => setForm((f) => ({ ...f, entrance_exam_name_enum: e.target.value }))}
                   placeholder="e.g. JEE"
-                  className="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm focus:ring-2 focus:ring-[#003366] focus:border-[#003366]"
+                  className={inputClass}
                 />
               </div>
               <div>
@@ -209,7 +128,7 @@ export default function Tools() {
                   value={form.admission_category_name_enum}
                   onChange={(e) => setForm((f) => ({ ...f, admission_category_name_enum: e.target.value }))}
                   placeholder="e.g. NORTH_EASTERN"
-                  className="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm focus:ring-2 focus:ring-[#003366] focus:border-[#003366]"
+                  className={inputClass}
                 />
               </div>
               <div>
@@ -221,7 +140,7 @@ export default function Tools() {
                   value={form.cutoff_from}
                   onChange={(e) => setForm((f) => ({ ...f, cutoff_from: e.target.value }))}
                   placeholder="Min cutoff"
-                  className="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm focus:ring-2 focus:ring-[#003366] focus:border-[#003366]"
+                  className={inputClass}
                 />
               </div>
               <div>
@@ -233,7 +152,7 @@ export default function Tools() {
                   value={form.cutoff_to}
                   onChange={(e) => setForm((f) => ({ ...f, cutoff_to: e.target.value }))}
                   placeholder="Max cutoff"
-                  className="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm focus:ring-2 focus:ring-[#003366] focus:border-[#003366]"
+                  className={inputClass}
                 />
               </div>
             </div>
@@ -245,7 +164,7 @@ export default function Tools() {
                   value={form.reservation_category_code}
                   onChange={(e) => setForm((f) => ({ ...f, reservation_category_code: e.target.value }))}
                   placeholder="e.g. GEN, OBC"
-                  className="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm focus:ring-2 focus:ring-[#003366] focus:border-[#003366]"
+                  className={inputClass}
                 />
               </div>
               <div>
@@ -255,7 +174,7 @@ export default function Tools() {
                   value={form.branch_codes}
                   onChange={(e) => setForm((f) => ({ ...f, branch_codes: e.target.value }))}
                   placeholder="e.g. CSE, IT"
-                  className="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm focus:ring-2 focus:ring-[#003366] focus:border-[#003366]"
+                  className={inputClass}
                 />
               </div>
               <div>
@@ -265,7 +184,7 @@ export default function Tools() {
                   value={form.districts}
                   onChange={(e) => setForm((f) => ({ ...f, districts: e.target.value }))}
                   placeholder="Optional"
-                  className="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm focus:ring-2 focus:ring-[#003366] focus:border-[#003366]"
+                  className={inputClass}
                 />
               </div>
               <div>
@@ -273,44 +192,63 @@ export default function Tools() {
                 <select
                   value={form.sort_order}
                   onChange={(e) => setForm((f) => ({ ...f, sort_order: e.target.value }))}
-                  className="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm focus:ring-2 focus:ring-[#003366] focus:border-[#003366]"
+                  className={inputClass}
                 >
                   <option value="ASC">Ascending (lowest first)</option>
                   <option value="DESC">Descending (highest first)</option>
                 </select>
               </div>
             </div>
-            <button
-              type="submit"
-              disabled={loading}
-              className="px-4 py-2.5 bg-[#003366] text-white text-sm font-medium rounded-lg hover:bg-[#004080] transition-colors disabled:opacity-60"
-            >
-              {loading ? 'Searching…' : 'Search colleges'}
-            </button>
+            <div className="flex items-center gap-3">
+              <button
+                type="submit"
+                disabled={loading}
+                className="px-4 py-2.5 bg-primary-navy hover:bg-primary-navy/90 text-white text-sm font-medium rounded-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+              >
+                {loading ? 'Searching…' : 'Search colleges'}
+              </button>
+              {loading && result && (
+                <span className="inline-block w-5 h-5 border-2 border-primary-navy/30 border-t-primary-navy rounded-full animate-spin" aria-hidden />
+              )}
+            </div>
           </form>
 
           {error && (
-            <div className="mb-4 p-3 rounded-lg bg-red-50 text-red-800 text-sm">
-              {error}
+            <div className="mb-6 rounded-lg border border-red-200 bg-red-50 p-4 flex gap-3">
+              <FiAlertCircle className="w-5 h-5 text-red-600 shrink-0 mt-0.5" aria-hidden />
+              <div>
+                <p className="text-sm font-medium text-red-800">{error}</p>
+                <p className="text-sm text-red-700/80 mt-1">Please try again later or contact support.</p>
+              </div>
             </div>
           )}
 
           {result && (
             <>
-              <div className="flex flex-wrap items-center gap-4 mb-4">
-                <p className="text-sm text-gray-600">
-                  Total: <span className="font-medium text-gray-900">{result.total_no_of_colleges}</span> colleges
-                  {result.admission_category_name && (
-                    <span className="ml-2 text-gray-500">({result.admission_category_name})</span>
-                  )}
+              <div className="px-6 py-4 border-t border-gray-200 bg-gray-50/80 border-l-4 border-l-primary-navy rounded-lg mt-6">
+                <h3 className="text-lg font-semibold text-primary-navy">
+                  Results
+                  <span className="font-normal text-gray-600 ml-2">
+                    {result.total_no_of_colleges} colleges
+                    {result.admission_category_name && ` • ${result.admission_category_name}`}
+                  </span>
+                </h3>
+              </div>
+
+              {result._demo && (
+                <p className="mt-4 px-4 py-2 rounded-lg bg-amber-50 border border-amber-200 text-amber-800 text-sm">
+                  Showing demo data. Set <code className="bg-amber-100/80 px-1 rounded">NW_PREDICTORS_ACCESS_TOKEN</code> in the backend to use live results.
                 </p>
+              )}
+
+              <div className="flex flex-wrap items-center gap-4 p-4 mt-4 bg-gray-50 border border-gray-200 rounded-lg">
                 <div className="flex items-center gap-2">
                   <label className="text-sm text-gray-600">Results per page</label>
                   <select
                     value={limit}
                     onChange={handleLimitChange}
                     disabled={loading}
-                    className="rounded-lg border border-gray-300 px-2 py-1.5 text-sm"
+                    className={inputClass + ' w-auto min-w-16'}
                   >
                     {LIMIT_OPTIONS.map((n) => (
                       <option key={n} value={n}>{n}</option>
@@ -322,68 +260,79 @@ export default function Tools() {
                     type="button"
                     onClick={handlePrev}
                     disabled={!canPrev || loading}
-                    className="p-2 rounded-lg border border-gray-300 text-gray-700 hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
+                    className="inline-flex items-center gap-1.5 px-3 py-2 rounded-lg border border-gray-300 text-gray-700 hover:bg-gray-100 disabled:opacity-50 disabled:cursor-not-allowed text-sm font-medium"
                     aria-label="Previous page"
                   >
-                    <FiChevronLeft className="w-5 h-5" />
+                    <FiChevronLeft className="w-4 h-4" /> Previous
                   </button>
                   <span className="text-sm text-gray-600">
-                    Page {Math.floor(offset / limit) + 1} (offset {offset})
+                    Page {currentPage} of {totalPages}
                   </span>
                   <button
                     type="button"
                     onClick={handleNext}
                     disabled={!canNext || loading}
-                    className="p-2 rounded-lg border border-gray-300 text-gray-700 hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
+                    className="inline-flex items-center gap-1.5 px-3 py-2 rounded-lg border border-gray-300 text-gray-700 hover:bg-gray-100 disabled:opacity-50 disabled:cursor-not-allowed text-sm font-medium"
                     aria-label="Next page"
                   >
-                    <FiChevronRight className="w-5 h-5" />
+                    Next <FiChevronRight className="w-4 h-4" />
                   </button>
                 </div>
+                {loading && (
+                  <span className="inline-block w-5 h-5 border-2 border-primary-navy/30 border-t-primary-navy rounded-full animate-spin" aria-hidden />
+                )}
               </div>
 
-              <div className="overflow-x-auto border border-gray-200 rounded-lg">
-                <table className="min-w-full divide-y divide-gray-200 text-sm">
-                  <thead className="bg-gray-50">
-                    <tr>
-                      <th className="px-4 py-2 text-left font-medium text-gray-700">College</th>
-                      <th className="px-4 py-2 text-left font-medium text-gray-700">Address</th>
-                      <th className="px-4 py-2 text-left font-medium text-gray-700">District</th>
-                      <th className="px-4 py-2 text-left font-medium text-gray-700">Branches</th>
-                    </tr>
-                  </thead>
-                  <tbody className="bg-white divide-y divide-gray-200">
-                    {colleges.map((c) => (
-                      <tr key={c.college_id}>
-                        <td className="px-4 py-3">
-                          <span className="font-medium text-gray-900">{c.college_name}</span>
-                          {c.is_promoted && (
-                            <span className="ml-2 text-xs text-amber-600 bg-amber-50 px-1.5 py-0.5 rounded">Promoted</span>
-                          )}
-                        </td>
-                        <td className="px-4 py-3 text-gray-600">{c.college_address || '—'}</td>
-                        <td className="px-4 py-3 text-gray-600">{c.district_enum || '—'}</td>
-                        <td className="px-4 py-3">
-                          <ul className="space-y-1">
-                            {(c.branches || []).map((b) => (
-                              <li key={b.branch_code} className="text-gray-600">
-                                {b.branch_code} ({b.branch_name}): cutoff {b.cutoff != null ? b.cutoff : '—'}, fee {b.fee != null ? b.fee : '—'}
-                              </li>
-                            ))}
-                          </ul>
-                        </td>
+              {colleges.length === 0 && !loading ? (
+                <div className="text-center py-12 px-4 mt-4 border border-gray-200 rounded-lg bg-gray-50/50">
+                  <FiSearch className="w-12 h-12 text-gray-400 mx-auto mb-3" aria-hidden />
+                  <p className="text-gray-600 font-medium">No colleges match your criteria.</p>
+                  <p className="text-sm text-gray-500 mt-1">Try adjusting the cutoff range or filters.</p>
+                </div>
+              ) : (
+                <div className="overflow-x-auto rounded-lg border border-gray-200 mt-4">
+                  <table className="min-w-full divide-y divide-gray-200 text-sm">
+                    <thead className="bg-gray-50">
+                      <tr>
+                        <th className="px-4 py-3 text-left font-medium text-gray-700">College</th>
+                        <th className="px-4 py-3 text-left font-medium text-gray-700">Address</th>
+                        <th className="px-4 py-3 text-left font-medium text-gray-700">District</th>
+                        <th className="px-4 py-3 text-left font-medium text-gray-700">Branches</th>
                       </tr>
-                    ))}
-                  </tbody>
-                </table>
-              </div>
-              {colleges.length === 0 && !loading && (
-                <p className="text-sm text-gray-500 py-4">No colleges found for this criteria.</p>
+                    </thead>
+                    <tbody className="divide-y divide-gray-200">
+                      {colleges.map((c, i) => (
+                        <tr
+                          key={c.college_id}
+                          className={`${i % 2 === 0 ? 'bg-white' : 'bg-gray-50/60'} hover:bg-primary-blue-50/30 transition-colors`}
+                        >
+                          <td className="px-4 py-3">
+                            <span className="font-medium text-gray-900">{c.college_name}</span>
+                            {c.is_promoted && (
+                              <span className="ml-2 text-xs text-amber-600 bg-amber-50 px-1.5 py-0.5 rounded">Promoted</span>
+                            )}
+                          </td>
+                          <td className="px-4 py-3 text-gray-600">{c.college_address || '—'}</td>
+                          <td className="px-4 py-3 text-gray-600">{c.district_enum || '—'}</td>
+                          <td className="px-4 py-3">
+                            <ul className="space-y-1">
+                              {(c.branches || []).map((b) => (
+                                <li key={b.branch_code} className="text-gray-600">
+                                  {b.branch_code} ({b.branch_name}): cutoff {b.cutoff != null ? b.cutoff : '—'}, fee {b.fee != null ? b.fee : '—'}
+                                </li>
+                              ))}
+                            </ul>
+                          </td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
               )}
             </>
           )}
         </div>
-      )}
+      </div>
     </div>
   );
 }
