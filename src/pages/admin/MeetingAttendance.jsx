@@ -148,9 +148,9 @@ export default function MeetingAttendance() {
       setRecords(dedupedList);
       setPagination({
         ...paginationData,
-        page: 1,
-        total: dedupedList.length,
-        totalPages: Math.max(1, Math.ceil(dedupedList.length / paginationData.limit))
+        page: paginationData.page,
+        total: paginationData.total,
+        totalPages: Math.max(1, paginationData.totalPages || 1)
       });
       setStats({ totalRecords: fallbackUnique, uniqueAttendees: fallbackUnique, duplicateCount });
     });
