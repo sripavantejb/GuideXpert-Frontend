@@ -9,6 +9,7 @@ import MeetingRegistration from './pages/MeetingRegistration';
 import TrainingMeeting from './pages/TrainingMeeting';
 import AssessmentForm from './pages/AssessmentForm';
 import AssessmentForm2 from './pages/AssessmentForm2';
+import AssessmentForm3 from './pages/AssessmentForm3';
 import AdminLayout from './components/Admin/AdminLayout';
 import Overview from './pages/admin/Overview';
 import Leads from './pages/admin/Leads';
@@ -21,6 +22,7 @@ import InfluencerTracking from './pages/admin/InfluencerTracking';
 import LeadStatus from './pages/admin/LeadStatus';
 import AssessmentResults from './pages/admin/AssessmentResults';
 import Assessment2Results from './pages/admin/Assessment2Results';
+import Assessment3Results from './pages/admin/Assessment3Results';
 
 /* Counsellor portal — lazy loaded */
 import CounsellorLayout from './components/Counsellor/CounsellorLayout';
@@ -54,6 +56,7 @@ function App() {
           <Route path="/training" element={<TrainingMeeting />} />
           <Route path="/assessment" element={<AssessmentForm />} />
           <Route path="/assessment-2" element={<AssessmentForm2 />} />
+          <Route path="/assessment-3" element={<AssessmentForm3 />} />
           <Route path="/admin/login" element={<AdminLogin />} />
           <Route
             path="/admin"
@@ -75,6 +78,7 @@ function App() {
             <Route path="influencer-tracking" element={<InfluencerTracking />} />
             <Route path="assessment-results" element={<AssessmentResults />} />
             <Route path="assessment-2-results" element={<Assessment2Results />} />
+            <Route path="assessment-3-results" element={<Assessment3Results />} />
           </Route>
 
           {/* Counsellor Portal */}

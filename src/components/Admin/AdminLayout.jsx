@@ -15,6 +15,7 @@ const navItems = [
   { to: '/admin/influencer-tracking', label: 'Influencer Tracking', icon: FiLink },
   { to: '/admin/assessment-results', label: 'Assessment Results', icon: FiAward },
   { to: '/admin/assessment-2-results', label: 'Assessment 2 Results', icon: FiAward },
+  { to: '/admin/assessment-3-results', label: 'Assessment 3 Results', icon: FiAward },
   { to: '/admin/settings', label: 'Settings', icon: FiSettings },
 ];
 
