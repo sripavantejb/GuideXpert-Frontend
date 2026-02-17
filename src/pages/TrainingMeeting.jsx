@@ -1,6 +1,7 @@
 import { useState, useRef } from 'react';
 import { registerForTraining, sendOtp, verifyOtp } from '../utils/api';
 
+// Training Google Meet – after OTP verify, user is redirected here
 const TRAINING_MEET_LINK = 'https://meet.google.com/usc-ykrc-zsj';
 
 function validateName(value) {
@@ -199,6 +200,7 @@ export default function TrainingMeeting() {
         <div className="text-center mb-6">
           <h1 className="text-2xl font-bold text-gray-900">GuideXpert</h1>
           <p className="text-gray-600 mt-1">Join Training Google Meet</p>
+          <p className="text-xs text-gray-400 mt-0.5">meet.google.com/usc-ykrc-zsj</p>
         </div>
 
         {step === 2 && (
