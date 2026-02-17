@@ -94,8 +94,11 @@ function App() {
             <Route path="reports" element={<Suspense fallback={<div className="flex items-center justify-center h-64 text-gray-400">Loading...</div>}><CounsellorReports /></Suspense>} />
             <Route path="resources" element={<Suspense fallback={<div className="flex items-center justify-center h-64 text-gray-400">Loading...</div>}><CounsellorResources /></Suspense>} />
             <Route path="marketing" element={<Suspense fallback={<div className="flex items-center justify-center h-64 text-gray-400">Loading...</div>}><CounsellorMarketing /></Suspense>} />
+<<<<<<< HEAD
             <Route path="college-referrals" element={<Suspense fallback={<div className="flex items-center justify-center h-64 text-gray-400">Loading...</div>}><CollegeReferrals /></Suspense>} />
             <Route path="college-referrals/:collegeSlug" element={<Suspense fallback={<div className="flex items-center justify-center h-64 text-gray-400">Loading...</div>}><CollegeReferralDetail /></Suspense>} />
+=======
+>>>>>>> a050299c520e0ce3226f2b7976a9780439d42078
             <Route path="settings" element={<Suspense fallback={<div className="flex items-center justify-center h-64 text-gray-400">Loading...</div>}><CounsellorSettings /></Suspense>} />
           </Route>
 
