@@ -1,0 +1,327 @@
+/* Shape Careers – Features grid */
+.shape-careers-grid {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 1.5rem;
+  align-items: stretch;
+  margin-bottom: 4rem;
+}
+
+@media (min-width: 768px) {
+  .shape-careers-grid {
+    grid-template-columns: repeat(2, 1fr);
+    gap: 2rem;
+  }
+}
+
+@media (min-width: 1280px) {
+  .shape-careers-grid {
+    grid-template-columns: repeat(4, 1fr);
+    gap: 2rem 2.5rem;
+    margin-bottom: 5rem;
+  }
+}
+
+/* Card base */
+.shape-careers-card {
+  position: relative;
+  overflow: hidden;
+  background: #ffffff;
+  border-radius: 1rem;
+  padding: 1.75rem 1.5rem;
+  border: 1px solid #e5e7eb;
+  border-top: 2px solid transparent;
+  box-shadow: 0 6px 12px -2px rgba(0, 0, 0, 0.08), 0 2px 6px -2px rgba(0, 0, 0, 0.05);
+  transition: transform 0.3s ease, box-shadow 0.3s ease;
+}
+
+.shape-careers-card::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 3px;
+  opacity: 0;
+  transition: opacity 0.3s ease;
+  border-radius: 1rem 1rem 0 0;
+}
+
+.shape-careers-card:hover {
+  transform: translateY(-6px);
+  box-shadow: 0 12px 24px -4px rgba(15, 23, 42, 0.12), 0 4px 12px -2px rgba(15, 23, 42, 0.08);
+}
+
+.shape-careers-card:hover::before {
+  opacity: 1;
+}
+
+@media (min-width: 768px) {
+  .shape-careers-card {
+    padding: 2rem 1.75rem;
+  }
+}
+
+/* Accent bar + icon: Learning (blue) */
+.shape-careers-card-learning {
+  border-top-color: #003366;
+}
+
+.shape-careers-card-learning::before {
+  background: linear-gradient(90deg, #003366, #003366);
+}
+
+.shape-careers-card-learning .shape-careers-card-icon {
+  background: #003366;
+}
+
+/* Accent bar + icon: Flexible (green) */
+.shape-careers-card-flexible {
+  border-top-color: #166534;
+}
+
+.shape-careers-card-flexible::before {
+  background: linear-gradient(90deg, #166534, #15803d);
+}
+
+.shape-careers-card-flexible .shape-careers-card-icon {
+  background: #166534;
+}
+
+/* Accent bar + icon: Earning (gold) */
+.shape-careers-card-earning {
+  border-top-color: #b45309;
+}
+
+.shape-careers-card-earning::before {
+  background: linear-gradient(90deg, #b45309, #d97706);
+}
+
+.shape-careers-card-earning .shape-careers-card-icon {
+  background: #b45309;
+}
+
+/* Accent bar + icon: Community (blue) */
+.shape-careers-card-community {
+  border-top-color: #003366;
+}
+
+.shape-careers-card-community::before {
+  background: linear-gradient(90deg, #003366, #003366);
+}
+
+.shape-careers-card-community .shape-careers-card-icon {
+  background: #003366;
+}
+
+/* Icon container */
+.shape-careers-card-icon {
+  width: 3rem;
+  height: 3rem;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin-bottom: 1rem;
+}
+
+.shape-careers-card-icon svg {
+  width: 1.25rem;
+  height: 1.25rem;
+  color: #ffffff;
+  flex-shrink: 0;
+}
+
+@media (min-width: 768px) {
+  .shape-careers-card-icon {
+    width: 3.25rem;
+    height: 3.25rem;
+  }
+
+  .shape-careers-card-icon svg {
+    width: 1.35rem;
+    height: 1.35rem;
+  }
+}
+
+/* Typography */
+.shape-careers-card-title {
+  font-family: 'Satoshi', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+  font-size: 1.25rem;
+  font-weight: 700;
+  line-height: 1.3;
+  color: #1f2937;
+  margin-bottom: 0.5rem;
+}
+
+.shape-careers-card-desc {
+  font-size: 0.9375rem;
+  font-weight: 500;
+  line-height: 1.6;
+  color: #4b5563;
+  margin: 0;
+}
+
+/* Focus and reduced motion */
+.shape-careers-card:focus-visible {
+  outline: 2px solid #003366;
+  outline-offset: 2px;
+  border-radius: 1rem;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .shape-careers-card {
+    transition: none;
+  }
+
+  .shape-careers-card:hover {
+    transform: none;
+  }
+
+  .shape-careers-card::before {
+    transition: none;
+  }
+}
+
+/* –––––– Earning Potential Snapshots –––––– */
+
+.shape-careers-earning-grid {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 1.5rem;
+  align-items: stretch;
+}
+
+@media (min-width: 768px) {
+  .shape-careers-earning-grid {
+    grid-template-columns: repeat(3, 1fr);
+    gap: 2rem;
+  }
+}
+
+@media (min-width: 1024px) {
+  .shape-careers-earning-grid {
+    gap: 2.5rem;
+  }
+}
+
+.shape-careers-earning-card {
+  position: relative;
+  overflow: hidden;
+  background: #ffffff;
+  border-radius: 1rem;
+  padding: 2rem 1.5rem;
+  border: 1px solid #e5e7eb;
+  box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.06), 0 2px 4px -1px rgba(0, 0, 0, 0.04);
+  transition: transform 0.3s ease, box-shadow 0.3s ease;
+  text-align: center;
+}
+
+.shape-careers-earning-card::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 3px;
+  opacity: 0;
+  transition: opacity 0.3s ease;
+  border-radius: 1rem 1rem 0 0;
+}
+
+.shape-careers-earning-card:hover {
+  transform: translateY(-6px);
+  box-shadow: 0 12px 24px -4px rgba(15, 23, 42, 0.12), 0 4px 12px -2px rgba(15, 23, 42, 0.08);
+}
+
+.shape-careers-earning-card:hover::before {
+  opacity: 1;
+}
+
+/* Per-tier: Bronze */
+.shape-careers-earning-card-bronze::before {
+  background: linear-gradient(90deg, #b45309, #d97706);
+}
+
+.shape-careers-earning-card-bronze .shape-careers-earning-icon {
+  background: #b45309;
+}
+
+/* Per-tier: Silver */
+.shape-careers-earning-card-silver::before {
+  background: linear-gradient(90deg, #6b7280, #9ca3af);
+}
+
+.shape-careers-earning-card-silver .shape-careers-earning-icon {
+  background: #6b7280;
+}
+
+/* Per-tier: Gold */
+.shape-careers-earning-card-gold::before {
+  background: linear-gradient(90deg, #d97706, #f59e0b);
+}
+
+.shape-careers-earning-card-gold .shape-careers-earning-icon {
+  background: #d97706;
+}
+
+.shape-careers-earning-icon {
+  width: 3.5rem;
+  height: 3.5rem;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin: 0 auto 1.25rem;
+}
+
+.shape-careers-earning-icon svg {
+  width: 1.75rem;
+  height: 1.75rem;
+  color: #ffffff;
+  flex-shrink: 0;
+}
+
+.shape-careers-earning-amount {
+  font-family: 'Satoshi', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+  font-size: 1.875rem;
+  font-weight: 700;
+  line-height: 1.1;
+  letter-spacing: -0.02em;
+  color: #111827;
+  margin-bottom: 0.5rem;
+}
+
+@media (min-width: 768px) {
+  .shape-careers-earning-amount {
+    font-size: 2.25rem;
+  }
+}
+
+.shape-careers-earning-level {
+  font-size: 0.8125rem;
+  font-weight: 600;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+  color: #4b5563;
+}
+
+.shape-careers-earning-card:focus-visible {
+  outline: 2px solid #003366;
+  outline-offset: 2px;
+  border-radius: 1rem;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .shape-careers-earning-card {
+    transition: none;
+  }
+
+  .shape-careers-earning-card:hover {
+    transform: none;
+  }
+
+  .shape-careers-earning-card::before {
+    transition: none;
+  }
+}

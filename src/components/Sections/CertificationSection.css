@@ -1,0 +1,20 @@
+/* Certification Section – gradient aligned with hero (ApplySection) */
+
+.certification-section {
+  position: relative;
+  background: linear-gradient(to bottom right, #e8f0fa 0%, #eef4fa 25%, #f2f4f8 50%, #f5f4f2 75%, #f7f4eb 100%);
+}
+
+.certification-section::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  z-index: 0;
+  pointer-events: none;
+  background: linear-gradient(to bottom right, #e8f0fa 0%, #eef4fa 25%, #f2f4f8 50%, #f5f4f2 75%, #f7f4eb 100%);
+}
+
+.certification-section-inner {
+  position: relative;
+  z-index: 1;
+}

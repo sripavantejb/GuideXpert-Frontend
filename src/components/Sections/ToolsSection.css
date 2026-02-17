@@ -1,0 +1,129 @@
+/* Serpentine Scrolling Reviews */
+.reviews-scroll-container {
+  overflow: hidden;
+  position: relative;
+  width: 100%;
+  padding: 1rem 0;
+}
+
+.reviews-scroll-row {
+  display: flex;
+  width: fit-content;
+  gap: 1rem;
+  margin-bottom: 1.5rem;
+  will-change: transform;
+  align-items: flex-start;
+}
+
+.reviews-scroll-row:last-child {
+  margin-bottom: 0;
+}
+
+.review-card {
+  flex-shrink: 0;
+  width: 320px;
+  height: 160px;
+  background-color: #1f2937;
+  border-radius: 0.75rem;
+  padding: 1.5rem;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  transition: background-color 0.3s ease;
+  box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.08), 0 2px 4px -1px rgba(0, 0, 0, 0.04);
+}
+
+.review-card:hover {
+  background-color: #374151;
+}
+
+/* Scroll animations - seamless infinite loop */
+@keyframes scroll-left {
+  from {
+    transform: translateX(0);
+  }
+  to {
+    transform: translateX(-50%);
+  }
+}
+
+@keyframes scroll-right {
+  from {
+    transform: translateX(-50%);
+  }
+  to {
+    transform: translateX(0);
+  }
+}
+
+.scroll-left {
+  animation: scroll-left 40s linear infinite;
+}
+
+.scroll-right {
+  animation: scroll-right 40s linear infinite;
+}
+
+/* Smooth scrolling with hardware acceleration */
+.scroll-left,
+.scroll-right {
+  will-change: transform;
+  backface-visibility: hidden;
+  perspective: 1000px;
+}
+
+/* Responsive adjustments */
+@media (max-width: 768px) {
+  .review-card {
+    width: 280px;
+    min-width: 280px;
+    height: auto;
+    min-height: 150px;
+    padding: 1.25rem;
+  }
+  
+  .reviews-scroll-row {
+    gap: 0.75rem;
+    margin-bottom: 1.25rem;
+  }
+  
+  .scroll-left {
+    animation-duration: 32s;
+  }
+  
+  .scroll-right {
+    animation-duration: 32s;
+  }
+}
+
+/* Smaller screens */
+@media (max-width: 640px) {
+  .review-card {
+    width: 85vw;
+    min-width: 85vw;
+    max-width: 300px;
+    height: auto;
+    min-height: 140px;
+    padding: 1rem;
+  }
+  
+  .reviews-scroll-row {
+    gap: 0.5rem;
+    margin-bottom: 1rem;
+  }
+}
+
+/* Extra small screens */
+@media (max-width: 480px) {
+  .review-card {
+    width: 90vw;
+    min-width: 90vw;
+    max-width: 280px;
+    min-height: 130px;
+    padding: 0.875rem;
+  }
+  
+  .reviews-scroll-container {
+    padding: 0.5rem 0;
+  }
+}

@@ -1,0 +1,299 @@
+const API_BASE_URL = import.meta.env.VITE_API_URL || 'https://guide-xpert-backend.vercel.app/api';
+const ADMIN_TOKEN_KEY = 'guidexpert_admin_token';
+
+export function getStoredToken() {
+  return localStorage.getItem(ADMIN_TOKEN_KEY);
+}
+
+export function setStoredToken(token) {
+  if (token) localStorage.setItem(ADMIN_TOKEN_KEY, token);
+  else localStorage.removeItem(ADMIN_TOKEN_KEY);
+}
+
+async function adminRequest(endpoint, options = {}, token = getStoredToken()) {
+  const url = `${API_BASE_URL}/admin${endpoint}`;
+  const headers = {
+    'Content-Type': 'application/json',
+    ...options.headers,
+  };
+  if (token) headers.Authorization = `Bearer ${token}`;
+
+  const config = { ...options, headers };
+
+  try {
+    const response = await fetch(url, config);
+    let data;
+    try {
+      data = await response.json();
+    } catch {
+      data = { message: 'Invalid response' };
+    }
+    if (!response.ok) {
+      return {
+        success: false,
+        message: data.message || 'Request failed',
+        status: response.status,
+        data,
+      };
+    }
+    return { success: true, data, status: response.status };
+  } catch (error) {
+    const isNetworkError = error.message === 'Failed to fetch' || error.name === 'TypeError';
+    const message = isNetworkError
+      ? 'Cannot reach server. Make sure the backend is running on port 5000.'
+      : (error.message || 'Network error');
+    return {
+      success: false,
+      message,
+      status: 0,
+      error,
+    };
+  }
+}
+
+export const adminLogin = async (username, password) => {
+  return adminRequest('/login', {
+    method: 'POST',
+    body: JSON.stringify({ username, password }),
+  }, null);
+};
+
+export const getAdminLeads = async (params = {}, token = getStoredToken()) => {
+  const search = new URLSearchParams();
+  if (params.page != null) search.set('page', params.page);
+  if (params.limit != null) search.set('limit', params.limit);
+  if (params.applicationStatus) search.set('applicationStatus', params.applicationStatus);
+  if (params.otpVerified !== undefined && params.otpVerified !== '') search.set('otpVerified', String(params.otpVerified));
+  if (params.slotBooked !== undefined && params.slotBooked !== '') search.set('slotBooked', String(params.slotBooked));
+  if (params.selectedSlot) search.set('selectedSlot', params.selectedSlot);
+  if (params.slotDate && typeof params.slotDate === 'string' && params.slotDate.trim()) search.set('slotDate', params.slotDate);
+  if (params.q) search.set('q', params.q);
+  if (params.utm_content) search.set('utm_content', params.utm_content);
+  search.set('_t', String(Date.now()));
+  const query = search.toString();
+  return adminRequest(`/leads?${query}`, { method: 'GET' }, token);
+};
+
+export const getAdminStats = async (params = {}, token = getStoredToken()) => {
+  const search = new URLSearchParams();
+  if (params.from) search.set('from', params.from);
+  if (params.to) search.set('to', params.to);
+  const query = search.toString();
+  return adminRequest(`/stats${query ? `?${query}` : ''}`, { method: 'GET' }, token);
+};
+
+export const getLead = async (id, token = getStoredToken()) => {
+  return adminRequest(`/leads/${encodeURIComponent(id)}`, { method: 'GET' }, token);
+};
+
+export const updateLeadNotes = async (id, adminNotes, token = getStoredToken()) => {
+  return adminRequest(`/leads/${encodeURIComponent(id)}`, {
+    method: 'PATCH',
+    body: JSON.stringify({ adminNotes: adminNotes ?? '' }),
+  }, token);
+};
+
+/**
+ * Partial update for a lead. Payload may include adminNotes, leadStatus, leadDescription.
+ */
+export const updateLead = async (id, payload, token = getStoredToken()) => {
+  const body = {};
+  if (payload.adminNotes !== undefined) body.adminNotes = payload.adminNotes ?? '';
+  if (payload.leadStatus !== undefined) body.leadStatus = payload.leadStatus ?? '';
+  if (payload.leadDescription !== undefined) body.leadDescription = payload.leadDescription ?? '';
+  return adminRequest(`/leads/${encodeURIComponent(id)}`, {
+    method: 'PATCH',
+    body: JSON.stringify(body),
+  }, token);
+};
+
+export const getSlotConfigs = async (token = getStoredToken()) => {
+  return adminRequest('/slots', { method: 'GET' }, token);
+};
+
+/** GET /admin/slots/for-date?date=YYYY-MM-DD — slots available on that date. Returns data.slots or []. */
+export const getSlotsForDate = async (date, token = getStoredToken()) => {
+  if (!date || typeof date !== 'string' || !/^\d{4}-\d{2}-\d{2}$/.test(date.trim())) {
+    return [];
+  }
+  const res = await adminRequest(`/slots/for-date?date=${encodeURIComponent(date.trim())}`, { method: 'GET' }, token);
+  if (!res.success || !res.data || !Array.isArray(res.data.slots)) return [];
+  return res.data.slots;
+};
+
+export const updateSlotConfig = async (slotId, enabled, token = getStoredToken()) => {
+  return adminRequest(`/slots/${slotId}`, {
+    method: 'PUT',
+    body: JSON.stringify({ enabled }),
+  }, token);
+};
+
+/** GET /admin/slots/overrides?from=YYYY-MM-DD&to=YYYY-MM-DD */
+export const getSlotOverrides = async (from, to, token = getStoredToken()) => {
+  const params = new URLSearchParams({ from, to });
+  return adminRequest(`/slots/overrides?${params}`, { method: 'GET' }, token);
+};
+
+/** PUT /admin/slots/overrides — body: { date, slotId, enabled } */
+export const setSlotOverride = async (date, slotId, enabled, token = getStoredToken()) => {
+  return adminRequest('/slots/overrides', {
+    method: 'PUT',
+    body: JSON.stringify({ date, slotId, enabled }),
+  }, token);
+};
+
+/** GET /admin/slots/booking-counts?from=YYYY-MM-DD&to=YYYY-MM-DD — per-date counts */
+export const getSlotBookingCounts = async (from, to, token = getStoredToken()) => {
+  const params = new URLSearchParams({ from, to });
+  return adminRequest(`/slots/booking-counts?${params}`, { method: 'GET' }, token);
+};
+
+export const getMeetingAttendance = async (params = {}, token = getStoredToken()) => {
+  const search = new URLSearchParams();
+  if (params.page != null) search.set('page', params.page);
+  if (params.limit != null) search.set('limit', params.limit);
+  if (params.from) search.set('from', params.from);
+  if (params.to) search.set('to', params.to);
+  if (params.q) search.set('q', params.q);
+  if (params.uniqueByMobile !== undefined) search.set('uniqueByMobile', String(params.uniqueByMobile));
+  if (params.dedupeMode) search.set('dedupeMode', params.dedupeMode);
+  const query = search.toString();
+  return adminRequest(`/meeting-attendance${query ? `?${query}` : ''}`, { method: 'GET' }, token);
+};
+
+export const getTrainingAttendance = async (params = {}, token = getStoredToken()) => {
+  const search = new URLSearchParams();
+  if (params.page != null) search.set('page', params.page);
+  if (params.limit != null) search.set('limit', params.limit);
+  if (params.from) search.set('from', params.from);
+  if (params.to) search.set('to', params.to);
+  if (params.q) search.set('q', params.q);
+  if (params.uniqueByMobile !== undefined) search.set('uniqueByMobile', String(params.uniqueByMobile));
+  if (params.dedupeMode) search.set('dedupeMode', params.dedupeMode);
+  const query = search.toString();
+  return adminRequest(`/training-attendance${query ? `?${query}` : ''}`, { method: 'GET' }, token);
+};
+
+/** GET /admin/assessment-submissions — list with pagination. Returns { submissions, total }. */
+export const getAssessmentSubmissions = async (page = 1, limit = 50, token = getStoredToken()) => {
+  const params = new URLSearchParams({ page: String(page), limit: String(limit) });
+  return adminRequest(`/assessment-submissions?${params}`, { method: 'GET' }, token);
+};
+
+/** GET /admin/assessment-2-submissions — list with pagination. Returns { submissions, total }. */
+export const getAssessment2Submissions = async (page = 1, limit = 50, token = getStoredToken()) => {
+  const params = new URLSearchParams({ page: String(page), limit: String(limit) });
+  return adminRequest(`/assessment-2-submissions?${params}`, { method: 'GET' }, token);
+};
+
+/** GET /admin/assessment-submissions/:id — single submission with questionResults. */
+export const getAssessmentSubmissionById = async (id, token = getStoredToken()) => {
+  return adminRequest(`/assessment-submissions/${encodeURIComponent(id)}`, { method: 'GET' }, token);
+};
+
+/** GET /admin/assessment-2-submissions/:id — single submission with questionResults. */
+export const getAssessment2SubmissionById = async (id, token = getStoredToken()) => {
+  return adminRequest(`/assessment-2-submissions/${encodeURIComponent(id)}`, { method: 'GET' }, token);
+};
+
+/** GET /admin/assessment-3-submissions — list with pagination. Returns { submissions, total }. */
+export const getAssessment3Submissions = async (page = 1, limit = 50, token = getStoredToken()) => {
+  const params = new URLSearchParams({ page: String(page), limit: String(limit) });
+  return adminRequest(`/assessment-3-submissions?${params}`, { method: 'GET' }, token);
+};
+
+/** GET /admin/assessment-3-submissions/:id — single submission with questionResults. */
+export const getAssessment3SubmissionById = async (id, token = getStoredToken()) => {
+  return adminRequest(`/assessment-3-submissions/${encodeURIComponent(id)}`, { method: 'GET' }, token);
+};
+
+/** Request to /api/influencer-links and /api/influencer-analytics (admin auth, no /admin prefix). */
+async function influencerRequest(path, options = {}, token = getStoredToken()) {
+  const url = `${API_BASE_URL}${path}`;
+  const headers = { 'Content-Type': 'application/json', ...options.headers };
+  if (token) headers.Authorization = `Bearer ${token}`;
+  try {
+    const response = await fetch(url, { ...options, headers });
+    let data;
+    try {
+      data = await response.json();
+    } catch {
+      data = { message: 'Invalid response' };
+    }
+    if (!response.ok) {
+      return { success: false, message: data.message || 'Request failed', status: response.status, data };
+    }
+    return { success: true, data, status: response.status };
+  } catch (error) {
+    const message = error.message === 'Failed to fetch' ? 'Cannot reach server.' : (error.message || 'Network error');
+    return { success: false, message, status: 0, error };
+  }
+}
+
+export const createInfluencerLink = async (payload, save = false, token = getStoredToken()) => {
+  return influencerRequest('/influencer-links', {
+    method: 'POST',
+    body: JSON.stringify({ ...payload, save }),
+  }, token);
+};
+
+export const getInfluencerLinks = async (token = getStoredToken()) => {
+  return influencerRequest('/influencer-links', { method: 'GET' }, token);
+};
+
+export const deleteInfluencerLink = async (id, token = getStoredToken()) => {
+  return influencerRequest(`/influencer-links/${id}`, { method: 'DELETE' }, token);
+};
+
+export const getInfluencerAnalytics = async (params = {}, token = getStoredToken()) => {
+  const search = new URLSearchParams();
+  if (params.from) search.set('from', params.from);
+  if (params.to) search.set('to', params.to);
+  if (params.sort) search.set('sort', params.sort);
+  const query = search.toString();
+  return influencerRequest(`/influencer-analytics${query ? `?${query}` : ''}`, { method: 'GET' }, token);
+};
+
+export const getInfluencerAnalyticsTrend = async (params = {}, token = getStoredToken()) => {
+  const search = new URLSearchParams();
+  if (params.from) search.set('from', params.from);
+  if (params.to) search.set('to', params.to);
+  const query = search.toString();
+  return influencerRequest(`/influencer-analytics/trend${query ? `?${query}` : ''}`, { method: 'GET' }, token);
+};
+
+export async function getAdminLeadsExport(params = {}, token = getStoredToken()) {
+  const search = new URLSearchParams();
+  if (params.from) search.set('from', params.from);
+  if (params.to) search.set('to', params.to);
+  if (params.selectedSlot) search.set('selectedSlot', params.selectedSlot);
+  if (params.utm_content) search.set('utm_content', params.utm_content);
+  const query = search.toString();
+  const url = `${API_BASE_URL}/admin/leads/export${query ? `?${query}` : ''}`;
+  const headers = {};
+  if (token) headers.Authorization = `Bearer ${token}`;
+  const response = await fetch(url, { method: 'GET', headers });
+  if (!response.ok) {
+    let message = 'Export failed';
+    try {
+      const data = await response.json();
+      message = data.message || message;
+    } catch {
+      message = response.statusText || message;
+    }
+    return { success: false, message, status: response.status };
+  }
+  const blob = await response.blob();
+  const disposition = response.headers.get('Content-Disposition');
+  let filename = `guidexpert-leads-${new Date().toISOString().slice(0, 10)}.csv`;
+  if (disposition) {
+    const match = /filename="?([^"]+)"?/.exec(disposition);
+    if (match) filename = match[1];
+  }
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(blob);
+  a.download = filename;
+  a.click();
+  URL.revokeObjectURL(a.href);
+  return { success: true };
+}

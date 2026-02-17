@@ -1,0 +1,342 @@
+/* Training & Support Section */
+
+.training-support-section {
+  position: relative;
+  background: #ffffff;
+}
+
+.training-support-section-inner {
+  position: relative;
+  z-index: 1;
+}
+
+/* –––––– Support cards (Online Training, Counselor Toolkit, Ongoing Support) –––––– */
+
+.training-support-cards {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 1.5rem;
+  align-items: stretch;
+  margin-bottom: 4rem;
+}
+
+@media (min-width: 768px) {
+  .training-support-cards {
+    grid-template-columns: repeat(3, 1fr);
+    gap: 2rem;
+  }
+}
+
+.training-support-card {
+  position: relative;
+  overflow: hidden;
+  background: #ffffff;
+  border-radius: 1rem;
+  padding: 1.75rem 1.5rem;
+  border: 1px solid #e5e7eb;
+  border-top: 2px solid transparent;
+  box-shadow: 0 6px 12px -2px rgba(0, 0, 0, 0.08), 0 2px 6px -2px rgba(0, 0, 0, 0.05);
+  transition: transform 0.3s ease, box-shadow 0.3s ease;
+}
+
+.training-support-card::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 3px;
+  opacity: 0;
+  transition: opacity 0.3s ease;
+  border-radius: 1rem 1rem 0 0;
+}
+
+.training-support-card:hover {
+  transform: translateY(-6px);
+  box-shadow: 0 12px 24px -4px rgba(15, 23, 42, 0.12), 0 4px 12px -2px rgba(15, 23, 42, 0.08);
+}
+
+.training-support-card:hover::before {
+  opacity: 1;
+}
+
+@media (min-width: 768px) {
+  .training-support-card {
+    padding: 2rem 1.75rem;
+  }
+}
+
+.training-support-card-online {
+  border-top-color: #003366;
+}
+
+.training-support-card-online::before {
+  background: linear-gradient(90deg, #003366, #003366);
+}
+
+.training-support-card-online .training-support-card-icon {
+  background: #003366;
+}
+
+.training-support-card-toolkit {
+  border-top-color: #166534;
+}
+
+.training-support-card-toolkit::before {
+  background: linear-gradient(90deg, #166534, #15803d);
+}
+
+.training-support-card-toolkit .training-support-card-icon {
+  background: #166534;
+}
+
+.training-support-card-support {
+  border-top-color: #003366;
+}
+
+.training-support-card-support::before {
+  background: linear-gradient(90deg, #003366, #003366);
+}
+
+.training-support-card-support .training-support-card-icon {
+  background: #003366;
+}
+
+.training-support-card-icon {
+  width: 3rem;
+  height: 3rem;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin-bottom: 1rem;
+}
+
+.training-support-card-icon svg {
+  width: 1.25rem;
+  height: 1.25rem;
+  color: #ffffff;
+  flex-shrink: 0;
+}
+
+@media (min-width: 768px) {
+  .training-support-card-icon {
+    width: 3.25rem;
+    height: 3.25rem;
+  }
+
+  .training-support-card-icon svg {
+    width: 1.35rem;
+    height: 1.35rem;
+  }
+}
+
+.training-support-card-title {
+  font-family: 'Satoshi', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+  font-size: 1.25rem;
+  font-weight: 700;
+  line-height: 1.3;
+  color: #1f2937;
+  margin-bottom: 0.5rem;
+}
+
+.training-support-card-desc {
+  font-size: 0.9375rem;
+  font-weight: 500;
+  line-height: 1.6;
+  color: #4b5563;
+  margin: 0;
+}
+
+.training-support-card:focus-visible {
+  outline: 2px solid #003366;
+  outline-offset: 2px;
+  border-radius: 1rem;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .training-support-card {
+    transition: none;
+  }
+
+  .training-support-card:hover {
+    transform: none;
+  }
+
+  .training-support-card::before {
+    transition: none;
+  }
+}
+
+/* –––––– Journey cards (Enroll, Learn, Achieve) –––––– */
+
+.training-journey-cards {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 1.5rem;
+  align-items: stretch;
+  margin-bottom: 2rem;
+}
+
+@media (min-width: 768px) {
+  .training-journey-cards {
+    grid-template-columns: repeat(3, 1fr);
+    gap: 2rem;
+  }
+}
+
+.training-journey-card {
+  position: relative;
+  overflow: hidden;
+  background: #ffffff;
+  border-radius: 1rem;
+  padding: 1.75rem 1.5rem;
+  border: 1px solid #e5e7eb;
+  border-top: 2px solid transparent;
+  box-shadow: 0 6px 12px -2px rgba(0, 0, 0, 0.08), 0 2px 6px -2px rgba(0, 0, 0, 0.05);
+  transition: transform 0.3s ease, box-shadow 0.3s ease;
+  text-align: center;
+}
+
+.training-journey-card::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 3px;
+  opacity: 0;
+  transition: opacity 0.3s ease;
+  border-radius: 1rem 1rem 0 0;
+}
+
+.training-journey-card:hover {
+  transform: translateY(-6px);
+  box-shadow: 0 12px 24px -4px rgba(15, 23, 42, 0.12), 0 4px 12px -2px rgba(15, 23, 42, 0.08);
+}
+
+.training-journey-card:hover::before {
+  opacity: 1;
+}
+
+@media (min-width: 768px) {
+  .training-journey-card {
+    padding: 2rem 1.75rem;
+  }
+}
+
+.training-journey-card-enroll {
+  border-top-color: #003366;
+}
+
+.training-journey-card-enroll::before {
+  background: linear-gradient(90deg, #003366, #003366);
+}
+
+.training-journey-card-enroll .training-journey-card-icon {
+  background: #003366;
+}
+
+.training-journey-card-learn {
+  border-top-color: #166534;
+}
+
+.training-journey-card-learn::before {
+  background: linear-gradient(90deg, #166534, #15803d);
+}
+
+.training-journey-card-learn .training-journey-card-icon {
+  background: #166534;
+}
+
+.training-journey-card-achieve {
+  border-top-color: #b45309;
+}
+
+.training-journey-card-achieve::before {
+  background: linear-gradient(90deg, #b45309, #d97706);
+}
+
+.training-journey-card-achieve .training-journey-card-icon {
+  background: #b45309;
+}
+
+.training-journey-card-icon {
+  width: 3rem;
+  height: 3rem;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin: 0 auto 0.5rem;
+}
+
+.training-journey-card-icon svg {
+  width: 1.25rem;
+  height: 1.25rem;
+  color: #ffffff;
+  flex-shrink: 0;
+}
+
+@media (min-width: 768px) {
+  .training-journey-card-icon {
+    width: 3.25rem;
+    height: 3.25rem;
+  }
+
+  .training-journey-card-icon svg {
+    width: 1.35rem;
+    height: 1.35rem;
+  }
+}
+
+.training-journey-step {
+  width: 1.5rem;
+  height: 1.5rem;
+  border-radius: 50%;
+  background: #f3f4f6;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin: 0 auto 1rem;
+  font-size: 0.75rem;
+  font-weight: 600;
+  color: #4b5563;
+}
+
+.training-journey-card-title {
+  font-family: 'Satoshi', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+  font-size: 1.25rem;
+  font-weight: 700;
+  line-height: 1.3;
+  color: #1f2937;
+  margin-bottom: 0.5rem;
+}
+
+.training-journey-card-desc {
+  font-size: 0.9375rem;
+  font-weight: 500;
+  line-height: 1.6;
+  color: #4b5563;
+  margin: 0;
+}
+
+.training-journey-card:focus-visible {
+  outline: 2px solid #003366;
+  outline-offset: 2px;
+  border-radius: 1rem;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .training-journey-card {
+    transition: none;
+  }
+
+  .training-journey-card:hover {
+    transform: none;
+  }
+
+  .training-journey-card::before {
+    transition: none;
+  }
+}
