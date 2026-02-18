@@ -1,5 +1,4 @@
 import { useState } from 'react';
-import { Link } from 'react-router-dom';
 import { submitTrainingFeedback } from '../utils/api';
 
 const EDUCATION_OPTIONS = [
@@ -193,7 +192,7 @@ export default function FeedbackForm() {
             <p className="text-slate-600 text-sm leading-relaxed mb-6">
               Your training feedback has been submitted successfully. We will get back to you as needed.
             </p>
-            <div className="flex flex-col sm:flex-row gap-3 justify-center">
+            <div className="flex justify-center">
               <button
                 type="button"
                 onClick={resetForm}
@@ -201,12 +200,6 @@ export default function FeedbackForm() {
               >
                 Submit another
               </button>
-              <Link
-                to="/training"
-                className="px-5 py-2.5 rounded-xl font-medium text-white bg-[#003366] hover:bg-[#004080] transition-colors text-center"
-              >
-                Back to Training
-              </Link>
             </div>
           </div>
         </div>
