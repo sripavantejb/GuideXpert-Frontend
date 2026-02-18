@@ -174,6 +174,19 @@ export const getTrainingAttendance = async (params = {}, token = getStoredToken(
   return adminRequest(`/training-attendance${query ? `?${query}` : ''}`, { method: 'GET' }, token);
 };
 
+export const getTrainingFeedback = async (params = {}, token = getStoredToken()) => {
+  const search = new URLSearchParams();
+  if (params.page != null) search.set('page', params.page);
+  if (params.limit != null) search.set('limit', params.limit);
+  if (params.from) search.set('from', params.from);
+  if (params.to) search.set('to', params.to);
+  if (params.q) search.set('q', params.q);
+  if (params.gender) search.set('gender', params.gender);
+  if (params.occupation) search.set('occupation', params.occupation);
+  const query = search.toString();
+  return adminRequest(`/training-feedback${query ? `?${query}` : ''}`, { method: 'GET' }, token);
+};
+
 /** GET /admin/assessment-submissions — list with pagination. Returns { submissions, total }. */
 export const getAssessmentSubmissions = async (page = 1, limit = 50, token = getStoredToken()) => {
   const params = new URLSearchParams({ page: String(page), limit: String(limit) });

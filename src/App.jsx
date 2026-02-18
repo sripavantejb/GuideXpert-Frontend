@@ -7,6 +7,7 @@ import LandingPage from './pages/LandingPage';
 import AdminLogin from './pages/AdminLogin';
 import MeetingRegistration from './pages/MeetingRegistration';
 import TrainingMeeting from './pages/TrainingMeeting';
+import FeedbackForm from './pages/FeedbackForm';
 import AssessmentForm from './pages/AssessmentForm';
 import AssessmentForm2 from './pages/AssessmentForm2';
 import AssessmentForm3 from './pages/AssessmentForm3';
@@ -23,6 +24,7 @@ import LeadStatus from './pages/admin/LeadStatus';
 import AssessmentResults from './pages/admin/AssessmentResults';
 import Assessment2Results from './pages/admin/Assessment2Results';
 import Assessment3Results from './pages/admin/Assessment3Results';
+import TrainingFeedback from './pages/admin/TrainingFeedback';
 
 /* Counsellor portal — lazy loaded */
 import CounsellorLayout from './components/Counsellor/CounsellorLayout';
@@ -56,6 +58,7 @@ function App() {
           <Route path="/register" element={<LandingPage />} />
           <Route path="/meet" element={<MeetingRegistration />} />
           <Route path="/training" element={<TrainingMeeting />} />
+          <Route path="/feedback" element={<FeedbackForm />} />
           <Route path="/assessment" element={<AssessmentForm />} />
           <Route path="/assessment-2" element={<AssessmentForm2 />} />
           <Route path="/assessment-3" element={<AssessmentForm3 />} />
@@ -77,6 +80,7 @@ function App() {
             <Route path="export" element={<Export />} />
             <Route path="settings" element={<Settings />} />
             <Route path="meeting-attendance" element={<MeetingAttendance />} />
+            <Route path="training-feedback" element={<TrainingFeedback />} />
             <Route path="influencer-tracking" element={<InfluencerTracking />} />
             <Route path="assessment-results" element={<AssessmentResults />} />
             <Route path="assessment-2-results" element={<Assessment2Results />} />

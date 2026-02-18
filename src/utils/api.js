@@ -278,6 +278,18 @@ export const registerForTraining = async (name, mobileNumber) => {
 };
 
 /**
+ * Submit training feedback form.
+ * @param {Object} payload - { name, mobileNumber, whatsappNumber, email, addressOfCommunication, occupation, dateOfBirth, gender, educationQualification, yearsOfExperience }
+ * @returns {Promise<{success: boolean, message?: string, data?: Object, status?: number}>}
+ */
+export const submitTrainingFeedback = async (payload) => {
+  return apiRequest('/feedback', {
+    method: 'POST',
+    body: JSON.stringify(payload),
+  });
+};
+
+/**
  * Submit counsellor assessment (after OTP verification).
  * @param {string} name - User's full name
  * @param {string} phone - 10-digit phone number
