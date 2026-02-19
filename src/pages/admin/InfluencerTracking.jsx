@@ -26,6 +26,7 @@ const PLATFORMS = [
   { value: 'YouTube', label: 'YouTube' },
   { value: 'Twitter', label: 'Twitter' },
   { value: 'WhatsApp', label: 'WhatsApp' },
+  { value: 'Telegram', label: 'Telegram' },
 ];
 
 const DEFAULT_CAMPAIGN = 'guide_xperts';
