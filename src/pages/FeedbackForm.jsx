@@ -190,17 +190,15 @@ export default function FeedbackForm() {
             </div>
             <h2 className="text-xl font-semibold text-slate-900 mb-2">Thank you</h2>
             <p className="text-slate-600 text-sm leading-relaxed mb-6">
-              Your training feedback has been submitted successfully. We will get back to you as needed.
+              Your form has been submitted successfully. We will get back to you as needed.
             </p>
-            <div className="flex justify-center">
-              <button
-                type="button"
-                onClick={resetForm}
-                className="px-5 py-2.5 rounded-xl font-medium text-[#003366] border-2 border-[#003366] hover:bg-[#003366]/5 transition-colors"
-              >
-                Submit another
-              </button>
-            </div>
+            <button
+              type="button"
+              onClick={resetForm}
+              className="px-5 py-2.5 rounded-xl font-medium text-white bg-[#003366] hover:bg-[#004080] transition-colors"
+            >
+              Submit another
+            </button>
           </div>
         </div>
       </div>
@@ -221,7 +219,7 @@ export default function FeedbackForm() {
               </svg>
             </div>
             <h1 className="text-2xl font-bold text-slate-900" style={{ color: '#003366' }}>
-              Training Feedback
+              Certified Counsellor Activation Form
             </h1>
             <p className="text-slate-600 mt-1.5 text-sm">GuideXpert</p>
             <p className="text-slate-500 text-sm mt-1">Complete all required fields to submit your feedback.</p>
