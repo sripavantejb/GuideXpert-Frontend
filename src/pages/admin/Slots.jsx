@@ -16,19 +16,34 @@ const DAY_HEADER = {
   FRIDAY: 'Fri', SATURDAY: 'Sat', SUNDAY: 'Sun'
 };
 const DAY_BY_DOW = ['SUNDAY', 'MONDAY', 'TUESDAY', 'WEDNESDAY', 'THURSDAY', 'FRIDAY', 'SATURDAY'];
-const TIME_ROWS = ['11AM', '7PM'];
-const TIME_DISPLAY = { '11AM': '11 AM', '7PM': '7 PM' };
+const TIME_ROWS = ['11AM', '3PM', '7PM'];
+const TIME_DISPLAY = { '11AM': '11 AM', '3PM': '3 PM', '7PM': '7 PM' };
 const WEEKDAY_HEADER = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
+
+/** Must match backend ALL_SLOT_IDS so grid shows all configured slots (e.g. Sunday 3 PM). */
+const EXPECTED_SLOT_IDS = [
+  'MONDAY_7PM', 'TUESDAY_7PM', 'WEDNESDAY_7PM', 'THURSDAY_7PM',
+  'FRIDAY_7PM', 'SATURDAY_7PM', 'SUNDAY_3PM', 'SUNDAY_11AM'
+];
 
 function slotIdFor(day, timeKey) {
   return `${day}_${timeKey}`;
 }
 
+/** Sunday 7 PM slot removed; only Sunday 3 PM is used. */
+const SUNDAY_7PM_SLOT_ID = 'SUNDAY_7PM';
+
 function slotMapFromList(slots) {
-  return (slots || []).reduce((acc, s) => {
-    if (s?.slotId) acc[s.slotId] = s;
+  const fromApi = (slots || []).reduce((acc, s) => {
+    if (s?.slotId && s.slotId !== SUNDAY_7PM_SLOT_ID) acc[s.slotId] = s;
     return acc;
   }, {});
+  // Ensure every expected slot has an entry so Sunday 3 PM etc. always show even if API missed it
+  const merged = { ...fromApi };
+  EXPECTED_SLOT_IDS.forEach((id) => {
+    if (!merged[id]) merged[id] = { slotId: id, enabled: true, bookedCount: 0 };
+  });
+  return merged;
 }
 
 function toYYYYMMDD(date) {

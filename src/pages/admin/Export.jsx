@@ -3,7 +3,7 @@ import { getAdminLeadsExport, getStoredToken } from '../../utils/adminApi';
 
 const ALL_SLOT_IDS = [
   'MONDAY_7PM', 'TUESDAY_7PM', 'WEDNESDAY_7PM', 'THURSDAY_7PM',
-  'FRIDAY_7PM', 'SATURDAY_7PM', 'SUNDAY_7PM', 'SUNDAY_11AM'
+  'FRIDAY_7PM', 'SATURDAY_7PM', 'SUNDAY_3PM', 'SUNDAY_11AM'
 ];
 
 function formatSlotIdForDropdown(slotId) {
