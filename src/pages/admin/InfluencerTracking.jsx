@@ -1,5 +1,6 @@
 import { useState, useEffect, useCallback, useMemo } from 'react';
-import { FiCopy, FiSave, FiRefreshCw, FiTrash2, FiLink, FiBarChart2 } from 'react-icons/fi';
+import { useNavigate } from 'react-router-dom';
+import { FiCopy, FiSave, FiRefreshCw, FiTrash2, FiLink, FiBarChart2, FiEye, FiX } from 'react-icons/fi';
 import {
   BarChart,
   Bar,
@@ -17,6 +18,7 @@ import {
   deleteInfluencerLink,
   getInfluencerAnalytics,
   getInfluencerAnalyticsTrend,
+  getAdminLeads,
   getStoredToken,
 } from '../../utils/adminApi';
 import { useAuth } from '../../contexts/AuthContext';
@@ -78,6 +80,11 @@ function getDatePresetRange(preset) {
     return { from: from.toISOString().slice(0, 10), to: today.toISOString().slice(0, 10) };
   }
   return { from: '', to: '' };
+}
+
+function normalizeInfluencerName(name) {
+  if (name == null || typeof name !== 'string') return '';
+  return name.trim().toLowerCase();
 }
 
 function TableSkeleton({ rows = 5, cols = 6 }) {
@@ -142,6 +149,12 @@ export default function InfluencerTracking() {
   });
   const [analyticsSearch, setAnalyticsSearch] = useState('');
 
+  const [detailInfluencer, setDetailInfluencer] = useState(null);
+  const [detailLeads, setDetailLeads] = useState([]);
+  const [detailLeadsPagination, setDetailLeadsPagination] = useState({ page: 1, limit: 10, total: 0, totalPages: 1 });
+  const [detailLeadsLoading, setDetailLeadsLoading] = useState(false);
+
+  const navigate = useNavigate();
   const token = getStoredToken();
 
   const fetchLinks = useCallback(() => {
@@ -260,16 +273,6 @@ export default function InfluencerTracking() {
     }));
   }, [analytics]);
 
-  // Lookup analytics for saved links only (same key as backend: normalized name + platform)
-  const analyticsByLinkKey = useMemo(() => {
-    const map = new Map();
-    for (const r of analytics) {
-      const key = `${(r.influencerName || '').trim().toLowerCase()}|${(r.platform || '').trim().toLowerCase()}`;
-      map.set(key, { totalRegistrations: r.totalRegistrations ?? 0, latestRegistration: r.latestRegistration ?? null });
-    }
-    return map;
-  }, [analytics]);
-
   const filteredSavedLinks = useMemo(() => {
     let list = savedLinks;
     const q = savedLinksSearch.trim().toLowerCase();
@@ -303,6 +306,53 @@ export default function InfluencerTracking() {
     const q = analyticsSearch.trim().toLowerCase();
     return analytics.filter((r) => (r.influencerName || '').toLowerCase().includes(q));
   }, [analytics, analyticsSearch]);
+
+  const detailLinksForName = useMemo(() => {
+    if (!detailInfluencer?.name) return [];
+    const key = normalizeInfluencerName(detailInfluencer.name);
+    return savedLinks.filter((l) => normalizeInfluencerName(l.influencerName) === key);
+  }, [detailInfluencer?.name, savedLinks]);
+
+  const detailTotalLeads = useMemo(() => {
+    if (!detailInfluencer?.name) return 0;
+    const key = normalizeInfluencerName(detailInfluencer.name);
+    return analytics
+      .filter((r) => normalizeInfluencerName(r.influencerName) === key)
+      .reduce((sum, r) => sum + (r.totalRegistrations ?? 0), 0);
+  }, [detailInfluencer?.name, analytics]);
+
+  const fetchDetailLeads = useCallback(() => {
+    if (!detailInfluencer?.name) return;
+    setDetailLeadsLoading(true);
+    getAdminLeads(
+      {
+        page: detailLeadsPagination.page,
+        limit: detailLeadsPagination.limit,
+        utm_content: detailInfluencer.name,
+      },
+      token
+    ).then((result) => {
+      setDetailLeadsLoading(false);
+      if (!result.success) {
+        setDetailLeads([]);
+        setDetailLeadsPagination((p) => ({ ...p, total: 0, totalPages: 1 }));
+        return;
+      }
+      const data = result.data?.data ?? [];
+      const pagination = result.data?.pagination ?? {};
+      setDetailLeads(data);
+      setDetailLeadsPagination((p) => ({
+        ...p,
+        total: pagination.total ?? 0,
+        totalPages: pagination.totalPages ?? 1,
+      }));
+    });
+  }, [detailInfluencer?.name, token, detailLeadsPagination.page, detailLeadsPagination.limit]);
+
+  useEffect(() => {
+    if (!detailInfluencer) return;
+    fetchDetailLeads();
+  }, [detailInfluencer, detailLeadsPagination.page, fetchDetailLeads]);
 
   const handleFormChange = (e) => {
     const { name, value } = e.target;
@@ -380,6 +430,13 @@ export default function InfluencerTracking() {
     }
     setGeneratedLink(result.data?.data?.utmLink ?? generatedLink);
     fetchLinks();
+    openDetailView(form.influencerName.trim(), form.platform);
+  };
+
+  const openDetailView = (name, platform) => {
+    if (!name) return;
+    setDetailInfluencer({ name, platform: platform || '' });
+    setDetailLeadsPagination((p) => ({ ...p, page: 1 }));
   };
 
   const handleDeleteClick = (link) => setLinkToDelete(link);
@@ -668,7 +725,7 @@ export default function InfluencerTracking() {
         <div className={sectionHeaderClass + ' flex flex-wrap items-center justify-between gap-4'}>
           <div>
             <h2 className="text-base font-semibold text-gray-800">Saved Influencer Links</h2>
-            <p className="text-sm text-gray-500 mt-0.5">Links saved for reuse. Search, filter, export or bulk delete.</p>
+            <p className="text-sm text-gray-500 mt-0.5">Links saved for reuse. Leads column shows count per link. Search, filter, export or bulk delete.</p>
           </div>
           <div className="flex items-center gap-2">
             <button type="button" onClick={fetchLinks} disabled={linksLoading} className="p-2 rounded-lg text-gray-500 hover:bg-gray-200 disabled:opacity-50" title="Refresh">
@@ -743,16 +800,12 @@ export default function InfluencerTracking() {
                     <th className="px-6 py-3 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">Campaign</th>
                     <th className="px-6 py-3 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">UTM Link</th>
                     <th className="px-6 py-3 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">Date created</th>
-                    <th className="px-6 py-3 text-right text-xs font-semibold text-gray-600 uppercase tracking-wider">Registrations</th>
-                    <th className="px-6 py-3 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">Latest registration</th>
-                    <th className="px-6 py-3 text-right text-xs font-semibold text-gray-600 uppercase tracking-wider">Actions</th>
+                    <th className="px-6 py-3 text-right text-xs font-semibold text-gray-600 uppercase tracking-wider">Leads</th>
+                    <th className="px-6 py-3 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">Latest lead</th>
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-gray-100">
-                  {paginatedLinks.map((link, i) => {
-                    const linkKey = `${(link.influencerName || '').trim().toLowerCase()}|${(link.platform || '').trim().toLowerCase()}`;
-                    const stats = analyticsByLinkKey.get(linkKey);
-                    return (
+                  {paginatedLinks.map((link, i) => (
                     <tr key={link.id} className={i % 2 === 0 ? 'bg-white' : 'bg-gray-50/60 hover:bg-primary-blue-50/30'}>
                       <td className="px-4 py-3">
                         <input
@@ -762,7 +815,30 @@ export default function InfluencerTracking() {
                           className="rounded border-gray-300"
                         />
                       </td>
-                      <td className="px-6 py-3 text-sm font-medium text-gray-900">{link.influencerName}</td>
+                      <td className="px-6 py-3 text-sm">
+                        <div className="flex items-center gap-2">
+                          <button
+                            type="button"
+                            onClick={() => openDetailView(link.influencerName, link.platform)}
+                            className="font-medium text-gray-900 hover:text-primary-navy hover:underline text-left"
+                          >
+                            {link.influencerName}
+                          </button>
+                          {(() => {
+                            const sameNameCount = savedLinks.filter(
+                              (l) => normalizeInfluencerName(l.influencerName) === normalizeInfluencerName(link.influencerName)
+                            ).length;
+                            if (sameNameCount > 1) {
+                              return (
+                                <span className="text-xs text-gray-500 bg-gray-100 px-1.5 py-0.5 rounded">
+                                  {sameNameCount} links
+                                </span>
+                              );
+                            }
+                            return null;
+                          })()}
+                        </div>
+                      </td>
                       <td className="px-6 py-3 text-sm text-gray-600">{link.platform}</td>
                       <td className="px-6 py-3 text-sm text-gray-600">{link.campaign}</td>
                       <td className="px-6 py-3 text-sm max-w-[200px]">
@@ -771,29 +847,10 @@ export default function InfluencerTracking() {
                         </a>
                       </td>
                       <td className="px-6 py-3 text-sm text-gray-500">{formatDate(link.createdAt)}</td>
-                      <td className="px-6 py-3 text-sm text-gray-900 text-right font-medium">{stats ? stats.totalRegistrations : 0}</td>
-                      <td className="px-6 py-3 text-sm text-gray-500">{stats?.latestRegistration ? formatDate(stats.latestRegistration) : '—'}</td>
-                      <td className="px-6 py-3 text-right">
-                        <div className="flex items-center justify-end gap-2">
-                          <button
-                            type="button"
-                            onClick={() => handleCopy(link.utmLink, link.id)}
-                            className="inline-flex items-center gap-1 px-2 py-1 rounded text-sm text-gray-600 hover:bg-gray-100"
-                          >
-                            <FiCopy className="w-4 h-4" />{copiedLinkId === link.id ? 'Copied' : 'Copy'}
-                          </button>
-                          <button
-                            type="button"
-                            onClick={() => handleDeleteClick(link)}
-                            disabled={deletingId === link.id}
-                            className="inline-flex items-center gap-1 px-2 py-1 rounded text-sm text-red-600 hover:bg-red-50 disabled:opacity-50"
-                          >
-                            <FiTrash2 className="w-4 h-4" />{deletingId === link.id ? 'Deleting…' : 'Delete'}
-                          </button>
-                        </div>
-                      </td>
+                      <td className="px-6 py-3 text-sm text-gray-900 text-right font-medium">{link.leadCount ?? 0}</td>
+                      <td className="px-6 py-3 text-sm text-gray-500">{link.latestLeadAt ? formatDate(link.latestLeadAt) : '—'}</td>
                     </tr>
-                  ); })}
+                  ))}
                 </tbody>
               </table>
             </div>
@@ -875,7 +932,15 @@ export default function InfluencerTracking() {
               <tbody className="divide-y divide-gray-100">
                 {filteredAnalytics.map((row, idx) => (
                   <tr key={(row.influencerName || '') + idx} className={idx % 2 === 0 ? 'bg-white' : 'bg-gray-50/60 hover:bg-primary-blue-50/30'}>
-                    <td className="px-6 py-4 text-sm font-medium text-gray-900">{row.influencerName ?? '—'}</td>
+                    <td className="px-6 py-4 text-sm">
+                      <button
+                        type="button"
+                        onClick={() => openDetailView(row.influencerName, row.platform)}
+                        className="font-medium text-gray-900 hover:text-primary-navy hover:underline text-left"
+                      >
+                        {row.influencerName ?? '—'}
+                      </button>
+                    </td>
                     <td className="px-6 py-4 text-sm text-gray-600">{row.platform ?? '—'}</td>
                     <td className="px-6 py-4 text-sm text-gray-900 text-right font-medium">{row.totalRegistrations ?? 0}</td>
                     <td className="px-6 py-4 text-sm text-gray-500">{formatDate(row.latestRegistration)}</td>
@@ -886,6 +951,172 @@ export default function InfluencerTracking() {
           </div>
         )}
       </section>
+
+      {/* Influencer detail modal: links + leads for this name */}
+      {detailInfluencer && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50" role="dialog" aria-modal="true" aria-labelledby="detail-modal-title">
+          <div className="bg-white rounded-xl shadow-xl max-w-4xl w-full max-h-[90vh] overflow-hidden flex flex-col">
+            <div className="px-6 py-4 border-b border-gray-200 flex items-center justify-between shrink-0">
+              <h2 id="detail-modal-title" className="text-lg font-semibold text-gray-900">
+                Influencer: {detailInfluencer.name}
+                {detailInfluencer.platform ? ` (${detailInfluencer.platform})` : ''}
+              </h2>
+              <button
+                type="button"
+                onClick={() => setDetailInfluencer(null)}
+                className="p-2 rounded-lg text-gray-500 hover:bg-gray-100"
+                aria-label="Close"
+              >
+                <FiX className="w-5 h-5" />
+              </button>
+            </div>
+            <div className="p-6 overflow-y-auto flex-1 space-y-6">
+              <div className="grid grid-cols-2 gap-4">
+                <div className="bg-gray-50 rounded-lg p-4">
+                  <p className="text-sm text-gray-500">Links created</p>
+                  <p className="text-2xl font-semibold text-gray-900">{detailLinksForName.length}</p>
+                </div>
+                <div className="bg-gray-50 rounded-lg p-4">
+                  <p className="text-sm text-gray-500">Leads captured</p>
+                  <p className="text-2xl font-semibold text-gray-900">{detailTotalLeads}</p>
+                </div>
+              </div>
+
+              <section>
+                <h3 className="text-sm font-semibold text-gray-800 mb-2">Links for this name</h3>
+                {detailLinksForName.length === 0 ? (
+                  <p className="text-sm text-gray-500">No saved links for this influencer.</p>
+                ) : (
+                  <div className="overflow-x-auto border border-gray-200 rounded-lg">
+                    <table className="min-w-full divide-y divide-gray-200">
+                      <thead className="bg-gray-50">
+                        <tr>
+                          <th className="px-4 py-2 text-left text-xs font-semibold text-gray-600 uppercase">Platform</th>
+                          <th className="px-4 py-2 text-left text-xs font-semibold text-gray-600 uppercase">Campaign</th>
+                          <th className="px-4 py-2 text-left text-xs font-semibold text-gray-600 uppercase">UTM Link</th>
+                          <th className="px-4 py-2 text-left text-xs font-semibold text-gray-600 uppercase">Date created</th>
+                          <th className="px-4 py-2 text-right text-xs font-semibold text-gray-600 uppercase">Leads</th>
+                          <th className="px-4 py-2 text-left text-xs font-semibold text-gray-600 uppercase">Latest lead</th>
+                          <th className="px-4 py-2 text-right text-xs font-semibold text-gray-600 uppercase">Actions</th>
+                        </tr>
+                      </thead>
+                      <tbody className="divide-y divide-gray-100">
+                        {detailLinksForName.map((link) => (
+                          <tr key={link.id} className="bg-white hover:bg-gray-50/50">
+                            <td className="px-4 py-2 text-sm text-gray-900">{link.platform ?? '—'}</td>
+                            <td className="px-4 py-2 text-sm text-gray-600">{link.campaign ?? '—'}</td>
+                            <td className="px-4 py-2 text-sm max-w-[220px]">
+                              <a href={link.utmLink} target="_blank" rel="noopener noreferrer" className="text-primary-navy hover:underline truncate block font-mono text-xs" title={link.utmLink}>
+                                {link.utmLink}
+                              </a>
+                            </td>
+                            <td className="px-4 py-2 text-sm text-gray-500">{formatDate(link.createdAt)}</td>
+                            <td className="px-4 py-2 text-sm text-gray-900 text-right font-medium">{link.leadCount ?? 0}</td>
+                            <td className="px-4 py-2 text-sm text-gray-500">{link.latestLeadAt ? formatDate(link.latestLeadAt) : '—'}</td>
+                            <td className="px-4 py-2 text-right">
+                              <button
+                                type="button"
+                                onClick={() => handleCopy(link.utmLink, link.id)}
+                                className="inline-flex items-center gap-1 px-2 py-1 rounded text-sm text-gray-600 hover:bg-gray-100"
+                              >
+                                <FiCopy className="w-4 h-4" /> {copiedLinkId === link.id ? 'Copied' : 'Copy'}
+                              </button>
+                            </td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  </div>
+                )}
+              </section>
+
+              <section>
+                <h3 className="text-sm font-semibold text-gray-800 mb-2">Leads for this name</h3>
+                {detailLeadsLoading ? (
+                  <div className="py-6"><TableSkeleton rows={4} cols={5} /></div>
+                ) : detailLeads.length === 0 && detailLeadsPagination.total === 0 ? (
+                  <p className="text-sm text-gray-500">No leads attributed to this influencer yet.</p>
+                ) : (
+                  <>
+                    <div className="overflow-x-auto border border-gray-200 rounded-lg">
+                      <table className="min-w-full divide-y divide-gray-200">
+                        <thead className="bg-gray-50">
+                          <tr>
+                            <th className="px-4 py-2 text-left text-xs font-semibold text-gray-600 uppercase">Name</th>
+                            <th className="px-4 py-2 text-left text-xs font-semibold text-gray-600 uppercase">Phone</th>
+                            <th className="px-4 py-2 text-left text-xs font-semibold text-gray-600 uppercase">Status</th>
+                            <th className="px-4 py-2 text-left text-xs font-semibold text-gray-600 uppercase">Created</th>
+                            <th className="px-4 py-2 text-right text-xs font-semibold text-gray-600 uppercase">Actions</th>
+                          </tr>
+                        </thead>
+                        <tbody className="divide-y divide-gray-100">
+                          {detailLeads.map((lead) => (
+                            <tr key={lead.id} className="bg-white hover:bg-gray-50/50">
+                              <td className="px-4 py-2 text-sm text-gray-900">{lead.fullName || '—'}</td>
+                              <td className="px-4 py-2 text-sm text-gray-600">{lead.phone || '—'}</td>
+                              <td className="px-4 py-2 text-sm">
+                                {lead.applicationStatus ? (
+                                  <span className={`inline-flex px-2 py-0.5 rounded text-xs font-medium ${
+                                    lead.applicationStatus === 'completed' ? 'bg-green-100 text-green-800' :
+                                    lead.applicationStatus === 'registered' ? 'bg-blue-100 text-blue-800' :
+                                    'bg-amber-100 text-amber-800'
+                                  }`}>
+                                    {lead.applicationStatus}
+                                  </span>
+                                ) : '—'}
+                              </td>
+                              <td className="px-4 py-2 text-sm text-gray-500">{formatDate(lead.createdAt)}</td>
+                              <td className="px-4 py-2 text-right">
+                                <button
+                                  type="button"
+                                  onClick={() => {
+                                    setDetailInfluencer(null);
+                                    navigate(`/admin/leads?utm_content=${encodeURIComponent(detailInfluencer.name)}`);
+                                  }}
+                                  className="inline-flex items-center gap-1 text-primary-navy hover:underline text-sm font-medium"
+                                >
+                                  <FiEye className="w-4 h-4" /> View
+                                </button>
+                              </td>
+                            </tr>
+                          ))}
+                        </tbody>
+                      </table>
+                    </div>
+                    {detailLeadsPagination.totalPages > 1 && (
+                      <div className="flex flex-wrap items-center justify-between gap-3 mt-3">
+                        <p className="text-sm text-gray-500">
+                          Showing {(detailLeadsPagination.page - 1) * detailLeadsPagination.limit + 1}–
+                          {Math.min(detailLeadsPagination.page * detailLeadsPagination.limit, detailLeadsPagination.total)} of {detailLeadsPagination.total}
+                        </p>
+                        <div className="flex gap-2">
+                          <button
+                            type="button"
+                            onClick={() => setDetailLeadsPagination((p) => ({ ...p, page: Math.max(1, p.page - 1) }))}
+                            disabled={detailLeadsPagination.page <= 1}
+                            className="px-3 py-1.5 rounded-lg border border-gray-300 text-sm disabled:opacity-50"
+                          >
+                            Previous
+                          </button>
+                          <span className="text-sm text-gray-600 self-center">Page {detailLeadsPagination.page} of {detailLeadsPagination.totalPages}</span>
+                          <button
+                            type="button"
+                            onClick={() => setDetailLeadsPagination((p) => ({ ...p, page: Math.min(p.totalPages, p.page + 1) }))}
+                            disabled={detailLeadsPagination.page >= detailLeadsPagination.totalPages}
+                            className="px-3 py-1.5 rounded-lg border border-gray-300 text-sm disabled:opacity-50"
+                          >
+                            Next
+                          </button>
+                        </div>
+                      </div>
+                    )}
+                  </>
+                )}
+              </section>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* Delete single modal */}
       {linkToDelete && (
