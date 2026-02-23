@@ -179,6 +179,22 @@
     font-family: 'Satoshi', -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', sans-serif;
   }
 
+  /* Counsellor portal card – shared surface token */
+  .portal-card {
+    border-radius: 1rem;
+    border: 1px solid rgba(226, 232, 240, 0.8);
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.04), 0 1px 2px rgba(0, 0, 0, 0.02);
+  }
+
+  .portal-card-hover:hover {
+    box-shadow: 0 12px 28px rgba(0, 0, 0, 0.08), 0 4px 12px rgba(0, 0, 0, 0.04);
+  }
+
+  /* Counsellor portal: Satoshi for consistent typography */
+  .counsellor-portal {
+    font-family: 'Satoshi', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+  }
+
   .heading-subsection {
     font-size: 1.5rem;
   }

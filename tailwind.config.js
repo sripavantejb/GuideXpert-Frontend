@@ -8,6 +8,7 @@ export default {
     extend: {
       colors: {
         primary: {
+          navy: '#003366',
           blue: {
             50: '#f0f5fa',
             100: '#e0ebf5',
@@ -21,6 +22,10 @@ export default {
             900: '#003366',
           },
         },
+        sidebar: {
+          blue: '#1d4ed8',
+          bg: '#0f172a',
+        },
         accent: {
           yellow: {
             400: '#fbbf24',
@@ -29,6 +34,11 @@ export default {
           },
           gold: '#fbbf24',
         },
+      },
+      boxShadow: {
+        card: '0 1px 3px rgba(0,0,0,0.04), 0 1px 2px rgba(0,0,0,0.02)',
+        'card-hover': '0 12px 28px rgba(0,0,0,0.08), 0 4px 12px rgba(0,0,0,0.04)',
+        header: '0 1px 3px rgba(0,0,0,0.08)',
       },
     },
   },

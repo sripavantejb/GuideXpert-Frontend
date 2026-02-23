@@ -77,7 +77,7 @@ export default function CounsellorLayout() {
   };
 
   return (
-    <div className="min-h-screen h-screen overflow-hidden bg-[#f1f5f9] flex">
+    <div className="counsellor-portal min-h-screen h-screen overflow-hidden bg-[#f1f5f9] flex">
       {/* Sidebar overlay (mobile) */}
       <div
         className="fixed inset-0 bg-black/50 z-20 lg:hidden transition-opacity duration-200"
@@ -133,7 +133,7 @@ export default function CounsellorLayout() {
                 className={({ isActive }) =>
                   `flex items-center gap-3 mx-2 px-3.5 py-3 rounded-xl text-[0.8125rem] font-medium leading-relaxed transition-all duration-150 cursor-pointer ${
                     isActive
-                      ? 'bg-[#1d4ed8] text-white'
+                      ? 'bg-sidebar-blue text-white'
                       : 'text-slate-400 hover:bg-white/[0.06] hover:text-slate-200'
                   }`
                 }
@@ -160,7 +160,7 @@ export default function CounsellorLayout() {
                 className={({ isActive }) =>
                   `flex items-center gap-3 mx-2 px-3.5 py-3 rounded-xl text-[0.8125rem] font-medium leading-relaxed transition-all duration-150 cursor-pointer ${
                     isActive
-                      ? 'bg-[#1d4ed8] text-white'
+                      ? 'bg-sidebar-blue text-white'
                       : 'text-slate-400 hover:bg-white/[0.06] hover:text-slate-200'
                   }`
                 }
@@ -187,7 +187,7 @@ export default function CounsellorLayout() {
                 className={({ isActive }) =>
                   `flex items-center gap-3 mx-2 px-3.5 py-3 rounded-xl text-[0.8125rem] font-medium leading-relaxed transition-all duration-150 cursor-pointer ${
                     isActive
-                      ? 'bg-[#1d4ed8] text-white'
+                      ? 'bg-sidebar-blue text-white'
                       : 'text-slate-400 hover:bg-white/[0.06] hover:text-slate-200'
                   }`
                 }
@@ -206,25 +206,13 @@ export default function CounsellorLayout() {
           </div>
         </nav>
 
-        {/* Sidebar Footer — Profile Card */}
+        {/* Sidebar Footer — compact avatar + name only (Certified lives in header) */}
         <div className="px-4 py-4 border-t border-white/[0.06] mt-auto">
-          <div
-            className="flex items-center gap-3 p-3 rounded-xl"
-            style={{
-              background: 'rgba(255,255,255,0.04)',
-              boxShadow: '0 -4px 12px rgba(0,0,0,0.08)',
-            }}
-          >
-            <div className="w-10 h-10 rounded-full bg-gradient-to-br from-[#1d4ed8] to-[#003366] flex items-center justify-center shrink-0 ring-2 ring-white/10">
+          <div className="flex items-center gap-3 p-3 rounded-xl bg-white/[0.04]" style={{ boxShadow: '0 -4px 12px rgba(0,0,0,0.08)' }}>
+            <div className="w-10 h-10 rounded-full bg-gradient-to-br from-sidebar-blue to-primary-navy flex items-center justify-center shrink-0 ring-2 ring-white/10">
               <span className="text-white text-sm font-bold">{initials}</span>
             </div>
-            <div className="flex-1 min-w-0">
-              <p className="text-sm font-semibold text-white truncate">{displayName}</p>
-              <span className="inline-flex items-center gap-1.5 mt-0.5 px-2 py-0.5 rounded-lg bg-emerald-500/15 text-[0.625rem] font-semibold text-emerald-400 uppercase tracking-wider">
-                <span className="w-1.5 h-1.5 rounded-full bg-emerald-400" />
-                Certified
-              </span>
-            </div>
+            <p className="text-sm font-semibold text-white truncate flex-1 min-w-0">{displayName}</p>
           </div>
         </div>
       </aside>
@@ -232,7 +220,7 @@ export default function CounsellorLayout() {
       {/* ── Main Content Area ── */}
       <div className="flex-1 flex flex-col min-w-0 min-h-0 lg:ml-[272px]">
         {/* Top Header */}
-        <header className="bg-white px-4 lg:px-6 py-3 flex items-center justify-between shrink-0" style={{ boxShadow: '0 1px 3px rgba(0,0,0,0.08)' }}>
+        <header className="bg-white px-4 lg:px-6 py-3 flex items-center justify-between shrink-0 shadow-header">
           {/* Left: Mobile toggle + Page title */}
           <div className="flex items-center gap-3">
             <button
@@ -244,11 +232,11 @@ export default function CounsellorLayout() {
               {sidebarOpen ? <HiXIcon className="w-6 h-6" /> : <HiMenuIcon className="w-6 h-6" />}
             </button>
             <div className="hidden sm:block">
-              <h1 className="text-[1.0625rem] font-bold text-gray-900 leading-tight">
+              <h1 className="text-lg font-bold text-gray-900 leading-tight">
                 {currentPage.title}
               </h1>
               {currentPage.subtitle && (
-                <p className="text-xs text-gray-500 mt-0.5" style={{ lineHeight: '1.4' }}>
+                <p className="text-xs text-gray-500 mt-0.5 leading-snug">
                   {currentPage.subtitle}
                 </p>
               )}
@@ -262,7 +250,7 @@ export default function CounsellorLayout() {
               <input
                 type="text"
                 placeholder="Search students, tools, reports..."
-                className="w-full pl-9 pr-4 py-2 text-sm bg-gray-50 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#1d4ed8]/20 focus:border-[#1d4ed8]/40 focus:bg-white placeholder:text-gray-400 transition-colors"
+                className="w-full pl-9 pr-4 py-2 text-sm bg-gray-50 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-sidebar-blue/20 focus:border-sidebar-blue/40 focus:bg-white placeholder:text-gray-400 transition-colors"
               />
             </div>
           </div>
@@ -298,7 +286,7 @@ export default function CounsellorLayout() {
                 onClick={() => setProfileOpen((o) => !o)}
                 className="flex items-center gap-2.5 px-2 py-1.5 rounded-lg hover:bg-gray-50 transition-colors"
               >
-                <div className="w-9 h-9 rounded-full bg-[#003366] flex items-center justify-center ring-2 ring-gray-100">
+                <div className="w-9 h-9 rounded-full bg-primary-navy flex items-center justify-center ring-2 ring-gray-100">
                   <span className="text-white text-xs font-bold">{initials}</span>
                 </div>
                 <div className="hidden md:block text-left">

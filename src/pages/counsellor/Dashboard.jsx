@@ -168,11 +168,11 @@ function SectionHeader({ title, subtitle }) {
   return (
     <div className="mb-6">
       <div className="flex items-center gap-3 mb-1">
-        <div className="w-1 h-6 rounded-full bg-[#003366]" />
-        <h3 className="text-lg font-extrabold text-[#0f172a]">{title}</h3>
+        <div className="w-1 h-6 rounded-full bg-primary-navy" />
+        <h3 className="text-xl font-bold text-gray-900">{title}</h3>
       </div>
       {subtitle && (
-        <p className="text-[0.8125rem] text-gray-500 ml-4">{subtitle}</p>
+        <p className="text-sm text-gray-500 ml-4">{subtitle}</p>
       )}
     </div>
   );
@@ -185,21 +185,7 @@ function StatCard({ label, value, icon: Icon, accent, pill, progress }) {
   const hasProgress = progress != null && !pill;
 
   return (
-    <div
-      className="group relative overflow-hidden rounded-2xl bg-white transition-all duration-300 cursor-default"
-      style={{
-        boxShadow: '0 1px 3px rgba(0,0,0,0.04), 0 1px 2px rgba(0,0,0,0.02)',
-        border: '1px solid rgba(226,232,240,0.8)',
-      }}
-      onMouseEnter={(e) => {
-        e.currentTarget.style.boxShadow = '0 12px 28px rgba(0,0,0,0.08), 0 4px 12px rgba(0,0,0,0.04)';
-        e.currentTarget.style.borderColor = styles.border;
-      }}
-      onMouseLeave={(e) => {
-        e.currentTarget.style.boxShadow = '0 1px 3px rgba(0,0,0,0.04), 0 1px 2px rgba(0,0,0,0.02)';
-        e.currentTarget.style.borderColor = 'rgba(226,232,240,0.8)';
-      }}
-    >
+    <div className="group relative overflow-hidden rounded-2xl bg-white transition-all duration-300 cursor-default portal-card portal-card-hover">
       {/* Top accent bar */}
       <div
         className="absolute top-0 left-0 right-0 h-[3px]"
@@ -207,10 +193,7 @@ function StatCard({ label, value, icon: Icon, accent, pill, progress }) {
       />
       <div className="p-6 pt-7">
         <div className="flex items-start justify-between gap-4">
-          <div
-            className={`w-12 h-12 rounded-xl ${styles.iconBg} flex items-center justify-center shrink-0 ring-1 ring-black/5`}
-            style={{ boxShadow: '0 1px 2px rgba(0,0,0,0.04)' }}
-          >
+          <div className={`w-12 h-12 rounded-xl ${styles.iconBg} flex items-center justify-center shrink-0 ring-1 ring-black/5 shadow-card`}>
             <Icon className={`w-5 h-5 ${styles.iconColor}`} />
           </div>
           <p className="text-3xl font-extrabold text-gray-900 tracking-tight tabular-nums">{value}</p>
@@ -219,10 +202,7 @@ function StatCard({ label, value, icon: Icon, accent, pill, progress }) {
         <p className="text-[0.8125rem] font-medium text-gray-600 mt-3">{label}</p>
 
         {pill && (
-          <span
-            className="inline-flex items-center mt-2.5 text-xs font-medium px-2.5 py-1 rounded-lg text-gray-600"
-            style={{ background: 'rgba(241,245,249,0.9)' }}
-          >
+          <span className="inline-flex items-center mt-2.5 text-xs font-medium px-2.5 py-1 rounded-lg text-gray-600 bg-slate-100/90">
             {pill}
           </span>
         )}
@@ -253,16 +233,15 @@ function FeatureCard({ title, desc, icon: Icon, bg, iconColor, link }) {
   return (
     <Link
       to={link}
-      className="group bg-white rounded-xl border border-gray-100 p-6 hover:shadow-lg hover:-translate-y-1 hover:border-[#003366]/15 transition-all duration-200 flex flex-col"
-      style={{ boxShadow: '0 1px 3px rgba(0,0,0,0.06)' }}
+      className="portal-card portal-card-hover group flex flex-col rounded-xl bg-white p-6 transition-all duration-200 hover:-translate-y-1 hover:border-primary-navy/15"
     >
-      <div className={`w-14 h-14 rounded-2xl ${bg} flex items-center justify-center mb-4`}>
+      <div className={`mb-4 flex h-14 w-14 items-center justify-center rounded-2xl ${bg}`}>
         <Icon className={`w-6 h-6 ${iconColor}`} />
       </div>
-      <h3 className="text-[0.95rem] font-bold text-gray-900 mb-1">{title}</h3>
-      <p className="text-sm text-gray-500 flex-1 leading-relaxed">{desc}</p>
+      <h3 className="mb-1 text-base font-bold text-gray-900">{title}</h3>
+      <p className="flex-1 text-sm leading-relaxed text-gray-500">{desc}</p>
       <div className="mt-4">
-        <span className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-[#003366]/[0.04] text-[#003366] text-xs font-semibold group-hover:bg-[#003366]/[0.08] transition-colors">
+        <span className="inline-flex items-center gap-1.5 rounded-lg bg-primary-navy/5 px-3 py-1.5 text-xs font-semibold text-primary-navy transition-colors group-hover:bg-primary-navy/10">
           Open <FiArrowRight className="w-3.5 h-3.5" />
         </span>
       </div>
@@ -272,23 +251,20 @@ function FeatureCard({ title, desc, icon: Icon, bg, iconColor, link }) {
 
 function ToolCard({ title, desc, icon: Icon, accuracy }) {
   return (
-    <div
-      className="bg-white rounded-xl border border-gray-100 p-6 hover:shadow-lg hover:-translate-y-0.5 transition-all duration-200"
-      style={{ boxShadow: '0 1px 3px rgba(0,0,0,0.06)' }}
-    >
-      <div className="flex items-start justify-between mb-4">
-        <div className="w-12 h-12 rounded-xl bg-[#003366]/[0.06] flex items-center justify-center">
-          <Icon className="w-5 h-5 text-[#003366]" />
+    <div className="portal-card portal-card-hover rounded-xl bg-white p-6 transition-all duration-200 hover:-translate-y-0.5">
+      <div className="mb-4 flex items-start justify-between">
+        <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-primary-navy/10">
+          <Icon className="w-5 h-5 text-primary-navy" />
         </div>
         {accuracy && (
-          <span className="text-xs font-semibold text-emerald-700 bg-emerald-50 px-2.5 py-1 rounded-md">
+          <span className="rounded-md bg-emerald-50 px-2.5 py-1 text-xs font-semibold text-emerald-700">
             {accuracy} accuracy
           </span>
         )}
       </div>
-      <h4 className="text-[0.95rem] font-bold text-gray-900 mb-1">{title}</h4>
-      <p className="text-sm text-gray-500 mb-5 leading-relaxed">{desc}</p>
-      <button className="inline-flex items-center gap-1.5 px-4 py-2 bg-[#003366] text-white text-xs font-semibold rounded-lg hover:bg-[#004080] transition-colors">
+      <h4 className="mb-1 text-base font-bold text-gray-900">{title}</h4>
+      <p className="mb-5 text-sm leading-relaxed text-gray-500">{desc}</p>
+      <button type="button" className="inline-flex items-center gap-1.5 rounded-lg bg-primary-navy px-4 py-2 text-xs font-semibold text-white transition-colors hover:bg-primary-navy/90">
         Launch Tool <FiArrowRight className="w-3.5 h-3.5" />
       </button>
     </div>
@@ -297,10 +273,7 @@ function ToolCard({ title, desc, icon: Icon, accuracy }) {
 
 function MetricCard({ label, value, change, up, icon: Icon }) {
   return (
-    <div
-      className="bg-white rounded-xl border border-gray-100 p-5 hover:shadow-md transition-shadow duration-200"
-      style={{ boxShadow: '0 1px 3px rgba(0,0,0,0.06)' }}
-    >
+    <div className="portal-card portal-card-hover rounded-xl bg-white p-5 transition-shadow duration-200">
       <div className="flex items-center justify-between mb-3">
         <div className="w-10 h-10 rounded-full bg-gray-50 flex items-center justify-center">
           <Icon className="w-4.5 h-4.5 text-gray-600" />
@@ -318,13 +291,10 @@ function MetricCard({ label, value, change, up, icon: Icon }) {
 
 function KPICard({ label, value, change, up, icon: Icon }) {
   return (
-    <div
-      className="bg-white rounded-xl border border-gray-100 p-6 hover:shadow-md transition-shadow duration-200"
-      style={{ boxShadow: '0 1px 3px rgba(0,0,0,0.06)' }}
-    >
-      <div className="flex items-center gap-3 mb-3">
-        <div className="w-10 h-10 rounded-full bg-[#003366]/[0.06] flex items-center justify-center">
-          <Icon className="w-4.5 h-4.5 text-[#003366]" />
+    <div className="portal-card portal-card-hover rounded-xl bg-white p-6 transition-shadow duration-200">
+      <div className="mb-3 flex items-center gap-3">
+        <div className="flex h-10 w-10 items-center justify-center rounded-full bg-primary-navy/10">
+          <Icon className="h-4.5 w-4.5 text-primary-navy" />
         </div>
         <span className="text-[0.8125rem] text-gray-500 font-medium">{label}</span>
       </div>
@@ -397,86 +367,45 @@ export default function CounsellorDashboard() {
               <p className="text-sm font-medium text-gray-500">Welcome back, Dr. Counsellor</p>
               <div className="h-px w-12 bg-gray-200" />
               <div className="flex items-center gap-2.5">
-                <span
-                  className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-white text-xs font-semibold uppercase tracking-wider shadow-sm"
-                  style={{ background: 'linear-gradient(to right, #003366, #1d4ed8)' }}
-                >
+                <span className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-white text-xs font-semibold uppercase tracking-wider shadow-sm bg-gradient-to-r from-primary-navy to-sidebar-blue">
                   <FiAward className="w-4 h-4" />
                   Certified Counsellor
                 </span>
               </div>
               <div>
-                <h2 className="text-3xl md:text-4xl font-extrabold tracking-tight" style={{ color: '#003366' }}>
+                <h2 className="text-3xl md:text-4xl font-bold tracking-tight text-primary-navy">
                   Professional Tools Portal
                 </h2>
-                <div
-                  className="mt-2 h-1 w-24 rounded-full"
-                  style={{ background: 'linear-gradient(to right, #003366, #1d4ed8)' }}
-                />
+                <div className="mt-2 h-1 w-24 rounded-full bg-gradient-to-r from-primary-navy to-sidebar-blue" />
               </div>
               <p className="text-base text-gray-500 font-medium">Manage your counseling practice efficiently</p>
             </div>
 
-            {/* Right: Soft glass panels — depth layers, no icons */}
-            <div
-              className="hidden lg:flex absolute right-4 top-1/2 -translate-y-1/2 w-[35%] max-w-[240px] h-32 pointer-events-none select-none items-center justify-center"
-              aria-hidden
-            >
-              <div className="relative w-full h-full">
-                {/* Panel 1 — back layer */}
-                <div
-                  className="absolute w-[85%] h-20 rounded-2xl"
-                  style={{
-                    left: '0',
-                    top: '50%',
-                    transform: 'translateY(-50%) rotate(-3deg)',
-                    background: 'rgba(255,255,255,0.35)',
-                    backdropFilter: 'blur(16px)',
-                    WebkitBackdropFilter: 'blur(16px)',
-                    border: '1px solid rgba(255,255,255,0.6)',
-                    boxShadow: '0 4px 24px rgba(0,0,0,0.03)',
-                  }}
-                />
-                {/* Panel 2 */}
-                <div
-                  className="absolute w-[80%] h-20 rounded-2xl"
-                  style={{
-                    right: '0',
-                    top: '45%',
-                    transform: 'translateY(-50%) rotate(2deg)',
-                    background: 'rgba(248,250,252,0.3)',
-                    backdropFilter: 'blur(14px)',
-                    WebkitBackdropFilter: 'blur(14px)',
-                    border: '1px solid rgba(255,255,255,0.55)',
-                    boxShadow: '0 4px 20px rgba(0,0,0,0.025)',
-                  }}
-                />
-                {/* Panel 3 */}
-                <div
-                  className="absolute w-[75%] h-16 rounded-2xl left-1/2 -translate-x-1/2"
-                  style={{
-                    top: '52%',
-                    transform: 'translate(-50%, -50%) rotate(-1deg)',
-                    background: 'rgba(241,245,249,0.28)',
-                    backdropFilter: 'blur(12px)',
-                    WebkitBackdropFilter: 'blur(12px)',
-                    border: '1px solid rgba(255,255,255,0.5)',
-                    boxShadow: '0 2px 16px rgba(0,0,0,0.02)',
-                  }}
-                />
-                {/* Panel 4 — front, smallest */}
-                <div
-                  className="absolute w-[60%] h-12 rounded-xl left-1/2 -translate-x-1/2"
-                  style={{
-                    top: '48%',
-                    transform: 'translate(-50%, -50%) rotate(1.5deg)',
-                    background: 'rgba(255,255,255,0.22)',
-                    backdropFilter: 'blur(10px)',
-                    WebkitBackdropFilter: 'blur(10px)',
-                    border: '1px solid rgba(255,255,255,0.45)',
-                    boxShadow: '0 2px 12px rgba(0,0,0,0.015)',
-                  }}
-                />
+            {/* Right: purposeful CTA + mini stats */}
+            <div className="hidden lg:flex shrink-0 flex-col items-end gap-3">
+              <Link
+                to="/counsellor/sessions"
+                className="portal-card portal-card-hover flex items-center gap-3 rounded-xl bg-white/90 px-5 py-4 transition-all duration-200 hover:bg-white"
+              >
+                <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-primary-navy/10">
+                  <FiCalendar className="h-6 w-6 text-primary-navy" />
+                </div>
+                <div className="text-left">
+                  <p className="text-sm font-semibold text-gray-900">View today&apos;s sessions</p>
+                  <p className="text-xs text-gray-500">Next: Today 2 PM</p>
+                </div>
+                <FiArrowRight className="h-5 w-5 text-gray-400 shrink-0" />
+              </Link>
+              <div className="portal-card flex gap-4 rounded-xl bg-white/80 px-4 py-3">
+                <div className="text-center">
+                  <p className="text-xl font-bold tabular-nums text-primary-navy">12</p>
+                  <p className="text-[0.6875rem] font-medium text-gray-500">Upcoming</p>
+                </div>
+                <div className="w-px bg-gray-200" />
+                <div className="text-center">
+                  <p className="text-xl font-bold tabular-nums text-primary-navy">3</p>
+                  <p className="text-[0.6875rem] font-medium text-gray-500">Action needed</p>
+                </div>
               </div>
             </div>
           </div>
@@ -523,7 +452,7 @@ export default function CounsellorDashboard() {
         <div className="mt-6 flex items-center gap-3">
           <Link
             to="/counsellor/marketing"
-            className="inline-flex items-center gap-1.5 px-4 py-2 bg-[#003366] text-white text-xs font-semibold rounded-lg hover:bg-[#004080] transition-colors"
+            className="inline-flex items-center gap-1.5 rounded-lg bg-primary-navy px-4 py-2 text-xs font-semibold text-white transition-colors hover:bg-primary-navy/90"
           >
             View Marketing Dashboard <FiArrowRight className="w-3.5 h-3.5" />
           </Link>
@@ -544,7 +473,7 @@ export default function CounsellorDashboard() {
         {/* Charts Row */}
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
           {/* Line Chart — Monthly Trend */}
-          <div className="bg-white rounded-xl border border-gray-100 p-6" style={{ boxShadow: '0 1px 3px rgba(0,0,0,0.06)' }}>
+          <div className="portal-card rounded-xl bg-white p-6">
             <h4 className="text-sm font-bold text-gray-800 mb-4">Monthly Trend</h4>
             <div className="h-64">
               <ResponsiveContainer width="100%" height="100%">
@@ -585,7 +514,7 @@ export default function CounsellorDashboard() {
           </div>
 
           {/* Bar Chart — Year over Year */}
-          <div className="bg-white rounded-xl border border-gray-100 p-6" style={{ boxShadow: '0 1px 3px rgba(0,0,0,0.06)' }}>
+          <div className="portal-card rounded-xl bg-white p-6">
             <h4 className="text-sm font-bold text-gray-800 mb-4">Year-over-Year Comparison</h4>
             <div className="h-64">
               <ResponsiveContainer width="100%" height="100%">
@@ -604,7 +533,7 @@ export default function CounsellorDashboard() {
                 <span className="w-3 h-3 bg-[#003366] rounded-sm inline-block" /> This Year
               </span>
               <span className="flex items-center gap-1.5 text-xs text-gray-500 font-medium">
-                <span className="w-3 h-3 bg-[#c2d7eb] rounded-sm inline-block" /> Last Year
+                <span className="w-3 h-3 rounded-sm bg-primary-blue-200 inline-block" /> Last Year
               </span>
             </div>
           </div>
