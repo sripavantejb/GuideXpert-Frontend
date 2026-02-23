@@ -18,6 +18,7 @@ import {
   FiUser,
   FiSearch,
   FiLink,
+  FiAward,
 } from 'react-icons/fi';
 import { HiMenu as HiMenuIcon, HiX as HiXIcon } from 'react-icons/hi';
 import { useCounsellorProfile } from '../../contexts/CounsellorProfileContext';
@@ -33,6 +34,7 @@ const secondaryNav = [
   { to: '/counsellor/reports', label: 'Reports', icon: FiBarChart2 },
   { to: '/counsellor/resources', label: 'Resources', icon: FiFolder },
   { to: '/counsellor/marketing', label: 'Marketing', icon: FiTrendingUp },
+  { to: '/counsellor/certificate', label: 'Certificate', icon: FiAward },
   { to: '/counsellor/college-referrals', label: 'College Referrals', icon: FiLink },
 ];
 const settingsNav = [{ to: '/counsellor/settings', label: 'Settings', icon: FiSettings }];
@@ -46,6 +48,7 @@ const pageMeta = {
   '/counsellor/reports': { title: 'Reports', subtitle: 'Performance and analytics reports' },
   '/counsellor/resources': { title: 'Resources', subtitle: 'PDFs, videos, notes and templates' },
   '/counsellor/marketing': { title: 'Marketing', subtitle: 'Reach more students and grow your practice' },
+  '/counsellor/certificate': { title: 'Certificate', subtitle: 'Generate and download certificates of achievement' },
   '/counsellor/college-referrals': { title: 'College Referrals', subtitle: 'Get referral links for partner colleges' },
   '/counsellor/settings': { title: 'Settings', subtitle: 'Manage your account and preferences' },
 };

@@ -16,14 +16,16 @@ const DAY_HEADER = {
   FRIDAY: 'Fri', SATURDAY: 'Sat', SUNDAY: 'Sun'
 };
 const DAY_BY_DOW = ['SUNDAY', 'MONDAY', 'TUESDAY', 'WEDNESDAY', 'THURSDAY', 'FRIDAY', 'SATURDAY'];
-const TIME_ROWS = ['11AM', '3PM', '7PM'];
-const TIME_DISPLAY = { '11AM': '11 AM', '3PM': '3 PM', '7PM': '7 PM' };
+const TIME_ROWS = ['11AM', '3PM', '6PM', '7PM'];
+const TIME_DISPLAY = { '11AM': '11 AM', '3PM': '3 PM', '6PM': '6 PM', '7PM': '7 PM' };
 const WEEKDAY_HEADER = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
 
 /** Must match backend ALL_SLOT_IDS so grid shows all configured slots (e.g. Sunday 3 PM). */
 const EXPECTED_SLOT_IDS = [
   'MONDAY_7PM', 'TUESDAY_7PM', 'WEDNESDAY_7PM', 'THURSDAY_7PM',
-  'FRIDAY_7PM', 'SATURDAY_7PM', 'SUNDAY_3PM', 'SUNDAY_11AM'
+  'FRIDAY_7PM', 'SATURDAY_7PM', 'SUNDAY_3PM', 'SUNDAY_11AM',
+  'MONDAY_6PM', 'TUESDAY_6PM', 'WEDNESDAY_6PM', 'THURSDAY_6PM',
+  'FRIDAY_6PM', 'SATURDAY_6PM', 'SUNDAY_6PM'
 ];
 
 function slotIdFor(day, timeKey) {

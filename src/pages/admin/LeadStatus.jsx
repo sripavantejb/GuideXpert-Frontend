@@ -10,7 +10,7 @@ function formatDate(d) {
 
 function formatSlotIdForDisplay(slotId) {
   if (!slotId || typeof slotId !== 'string') return slotId || '';
-  const match = slotId.match(/^(MONDAY|TUESDAY|WEDNESDAY|THURSDAY|FRIDAY|SATURDAY|SUNDAY)_(7PM|11AM|3PM)$/i);
+  const match = slotId.match(/^(MONDAY|TUESDAY|WEDNESDAY|THURSDAY|FRIDAY|SATURDAY|SUNDAY)_(7PM|11AM|3PM|6PM)$/i);
   if (match) {
     const dayNames = { MONDAY: 'Mon', TUESDAY: 'Tue', WEDNESDAY: 'Wed', THURSDAY: 'Thu', FRIDAY: 'Fri', SATURDAY: 'Sat', SUNDAY: 'Sun' };
     return `${dayNames[match[1]] || match[1]} ${match[2]}`;
