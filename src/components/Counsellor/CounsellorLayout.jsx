@@ -89,22 +89,25 @@ export default function CounsellorLayout() {
           ${sidebarOpen ? 'translate-x-0' : '-translate-x-full lg:translate-x-0'}
         `}
         style={{
-          background: 'linear-gradient(180deg, #0f172a 0%, #0c1322 100%)',
+          background: '#041e30',
           boxShadow: '1px 0 0 0 rgba(255,255,255,0.04), 8px 0 32px rgba(0,0,0,0.16)',
         }}
       >
-        {/* Brand block — image only, full width white bar */}
+        {/* Brand block — logo + Certified Counsellor Dashboard */}
         <Link
           to="/"
-          className="flex w-full items-center justify-center py-5 border-b border-white/5 hover:bg-white/[0.02] transition-colors duration-200"
+          className="flex w-full flex-col items-start justify-center py-5 border-b border-white/5 hover:bg-white/[0.02] transition-colors duration-200"
           aria-label="GuideXpert Home"
         >
-          <div className="w-full flex items-center justify-center py-3 px-4">
+          <div className="w-full flex flex-col items-start justify-center py-3 px-4 gap-2">
             <img
-              src="https://res.cloudinary.com/dqataciy5/image/upload/v1769173121/guidexpert-logo-3Ifn2ZP2_ljlxlc.png"
+              src="https://res.cloudinary.com/dqataciy5/image/upload/v1769258985/Gemini_Generated_Image_ybdgvrybdgvrybdg_fgmdnj.png"
               alt="GuideXpert"
               className="h-8 w-auto object-contain"
             />
+            <p className="text-[0.6875rem] font-semibold text-slate-400 uppercase tracking-widest text-left leading-tight">
+              Certified Counsellor Dashboard
+            </p>
           </div>
         </Link>
 

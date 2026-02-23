@@ -592,13 +592,13 @@ export default function InfluencerTracking() {
             <h3 className="text-sm font-semibold text-gray-800">Registrations by influencer</h3>
             <p className="text-xs text-gray-500 mt-0.5">Top 10 by registration count (current date range)</p>
           </div>
-          <div className="p-4 h-[240px]">
+          <div className="p-4 h-[240px] min-h-[200px] w-full min-w-0">
             {analyticsLoading ? (
               <ChartSkeleton />
             ) : barChartData.length === 0 ? (
               <div className="h-full flex items-center justify-center text-gray-500 text-sm">No data</div>
             ) : (
-              <ResponsiveContainer width="100%" height="100%">
+              <ResponsiveContainer width="100%" height="100%" minHeight={200}>
                 <BarChart data={barChartData} margin={{ top: 8, right: 8, left: 0, bottom: 0 }}>
                   <XAxis dataKey="name" tick={{ fontSize: 11 }} />
                   <YAxis allowDecimals={false} tick={{ fontSize: 11 }} />
@@ -618,13 +618,13 @@ export default function InfluencerTracking() {
             <h3 className="text-sm font-semibold text-gray-800">Registrations over time</h3>
             <p className="text-xs text-gray-500 mt-0.5">Daily count (IST), current date range</p>
           </div>
-          <div className="p-4 h-[240px]">
+          <div className="p-4 h-[240px] min-h-[200px] w-full min-w-0">
             {trendLoading ? (
               <ChartSkeleton />
             ) : trendData.length === 0 ? (
               <div className="h-full flex items-center justify-center text-gray-500 text-sm">No data</div>
             ) : (
-              <ResponsiveContainer width="100%" height="100%">
+              <ResponsiveContainer width="100%" height="100%" minHeight={200}>
                 <LineChart data={trendData} margin={{ top: 8, right: 8, left: 0, bottom: 0 }}>
                   <CartesianGrid strokeDasharray="3 3" stroke="#eee" />
                   <XAxis dataKey="date" tick={{ fontSize: 11 }} tickFormatter={(v) => (v && v.length >= 10 ? `${v.slice(8, 10)}/${v.slice(5, 7)}` : v)} />

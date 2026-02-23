@@ -540,8 +540,8 @@ export default function Marketing() {
               ))}
             </div>
           </div>
-          <div className="h-56">
-            <ResponsiveContainer width="100%" height="100%">
+          <div className="h-56 min-h-[200px] w-full min-w-0">
+            <ResponsiveContainer width="100%" height="100%" minHeight={200}>
               <LineChart data={chartConfig.data} margin={{ top: 5, right: 10, left: 0, bottom: 0 }}>
                 <CartesianGrid strokeDasharray="3 3" stroke="#f1f5f9" />
                 <XAxis dataKey={chartConfig.xKey} tick={{ fontSize: 12, fill: '#64748b' }} axisLine={false} tickLine={false} />
