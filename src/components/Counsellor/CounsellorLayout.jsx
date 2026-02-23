@@ -7,8 +7,6 @@ import {
   FiBookOpen,
   FiCalendar,
   FiTool,
-  FiBarChart2,
-  FiFolder,
   FiTrendingUp,
   FiSettings,
   FiBell,
@@ -31,8 +29,6 @@ const primaryNav = [
 ];
 const secondaryNav = [
   { to: '/counsellor/tools', label: 'Tools', icon: FiTool },
-  { to: '/counsellor/reports', label: 'Reports', icon: FiBarChart2 },
-  { to: '/counsellor/resources', label: 'Resources', icon: FiFolder },
   { to: '/counsellor/marketing', label: 'Marketing', icon: FiTrendingUp },
   { to: '/counsellor/certificate', label: 'Certificate', icon: FiAward },
   { to: '/counsellor/college-referrals', label: 'College Referrals', icon: FiLink },
@@ -45,8 +41,6 @@ const pageMeta = {
   '/counsellor/admissions': { title: 'Admissions', subtitle: 'Track college applications and deadlines' },
   '/counsellor/sessions': { title: 'Sessions', subtitle: 'Schedule and manage counseling sessions' },
   '/counsellor/tools': { title: 'Tools', subtitle: 'Assessment and prediction tools' },
-  '/counsellor/reports': { title: 'Reports', subtitle: 'Performance and analytics reports' },
-  '/counsellor/resources': { title: 'Resources', subtitle: 'PDFs, videos, notes and templates' },
   '/counsellor/marketing': { title: 'Marketing', subtitle: 'Reach more students and grow your practice' },
   '/counsellor/certificate': { title: 'Certificate', subtitle: 'Generate and download certificates of achievement' },
   '/counsellor/college-referrals': { title: 'College Referrals', subtitle: 'Get referral links for partner colleges' },
@@ -86,139 +80,126 @@ export default function CounsellorLayout() {
         onClick={() => setSidebarOpen(false)}
       />
 
-      {/* ── Sidebar — Premium Command Panel ── */}
+      {/* ── Sidebar — Professional Command Panel ── */}
       <aside
         className={`
-          fixed inset-y-0 left-0 z-30 w-[272px] flex flex-col
+          fixed inset-y-0 left-0 z-30 w-[280px] flex flex-col
           transform transition-transform duration-200 ease-out
           lg:transform-none
           ${sidebarOpen ? 'translate-x-0' : '-translate-x-full lg:translate-x-0'}
         `}
         style={{
-          background: 'linear-gradient(180deg, #0f172a 0%, #0b1220 50%, #070d18 100%)',
-          boxShadow: 'inset 1px 0 0 rgba(255,255,255,0.03), 4px 0 24px rgba(0,0,0,0.12)',
+          background: 'linear-gradient(180deg, #0f172a 0%, #0c1322 100%)',
+          boxShadow: '1px 0 0 0 rgba(255,255,255,0.04), 8px 0 32px rgba(0,0,0,0.16)',
         }}
       >
-        {/* Sidebar Header / Logo */}
+        {/* Brand block — image only, full width white bar */}
         <Link
           to="/"
-          className="px-5 py-5 flex items-center gap-3.5 border-b border-white/[0.06] hover:bg-white/[0.02] transition-colors duration-150"
+          className="flex w-full items-center justify-center py-5 border-b border-white/5 hover:bg-white/[0.02] transition-colors duration-200"
+          aria-label="GuideXpert Home"
         >
-          <div
-            className="w-11 h-11 rounded-xl bg-white flex items-center justify-center overflow-hidden shrink-0 p-1.5"
-            style={{ boxShadow: '0 0 0 1px rgba(255,255,255,0.06), 0 2px 8px rgba(0,0,0,0.15)' }}
-          >
+          <div className="w-full flex items-center justify-center py-3 px-4">
             <img
               src="https://res.cloudinary.com/dqataciy5/image/upload/v1769173121/guidexpert-logo-3Ifn2ZP2_ljlxlc.png"
               alt="GuideXpert"
-              className="h-7 w-auto object-contain"
+              className="h-8 w-auto object-contain"
             />
-          </div>
-          <div>
-            <span className="text-white font-bold text-[0.9375rem] tracking-tight block leading-snug">GuideXpert</span>
-            <span className="text-slate-500 text-[0.6875rem] font-medium opacity-90">Counsellor Portal</span>
           </div>
         </Link>
 
         {/* Navigation */}
-        <nav className="flex-1 px-4 py-4 overflow-y-auto flex flex-col gap-5">
-          {/* Primary */}
-          <div className="space-y-1">
-            {primaryNav.map(({ to, label, icon: Icon }) => (
-              <NavLink
-                key={to}
-                to={to}
-                end={to === '/counsellor/dashboard'}
-                onClick={() => setSidebarOpen(false)}
-                className={({ isActive }) =>
-                  `flex items-center gap-3 mx-2 px-3.5 py-3 rounded-xl text-[0.8125rem] font-medium leading-relaxed transition-all duration-150 cursor-pointer ${
-                    isActive
-                      ? 'bg-sidebar-blue text-white'
-                      : 'text-slate-400 hover:bg-white/[0.06] hover:text-slate-200'
-                  }`
-                }
-                style={({ isActive }) =>
-                  isActive
-                    ? {
-                        boxShadow: '0 2px 8px rgba(29,78,216,0.4), inset 0 1px 0 rgba(255,255,255,0.1)',
-                      }
-                    : {}
-                }
-              >
-                <Icon className="w-4 h-4 shrink-0" />
-                {label}
-              </NavLink>
-            ))}
+        <nav className="flex-1 overflow-y-auto py-5 flex flex-col gap-6 px-3">
+          {/* Main */}
+          <div>
+            <p className="px-3 mb-2 text-[0.6875rem] font-semibold text-slate-500 uppercase tracking-wider">Main</p>
+            <div className="space-y-0.5">
+              {primaryNav.map(({ to, label, icon: Icon }) => (
+                <NavLink
+                  key={to}
+                  to={to}
+                  end={to === '/counsellor/dashboard'}
+                  onClick={() => setSidebarOpen(false)}
+                  className={({ isActive }) =>
+                    `flex items-center gap-3 px-3 py-2.5 rounded-lg text-[0.8125rem] font-medium transition-all duration-200 ${
+                      isActive
+                        ? 'bg-primary-navy/90 text-white shadow-[inset_3px_0_0_0_#4d8ec7]'
+                        : 'text-slate-400 hover:bg-white/5 hover:text-slate-200'
+                    }`
+                  }
+                >
+                  <Icon className="w-[1.125rem] h-[1.125rem] shrink-0 opacity-90" />
+                  <span>{label}</span>
+                </NavLink>
+              ))}
+            </div>
           </div>
-          {/* Secondary */}
-          <div className="space-y-1">
-            {secondaryNav.map(({ to, label, icon: Icon }) => (
-              <NavLink
-                key={to}
-                to={to}
-                onClick={() => setSidebarOpen(false)}
-                className={({ isActive }) =>
-                  `flex items-center gap-3 mx-2 px-3.5 py-3 rounded-xl text-[0.8125rem] font-medium leading-relaxed transition-all duration-150 cursor-pointer ${
-                    isActive
-                      ? 'bg-sidebar-blue text-white'
-                      : 'text-slate-400 hover:bg-white/[0.06] hover:text-slate-200'
-                  }`
-                }
-                style={({ isActive }) =>
-                  isActive
-                    ? {
-                        boxShadow: '0 2px 8px rgba(29,78,216,0.4), inset 0 1px 0 rgba(255,255,255,0.1)',
-                      }
-                    : {}
-                }
-              >
-                <Icon className="w-4 h-4 shrink-0" />
-                {label}
-              </NavLink>
-            ))}
+
+          {/* Tools & growth */}
+          <div>
+            <p className="px-3 mb-2 text-[0.6875rem] font-semibold text-slate-500 uppercase tracking-wider">Tools & growth</p>
+            <div className="space-y-0.5">
+              {secondaryNav.map(({ to, label, icon: Icon }) => (
+                <NavLink
+                  key={to}
+                  to={to}
+                  onClick={() => setSidebarOpen(false)}
+                  className={({ isActive }) =>
+                    `flex items-center gap-3 px-3 py-2.5 rounded-lg text-[0.8125rem] font-medium transition-all duration-200 ${
+                      isActive
+                        ? 'bg-primary-navy/90 text-white shadow-[inset_3px_0_0_0_#4d8ec7]'
+                        : 'text-slate-400 hover:bg-white/5 hover:text-slate-200'
+                    }`
+                  }
+                >
+                  <Icon className="w-[1.125rem] h-[1.125rem] shrink-0 opacity-90" />
+                  <span>{label}</span>
+                </NavLink>
+              ))}
+            </div>
           </div>
-          {/* Settings */}
-          <div className="space-y-1">
-            {settingsNav.map(({ to, label, icon: Icon }) => (
-              <NavLink
-                key={to}
-                to={to}
-                onClick={() => setSidebarOpen(false)}
-                className={({ isActive }) =>
-                  `flex items-center gap-3 mx-2 px-3.5 py-3 rounded-xl text-[0.8125rem] font-medium leading-relaxed transition-all duration-150 cursor-pointer ${
-                    isActive
-                      ? 'bg-sidebar-blue text-white'
-                      : 'text-slate-400 hover:bg-white/[0.06] hover:text-slate-200'
-                  }`
-                }
-                style={({ isActive }) =>
-                  isActive
-                    ? {
-                        boxShadow: '0 2px 8px rgba(29,78,216,0.4), inset 0 1px 0 rgba(255,255,255,0.1)',
-                      }
-                    : {}
-                }
-              >
-                <Icon className="w-4 h-4 shrink-0" />
-                {label}
-              </NavLink>
-            ))}
+
+          {/* Account */}
+          <div>
+            <p className="px-3 mb-2 text-[0.6875rem] font-semibold text-slate-500 uppercase tracking-wider">Account</p>
+            <div className="space-y-0.5">
+              {settingsNav.map(({ to, label, icon: Icon }) => (
+                <NavLink
+                  key={to}
+                  to={to}
+                  onClick={() => setSidebarOpen(false)}
+                  className={({ isActive }) =>
+                    `flex items-center gap-3 px-3 py-2.5 rounded-lg text-[0.8125rem] font-medium transition-all duration-200 ${
+                      isActive
+                        ? 'bg-primary-navy/90 text-white shadow-[inset_3px_0_0_0_#4d8ec7]'
+                        : 'text-slate-400 hover:bg-white/5 hover:text-slate-200'
+                    }`
+                  }
+                >
+                  <Icon className="w-[1.125rem] h-[1.125rem] shrink-0 opacity-90" />
+                  <span>{label}</span>
+                </NavLink>
+              ))}
+            </div>
           </div>
         </nav>
 
-        {/* Sidebar Footer — compact avatar + name only (Certified lives in header) */}
-        <div className="px-4 py-4 border-t border-white/[0.06] mt-auto">
-          <div className="flex items-center gap-3 p-3 rounded-xl bg-white/[0.04]" style={{ boxShadow: '0 -4px 12px rgba(0,0,0,0.08)' }}>
-            <div className="w-10 h-10 rounded-full bg-gradient-to-br from-sidebar-blue to-primary-navy flex items-center justify-center shrink-0 ring-2 ring-white/10">
-              <span className="text-white text-sm font-bold">{initials}</span>
+        {/* Profile footer */}
+        <div className="p-3 border-t border-white/5 mt-auto">
+          <div className="flex items-center gap-3 px-3 py-2.5 rounded-lg bg-white/5">
+            <div className="w-9 h-9 rounded-full bg-primary-navy flex items-center justify-center shrink-0 ring-2 ring-white/10">
+              <span className="text-white text-xs font-semibold">{initials}</span>
             </div>
-            <p className="text-sm font-semibold text-white truncate flex-1 min-w-0">{displayName}</p>
+            <div className="min-w-0 flex-1">
+              <p className="text-sm font-semibold text-white truncate">{displayName}</p>
+              <p className="text-[0.6875rem] text-slate-500 font-medium">Counsellor</p>
+            </div>
           </div>
         </div>
       </aside>
 
       {/* ── Main Content Area ── */}
-      <div className="flex-1 flex flex-col min-w-0 min-h-0 lg:ml-[272px]">
+      <div className="flex-1 flex flex-col min-w-0 min-h-0 lg:ml-[280px]">
         {/* Top Header */}
         <header className="bg-white px-4 lg:px-6 py-3 flex items-center justify-between shrink-0 shadow-header">
           {/* Left: Mobile toggle + Page title */}
@@ -249,7 +230,7 @@ export default function CounsellorLayout() {
               <FiSearch className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
               <input
                 type="text"
-                placeholder="Search students, tools, reports..."
+                placeholder="Search students, tools..."
                 className="w-full pl-9 pr-4 py-2 text-sm bg-gray-50 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-sidebar-blue/20 focus:border-sidebar-blue/40 focus:bg-white placeholder:text-gray-400 transition-colors"
               />
             </div>

@@ -4,7 +4,6 @@ import {
   FiBookOpen,
   FiCalendar,
   FiClipboard,
-  FiFolder,
   FiBarChart2,
   FiTarget,
   FiTrendingUp,
@@ -12,9 +11,6 @@ import {
   FiArrowRight,
   FiArrowUpRight,
   FiArrowDownRight,
-  FiActivity,
-  FiEye,
-  FiMail,
   FiStar,
   FiCheckCircle,
   FiAward,
@@ -22,18 +18,6 @@ import {
   FiCompass,
   FiBriefcase,
 } from 'react-icons/fi';
-import {
-  LineChart,
-  Line,
-  BarChart,
-  Bar,
-  XAxis,
-  YAxis,
-  CartesianGrid,
-  Tooltip,
-  ResponsiveContainer,
-} from 'recharts';
-
 /* ───────── Static / Demo Data ───────── */
 
 const accentStyles = {
@@ -83,22 +67,6 @@ const featureCards = [
     iconColor: 'text-purple-600',
     link: '/counsellor/tools',
   },
-  {
-    title: 'Resource Library',
-    desc: 'Access PDFs, videos, notes, and templates for counseling sessions.',
-    icon: FiFolder,
-    bg: 'bg-rose-50',
-    iconColor: 'text-rose-600',
-    link: '/counsellor/resources',
-  },
-  {
-    title: 'Reports & Insights',
-    desc: 'View performance trends, success metrics, and detailed analytics.',
-    icon: FiBarChart2,
-    bg: 'bg-indigo-50',
-    iconColor: 'text-indigo-600',
-    link: '/counsellor/reports',
-  },
 ];
 
 const toolCards = [
@@ -128,38 +96,11 @@ const toolCards = [
   },
 ];
 
-const marketingMetrics = [
-  { label: 'Profile Views', value: '2,847', change: '+12.5%', up: true, icon: FiEye },
-  { label: 'Lead Generation', value: '164', change: '+8.3%', up: true, icon: FiTrendingUp },
-  { label: 'Active Campaigns', value: '5', change: '+2', up: true, icon: FiActivity },
-  { label: 'Student Inquiries', value: '47', change: '-3.1%', up: false, icon: FiMail },
-];
-
 const performanceKPIs = [
   { label: 'Students Counseled', value: '342', change: '+18', up: true, icon: FiUsers },
   { label: 'Admission Success', value: '87%', change: '+4.2%', up: true, icon: FiCheckCircle },
   { label: 'Session Completion', value: '94%', change: '+1.1%', up: true, icon: FiCalendar },
   { label: 'Satisfaction Score', value: '4.8', change: '+0.2', up: true, icon: FiStar },
-];
-
-const monthlyTrend = [
-  { month: 'Aug', students: 28, admissions: 12 },
-  { month: 'Sep', students: 35, admissions: 18 },
-  { month: 'Oct', students: 42, admissions: 22 },
-  { month: 'Nov', students: 38, admissions: 25 },
-  { month: 'Dec', students: 50, admissions: 30 },
-  { month: 'Jan', students: 58, admissions: 34 },
-  { month: 'Feb', students: 64, admissions: 38 },
-];
-
-const monthlyComparison = [
-  { month: 'Aug', thisYear: 28, lastYear: 22 },
-  { month: 'Sep', thisYear: 35, lastYear: 28 },
-  { month: 'Oct', thisYear: 42, lastYear: 34 },
-  { month: 'Nov', thisYear: 38, lastYear: 30 },
-  { month: 'Dec', thisYear: 50, lastYear: 40 },
-  { month: 'Jan', thisYear: 58, lastYear: 44 },
-  { month: 'Feb', thisYear: 64, lastYear: 48 },
 ];
 
 /* ───────── Section Header ───────── */
@@ -185,45 +126,46 @@ function StatCard({ label, value, icon: Icon, accent, pill, progress }) {
   const hasProgress = progress != null && !pill;
 
   return (
-    <div className="group relative overflow-hidden rounded-2xl bg-white transition-all duration-300 cursor-default portal-card portal-card-hover">
+    <div className="group relative flex h-full flex-col overflow-hidden rounded-2xl bg-white transition-all duration-300 cursor-default portal-card portal-card-hover">
       {/* Top accent bar */}
       <div
-        className="absolute top-0 left-0 right-0 h-[3px]"
+        className="h-[3px] shrink-0"
         style={{ background: `linear-gradient(90deg, ${styles.accent} 0%, transparent 100%)` }}
       />
-      <div className="p-6 pt-7">
-        <div className="flex items-start justify-between gap-4">
-          <div className={`w-12 h-12 rounded-xl ${styles.iconBg} flex items-center justify-center shrink-0 ring-1 ring-black/5 shadow-card`}>
-            <Icon className={`w-5 h-5 ${styles.iconColor}`} />
+      <div className="flex flex-1 flex-col p-6">
+        <div className="flex items-start justify-between gap-3">
+          <div className={`flex h-12 w-12 shrink-0 items-center justify-center rounded-xl ring-1 ring-black/5 shadow-card ${styles.iconBg}`}>
+            <Icon className={`h-5 w-5 ${styles.iconColor}`} />
           </div>
-          <p className="text-3xl font-extrabold text-gray-900 tracking-tight tabular-nums">{value}</p>
+          <p className="text-right text-3xl font-extrabold tabular-nums tracking-tight text-gray-900">{value}</p>
         </div>
 
-        <p className="text-[0.8125rem] font-medium text-gray-600 mt-3">{label}</p>
+        <p className="mt-3 text-[0.8125rem] font-medium leading-snug text-gray-600">{label}</p>
 
-        {pill && (
-          <span className="inline-flex items-center mt-2.5 text-xs font-medium px-2.5 py-1 rounded-lg text-gray-600 bg-slate-100/90">
-            {pill}
-          </span>
-        )}
-
-        {hasProgress && (
-          <div className="mt-4">
-            <div className="flex items-center justify-between text-[0.6875rem] font-medium text-gray-500 mb-1.5">
-              <span>Weekly goal</span>
-              <span className="text-gray-700">{progress}%</span>
+        <div className="mt-4 min-h-[3.25rem] flex flex-col justify-end">
+          {pill && (
+            <span className="inline-flex w-fit items-center rounded-lg bg-slate-100/90 px-2.5 py-1 text-xs font-medium text-gray-600">
+              {pill}
+            </span>
+          )}
+          {hasProgress && (
+            <div>
+              <div className="mb-1.5 flex items-center justify-between text-[0.6875rem] font-medium text-gray-500">
+                <span>Weekly goal</span>
+                <span className="text-gray-700">{progress}%</span>
+              </div>
+              <div className="h-2 w-full overflow-hidden rounded-full bg-gray-100">
+                <div
+                  className={`h-full rounded-full transition-all duration-500 ease-out ${styles.bar}`}
+                  style={{
+                    width: `${progress}%`,
+                    boxShadow: '0 0 0 1px rgba(255,255,255,0.2) inset',
+                  }}
+                />
+              </div>
             </div>
-            <div className="w-full h-2 bg-gray-100 rounded-full overflow-hidden">
-              <div
-                className={`h-full ${styles.bar} rounded-full transition-all duration-500 ease-out`}
-                style={{
-                  width: `${progress}%`,
-                  boxShadow: '0 0 0 1px rgba(255,255,255,0.2) inset',
-                }}
-              />
-            </div>
-          </div>
-        )}
+          )}
+        </div>
       </div>
     </div>
   );
@@ -271,24 +213,6 @@ function ToolCard({ title, desc, icon: Icon, accuracy }) {
   );
 }
 
-function MetricCard({ label, value, change, up, icon: Icon }) {
-  return (
-    <div className="portal-card portal-card-hover rounded-xl bg-white p-5 transition-shadow duration-200">
-      <div className="flex items-center justify-between mb-3">
-        <div className="w-10 h-10 rounded-full bg-gray-50 flex items-center justify-center">
-          <Icon className="w-4.5 h-4.5 text-gray-600" />
-        </div>
-        <span className={`inline-flex items-center gap-0.5 text-xs font-semibold px-2 py-0.5 rounded-full ${up ? 'bg-emerald-50 text-emerald-700' : 'bg-red-50 text-red-600'}`}>
-          {up ? <FiArrowUpRight className="w-3.5 h-3.5" /> : <FiArrowDownRight className="w-3.5 h-3.5" />}
-          {change}
-        </span>
-      </div>
-      <p className="text-2xl font-extrabold text-gray-900">{value}</p>
-      <p className="text-sm text-gray-500 mt-0.5">{label}</p>
-    </div>
-  );
-}
-
 function KPICard({ label, value, change, up, icon: Icon }) {
   return (
     <div className="portal-card portal-card-hover rounded-xl bg-white p-6 transition-shadow duration-200">
@@ -305,23 +229,6 @@ function KPICard({ label, value, change, up, icon: Icon }) {
           {change} vs last month
         </span>
       </div>
-    </div>
-  );
-}
-
-/* ───────── Custom Tooltip ───────── */
-
-function CustomTooltip({ active, payload, label }) {
-  if (!active || !payload?.length) return null;
-  return (
-    <div className="bg-white border border-gray-200 rounded-lg px-3 py-2 text-sm" style={{ boxShadow: '0 4px 16px rgba(0,0,0,0.1)' }}>
-      <p className="font-bold text-gray-900 mb-1">{label}</p>
-      {payload.map((entry) => (
-        <p key={entry.dataKey} className="text-gray-600">
-          <span className="inline-block w-2 h-2 rounded-full mr-1.5" style={{ backgroundColor: entry.color }} />
-          {entry.name}: <span className="font-semibold text-gray-900">{entry.value}</span>
-        </p>
-      ))}
     </div>
   );
 }
@@ -412,7 +319,7 @@ export default function CounsellorDashboard() {
         </div>
         </div>
 
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-5">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-5 items-stretch">
           {stats.map((s) => (
             <StatCard key={s.label} {...s} />
           ))}
@@ -439,27 +346,7 @@ export default function CounsellorDashboard() {
         </div>
       </div>
 
-      {/* ── Section D: Marketing Support ── */}
-      <div className="bg-[#f8fafc] rounded-2xl border border-gray-100 p-6 lg:p-8">
-        <SectionHeader title="Marketing Support" subtitle="Get help reaching more students" />
-
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-          {marketingMetrics.map((m) => (
-            <MetricCard key={m.label} {...m} />
-          ))}
-        </div>
-
-        <div className="mt-6 flex items-center gap-3">
-          <Link
-            to="/counsellor/marketing"
-            className="inline-flex items-center gap-1.5 rounded-lg bg-primary-navy px-4 py-2 text-xs font-semibold text-white transition-colors hover:bg-primary-navy/90"
-          >
-            View Marketing Dashboard <FiArrowRight className="w-3.5 h-3.5" />
-          </Link>
-        </div>
-      </div>
-
-      {/* ── Section E: Performance Dashboard ── */}
+      {/* ── Section D: Performance Dashboard ── */}
       <div>
         <SectionHeader title="Performance Dashboard" subtitle="Track your progress and impact" />
 
@@ -470,74 +357,6 @@ export default function CounsellorDashboard() {
           ))}
         </div>
 
-        {/* Charts Row */}
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-          {/* Line Chart — Monthly Trend */}
-          <div className="portal-card rounded-xl bg-white p-6">
-            <h4 className="text-sm font-bold text-gray-800 mb-4">Monthly Trend</h4>
-            <div className="h-64">
-              <ResponsiveContainer width="100%" height="100%">
-                <LineChart data={monthlyTrend} margin={{ top: 5, right: 10, left: 0, bottom: 0 }}>
-                  <CartesianGrid strokeDasharray="3 3" stroke="#f1f5f9" />
-                  <XAxis dataKey="month" tick={{ fontSize: 12, fill: '#6b7280' }} axisLine={false} tickLine={false} />
-                  <YAxis tick={{ fontSize: 12, fill: '#6b7280' }} axisLine={false} tickLine={false} />
-                  <Tooltip content={<CustomTooltip />} />
-                  <Line
-                    type="monotone"
-                    dataKey="students"
-                    stroke="#003366"
-                    strokeWidth={2.5}
-                    dot={{ r: 4, fill: '#003366', strokeWidth: 2, stroke: '#fff' }}
-                    activeDot={{ r: 6, fill: '#003366', strokeWidth: 2, stroke: '#fff' }}
-                    name="Students"
-                  />
-                  <Line
-                    type="monotone"
-                    dataKey="admissions"
-                    stroke="#16a34a"
-                    strokeWidth={2.5}
-                    dot={{ r: 4, fill: '#16a34a', strokeWidth: 2, stroke: '#fff' }}
-                    activeDot={{ r: 6, fill: '#16a34a', strokeWidth: 2, stroke: '#fff' }}
-                    name="Admissions"
-                  />
-                </LineChart>
-              </ResponsiveContainer>
-            </div>
-            <div className="flex items-center gap-5 mt-3">
-              <span className="flex items-center gap-1.5 text-xs text-gray-500 font-medium">
-                <span className="w-3 h-[3px] bg-[#003366] rounded inline-block" /> Students
-              </span>
-              <span className="flex items-center gap-1.5 text-xs text-gray-500 font-medium">
-                <span className="w-3 h-[3px] bg-emerald-600 rounded inline-block" /> Admissions
-              </span>
-            </div>
-          </div>
-
-          {/* Bar Chart — Year over Year */}
-          <div className="portal-card rounded-xl bg-white p-6">
-            <h4 className="text-sm font-bold text-gray-800 mb-4">Year-over-Year Comparison</h4>
-            <div className="h-64">
-              <ResponsiveContainer width="100%" height="100%">
-                <BarChart data={monthlyComparison} margin={{ top: 5, right: 10, left: 0, bottom: 0 }}>
-                  <CartesianGrid strokeDasharray="3 3" stroke="#f1f5f9" />
-                  <XAxis dataKey="month" tick={{ fontSize: 12, fill: '#6b7280' }} axisLine={false} tickLine={false} />
-                  <YAxis tick={{ fontSize: 12, fill: '#6b7280' }} axisLine={false} tickLine={false} />
-                  <Tooltip content={<CustomTooltip />} />
-                  <Bar dataKey="thisYear" fill="#003366" name="This Year" radius={[4, 4, 0, 0]} barSize={22} />
-                  <Bar dataKey="lastYear" fill="#c2d7eb" name="Last Year" radius={[4, 4, 0, 0]} barSize={22} />
-                </BarChart>
-              </ResponsiveContainer>
-            </div>
-            <div className="flex items-center gap-5 mt-3">
-              <span className="flex items-center gap-1.5 text-xs text-gray-500 font-medium">
-                <span className="w-3 h-3 bg-[#003366] rounded-sm inline-block" /> This Year
-              </span>
-              <span className="flex items-center gap-1.5 text-xs text-gray-500 font-medium">
-                <span className="w-3 h-3 rounded-sm bg-primary-blue-200 inline-block" /> Last Year
-              </span>
-            </div>
-          </div>
-        </div>
       </div>
 
       {/* Bottom spacer */}

@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useCallback } from 'react'; // eslint-disable-line no-unused-vars -- useCallback for cached/legacy bundles
 import { FiTarget, FiBarChart2, FiZap, FiClock, FiArrowRight } from 'react-icons/fi';
 
 const toolCards = [

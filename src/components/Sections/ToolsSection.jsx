@@ -6,7 +6,6 @@ import {
   FiUsers,
   FiFileText,
   FiSettings,
-  FiBook,
   FiCalendar,
   FiLayers
 } from 'react-icons/fi';
@@ -103,8 +102,6 @@ const ToolsSection = () => {
     { icon: FiLayout, label: 'Dashboard', active: false },
     { icon: FiUsers, label: 'Students', active: true },
     { icon: FiFileText, label: 'Assessments', active: false },
-    { icon: FiBarChart2, label: 'Reports', active: false },
-    { icon: FiBook, label: 'Resources', active: false },
     { icon: FiSettings, label: 'Settings', active: false },
   ];
 

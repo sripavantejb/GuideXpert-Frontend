@@ -33,8 +33,6 @@ const CounsellorStudents = lazy(() => import('./pages/counsellor/Students'));
 const CounsellorAdmissions = lazy(() => import('./pages/counsellor/Admissions'));
 const CounsellorSessions = lazy(() => import('./pages/counsellor/Sessions'));
 const CounsellorTools = lazy(() => import('./pages/counsellor/Tools'));
-const CounsellorReports = lazy(() => import('./pages/counsellor/Reports'));
-const CounsellorResources = lazy(() => import('./pages/counsellor/Resources'));
 const CounsellorMarketing = lazy(() => import('./pages/counsellor/Marketing'));
 const CounsellorCertificate = lazy(() => import('./pages/counsellor/Certificate'));
 const CollegeReferrals = lazy(() => import('./pages/counsellor/CollegeReferrals'));
@@ -96,8 +94,6 @@ function App() {
             <Route path="admissions" element={<Suspense fallback={<div className="flex items-center justify-center h-64 text-gray-400">Loading...</div>}><CounsellorAdmissions /></Suspense>} />
             <Route path="sessions" element={<Suspense fallback={<div className="flex items-center justify-center h-64 text-gray-400">Loading...</div>}><CounsellorSessions /></Suspense>} />
             <Route path="tools" element={<Suspense fallback={<div className="flex items-center justify-center h-64 text-gray-400">Loading...</div>}><CounsellorTools /></Suspense>} />
-            <Route path="reports" element={<Suspense fallback={<div className="flex items-center justify-center h-64 text-gray-400">Loading...</div>}><CounsellorReports /></Suspense>} />
-            <Route path="resources" element={<Suspense fallback={<div className="flex items-center justify-center h-64 text-gray-400">Loading...</div>}><CounsellorResources /></Suspense>} />
             <Route path="marketing" element={<Suspense fallback={<div className="flex items-center justify-center h-64 text-gray-400">Loading...</div>}><CounsellorMarketing /></Suspense>} />
             <Route path="certificate" element={<Suspense fallback={<div className="flex items-center justify-center h-64 text-gray-400">Loading...</div>}><CounsellorCertificate /></Suspense>} />
             <Route path="college-referrals" element={<Suspense fallback={<div className="flex items-center justify-center h-64 text-gray-400">Loading...</div>}><CollegeReferrals /></Suspense>} />
