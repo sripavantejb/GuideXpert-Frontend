@@ -61,15 +61,17 @@ export default function Certificate() {
     setGenerating(true);
     await new Promise((r) => setTimeout(r, 400));
     try {
+      const scale = 2;
       const canvas = await html2canvas(target, {
-        scale: 2,
+        scale,
+        width: POSTER_WIDTH,
+        height: POSTER_HEIGHT,
         useCORS: true,
         backgroundColor: '#ffffff',
         logging: false,
         allowTaint: true,
         imageTimeout: 0,
       });
-      const scale = 2;
       const w = POSTER_WIDTH * scale;
       const h = POSTER_HEIGHT * scale;
       const cropped = document.createElement('canvas');
@@ -93,15 +95,17 @@ export default function Certificate() {
     setGenerating(true);
     await new Promise((r) => setTimeout(r, 400));
     try {
+      const scale = 2;
       const canvas = await html2canvas(target, {
-        scale: 2,
+        scale,
+        width: POSTER_WIDTH,
+        height: POSTER_HEIGHT,
         useCORS: true,
         backgroundColor: '#ffffff',
         logging: false,
         allowTaint: true,
         imageTimeout: 0,
       });
-      const scale = 2;
       const w = POSTER_WIDTH * scale;
       const h = POSTER_HEIGHT * scale;
       const cropped = document.createElement('canvas');
