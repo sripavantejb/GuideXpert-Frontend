@@ -42,12 +42,13 @@ const PosterPreview = forwardRef(function PosterPreview(
   const textWidth = 432;
   const taglineFontSize = forExport ? 20 : 24;
   const taglineMinHeight = forExport ? 30 : 34;
-  const textContainerPaddingTop = forExport ? 36 : 20;
-  const nameMinHeight = forExport ? 64 : 52;
-  const namePaddingTop = forExport ? 12 : 0;
+  const textContainerPaddingTop = forExport ? 48 : 20;
+  const nameMinHeight = forExport ? 66 : 52;
+  const namePaddingTop = forExport ? 16 : 0;
   const namePaddingBottom = forExport ? 6 : 0;
   const linePaddingVertical = forExport ? 4 : 0;
   const nameOverflow = forExport ? 'visible' : 'hidden';
+  const textContainerOverflow = forExport ? 'visible' : 'hidden';
 
   return (
     <div
@@ -99,7 +100,7 @@ const PosterPreview = forwardRef(function PosterPreview(
           alignItems: 'flex-start',
           justifyContent: 'flex-start',
           direction: 'ltr',
-          overflow: 'hidden',
+          overflow: textContainerOverflow,
         }}
       >
         <div
