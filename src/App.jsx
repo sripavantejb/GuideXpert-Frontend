@@ -57,6 +57,7 @@ function App() {
           <Route path="/register" element={<LandingPage />} />
           <Route path="/meet" element={<MeetingRegistration />} />
           <Route path="/training" element={<TrainingMeeting />} />
+          <Route path="/counsellor-poster" element={<Suspense fallback={<div className="flex items-center justify-center min-h-screen text-gray-400">Loading...</div>}><CounsellorCertificate /></Suspense>} />
           <Route path="/activationform" element={<FeedbackForm />} />
           <Route path="/assessment" element={<AssessmentForm />} />
           <Route path="/assessment-2" element={<AssessmentForm2 />} />
@@ -95,7 +96,6 @@ function App() {
             <Route path="sessions" element={<Suspense fallback={<div className="flex items-center justify-center h-64 text-gray-400">Loading...</div>}><CounsellorSessions /></Suspense>} />
             <Route path="tools" element={<Suspense fallback={<div className="flex items-center justify-center h-64 text-gray-400">Loading...</div>}><CounsellorTools /></Suspense>} />
             <Route path="marketing" element={<Suspense fallback={<div className="flex items-center justify-center h-64 text-gray-400">Loading...</div>}><CounsellorMarketing /></Suspense>} />
-            <Route path="certificate" element={<Suspense fallback={<div className="flex items-center justify-center h-64 text-gray-400">Loading...</div>}><CounsellorCertificate /></Suspense>} />
             <Route path="college-referrals" element={<Suspense fallback={<div className="flex items-center justify-center h-64 text-gray-400">Loading...</div>}><CollegeReferrals /></Suspense>} />
             <Route path="college-referrals/:collegeSlug" element={<Suspense fallback={<div className="flex items-center justify-center h-64 text-gray-400">Loading...</div>}><CollegeReferralDetail /></Suspense>} />
             <Route path="settings" element={<Suspense fallback={<div className="flex items-center justify-center h-64 text-gray-400">Loading...</div>}><CounsellorSettings /></Suspense>} />

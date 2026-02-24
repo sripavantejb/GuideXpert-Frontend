@@ -30,7 +30,7 @@ const primaryNav = [
 const secondaryNav = [
   { to: '/counsellor/tools', label: 'Tools', icon: FiTool },
   { to: '/counsellor/marketing', label: 'Marketing', icon: FiTrendingUp },
-  { to: '/counsellor/certificate', label: 'Certificate', icon: FiAward },
+  { to: '/counsellor-poster', label: 'Poster', icon: FiAward },
   { to: '/counsellor/college-referrals', label: 'College Referrals', icon: FiLink },
 ];
 const settingsNav = [{ to: '/counsellor/settings', label: 'Settings', icon: FiSettings }];
@@ -42,7 +42,6 @@ const pageMeta = {
   '/counsellor/sessions': { title: 'Sessions', subtitle: 'Schedule and manage counseling sessions' },
   '/counsellor/tools': { title: 'Tools', subtitle: 'Assessment and prediction tools' },
   '/counsellor/marketing': { title: 'Marketing', subtitle: 'Reach more students and grow your practice' },
-  '/counsellor/certificate': { title: 'Certificate', subtitle: 'Generate and download certificates of achievement' },
   '/counsellor/college-referrals': { title: 'College Referrals', subtitle: 'Get referral links for partner colleges' },
   '/counsellor/settings': { title: 'Settings', subtitle: 'Manage your account and preferences' },
 };

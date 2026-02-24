@@ -290,6 +290,18 @@ export const submitTrainingFeedback = async (payload) => {
 };
 
 /**
+ * Check if mobile number is eligible for poster download (exists in training feedbacks).
+ * @param {string} mobileNumber - 10-digit mobile number
+ * @returns {Promise<{success: boolean, eligible?: boolean, message?: string, data?: Object, status?: number}>}
+ */
+export const checkPosterEligibility = async (mobileNumber) => {
+  return apiRequest('/counsellor/poster-eligibility', {
+    method: 'POST',
+    body: JSON.stringify({ mobileNumber: String(mobileNumber || '').replace(/\D/g, '').slice(0, 10) }),
+  });
+};
+
+/**
  * Submit counsellor assessment (after OTP verification).
  * @param {string} name - User's full name
  * @param {string} phone - 10-digit phone number
