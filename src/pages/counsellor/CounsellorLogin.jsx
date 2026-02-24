@@ -158,39 +158,71 @@ export default function CounsellorLogin() {
   };
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gray-50 px-4">
-      <div className="w-full max-w-md">
+    <div className="min-h-screen flex flex-col md:flex-row">
+      {/* Left panel – dark blue, branding + steps */}
+      <div
+        className="relative w-full md:w-1/2 min-h-0 md:min-h-screen flex flex-col justify-center px-5 py-6 md:px-12 md:py-16"
+        style={{ background: '#041e30' }}
+      >
+        {/* Subtle chevron pattern */}
         <div
-          className="bg-white rounded-xl shadow-lg p-6 sm:p-8"
-          style={{ boxShadow: '0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04)' }}
-        >
-          <div className="text-center mb-6">
-            <h1 className="text-2xl font-bold text-primary-blue-600 mb-2" style={{ color: '#003366' }}>
-              GuideXpert Counsellor
-            </h1>
-            <p className="text-gray-500 text-sm">Sign in to your Certified Counsellor Dashboard</p>
+          className="absolute inset-0 opacity-[0.06] pointer-events-none"
+          style={{
+            backgroundImage: `url("data:image/svg+xml,%3Csvg width='24' height='24' viewBox='0 0 24 24' fill='none' xmlns='http://www.w3.org/2000/svg'%3E%3Cpath d='M8 4l8 8-8 8' stroke='white' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E")`,
+            backgroundRepeat: 'repeat',
+          }}
+        />
+        <div className="relative z-10 max-w-md">
+          <div className="inline-flex items-center gap-2 rounded-full bg-white/95 px-4 py-2 mb-6">
+            <span className="text-lg font-semibold" style={{ color: '#003366' }}>
+              Counsellor Login
+            </span>
           </div>
-
-          {step === 2 && (
-            <div className="mb-4">
-              <div className="flex items-center justify-between text-xs text-gray-500 mb-1">
-                <span>Step 2 of 2</span>
-                <span>OTP Verification</span>
+          <h1 className="text-2xl md:text-3xl font-bold text-white mb-2 leading-tight">
+            Guide students. Build your practice. Earn with impact.
+          </h1>
+          <p className="text-white/80 text-sm md:text-base mb-8">Just 2 simple steps</p>
+          <div className="flex flex-col gap-0">
+            <div className="flex items-start gap-4">
+              <div
+                className={`shrink-0 w-8 h-8 rounded-full flex items-center justify-center text-sm font-semibold ${
+                  step === 1 ? 'bg-white text-[#041e30]' : 'bg-white/20 text-white border border-white/40'
+                }`}
+              >
+                1
               </div>
-              <div className="w-full bg-gray-200 rounded-full h-1.5">
-                <div className="bg-primary-blue-600 h-1.5 rounded-full transition-all" style={{ width: '100%' }} />
+              <div className="pt-0.5">
+                <p className="text-white text-sm font-medium">Enter your phone number and verify OTP</p>
               </div>
             </div>
-          )}
+            <div className="w-px h-6 bg-white/30 ml-4 mt-0.5" aria-hidden />
+            <div className="flex items-start gap-4">
+              <div
+                className={`shrink-0 w-8 h-8 rounded-full flex items-center justify-center text-sm font-semibold ${
+                  step === 2 ? 'bg-white text-[#041e30]' : 'bg-white/20 text-white border border-white/40'
+                }`}
+              >
+                2
+              </div>
+              <div className="pt-0.5">
+                <p className="text-white text-sm font-medium">Access your Certified Counsellor Dashboard</p>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
 
-          {step === 1 && (
-            <h2 className="text-lg font-semibold text-gray-900 mb-1">Enter your mobile number</h2>
-          )}
-          {step === 2 && (
-            <p className="text-sm text-gray-600 mb-6">
-              Enter the 6-digit OTP sent to ****{mobileNumber.slice(-4)}
-            </p>
-          )}
+      {/* Right panel – white form: content-sized on mobile to avoid white space, centered on desktop */}
+      <div className="w-full md:w-1/2 min-h-0 md:min-h-screen flex flex-col items-center justify-start md:justify-center bg-white px-6 py-6 md:px-12 md:py-16">
+        <div className="w-full max-w-md">
+          <h2 className="text-xl md:text-2xl font-bold text-gray-900 mb-1">
+            {step === 1 ? 'Your Counsellor Journey Starts Here' : 'Verify OTP'}
+          </h2>
+          <p className="text-gray-500 text-sm mb-6">
+            {step === 1
+              ? 'Sign in with your registered mobile number'
+              : `Enter the 6-digit code sent to ****${mobileNumber.slice(-4)}`}
+          </p>
 
           {successMessage && (
             <div className="mb-4 p-3 rounded-lg border border-green-200 bg-green-50 text-green-700 text-sm" role="status">
@@ -206,23 +238,29 @@ export default function CounsellorLogin() {
           {step === 1 && (
             <form onSubmit={handleSendOtp} className="space-y-4">
               <div>
-                <label htmlFor="counsellor-mobile" className="block text-sm font-medium text-gray-700 mb-1">
-                  Mobile number <span className="text-red-500">*</span>
+                <label htmlFor="counsellor-mobile" className="block text-sm font-medium text-gray-900 mb-1">
+                  Mobile Number
                 </label>
-                <input
-                  id="counsellor-mobile"
-                  type="tel"
-                  value={mobileNumber}
-                  onChange={handleMobileChange}
-                  placeholder="10-digit mobile number"
-                  className={`w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-primary-blue-500 focus:border-primary-blue-500 outline-none ${
-                    mobileError ? 'border-red-500' : 'border-gray-300'
-                  }`}
-                  disabled={loading}
-                  autoComplete="tel"
-                  inputMode="numeric"
-                  maxLength={10}
-                />
+                <div className="flex rounded-lg border border-gray-300 overflow-hidden focus-within:ring-2 focus-within:ring-primary-blue-500 focus-within:border-primary-blue-500">
+                  <div className="flex items-center gap-1.5 px-3 py-2.5 bg-gray-50 border-r border-gray-300 text-gray-700 text-sm">
+                    <span className="font-medium">IN</span>
+                    <span className="text-gray-500">+91</span>
+                  </div>
+                  <input
+                    id="counsellor-mobile"
+                    type="tel"
+                    value={mobileNumber}
+                    onChange={handleMobileChange}
+                    placeholder="Enter Number"
+                    className={`flex-1 min-w-0 px-4 py-2.5 outline-none ${
+                      mobileError ? 'border-red-500' : ''
+                    }`}
+                    disabled={loading}
+                    autoComplete="tel"
+                    inputMode="numeric"
+                    maxLength={10}
+                  />
+                </div>
                 {mobileError && (
                   <p className="mt-1 text-sm text-red-600" role="alert">
                     {mobileError}
@@ -232,10 +270,10 @@ export default function CounsellorLogin() {
               <button
                 type="submit"
                 disabled={loading}
-                className="w-full py-2.5 px-4 rounded-lg font-medium text-white bg-primary-blue-600 hover:bg-primary-blue-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                className="w-full py-3 px-4 rounded-lg font-medium text-white uppercase tracking-wide disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
                 style={{ backgroundColor: '#003366' }}
               >
-                {loading ? 'Sending OTP…' : 'Send OTP'}
+                {loading ? 'Sending…' : 'Get OTP'}
               </button>
             </form>
           )}
@@ -279,7 +317,7 @@ export default function CounsellorLogin() {
                 <button
                   type="submit"
                   disabled={verifying || loading}
-                  className="flex-[2] py-3 px-4 rounded-lg font-medium text-white bg-primary-blue-600 hover:bg-primary-blue-700 disabled:opacity-60 disabled:cursor-not-allowed transition-colors"
+                  className="flex-[2] py-3 px-4 rounded-lg font-medium text-white hover:opacity-90 disabled:opacity-60 disabled:cursor-not-allowed transition-colors"
                   style={{ backgroundColor: '#003366' }}
                 >
                   {verifying ? 'Signing in…' : 'Verify & Sign in'}
@@ -290,7 +328,7 @@ export default function CounsellorLogin() {
                   type="button"
                   onClick={handleResendOtp}
                   disabled={loading || verifying}
-                  className="text-sm text-primary-blue-600 hover:underline disabled:opacity-60 disabled:cursor-not-allowed"
+                  className="text-sm hover:underline disabled:opacity-60 disabled:cursor-not-allowed"
                   style={{ color: '#003366' }}
                 >
                   {loading ? 'Resending…' : "Didn't receive OTP? Resend"}
