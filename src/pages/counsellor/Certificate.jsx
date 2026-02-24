@@ -59,17 +59,27 @@ export default function Certificate() {
     const target = exportRef.current || posterRef.current;
     if (!target) return;
     setGenerating(true);
-    await new Promise((r) => setTimeout(r, 150));
+    await new Promise((r) => setTimeout(r, 400));
     try {
       const canvas = await html2canvas(target, {
         scale: 2,
         useCORS: true,
         backgroundColor: '#ffffff',
         logging: false,
+        allowTaint: true,
+        imageTimeout: 0,
       });
+      const scale = 2;
+      const w = POSTER_WIDTH * scale;
+      const h = POSTER_HEIGHT * scale;
+      const cropped = document.createElement('canvas');
+      cropped.width = w;
+      cropped.height = h;
+      const ctx = cropped.getContext('2d');
+      ctx.drawImage(canvas, 0, 0, w, h, 0, 0, w, h);
       const link = document.createElement('a');
       link.download = `GuideXpert-Poster-${safeFilename(fullName)}-${Date.now()}.png`;
-      link.href = canvas.toDataURL('image/png');
+      link.href = cropped.toDataURL('image/png');
       link.click();
     } catch (err) {
       console.error(err);
@@ -81,15 +91,25 @@ export default function Certificate() {
     const target = exportRef.current || posterRef.current;
     if (!target) return;
     setGenerating(true);
-    await new Promise((r) => setTimeout(r, 150));
+    await new Promise((r) => setTimeout(r, 400));
     try {
       const canvas = await html2canvas(target, {
         scale: 2,
         useCORS: true,
         backgroundColor: '#ffffff',
         logging: false,
+        allowTaint: true,
+        imageTimeout: 0,
       });
-      const imgData = canvas.toDataURL('image/png');
+      const scale = 2;
+      const w = POSTER_WIDTH * scale;
+      const h = POSTER_HEIGHT * scale;
+      const cropped = document.createElement('canvas');
+      cropped.width = w;
+      cropped.height = h;
+      const ctx = cropped.getContext('2d');
+      ctx.drawImage(canvas, 0, 0, w, h, 0, 0, w, h);
+      const imgData = cropped.toDataURL('image/png');
       const pdf = new jsPDF({
         orientation: 'portrait',
         unit: 'px',
@@ -240,7 +260,7 @@ export default function Certificate() {
         </div>
       </div>
 
-      {/* Hidden full-size poster for export — exact 810x810, no blanks in PNG/PDF */}
+      {/* Hidden full-size poster for export — forExport avoids clipping text in html2canvas */}
       {eligible && (
         <div
           aria-hidden="true"
@@ -250,7 +270,7 @@ export default function Certificate() {
             top: 0,
             width: POSTER_WIDTH,
             height: POSTER_HEIGHT,
-            overflow: 'hidden',
+            overflow: 'visible',
             opacity: 0,
             pointerEvents: 'none',
             zIndex: -1,
@@ -260,6 +280,7 @@ export default function Certificate() {
             ref={exportRef}
             fullName={fullName}
             mobileNumber={mobile10 || undefined}
+            forExport
           />
         </div>
       )}

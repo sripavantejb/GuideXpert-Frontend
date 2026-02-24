@@ -31,9 +31,10 @@ const FallbackPosterSvg = () => (
  * Poster from /downloadcertificate.svg with overlay for counsellor name.
  * Uses a lightweight fallback so the poster is never blank (main SVG is ~52MB and may not load).
  * Ref on root for html2canvas capture (PNG/PDF).
+ * forExport=true: overflow visible on root so html2canvas captures full text (no clipping).
  */
 const PosterPreview = forwardRef(function PosterPreview(
-  { fullName = '', mobileNumber = '' },
+  { fullName = '', mobileNumber = '', forExport = false },
   ref
 ) {
   const [imageLoaded, setImageLoaded] = useState(false);
@@ -47,7 +48,7 @@ const PosterPreview = forwardRef(function PosterPreview(
         width: WIDTH,
         height: HEIGHT,
         position: 'relative',
-        overflow: 'hidden',
+        overflow: forExport ? 'visible' : 'hidden',
         margin: 0,
         padding: 0,
         boxSizing: 'border-box',
@@ -77,19 +78,21 @@ const PosterPreview = forwardRef(function PosterPreview(
         />
       )}
 
-      {/* Layer 2: Text only — inside poster, over the existing blue box; forced left alignment */}
+      {/* Layer 2: Text only — inside poster, over the existing blue box; generous spacing so glyphs aren't clipped */}
       <div
         style={{
           position: 'absolute',
           left: 430,
-          bottom: 48,
+          bottom: 56,
           width: 340,
-          padding: '18px 0',
+          padding: '24px 0',
           boxSizing: 'border-box',
           display: 'flex',
           flexDirection: 'column',
           alignItems: 'flex-start',
+          justifyContent: 'flex-start',
           direction: 'ltr',
+          overflow: 'visible',
         }}
       >
         <div
@@ -98,14 +101,16 @@ const PosterPreview = forwardRef(function PosterPreview(
             fontSize: 40,
             fontWeight: 600,
             color: '#ffffff',
-            lineHeight: 1.2,
+            lineHeight: 1.4,
             marginBottom: 10,
+            minHeight: 56,
+            padding: '6px 0',
             whiteSpace: 'nowrap',
-            overflow: 'hidden',
-            textOverflow: 'ellipsis',
+            overflow: 'visible',
             width: '100%',
             textAlign: 'left',
             alignSelf: 'stretch',
+            boxSizing: 'border-box',
           }}
         >
           {fullName || '\u00A0'}
@@ -116,14 +121,16 @@ const PosterPreview = forwardRef(function PosterPreview(
             fontSize: 30,
             fontWeight: 400,
             color: '#ffffff',
-            lineHeight: 1.3,
-            marginBottom: 12,
+            lineHeight: 1.4,
+            marginBottom: 10,
+            minHeight: 42,
+            padding: '6px 0',
             whiteSpace: 'nowrap',
-            overflow: 'hidden',
-            textOverflow: 'ellipsis',
+            overflow: 'visible',
             width: '100%',
             textAlign: 'left',
             alignSelf: 'stretch',
+            boxSizing: 'border-box',
           }}
         >
           {mobileNumber ? `+91 ${mobileNumber}` : '\u00A0'}
@@ -135,13 +142,15 @@ const PosterPreview = forwardRef(function PosterPreview(
             fontWeight: 700,
             fontStyle: 'italic',
             color: '#eab308',
-            lineHeight: 1.25,
+            lineHeight: 1.4,
+            minHeight: 44,
+            padding: '6px 0',
             whiteSpace: 'nowrap',
-            overflow: 'hidden',
-            textOverflow: 'ellipsis',
+            overflow: 'visible',
             width: '100%',
             textAlign: 'left',
             alignSelf: 'stretch',
+            boxSizing: 'border-box',
           }}
         >
           Certified Career Counsellor
