@@ -101,10 +101,12 @@ export const sendOtp = async (fullName, whatsappNumber, occupation) => {
  * @returns {Promise<{success: boolean, message?: string, verified?: boolean, status?: number}>}
  */
 export const verifyOtp = async (phone, otp) => {
+  const phoneStr = String(phone ?? '');
   return apiRequest('/verify-otp', {
     method: 'POST',
     body: JSON.stringify({
-      phone: String(phone ?? ''),
+      phone: phoneStr,
+      whatsappNumber: phoneStr,
       otp: String(otp ?? ''),
     }),
   });

@@ -105,6 +105,7 @@ export default function CounsellorLogin() {
     setVerifying(true);
     const cleanPhone = mobileNumber.replace(/\D/g, '');
     const normalizedPhone = cleanPhone.length >= 10 ? cleanPhone.slice(-10) : cleanPhone;
+    // Same normalized number as send-otp so backend lookup key matches
     try {
       const result = await verifyOtp(normalizedPhone, otpString);
       if (result.success && result.data?.verified === true) {
