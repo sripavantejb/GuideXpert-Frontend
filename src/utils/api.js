@@ -104,8 +104,8 @@ export const verifyOtp = async (phone, otp) => {
   return apiRequest('/verify-otp', {
     method: 'POST',
     body: JSON.stringify({
-      phone,
-      otp,
+      phone: String(phone ?? ''),
+      otp: String(otp ?? ''),
     }),
   });
 };
