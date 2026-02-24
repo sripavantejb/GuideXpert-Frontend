@@ -29,16 +29,25 @@ const FallbackPosterSvg = () => (
 
 /**
  * Poster from /downloadcertificate.svg with overlay for counsellor name.
- * Uses a lightweight fallback so the poster is never blank (main SVG is ~52MB and may not load).
- * Ref on root for html2canvas capture (PNG/PDF).
- * Root keeps overflow:hidden so export is exactly 810x1440 with no clipped overflow.
+ * Preview: normal layout (forExport=false). Download: forExport=true uses slightly smaller tagline so PNG/PDF don't clip.
  */
 const PosterPreview = forwardRef(function PosterPreview(
-  { fullName = '', mobileNumber = '' },
+  { fullName = '', mobileNumber = '', forExport = false },
   ref
 ) {
   const [imageLoaded, setImageLoaded] = useState(false);
   const [imageError, setImageError] = useState(false);
+
+  const textLeft = 360;
+  const textWidth = 432;
+  const taglineFontSize = forExport ? 20 : 24;
+  const taglineMinHeight = forExport ? 30 : 34;
+  const textContainerPaddingTop = forExport ? 36 : 20;
+  const nameMinHeight = forExport ? 64 : 52;
+  const namePaddingTop = forExport ? 12 : 0;
+  const namePaddingBottom = forExport ? 6 : 0;
+  const linePaddingVertical = forExport ? 4 : 0;
+  const nameOverflow = forExport ? 'visible' : 'hidden';
 
   return (
     <div
@@ -54,9 +63,7 @@ const PosterPreview = forwardRef(function PosterPreview(
         boxSizing: 'border-box',
       }}
     >
-      {/* Layer 1a: fallback poster (always visible so it's never blank) */}
       <FallbackPosterSvg />
-      {/* Layer 1b: full template — when loaded it covers fallback (may be slow/fail if file is huge) */}
       {!imageError && (
         <img
           src="/downloadcertificate.svg"
@@ -78,14 +85,14 @@ const PosterPreview = forwardRef(function PosterPreview(
         />
       )}
 
-      {/* Layer 2: Text only — over poster's blue box; left-aligned, one line each; kept inside bounds for PNG/PDF */}
+      {/* Text over poster's blue box — forExport adds top/line padding so ascenders aren't clipped in PNG/PDF */}
       <div
         style={{
           position: 'absolute',
-          left: 360,
+          left: textLeft,
           bottom: 64,
-          width: 432,
-          padding: '20px 18px',
+          width: textWidth,
+          padding: `${textContainerPaddingTop}px 18px 20px 18px`,
           boxSizing: 'border-box',
           display: 'flex',
           flexDirection: 'column',
@@ -103,9 +110,11 @@ const PosterPreview = forwardRef(function PosterPreview(
             color: '#ffffff',
             lineHeight: 1.35,
             marginBottom: 8,
-            minHeight: 52,
+            minHeight: nameMinHeight,
+            paddingTop: namePaddingTop,
+            paddingBottom: namePaddingBottom,
             whiteSpace: 'nowrap',
-            overflow: 'hidden',
+            overflow: nameOverflow,
             textOverflow: 'ellipsis',
             width: '100%',
             textAlign: 'left',
@@ -123,6 +132,8 @@ const PosterPreview = forwardRef(function PosterPreview(
             lineHeight: 1.35,
             marginBottom: 8,
             minHeight: 40,
+            paddingTop: linePaddingVertical,
+            paddingBottom: linePaddingVertical,
             whiteSpace: 'nowrap',
             overflow: 'hidden',
             textOverflow: 'ellipsis',
@@ -136,12 +147,14 @@ const PosterPreview = forwardRef(function PosterPreview(
         <div
           style={{
             fontFamily: '-apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif',
-            fontSize: 24,
+            fontSize: taglineFontSize,
             fontWeight: 700,
             fontStyle: 'italic',
             color: '#eab308',
-            lineHeight: 1.35,
-            minHeight: 34,
+            lineHeight: 1.4,
+            minHeight: taglineMinHeight,
+            paddingTop: linePaddingVertical,
+            paddingBottom: linePaddingVertical,
             whiteSpace: 'nowrap',
             overflow: 'hidden',
             textOverflow: 'ellipsis',

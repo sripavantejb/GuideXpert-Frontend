@@ -59,7 +59,7 @@ export default function Certificate() {
     const target = exportRef.current || posterRef.current;
     if (!target) return;
     setGenerating(true);
-    await new Promise((r) => setTimeout(r, 400));
+    await new Promise((r) => setTimeout(r, 600));
     try {
       const scale = 2;
       const canvas = await html2canvas(target, {
@@ -93,7 +93,7 @@ export default function Certificate() {
     const target = exportRef.current || posterRef.current;
     if (!target) return;
     setGenerating(true);
-    await new Promise((r) => setTimeout(r, 400));
+    await new Promise((r) => setTimeout(r, 600));
     try {
       const scale = 2;
       const canvas = await html2canvas(target, {
@@ -264,7 +264,7 @@ export default function Certificate() {
         </div>
       </div>
 
-      {/* Hidden full-size poster for export (same as visible poster, used for PNG/PDF) */}
+      {/* Hidden poster for PNG/PDF only — forExport=true so tagline fits in export (preview unchanged) */}
       {eligible && (
         <div
           aria-hidden="true"
@@ -274,7 +274,7 @@ export default function Certificate() {
             top: 0,
             width: POSTER_WIDTH,
             height: POSTER_HEIGHT,
-            overflow: 'visible',
+            overflow: 'hidden',
             opacity: 0,
             pointerEvents: 'none',
             zIndex: -1,
@@ -284,6 +284,7 @@ export default function Certificate() {
             ref={exportRef}
             fullName={fullName}
             mobileNumber={mobile10 || undefined}
+            forExport
           />
         </div>
       )}
