@@ -1,3 +1,4 @@
+import { Link } from 'react-router-dom';
 import { FiMail, FiPhone } from 'react-icons/fi';
 import { FaWhatsapp } from 'react-icons/fa';
 
@@ -8,7 +9,7 @@ const Footer = () => {
   const quickLinks = [
     { name: 'Privacy Policy', href: '#privacy' },
     { name: 'Terms & Conditions', href: '#terms' },
-    { name: 'Counselor Login', href: '#counselor-login' },
+    { name: 'Counselor Login', to: '/counsellor/login' },
     { name: 'About GuideXpert', href: '#about' },
   ];
 
@@ -103,9 +104,15 @@ const Footer = () => {
             <ul className="space-y-3" role="list">
               {quickLinks.map((link) => (
                 <li key={link.name}>
-                  <a href={link.href} className={`text-sm ${linkClass} inline-block`}>
-                    {link.name}
-                  </a>
+                  {link.to ? (
+                    <Link to={link.to} className={`text-sm ${linkClass} inline-block`}>
+                      {link.name}
+                    </Link>
+                  ) : (
+                    <a href={link.href} className={`text-sm ${linkClass} inline-block`}>
+                      {link.name}
+                    </a>
+                  )}
                 </li>
               ))}
             </ul>

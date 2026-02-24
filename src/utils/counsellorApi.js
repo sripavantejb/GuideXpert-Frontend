@@ -65,6 +65,13 @@ export const counsellorLogin = async (email, password) => {
   }, null);
 };
 
+export const loginWithPhone = async (phone) => {
+  return counsellorRequest('/login-with-phone', {
+    method: 'POST',
+    body: JSON.stringify({ phone }),
+  }, null);
+};
+
 export const getStudents = async (params = {}, token = getCounsellorToken()) => {
   const search = new URLSearchParams();
   if (params.page != null) search.set('page', params.page);

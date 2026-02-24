@@ -99,13 +99,13 @@ export default function CounsellorLayout() {
           className="flex w-full flex-col items-start justify-center py-5 border-b border-white/5 hover:bg-white/[0.02] transition-colors duration-200"
           aria-label="GuideXpert Home"
         >
-          <div className="w-full flex flex-col items-start justify-center py-3 px-4 gap-2">
+          <div className="w-full flex flex-col items-center justify-center py-3 px-4 gap-1.5">
             <img
               src="https://res.cloudinary.com/dqataciy5/image/upload/v1769258985/Gemini_Generated_Image_ybdgvrybdgvrybdg_fgmdnj.png"
               alt="GuideXpert"
               className="h-8 w-auto object-contain"
             />
-            <p className="text-[0.6875rem] font-semibold text-slate-400 uppercase tracking-widest text-left leading-tight">
+            <p className="text-[0.5625rem] font-semibold text-slate-400 uppercase tracking-wider text-center leading-tight">
               Certified Counsellor Dashboard
             </p>
           </div>

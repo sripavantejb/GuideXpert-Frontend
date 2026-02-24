@@ -1,7 +1,7 @@
 import { Suspense, lazy } from 'react';
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
 import { AuthProvider, useAuth } from './contexts/AuthContext';
-import { CounsellorAuthProvider } from './contexts/CounsellorAuthContext';
+import { CounsellorAuthProvider, useCounsellorAuth } from './contexts/CounsellorAuthContext';
 import { CounsellorProfileProvider } from './contexts/CounsellorProfileContext';
 import LandingPage from './pages/LandingPage';
 import AdminLogin from './pages/AdminLogin';
@@ -25,16 +25,19 @@ import AssessmentResults from './pages/admin/AssessmentResults';
 import Assessment2Results from './pages/admin/Assessment2Results';
 import Assessment3Results from './pages/admin/Assessment3Results';
 import TrainingFeedback from './pages/admin/TrainingFeedback';
+import CounsellorLogin from './pages/counsellor/CounsellorLogin';
 
 /* Counsellor portal — lazy loaded */
 import CounsellorLayout from './components/Counsellor/CounsellorLayout';
+import { ErrorBoundary } from './components/ErrorBoundary';
 const CounsellorDashboard = lazy(() => import('./pages/counsellor/Dashboard'));
 const CounsellorStudents = lazy(() => import('./pages/counsellor/Students'));
 const CounsellorAdmissions = lazy(() => import('./pages/counsellor/Admissions'));
 const CounsellorSessions = lazy(() => import('./pages/counsellor/Sessions'));
 const CounsellorTools = lazy(() => import('./pages/counsellor/Tools'));
 const CounsellorMarketing = lazy(() => import('./pages/counsellor/Marketing'));
-const CounsellorCertificate = lazy(() => import('./pages/counsellor/Certificate'));
+/* Certificate loaded eagerly to avoid dynamic import chunk failures (html2canvas/jspdf) */
+import CounsellorCertificate from './pages/counsellor/Certificate';
 const CollegeReferrals = lazy(() => import('./pages/counsellor/CollegeReferrals'));
 const CollegeReferralDetail = lazy(() => import('./pages/counsellor/CollegeReferralDetail'));
 const CounsellorSettings = lazy(() => import('./pages/counsellor/Settings'));
@@ -43,6 +46,14 @@ function ProtectedAdmin({ children }) {
   const { isAuthenticated } = useAuth();
   if (!isAuthenticated) {
     return <Navigate to="/admin/login" replace />;
+  }
+  return children;
+}
+
+function ProtectedCounsellor({ children }) {
+  const { isAuthenticated } = useCounsellorAuth();
+  if (!isAuthenticated) {
+    return <Navigate to="/counsellor/login" replace />;
   }
   return children;
 }
@@ -87,18 +98,19 @@ function App() {
           </Route>
 
           {/* Counsellor Portal */}
-          <Route path="/counsellor" element={<CounsellorProfileProvider><CounsellorLayout /></CounsellorProfileProvider>}>
+          <Route path="/counsellor/login" element={<CounsellorLogin />} />
+          <Route path="/counsellor" element={<ProtectedCounsellor><CounsellorProfileProvider><CounsellorLayout /></CounsellorProfileProvider></ProtectedCounsellor>}>
             <Route index element={<Navigate to="/counsellor/dashboard" replace />} />
-            <Route path="dashboard" element={<Suspense fallback={<div className="flex items-center justify-center h-64 text-gray-400">Loading...</div>}><CounsellorDashboard /></Suspense>} />
-            <Route path="students" element={<Suspense fallback={<div className="flex items-center justify-center h-64 text-gray-400">Loading...</div>}><CounsellorStudents /></Suspense>} />
-            <Route path="admissions" element={<Suspense fallback={<div className="flex items-center justify-center h-64 text-gray-400">Loading...</div>}><CounsellorAdmissions /></Suspense>} />
-            <Route path="sessions" element={<Suspense fallback={<div className="flex items-center justify-center h-64 text-gray-400">Loading...</div>}><CounsellorSessions /></Suspense>} />
-            <Route path="tools" element={<Suspense fallback={<div className="flex items-center justify-center h-64 text-gray-400">Loading...</div>}><CounsellorTools /></Suspense>} />
-            <Route path="marketing" element={<Suspense fallback={<div className="flex items-center justify-center h-64 text-gray-400">Loading...</div>}><CounsellorMarketing /></Suspense>} />
-            <Route path="certificate" element={<Suspense fallback={<div className="flex items-center justify-center h-64 text-gray-400">Loading...</div>}><CounsellorCertificate /></Suspense>} />
-            <Route path="college-referrals" element={<Suspense fallback={<div className="flex items-center justify-center h-64 text-gray-400">Loading...</div>}><CollegeReferrals /></Suspense>} />
-            <Route path="college-referrals/:collegeSlug" element={<Suspense fallback={<div className="flex items-center justify-center h-64 text-gray-400">Loading...</div>}><CollegeReferralDetail /></Suspense>} />
-            <Route path="settings" element={<Suspense fallback={<div className="flex items-center justify-center h-64 text-gray-400">Loading...</div>}><CounsellorSettings /></Suspense>} />
+            <Route path="dashboard" element={<ErrorBoundary><Suspense fallback={<div className="flex items-center justify-center h-64 text-gray-400">Loading...</div>}><CounsellorDashboard /></Suspense></ErrorBoundary>} />
+            <Route path="students" element={<ErrorBoundary><Suspense fallback={<div className="flex items-center justify-center h-64 text-gray-400">Loading...</div>}><CounsellorStudents /></Suspense></ErrorBoundary>} />
+            <Route path="admissions" element={<ErrorBoundary><Suspense fallback={<div className="flex items-center justify-center h-64 text-gray-400">Loading...</div>}><CounsellorAdmissions /></Suspense></ErrorBoundary>} />
+            <Route path="sessions" element={<ErrorBoundary><Suspense fallback={<div className="flex items-center justify-center h-64 text-gray-400">Loading...</div>}><CounsellorSessions /></Suspense></ErrorBoundary>} />
+            <Route path="tools" element={<ErrorBoundary><Suspense fallback={<div className="flex items-center justify-center h-64 text-gray-400">Loading...</div>}><CounsellorTools /></Suspense></ErrorBoundary>} />
+            <Route path="marketing" element={<ErrorBoundary><Suspense fallback={<div className="flex items-center justify-center h-64 text-gray-400">Loading...</div>}><CounsellorMarketing /></Suspense></ErrorBoundary>} />
+            <Route path="certificate" element={<ErrorBoundary><CounsellorCertificate /></ErrorBoundary>} />
+            <Route path="college-referrals" element={<ErrorBoundary><Suspense fallback={<div className="flex items-center justify-center h-64 text-gray-400">Loading...</div>}><CollegeReferrals /></Suspense></ErrorBoundary>} />
+            <Route path="college-referrals/:collegeSlug" element={<ErrorBoundary><Suspense fallback={<div className="flex items-center justify-center h-64 text-gray-400">Loading...</div>}><CollegeReferralDetail /></Suspense></ErrorBoundary>} />
+            <Route path="settings" element={<ErrorBoundary><Suspense fallback={<div className="flex items-center justify-center h-64 text-gray-400">Loading...</div>}><CounsellorSettings /></Suspense></ErrorBoundary>} />
           </Route>
 
           <Route path="*" element={<Navigate to="/" replace />} />

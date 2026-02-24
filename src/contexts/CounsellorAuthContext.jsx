@@ -1,6 +1,7 @@
 import { createContext, useContext, useState, useCallback, useEffect } from 'react';
 import {
   counsellorLogin as apiLogin,
+  loginWithPhone as apiLoginWithPhone,
   getCounsellorToken,
   setCounsellorToken,
   getCounsellorUser,
@@ -16,6 +17,17 @@ export function CounsellorAuthProvider({ children }) {
 
   const login = useCallback(async (email, password) => {
     const result = await apiLogin(email, password);
+    if (!result.success) return result;
+    const { token: newToken, user: userData } = result.data;
+    setCounsellorToken(newToken);
+    setCounsellorUser(userData);
+    setToken(newToken);
+    setUser(userData);
+    return result;
+  }, []);
+
+  const loginWithPhone = useCallback(async (phone) => {
+    const result = await apiLoginWithPhone(phone);
     if (!result.success) return result;
     const { token: newToken, user: userData } = result.data;
     setCounsellorToken(newToken);
@@ -41,7 +53,7 @@ export function CounsellorAuthProvider({ children }) {
     }
   }, []);
 
-  const value = { user, token, isAuthenticated, login, logout };
+  const value = { user, token, isAuthenticated, login, loginWithPhone, logout };
   return (
     <CounsellorAuthContext.Provider value={value}>
       {children}
