@@ -78,16 +78,16 @@ const PosterPreview = forwardRef(function PosterPreview(
         />
       )}
 
-      {/* Layer 2: Text only — over poster's blue box; no extra box, no side gaps; fits in one line for export */}
+      {/* Layer 2: Text only — over poster's blue box; left-aligned, one line each; no overflow on PNG/PDF */}
       <div
         style={{
           position: 'absolute',
-          left: 400,
+          left: 380,
           bottom: 64,
-          width: 390,
-          padding: '20px 0',
-          paddingLeft: 0,
-          paddingRight: 0,
+          width: 410,
+          padding: '22px 0',
+          paddingLeft: 16,
+          paddingRight: 16,
           boxSizing: 'border-box',
           display: 'flex',
           flexDirection: 'column',
@@ -103,15 +103,16 @@ const PosterPreview = forwardRef(function PosterPreview(
             fontSize: 40,
             fontWeight: 600,
             color: '#ffffff',
-            lineHeight: 1.35,
-            marginBottom: 8,
-            minHeight: 54,
-            padding: '8px 0',
+            lineHeight: 1.4,
+            marginBottom: 10,
+            minHeight: 56,
+            padding: '6px 0',
             whiteSpace: 'nowrap',
             overflow: 'visible',
             width: '100%',
+            maxWidth: '100%',
             textAlign: 'left',
-            alignSelf: 'stretch',
+            alignSelf: 'flex-start',
             boxSizing: 'border-box',
           }}
         >
@@ -123,15 +124,16 @@ const PosterPreview = forwardRef(function PosterPreview(
             fontSize: 30,
             fontWeight: 400,
             color: '#ffffff',
-            lineHeight: 1.35,
-            marginBottom: 8,
-            minHeight: 40,
-            padding: '8px 0',
+            lineHeight: 1.4,
+            marginBottom: 10,
+            minHeight: 42,
+            padding: '6px 0',
             whiteSpace: 'nowrap',
             overflow: 'visible',
             width: '100%',
+            maxWidth: '100%',
             textAlign: 'left',
-            alignSelf: 'stretch',
+            alignSelf: 'flex-start',
             boxSizing: 'border-box',
           }}
         >
@@ -140,18 +142,19 @@ const PosterPreview = forwardRef(function PosterPreview(
         <div
           style={{
             fontFamily: '-apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif',
-            fontSize: 26,
+            fontSize: 22,
             fontWeight: 700,
             fontStyle: 'italic',
             color: '#eab308',
-            lineHeight: 1.35,
-            minHeight: 38,
-            padding: '8px 0',
+            lineHeight: 1.4,
+            minHeight: 34,
+            padding: '6px 0',
             whiteSpace: 'nowrap',
             overflow: 'visible',
             width: '100%',
+            maxWidth: '100%',
             textAlign: 'left',
-            alignSelf: 'stretch',
+            alignSelf: 'flex-start',
             boxSizing: 'border-box',
           }}
         >
