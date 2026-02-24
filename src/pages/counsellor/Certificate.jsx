@@ -264,7 +264,7 @@ export default function Certificate() {
         </div>
       </div>
 
-      {/* Hidden full-size poster for export — forExport avoids clipping text in html2canvas */}
+      {/* Hidden full-size poster for export (same as visible poster, used for PNG/PDF) */}
       {eligible && (
         <div
           aria-hidden="true"
@@ -284,7 +284,6 @@ export default function Certificate() {
             ref={exportRef}
             fullName={fullName}
             mobileNumber={mobile10 || undefined}
-            forExport
           />
         </div>
       )}

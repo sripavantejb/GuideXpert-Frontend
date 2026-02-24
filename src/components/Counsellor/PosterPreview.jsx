@@ -31,10 +31,10 @@ const FallbackPosterSvg = () => (
  * Poster from /downloadcertificate.svg with overlay for counsellor name.
  * Uses a lightweight fallback so the poster is never blank (main SVG is ~52MB and may not load).
  * Ref on root for html2canvas capture (PNG/PDF).
- * forExport=true: overflow visible on root so html2canvas captures full text (no clipping).
+ * Root keeps overflow:hidden so export is exactly 810x1440 with no clipped overflow.
  */
 const PosterPreview = forwardRef(function PosterPreview(
-  { fullName = '', mobileNumber = '', forExport = false },
+  { fullName = '', mobileNumber = '' },
   ref
 ) {
   const [imageLoaded, setImageLoaded] = useState(false);
@@ -48,7 +48,7 @@ const PosterPreview = forwardRef(function PosterPreview(
         width: WIDTH,
         height: HEIGHT,
         position: 'relative',
-        overflow: forExport ? 'visible' : 'hidden',
+        overflow: 'hidden',
         margin: 0,
         padding: 0,
         boxSizing: 'border-box',
@@ -78,41 +78,37 @@ const PosterPreview = forwardRef(function PosterPreview(
         />
       )}
 
-      {/* Layer 2: Text only — over poster's blue box; left-aligned, one line each; no overflow on PNG/PDF */}
+      {/* Layer 2: Text only — over poster's blue box; left-aligned, one line each; kept inside bounds for PNG/PDF */}
       <div
         style={{
           position: 'absolute',
-          left: 380,
+          left: 360,
           bottom: 64,
-          width: 410,
-          padding: '22px 0',
-          paddingLeft: 16,
-          paddingRight: 16,
+          width: 432,
+          padding: '20px 18px',
           boxSizing: 'border-box',
           display: 'flex',
           flexDirection: 'column',
           alignItems: 'flex-start',
           justifyContent: 'flex-start',
           direction: 'ltr',
-          overflow: 'visible',
+          overflow: 'hidden',
         }}
       >
         <div
           style={{
             fontFamily: 'sans-serif',
-            fontSize: 40,
+            fontSize: 38,
             fontWeight: 600,
             color: '#ffffff',
-            lineHeight: 1.4,
-            marginBottom: 10,
-            minHeight: 56,
-            padding: '6px 0',
+            lineHeight: 1.35,
+            marginBottom: 8,
+            minHeight: 52,
             whiteSpace: 'nowrap',
-            overflow: 'visible',
+            overflow: 'hidden',
+            textOverflow: 'ellipsis',
             width: '100%',
-            maxWidth: '100%',
             textAlign: 'left',
-            alignSelf: 'flex-start',
             boxSizing: 'border-box',
           }}
         >
@@ -121,19 +117,17 @@ const PosterPreview = forwardRef(function PosterPreview(
         <div
           style={{
             fontFamily: '-apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif',
-            fontSize: 30,
+            fontSize: 28,
             fontWeight: 400,
             color: '#ffffff',
-            lineHeight: 1.4,
-            marginBottom: 10,
-            minHeight: 42,
-            padding: '6px 0',
+            lineHeight: 1.35,
+            marginBottom: 8,
+            minHeight: 40,
             whiteSpace: 'nowrap',
-            overflow: 'visible',
+            overflow: 'hidden',
+            textOverflow: 'ellipsis',
             width: '100%',
-            maxWidth: '100%',
             textAlign: 'left',
-            alignSelf: 'flex-start',
             boxSizing: 'border-box',
           }}
         >
@@ -142,19 +136,17 @@ const PosterPreview = forwardRef(function PosterPreview(
         <div
           style={{
             fontFamily: '-apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif',
-            fontSize: 22,
+            fontSize: 24,
             fontWeight: 700,
             fontStyle: 'italic',
             color: '#eab308',
-            lineHeight: 1.4,
+            lineHeight: 1.35,
             minHeight: 34,
-            padding: '6px 0',
             whiteSpace: 'nowrap',
-            overflow: 'visible',
+            overflow: 'hidden',
+            textOverflow: 'ellipsis',
             width: '100%',
-            maxWidth: '100%',
             textAlign: 'left',
-            alignSelf: 'flex-start',
             boxSizing: 'border-box',
           }}
         >
