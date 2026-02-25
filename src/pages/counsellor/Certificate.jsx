@@ -40,6 +40,8 @@ export default function Certificate() {
   const [generating, setGenerating] = useState(false);
   const [exportImageReady, setExportImageReady] = useState(false);
   const [pendingDownload, setPendingDownload] = useState(null);
+  const [iosResult, setIosResult] = useState(null);
+  const iosResultBlobUrlRef = useRef(null);
   const posterRef = useRef(null);
   const exportRef = useRef(null);
   const exportWrapperRef = useRef(null);
@@ -113,8 +115,8 @@ export default function Certificate() {
     wrapper.style.opacity = '0';
     wrapper.style.zIndex = '-1';
     wrapper.style.overflow = 'hidden';
-    wrapper.style.left = isIOS() ? '-9999px' : '0';
-    wrapper.style.top = '0';
+    wrapper.style.left = '';
+    wrapper.style.top = '';
     wrapper.style.minWidth = '';
     wrapper.style.maxWidth = '';
     wrapper.style.minHeight = '';
@@ -147,8 +149,8 @@ export default function Certificate() {
       clonedElement.style.top = '0';
       let parent = clonedElement.parentElement;
       while (parent && parent !== clonedDoc.body) {
-        const pos = parent.style.position || (typeof getComputedStyle !== 'undefined' ? clonedDoc.defaultView.getComputedStyle(parent).position : '');
-        if (String(pos).toLowerCase() === 'fixed') {
+        const pos = parent.style.position || (parent.currentStyle && parent.currentStyle.position);
+        if (pos === 'fixed' || (parent.getAttribute && parent.getAttribute('style') && String(parent.getAttribute('style')).includes('fixed'))) {
           parent.style.position = 'absolute';
           parent.style.left = '0';
           parent.style.top = '0';
@@ -158,7 +160,7 @@ export default function Certificate() {
     },
   });
 
-  const imageWaitMs = 8000;
+  const imageWaitMs = isMobileOrTablet() ? 600 : 2500;
   const layoutSettleMs = isMobileOrTablet() ? 80 : 300;
 
   function triggerPendingDownload() {
@@ -174,18 +176,12 @@ export default function Certificate() {
   }
 
   const handleDownloadPng = async () => {
-    if (!exportImageReadyRef.current) {
-      await waitForExportImageReadyWithTimeout(imageWaitMs);
-      if (!exportImageReadyRef.current) {
-        alert('Poster image is still loading. Please wait a moment and try again.');
-        return;
-      }
-    }
     const target = exportRef.current || posterRef.current;
     if (!target) return;
     setGenerating(true);
     setPendingDownload(null);
     try {
+      await waitForExportImageReadyWithTimeout(imageWaitMs);
       await new Promise((r) => setTimeout(r, layoutSettleMs));
       showExportWrapper();
       await new Promise((r) => requestAnimationFrame(r));
@@ -200,13 +196,17 @@ export default function Certificate() {
       ctx.drawImage(canvas, 0, 0, w, h, 0, 0, w, h);
       const dataUrl = cropped.toDataURL('image/png');
       const filename = `GuideXpert-Poster-${safeFilename(fullName)}-${Date.now()}.png`;
-      const link = document.createElement('a');
-      link.download = filename;
-      link.href = dataUrl;
-      link.click();
-      if (isMobileOrTablet()) {
-        pendingDownloadRef.current = { url: dataUrl, filename };
-        setPendingDownload('png');
+      if (isIOS()) {
+        setIosResult({ url: dataUrl, type: 'image' });
+      } else {
+        const link = document.createElement('a');
+        link.download = filename;
+        link.href = dataUrl;
+        link.click();
+        if (isMobileOrTablet()) {
+          pendingDownloadRef.current = { url: dataUrl, filename };
+          setPendingDownload('png');
+        }
       }
     } catch (err) {
       console.error(err);
@@ -217,18 +217,12 @@ export default function Certificate() {
   };
 
   const handleDownloadPdf = async () => {
-    if (!exportImageReadyRef.current) {
-      await waitForExportImageReadyWithTimeout(imageWaitMs);
-      if (!exportImageReadyRef.current) {
-        alert('Poster image is still loading. Please wait a moment and try again.');
-        return;
-      }
-    }
     const target = exportRef.current || posterRef.current;
     if (!target) return;
     setGenerating(true);
     setPendingDownload(null);
     try {
+      await waitForExportImageReadyWithTimeout(imageWaitMs);
       await new Promise((r) => setTimeout(r, layoutSettleMs));
       showExportWrapper();
       await new Promise((r) => requestAnimationFrame(r));
@@ -252,15 +246,20 @@ export default function Certificate() {
       const filename = `GuideXpert-Poster-${safeFilename(fullName)}-${Date.now()}.pdf`;
       const blob = pdf.output('blob');
       const pdfUrl = URL.createObjectURL(blob);
-      const pdfLink = document.createElement('a');
-      pdfLink.download = filename;
-      pdfLink.href = pdfUrl;
-      pdfLink.click();
-      if (isMobileOrTablet()) {
-        pendingDownloadRef.current = { url: pdfUrl, filename, revoke: true };
-        setPendingDownload('pdf');
+      if (isIOS()) {
+        iosResultBlobUrlRef.current = pdfUrl;
+        setIosResult({ url: pdfUrl, type: 'pdf' });
       } else {
-        setTimeout(() => URL.revokeObjectURL(pdfUrl), 5000);
+        const pdfLink = document.createElement('a');
+        pdfLink.download = filename;
+        pdfLink.href = pdfUrl;
+        pdfLink.click();
+        if (isMobileOrTablet()) {
+          pendingDownloadRef.current = { url: pdfUrl, filename, revoke: true };
+          setPendingDownload('pdf');
+        } else {
+          setTimeout(() => URL.revokeObjectURL(pdfUrl), 5000);
+        }
       }
     } catch (err) {
       console.error(err);
@@ -269,6 +268,14 @@ export default function Certificate() {
     }
     setGenerating(false);
   };
+
+  function closeIosResult() {
+    if (iosResultBlobUrlRef.current) {
+      try { URL.revokeObjectURL(iosResultBlobUrlRef.current); } catch (_) {}
+      iosResultBlobUrlRef.current = null;
+    }
+    setIosResult(null);
+  }
 
   return (
     <div className="max-w-6xl mx-auto px-4 py-6">
@@ -295,6 +302,42 @@ export default function Certificate() {
             <p className="text-xs text-gray-500 text-center">
               This may take a few seconds
             </p>
+          </div>
+        </div>
+      )}
+
+      {iosResult && (
+        <div className="fixed inset-0 z-[10001] flex flex-col bg-black" role="dialog" aria-modal="true" aria-label="Save your poster">
+          <div className="flex-1 flex flex-col items-center justify-center min-h-0 p-4">
+            {iosResult.type === 'image' ? (
+              <img
+                src={iosResult.url}
+                alt="Your poster"
+                className="max-w-full max-h-full object-contain select-none"
+                style={{ WebkitUserSelect: 'none', userSelect: 'none' }}
+                draggable={false}
+              />
+            ) : (
+              <iframe
+                src={iosResult.url}
+                title="Poster PDF"
+                className="w-full flex-1 min-h-0 border-0"
+              />
+            )}
+            <p className="text-white text-sm text-center mt-3 px-2">
+              {iosResult.type === 'image'
+                ? 'Long-press the image above, then tap "Save Image" to save to Photos.'
+                : 'Tap the Share icon below, then choose Save to Files or add to Photos.'}
+            </p>
+          </div>
+          <div className="p-4 bg-gray-900">
+            <button
+              type="button"
+              onClick={closeIosResult}
+              className="w-full py-3 rounded-lg bg-white text-gray-900 font-medium"
+            >
+              Close
+            </button>
           </div>
         </div>
       )}
@@ -410,21 +453,21 @@ export default function Certificate() {
           {eligible && (
             <div className="flex flex-wrap gap-3 mt-4 w-full justify-center">
               <div className="rounded-md bg-green-50 border border-green-200 px-3 py-2 text-sm text-green-800 mb-2 w-full text-center">
-                {exportImageReady ? 'Your poster is ready to download.' : 'Preparing poster…'}
+                You are eligible. Your poster is ready to download.
               </div>
               <button
                 type="button"
                 onClick={handleDownloadPng}
-                disabled={generating || !exportImageReady}
-                className="inline-flex items-center rounded-md bg-primary-navy px-4 py-2 text-sm font-medium text-white shadow-sm hover:bg-primary-blue-800 disabled:opacity-60 disabled:cursor-not-allowed"
+                disabled={generating}
+                className="inline-flex items-center rounded-md bg-primary-navy px-4 py-2 text-sm font-medium text-white shadow-sm hover:bg-primary-blue-800 disabled:opacity-60"
               >
                 {generating ? 'Generating…' : 'Download as PNG'}
               </button>
               <button
                 type="button"
                 onClick={handleDownloadPdf}
-                disabled={generating || !exportImageReady}
-                className="inline-flex items-center rounded-md border border-gray-300 bg-white px-4 py-2 text-sm font-medium text-gray-700 shadow-sm hover:bg-gray-50 disabled:opacity-60 disabled:cursor-not-allowed"
+                disabled={generating}
+                className="inline-flex items-center rounded-md border border-gray-300 bg-white px-4 py-2 text-sm font-medium text-gray-700 shadow-sm hover:bg-gray-50 disabled:opacity-60"
               >
                 {generating ? 'Generating…' : 'Download as PDF'}
               </button>
@@ -442,14 +485,14 @@ export default function Certificate() {
         </div>
       </div>
 
-      {/* Hidden poster for PNG/PDF only — forExport=true. On iOS use absolute to avoid html2canvas fixed-position bug. */}
+      {/* Hidden poster for PNG/PDF only — forExport=true so tagline fits in export (preview unchanged) */}
       {eligible && (
         <div
           ref={exportWrapperRef}
           aria-hidden="true"
           style={{
-            position: isIOS() ? 'absolute' : 'fixed',
-            left: isIOS() ? '-9999px' : 0,
+            position: 'fixed',
+            left: 0,
             top: 0,
             width: POSTER_WIDTH,
             height: POSTER_HEIGHT,
