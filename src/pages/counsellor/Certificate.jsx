@@ -41,7 +41,6 @@ export default function Certificate() {
   const [exportImageReady, setExportImageReady] = useState(false);
   const [pendingDownload, setPendingDownload] = useState(null);
   const [iosResult, setIosResult] = useState(null);
-  const [downloadError, setDownloadError] = useState(null);
   const iosResultBlobUrlRef = useRef(null);
   const posterRef = useRef(null);
   const exportRef = useRef(null);
@@ -70,20 +69,14 @@ export default function Certificate() {
   const handleConfirmAndGenerate = async () => {
     setShowConfirmModal(false);
     setCheckingEligibility(true);
-    try {
-      const result = await checkPosterEligibility(mobile10);
-      const eligibleResult = result?.data?.eligible ?? result?.eligible;
-      if (result?.success && eligibleResult) {
-        setEligible(true);
-      } else {
-        setIneligibleMessage(result?.data?.message || result?.message || 'Your training is not yet completed. Please complete the training to download the poster.');
-        setShowIneligibleModal(true);
-      }
-    } catch (_) {
-      setIneligibleMessage('Unable to check eligibility. Please try again.');
+    const result = await checkPosterEligibility(mobile10);
+    setCheckingEligibility(false);
+    const eligibleResult = result.data?.eligible ?? result.eligible;
+    if (result.success && eligibleResult) {
+      setEligible(true);
+    } else {
+      setIneligibleMessage(result.data?.message || result.message || 'Your training is not yet completed. Please complete the training to download the poster.');
       setShowIneligibleModal(true);
-    } finally {
-      setCheckingEligibility(false);
     }
   };
 
@@ -182,6 +175,16 @@ export default function Certificate() {
             clonedDoc.body.style.minWidth = `${POSTER_WIDTH}px`;
             clonedDoc.body.style.minHeight = `${POSTER_HEIGHT}px`;
           }
+          // Force poster root and every ancestor to 810x1440 so clone layout and capture height are correct (fixes text position + bottom cut-off on iOS).
+          let node = clonedElement;
+          while (node && node !== clonedDoc.body) {
+            node.style.width = `${POSTER_WIDTH}px`;
+            node.style.height = `${POSTER_HEIGHT}px`;
+            node.style.minWidth = `${POSTER_WIDTH}px`;
+            node.style.minHeight = `${POSTER_HEIGHT}px`;
+            node.style.overflow = 'visible';
+            node = node.parentElement;
+          }
         }
         clonedElement.style.opacity = '1';
         clonedElement.style.visibility = 'visible';
@@ -224,7 +227,6 @@ export default function Certificate() {
     if (!target) return;
     setGenerating(true);
     setPendingDownload(null);
-    setDownloadError(null);
     try {
       await waitForExportImageReadyWithTimeout(imageWaitMs);
       await new Promise((r) => setTimeout(r, layoutSettleMs));
@@ -238,7 +240,6 @@ export default function Certificate() {
       cropped.width = w;
       cropped.height = h;
       const ctx = cropped.getContext('2d');
-      if (!ctx) throw new Error('Canvas not supported');
       ctx.drawImage(canvas, 0, 0, Math.min(canvas.width, w), Math.min(canvas.height, h), 0, 0, w, h);
       const dataUrl = cropped.toDataURL('image/png');
       const filename = `GuideXpert-Poster-${safeFilename(fullName)}-${Date.now()}.png`;
@@ -256,7 +257,6 @@ export default function Certificate() {
       }
     } catch (err) {
       console.error(err);
-      setDownloadError('Generation failed. Please try again.');
     } finally {
       hideExportWrapper();
     }
@@ -268,7 +268,6 @@ export default function Certificate() {
     if (!target) return;
     setGenerating(true);
     setPendingDownload(null);
-    setDownloadError(null);
     try {
       await waitForExportImageReadyWithTimeout(imageWaitMs);
       await new Promise((r) => setTimeout(r, layoutSettleMs));
@@ -282,7 +281,6 @@ export default function Certificate() {
       cropped.width = w;
       cropped.height = h;
       const ctx = cropped.getContext('2d');
-      if (!ctx) throw new Error('Canvas not supported');
       ctx.drawImage(canvas, 0, 0, Math.min(canvas.width, w), Math.min(canvas.height, h), 0, 0, w, h);
       const imgData = cropped.toDataURL('image/png');
       const pdf = new jsPDF({
@@ -312,7 +310,6 @@ export default function Certificate() {
       }
     } catch (err) {
       console.error(err);
-      setDownloadError('Generation failed. Please try again.');
     } finally {
       hideExportWrapper();
     }
@@ -320,12 +317,11 @@ export default function Certificate() {
   };
 
   function closeIosResult() {
-    const url = iosResultBlobUrlRef.current;
-    iosResultBlobUrlRef.current = null;
-    setIosResult(null);
-    if (url) {
-      setTimeout(() => { try { URL.revokeObjectURL(url); } catch (_) {} }, 3000);
+    if (iosResultBlobUrlRef.current) {
+      try { URL.revokeObjectURL(iosResultBlobUrlRef.current); } catch (_) {}
+      iosResultBlobUrlRef.current = null;
     }
+    setIosResult(null);
   }
 
   return (
@@ -364,29 +360,21 @@ export default function Certificate() {
               <img
                 src={iosResult.url}
                 alt="Your poster"
-                className="max-w-full max-h-full object-contain"
-                style={{ WebkitTouchCallout: 'default', WebkitUserSelect: 'auto', userSelect: 'auto' }}
+                className="max-w-full max-h-full object-contain select-none"
+                style={{ WebkitUserSelect: 'none', userSelect: 'none' }}
                 draggable={false}
               />
             ) : (
-              <div className="flex flex-col items-center justify-center gap-4 w-full flex-1 min-h-0">
-                <p className="text-white text-sm text-center px-2">
-                  To save the PDF: tap the button below to open it, then use the Share button and choose Save to Files.
-                </p>
-                <a
-                  href={iosResult.url}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="px-6 py-3 rounded-lg bg-white text-gray-900 font-medium no-underline"
-                >
-                  Open PDF
-                </a>
-              </div>
+              <iframe
+                src={iosResult.url}
+                title="Poster PDF"
+                className="w-full flex-1 min-h-0 border-0"
+              />
             )}
             <p className="text-white text-sm text-center mt-3 px-2">
               {iosResult.type === 'image'
                 ? 'Long-press the image above, then tap "Save Image" to save to Photos.'
-                : 'After opening, use Share to save or add to Files.'}
+                : 'Tap the Share icon below, then choose Save to Files or add to Photos.'}
             </p>
           </div>
           <div className="p-4 bg-gray-900">
@@ -538,11 +526,6 @@ export default function Certificate() {
                 >
                   Download now (tap to save)
                 </button>
-              )}
-              {downloadError && (
-                <p className="w-full text-center text-sm text-red-600" role="alert">
-                  {downloadError}
-                </p>
               )}
             </div>
           )}
