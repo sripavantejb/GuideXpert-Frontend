@@ -93,7 +93,7 @@ export default function Certificate() {
       wrapper.style.top = '0';
     }
     wrapper.style.opacity = '1';
-    wrapper.style.zIndex = '9999';
+    wrapper.style.zIndex = '9998';
     wrapper.style.overflow = 'visible';
     wrapper.style.minWidth = `${POSTER_WIDTH}px`;
     wrapper.style.maxWidth = `${POSTER_WIDTH}px`;
@@ -242,6 +242,33 @@ export default function Certificate() {
 
   return (
     <div className="max-w-6xl mx-auto px-4 py-6">
+      {/* Full-screen generating loader — professional, iOS-style */}
+      {generating && (
+        <div
+          className="fixed inset-0 flex items-center justify-center z-[10000]"
+          style={{
+            backgroundColor: 'rgba(0,0,0,0.4)',
+            backdropFilter: 'blur(8px)',
+            WebkitBackdropFilter: 'blur(8px)',
+          }}
+          aria-live="polite"
+          aria-busy="true"
+        >
+          <div className="flex flex-col items-center gap-5 rounded-2xl bg-white/95 shadow-xl px-8 py-8 mx-4 max-w-[280px]">
+            <div
+              className="w-10 h-10 rounded-full border-2 border-primary-navy border-t-transparent animate-spin"
+              style={{ animationDuration: '0.8s' }}
+            />
+            <p className="text-sm font-medium text-gray-800 text-center">
+              Generating poster…
+            </p>
+            <p className="text-xs text-gray-500 text-center">
+              This may take a few seconds
+            </p>
+          </div>
+        </div>
+      )}
+
       <h1 className="text-2xl font-semibold text-gray-900 mb-2">Download Poster</h1>
       <p className="text-gray-600 mb-6">Enter your details and verify your training completion to generate and download your official poster.</p>
 

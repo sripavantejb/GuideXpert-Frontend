@@ -41,8 +41,8 @@ const PosterPreview = forwardRef(function PosterPreview(
 
   const textLeft = 360;
   const textWidth = 432;
-  const textBlockBottom = forExport ? 96 : 64;
-  const textContainerPaddingBottom = forExport ? 28 : 20;
+  const textBlockBottom = forExport ? 72 : 64;
+  const textContainerPaddingBottom = forExport ? 24 : 20;
   const taglineFontSize = forExport ? 20 : 24;
   const taglineMinHeight = forExport ? 30 : 34;
   const textContainerPaddingTop = forExport ? 48 : 20;
@@ -96,7 +96,7 @@ const PosterPreview = forwardRef(function PosterPreview(
         />
       )}
 
-      {/* Text over poster's blue box — forExport adds top/line padding so ascenders aren't clipped in PNG/PDF */}
+      {/* Text over poster's blue box — forExport: fixed px values so alignment is identical on all devices */}
       <div
         style={{
           position: 'absolute',
@@ -111,6 +111,7 @@ const PosterPreview = forwardRef(function PosterPreview(
           justifyContent: 'flex-start',
           direction: 'ltr',
           overflow: textContainerOverflow,
+          ...(forExport ? { contain: 'layout' } : {}),
         }}
       >
         <div
