@@ -22,6 +22,11 @@ function isMobileOrTablet() {
   return /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent) || (typeof window !== 'undefined' && 'ontouchstart' in window);
 }
 
+function isIOS() {
+  if (typeof navigator === 'undefined') return false;
+  return /iPhone|iPad|iPod/i.test(navigator.userAgent);
+}
+
 export default function Certificate() {
   const [firstName, setFirstName] = useState('');
   const [lastName, setLastName] = useState('');
@@ -108,8 +113,8 @@ export default function Certificate() {
     wrapper.style.opacity = '0';
     wrapper.style.zIndex = '-1';
     wrapper.style.overflow = 'hidden';
-    wrapper.style.left = '';
-    wrapper.style.top = '';
+    wrapper.style.left = isIOS() ? '-9999px' : '0';
+    wrapper.style.top = '0';
     wrapper.style.minWidth = '';
     wrapper.style.maxWidth = '';
     wrapper.style.minHeight = '';
@@ -137,10 +142,23 @@ export default function Certificate() {
       clonedElement.style.visibility = 'visible';
       clonedElement.style.zIndex = '9999';
       clonedElement.style.overflow = 'visible';
+      clonedElement.style.position = 'relative';
+      clonedElement.style.left = '0';
+      clonedElement.style.top = '0';
+      let parent = clonedElement.parentElement;
+      while (parent && parent !== clonedDoc.body) {
+        const pos = parent.style.position || (typeof getComputedStyle !== 'undefined' ? clonedDoc.defaultView.getComputedStyle(parent).position : '');
+        if (String(pos).toLowerCase() === 'fixed') {
+          parent.style.position = 'absolute';
+          parent.style.left = '0';
+          parent.style.top = '0';
+        }
+        parent = parent.parentElement;
+      }
     },
   });
 
-  const imageWaitMs = isMobileOrTablet() ? 600 : 2500;
+  const imageWaitMs = 8000;
   const layoutSettleMs = isMobileOrTablet() ? 80 : 300;
 
   function triggerPendingDownload() {
@@ -156,12 +174,18 @@ export default function Certificate() {
   }
 
   const handleDownloadPng = async () => {
+    if (!exportImageReadyRef.current) {
+      await waitForExportImageReadyWithTimeout(imageWaitMs);
+      if (!exportImageReadyRef.current) {
+        alert('Poster image is still loading. Please wait a moment and try again.');
+        return;
+      }
+    }
     const target = exportRef.current || posterRef.current;
     if (!target) return;
     setGenerating(true);
     setPendingDownload(null);
     try {
-      await waitForExportImageReadyWithTimeout(imageWaitMs);
       await new Promise((r) => setTimeout(r, layoutSettleMs));
       showExportWrapper();
       await new Promise((r) => requestAnimationFrame(r));
@@ -193,12 +217,18 @@ export default function Certificate() {
   };
 
   const handleDownloadPdf = async () => {
+    if (!exportImageReadyRef.current) {
+      await waitForExportImageReadyWithTimeout(imageWaitMs);
+      if (!exportImageReadyRef.current) {
+        alert('Poster image is still loading. Please wait a moment and try again.');
+        return;
+      }
+    }
     const target = exportRef.current || posterRef.current;
     if (!target) return;
     setGenerating(true);
     setPendingDownload(null);
     try {
-      await waitForExportImageReadyWithTimeout(imageWaitMs);
       await new Promise((r) => setTimeout(r, layoutSettleMs));
       showExportWrapper();
       await new Promise((r) => requestAnimationFrame(r));
@@ -380,21 +410,21 @@ export default function Certificate() {
           {eligible && (
             <div className="flex flex-wrap gap-3 mt-4 w-full justify-center">
               <div className="rounded-md bg-green-50 border border-green-200 px-3 py-2 text-sm text-green-800 mb-2 w-full text-center">
-                You are eligible. Your poster is ready to download.
+                {exportImageReady ? 'Your poster is ready to download.' : 'Preparing poster…'}
               </div>
               <button
                 type="button"
                 onClick={handleDownloadPng}
-                disabled={generating}
-                className="inline-flex items-center rounded-md bg-primary-navy px-4 py-2 text-sm font-medium text-white shadow-sm hover:bg-primary-blue-800 disabled:opacity-60"
+                disabled={generating || !exportImageReady}
+                className="inline-flex items-center rounded-md bg-primary-navy px-4 py-2 text-sm font-medium text-white shadow-sm hover:bg-primary-blue-800 disabled:opacity-60 disabled:cursor-not-allowed"
               >
                 {generating ? 'Generating…' : 'Download as PNG'}
               </button>
               <button
                 type="button"
                 onClick={handleDownloadPdf}
-                disabled={generating}
-                className="inline-flex items-center rounded-md border border-gray-300 bg-white px-4 py-2 text-sm font-medium text-gray-700 shadow-sm hover:bg-gray-50 disabled:opacity-60"
+                disabled={generating || !exportImageReady}
+                className="inline-flex items-center rounded-md border border-gray-300 bg-white px-4 py-2 text-sm font-medium text-gray-700 shadow-sm hover:bg-gray-50 disabled:opacity-60 disabled:cursor-not-allowed"
               >
                 {generating ? 'Generating…' : 'Download as PDF'}
               </button>
@@ -412,14 +442,14 @@ export default function Certificate() {
         </div>
       </div>
 
-      {/* Hidden poster for PNG/PDF only — forExport=true so tagline fits in export (preview unchanged) */}
+      {/* Hidden poster for PNG/PDF only — forExport=true. On iOS use absolute to avoid html2canvas fixed-position bug. */}
       {eligible && (
         <div
           ref={exportWrapperRef}
           aria-hidden="true"
           style={{
-            position: 'fixed',
-            left: 0,
+            position: isIOS() ? 'absolute' : 'fixed',
+            left: isIOS() ? '-9999px' : 0,
             top: 0,
             width: POSTER_WIDTH,
             height: POSTER_HEIGHT,
