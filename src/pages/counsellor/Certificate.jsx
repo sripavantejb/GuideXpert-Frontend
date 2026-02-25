@@ -95,7 +95,9 @@ export default function Certificate() {
   function showExportWrapper() {
     const wrapper = exportWrapperRef.current;
     if (!wrapper) return;
-    if (isMobileOrTablet()) {
+    // On iOS, keep wrapper at (0,0) during capture so html2canvas uses correct origin and text stays in place.
+    // Off-screen positioning (-9999px) causes wrong coordinates and misplaced text on iOS only.
+    if (isMobileOrTablet() && !isIOS()) {
       wrapper.style.left = '-9999px';
       wrapper.style.top = '0';
     }
