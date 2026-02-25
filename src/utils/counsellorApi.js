@@ -159,6 +159,24 @@ export const getPredictedColleges = async (params = {}, token = getCounsellorTok
   }, token);
 };
 
+/** GET /api/counsellor/assessment-links — returns careerDna and courseFit links. */
+export const getAssessmentLinks = async (token = getCounsellorToken()) => {
+  return counsellorRequest('/assessment-links', { method: 'GET' }, token);
+};
+
+/** GET /api/counsellor/assessment-results?type=career-dna|course-fit&page=&limit= */
+export const getAssessmentResults = async (type, params = {}, token = getCounsellorToken()) => {
+  const search = new URLSearchParams({ type });
+  if (params.page != null) search.set('page', params.page);
+  if (params.limit != null) search.set('limit', params.limit);
+  return counsellorRequest(`/assessment-results?${search.toString()}`, { method: 'GET' }, token);
+};
+
+/** GET /api/counsellor/assessment-results/:id?type=career-dna|course-fit */
+export const getAssessmentResultById = async (id, type, token = getCounsellorToken()) => {
+  return counsellorRequest(`/assessment-results/${encodeURIComponent(id)}?type=${encodeURIComponent(type)}`, { method: 'GET' }, token);
+};
+
 export const exportStudents = async (params = {}, token = getCounsellorToken()) => {
   const search = new URLSearchParams();
   if (params.q) search.set('q', params.q);

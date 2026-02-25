@@ -11,6 +11,7 @@ import FeedbackForm from './pages/FeedbackForm';
 import AssessmentForm from './pages/AssessmentForm';
 import AssessmentForm2 from './pages/AssessmentForm2';
 import AssessmentForm3 from './pages/AssessmentForm3';
+import AssessmentFormCounsellorTest from './pages/AssessmentFormCounsellorTest';
 import AdminLayout from './components/Admin/AdminLayout';
 import Overview from './pages/admin/Overview';
 import Leads from './pages/admin/Leads';
@@ -73,6 +74,8 @@ function App() {
           <Route path="/assessment" element={<AssessmentForm />} />
           <Route path="/assessment-2" element={<AssessmentForm2 />} />
           <Route path="/assessment-3" element={<AssessmentForm3 />} />
+          <Route path="/assessment-career-dna" element={<AssessmentFormCounsellorTest type="career-dna" />} />
+          <Route path="/assessment-course-fit" element={<AssessmentFormCounsellorTest type="course-fit" />} />
           <Route path="/admin/login" element={<AdminLogin />} />
           <Route
             path="/admin"
