@@ -186,6 +186,12 @@
     box-shadow: 0 1px 3px rgba(0, 0, 0, 0.04), 0 1px 2px rgba(0, 0, 0, 0.02);
   }
 
+  /* Quiz/assessment pages – home-page-style gradient (matches ApplySection hero) */
+  .assessment-page-wrap {
+    min-height: 100vh;
+    background: linear-gradient(to bottom right, #e8f0fa 0%, #eef4fa 25%, #f2f4f8 50%, #f5f4f2 75%, #f7f4eb 100%);
+  }
+
   .portal-card-hover:hover {
     box-shadow: 0 12px 28px rgba(0, 0, 0, 0.08), 0 4px 12px rgba(0, 0, 0, 0.04);
   }
