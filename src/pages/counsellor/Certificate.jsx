@@ -17,6 +17,11 @@ const POSTER_WIDTH = 810;
 const POSTER_HEIGHT = 1440;
 const PREVIEW_SCALE = 0.38;
 
+function isMobileOrTablet() {
+  if (typeof navigator === 'undefined') return false;
+  return /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent) || (typeof window !== 'undefined' && 'ontouchstart' in window);
+}
+
 export default function Certificate() {
   const [firstName, setFirstName] = useState('');
   const [lastName, setLastName] = useState('');
@@ -29,10 +34,12 @@ export default function Certificate() {
   const [eligible, setEligible] = useState(false);
   const [generating, setGenerating] = useState(false);
   const [exportImageReady, setExportImageReady] = useState(false);
+  const [pendingDownload, setPendingDownload] = useState(null);
   const posterRef = useRef(null);
   const exportRef = useRef(null);
   const exportWrapperRef = useRef(null);
   const exportImageReadyRef = useRef(false);
+  const pendingDownloadRef = useRef({ url: null, filename: null, revoke: false });
 
   const mobile10 = to10Digits(mobileNumber);
   const fullName = [firstName.trim(), lastName.trim()].filter(Boolean).join(' ');
@@ -81,9 +88,18 @@ export default function Certificate() {
   function showExportWrapper() {
     const wrapper = exportWrapperRef.current;
     if (!wrapper) return;
+    if (isMobileOrTablet()) {
+      wrapper.style.left = '-9999px';
+      wrapper.style.top = '0';
+    }
     wrapper.style.opacity = '1';
     wrapper.style.zIndex = '9999';
     wrapper.style.overflow = 'visible';
+    wrapper.style.minWidth = `${POSTER_WIDTH}px`;
+    wrapper.style.maxWidth = `${POSTER_WIDTH}px`;
+    wrapper.style.minHeight = `${POSTER_HEIGHT}px`;
+    wrapper.style.maxHeight = `${POSTER_HEIGHT}px`;
+    wrapper.style.transform = 'translateZ(0)';
   }
 
   function hideExportWrapper() {
@@ -92,6 +108,13 @@ export default function Certificate() {
     wrapper.style.opacity = '0';
     wrapper.style.zIndex = '-1';
     wrapper.style.overflow = 'hidden';
+    wrapper.style.left = '';
+    wrapper.style.top = '';
+    wrapper.style.minWidth = '';
+    wrapper.style.maxWidth = '';
+    wrapper.style.minHeight = '';
+    wrapper.style.maxHeight = '';
+    wrapper.style.transform = '';
   }
 
   const getHtml2canvasOptions = (scale) => ({
@@ -117,13 +140,29 @@ export default function Certificate() {
     },
   });
 
+  const imageWaitMs = isMobileOrTablet() ? 600 : 2500;
+  const layoutSettleMs = isMobileOrTablet() ? 80 : 300;
+
+  function triggerPendingDownload() {
+    const { url, filename, revoke } = pendingDownloadRef.current;
+    if (!url || !filename) return;
+    const link = document.createElement('a');
+    link.download = filename;
+    link.href = url;
+    link.click();
+    if (revoke) setTimeout(() => URL.revokeObjectURL(url), 2000);
+    pendingDownloadRef.current = { url: null, filename: null, revoke: false };
+    setPendingDownload(null);
+  }
+
   const handleDownloadPng = async () => {
     const target = exportRef.current || posterRef.current;
     if (!target) return;
     setGenerating(true);
+    setPendingDownload(null);
     try {
-      await waitForExportImageReadyWithTimeout(2500);
-      await new Promise((r) => setTimeout(r, 300));
+      await waitForExportImageReadyWithTimeout(imageWaitMs);
+      await new Promise((r) => setTimeout(r, layoutSettleMs));
       showExportWrapper();
       await new Promise((r) => requestAnimationFrame(r));
       const scale = 2;
@@ -135,10 +174,16 @@ export default function Certificate() {
       cropped.height = h;
       const ctx = cropped.getContext('2d');
       ctx.drawImage(canvas, 0, 0, w, h, 0, 0, w, h);
+      const dataUrl = cropped.toDataURL('image/png');
+      const filename = `GuideXpert-Poster-${safeFilename(fullName)}-${Date.now()}.png`;
       const link = document.createElement('a');
-      link.download = `GuideXpert-Poster-${safeFilename(fullName)}-${Date.now()}.png`;
-      link.href = cropped.toDataURL('image/png');
+      link.download = filename;
+      link.href = dataUrl;
       link.click();
+      if (isMobileOrTablet()) {
+        pendingDownloadRef.current = { url: dataUrl, filename };
+        setPendingDownload('png');
+      }
     } catch (err) {
       console.error(err);
     } finally {
@@ -151,9 +196,10 @@ export default function Certificate() {
     const target = exportRef.current || posterRef.current;
     if (!target) return;
     setGenerating(true);
+    setPendingDownload(null);
     try {
-      await waitForExportImageReadyWithTimeout(2500);
-      await new Promise((r) => setTimeout(r, 300));
+      await waitForExportImageReadyWithTimeout(imageWaitMs);
+      await new Promise((r) => setTimeout(r, layoutSettleMs));
       showExportWrapper();
       await new Promise((r) => requestAnimationFrame(r));
       const scale = 2;
@@ -173,7 +219,19 @@ export default function Certificate() {
         compress: true,
       });
       pdf.addImage(imgData, 'PNG', 0, 0, POSTER_WIDTH, POSTER_HEIGHT);
-      pdf.save(`GuideXpert-Poster-${safeFilename(fullName)}-${Date.now()}.pdf`);
+      const filename = `GuideXpert-Poster-${safeFilename(fullName)}-${Date.now()}.pdf`;
+      const blob = pdf.output('blob');
+      const pdfUrl = URL.createObjectURL(blob);
+      const pdfLink = document.createElement('a');
+      pdfLink.download = filename;
+      pdfLink.href = pdfUrl;
+      pdfLink.click();
+      if (isMobileOrTablet()) {
+        pendingDownloadRef.current = { url: pdfUrl, filename, revoke: true };
+        setPendingDownload('pdf');
+      } else {
+        setTimeout(() => URL.revokeObjectURL(pdfUrl), 5000);
+      }
     } catch (err) {
       console.error(err);
     } finally {
@@ -313,6 +371,15 @@ export default function Certificate() {
               >
                 {generating ? 'Generating…' : 'Download as PDF'}
               </button>
+              {pendingDownload && (
+                <button
+                  type="button"
+                  onClick={triggerPendingDownload}
+                  className="inline-flex items-center rounded-md bg-amber-600 px-4 py-2 text-sm font-medium text-white shadow-sm hover:bg-amber-700"
+                >
+                  Download now (tap to save)
+                </button>
+              )}
             </div>
           )}
         </div>
@@ -329,10 +396,15 @@ export default function Certificate() {
             top: 0,
             width: POSTER_WIDTH,
             height: POSTER_HEIGHT,
+            minWidth: POSTER_WIDTH,
+            maxWidth: POSTER_WIDTH,
+            minHeight: POSTER_HEIGHT,
+            maxHeight: POSTER_HEIGHT,
             overflow: 'hidden',
             opacity: 0,
             pointerEvents: 'none',
             zIndex: -1,
+            boxSizing: 'border-box',
           }}
         >
           <PosterPreview
