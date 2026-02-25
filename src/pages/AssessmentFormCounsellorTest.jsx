@@ -1,4 +1,5 @@
 import { useState, useRef, useMemo, useEffect } from 'react';
+import { Link } from 'react-router-dom';
 import { parseUtmFromUrl } from '../utils/utm';
 import {
   sendOtp,
@@ -85,8 +86,8 @@ export default function AssessmentFormCounsellorTest({ type = 'career-dna' }) {
 
   const flatQuestions = useMemo(
     () =>
-      sections.flatMap((s) =>
-        s.questions.map((q) => ({ ...q, sectionTitle: s.title }))
+      sections.flatMap((s, sectionIndex) =>
+        s.questions.map((q) => ({ ...q, sectionTitle: s.title, sectionSetIndex: sectionIndex + 1 }))
       ),
     [sections]
   );
@@ -296,9 +297,54 @@ export default function AssessmentFormCounsellorTest({ type = 'career-dna' }) {
     setErrors({ name: '', mobileNumber: '' });
   };
 
+  const currentQuestion = flatQuestions[questionIndex];
+  const topBarRightLabel = step === 3 && !submittedResult && currentQuestion
+    ? `Set ${currentQuestion.sectionSetIndex}`
+    : config.title;
+
   return (
     <div className="assessment-page-wrap py-8 px-4">
       <div className="max-w-2xl mx-auto">
+        {/* Page-level top bar: Back (left), context label (right) */}
+        <div className="flex items-center justify-between mb-6">
+          <div>
+            {step === 1 && (
+              <Link
+                to="/"
+                className="inline-flex items-center gap-1.5 rounded-lg border border-[#003366]/30 bg-white/80 px-4 py-2 text-sm font-medium text-gray-700 transition-colors hover:bg-[#003366]/5 hover:border-[#003366]/50"
+                aria-label="Back to home"
+              >
+                <span aria-hidden>←</span> Back
+              </Link>
+            )}
+            {step === 2 && (
+              <button
+                type="button"
+                onClick={() => { setStep(1); setOtp(['', '', '', '', '', '']); setOtpError(''); setSuccessMessage(''); setSubmitError(''); }}
+                className="inline-flex items-center gap-1.5 rounded-lg border border-[#003366]/30 bg-white/80 px-4 py-2 text-sm font-medium text-gray-700 transition-colors hover:bg-[#003366]/5 hover:border-[#003366]/50"
+                aria-label="Back to your details"
+              >
+                <span aria-hidden>←</span> Back
+              </button>
+            )}
+            {step === 3 && !submittedResult && (
+              <button
+                type="button"
+                onClick={() => (questionIndex > 0 ? setQuestionIndex((i) => i - 1) : handleBackToOtp())}
+                disabled={submitting}
+                className="inline-flex items-center gap-1.5 rounded-lg border border-[#003366]/30 bg-white/80 px-4 py-2 text-sm font-medium text-gray-700 transition-colors hover:bg-[#003366]/5 hover:border-[#003366]/50 disabled:opacity-60 disabled:cursor-not-allowed"
+                aria-label={questionIndex > 0 ? 'Previous question' : 'Back to verification'}
+              >
+                <span aria-hidden>←</span> Back
+              </button>
+            )}
+            {step === 3 && submittedResult && (
+              <span className="text-sm text-gray-500">{config.title}</span>
+            )}
+          </div>
+          <span className="text-sm font-medium text-gray-600">{topBarRightLabel}</span>
+        </div>
+
         <div className="text-center mb-6">
           <h1 className="text-2xl font-bold" style={{ color: '#003366' }}>GuideXpert</h1>
           <p className="text-gray-600 mt-1">{config.title}</p>
@@ -458,7 +504,7 @@ export default function AssessmentFormCounsellorTest({ type = 'career-dna' }) {
                   <button
                     type="submit"
                     disabled={verifying || loading}
-                    className="flex-[2] py-3 px-4 bg-[#003366] hover:bg-[#004080] text-white font-medium rounded-lg transition disabled:opacity-60"
+                    className="flex-2 py-3 px-4 bg-[#003366] hover:bg-[#004080] text-white font-medium rounded-lg transition disabled:opacity-60"
                   >
                     {verifying ? 'Verifying...' : 'Verify & Continue'}
                   </button>
@@ -479,41 +525,41 @@ export default function AssessmentFormCounsellorTest({ type = 'career-dna' }) {
 
           {step === 3 && !submittedResult && flatQuestions.length > 0 && (
             <>
-              <h2 className="text-lg font-semibold mb-1" style={{ color: '#003366' }}>Assessment questions</h2>
-              <p className="text-sm text-gray-600 mb-4">Answer honestly to get the best fit.</p>
-              <div className="mb-6">
-                <div className="flex items-center justify-between text-xs text-gray-500 mb-1">
-                  <span>Question {questionIndex + 1} of {flatQuestions.length}</span>
-                </div>
-                <div className="w-full bg-gray-200 rounded-full h-1.5">
-                  <div
-                    className="bg-[#003366] h-1.5 rounded-full transition-all"
-                    style={{ width: `${((questionIndex + 1) / flatQuestions.length) * 100}%` }}
-                  />
-                </div>
-              </div>
               {submitError && (
                 <div className="mb-4 p-3 rounded-lg border border-red-200 bg-red-50 text-red-700 text-sm">{submitError}</div>
               )}
-              <form onSubmit={handleSubmitAssessment} onKeyDown={handleAssessmentFormKeyDown} className="space-y-6">
-                <div className="rounded-2xl bg-white/95 border border-gray-200/80 border-l-2 border-l-[#003366] shadow-md overflow-hidden p-6 sm:p-8">
+              <form onSubmit={handleSubmitAssessment} onKeyDown={handleAssessmentFormKeyDown} className="space-y-0">
+                {/* Central card: Question X of N, progress bar, section + question, options, footer */}
+                <div className="rounded-2xl bg-white border border-gray-200/80 shadow-md overflow-hidden p-6 sm:p-8">
                   {(() => {
                     const q = flatQuestions[questionIndex];
                     if (!q) return null;
                     return (
                       <div key={q.id}>
-                        <h3 className="text-sm font-semibold uppercase tracking-wide text-[#003366] mb-4">{q.sectionTitle}</h3>
-                        <p className="text-lg font-semibold text-gray-900 mb-6">{q.text}</p>
+                        <p className="text-sm text-gray-600 mb-2">Question {questionIndex + 1} of {flatQuestions.length}</p>
+                        <div className="w-full bg-gray-200 rounded-full h-2 mb-6">
+                          <div
+                            className="bg-[#003366] h-2 rounded-full transition-all"
+                            style={{ width: `${((questionIndex + 1) / flatQuestions.length) * 100}%` }}
+                            role="progressbar"
+                            aria-valuenow={questionIndex + 1}
+                            aria-valuemin={1}
+                            aria-valuemax={flatQuestions.length}
+                            aria-label={`Question ${questionIndex + 1} of ${flatQuestions.length}`}
+                          />
+                        </div>
+                        <h3 className="text-xs font-semibold uppercase tracking-wider text-[#003366] mb-3">{q.sectionTitle}</h3>
+                        <p className="text-xl font-bold text-gray-900 mb-6">{q.text}</p>
                         {q.type === 'mcq' && (
-                          <div className="space-y-4">
+                          <div className="space-y-3">
                             {q.options.map((opt, idx) => {
                               const letter = String.fromCharCode(65 + idx);
                               const isSelected = (answers[q.id] || '') === opt;
                               return (
                                 <label
                                   key={opt}
-                                  className={`flex items-center gap-4 w-full rounded-xl border-2 py-4 px-4 transition-colors cursor-pointer ${
-                                    isSelected ? 'border-[#003366] bg-[#003366]/10' : 'border-gray-200 bg-gray-50/50 hover:border-[#003366]/30 hover:bg-[#003366]/5'
+                                  className={`flex items-center gap-4 w-full rounded-xl border py-4 px-4 transition-colors cursor-pointer bg-white ${
+                                    isSelected ? 'border-2 border-[#003366] bg-[#003366]/5' : 'border border-gray-200 hover:border-gray-300 hover:bg-gray-50/50'
                                   }`}
                                 >
                                   <input
@@ -523,8 +569,9 @@ export default function AssessmentFormCounsellorTest({ type = 'career-dna' }) {
                                     checked={isSelected}
                                     onChange={() => setAnswer(q.id, opt)}
                                     className="sr-only"
+                                    aria-label={`Option ${letter}: ${opt}`}
                                   />
-                                  <span className={`shrink-0 w-9 h-9 rounded-full flex items-center justify-center text-sm font-bold ${isSelected ? 'bg-[#003366] text-white' : 'bg-[#003366]/10 text-[#003366]'}`}>
+                                  <span className={`shrink-0 w-8 h-8 rounded-full flex items-center justify-center text-sm font-bold ${isSelected ? 'bg-[#003366] text-white' : 'bg-gray-100 text-gray-600'}`}>
                                     {letter}
                                   </span>
                                   <span className="text-sm font-medium text-gray-800">{opt}</span>
@@ -536,33 +583,35 @@ export default function AssessmentFormCounsellorTest({ type = 'career-dna' }) {
                       </div>
                     );
                   })()}
-                </div>
-                <div className="flex gap-3 pt-6">
-                  <button
-                    type="button"
-                    onClick={() => (questionIndex > 0 ? setQuestionIndex((i) => i - 1) : handleBackToOtp())}
-                    disabled={submitting}
-                    className="px-4 py-2 bg-gray-100 hover:bg-gray-200 text-gray-700 font-medium rounded-lg transition disabled:opacity-60"
-                  >
-                    Back
-                  </button>
-                  {questionIndex < flatQuestions.length - 1 ? (
+                  {/* Footer: Back (left), primary action (right) */}
+                  <div className="flex items-center justify-between pt-6 mt-6 border-t border-gray-100">
                     <button
                       type="button"
-                      onClick={() => setQuestionIndex((i) => i + 1)}
-                      className="flex-1 py-3 px-4 bg-[#003366] hover:bg-[#004080] text-white font-medium rounded-lg transition"
-                    >
-                      Next
-                    </button>
-                  ) : (
-                    <button
-                      type="submit"
+                      onClick={() => (questionIndex > 0 ? setQuestionIndex((i) => i - 1) : handleBackToOtp())}
                       disabled={submitting}
-                      className="flex-1 py-3 px-4 bg-[#003366] hover:bg-[#004080] text-white font-medium rounded-lg transition disabled:opacity-60 disabled:cursor-not-allowed"
+                      className="text-sm font-medium text-gray-600 hover:text-gray-900 transition disabled:opacity-60 disabled:cursor-not-allowed"
+                      aria-label={questionIndex > 0 ? 'Previous question' : 'Back to verification'}
                     >
-                      {submitting ? 'Submitting...' : 'Submit Assessment'}
+                      Back
                     </button>
-                  )}
+                    {questionIndex < flatQuestions.length - 1 ? (
+                      <button
+                        type="button"
+                        onClick={() => setQuestionIndex((i) => i + 1)}
+                        className="rounded-lg bg-[#003366] hover:bg-[#004080] text-white font-medium px-5 py-2.5 text-sm transition"
+                      >
+                        Next
+                      </button>
+                    ) : (
+                      <button
+                        type="submit"
+                        disabled={submitting}
+                        className="rounded-lg bg-[#003366] hover:bg-[#004080] text-white font-medium px-5 py-2.5 text-sm transition disabled:opacity-60 disabled:cursor-not-allowed"
+                      >
+                        {submitting ? 'Submitting...' : 'Submit Assessment'}
+                      </button>
+                    )}
+                  </div>
                 </div>
               </form>
             </>
