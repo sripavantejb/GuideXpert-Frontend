@@ -1,4 +1,4 @@
-import { useState, useRef } from 'react';
+import { useState, useRef, useEffect } from 'react';
 import html2canvas from 'html2canvas';
 import { jsPDF } from 'jspdf';
 import { checkPosterEligibility } from '../../utils/api';
@@ -28,8 +28,11 @@ export default function Certificate() {
   const [checkingEligibility, setCheckingEligibility] = useState(false);
   const [eligible, setEligible] = useState(false);
   const [generating, setGenerating] = useState(false);
+  const [exportImageReady, setExportImageReady] = useState(false);
   const posterRef = useRef(null);
   const exportRef = useRef(null);
+  const exportWrapperRef = useRef(null);
+  const exportImageReadyRef = useRef(false);
 
   const mobile10 = to10Digits(mobileNumber);
   const fullName = [firstName.trim(), lastName.trim()].filter(Boolean).join(' ');
@@ -40,6 +43,13 @@ export default function Certificate() {
     if (!canSubmit) return;
     setShowConfirmModal(true);
   };
+
+  useEffect(() => {
+    if (!eligible) {
+      setExportImageReady(false);
+      exportImageReadyRef.current = false;
+    }
+  }, [eligible]);
 
   const handleConfirmAndGenerate = async () => {
     setShowConfirmModal(false);
@@ -55,6 +65,35 @@ export default function Certificate() {
     }
   };
 
+  function waitForExportImageReadyWithTimeout(ms) {
+    return new Promise((resolve) => {
+      if (exportImageReadyRef.current) return resolve();
+      const deadline = Date.now() + ms;
+      const id = setInterval(() => {
+        if (exportImageReadyRef.current || Date.now() >= deadline) {
+          clearInterval(id);
+          resolve();
+        }
+      }, 50);
+    });
+  }
+
+  function showExportWrapper() {
+    const wrapper = exportWrapperRef.current;
+    if (!wrapper) return;
+    wrapper.style.opacity = '1';
+    wrapper.style.zIndex = '9999';
+    wrapper.style.overflow = 'visible';
+  }
+
+  function hideExportWrapper() {
+    const wrapper = exportWrapperRef.current;
+    if (!wrapper) return;
+    wrapper.style.opacity = '0';
+    wrapper.style.zIndex = '-1';
+    wrapper.style.overflow = 'hidden';
+  }
+
   const getHtml2canvasOptions = (scale) => ({
     scale,
     width: POSTER_WIDTH,
@@ -69,6 +108,8 @@ export default function Certificate() {
     allowTaint: true,
     imageTimeout: 0,
     onclone: (clonedDoc, clonedElement) => {
+      clonedDoc.documentElement.style.overflow = 'visible';
+      if (clonedDoc.body) clonedDoc.body.style.overflow = 'visible';
       clonedElement.style.opacity = '1';
       clonedElement.style.visibility = 'visible';
       clonedElement.style.zIndex = '9999';
@@ -80,8 +121,11 @@ export default function Certificate() {
     const target = exportRef.current || posterRef.current;
     if (!target) return;
     setGenerating(true);
-    await new Promise((r) => setTimeout(r, 1000));
     try {
+      await waitForExportImageReadyWithTimeout(2500);
+      await new Promise((r) => setTimeout(r, 300));
+      showExportWrapper();
+      await new Promise((r) => requestAnimationFrame(r));
       const scale = 2;
       const canvas = await html2canvas(target, getHtml2canvasOptions(scale));
       const w = POSTER_WIDTH * scale;
@@ -97,6 +141,8 @@ export default function Certificate() {
       link.click();
     } catch (err) {
       console.error(err);
+    } finally {
+      hideExportWrapper();
     }
     setGenerating(false);
   };
@@ -105,8 +151,11 @@ export default function Certificate() {
     const target = exportRef.current || posterRef.current;
     if (!target) return;
     setGenerating(true);
-    await new Promise((r) => setTimeout(r, 1000));
     try {
+      await waitForExportImageReadyWithTimeout(2500);
+      await new Promise((r) => setTimeout(r, 300));
+      showExportWrapper();
+      await new Promise((r) => requestAnimationFrame(r));
       const scale = 2;
       const canvas = await html2canvas(target, getHtml2canvasOptions(scale));
       const w = POSTER_WIDTH * scale;
@@ -127,6 +176,8 @@ export default function Certificate() {
       pdf.save(`GuideXpert-Poster-${safeFilename(fullName)}-${Date.now()}.pdf`);
     } catch (err) {
       console.error(err);
+    } finally {
+      hideExportWrapper();
     }
     setGenerating(false);
   };
@@ -270,6 +321,7 @@ export default function Certificate() {
       {/* Hidden poster for PNG/PDF only — forExport=true so tagline fits in export (preview unchanged) */}
       {eligible && (
         <div
+          ref={exportWrapperRef}
           aria-hidden="true"
           style={{
             position: 'fixed',
@@ -288,6 +340,10 @@ export default function Certificate() {
             fullName={fullName}
             mobileNumber={mobile10 || undefined}
             forExport
+            onExportImageLoad={() => {
+              exportImageReadyRef.current = true;
+              setExportImageReady(true);
+            }}
           />
         </div>
       )}

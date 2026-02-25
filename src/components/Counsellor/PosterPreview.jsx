@@ -1,4 +1,4 @@
-import { forwardRef, useState } from 'react';
+import { forwardRef, useState, useRef } from 'react';
 
 /** Poster template: 9:16 (viewBox 0 0 810 1440) */
 const WIDTH = 810;
@@ -32,11 +32,12 @@ const FallbackPosterSvg = () => (
  * Preview: normal layout (forExport=false). Download: forExport=true uses slightly smaller tagline so PNG/PDF don't clip.
  */
 const PosterPreview = forwardRef(function PosterPreview(
-  { fullName = '', mobileNumber = '', forExport = false },
+  { fullName = '', mobileNumber = '', forExport = false, onExportImageLoad },
   ref
 ) {
   const [imageLoaded, setImageLoaded] = useState(false);
   const [imageError, setImageError] = useState(false);
+  const exportImageLoadFired = useRef(false);
 
   const textLeft = 360;
   const textWidth = 432;
@@ -69,7 +70,13 @@ const PosterPreview = forwardRef(function PosterPreview(
         <img
           src="/downloadcertificate.svg"
           alt=""
-          onLoad={() => setImageLoaded(true)}
+          onLoad={() => {
+            setImageLoaded(true);
+            if (forExport && onExportImageLoad && !exportImageLoadFired.current) {
+              exportImageLoadFired.current = true;
+              onExportImageLoad();
+            }
+          }}
           onError={() => setImageError(true)}
           style={{
             position: 'absolute',
