@@ -58,7 +58,7 @@ const PosterPreview = forwardRef(function PosterPreview(
         width: WIDTH,
         height: HEIGHT,
         position: 'relative',
-        overflow: 'hidden',
+        overflow: forExport ? 'visible' : 'hidden',
         margin: 0,
         padding: 0,
         boxSizing: 'border-box',

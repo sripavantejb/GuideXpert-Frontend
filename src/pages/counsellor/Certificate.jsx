@@ -55,23 +55,35 @@ export default function Certificate() {
     }
   };
 
+  const getHtml2canvasOptions = (scale) => ({
+    scale,
+    width: POSTER_WIDTH,
+    height: POSTER_HEIGHT,
+    windowWidth: POSTER_WIDTH + 20,
+    windowHeight: POSTER_HEIGHT + 20,
+    scrollX: 0,
+    scrollY: 0,
+    useCORS: true,
+    backgroundColor: '#ffffff',
+    logging: false,
+    allowTaint: true,
+    imageTimeout: 0,
+    onclone: (clonedDoc, clonedElement) => {
+      clonedElement.style.opacity = '1';
+      clonedElement.style.visibility = 'visible';
+      clonedElement.style.zIndex = '9999';
+      clonedElement.style.overflow = 'visible';
+    },
+  });
+
   const handleDownloadPng = async () => {
     const target = exportRef.current || posterRef.current;
     if (!target) return;
     setGenerating(true);
-    await new Promise((r) => setTimeout(r, 600));
+    await new Promise((r) => setTimeout(r, 1000));
     try {
       const scale = 2;
-      const canvas = await html2canvas(target, {
-        scale,
-        width: POSTER_WIDTH,
-        height: POSTER_HEIGHT,
-        useCORS: true,
-        backgroundColor: '#ffffff',
-        logging: false,
-        allowTaint: true,
-        imageTimeout: 0,
-      });
+      const canvas = await html2canvas(target, getHtml2canvasOptions(scale));
       const w = POSTER_WIDTH * scale;
       const h = POSTER_HEIGHT * scale;
       const cropped = document.createElement('canvas');
@@ -93,19 +105,10 @@ export default function Certificate() {
     const target = exportRef.current || posterRef.current;
     if (!target) return;
     setGenerating(true);
-    await new Promise((r) => setTimeout(r, 600));
+    await new Promise((r) => setTimeout(r, 1000));
     try {
       const scale = 2;
-      const canvas = await html2canvas(target, {
-        scale,
-        width: POSTER_WIDTH,
-        height: POSTER_HEIGHT,
-        useCORS: true,
-        backgroundColor: '#ffffff',
-        logging: false,
-        allowTaint: true,
-        imageTimeout: 0,
-      });
+      const canvas = await html2canvas(target, getHtml2canvasOptions(scale));
       const w = POSTER_WIDTH * scale;
       const h = POSTER_HEIGHT * scale;
       const cropped = document.createElement('canvas');
