@@ -11,7 +11,7 @@ function validateMobile(value) {
 }
 
 export default function CounsellorLogin() {
-  const { loginWithPhone, isAuthenticated } = useCounsellorAuth();
+  const { setAuthFromVerifyOtp, isAuthenticated } = useCounsellorAuth();
   const navigate = useNavigate();
   const [step, setStep] = useState(1);
   const [mobileNumber, setMobileNumber] = useState('');
@@ -105,21 +105,18 @@ export default function CounsellorLogin() {
     setVerifying(true);
     const cleanPhone = mobileNumber.replace(/\D/g, '');
     const normalizedPhone = cleanPhone.length >= 10 ? cleanPhone.slice(-10) : cleanPhone;
-    // Same normalized number as send-otp so backend lookup key matches
+    // Same verification method as registration form: single verify-otp call with counsellorLogin returns token
     try {
-      const result = await verifyOtp(normalizedPhone, otpString);
+      const result = await verifyOtp(normalizedPhone, otpString, { counsellorLogin: true });
       if (result.success && result.data?.verified === true) {
-        const loginResult = await loginWithPhone(normalizedPhone);
-        if (loginResult.success) {
+        if (result.data?.token && result.data?.user) {
+          setAuthFromVerifyOtp(result.data);
           navigate('/counsellor/dashboard', { replace: true });
           return;
         }
-        const loginMsg = loginResult.status === 500 && (loginResult.message === 'Something went wrong.' || !loginResult.message)
-          ? 'Login failed. Please try again.'
-          : (loginResult.message || 'No counsellor account linked to this number.');
-        setOtpError(loginMsg);
+        setOtpError(result.message || 'Login failed. Please try again.');
       } else {
-        setOtpError(result.message || 'Invalid or expired OTP. Please try again.');
+        setOtpError(result.message || result.data?.message || 'Invalid or expired OTP. Please try again.');
         setOtp(['', '', '', '', '', '']);
         setTimeout(() => otpInputRefs.current[0]?.focus(), 100);
       }

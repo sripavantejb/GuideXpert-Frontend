@@ -37,6 +37,17 @@ export function CounsellorAuthProvider({ children }) {
     return result;
   }, []);
 
+  /** Set auth from verify-otp response when counsellorLogin was true (same flow as registration: one verify call). */
+  const setAuthFromVerifyOtp = useCallback((data) => {
+    const newToken = data?.token;
+    const userData = data?.user;
+    if (!newToken || !userData) return;
+    setCounsellorToken(newToken);
+    setCounsellorUser(userData);
+    setToken(newToken);
+    setUser(userData);
+  }, []);
+
   const logout = useCallback(() => {
     setCounsellorToken(null);
     setCounsellorUser(null);
@@ -53,7 +64,7 @@ export function CounsellorAuthProvider({ children }) {
     }
   }, []);
 
-  const value = { user, token, isAuthenticated, login, loginWithPhone, logout };
+  const value = { user, token, isAuthenticated, login, loginWithPhone, setAuthFromVerifyOtp, logout };
   return (
     <CounsellorAuthContext.Provider value={value}>
       {children}
