@@ -27,6 +27,61 @@ function isIOS() {
   return /iPhone|iPad|iPod/i.test(navigator.userAgent);
 }
 
+/** Load poster background image (for iOS canvas path). */
+function loadPosterImage() {
+  return new Promise((resolve, reject) => {
+    const img = new Image();
+    const timeout = setTimeout(() => reject(new Error('Poster image load timeout')), 15000);
+    img.onload = () => {
+      clearTimeout(timeout);
+      resolve(img);
+    };
+    img.onerror = () => {
+      clearTimeout(timeout);
+      reject(new Error('Failed to load poster image'));
+    };
+    img.src = '/downloadcertificate.svg';
+  });
+}
+
+/** iOS-only: draw poster (background + name/phone/tagline) to a canvas. No html2canvas. */
+function drawPosterToCanvas(img, fullName, mobileNumber, scale = 2) {
+  const w = POSTER_WIDTH * scale;
+  const h = POSTER_HEIGHT * scale;
+  const canvas = document.createElement('canvas');
+  canvas.width = w;
+  canvas.height = h;
+  const ctx = canvas.getContext('2d');
+  if (!ctx) throw new Error('Canvas not supported');
+  ctx.drawImage(img, 0, 0, w, h);
+  // Text block: aligned to blue box in design (lower right). Coordinates in 810x1440 poster space.
+  const sx = scale;
+  const blockLeft = 360;
+  const blockPaddingH = 18;
+  const blockTop = 1200;
+  const paddingTop = 48;
+  const nameFontSize = 38;
+  const nameLineGap = 8;
+  const phoneFontSize = 28;
+  const phoneLineGap = 8;
+  const taglineFontSize = 20;
+  const x = (blockLeft + blockPaddingH) * sx;
+  const nameBaseline = (blockTop + paddingTop + nameFontSize) * sx;
+  const phoneBaseline = nameBaseline + (nameLineGap + 40) * sx;
+  const taglineBaseline = phoneBaseline + (phoneLineGap + phoneFontSize) * sx;
+  ctx.fillStyle = '#ffffff';
+  ctx.textBaseline = 'alphabetic';
+  ctx.textAlign = 'left';
+  ctx.font = `600 ${nameFontSize * sx}px sans-serif`;
+  ctx.fillText(String(fullName || ' ').trim() || ' ', x, nameBaseline);
+  ctx.font = `${phoneFontSize * sx}px sans-serif`;
+  ctx.fillText(mobileNumber ? `+91 ${mobileNumber}` : ' ', x, phoneBaseline);
+  ctx.fillStyle = '#eab308';
+  ctx.font = `bold italic ${taglineFontSize * sx}px sans-serif`;
+  ctx.fillText('Certified Career Counsellor', x, taglineBaseline);
+  return canvas;
+}
+
 export default function Certificate() {
   const [firstName, setFirstName] = useState('');
   const [lastName, setLastName] = useState('');
@@ -223,29 +278,33 @@ export default function Certificate() {
   }
 
   const handleDownloadPng = async () => {
-    const target = exportRef.current || posterRef.current;
-    if (!target) return;
     setGenerating(true);
     setPendingDownload(null);
     try {
-      await waitForExportImageReadyWithTimeout(imageWaitMs);
-      await new Promise((r) => setTimeout(r, layoutSettleMs));
-      showExportWrapper();
-      await new Promise((r) => requestAnimationFrame(r));
-      const scale = 2;
-      const canvas = await html2canvas(target, getHtml2canvasOptions(scale, target));
-      const w = POSTER_WIDTH * scale;
-      const h = POSTER_HEIGHT * scale;
-      const cropped = document.createElement('canvas');
-      cropped.width = w;
-      cropped.height = h;
-      const ctx = cropped.getContext('2d');
-      ctx.drawImage(canvas, 0, 0, Math.min(canvas.width, w), Math.min(canvas.height, h), 0, 0, w, h);
-      const dataUrl = cropped.toDataURL('image/png');
-      const filename = `GuideXpert-Poster-${safeFilename(fullName)}-${Date.now()}.png`;
       if (isIOS()) {
+        const img = await loadPosterImage();
+        const scale = 2;
+        const canvas = drawPosterToCanvas(img, fullName, mobile10, scale);
+        const dataUrl = canvas.toDataURL('image/png');
         setIosResult({ url: dataUrl, type: 'image' });
       } else {
+        const target = exportRef.current || posterRef.current;
+        if (!target) return;
+        await waitForExportImageReadyWithTimeout(imageWaitMs);
+        await new Promise((r) => setTimeout(r, layoutSettleMs));
+        showExportWrapper();
+        await new Promise((r) => requestAnimationFrame(r));
+        const scale = 2;
+        const canvas = await html2canvas(target, getHtml2canvasOptions(scale, target));
+        const w = POSTER_WIDTH * scale;
+        const h = POSTER_HEIGHT * scale;
+        const cropped = document.createElement('canvas');
+        cropped.width = w;
+        cropped.height = h;
+        const ctx = cropped.getContext('2d');
+        if (ctx) ctx.drawImage(canvas, 0, 0, Math.min(canvas.width, w), Math.min(canvas.height, h), 0, 0, w, h);
+        const dataUrl = cropped.toDataURL('image/png');
+        const filename = `GuideXpert-Poster-${safeFilename(fullName)}-${Date.now()}.png`;
         const link = document.createElement('a');
         link.download = filename;
         link.href = dataUrl;
@@ -258,45 +317,58 @@ export default function Certificate() {
     } catch (err) {
       console.error(err);
     } finally {
-      hideExportWrapper();
+      if (!isIOS()) hideExportWrapper();
     }
     setGenerating(false);
   };
 
   const handleDownloadPdf = async () => {
-    const target = exportRef.current || posterRef.current;
-    if (!target) return;
     setGenerating(true);
     setPendingDownload(null);
     try {
-      await waitForExportImageReadyWithTimeout(imageWaitMs);
-      await new Promise((r) => setTimeout(r, layoutSettleMs));
-      showExportWrapper();
-      await new Promise((r) => requestAnimationFrame(r));
-      const scale = 2;
-      const canvas = await html2canvas(target, getHtml2canvasOptions(scale, target));
-      const w = POSTER_WIDTH * scale;
-      const h = POSTER_HEIGHT * scale;
-      const cropped = document.createElement('canvas');
-      cropped.width = w;
-      cropped.height = h;
-      const ctx = cropped.getContext('2d');
-      ctx.drawImage(canvas, 0, 0, Math.min(canvas.width, w), Math.min(canvas.height, h), 0, 0, w, h);
-      const imgData = cropped.toDataURL('image/png');
-      const pdf = new jsPDF({
-        orientation: 'portrait',
-        unit: 'px',
-        format: [POSTER_WIDTH, POSTER_HEIGHT],
-        compress: true,
-      });
-      pdf.addImage(imgData, 'PNG', 0, 0, POSTER_WIDTH, POSTER_HEIGHT);
-      const filename = `GuideXpert-Poster-${safeFilename(fullName)}-${Date.now()}.pdf`;
-      const blob = pdf.output('blob');
-      const pdfUrl = URL.createObjectURL(blob);
       if (isIOS()) {
+        const img = await loadPosterImage();
+        const scale = 2;
+        const canvas = drawPosterToCanvas(img, fullName, mobile10, scale);
+        const imgData = canvas.toDataURL('image/png');
+        const pdf = new jsPDF({
+          orientation: 'portrait',
+          unit: 'px',
+          format: [POSTER_WIDTH, POSTER_HEIGHT],
+          compress: true,
+        });
+        pdf.addImage(imgData, 'PNG', 0, 0, POSTER_WIDTH, POSTER_HEIGHT);
+        const blob = pdf.output('blob');
+        const pdfUrl = URL.createObjectURL(blob);
         iosResultBlobUrlRef.current = pdfUrl;
         setIosResult({ url: pdfUrl, type: 'pdf' });
       } else {
+        const target = exportRef.current || posterRef.current;
+        if (!target) return;
+        await waitForExportImageReadyWithTimeout(imageWaitMs);
+        await new Promise((r) => setTimeout(r, layoutSettleMs));
+        showExportWrapper();
+        await new Promise((r) => requestAnimationFrame(r));
+        const scale = 2;
+        const canvas = await html2canvas(target, getHtml2canvasOptions(scale, target));
+        const w = POSTER_WIDTH * scale;
+        const h = POSTER_HEIGHT * scale;
+        const cropped = document.createElement('canvas');
+        cropped.width = w;
+        cropped.height = h;
+        const ctx = cropped.getContext('2d');
+        if (ctx) ctx.drawImage(canvas, 0, 0, Math.min(canvas.width, w), Math.min(canvas.height, h), 0, 0, w, h);
+        const imgData = cropped.toDataURL('image/png');
+        const pdf = new jsPDF({
+          orientation: 'portrait',
+          unit: 'px',
+          format: [POSTER_WIDTH, POSTER_HEIGHT],
+          compress: true,
+        });
+        pdf.addImage(imgData, 'PNG', 0, 0, POSTER_WIDTH, POSTER_HEIGHT);
+        const filename = `GuideXpert-Poster-${safeFilename(fullName)}-${Date.now()}.pdf`;
+        const blob = pdf.output('blob');
+        const pdfUrl = URL.createObjectURL(blob);
         const pdfLink = document.createElement('a');
         pdfLink.download = filename;
         pdfLink.href = pdfUrl;
@@ -311,7 +383,7 @@ export default function Certificate() {
     } catch (err) {
       console.error(err);
     } finally {
-      hideExportWrapper();
+      if (!isIOS()) hideExportWrapper();
     }
     setGenerating(false);
   };
