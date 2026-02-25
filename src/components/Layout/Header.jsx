@@ -54,7 +54,7 @@ const Header = () => {
                 aria-label="Go to top"
               >
                 <img
-                  src="https://res.cloudinary.com/dqataciy5/image/upload/v1769173121/guidexpert-logo-3Ifn2ZP2_ljlxlc.png"
+                  src="https://res.cloudinary.com/dfqdb1xws/image/upload/v1771938860/guidexpert-logo-3Ifn2ZP2_ljlxlc_ydiqc6.png"
                   alt="GuideXpert Logo"
                   className="h-28 md:h-40 object-contain"
                 />
