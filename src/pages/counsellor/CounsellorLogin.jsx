@@ -114,7 +114,10 @@ export default function CounsellorLogin() {
           navigate('/counsellor/dashboard', { replace: true });
           return;
         }
-        setOtpError(loginResult.message || 'No counsellor account linked to this number.');
+        const loginMsg = loginResult.status === 500 && (loginResult.message === 'Something went wrong.' || !loginResult.message)
+          ? 'Login failed. Please try again.'
+          : (loginResult.message || 'No counsellor account linked to this number.');
+        setOtpError(loginMsg);
       } else {
         setOtpError(result.message || 'Invalid or expired OTP. Please try again.');
         setOtp(['', '', '', '', '', '']);
