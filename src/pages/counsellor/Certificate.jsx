@@ -41,10 +41,12 @@ export default function Certificate() {
   const [exportImageReady, setExportImageReady] = useState(false);
   const [pendingDownload, setPendingDownload] = useState(null);
   const [iosResult, setIosResult] = useState(null);
+  const [downloadError, setDownloadError] = useState(null);
   const iosResultBlobUrlRef = useRef(null);
   const posterRef = useRef(null);
   const exportRef = useRef(null);
   const exportWrapperRef = useRef(null);
+  const captureContainerRef = useRef(null);
   const exportImageReadyRef = useRef(false);
   const pendingDownloadRef = useRef({ url: null, filename: null, revoke: false });
 
@@ -68,14 +70,20 @@ export default function Certificate() {
   const handleConfirmAndGenerate = async () => {
     setShowConfirmModal(false);
     setCheckingEligibility(true);
-    const result = await checkPosterEligibility(mobile10);
-    setCheckingEligibility(false);
-    const eligibleResult = result.data?.eligible ?? result.eligible;
-    if (result.success && eligibleResult) {
-      setEligible(true);
-    } else {
-      setIneligibleMessage(result.data?.message || result.message || 'Your training is not yet completed. Please complete the training to download the poster.');
+    try {
+      const result = await checkPosterEligibility(mobile10);
+      const eligibleResult = result?.data?.eligible ?? result?.eligible;
+      if (result?.success && eligibleResult) {
+        setEligible(true);
+      } else {
+        setIneligibleMessage(result?.data?.message || result?.message || 'Your training is not yet completed. Please complete the training to download the poster.');
+        setShowIneligibleModal(true);
+      }
+    } catch (_) {
+      setIneligibleMessage('Unable to check eligibility. Please try again.');
       setShowIneligibleModal(true);
+    } finally {
+      setCheckingEligibility(false);
     }
   };
 
@@ -94,10 +102,19 @@ export default function Certificate() {
 
   function showExportWrapper() {
     const wrapper = exportWrapperRef.current;
+    const container = captureContainerRef.current;
     if (!wrapper) return;
-    // On iOS, keep wrapper at (0,0) during capture so html2canvas uses correct origin and text stays in place.
-    // Off-screen positioning (-9999px) causes wrong coordinates and misplaced text on iOS only.
-    if (isMobileOrTablet() && !isIOS()) {
+    if (isIOS()) {
+      // iOS: keep wrapper at (0,0) with position absolute inside fixed container so html2canvas
+      // gets a full 810x1440 box and doesn't clip to viewport; avoids wrong text position and 80% capture.
+      wrapper.style.position = 'absolute';
+      wrapper.style.left = '0';
+      wrapper.style.top = '0';
+      if (container) {
+        container.style.zIndex = '9998';
+        container.style.overflow = 'visible';
+      }
+    } else if (isMobileOrTablet()) {
       wrapper.style.left = '-9999px';
       wrapper.style.top = '0';
     }
@@ -113,6 +130,7 @@ export default function Certificate() {
 
   function hideExportWrapper() {
     const wrapper = exportWrapperRef.current;
+    const container = captureContainerRef.current;
     if (!wrapper) return;
     wrapper.style.opacity = '0';
     wrapper.style.zIndex = '-1';
@@ -124,43 +142,67 @@ export default function Certificate() {
     wrapper.style.minHeight = '';
     wrapper.style.maxHeight = '';
     wrapper.style.transform = '';
+    if (isIOS()) {
+      wrapper.style.position = '';
+      if (container) {
+        container.style.zIndex = '-1';
+        container.style.overflow = 'hidden';
+      }
+    }
   }
 
-  const getHtml2canvasOptions = (scale) => ({
-    scale,
-    width: POSTER_WIDTH,
-    height: POSTER_HEIGHT,
-    windowWidth: POSTER_WIDTH + 20,
-    windowHeight: POSTER_HEIGHT + 20,
-    scrollX: 0,
-    scrollY: 0,
-    useCORS: true,
-    backgroundColor: '#ffffff',
-    logging: false,
-    allowTaint: true,
-    imageTimeout: 0,
-    onclone: (clonedDoc, clonedElement) => {
-      clonedDoc.documentElement.style.overflow = 'visible';
-      if (clonedDoc.body) clonedDoc.body.style.overflow = 'visible';
-      clonedElement.style.opacity = '1';
-      clonedElement.style.visibility = 'visible';
-      clonedElement.style.zIndex = '9999';
-      clonedElement.style.overflow = 'visible';
-      clonedElement.style.position = 'relative';
-      clonedElement.style.left = '0';
-      clonedElement.style.top = '0';
-      let parent = clonedElement.parentElement;
-      while (parent && parent !== clonedDoc.body) {
-        const pos = parent.style.position || (parent.currentStyle && parent.currentStyle.position);
-        if (pos === 'fixed' || (parent.getAttribute && parent.getAttribute('style') && String(parent.getAttribute('style')).includes('fixed'))) {
-          parent.style.position = 'absolute';
-          parent.style.left = '0';
-          parent.style.top = '0';
+  function getHtml2canvasOptions(scale, target) {
+    const isIos = isIOS();
+    const el = target || exportRef.current;
+    const winW = isIos ? (el?.scrollWidth || POSTER_WIDTH) : POSTER_WIDTH + 20;
+    const winH = isIos ? (el?.scrollHeight || POSTER_HEIGHT) : POSTER_HEIGHT + 20;
+    return {
+      scale,
+      ...(isIos ? { width: POSTER_WIDTH * scale, height: POSTER_HEIGHT * scale } : { width: POSTER_WIDTH, height: POSTER_HEIGHT }),
+      windowWidth: winW,
+      windowHeight: winH,
+      scrollX: 0,
+      scrollY: 0,
+      useCORS: true,
+      backgroundColor: '#ffffff',
+      logging: false,
+      allowTaint: true,
+      imageTimeout: 0,
+      onclone: (clonedDoc, clonedElement) => {
+        clonedDoc.documentElement.style.overflow = 'visible';
+        if (clonedDoc.body) clonedDoc.body.style.overflow = 'visible';
+        if (isIos) {
+          clonedDoc.documentElement.style.width = `${POSTER_WIDTH}px`;
+          clonedDoc.documentElement.style.height = `${POSTER_HEIGHT}px`;
+          clonedDoc.documentElement.style.minWidth = `${POSTER_WIDTH}px`;
+          clonedDoc.documentElement.style.minHeight = `${POSTER_HEIGHT}px`;
+          if (clonedDoc.body) {
+            clonedDoc.body.style.width = `${POSTER_WIDTH}px`;
+            clonedDoc.body.style.height = `${POSTER_HEIGHT}px`;
+            clonedDoc.body.style.minWidth = `${POSTER_WIDTH}px`;
+            clonedDoc.body.style.minHeight = `${POSTER_HEIGHT}px`;
+          }
         }
-        parent = parent.parentElement;
-      }
-    },
-  });
+        clonedElement.style.opacity = '1';
+        clonedElement.style.visibility = 'visible';
+        clonedElement.style.zIndex = '9999';
+        clonedElement.style.overflow = 'visible';
+        clonedElement.style.position = 'relative';
+        clonedElement.style.left = '0';
+        clonedElement.style.top = '0';
+        let parent = clonedElement.parentElement;
+        while (parent && parent !== clonedDoc.body) {
+          const pos = parent.style.position || (parent.currentStyle && parent.currentStyle.position);
+          if (pos === 'fixed' || (parent.getAttribute && parent.getAttribute('style') && String(parent.getAttribute('style')).includes('fixed'))) {
+            parent.style.position = 'absolute';
+            parent.style.left = '0';
+            parent.style.top = '0';
+          }
+          parent = parent.parentElement;
+        }
+      },
+    };
+  }
 
   const imageWaitMs = isMobileOrTablet() ? 600 : 2500;
   const layoutSettleMs = isMobileOrTablet() ? 80 : 300;
@@ -182,20 +224,22 @@ export default function Certificate() {
     if (!target) return;
     setGenerating(true);
     setPendingDownload(null);
+    setDownloadError(null);
     try {
       await waitForExportImageReadyWithTimeout(imageWaitMs);
       await new Promise((r) => setTimeout(r, layoutSettleMs));
       showExportWrapper();
       await new Promise((r) => requestAnimationFrame(r));
       const scale = 2;
-      const canvas = await html2canvas(target, getHtml2canvasOptions(scale));
+      const canvas = await html2canvas(target, getHtml2canvasOptions(scale, target));
       const w = POSTER_WIDTH * scale;
       const h = POSTER_HEIGHT * scale;
       const cropped = document.createElement('canvas');
       cropped.width = w;
       cropped.height = h;
       const ctx = cropped.getContext('2d');
-      ctx.drawImage(canvas, 0, 0, w, h, 0, 0, w, h);
+      if (!ctx) throw new Error('Canvas not supported');
+      ctx.drawImage(canvas, 0, 0, Math.min(canvas.width, w), Math.min(canvas.height, h), 0, 0, w, h);
       const dataUrl = cropped.toDataURL('image/png');
       const filename = `GuideXpert-Poster-${safeFilename(fullName)}-${Date.now()}.png`;
       if (isIOS()) {
@@ -212,6 +256,7 @@ export default function Certificate() {
       }
     } catch (err) {
       console.error(err);
+      setDownloadError('Generation failed. Please try again.');
     } finally {
       hideExportWrapper();
     }
@@ -223,20 +268,22 @@ export default function Certificate() {
     if (!target) return;
     setGenerating(true);
     setPendingDownload(null);
+    setDownloadError(null);
     try {
       await waitForExportImageReadyWithTimeout(imageWaitMs);
       await new Promise((r) => setTimeout(r, layoutSettleMs));
       showExportWrapper();
       await new Promise((r) => requestAnimationFrame(r));
       const scale = 2;
-      const canvas = await html2canvas(target, getHtml2canvasOptions(scale));
+      const canvas = await html2canvas(target, getHtml2canvasOptions(scale, target));
       const w = POSTER_WIDTH * scale;
       const h = POSTER_HEIGHT * scale;
       const cropped = document.createElement('canvas');
       cropped.width = w;
       cropped.height = h;
       const ctx = cropped.getContext('2d');
-      ctx.drawImage(canvas, 0, 0, w, h, 0, 0, w, h);
+      if (!ctx) throw new Error('Canvas not supported');
+      ctx.drawImage(canvas, 0, 0, Math.min(canvas.width, w), Math.min(canvas.height, h), 0, 0, w, h);
       const imgData = cropped.toDataURL('image/png');
       const pdf = new jsPDF({
         orientation: 'portrait',
@@ -265,6 +312,7 @@ export default function Certificate() {
       }
     } catch (err) {
       console.error(err);
+      setDownloadError('Generation failed. Please try again.');
     } finally {
       hideExportWrapper();
     }
@@ -272,11 +320,12 @@ export default function Certificate() {
   };
 
   function closeIosResult() {
-    if (iosResultBlobUrlRef.current) {
-      try { URL.revokeObjectURL(iosResultBlobUrlRef.current); } catch (_) {}
-      iosResultBlobUrlRef.current = null;
-    }
+    const url = iosResultBlobUrlRef.current;
+    iosResultBlobUrlRef.current = null;
     setIosResult(null);
+    if (url) {
+      setTimeout(() => { try { URL.revokeObjectURL(url); } catch (_) {} }, 3000);
+    }
   }
 
   return (
@@ -315,21 +364,29 @@ export default function Certificate() {
               <img
                 src={iosResult.url}
                 alt="Your poster"
-                className="max-w-full max-h-full object-contain select-none"
-                style={{ WebkitUserSelect: 'none', userSelect: 'none' }}
+                className="max-w-full max-h-full object-contain"
+                style={{ WebkitTouchCallout: 'default', WebkitUserSelect: 'auto', userSelect: 'auto' }}
                 draggable={false}
               />
             ) : (
-              <iframe
-                src={iosResult.url}
-                title="Poster PDF"
-                className="w-full flex-1 min-h-0 border-0"
-              />
+              <div className="flex flex-col items-center justify-center gap-4 w-full flex-1 min-h-0">
+                <p className="text-white text-sm text-center px-2">
+                  To save the PDF: tap the button below to open it, then use the Share button and choose Save to Files.
+                </p>
+                <a
+                  href={iosResult.url}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="px-6 py-3 rounded-lg bg-white text-gray-900 font-medium no-underline"
+                >
+                  Open PDF
+                </a>
+              </div>
             )}
             <p className="text-white text-sm text-center mt-3 px-2">
               {iosResult.type === 'image'
                 ? 'Long-press the image above, then tap "Save Image" to save to Photos.'
-                : 'Tap the Share icon below, then choose Save to Files or add to Photos.'}
+                : 'After opening, use Share to save or add to Files.'}
             </p>
           </div>
           <div className="p-4 bg-gray-900">
@@ -482,6 +539,11 @@ export default function Certificate() {
                   Download now (tap to save)
                 </button>
               )}
+              {downloadError && (
+                <p className="w-full text-center text-sm text-red-600" role="alert">
+                  {downloadError}
+                </p>
+              )}
             </div>
           )}
         </div>
@@ -490,7 +552,7 @@ export default function Certificate() {
       {/* Hidden poster for PNG/PDF only — forExport=true so tagline fits in export (preview unchanged) */}
       {eligible && (
         <div
-          ref={exportWrapperRef}
+          ref={captureContainerRef}
           aria-hidden="true"
           style={{
             position: 'fixed',
@@ -503,13 +565,32 @@ export default function Certificate() {
             minHeight: POSTER_HEIGHT,
             maxHeight: POSTER_HEIGHT,
             overflow: 'hidden',
-            opacity: 0,
             pointerEvents: 'none',
             zIndex: -1,
             boxSizing: 'border-box',
           }}
         >
-          <PosterPreview
+          <div
+            ref={exportWrapperRef}
+            aria-hidden="true"
+            style={{
+              position: 'fixed',
+              left: 0,
+              top: 0,
+              width: POSTER_WIDTH,
+              height: POSTER_HEIGHT,
+              minWidth: POSTER_WIDTH,
+              maxWidth: POSTER_WIDTH,
+              minHeight: POSTER_HEIGHT,
+              maxHeight: POSTER_HEIGHT,
+              overflow: 'hidden',
+              opacity: 0,
+              pointerEvents: 'none',
+              zIndex: -1,
+              boxSizing: 'border-box',
+            }}
+          >
+            <PosterPreview
             ref={exportRef}
             fullName={fullName}
             mobileNumber={mobile10 || undefined}
@@ -519,6 +600,7 @@ export default function Certificate() {
               setExportImageReady(true);
             }}
           />
+          </div>
         </div>
       )}
 
