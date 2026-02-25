@@ -1,5 +1,5 @@
 import { useState, useRef } from 'react';
-import { useNavigate, Navigate } from 'react-router-dom';
+import { useNavigate, Navigate, Link } from 'react-router-dom';
 import { sendOtp, verifyOtp } from '../../utils/api';
 import { useCounsellorAuth } from '../../contexts/CounsellorAuthContext';
 
@@ -109,6 +109,10 @@ export default function CounsellorLogin() {
     try {
       const result = await verifyOtp(normalizedPhone, otpString, { counsellorLogin: true });
       if (result.success && result.data?.verified === true) {
+        if (result.data?.allowedAccess === false || !result.data?.token) {
+          setStep(3);
+          return;
+        }
         if (result.data?.token && result.data?.user) {
           setAuthFromVerifyOtp(result.data);
           navigate('/counsellor/dashboard', { replace: true });
@@ -157,6 +161,63 @@ export default function CounsellorLogin() {
     setSubmitError('');
     setSuccessMessage('');
   };
+
+  const handleBackFromLocked = () => {
+    setStep(1);
+    setOtp(['', '', '', '', '', '']);
+    setOtpError('');
+    setSubmitError('');
+    setSuccessMessage('');
+  };
+
+  if (step === 3) {
+    return (
+      <div className="min-h-screen flex flex-col md:flex-row">
+        <div
+          className="relative w-full md:w-1/2 min-h-0 md:min-h-screen flex flex-col justify-center px-5 py-6 md:px-12 md:py-16"
+          style={{ background: '#041e30' }}
+        >
+          <div className="relative z-10 max-w-md mx-auto w-full flex flex-col items-center justify-center text-center md:text-left md:items-start">
+            <div className="w-16 h-16 rounded-full flex items-center justify-center mb-6 border-2 border-white/30" aria-hidden>
+              <svg className="w-8 h-8 text-white/80" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden>
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" />
+              </svg>
+            </div>
+            <h1 className="text-2xl md:text-3xl font-bold text-white mb-2 leading-tight">
+              Access limited to programme members
+            </h1>
+            <p className="text-white/80 text-sm md:text-base">
+              This portal is for certified GuideXpert counsellors. If you have already completed the programme, please sign in with the phone number you used during registration.
+            </p>
+          </div>
+        </div>
+        <div className="w-full md:w-1/2 min-h-0 md:min-h-screen flex flex-col items-center justify-center bg-white px-6 py-6 md:px-12 md:py-16">
+          <div className="w-full max-w-md text-center">
+            <p className="text-lg font-semibold text-gray-900 mb-1">You’re not part of this programme</p>
+            <p className="text-gray-600 text-sm mb-6">
+              This portal is for <strong>certified GuideXpert counsellors</strong> only. To get access, complete the certification programme application.
+            </p>
+            <div className="flex flex-col sm:flex-row gap-3 justify-center">
+              <Link
+                to="/register"
+                className="inline-flex items-center justify-center py-3 px-6 rounded-lg font-medium text-white transition-colors hover:opacity-90"
+                style={{ backgroundColor: '#003366' }}
+              >
+                Apply to become a Certified GuideXpert Counsellor
+              </Link>
+              <button
+                type="button"
+                onClick={handleBackFromLocked}
+                className="py-3 px-6 rounded-lg font-medium text-gray-700 bg-gray-100 hover:bg-gray-200 transition-colors"
+              >
+                Try another number
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen flex flex-col md:flex-row">
