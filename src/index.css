@@ -43,6 +43,11 @@
   --color-info: #003366;
 }
 
+/* Homepage hero gradient – single source of truth for landing and assessment pages */
+:root {
+  --gradient-home-hero: linear-gradient(to bottom right, #e8f0fa 0%, #eef4fa 25%, #f2f4f8 50%, #f5f4f2 75%, #f7f4eb 100%);
+}
+
 @layer base {
   * {
     font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Oxygen', 'Ubuntu', 'Cantarell', 'Fira Sans', 'Droid Sans', 'Helvetica Neue', sans-serif;
@@ -188,8 +193,23 @@
 
   /* Quiz/assessment pages – home-page-style gradient (matches ApplySection hero) */
   .assessment-page-wrap {
+    position: relative;
     min-height: 100vh;
-    background: linear-gradient(to bottom right, #e8f0fa 0%, #eef4fa 25%, #f2f4f8 50%, #f5f4f2 75%, #f7f4eb 100%);
+    background: var(--gradient-home-hero);
+  }
+
+  .assessment-page-wrap::before {
+    content: '';
+    position: absolute;
+    inset: 0;
+    z-index: 0;
+    pointer-events: none;
+    background: var(--gradient-home-hero);
+  }
+
+  .assessment-page-wrap > * {
+    position: relative;
+    z-index: 1;
   }
 
   .portal-card-hover:hover {

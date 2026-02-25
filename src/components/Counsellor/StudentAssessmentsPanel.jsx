@@ -236,7 +236,7 @@ export default function StudentAssessmentsPanel({ type }) {
               </div>
             </div>
           )}
-        </div>
+        </section>
       </div>
     </div>
   );
