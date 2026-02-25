@@ -3,6 +3,7 @@ const API_BASE_URL = import.meta.env.VITE_API_URL || 'https://guide-xpert-backen
 
 const COUNSELLOR_TOKEN_KEY = 'guidexpert_counsellor_token';
 const COUNSELLOR_USER_KEY = 'guidexpert_counsellor_user';
+const COUNSELLOR_ACCESS_FORM_KEY = 'guidexpert_counsellor_access_form';
 
 export function getCounsellorToken() {
   return localStorage.getItem(COUNSELLOR_TOKEN_KEY);
@@ -25,6 +26,23 @@ export function getCounsellorUser() {
 export function setCounsellorUser(user) {
   if (user) localStorage.setItem(COUNSELLOR_USER_KEY, JSON.stringify(user));
   else localStorage.removeItem(COUNSELLOR_USER_KEY);
+}
+
+export function getCounsellorAccessForm() {
+  try {
+    const raw = localStorage.getItem(COUNSELLOR_ACCESS_FORM_KEY);
+    return raw ? JSON.parse(raw) : null;
+  } catch {
+    return null;
+  }
+}
+
+export function setCounsellorAccessForm(accessForm) {
+  if (accessForm && typeof accessForm === 'object') {
+    localStorage.setItem(COUNSELLOR_ACCESS_FORM_KEY, JSON.stringify(accessForm));
+  } else {
+    localStorage.removeItem(COUNSELLOR_ACCESS_FORM_KEY);
+  }
 }
 
 async function counsellorRequest(endpoint, options = {}, token = getCounsellorToken()) {
