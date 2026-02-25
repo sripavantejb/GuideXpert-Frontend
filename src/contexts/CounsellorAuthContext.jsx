@@ -6,6 +6,8 @@ import {
   setCounsellorToken,
   getCounsellorUser,
   setCounsellorUser,
+  getCounsellorAccessForm,
+  setCounsellorAccessForm,
 } from '../utils/counsellorApi';
 
 const CounsellorAuthContext = createContext(null);
@@ -13,6 +15,7 @@ const CounsellorAuthContext = createContext(null);
 export function CounsellorAuthProvider({ children }) {
   const [user, setUser] = useState(() => getCounsellorUser());
   const [token, setToken] = useState(() => getCounsellorToken());
+  const [accessForm, setAccessFormState] = useState(() => getCounsellorAccessForm());
   const isAuthenticated = !!token;
 
   const login = useCallback(async (email, password) => {
@@ -46,13 +49,20 @@ export function CounsellorAuthProvider({ children }) {
     setCounsellorUser(userData);
     setToken(newToken);
     setUser(userData);
+    const formData = data?.accessForm;
+    if (formData && typeof formData === 'object') {
+      setCounsellorAccessForm(formData);
+      setAccessFormState(formData);
+    }
   }, []);
 
   const logout = useCallback(() => {
     setCounsellorToken(null);
     setCounsellorUser(null);
+    setCounsellorAccessForm(null);
     setToken(null);
     setUser(null);
+    setAccessFormState(null);
   }, []);
 
   useEffect(() => {
@@ -61,10 +71,14 @@ export function CounsellorAuthProvider({ children }) {
     if (!t || !u) {
       setToken(null);
       setUser(null);
+      setCounsellorAccessForm(null);
+      setAccessFormState(null);
+    } else {
+      setAccessFormState(getCounsellorAccessForm());
     }
   }, []);
 
-  const value = { user, token, isAuthenticated, login, loginWithPhone, setAuthFromVerifyOtp, logout };
+  const value = { user, token, accessForm, isAuthenticated, login, loginWithPhone, setAuthFromVerifyOtp, logout };
   return (
     <CounsellorAuthContext.Provider value={value}>
       {children}

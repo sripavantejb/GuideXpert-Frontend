@@ -1,9 +1,17 @@
 import { useState, useRef, useMemo, useEffect } from 'react';
-import { sendOtp, verifyOtp, submitAssessment3 } from '../utils/api';
-import { ASSESSMENT_SECTIONS_3 } from '../data/assessmentQuestions3';
+import { Link } from 'react-router-dom';
+import { parseUtmFromUrl } from '../utils/utm';
+import {
+  sendOtp,
+  verifyOtp,
+  setAssessmentUtm,
+  getAssessmentUtm,
+  submitCareerDnaAssessment,
+  submitCourseFitAssessment,
+} from '../utils/api';
+import { ASSESSMENT_SECTIONS_CAREER_DNA } from '../data/assessmentQuestionsCareerDna';
+import { ASSESSMENT_SECTIONS_COURSE_FIT } from '../data/assessmentQuestionsCourseFit';
 import SuccessPopup from '../components/UI/SuccessPopup';
-
-const MAX_SCORE_3 = 20;
 
 function validateName(value) {
   const trimmed = typeof value === 'string' ? value.trim() : '';
@@ -20,9 +28,9 @@ function validateMobile(value) {
   return '';
 }
 
-function getInitialAnswers() {
+function getInitialAnswers(sections) {
   const initial = {};
-  ASSESSMENT_SECTIONS_3.forEach((section) => {
+  sections.forEach((section) => {
     section.questions.forEach((q) => {
       initial[q.id] = '';
     });
@@ -30,10 +38,31 @@ function getInitialAnswers() {
   return initial;
 }
 
-export default function AssessmentForm3() {
+const CONFIG = {
+  'career-dna': {
+    title: 'Career DNA Test',
+    subtitle: 'Discover what your dream course might be',
+    sections: ASSESSMENT_SECTIONS_CAREER_DNA,
+    submitFn: submitCareerDnaAssessment,
+  },
+  'course-fit': {
+    title: 'Course Fit Test',
+    subtitle: 'Find out which stream feels made for you',
+    sections: ASSESSMENT_SECTIONS_COURSE_FIT,
+    submitFn: submitCourseFitAssessment,
+  },
+};
+
+export default function AssessmentFormCounsellorTest({ type = 'career-dna' }) {
+  const config = CONFIG[type] || CONFIG['career-dna'];
+  const sections = config.sections;
+
   const [step, setStep] = useState(1);
   const [name, setName] = useState('');
   const [mobileNumber, setMobileNumber] = useState('');
+  const [email, setEmail] = useState('');
+  const [school, setSchool] = useState('');
+  const [classVal, setClassVal] = useState('');
   const [otp, setOtp] = useState(['', '', '', '', '', '']);
   const [errors, setErrors] = useState({ name: '', mobileNumber: '' });
   const [submitError, setSubmitError] = useState('');
@@ -41,41 +70,37 @@ export default function AssessmentForm3() {
   const [successMessage, setSuccessMessage] = useState('');
   const [loading, setLoading] = useState(false);
   const [verifying, setVerifying] = useState(false);
-  const [answers, setAnswers] = useState(getInitialAnswers);
+  const [answers, setAnswers] = useState(() => getInitialAnswers(sections));
   const [submitting, setSubmitting] = useState(false);
   const [submittedResult, setSubmittedResult] = useState(null);
   const [showSuccessPopup, setShowSuccessPopup] = useState(false);
   const [questionIndex, setQuestionIndex] = useState(0);
-  const [submitUnlocked, setSubmitUnlocked] = useState(false);
 
   const otpInputRefs = useRef([]);
 
+  // Capture UTM from URL on mount (for counsellor attribution)
+  useEffect(() => {
+    const utm = parseUtmFromUrl();
+    if (Object.keys(utm).length > 0) setAssessmentUtm(utm);
+  }, []);
+
   const flatQuestions = useMemo(
     () =>
-      ASSESSMENT_SECTIONS_3.flatMap((s) =>
-        s.questions.map((q) => ({ ...q, sectionTitle: s.title }))
+      sections.flatMap((s, sectionIndex) =>
+        s.questions.map((q) => ({ ...q, sectionTitle: s.title, sectionSetIndex: sectionIndex + 1 }))
       ),
-    []
+    [sections]
   );
 
   const questionTextMap = useMemo(() => {
     const map = {};
-    ASSESSMENT_SECTIONS_3.forEach((s) => {
-      s.questions.forEach((q) => { map[q.id] = q.text; });
+    sections.forEach((s) => {
+      s.questions.forEach((q) => {
+        map[q.id] = q.text;
+      });
     });
     return map;
-  }, []);
-
-  // Unlock Submit button only after a short delay on the last question so double-clicking "Next" doesn't submit
-  const isOnLastQuestion = questionIndex === flatQuestions.length - 1;
-  useEffect(() => {
-    if (isOnLastQuestion) {
-      const t = setTimeout(() => setSubmitUnlocked(true), 600);
-      return () => clearTimeout(t);
-    } else {
-      setSubmitUnlocked(false);
-    }
-  }, [isOnLastQuestion]);
+  }, [sections]);
 
   const normalizedPhone = useMemo(() => {
     const digits = (mobileNumber || '').replace(/\D/g, '');
@@ -109,7 +134,7 @@ export default function AssessmentForm3() {
     setSuccessMessage('');
     setLoading(true);
     try {
-      const result = await sendOtp(name.trim(), normalizedPhone, 'Counsellor Assessment 3');
+      const result = await sendOtp(name.trim(), normalizedPhone, config.title);
       if (result.success) {
         setSuccessMessage('OTP sent successfully to your mobile number');
         setStep(2);
@@ -184,7 +209,7 @@ export default function AssessmentForm3() {
     setOtp(['', '', '', '', '', '']);
     setLoading(true);
     try {
-      const result = await sendOtp(name.trim(), normalizedPhone, 'Counsellor Assessment 3');
+      const result = await sendOtp(name.trim(), normalizedPhone, config.title);
       if (result.success) {
         setSuccessMessage('OTP resent successfully');
         otpInputRefs.current[0]?.focus();
@@ -212,12 +237,11 @@ export default function AssessmentForm3() {
 
   const handleAssessmentFormKeyDown = (e) => {
     if (e.key !== 'Enter') return;
-    // Prevent Enter from submitting the form so submission only happens on explicit "Submit Assessment" click
-    e.preventDefault();
     const target = e.target;
     const isRadio = target.type === 'radio';
     const isInsideOptionLabel = target.closest('label')?.querySelector('input[type="radio"]');
     if (isRadio || isInsideOptionLabel) {
+      e.preventDefault();
       e.stopPropagation();
     }
   };
@@ -226,21 +250,27 @@ export default function AssessmentForm3() {
     e.preventDefault();
     setSubmitError('');
     setSubmitting(true);
+    const utm = getAssessmentUtm();
+    const extra = {};
+    if (email && String(email).trim()) extra.email = String(email).trim();
+    if (school && String(school).trim()) extra.school = String(school).trim();
+    if (classVal && String(classVal).trim()) extra.class = String(classVal).trim();
     try {
-      const result = await submitAssessment3(name.trim(), normalizedPhone, answers);
-      if (result.success) {
+      const result = await config.submitFn(name.trim(), normalizedPhone, answers, utm, extra);
+      const payload = result.data?.data ?? result.data;
+      if (result.success && payload) {
         setSubmittedResult({
-          score: result.data?.score ?? 0,
-          maxScore: result.data?.maxScore ?? MAX_SCORE_3,
-          questionResults: result.data?.questionResults ?? []
+          score: payload.score ?? 0,
+          maxScore: payload.maxScore ?? 10,
+          questionResults: payload.questionResults ?? [],
         });
         setShowSuccessPopup(true);
       } else {
-        const message =
+        setSubmitError(
           result.status === 404
-            ? 'Assessment service is temporarily unavailable. Please try again in a few minutes or contact support.'
-            : (result.message || 'Failed to submit assessment. Please try again.');
-        setSubmitError(message);
+            ? 'Assessment service is temporarily unavailable. Please try again later.'
+            : (result.message || 'Failed to submit assessment. Please try again.')
+        );
       }
     } catch {
       setSubmitError('Network error. Please check your connection and try again.');
@@ -252,7 +282,7 @@ export default function AssessmentForm3() {
   const handleWriteAgain = () => {
     setStep(1);
     setSubmittedResult(null);
-    setAnswers(getInitialAnswers());
+    setAnswers(getInitialAnswers(sections));
     setQuestionIndex(0);
     setShowSuccessPopup(false);
     setSubmitError('');
@@ -260,20 +290,67 @@ export default function AssessmentForm3() {
     setSuccessMessage('');
     setName('');
     setMobileNumber('');
+    setEmail('');
+    setSchool('');
+    setClassVal('');
     setOtp(['', '', '', '', '', '']);
     setErrors({ name: '', mobileNumber: '' });
-    setSubmitUnlocked(false);
   };
+
+  const currentQuestion = flatQuestions[questionIndex];
+  const topBarRightLabel = step === 3 && !submittedResult && currentQuestion
+    ? `Set ${currentQuestion.sectionSetIndex}`
+    : config.title;
 
   return (
     <div className="assessment-page-wrap py-8 px-4">
       <div className="max-w-2xl mx-auto">
-        <div className="text-center mb-6">
-          <h1 className="text-2xl font-bold" style={{ color: '#003366' }}>GuideXpert</h1>
-          <p className="text-gray-600 mt-1">Counsellor Assessment 3</p>
+        {/* Page-level top bar: Back (left), context label (right) */}
+        <div className="flex items-center justify-between mb-6">
+          <div>
+            {step === 1 && (
+              <Link
+                to="/"
+                className="inline-flex items-center gap-1.5 rounded-lg border border-[#003366]/30 bg-white/80 px-4 py-2 text-sm font-medium text-gray-700 transition-colors hover:bg-[#003366]/5 hover:border-[#003366]/50"
+                aria-label="Back to home"
+              >
+                <span aria-hidden>←</span> Back
+              </Link>
+            )}
+            {step === 2 && (
+              <button
+                type="button"
+                onClick={() => { setStep(1); setOtp(['', '', '', '', '', '']); setOtpError(''); setSuccessMessage(''); setSubmitError(''); }}
+                className="inline-flex items-center gap-1.5 rounded-lg border border-[#003366]/30 bg-white/80 px-4 py-2 text-sm font-medium text-gray-700 transition-colors hover:bg-[#003366]/5 hover:border-[#003366]/50"
+                aria-label="Back to your details"
+              >
+                <span aria-hidden>←</span> Back
+              </button>
+            )}
+            {step === 3 && !submittedResult && (
+              <button
+                type="button"
+                onClick={() => (questionIndex > 0 ? setQuestionIndex((i) => i - 1) : handleBackToOtp())}
+                disabled={submitting}
+                className="inline-flex items-center gap-1.5 rounded-lg border border-[#003366]/30 bg-white/80 px-4 py-2 text-sm font-medium text-gray-700 transition-colors hover:bg-[#003366]/5 hover:border-[#003366]/50 disabled:opacity-60 disabled:cursor-not-allowed"
+                aria-label={questionIndex > 0 ? 'Previous question' : 'Back to verification'}
+              >
+                <span aria-hidden>←</span> Back
+              </button>
+            )}
+            {step === 3 && submittedResult && (
+              <span className="text-sm text-gray-500">{config.title}</span>
+            )}
+          </div>
+          <span className="text-sm font-medium text-gray-600">{topBarRightLabel}</span>
         </div>
 
-        {/* Step indicator */}
+        <div className="text-center mb-6">
+          <h1 className="text-2xl font-bold" style={{ color: '#003366' }}>GuideXpert</h1>
+          <p className="text-gray-600 mt-1">{config.title}</p>
+          <p className="text-sm text-gray-500 mt-0.5">{config.subtitle}</p>
+        </div>
+
         <div className="mb-6">
           <div className="flex items-center justify-between text-xs text-gray-500 mb-1">
             <span>Step {step} of 3</span>
@@ -297,53 +374,82 @@ export default function AssessmentForm3() {
               <h2 className="text-lg font-semibold mb-1" style={{ color: '#003366' }}>Enter your details</h2>
               <p className="text-sm text-gray-600 mb-6">We will send an OTP to your mobile number before the assessment.</p>
               {successMessage && (
-                <div className="mb-4 p-3 rounded-lg border border-green-200 bg-green-50 text-green-700 text-sm">
-                  {successMessage}
-                </div>
+                <div className="mb-4 p-3 rounded-lg border border-green-200 bg-green-50 text-green-700 text-sm">{successMessage}</div>
               )}
               {submitError && (
-                <div className="mb-4 p-3 rounded-lg border border-red-200 bg-red-50 text-red-700 text-sm">
-                  {submitError}
-                </div>
+                <div className="mb-4 p-3 rounded-lg border border-red-200 bg-red-50 text-red-700 text-sm">{submitError}</div>
               )}
               <form onSubmit={handleSendOtp} className="space-y-4">
                 <div>
-                  <label htmlFor="assessment3-name" className="block text-sm font-medium text-gray-700 mb-1">
+                  <label htmlFor="assessment-name" className="block text-sm font-medium text-gray-700 mb-1">
                     Name <span className="text-red-500">*</span>
                   </label>
                   <input
                     type="text"
-                    id="assessment3-name"
+                    id="assessment-name"
                     value={name}
                     onChange={handleNameChange}
                     placeholder="Full Name"
-                    className={`w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-[#003366]/20 focus:border-[#003366] outline-none ${
-                      errors.name ? 'border-red-500' : 'border-gray-300'
-                    }`}
+                    className={`w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-[#003366]/20 focus:border-[#003366] outline-none ${errors.name ? 'border-red-500' : 'border-gray-300'}`}
                     disabled={loading}
                     autoComplete="name"
                   />
                   {errors.name && <p className="mt-1 text-sm text-red-600">{errors.name}</p>}
                 </div>
                 <div>
-                  <label htmlFor="assessment3-mobile" className="block text-sm font-medium text-gray-700 mb-1">
+                  <label htmlFor="assessment-mobile" className="block text-sm font-medium text-gray-700 mb-1">
                     Mobile Number <span className="text-red-500">*</span>
                   </label>
                   <input
                     type="tel"
-                    id="assessment3-mobile"
+                    id="assessment-mobile"
                     value={mobileNumber}
                     onChange={handleMobileChange}
                     placeholder="10-digit mobile number"
-                    className={`w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-[#003366]/20 focus:border-[#003366] outline-none ${
-                      errors.mobileNumber ? 'border-red-500' : 'border-gray-300'
-                    }`}
+                    className={`w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-[#003366]/20 focus:border-[#003366] outline-none ${errors.mobileNumber ? 'border-red-500' : 'border-gray-300'}`}
                     disabled={loading}
                     autoComplete="tel"
                     inputMode="numeric"
                     maxLength={10}
                   />
                   {errors.mobileNumber && <p className="mt-1 text-sm text-red-600">{errors.mobileNumber}</p>}
+                </div>
+                <div>
+                  <label htmlFor="assessment-email" className="block text-sm font-medium text-gray-700 mb-1">Email (optional)</label>
+                  <input
+                    type="email"
+                    id="assessment-email"
+                    value={email}
+                    onChange={(e) => setEmail(e.target.value)}
+                    placeholder="your@email.com"
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#003366]/20 focus:border-[#003366] outline-none"
+                    disabled={loading}
+                    autoComplete="email"
+                  />
+                </div>
+                <div>
+                  <label htmlFor="assessment-school" className="block text-sm font-medium text-gray-700 mb-1">School (optional)</label>
+                  <input
+                    type="text"
+                    id="assessment-school"
+                    value={school}
+                    onChange={(e) => setSchool(e.target.value)}
+                    placeholder="School name"
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#003366]/20 focus:border-[#003366] outline-none"
+                    disabled={loading}
+                  />
+                </div>
+                <div>
+                  <label htmlFor="assessment-class" className="block text-sm font-medium text-gray-700 mb-1">Class (optional)</label>
+                  <input
+                    type="text"
+                    id="assessment-class"
+                    value={classVal}
+                    onChange={(e) => setClassVal(e.target.value)}
+                    placeholder="e.g. 10th, 12th"
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#003366]/20 focus:border-[#003366] outline-none"
+                    disabled={loading}
+                  />
                 </div>
                 <button
                   type="submit"
@@ -359,18 +465,12 @@ export default function AssessmentForm3() {
           {step === 2 && (
             <>
               <h2 className="text-lg font-semibold mb-1" style={{ color: '#003366' }}>Verify your number</h2>
-              <p className="text-sm text-gray-600 mb-6">
-                Enter the 6-digit OTP sent to ****{mobileNumber.slice(-4)}
-              </p>
+              <p className="text-sm text-gray-600 mb-6">Enter the 6-digit OTP sent to ****{mobileNumber.slice(-4)}</p>
               {successMessage && (
-                <div className="mb-4 p-3 rounded-lg border border-green-200 bg-green-50 text-green-700 text-sm">
-                  {successMessage}
-                </div>
+                <div className="mb-4 p-3 rounded-lg border border-green-200 bg-green-50 text-green-700 text-sm">{successMessage}</div>
               )}
               {submitError && (
-                <div className="mb-4 p-3 rounded-lg border border-red-200 bg-red-50 text-red-700 text-sm">
-                  {submitError}
-                </div>
+                <div className="mb-4 p-3 rounded-lg border border-red-200 bg-red-50 text-red-700 text-sm">{submitError}</div>
               )}
               <form onSubmit={handleVerifyOtp} className="space-y-4">
                 <div className="flex justify-center gap-2 sm:gap-3">
@@ -404,7 +504,7 @@ export default function AssessmentForm3() {
                   <button
                     type="submit"
                     disabled={verifying || loading}
-                    className="flex-[2] py-3 px-4 bg-[#003366] hover:bg-[#004080] text-white font-medium rounded-lg transition disabled:opacity-60"
+                    className="flex-2 py-3 px-4 bg-[#003366] hover:bg-[#004080] text-white font-medium rounded-lg transition disabled:opacity-60"
                   >
                     {verifying ? 'Verifying...' : 'Verify & Continue'}
                   </button>
@@ -425,53 +525,41 @@ export default function AssessmentForm3() {
 
           {step === 3 && !submittedResult && flatQuestions.length > 0 && (
             <>
-              <h2 className="text-lg font-semibold mb-1" style={{ color: '#003366' }}>Assessment questions</h2>
-              <p className="text-sm text-gray-600 mb-4">You can go back to the previous step to change your details.</p>
-
-              {/* Question progress bar */}
-              <div className="mb-6">
-                <div className="flex items-center justify-between text-xs text-gray-500 mb-1">
-                  <span>Question {questionIndex + 1} of {flatQuestions.length}</span>
-                </div>
-                <div className="w-full bg-gray-200 rounded-full h-1.5">
-                  <div
-                    className="bg-[#003366] h-1.5 rounded-full transition-all"
-                    style={{ width: `${((questionIndex + 1) / flatQuestions.length) * 100}%` }}
-                  />
-                </div>
-              </div>
-
               {submitError && (
-                <div className="mb-4 p-3 rounded-lg border border-red-200 bg-red-50 text-red-700 text-sm">
-                  {submitError}
-                </div>
+                <div className="mb-4 p-3 rounded-lg border border-red-200 bg-red-50 text-red-700 text-sm">{submitError}</div>
               )}
-
-              <form onSubmit={handleSubmitAssessment} onKeyDown={handleAssessmentFormKeyDown} className="space-y-6">
-                <div className="rounded-2xl bg-white/95 border border-gray-200/80 border-l-2 border-l-[#003366] shadow-md overflow-hidden p-6 sm:p-8">
+              <form onSubmit={handleSubmitAssessment} onKeyDown={handleAssessmentFormKeyDown} className="space-y-0">
+                {/* Central card: Question X of N, progress bar, section + question, options, footer */}
+                <div className="rounded-2xl bg-white border border-gray-200/80 shadow-md overflow-hidden p-6 sm:p-8">
                   {(() => {
                     const q = flatQuestions[questionIndex];
                     if (!q) return null;
                     return (
                       <div key={q.id}>
-                        {q.sectionTitle && (
-                          <h3 className="text-sm font-semibold uppercase tracking-wide text-[#003366] mb-4">
-                            {q.sectionTitle}
-                          </h3>
-                        )}
-                        <p className="text-lg font-semibold text-gray-900 mb-6">{q.text}</p>
+                        <p className="text-sm text-gray-600 mb-2">Question {questionIndex + 1} of {flatQuestions.length}</p>
+                        <div className="w-full bg-gray-200 rounded-full h-2 mb-6">
+                          <div
+                            className="bg-[#003366] h-2 rounded-full transition-all"
+                            style={{ width: `${((questionIndex + 1) / flatQuestions.length) * 100}%` }}
+                            role="progressbar"
+                            aria-valuenow={questionIndex + 1}
+                            aria-valuemin={1}
+                            aria-valuemax={flatQuestions.length}
+                            aria-label={`Question ${questionIndex + 1} of ${flatQuestions.length}`}
+                          />
+                        </div>
+                        <h3 className="text-xs font-semibold uppercase tracking-wider text-[#003366] mb-3">{q.sectionTitle}</h3>
+                        <p className="text-xl font-bold text-gray-900 mb-6">{q.text}</p>
                         {q.type === 'mcq' && (
-                          <div className="space-y-4">
+                          <div className="space-y-3">
                             {q.options.map((opt, idx) => {
                               const letter = String.fromCharCode(65 + idx);
                               const isSelected = (answers[q.id] || '') === opt;
                               return (
                                 <label
                                   key={opt}
-                                  className={`flex items-center gap-4 w-full rounded-xl border-2 py-4 px-4 transition-colors cursor-pointer ${
-                                    isSelected
-                                      ? 'border-[#003366] bg-[#003366]/10'
-                                      : 'border-gray-200 bg-gray-50/50 hover:border-[#003366]/30 hover:bg-[#003366]/5'
+                                  className={`flex items-center gap-4 w-full rounded-xl border py-4 px-4 transition-colors cursor-pointer bg-white ${
+                                    isSelected ? 'border-2 border-[#003366] bg-[#003366]/5' : 'border border-gray-200 hover:border-gray-300 hover:bg-gray-50/50'
                                   }`}
                                 >
                                   <input
@@ -481,12 +569,9 @@ export default function AssessmentForm3() {
                                     checked={isSelected}
                                     onChange={() => setAnswer(q.id, opt)}
                                     className="sr-only"
+                                    aria-label={`Option ${letter}: ${opt}`}
                                   />
-                                  <span
-                                    className={`shrink-0 w-9 h-9 rounded-full flex items-center justify-center text-sm font-bold ${
-                                      isSelected ? 'bg-[#003366] text-white' : 'bg-[#003366]/10 text-[#003366]'
-                                    }`}
-                                  >
+                                  <span className={`shrink-0 w-8 h-8 rounded-full flex items-center justify-center text-sm font-bold ${isSelected ? 'bg-[#003366] text-white' : 'bg-gray-100 text-gray-600'}`}>
                                     {letter}
                                   </span>
                                   <span className="text-sm font-medium text-gray-800">{opt}</span>
@@ -498,34 +583,35 @@ export default function AssessmentForm3() {
                       </div>
                     );
                   })()}
-                </div>
-
-                <div className="flex gap-3 pt-6">
-                  <button
-                    type="button"
-                    onClick={() => (questionIndex > 0 ? setQuestionIndex((i) => i - 1) : handleBackToOtp())}
-                    disabled={submitting}
-                    className="px-4 py-2 bg-gray-100 hover:bg-gray-200 text-gray-700 font-medium rounded-lg transition disabled:opacity-60"
-                  >
-                    Back
-                  </button>
-                  {questionIndex < flatQuestions.length - 1 ? (
+                  {/* Footer: Back (left), primary action (right) */}
+                  <div className="flex items-center justify-between pt-6 mt-6 border-t border-gray-100">
                     <button
                       type="button"
-                      onClick={() => setQuestionIndex((i) => i + 1)}
-                      className="flex-1 py-3 px-4 bg-[#003366] hover:bg-[#004080] text-white font-medium rounded-lg transition"
+                      onClick={() => (questionIndex > 0 ? setQuestionIndex((i) => i - 1) : handleBackToOtp())}
+                      disabled={submitting}
+                      className="text-sm font-medium text-gray-600 hover:text-gray-900 transition disabled:opacity-60 disabled:cursor-not-allowed"
+                      aria-label={questionIndex > 0 ? 'Previous question' : 'Back to verification'}
                     >
-                      Next
+                      Back
                     </button>
-                  ) : (
-                    <button
-                      type="submit"
-                      disabled={submitting || !submitUnlocked}
-                      className="flex-1 py-3 px-4 bg-[#003366] hover:bg-[#004080] text-white font-medium rounded-lg transition disabled:opacity-60 disabled:cursor-not-allowed"
-                    >
-                      {submitting ? 'Submitting...' : !submitUnlocked ? 'Please wait...' : 'Submit Assessment'}
-                    </button>
-                  )}
+                    {questionIndex < flatQuestions.length - 1 ? (
+                      <button
+                        type="button"
+                        onClick={() => setQuestionIndex((i) => i + 1)}
+                        className="rounded-lg bg-[#003366] hover:bg-[#004080] text-white font-medium px-5 py-2.5 text-sm transition"
+                      >
+                        Next
+                      </button>
+                    ) : (
+                      <button
+                        type="submit"
+                        disabled={submitting}
+                        className="rounded-lg bg-[#003366] hover:bg-[#004080] text-white font-medium px-5 py-2.5 text-sm transition disabled:opacity-60 disabled:cursor-not-allowed"
+                      >
+                        {submitting ? 'Submitting...' : 'Submit Assessment'}
+                      </button>
+                    )}
+                  </div>
                 </div>
               </form>
             </>
@@ -545,55 +631,31 @@ export default function AssessmentForm3() {
                   <p className="mt-1 text-3xl font-bold text-[#003366] tabular-nums">
                     {submittedResult.score} / {submittedResult.maxScore}
                   </p>
-                  <p className="mt-4 text-sm text-gray-600">
-                    {submittedResult.score === submittedResult.maxScore
-                      ? 'Well done! All answers correct.'
-                      : 'Review the suggestions below to improve.'}
-                  </p>
-                  <p className="mt-3 text-sm text-gray-500">
-                    Thank you for completing the counsellor assessment 3.
-                  </p>
+                  <p className="mt-4 text-sm text-gray-600">Thank you for completing the {config.title}.</p>
                 </div>
-
-                <div className="mt-8 rounded-xl border-l-2 border-l-[#003366] bg-primary-blue-50 p-4 sm:p-5">
-                  <p className="text-xs font-semibold uppercase tracking-wider text-[#003366]">Suggestion</p>
-                  <p className="mt-2 text-sm text-gray-700 leading-relaxed">
-                    Focus on listening to the student&apos;s goals before suggesting options—it builds trust and leads to better outcomes.
-                  </p>
-                </div>
-
-                <div className="mt-8 pt-8 border-t border-gray-200">
-                  <h3 className="text-sm font-semibold uppercase tracking-wider text-[#003366]">Detailed report</h3>
-                  {(!submittedResult.questionResults || submittedResult.questionResults.length === 0) ? (
-                    <p className="mt-3 text-sm text-gray-500">Report not available.</p>
-                  ) : (() => {
-                    const incorrect = submittedResult.questionResults.filter((r) => !r.correct);
-                    if (incorrect.length === 0) {
-                      return <p className="mt-3 text-sm text-gray-600">All answers correct.</p>;
-                    }
-                    return (
-                      <ul className="mt-4 space-y-3">
-                        {incorrect.map((r) => (
-                          <li key={r.questionId} className="rounded-xl border border-gray-200 bg-gray-50/50 p-4 text-left">
-                            <p className="text-sm font-medium text-gray-900">{questionTextMap[r.questionId] ?? r.questionId}</p>
-                            <p className="mt-2 text-xs font-medium uppercase tracking-wider text-gray-500">Your answer</p>
-                            <p className="mt-0.5 text-sm text-[#991b1b]">{r.userAnswer || '—'}</p>
-                            <p className="mt-2 text-xs font-medium uppercase tracking-wider text-gray-500">Correct answer</p>
-                            <p className="mt-0.5 text-sm text-[#15803d]">{r.correctAnswer}</p>
-                          </li>
-                        ))}
-                      </ul>
-                    );
-                  })()}
-                </div>
-
+                {submittedResult.questionResults && submittedResult.questionResults.length > 0 && (
+                  <div className="mt-8 pt-8 border-t border-gray-200">
+                    <h3 className="text-sm font-semibold uppercase tracking-wider text-[#003366]">Detailed report</h3>
+                    <ul className="mt-4 space-y-3">
+                      {submittedResult.questionResults.filter((r) => !r.correct).map((r) => (
+                        <li key={r.questionId} className="rounded-xl border border-gray-200 bg-gray-50/50 p-4 text-left">
+                          <p className="text-sm font-medium text-gray-900">{questionTextMap[r.questionId] ?? r.questionId}</p>
+                          <p className="mt-2 text-xs font-medium uppercase tracking-wider text-gray-500">Your answer</p>
+                          <p className="mt-0.5 text-sm text-[#991b1b]">{r.userAnswer || '—'}</p>
+                          <p className="mt-2 text-xs font-medium uppercase tracking-wider text-gray-500">Suggested</p>
+                          <p className="mt-0.5 text-sm text-[#15803d]">{r.correctAnswer}</p>
+                        </li>
+                      ))}
+                    </ul>
+                  </div>
+                )}
                 <div className="mt-8 pt-8 border-t border-gray-200 text-center">
                   <button
                     type="button"
                     onClick={handleWriteAgain}
                     className="inline-flex items-center justify-center rounded-lg border-2 border-[#003366] px-6 py-2.5 text-sm font-semibold text-[#003366] transition-colors hover:bg-[#003366] hover:text-white"
                   >
-                    Write again
+                    Take again
                   </button>
                 </div>
               </div>
@@ -601,13 +663,12 @@ export default function AssessmentForm3() {
           )}
         </div>
       </div>
-
       <SuccessPopup
         isOpen={showSuccessPopup}
         onClose={() => setShowSuccessPopup(false)}
         variant="assessment"
         score={submittedResult?.score ?? 0}
-        maxScore={submittedResult?.maxScore ?? MAX_SCORE_3}
+        maxScore={submittedResult?.maxScore ?? 10}
       />
     </div>
   );

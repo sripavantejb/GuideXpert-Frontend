@@ -287,13 +287,19 @@ export default function CounsellorLogin() {
           </p>
 
           {successMessage && (
-            <div className="mb-4 p-3 rounded-lg border border-green-200 bg-green-50 text-green-700 text-sm" role="status">
-              {successMessage}
+            <div className="mb-5 flex items-center gap-3 rounded-xl border border-emerald-200 bg-emerald-50/80 px-4 py-3 text-sm text-emerald-800" role="status">
+              <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-emerald-100 text-emerald-600" aria-hidden>
+                <svg className="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" /></svg>
+              </span>
+              <span>{successMessage}</span>
             </div>
           )}
           {submitError && (
-            <div className="mb-4 p-3 rounded-lg border border-red-200 bg-red-50 text-red-700 text-sm" role="alert">
-              {submitError}
+            <div className="mb-5 flex items-center gap-3 rounded-xl border border-red-200 bg-red-50/80 px-4 py-3 text-sm text-red-800" role="alert">
+              <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-red-100 text-red-600" aria-hidden>
+                <svg className="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" /></svg>
+              </span>
+              <span>{submitError}</span>
             </div>
           )}
 
@@ -341,59 +347,61 @@ export default function CounsellorLogin() {
           )}
 
           {step === 2 && (
-            <form onSubmit={handleVerifyOtp} className="space-y-4">
-              <div>
-                <div className="flex justify-center gap-2 sm:gap-3">
+            <form onSubmit={handleVerifyOtp} className="space-y-6">
+              <div className="space-y-4">
+                <div className="flex justify-center gap-2 sm:gap-3" role="group" aria-label="OTP digits">
                   {otp.map((digit, index) => (
                     <input
                       key={index}
                       ref={(el) => (otpInputRefs.current[index] = el)}
                       type="text"
                       inputMode="numeric"
+                      autoComplete="one-time-code"
                       maxLength={1}
                       value={digit}
                       onChange={(e) => handleOtpChange(index, e.target.value)}
                       onKeyDown={(e) => handleOtpKeyDown(index, e)}
                       onPaste={handleOtpPaste}
-                      className="w-11 h-12 sm:w-12 sm:h-14 text-center text-xl font-semibold border-2 rounded-lg focus:ring-2 focus:ring-primary-blue-500 focus:border-primary-blue-500 outline-none border-gray-300"
-                      aria-label={`OTP digit ${index + 1}`}
+                      className="w-12 h-14 sm:w-14 sm:h-16 text-center text-2xl font-semibold tabular-nums rounded-xl border-2 border-gray-200 bg-gray-50/50 text-gray-900 transition-all duration-200 outline-none focus:border-primary-navy focus:ring-2 focus:ring-primary-navy/20 focus:bg-white hover:border-gray-300 disabled:opacity-60 disabled:cursor-not-allowed"
+                      aria-label={`Digit ${index + 1} of 6`}
                       disabled={verifying}
                     />
                   ))}
                 </div>
                 {otpError && (
-                  <p className="mt-2 text-sm text-red-600 text-center" role="alert">
+                  <p className="text-sm text-red-600 text-center" role="alert">
                     {otpError}
                   </p>
                 )}
               </div>
-              <div className="flex gap-3">
+              <div className="flex flex-col gap-3 sm:flex-row sm:gap-4">
                 <button
                   type="button"
                   onClick={handleBack}
                   disabled={verifying || loading}
-                  className="flex-1 py-3 px-4 bg-gray-100 hover:bg-gray-200 text-gray-700 font-medium rounded-lg transition disabled:opacity-60 disabled:cursor-not-allowed"
+                  className="order-2 sm:order-1 flex-1 py-3.5 px-4 rounded-xl border-2 border-gray-200 bg-white text-gray-700 font-semibold hover:bg-gray-50 hover:border-gray-300 transition-colors disabled:opacity-60 disabled:cursor-not-allowed"
                 >
                   Back
                 </button>
                 <button
                   type="submit"
                   disabled={verifying || loading}
-                  className="flex-[2] py-3 px-4 rounded-lg font-medium text-white hover:opacity-90 disabled:opacity-60 disabled:cursor-not-allowed transition-colors"
+                  className="order-1 sm:order-2 flex-[1.5] py-3.5 px-4 rounded-xl font-semibold text-white shadow-sm hover:opacity-95 disabled:opacity-60 disabled:cursor-not-allowed transition-all"
                   style={{ backgroundColor: '#003366' }}
                 >
-                  {verifying ? 'Signing in…' : 'Verify & Sign in'}
+                  {verifying ? 'Verifying…' : 'Verify & Sign in'}
                 </button>
               </div>
-              <div className="text-center">
+              <div className="text-center pt-1">
+                <span className="text-sm text-gray-500">Didn&apos;t receive the code? </span>
                 <button
                   type="button"
                   onClick={handleResendOtp}
                   disabled={loading || verifying}
-                  className="text-sm hover:underline disabled:opacity-60 disabled:cursor-not-allowed"
+                  className="text-sm font-semibold underline underline-offset-2 hover:no-underline disabled:opacity-60 disabled:cursor-not-allowed transition-opacity"
                   style={{ color: '#003366' }}
                 >
-                  {loading ? 'Resending…' : "Didn't receive OTP? Resend"}
+                  {loading ? 'Resending…' : 'Resend OTP'}
                 </button>
               </div>
             </form>

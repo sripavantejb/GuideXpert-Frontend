@@ -11,6 +11,8 @@ import FeedbackForm from './pages/FeedbackForm';
 import AssessmentForm from './pages/AssessmentForm';
 import AssessmentForm2 from './pages/AssessmentForm2';
 import AssessmentForm3 from './pages/AssessmentForm3';
+import AssessmentFormCounsellorTest from './pages/AssessmentFormCounsellorTest';
+import AssessmentLayout from './components/Layout/AssessmentLayout';
 import AdminLayout from './components/Admin/AdminLayout';
 import Overview from './pages/admin/Overview';
 import Leads from './pages/admin/Leads';
@@ -34,9 +36,9 @@ const CounsellorDashboard = lazy(() => import('./pages/counsellor/Dashboard'));
 const CounsellorStudents = lazy(() => import('./pages/counsellor/Students'));
 const CounsellorAdmissions = lazy(() => import('./pages/counsellor/Admissions'));
 const CounsellorSessions = lazy(() => import('./pages/counsellor/Sessions'));
-const CounsellorTools = lazy(() => import('./pages/counsellor/Tools'));
 const CounsellorMarketing = lazy(() => import('./pages/counsellor/Marketing'));
-/* Certificate loaded eagerly to avoid dynamic import chunk failures (html2canvas/jspdf) */
+/* Tools and Certificate loaded eagerly to avoid dynamic import chunk failures */
+import CounsellorTools from './pages/counsellor/Tools';
 import CounsellorCertificate from './pages/counsellor/Certificate';
 const CollegeReferrals = lazy(() => import('./pages/counsellor/CollegeReferrals'));
 const CollegeReferralDetail = lazy(() => import('./pages/counsellor/CollegeReferralDetail'));
@@ -73,6 +75,8 @@ function App() {
           <Route path="/assessment" element={<AssessmentForm />} />
           <Route path="/assessment-2" element={<AssessmentForm2 />} />
           <Route path="/assessment-3" element={<AssessmentForm3 />} />
+          <Route path="/assessment-career-dna" element={<AssessmentLayout><AssessmentFormCounsellorTest type="career-dna" /></AssessmentLayout>} />
+          <Route path="/assessment-course-fit" element={<AssessmentLayout><AssessmentFormCounsellorTest type="course-fit" /></AssessmentLayout>} />
           <Route path="/admin/login" element={<AdminLogin />} />
           <Route
             path="/admin"
@@ -106,7 +110,7 @@ function App() {
             <Route path="students" element={<ErrorBoundary><Suspense fallback={<div className="flex items-center justify-center h-64 text-gray-400">Loading...</div>}><CounsellorStudents /></Suspense></ErrorBoundary>} />
             <Route path="admissions" element={<ErrorBoundary><Suspense fallback={<div className="flex items-center justify-center h-64 text-gray-400">Loading...</div>}><CounsellorAdmissions /></Suspense></ErrorBoundary>} />
             <Route path="sessions" element={<ErrorBoundary><Suspense fallback={<div className="flex items-center justify-center h-64 text-gray-400">Loading...</div>}><CounsellorSessions /></Suspense></ErrorBoundary>} />
-            <Route path="tools" element={<ErrorBoundary><Suspense fallback={<div className="flex items-center justify-center h-64 text-gray-400">Loading...</div>}><CounsellorTools /></Suspense></ErrorBoundary>} />
+            <Route path="tools" element={<ErrorBoundary><CounsellorTools /></ErrorBoundary>} />
             <Route path="marketing" element={<ErrorBoundary><Suspense fallback={<div className="flex items-center justify-center h-64 text-gray-400">Loading...</div>}><CounsellorMarketing /></Suspense></ErrorBoundary>} />
             <Route path="certificate" element={<ErrorBoundary><CounsellorCertificate /></ErrorBoundary>} />
             <Route path="college-referrals" element={<ErrorBoundary><Suspense fallback={<div className="flex items-center justify-center h-64 text-gray-400">Loading...</div>}><CollegeReferrals /></Suspense></ErrorBoundary>} />

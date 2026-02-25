@@ -349,3 +349,61 @@ export const submitAssessment3 = async (name, phone, answers) => {
     body: JSON.stringify({ name, phone, answers }),
   });
 };
+
+const ASSESSMENT_UTM_KEY = 'guidexpert_assessment_utm';
+
+/**
+ * Store UTM for current assessment session (sessionStorage). Call on assessment page load.
+ * @param {{ utm_source?: string, utm_medium?: string, utm_campaign?: string, utm_content?: string }} utm
+ */
+export const setAssessmentUtm = (utm) => {
+  if (typeof sessionStorage === 'undefined' || !utm || typeof utm !== 'object') return;
+  try {
+    sessionStorage.setItem(ASSESSMENT_UTM_KEY, JSON.stringify(utm));
+  } catch (e) {
+    console.warn('[setAssessmentUtm]', e);
+  }
+};
+
+/**
+ * Get stored assessment UTM from session (for submit payload).
+ */
+export const getAssessmentUtm = () => {
+  if (typeof sessionStorage === 'undefined') return null;
+  try {
+    const raw = sessionStorage.getItem(ASSESSMENT_UTM_KEY);
+    if (!raw) return null;
+    const parsed = JSON.parse(raw);
+    return parsed && typeof parsed === 'object' ? parsed : null;
+  } catch {
+    return null;
+  }
+};
+
+/**
+ * Submit Career DNA assessment (after OTP). Sends name, phone, answers, UTM, and optional email/school/class.
+ */
+export const submitCareerDnaAssessment = async (name, phone, answers, utm = null, extra = {}) => {
+  const body = { name, phone, answers, ...extra };
+  if (utm && typeof utm === 'object') {
+    if (utm.utm_source != null) body.utm_source = utm.utm_source;
+    if (utm.utm_medium != null) body.utm_medium = utm.utm_medium;
+    if (utm.utm_campaign != null) body.utm_campaign = utm.utm_campaign;
+    if (utm.utm_content != null) body.utm_content = utm.utm_content;
+  }
+  return apiRequest('/assessment-career-dna/submit', { method: 'POST', body: JSON.stringify(body) });
+};
+
+/**
+ * Submit Course Fit assessment (after OTP). Sends name, phone, answers, UTM, and optional email/school/class.
+ */
+export const submitCourseFitAssessment = async (name, phone, answers, utm = null, extra = {}) => {
+  const body = { name, phone, answers, ...extra };
+  if (utm && typeof utm === 'object') {
+    if (utm.utm_source != null) body.utm_source = utm.utm_source;
+    if (utm.utm_medium != null) body.utm_medium = utm.utm_medium;
+    if (utm.utm_campaign != null) body.utm_campaign = utm.utm_campaign;
+    if (utm.utm_content != null) body.utm_content = utm.utm_content;
+  }
+  return apiRequest('/assessment-course-fit/submit', { method: 'POST', body: JSON.stringify(body) });
+};

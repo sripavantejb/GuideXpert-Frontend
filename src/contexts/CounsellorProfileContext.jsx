@@ -1,4 +1,5 @@
-import { createContext, useContext, useState, useCallback, useEffect } from 'react';
+import { createContext, useContext, useState, useCallback } from 'react';
+import { useCounsellorAuth } from './CounsellorAuthContext';
 
 const STORAGE_KEY = 'guidexpert_counsellor_profile';
 
@@ -37,6 +38,7 @@ const CounsellorProfileContext = createContext(null);
 
 export function CounsellorProfileProvider({ children }) {
   const [profile, setProfileState] = useState(getStored);
+  const { accessForm } = useCounsellorAuth();
 
   const setProfile = useCallback((updates) => {
     setProfileState((prev) => {
@@ -46,14 +48,19 @@ export function CounsellorProfileProvider({ children }) {
     });
   }, []);
 
+  const displayName = accessForm?.fullName ?? profile.displayName;
+  const email = accessForm?.email ?? profile.email;
+  const specialization = accessForm?.occupation ?? profile.specialization;
+
   const value = {
     profile,
-    displayName: profile.displayName,
-    email: profile.email,
-    specialization: profile.specialization,
+    accessForm,
+    displayName,
+    email,
+    specialization,
     phone: profile.phone,
     slug: profile.slug,
-    initials: getInitials(profile.displayName),
+    initials: getInitials(displayName),
     setProfile,
   };
 

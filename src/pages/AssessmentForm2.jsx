@@ -266,7 +266,7 @@ export default function AssessmentForm2() {
   };
 
   return (
-    <div className="min-h-screen bg-gray-50 py-8 px-4">
+    <div className="assessment-page-wrap py-8 px-4">
       <div className="max-w-2xl mx-auto">
         <div className="text-center mb-6">
           <h1 className="text-2xl font-bold" style={{ color: '#003366' }}>GuideXpert</h1>
@@ -291,7 +291,7 @@ export default function AssessmentForm2() {
           </div>
         </div>
 
-        <div className="bg-white rounded-xl shadow-lg p-6 sm:p-8">
+        <div className="bg-white rounded-xl shadow-md border border-gray-200/80 p-6 sm:p-8">
           {step === 1 && (
             <>
               <h2 className="text-lg font-semibold mb-1" style={{ color: '#003366' }}>Enter your details</h2>
@@ -448,7 +448,7 @@ export default function AssessmentForm2() {
               )}
 
               <form onSubmit={handleSubmitAssessment} onKeyDown={handleAssessmentFormKeyDown} className="space-y-6">
-                <div className="rounded-2xl bg-white border border-gray-100 border-l-4 border-l-[#003366] shadow-lg overflow-hidden p-6 sm:p-8">
+                <div className="rounded-2xl bg-white/95 border border-gray-200/80 border-l-2 border-l-[#003366] shadow-md overflow-hidden p-6 sm:p-8">
                   {(() => {
                     const q = flatQuestions[questionIndex];
                     if (!q) return null;
@@ -530,7 +530,7 @@ export default function AssessmentForm2() {
           )}
 
           {step === 3 && submittedResult && (
-            <div className="rounded-2xl border border-gray-200 border-l-4 border-l-[#003366] bg-white shadow-sm overflow-hidden">
+            <div className="rounded-2xl border border-gray-200/80 border-l-2 border-l-[#003366] bg-white shadow-md overflow-hidden">
               <div className="p-6 sm:p-8">
                 <div className="text-center">
                   <div className="inline-flex items-center justify-center w-14 h-14 rounded-full bg-[#003366]/10 text-[#003366] mb-5">
@@ -553,7 +553,7 @@ export default function AssessmentForm2() {
                   </p>
                 </div>
 
-                <div className="mt-8 rounded-xl border-l-4 border-l-[#003366] bg-primary-blue-50 p-4 sm:p-5">
+                <div className="mt-8 rounded-xl border-l-2 border-l-[#003366] bg-primary-blue-50 p-4 sm:p-5">
                   <p className="text-xs font-semibold uppercase tracking-wider text-[#003366]">Suggestion</p>
                   <p className="mt-2 text-sm text-gray-700 leading-relaxed">
                     Focus on listening to the student&apos;s goals before suggesting options—it builds trust and leads to better outcomes.

@@ -3,6 +3,7 @@ const API_BASE_URL = import.meta.env.VITE_API_URL || 'https://guide-xpert-backen
 
 const COUNSELLOR_TOKEN_KEY = 'guidexpert_counsellor_token';
 const COUNSELLOR_USER_KEY = 'guidexpert_counsellor_user';
+const COUNSELLOR_ACCESS_FORM_KEY = 'guidexpert_counsellor_access_form';
 
 export function getCounsellorToken() {
   return localStorage.getItem(COUNSELLOR_TOKEN_KEY);
@@ -25,6 +26,23 @@ export function getCounsellorUser() {
 export function setCounsellorUser(user) {
   if (user) localStorage.setItem(COUNSELLOR_USER_KEY, JSON.stringify(user));
   else localStorage.removeItem(COUNSELLOR_USER_KEY);
+}
+
+export function getCounsellorAccessForm() {
+  try {
+    const raw = localStorage.getItem(COUNSELLOR_ACCESS_FORM_KEY);
+    return raw ? JSON.parse(raw) : null;
+  } catch {
+    return null;
+  }
+}
+
+export function setCounsellorAccessForm(accessForm) {
+  if (accessForm && typeof accessForm === 'object') {
+    localStorage.setItem(COUNSELLOR_ACCESS_FORM_KEY, JSON.stringify(accessForm));
+  } else {
+    localStorage.removeItem(COUNSELLOR_ACCESS_FORM_KEY);
+  }
 }
 
 async function counsellorRequest(endpoint, options = {}, token = getCounsellorToken()) {
@@ -139,6 +157,24 @@ export const getPredictedColleges = async (params = {}, token = getCounsellorTok
     method: 'POST',
     body: JSON.stringify(body),
   }, token);
+};
+
+/** GET /api/counsellor/assessment-links — returns careerDna and courseFit links. */
+export const getAssessmentLinks = async (token = getCounsellorToken()) => {
+  return counsellorRequest('/assessment-links', { method: 'GET' }, token);
+};
+
+/** GET /api/counsellor/assessment-results?type=career-dna|course-fit&page=&limit= */
+export const getAssessmentResults = async (type, params = {}, token = getCounsellorToken()) => {
+  const search = new URLSearchParams({ type });
+  if (params.page != null) search.set('page', params.page);
+  if (params.limit != null) search.set('limit', params.limit);
+  return counsellorRequest(`/assessment-results?${search.toString()}`, { method: 'GET' }, token);
+};
+
+/** GET /api/counsellor/assessment-results/:id?type=career-dna|course-fit */
+export const getAssessmentResultById = async (id, type, token = getCounsellorToken()) => {
+  return counsellorRequest(`/assessment-results/${encodeURIComponent(id)}?type=${encodeURIComponent(type)}`, { method: 'GET' }, token);
 };
 
 export const exportStudents = async (params = {}, token = getCounsellorToken()) => {
