@@ -241,7 +241,7 @@ export default function CounsellorLogin() {
             </span>
           </div>
           <h1 className="text-2xl md:text-3xl font-bold text-white mb-2 leading-tight">
-            Guide students. Build your practice. Earn with impact.
+            Guide students with confidence. Earn income while transforming lives.
           </h1>
           <p className="text-white/80 text-sm md:text-base mb-8">Just 2 simple steps</p>
           <div className="flex flex-col gap-0">

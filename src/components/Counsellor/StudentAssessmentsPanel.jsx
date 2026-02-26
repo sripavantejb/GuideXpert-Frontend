@@ -78,73 +78,75 @@ export default function StudentAssessmentsPanel({ type }) {
   const linkUrl = (links && links[linkKey]?.link) ?? '';
 
   return (
-    <div className="rounded-xl bg-white shadow-sm border border-gray-200/80 overflow-hidden transition-all duration-200">
+    <div className="rounded-xl bg-white shadow-md border border-gray-200 overflow-hidden">
       <div className="h-1 w-full bg-primary-navy" />
-      <div className="p-6 sm:p-8">
-        <div className="flex items-start gap-4 mb-8">
-          <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-xl bg-primary-navy/10 text-primary-navy">
-            {assessmentType === 'career-dna' ? <FiActivity className="w-6 h-6" /> : <FiCrosshair className="w-6 h-6" />}
+      <div className="p-6 sm:p-7">
+        <div className="flex items-start gap-4 mb-6">
+          <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-primary-navy/10 text-primary-navy">
+            {assessmentType === 'career-dna' ? <FiActivity className="w-5 h-5" /> : <FiCrosshair className="w-5 h-5" />}
           </div>
           <div className="min-w-0">
-            <h3 className="text-xl font-semibold tracking-tight text-gray-900">{title}</h3>
-            <p className="text-sm text-gray-500 mt-1">Share your unique link with students. Their details and results will appear below.</p>
+            <h3 className="text-lg font-semibold tracking-tight text-gray-900">{title}</h3>
+            <p className="text-sm text-gray-600 mt-1 leading-relaxed">Share your unique link with students. Their details and results will appear below.</p>
           </div>
         </div>
 
-        <section className="mb-8" aria-labelledby="assessment-link-heading">
-          <h4 id="assessment-link-heading" className="text-sm font-semibold uppercase tracking-wider text-primary-navy mb-3">My assessment link</h4>
+        <section className="mb-2 pt-5 border-t border-gray-100" aria-labelledby="assessment-link-heading">
+          <h4 id="assessment-link-heading" className="text-xs font-semibold uppercase tracking-widest text-gray-500 mb-3">My assessment link</h4>
           {linksLoading ? (
             <p className="text-sm text-gray-500">Loading link…</p>
           ) : links ? (
-            <div className="rounded-xl border border-gray-200 bg-gray-50/50 p-4 sm:p-5 border-l-4 border-l-primary-navy">
-              <div className="flex gap-3 flex-wrap items-stretch">
+            <div className="rounded-xl border border-gray-200 bg-gray-50/60 p-4 border-l-4 border-l-primary-navy">
+              <div className="flex gap-3 flex-wrap items-center">
                 <input
                   type="text"
                   readOnly
                   value={linkUrl}
-                  className="flex-1 min-w-0 text-sm px-4 py-2.5 border border-gray-200 rounded-lg bg-white text-gray-700 focus:ring-2 focus:ring-primary-navy/20 focus:border-primary-navy outline-none transition-shadow"
+                  className="flex-1 min-w-[200px] text-sm px-4 py-2.5 border border-gray-200 rounded-lg bg-white text-gray-700 font-mono placeholder:text-gray-400 focus:ring-2 focus:ring-primary-navy/20 focus:border-primary-navy outline-none"
                 />
                 <button
                   type="button"
                   onClick={() => handleCopy(linkUrl)}
-                  className="shrink-0 inline-flex items-center gap-2 rounded-lg bg-primary-navy px-4 py-2.5 text-sm font-semibold text-white hover:bg-primary-navy/90 transition-colors shadow-sm"
+                  className="shrink-0 inline-flex items-center gap-2 rounded-lg bg-primary-navy px-4 py-2.5 text-sm font-semibold text-white hover:bg-primary-navy/90 active:scale-[0.98] transition-all shadow-sm"
                 >
-                  <FiCopy className="w-4 h-4" /> Copy link
+                  <FiCopy className="w-4 h-4" aria-hidden /> Copy link
                 </button>
               </div>
               {copyFeedback && <p className="mt-2 text-xs font-medium text-primary-navy">Copied to clipboard</p>}
             </div>
           ) : (
-            <p className="text-sm text-amber-700 bg-amber-50 border border-amber-200 rounded-lg px-4 py-3">Could not load link. Please try again later.</p>
+            <div className="rounded-xl border border-amber-200 bg-amber-50/80 px-4 py-3">
+              <p className="text-sm text-amber-800 font-medium">Could not load link. Please try again later.</p>
+            </div>
           )}
         </section>
 
-        <section aria-labelledby="results-heading">
-          <h4 id="results-heading" className="text-sm font-semibold uppercase tracking-wider text-primary-navy mb-3">Results</h4>
+        <section className="pt-2 border-t border-gray-100" aria-labelledby="results-heading">
+          <h4 id="results-heading" className="text-xs font-semibold uppercase tracking-widest text-gray-500 mb-3">Results</h4>
           {resultsLoading ? (
             <p className="text-sm text-gray-500">Loading results…</p>
           ) : submissions.length === 0 ? (
-            <div className="rounded-xl border border-gray-200 bg-gray-50/50 px-5 py-8 text-center">
-              <p className="text-sm text-gray-500">No submissions yet.</p>
-              <p className="text-sm text-gray-400 mt-1">Share your link with students to see their results here.</p>
+            <div className="rounded-xl border border-gray-200 border-dashed bg-gray-50/50 px-5 py-8 text-center">
+              <p className="text-sm font-medium text-gray-600">No submissions yet</p>
+              <p className="text-sm text-gray-500 mt-1">Share your link with students to see their results here.</p>
             </div>
           ) : (
             <div className="space-y-4">
-              <div className="overflow-x-auto rounded-xl border border-gray-200 shadow-sm">
+              <div className="overflow-x-auto rounded-xl border border-gray-200">
                 <table className="min-w-full text-sm">
-                  <thead className="bg-primary-navy/5">
-                    <tr>
-                      <th className="px-4 py-3 text-left font-semibold text-primary-navy">Name</th>
-                      <th className="px-4 py-3 text-left font-semibold text-primary-navy">Mobile</th>
-                      <th className="px-4 py-3 text-left font-semibold text-primary-navy">Email</th>
-                      <th className="px-4 py-3 text-left font-semibold text-primary-navy">Score</th>
-                      <th className="px-4 py-3 text-left font-semibold text-primary-navy">Submitted</th>
-                      <th className="px-4 py-3 text-right font-semibold text-primary-navy">Action</th>
+                  <thead>
+                    <tr className="bg-gray-50 border-b border-gray-200">
+                      <th className="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wider text-gray-600">Name</th>
+                      <th className="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wider text-gray-600">Mobile</th>
+                      <th className="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wider text-gray-600">Email</th>
+                      <th className="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wider text-gray-600">Score</th>
+                      <th className="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wider text-gray-600">Submitted</th>
+                      <th className="px-4 py-3 text-right text-xs font-semibold uppercase tracking-wider text-gray-600">Action</th>
                     </tr>
                   </thead>
-                  <tbody>
+                  <tbody className="divide-y divide-gray-100">
                     {submissions.map((s) => (
-                      <tr key={s._id} className="border-t border-gray-100 hover:bg-primary-navy/[0.04] transition-colors">
+                      <tr key={s._id} className="hover:bg-gray-50/80 transition-colors">
                         <td className="px-4 py-3 text-gray-900 font-medium">{s.fullName ?? '—'}</td>
                         <td className="px-4 py-3 text-gray-600">{s.phone ?? '—'}</td>
                         <td className="px-4 py-3 text-gray-600">{s.email || '—'}</td>
@@ -165,8 +167,8 @@ export default function StudentAssessmentsPanel({ type }) {
                 </table>
               </div>
               {totalPages > 1 && (
-                <div className="mt-4 flex flex-wrap items-center justify-between gap-3 rounded-lg border border-gray-200 bg-gray-50/50 px-4 py-3">
-                  <p className="text-sm text-gray-600">Page <span className="font-medium text-gray-900">{page}</span> of {totalPages} <span className="text-gray-400">({total} total)</span></p>
+                <div className="flex flex-wrap items-center justify-between gap-3 rounded-xl border border-gray-200 bg-gray-50/50 px-4 py-3">
+                  <p className="text-sm text-gray-600">Page <span className="font-semibold text-gray-900">{page}</span> of {totalPages} <span className="text-gray-400">({total} total)</span></p>
                   <div className="flex gap-2">
                     <button
                       type="button"
@@ -191,10 +193,10 @@ export default function StudentAssessmentsPanel({ type }) {
           )}
 
           {detailId && (
-            <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/40 backdrop-blur-sm" onClick={() => setDetailId(null)} role="dialog" aria-modal="true" aria-labelledby="modal-title">
+            <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm" onClick={() => setDetailId(null)} role="dialog" aria-modal="true" aria-labelledby="modal-title">
               <div className="bg-white rounded-2xl shadow-2xl max-w-2xl w-full max-h-[90vh] overflow-hidden flex flex-col border border-gray-200" onClick={(e) => e.stopPropagation()}>
                 <div className="h-1 w-full bg-primary-navy" />
-                <div className="flex items-center justify-between px-6 py-4 border-b border-gray-200">
+                <div className="flex items-center justify-between px-6 py-4 border-b border-gray-100">
                   <h4 id="modal-title" className="text-lg font-semibold text-gray-900">Submission details</h4>
                   <button type="button" onClick={() => setDetailId(null)} className="p-2 rounded-lg hover:bg-gray-100 text-gray-500 hover:text-gray-700 transition-colors" aria-label="Close">
                     <FiX className="w-5 h-5" />
@@ -205,18 +207,18 @@ export default function StudentAssessmentsPanel({ type }) {
                     <p className="text-sm text-gray-500">Loading…</p>
                   ) : detail ? (
                     <div className="space-y-5">
-                      <div className="grid grid-cols-2 gap-x-6 gap-y-4 text-sm rounded-xl border border-gray-200 bg-gray-50/50 p-5">
-                        <div><span className="text-gray-500 block text-xs font-semibold uppercase tracking-wider mb-0.5">Name</span><span className="text-gray-900">{detail.fullName ?? '—'}</span></div>
-                        <div><span className="text-gray-500 block text-xs font-semibold uppercase tracking-wider mb-0.5">Mobile</span><span className="text-gray-900">{detail.phone ?? '—'}</span></div>
-                        <div><span className="text-gray-500 block text-xs font-semibold uppercase tracking-wider mb-0.5">Email</span><span className="text-gray-900">{detail.email || '—'}</span></div>
-                        <div><span className="text-gray-500 block text-xs font-semibold uppercase tracking-wider mb-0.5">School</span><span className="text-gray-900">{detail.school || '—'}</span></div>
-                        <div><span className="text-gray-500 block text-xs font-semibold uppercase tracking-wider mb-0.5">Class</span><span className="text-gray-900">{detail.class || '—'}</span></div>
-                        <div><span className="text-gray-500 block text-xs font-semibold uppercase tracking-wider mb-0.5">Score</span><span className="font-semibold text-primary-navy tabular-nums">{detail.score ?? 0} / {detail.maxScore ?? 10}</span></div>
-                        <div className="col-span-2"><span className="text-gray-500 block text-xs font-semibold uppercase tracking-wider mb-0.5">Submitted</span><span className="text-gray-900">{detail.submittedAt ? new Date(detail.submittedAt).toLocaleString() : '—'}</span></div>
+                      <div className="grid grid-cols-2 gap-x-6 gap-y-4 text-sm rounded-xl border border-gray-200 bg-gray-50/60 p-5">
+                        <div><span className="text-gray-500 block text-xs font-semibold uppercase tracking-wider mb-1">Name</span><span className="text-gray-900">{detail.fullName ?? '—'}</span></div>
+                        <div><span className="text-gray-500 block text-xs font-semibold uppercase tracking-wider mb-1">Mobile</span><span className="text-gray-900">{detail.phone ?? '—'}</span></div>
+                        <div><span className="text-gray-500 block text-xs font-semibold uppercase tracking-wider mb-1">Email</span><span className="text-gray-900">{detail.email || '—'}</span></div>
+                        <div><span className="text-gray-500 block text-xs font-semibold uppercase tracking-wider mb-1">School</span><span className="text-gray-900">{detail.school || '—'}</span></div>
+                        <div><span className="text-gray-500 block text-xs font-semibold uppercase tracking-wider mb-1">Class</span><span className="text-gray-900">{detail.class || '—'}</span></div>
+                        <div><span className="text-gray-500 block text-xs font-semibold uppercase tracking-wider mb-1">Score</span><span className="font-semibold text-primary-navy tabular-nums">{detail.score ?? 0} / {detail.maxScore ?? 10}</span></div>
+                        <div className="col-span-2"><span className="text-gray-500 block text-xs font-semibold uppercase tracking-wider mb-1">Submitted</span><span className="text-gray-900">{detail.submittedAt ? new Date(detail.submittedAt).toLocaleString() : '—'}</span></div>
                       </div>
                       {detail.questionResults && detail.questionResults.length > 0 && (
-                        <div className="rounded-xl border border-gray-200 p-5">
-                          <h5 className="text-sm font-semibold uppercase tracking-wider text-primary-navy mb-3">Question-wise results</h5>
+                        <div className="rounded-xl border border-gray-200 bg-gray-50/30 p-5">
+                          <h5 className="text-xs font-semibold uppercase tracking-widest text-gray-500 mb-3">Question-wise results</h5>
                           <ul className="space-y-2.5">
                             {detail.questionResults.map((r) => (
                               <li key={r.questionId} className="text-sm border-b border-gray-100 pb-2.5 last:border-0 last:pb-0">
