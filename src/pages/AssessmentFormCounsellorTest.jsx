@@ -305,6 +305,7 @@ export default function AssessmentFormCounsellorTest({ type = 'career-dna' }) {
   return (
     <div className="assessment-page-wrap">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+        {/* Content width constrained for readability; do not stretch to full width. */}
         <div className="max-w-2xl">
         {/* Page-level top bar: Back (left), context label (right) */}
         <div className="flex items-center justify-between mb-6">
@@ -312,7 +313,7 @@ export default function AssessmentFormCounsellorTest({ type = 'career-dna' }) {
             {step === 1 && (
               <Link
                 to="/"
-                className="inline-flex items-center gap-1.5 rounded-lg border border-[#003366]/30 bg-white/80 px-4 py-2 text-sm font-medium text-gray-700 transition-colors hover:bg-[#003366]/5 hover:border-[#003366]/50"
+                className="inline-flex items-center gap-1.5 rounded-lg px-4 py-2.5 text-sm font-medium text-gray-700 bg-gray-100 hover:bg-gray-200 border border-gray-200 transition-colors"
                 aria-label="Back to home"
               >
                 <span aria-hidden>←</span> Back
@@ -322,7 +323,7 @@ export default function AssessmentFormCounsellorTest({ type = 'career-dna' }) {
               <button
                 type="button"
                 onClick={() => { setStep(1); setOtp(['', '', '', '', '', '']); setOtpError(''); setSuccessMessage(''); setSubmitError(''); }}
-                className="inline-flex items-center gap-1.5 rounded-lg border border-[#003366]/30 bg-white/80 px-4 py-2 text-sm font-medium text-gray-700 transition-colors hover:bg-[#003366]/5 hover:border-[#003366]/50"
+                className="inline-flex items-center gap-1.5 rounded-lg px-4 py-2.5 text-sm font-medium text-gray-700 bg-gray-100 hover:bg-gray-200 border border-gray-200 transition-colors"
                 aria-label="Back to your details"
               >
                 <span aria-hidden>←</span> Back
@@ -333,7 +334,7 @@ export default function AssessmentFormCounsellorTest({ type = 'career-dna' }) {
                 type="button"
                 onClick={() => (questionIndex > 0 ? setQuestionIndex((i) => i - 1) : handleBackToOtp())}
                 disabled={submitting}
-                className="inline-flex items-center gap-1.5 rounded-lg border border-[#003366]/30 bg-white/80 px-4 py-2 text-sm font-medium text-gray-700 transition-colors hover:bg-[#003366]/5 hover:border-[#003366]/50 disabled:opacity-60 disabled:cursor-not-allowed"
+                className="inline-flex items-center gap-1.5 rounded-lg px-4 py-2.5 text-sm font-medium text-gray-700 bg-gray-100 hover:bg-gray-200 border border-gray-200 transition-colors disabled:opacity-60 disabled:cursor-not-allowed"
                 aria-label={questionIndex > 0 ? 'Previous question' : 'Back to verification'}
               >
                 <span aria-hidden>←</span> Back
@@ -347,8 +348,8 @@ export default function AssessmentFormCounsellorTest({ type = 'career-dna' }) {
         </div>
 
         <div className="mb-6">
-          <h1 className="text-2xl font-bold" style={{ color: '#003366' }}>GuideXpert</h1>
-          <p className="text-gray-600 mt-1">{config.title}</p>
+          <h1 className="text-2xl sm:text-3xl font-bold text-[#003366]">GuideXpert</h1>
+          <p className="text-base text-gray-600 mt-1">{config.title}</p>
           <p className="text-sm text-gray-500 mt-0.5">{config.subtitle}</p>
         </div>
 
@@ -361,24 +362,24 @@ export default function AssessmentFormCounsellorTest({ type = 'career-dna' }) {
               {step === 3 && 'Questions'}
             </span>
           </div>
-          <div className="w-full bg-gray-200 rounded-full h-1.5">
+          <div className="w-full bg-gray-200 rounded-full h-2 overflow-hidden">
             <div
-              className="bg-[#003366] h-1.5 rounded-full transition-all"
+              className="bg-[#003366] h-2 rounded-full transition-all duration-300"
               style={{ width: `${(step / 3) * 100}%` }}
             />
           </div>
         </div>
 
-        <div className="bg-white rounded-xl shadow-md border border-gray-200/80 p-6 sm:p-8">
+        <div className="bg-white rounded-2xl shadow-lg border border-gray-200 p-6 sm:p-8">
           {step === 1 && (
             <>
-              <h2 className="text-lg font-semibold mb-1" style={{ color: '#003366' }}>Enter your details</h2>
+              <h2 className="text-lg font-semibold tracking-tight text-gray-900 mb-1">Enter your details</h2>
               <p className="text-sm text-gray-600 mb-6">We will send an OTP to your mobile number before the assessment.</p>
               {successMessage && (
-                <div className="mb-4 p-3 rounded-lg border border-green-200 bg-green-50 text-green-700 text-sm">{successMessage}</div>
+                <div className="mb-4 rounded-lg border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm text-emerald-800">{successMessage}</div>
               )}
               {submitError && (
-                <div className="mb-4 p-3 rounded-lg border border-red-200 bg-red-50 text-red-700 text-sm">{submitError}</div>
+                <div className="mb-4 rounded-lg border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-800">{submitError}</div>
               )}
               <form onSubmit={handleSendOtp} className="space-y-4">
                 <div>
@@ -391,7 +392,7 @@ export default function AssessmentFormCounsellorTest({ type = 'career-dna' }) {
                     value={name}
                     onChange={handleNameChange}
                     placeholder="Full Name"
-                    className={`w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-[#003366]/20 focus:border-[#003366] outline-none ${errors.name ? 'border-red-500' : 'border-gray-300'}`}
+                    className={`w-full px-4 py-2.5 border rounded-lg text-gray-900 placeholder:text-gray-400 focus:ring-2 focus:ring-[#003366]/20 focus:border-[#003366] outline-none transition-colors disabled:opacity-60 ${errors.name ? 'border-red-500 focus:ring-red-500/20' : 'border-gray-300'}`}
                     disabled={loading}
                     autoComplete="name"
                   />
@@ -407,7 +408,7 @@ export default function AssessmentFormCounsellorTest({ type = 'career-dna' }) {
                     value={mobileNumber}
                     onChange={handleMobileChange}
                     placeholder="10-digit mobile number"
-                    className={`w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-[#003366]/20 focus:border-[#003366] outline-none ${errors.mobileNumber ? 'border-red-500' : 'border-gray-300'}`}
+                    className={`w-full px-4 py-2.5 border rounded-lg text-gray-900 placeholder:text-gray-400 focus:ring-2 focus:ring-[#003366]/20 focus:border-[#003366] outline-none transition-colors disabled:opacity-60 ${errors.mobileNumber ? 'border-red-500 focus:ring-red-500/20' : 'border-gray-300'}`}
                     disabled={loading}
                     autoComplete="tel"
                     inputMode="numeric"
@@ -416,46 +417,46 @@ export default function AssessmentFormCounsellorTest({ type = 'career-dna' }) {
                   {errors.mobileNumber && <p className="mt-1 text-sm text-red-600">{errors.mobileNumber}</p>}
                 </div>
                 <div>
-                  <label htmlFor="assessment-email" className="block text-sm font-medium text-gray-700 mb-1">Email (optional)</label>
+                  <label htmlFor="assessment-email" className="block text-sm font-medium text-gray-700 mb-1">Email <span className="text-gray-500">(optional)</span></label>
                   <input
                     type="email"
                     id="assessment-email"
                     value={email}
                     onChange={(e) => setEmail(e.target.value)}
                     placeholder="your@email.com"
-                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#003366]/20 focus:border-[#003366] outline-none"
+                    className="w-full px-4 py-2.5 border border-gray-300 rounded-lg text-gray-900 placeholder:text-gray-400 focus:ring-2 focus:ring-[#003366]/20 focus:border-[#003366] outline-none transition-colors disabled:opacity-60"
                     disabled={loading}
                     autoComplete="email"
                   />
                 </div>
                 <div>
-                  <label htmlFor="assessment-school" className="block text-sm font-medium text-gray-700 mb-1">School (optional)</label>
+                  <label htmlFor="assessment-school" className="block text-sm font-medium text-gray-700 mb-1">School <span className="text-gray-500">(optional)</span></label>
                   <input
                     type="text"
                     id="assessment-school"
                     value={school}
                     onChange={(e) => setSchool(e.target.value)}
                     placeholder="School name"
-                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#003366]/20 focus:border-[#003366] outline-none"
+                    className="w-full px-4 py-2.5 border border-gray-300 rounded-lg text-gray-900 placeholder:text-gray-400 focus:ring-2 focus:ring-[#003366]/20 focus:border-[#003366] outline-none transition-colors disabled:opacity-60"
                     disabled={loading}
                   />
                 </div>
                 <div>
-                  <label htmlFor="assessment-class" className="block text-sm font-medium text-gray-700 mb-1">Class (optional)</label>
+                  <label htmlFor="assessment-class" className="block text-sm font-medium text-gray-700 mb-1">Class <span className="text-gray-500">(optional)</span></label>
                   <input
                     type="text"
                     id="assessment-class"
                     value={classVal}
                     onChange={(e) => setClassVal(e.target.value)}
                     placeholder="e.g. 10th, 12th"
-                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#003366]/20 focus:border-[#003366] outline-none"
+                    className="w-full px-4 py-2.5 border border-gray-300 rounded-lg text-gray-900 placeholder:text-gray-400 focus:ring-2 focus:ring-[#003366]/20 focus:border-[#003366] outline-none transition-colors disabled:opacity-60"
                     disabled={loading}
                   />
                 </div>
                 <button
                   type="submit"
                   disabled={loading}
-                  className="w-full py-3 px-4 bg-[#003366] hover:bg-[#004080] text-white font-medium rounded-lg transition disabled:opacity-60 disabled:cursor-not-allowed"
+                  className="w-full rounded-lg px-5 py-2.5 sm:py-3 font-semibold text-white bg-[#003366] hover:bg-[#004080] focus:ring-2 focus:ring-[#003366]/30 focus:ring-offset-2 transition-colors disabled:opacity-60 disabled:cursor-not-allowed"
                 >
                   {loading ? 'Sending OTP...' : 'Send OTP'}
                 </button>
@@ -465,13 +466,13 @@ export default function AssessmentFormCounsellorTest({ type = 'career-dna' }) {
 
           {step === 2 && (
             <>
-              <h2 className="text-lg font-semibold mb-1" style={{ color: '#003366' }}>Verify your number</h2>
+              <h2 className="text-lg font-semibold tracking-tight text-gray-900 mb-1">Verify your number</h2>
               <p className="text-sm text-gray-600 mb-6">Enter the 6-digit OTP sent to ****{mobileNumber.slice(-4)}</p>
               {successMessage && (
-                <div className="mb-4 p-3 rounded-lg border border-green-200 bg-green-50 text-green-700 text-sm">{successMessage}</div>
+                <div className="mb-4 rounded-lg border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm text-emerald-800">{successMessage}</div>
               )}
               {submitError && (
-                <div className="mb-4 p-3 rounded-lg border border-red-200 bg-red-50 text-red-700 text-sm">{submitError}</div>
+                <div className="mb-4 rounded-lg border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-800">{submitError}</div>
               )}
               <form onSubmit={handleVerifyOtp} className="space-y-4">
                 <div className="flex justify-center gap-2 sm:gap-3">
@@ -486,7 +487,7 @@ export default function AssessmentFormCounsellorTest({ type = 'career-dna' }) {
                       onChange={(e) => handleOtpChange(index, e.target.value)}
                       onKeyDown={(e) => handleOtpKeyDown(index, e)}
                       onPaste={handleOtpPaste}
-                      className="w-11 h-12 sm:w-12 sm:h-14 text-center text-xl font-semibold border-2 rounded-lg focus:ring-2 focus:ring-[#003366]/20 focus:border-[#003366] border-gray-300"
+                      className="w-11 h-12 sm:w-12 sm:h-14 text-center text-xl font-semibold border-2 border-gray-300 rounded-lg focus:ring-2 focus:ring-[#003366]/20 focus:border-[#003366] outline-none transition-colors disabled:opacity-60"
                       aria-label={`OTP digit ${index + 1}`}
                       disabled={verifying}
                     />
@@ -498,14 +499,14 @@ export default function AssessmentFormCounsellorTest({ type = 'career-dna' }) {
                     type="button"
                     onClick={() => { setStep(1); setOtp(['', '', '', '', '', '']); setOtpError(''); setSuccessMessage(''); setSubmitError(''); }}
                     disabled={verifying || loading}
-                    className="flex-1 py-3 px-4 bg-gray-100 hover:bg-gray-200 text-gray-700 font-medium rounded-lg transition disabled:opacity-60"
+                    className="flex-1 rounded-lg px-5 py-2.5 font-medium text-gray-700 bg-gray-100 hover:bg-gray-200 border border-gray-200 transition-colors disabled:opacity-60 disabled:cursor-not-allowed"
                   >
                     Back
                   </button>
                   <button
                     type="submit"
                     disabled={verifying || loading}
-                    className="flex-2 py-3 px-4 bg-[#003366] hover:bg-[#004080] text-white font-medium rounded-lg transition disabled:opacity-60"
+                    className="flex-1 rounded-lg px-5 py-2.5 sm:py-3 font-semibold text-white bg-[#003366] hover:bg-[#004080] focus:ring-2 focus:ring-[#003366]/30 focus:ring-offset-2 transition-colors disabled:opacity-60 disabled:cursor-not-allowed"
                   >
                     {verifying ? 'Verifying...' : 'Verify & Continue'}
                   </button>
@@ -527,20 +528,20 @@ export default function AssessmentFormCounsellorTest({ type = 'career-dna' }) {
           {step === 3 && !submittedResult && flatQuestions.length > 0 && (
             <>
               {submitError && (
-                <div className="mb-4 p-3 rounded-lg border border-red-200 bg-red-50 text-red-700 text-sm">{submitError}</div>
+                <div className="mb-4 rounded-lg border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-800">{submitError}</div>
               )}
               <form onSubmit={handleSubmitAssessment} onKeyDown={handleAssessmentFormKeyDown} className="space-y-0">
                 {/* Central card: Question X of N, progress bar, section + question, options, footer */}
-                <div className="rounded-2xl bg-white border border-gray-200/80 shadow-md overflow-hidden p-6 sm:p-8">
+                <div className="rounded-2xl bg-white border border-gray-200 shadow-lg overflow-hidden p-6 sm:p-8">
                   {(() => {
                     const q = flatQuestions[questionIndex];
                     if (!q) return null;
                     return (
                       <div key={q.id}>
                         <p className="text-sm text-gray-600 mb-2">Question {questionIndex + 1} of {flatQuestions.length}</p>
-                        <div className="w-full bg-gray-200 rounded-full h-2 mb-6">
+                        <div className="w-full bg-gray-200 rounded-full h-2 overflow-hidden mb-6">
                           <div
-                            className="bg-[#003366] h-2 rounded-full transition-all"
+                            className="bg-[#003366] h-2 rounded-full transition-all duration-300"
                             style={{ width: `${((questionIndex + 1) / flatQuestions.length) * 100}%` }}
                             role="progressbar"
                             aria-valuenow={questionIndex + 1}
@@ -590,7 +591,7 @@ export default function AssessmentFormCounsellorTest({ type = 'career-dna' }) {
                       type="button"
                       onClick={() => (questionIndex > 0 ? setQuestionIndex((i) => i - 1) : handleBackToOtp())}
                       disabled={submitting}
-                      className="text-sm font-medium text-gray-600 hover:text-gray-900 transition disabled:opacity-60 disabled:cursor-not-allowed"
+                      className="rounded-lg px-5 py-2.5 font-medium text-gray-700 bg-gray-100 hover:bg-gray-200 border border-gray-200 transition-colors disabled:opacity-60 disabled:cursor-not-allowed"
                       aria-label={questionIndex > 0 ? 'Previous question' : 'Back to verification'}
                     >
                       Back
@@ -599,7 +600,7 @@ export default function AssessmentFormCounsellorTest({ type = 'career-dna' }) {
                       <button
                         type="button"
                         onClick={() => setQuestionIndex((i) => i + 1)}
-                        className="rounded-lg bg-[#003366] hover:bg-[#004080] text-white font-medium px-5 py-2.5 text-sm transition"
+                        className="rounded-lg px-5 py-2.5 font-semibold text-white bg-[#003366] hover:bg-[#004080] focus:ring-2 focus:ring-[#003366]/30 focus:ring-offset-2 transition-colors"
                       >
                         Next
                       </button>
@@ -607,7 +608,7 @@ export default function AssessmentFormCounsellorTest({ type = 'career-dna' }) {
                       <button
                         type="submit"
                         disabled={submitting}
-                        className="rounded-lg bg-[#003366] hover:bg-[#004080] text-white font-medium px-5 py-2.5 text-sm transition disabled:opacity-60 disabled:cursor-not-allowed"
+                        className="rounded-lg px-5 py-2.5 font-semibold text-white bg-[#003366] hover:bg-[#004080] focus:ring-2 focus:ring-[#003366]/30 focus:ring-offset-2 transition-colors disabled:opacity-60 disabled:cursor-not-allowed"
                       >
                         {submitting ? 'Submitting...' : 'Submit Assessment'}
                       </button>
@@ -619,7 +620,7 @@ export default function AssessmentFormCounsellorTest({ type = 'career-dna' }) {
           )}
 
           {step === 3 && submittedResult && (
-            <div className="rounded-2xl border border-gray-200/80 border-l-2 border-l-[#003366] bg-white shadow-md overflow-hidden">
+            <div className="rounded-2xl border border-gray-200 border-l-4 border-l-[#003366] bg-white shadow-lg overflow-hidden">
               <div className="p-6 sm:p-8">
                 <div className="text-center">
                   <div className="inline-flex items-center justify-center w-14 h-14 rounded-full bg-[#003366]/10 text-[#003366] mb-5">
@@ -654,7 +655,7 @@ export default function AssessmentFormCounsellorTest({ type = 'career-dna' }) {
                   <button
                     type="button"
                     onClick={handleWriteAgain}
-                    className="inline-flex items-center justify-center rounded-lg border-2 border-[#003366] px-6 py-2.5 text-sm font-semibold text-[#003366] transition-colors hover:bg-[#003366] hover:text-white"
+                    className="inline-flex items-center justify-center rounded-lg px-5 py-2.5 font-medium text-gray-700 bg-gray-100 hover:bg-gray-200 border border-gray-200 transition-colors"
                   >
                     Take again
                   </button>
