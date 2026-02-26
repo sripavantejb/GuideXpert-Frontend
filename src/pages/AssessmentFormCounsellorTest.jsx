@@ -251,6 +251,7 @@ export default function AssessmentFormCounsellorTest({ type = 'career-dna' }) {
 
   const handleSubmitAssessment = async (e) => {
     e.preventDefault();
+    if (questionIndex !== flatQuestions.length - 1) return;
     setSubmitError('');
     setSubmitting(true);
     const utm = getAssessmentUtm();
@@ -553,7 +554,7 @@ export default function AssessmentFormCounsellorTest({ type = 'career-dna' }) {
               {submitError && (
                 <div className="nb-alert-error">{submitError}</div>
               )}
-              <form onSubmit={handleSubmitAssessment} onKeyDown={handleAssessmentFormKeyDown} className="space-y-0">
+              <form onSubmit={(e) => { e.preventDefault(); }} onKeyDown={handleAssessmentFormKeyDown} className="space-y-0">
                 <div className="nb-question-card">
                   {(() => {
                     const q = flatQuestions[questionIndex];
@@ -628,9 +629,10 @@ export default function AssessmentFormCounsellorTest({ type = 'career-dna' }) {
                       </button>
                     ) : (
                       <button
-                        type="submit"
+                        type="button"
                         disabled={submitting}
                         className="nb-btn-primary"
+                        onClick={(e) => handleSubmitAssessment(e)}
                       >
                         {submitting ? 'Submitting...' : 'Submit Assessment'}
                       </button>
