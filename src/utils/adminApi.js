@@ -220,6 +220,44 @@ export const getAssessment3SubmissionById = async (id, token = getStoredToken())
   return adminRequest(`/assessment-3-submissions/${encodeURIComponent(id)}`, { method: 'GET' }, token);
 };
 
+// —— Announcements ——
+export const getAnnouncements = async (params = {}, token = getStoredToken()) => {
+  const search = new URLSearchParams();
+  if (params.status) search.set('status', params.status);
+  const query = search.toString();
+  return adminRequest(`/announcements${query ? `?${query}` : ''}`, { method: 'GET' }, token);
+};
+
+export const getAnnouncementById = async (id, token = getStoredToken()) => {
+  return adminRequest(`/announcements/${encodeURIComponent(id)}`, { method: 'GET' }, token);
+};
+
+export const createAnnouncement = async (payload, token = getStoredToken()) => {
+  return adminRequest('/announcements', {
+    method: 'POST',
+    body: JSON.stringify(payload),
+  }, token);
+};
+
+export const updateAnnouncement = async (id, payload, token = getStoredToken()) => {
+  return adminRequest(`/announcements/${encodeURIComponent(id)}`, {
+    method: 'PATCH',
+    body: JSON.stringify(payload),
+  }, token);
+};
+
+export const deleteAnnouncement = async (id, token = getStoredToken()) => {
+  return adminRequest(`/announcements/${encodeURIComponent(id)}`, { method: 'DELETE' }, token);
+};
+
+export const publishAnnouncement = async (id, token = getStoredToken()) => {
+  return adminRequest(`/announcements/${encodeURIComponent(id)}/publish`, { method: 'POST' }, token);
+};
+
+export const unpublishAnnouncement = async (id, token = getStoredToken()) => {
+  return adminRequest(`/announcements/${encodeURIComponent(id)}/unpublish`, { method: 'POST' }, token);
+};
+
 /** Request to /api/influencer-links and /api/influencer-analytics (admin auth, no /admin prefix). */
 async function influencerRequest(path, options = {}, token = getStoredToken()) {
   const url = `${API_BASE_URL}${path}`;

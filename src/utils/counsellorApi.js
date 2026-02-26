@@ -213,4 +213,21 @@ export const exportStudents = async (params = {}, token = getCounsellorToken()) 
   a.click();
   URL.revokeObjectURL(a.href);
   return { success: true };
-}
+};
+
+// —— Announcements (notifications) ——
+export const getAnnouncements = async (token = getCounsellorToken()) => {
+  return counsellorRequest('/announcements', { method: 'GET' }, token);
+};
+
+export const getAnnouncement = async (id, token = getCounsellorToken()) => {
+  return counsellorRequest(`/announcements/${encodeURIComponent(id)}`, { method: 'GET' }, token);
+};
+
+export const markAnnouncementRead = async (id, token = getCounsellorToken()) => {
+  return counsellorRequest(`/announcements/${encodeURIComponent(id)}/read`, { method: 'POST' }, token);
+};
+
+export const markAllAnnouncementsRead = async (token = getCounsellorToken()) => {
+  return counsellorRequest('/announcements/read-all', { method: 'POST' }, token);
+};

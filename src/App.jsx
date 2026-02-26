@@ -27,6 +27,7 @@ import AssessmentResults from './pages/admin/AssessmentResults';
 import Assessment2Results from './pages/admin/Assessment2Results';
 import Assessment3Results from './pages/admin/Assessment3Results';
 import TrainingFeedback from './pages/admin/TrainingFeedback';
+import Announcements from './pages/admin/Announcements';
 import CounsellorLogin from './pages/counsellor/CounsellorLogin';
 
 /* Counsellor portal — lazy loaded */
@@ -100,6 +101,7 @@ function App() {
             <Route path="assessment-results" element={<AssessmentResults />} />
             <Route path="assessment-2-results" element={<Assessment2Results />} />
             <Route path="assessment-3-results" element={<Assessment3Results />} />
+            <Route path="announcements" element={<Announcements />} />
           </Route>
 
           {/* Counsellor Portal */}
