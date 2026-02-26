@@ -1,5 +1,5 @@
 /**
- * Career DNA Test: sections and questions (MCQ).
+ * Psychometric Test: sections and questions (MCQ).
  * Question ids (cd1–cd10) match backend scoring.
  */
 export const ASSESSMENT_SECTIONS_CAREER_DNA = [

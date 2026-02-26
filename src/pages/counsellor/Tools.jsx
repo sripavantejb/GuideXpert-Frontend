@@ -23,7 +23,7 @@ const toolCards = [
 const assessmentToolCards = [
   {
     id: 'career-dna',
-    title: 'Career DNA Test',
+    title: 'Psychometric Test',
     desc: 'Explore what your dream course might be, even if it differs from what you first thought. Students are often surprised by their results – find out what your profile reveals.',
     icon: FiActivity,
   },
