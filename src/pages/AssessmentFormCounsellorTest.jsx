@@ -238,12 +238,13 @@ export default function AssessmentFormCounsellorTest({ type = 'career-dna' }) {
   const handleAssessmentFormKeyDown = (e) => {
     if (e.key !== 'Enter') return;
     const target = e.target;
-    const isRadio = target.type === 'radio';
-    const isInsideOptionLabel = target.closest('label')?.querySelector('input[type="radio"]');
-    if (isRadio || isInsideOptionLabel) {
-      e.preventDefault();
-      e.stopPropagation();
-    }
+    const activeEl = document.activeElement;
+    const isSubmitButton =
+      (activeEl && activeEl.getAttribute?.('type') === 'submit') ||
+      (target && (target.getAttribute?.('type') === 'submit' || target.type === 'submit'));
+    if (isSubmitButton) return;
+    e.preventDefault();
+    e.stopPropagation();
   };
 
   const handleSubmitAssessment = async (e) => {
