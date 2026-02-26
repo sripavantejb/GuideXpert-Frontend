@@ -41,6 +41,10 @@ const PosterPreview = forwardRef(function PosterPreview(
 
   const textLeft = 360;
   const textWidth = 432;
+  const textBlockBottom = forExport ? 72 : 64;
+  // For export/capture: use fixed top (px) so position is correct in cloned doc when ancestor height is wrong (iOS).
+  const textBlockTopExport = HEIGHT - 72 - 224; // 224 ≈ block height (padding + name + phone + tagline)
+  const textContainerPaddingBottom = forExport ? 24 : 20;
   const taglineFontSize = forExport ? 20 : 24;
   const taglineMinHeight = forExport ? 30 : 34;
   const textContainerPaddingTop = forExport ? 48 : 20;
@@ -63,6 +67,7 @@ const PosterPreview = forwardRef(function PosterPreview(
         margin: 0,
         padding: 0,
         boxSizing: 'border-box',
+        ...(forExport ? { fontSize: 16 } : {}),
       }}
     >
       <FallbackPosterSvg />
@@ -93,14 +98,14 @@ const PosterPreview = forwardRef(function PosterPreview(
         />
       )}
 
-      {/* Text over poster's blue box — forExport adds top/line padding so ascenders aren't clipped in PNG/PDF */}
+      {/* Text over poster's blue box — forExport: use top (px) so position is correct in clone on iOS */}
       <div
         style={{
           position: 'absolute',
           left: textLeft,
-          bottom: 64,
+          ...(forExport ? { top: textBlockTopExport } : { bottom: textBlockBottom }),
           width: textWidth,
-          padding: `${textContainerPaddingTop}px 18px 20px 18px`,
+          padding: `${textContainerPaddingTop}px 18px ${textContainerPaddingBottom}px 18px`,
           boxSizing: 'border-box',
           display: 'flex',
           flexDirection: 'column',

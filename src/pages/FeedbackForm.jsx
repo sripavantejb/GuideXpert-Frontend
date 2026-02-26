@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { submitTrainingFeedback } from '../utils/api';
 
 const EDUCATION_OPTIONS = [
@@ -87,7 +88,12 @@ const inputBase =
   'w-full px-4 py-3 border rounded-xl focus:ring-2 focus:ring-[#003366]/25 focus:border-[#003366] outline-none transition text-gray-900 placeholder:text-gray-400';
 const inputError = 'border-amber-500 bg-amber-50/30';
 
+const MODAL_SUCCESS = 'success';
+const MODAL_NOT_COMPLETED = 'not_completed_training';
+const MODAL_ALREADY_SUBMITTED = 'already_submitted';
+
 export default function FeedbackForm() {
+  const navigate = useNavigate();
   const [name, setName] = useState('');
   const [mobileNumber, setMobileNumber] = useState('');
   const [whatsappNumber, setWhatsappNumber] = useState('');
@@ -102,7 +108,7 @@ export default function FeedbackForm() {
   const [errors, setErrors] = useState({});
   const [submitError, setSubmitError] = useState('');
   const [loading, setLoading] = useState(false);
-  const [submitted, setSubmitted] = useState(false);
+  const [modalType, setModalType] = useState(null);
 
   const setError = (field, message) => {
     setErrors((prev) => ({ ...prev, [field]: message }));
@@ -149,9 +155,13 @@ export default function FeedbackForm() {
       };
       const result = await submitTrainingFeedback(payload);
       if (result.success) {
-        setSubmitted(true);
+        setModalType(MODAL_SUCCESS);
+      } else if (result.data?.code === 'NOT_COMPLETED_TRAINING') {
+        setModalType(MODAL_NOT_COMPLETED);
+      } else if (result.data?.code === 'ALREADY_SUBMITTED') {
+        setModalType(MODAL_ALREADY_SUBMITTED);
       } else {
-        setSubmitError('Unable to submit at the moment. Please try again.');
+        setSubmitError(result.message || 'Unable to submit at the moment. Please try again.');
       }
     } catch {
       setSubmitError('Connection issue. Please check your network and try again.');
@@ -160,53 +170,76 @@ export default function FeedbackForm() {
     }
   };
 
-  const resetForm = () => {
-    setSubmitted(false);
-    setName('');
-    setMobileNumber('');
-    setWhatsappNumber('');
-    setEmail('');
-    setAddressOfCommunication('');
-    setOccupation('');
-    setDateOfBirth('');
-    setGender('');
-    setEducationQualification('');
-    setYearsOfExperience('');
-    setAnythingToConvey('');
-    setErrors({});
-    setSubmitError('');
-  };
+  const goHome = () => navigate('/');
 
-  if (submitted) {
-    return (
-      <div className="min-h-screen bg-gradient-to-b from-slate-50 to-slate-100 flex flex-col items-center justify-center p-4">
-        <div className="bg-white rounded-2xl shadow-xl max-w-md w-full overflow-hidden border border-slate-200">
-          <div className="h-1.5 w-full bg-gradient-to-r from-[#003366] to-[#004080]" />
-          <div className="p-8 text-center">
-            <div className="w-16 h-16 rounded-full bg-emerald-100 flex items-center justify-center mx-auto mb-5">
-              <svg className="w-9 h-9 text-emerald-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
-              </svg>
-            </div>
-            <h2 className="text-xl font-semibold text-slate-900 mb-2">Thank you</h2>
-            <p className="text-slate-600 text-sm leading-relaxed mb-6">
-              Your form has been submitted successfully. We will get back to you as needed.
-            </p>
-            <button
-              type="button"
-              onClick={resetForm}
-              className="px-5 py-2.5 rounded-xl font-medium text-white bg-[#003366] hover:bg-[#004080] transition-colors"
-            >
-              Submit another
-            </button>
-          </div>
+  const modalConfig = {
+    [MODAL_SUCCESS]: {
+      icon: (
+        <div className="w-16 h-16 rounded-full bg-emerald-100 flex items-center justify-center mx-auto mb-5">
+          <svg className="w-9 h-9 text-emerald-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+          </svg>
         </div>
-      </div>
-    );
-  }
+      ),
+      title: 'Thank you',
+      message: 'Your feedback has been submitted successfully.'
+    },
+    [MODAL_NOT_COMPLETED]: {
+      icon: (
+        <div className="w-16 h-16 rounded-full bg-amber-100 flex items-center justify-center mx-auto mb-5">
+          <svg className="w-9 h-9 text-amber-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+          </svg>
+        </div>
+      ),
+      title: 'Training not completed',
+      message: 'You have not yet completed the assessments. Please complete the training first.'
+    },
+    [MODAL_ALREADY_SUBMITTED]: {
+      icon: (
+        <div className="w-16 h-16 rounded-full bg-slate-100 flex items-center justify-center mx-auto mb-5">
+          <svg className="w-9 h-9 text-slate-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+          </svg>
+        </div>
+      ),
+      title: 'Already submitted',
+      message: 'You have already completed the feedback.'
+    }
+  };
 
   return (
     <div className="min-h-screen bg-gradient-to-b from-slate-50 to-slate-100 flex flex-col items-center justify-center p-4 py-10">
+      {/* Apple-style modal overlay */}
+      {modalType && (
+        <div
+          className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/40 backdrop-blur-sm"
+          role="dialog"
+          aria-modal="true"
+          aria-labelledby="modal-title"
+        >
+          <div className="bg-white rounded-2xl shadow-2xl max-w-md w-full overflow-hidden border border-slate-200">
+            <div className="h-1 w-full bg-gradient-to-r from-[#003366] to-[#004080]" />
+            <div className="p-8 text-center">
+              {modalConfig[modalType]?.icon}
+              <h2 id="modal-title" className="text-xl font-semibold text-slate-900 mb-2">
+                {modalConfig[modalType]?.title}
+              </h2>
+              <p className="text-slate-600 text-sm leading-relaxed mb-6">
+                {modalConfig[modalType]?.message}
+              </p>
+              <button
+                type="button"
+                onClick={goHome}
+                className="w-full px-5 py-3 rounded-xl font-medium text-white bg-[#003366] hover:bg-[#004080] transition-colors"
+              >
+                Go Home
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
       <div className="bg-white rounded-2xl shadow-xl max-w-2xl w-full overflow-hidden border border-slate-200">
         {/* Accent header */}
         <div className="h-1.5 w-full bg-gradient-to-r from-[#003366] via-[#004080] to-[#003366]" />
