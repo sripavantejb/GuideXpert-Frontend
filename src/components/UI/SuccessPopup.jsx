@@ -103,7 +103,7 @@ const SuccessPopup = ({ isOpen, onClose, slotInfo, variant = 'slot', score, maxS
           
           <p className="success-popup-message">
             {isAssessment
-              ? 'Thank you for completing the counsellor assessment.'
+              ? 'Thank you for completing the Psychometric Test.'
               : isPostRegistration
                 ? "We'll send the meeting link and updates to your email."
                 : "We'll send you a reminder before your demo session."}

@@ -3,7 +3,7 @@ import Header from './Header';
 import Footer from './Footer';
 
 /**
- * Layout for Career DNA and Course Fit assessment pages.
+ * Layout for Psychometric Test and Course Fit assessment pages.
  * Renders the same Header (standalone) and Footer as the landing page
  * so the tests feel like part of the main site.
  */

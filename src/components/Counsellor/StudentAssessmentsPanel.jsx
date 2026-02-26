@@ -11,7 +11,7 @@ function copyToClipboard(text) {
 
 export default function StudentAssessmentsPanel({ type }) {
   const assessmentType = type === 'course-fit' ? 'course-fit' : 'career-dna';
-  const title = assessmentType === 'career-dna' ? 'Career DNA Test' : 'Course Fit Test';
+  const title = assessmentType === 'career-dna' ? 'Psychometric Test' : 'Course Fit Test';
 
   const [links, setLinks] = useState(null);
   const [linksLoading, setLinksLoading] = useState(true);
@@ -241,7 +241,7 @@ export default function StudentAssessmentsPanel({ type }) {
 
                       {assessmentType === 'career-dna' && (detail.primaryType || detail.resultTitle) && (
                         <div className="rounded-xl border border-gray-200 bg-gray-50/30 p-5">
-                          <h5 className="text-xs font-semibold uppercase tracking-widest text-gray-500 mb-3">Career DNA result</h5>
+                          <h5 className="text-xs font-semibold uppercase tracking-widest text-gray-500 mb-3">Psychometric Test result</h5>
                           {detail.resultTitle && <p className="text-base font-semibold text-primary-navy mb-2">{detail.resultTitle}</p>}
                           <div className="flex flex-wrap gap-2 text-sm">
                             {detail.primaryType && <span className="px-2.5 py-1 rounded-lg bg-primary-navy/15 text-primary-navy font-medium">Primary: {detail.primaryType}</span>}

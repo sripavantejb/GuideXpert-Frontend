@@ -40,7 +40,7 @@ function getInitialAnswers(sections) {
 
 const CONFIG = {
   'career-dna': {
-    title: 'Career DNA Test',
+    title: 'Psychometric Test',
     subtitle: 'Discover what your dream course might be',
     sections: ASSESSMENT_SECTIONS_CAREER_DNA,
     submitFn: submitCareerDnaAssessment,
