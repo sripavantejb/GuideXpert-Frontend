@@ -76,8 +76,8 @@ function App() {
           <Route path="/assessment" element={<AssessmentForm />} />
           <Route path="/assessment-2" element={<AssessmentForm2 />} />
           <Route path="/assessment-3" element={<AssessmentForm3 />} />
-          <Route path="/assessment-career-dna" element={<AssessmentLayout><AssessmentFormCounsellorTest type="career-dna" /></AssessmentLayout>} />
-          <Route path="/assessment-course-fit" element={<AssessmentLayout><AssessmentFormCounsellorTest type="course-fit" /></AssessmentLayout>} />
+          <Route path="/assessment-career-dna" element={<AssessmentLayout hideNavAndFooter><AssessmentFormCounsellorTest type="career-dna" /></AssessmentLayout>} />
+          <Route path="/assessment-course-fit" element={<AssessmentLayout hideNavAndFooter><AssessmentFormCounsellorTest type="course-fit" /></AssessmentLayout>} />
           <Route path="/admin/login" element={<AdminLogin />} />
           <Route
             path="/admin"
