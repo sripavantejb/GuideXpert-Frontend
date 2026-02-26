@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useCallback, useEffect } from 'react';
 import { Link, NavLink, Outlet, useLocation, useNavigate } from 'react-router-dom';
 import { useCounsellorAuth } from '../../contexts/CounsellorAuthContext';
 import {
@@ -20,6 +20,9 @@ import {
 } from 'react-icons/fi';
 import { HiMenu as HiMenuIcon, HiX as HiXIcon } from 'react-icons/hi';
 import { useCounsellorProfile } from '../../contexts/CounsellorProfileContext';
+import { getAnnouncements, getAnnouncement, markAnnouncementRead, markAllAnnouncementsRead } from '../../utils/counsellorApi';
+import NotificationDropdown from './NotificationDropdown';
+import SlideOverPanel from './SlideOverPanel';
 
 const primaryNav = [
   { to: '/counsellor/dashboard', label: 'Dashboard', icon: FiLayout },
@@ -46,9 +49,22 @@ const pageMeta = {
   '/counsellor/settings': { title: 'Settings', subtitle: 'Manage your account and preferences' },
 };
 
+const PRIORITY_BADGE = {
+  normal: 'bg-primary-blue-100 text-primary-navy',
+  important: 'bg-orange-100 text-orange-800',
+  urgent: 'bg-red-100 text-red-800',
+};
+
 export default function CounsellorLayout() {
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [profileOpen, setProfileOpen] = useState(false);
+  const [notificationsOpen, setNotificationsOpen] = useState(false);
+  const [notificationFilter, setNotificationFilter] = useState('all');
+  const [announcements, setAnnouncements] = useState([]);
+  const [notificationsLoading, setNotificationsLoading] = useState(false);
+  const [detailOpen, setDetailOpen] = useState(false);
+  const [detailAnnouncement, setDetailAnnouncement] = useState(null);
+  const [detailLoading, setDetailLoading] = useState(false);
   const location = useLocation();
   const navigate = useNavigate();
   const { user, logout } = useCounsellorAuth();
@@ -68,6 +84,53 @@ export default function CounsellorLayout() {
     logout();
     navigate('/counsellor/login', { replace: true });
   };
+
+  const fetchNotifications = useCallback(async () => {
+    setNotificationsLoading(true);
+    const res = await getAnnouncements();
+    setNotificationsLoading(false);
+    if (res.success && Array.isArray(res.data)) setAnnouncements(res.data);
+    else setAnnouncements([]);
+  }, []);
+
+  const openNotifications = () => {
+    setProfileOpen(false);
+    if (!notificationsOpen) {
+      fetchNotifications();
+    }
+    setNotificationsOpen((o) => !o);
+  };
+
+  const handleMarkAllRead = async () => {
+    const res = await markAllAnnouncementsRead();
+    if (res.success) {
+      setAnnouncements((prev) => prev.map((a) => ({ ...a, read: true })));
+    }
+  };
+
+  const handleNotificationClick = async (item) => {
+    setNotificationsOpen(false);
+    setDetailAnnouncement(null);
+    setDetailOpen(true);
+    setDetailLoading(true);
+    if (!item.read) {
+      await markAnnouncementRead(item.id);
+      setAnnouncements((prev) => prev.map((a) => (a.id === item.id ? { ...a, read: true } : a)));
+    }
+    const res = await getAnnouncement(item.id);
+    setDetailLoading(false);
+    if (res.success && res.data) setDetailAnnouncement(res.data);
+  };
+
+  const unreadCount = announcements.filter((a) => !a.read).length;
+  const [isMobile, setIsMobile] = useState(false);
+  useEffect(() => {
+    const mq = window.matchMedia('(max-width: 767px)');
+    const update = () => setIsMobile(mq.matches);
+    update();
+    mq.addEventListener('change', update);
+    return () => mq.removeEventListener('change', update);
+  }, []);
 
   return (
     <div className="counsellor-portal min-h-screen h-screen overflow-hidden bg-[#f1f5f9] flex">
@@ -239,16 +302,36 @@ export default function CounsellorLayout() {
           </div>
 
           {/* Right: Notifications + Help + Profile */}
-          <div className="flex items-center gap-1.5">
+          <div className="flex items-center gap-1.5 relative">
             {/* Notifications */}
             <button
               type="button"
+              onClick={openNotifications}
               className="relative p-2 rounded-lg text-gray-500 hover:bg-gray-100 hover:text-gray-700 transition-colors"
               aria-label="Notifications"
+              aria-expanded={notificationsOpen}
             >
               <FiBell className="w-5 h-5" />
-              <span className="absolute top-1.5 right-1.5 w-2.5 h-2.5 bg-red-500 rounded-full ring-2 ring-white" />
+              {unreadCount > 0 && (
+                <span className="absolute top-1.5 right-1.5 min-w-[1.125rem] h-4.5 px-1 flex items-center justify-center bg-red-500 text-white text-[0.6875rem] font-bold rounded-full ring-2 ring-white">
+                  {unreadCount > 99 ? '99+' : unreadCount}
+                </span>
+              )}
             </button>
+            {notificationsOpen && (
+              <NotificationDropdown
+                isOpen={notificationsOpen}
+                onClose={() => setNotificationsOpen(false)}
+                announcements={announcements}
+                loading={notificationsLoading}
+                filter={notificationFilter}
+                onFilterChange={setNotificationFilter}
+                onMarkAllRead={handleMarkAllRead}
+                onItemClick={handleNotificationClick}
+                unreadCount={unreadCount}
+                isMobile={isMobile}
+              />
+            )}
 
             {/* Help */}
             <button
@@ -320,6 +403,34 @@ export default function CounsellorLayout() {
           <Outlet />
         </main>
       </div>
+
+      {/* Full announcement drawer */}
+      <SlideOverPanel
+        isOpen={detailOpen}
+        onClose={() => { setDetailOpen(false); setDetailAnnouncement(null); }}
+        title={detailAnnouncement?.title || 'Announcement'}
+      >
+        {detailLoading ? (
+          <div className="py-8 text-center text-gray-500">Loading…</div>
+        ) : detailAnnouncement ? (
+          <div className="space-y-4">
+            <div className="flex flex-wrap items-center gap-2">
+              <span className={`inline-flex px-2.5 py-1 rounded-lg text-xs font-medium ${PRIORITY_BADGE[detailAnnouncement.priority] || PRIORITY_BADGE.normal}`}>
+                {detailAnnouncement.priority}
+              </span>
+              <span className="text-sm text-gray-500">
+                {new Date(detailAnnouncement.createdAt).toLocaleString(undefined, { dateStyle: 'medium', timeStyle: 'short' })}
+              </span>
+            </div>
+            <div
+              className="prose prose-sm max-w-none text-gray-700"
+              dangerouslySetInnerHTML={{ __html: detailAnnouncement.description || '' }}
+            />
+          </div>
+        ) : (
+          <div className="py-8 text-center text-gray-500">Could not load announcement.</div>
+        )}
+      </SlideOverPanel>
     </div>
   );
 }

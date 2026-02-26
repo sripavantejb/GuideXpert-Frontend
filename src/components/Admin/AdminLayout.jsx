@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { NavLink, Outlet } from 'react-router-dom';
-import { FiLayout, FiUsers, FiUserCheck, FiBarChart2, FiDownload, FiSettings, FiCalendar, FiVideo, FiLink, FiAward, FiMessageSquare } from 'react-icons/fi';
+import { FiLayout, FiUsers, FiUserCheck, FiBarChart2, FiDownload, FiSettings, FiCalendar, FiVideo, FiLink, FiAward, FiMessageSquare, FiRadio } from 'react-icons/fi';
 import { HiMenu as HiMenuIcon, HiX as HiXIcon } from 'react-icons/hi';
 import { useAuth } from '../../contexts/AuthContext';
 
@@ -17,6 +17,7 @@ const navItems = [
   { to: '/admin/assessment-results', label: 'Assessment Results', icon: FiAward },
   { to: '/admin/assessment-2-results', label: 'Assessment 2 Results', icon: FiAward },
   { to: '/admin/assessment-3-results', label: 'Assessment 3 Results', icon: FiAward },
+  { to: '/admin/announcements', label: 'Announcements', icon: FiRadio },
   { to: '/admin/settings', label: 'Settings', icon: FiSettings },
 ];
 
