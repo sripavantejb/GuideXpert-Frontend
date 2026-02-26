@@ -216,6 +216,71 @@ export default function StudentAssessmentsPanel({ type }) {
                         <div><span className="text-gray-500 block text-xs font-semibold uppercase tracking-wider mb-1">Score</span><span className="font-semibold text-primary-navy tabular-nums">{detail.score ?? 0} / {detail.maxScore ?? 10}</span></div>
                         <div className="col-span-2"><span className="text-gray-500 block text-xs font-semibold uppercase tracking-wider mb-1">Submitted</span><span className="text-gray-900">{detail.submittedAt ? new Date(detail.submittedAt).toLocaleString() : '—'}</span></div>
                       </div>
+
+                      {detail.scoreBreakdown && Object.keys(detail.scoreBreakdown).length > 0 && (
+                        <div className="rounded-xl border border-gray-200 bg-gray-50/30 p-5">
+                          <h5 className="text-xs font-semibold uppercase tracking-widest text-gray-500 mb-3">Score breakdown</h5>
+                          <div className="space-y-2.5">
+                            {(assessmentType === 'career-dna' ? ['TECH', 'SOCIAL', 'CREATIVE', 'RESEARCH'] : ['SCIENCE', 'COMMERCE', 'ARTS', 'RESEARCH', 'MIXED']).map((cat) => {
+                              const value = detail.scoreBreakdown[cat] ?? 0;
+                              const max = 10;
+                              const pct = max > 0 ? (value / max) * 100 : 0;
+                              return (
+                                <div key={cat} className="flex items-center gap-3">
+                                  <span className="w-20 text-xs font-medium text-gray-600 shrink-0">{cat}</span>
+                                  <div className="flex-1 h-5 bg-gray-200 rounded overflow-hidden">
+                                    <div className="h-full bg-primary-navy rounded transition-all" style={{ width: `${pct}%` }} />
+                                  </div>
+                                  <span className="w-6 text-right text-sm font-semibold tabular-nums text-gray-900">{value}</span>
+                                </div>
+                              );
+                            })}
+                          </div>
+                        </div>
+                      )}
+
+                      {assessmentType === 'career-dna' && (detail.primaryType || detail.resultTitle) && (
+                        <div className="rounded-xl border border-gray-200 bg-gray-50/30 p-5">
+                          <h5 className="text-xs font-semibold uppercase tracking-widest text-gray-500 mb-3">Career DNA result</h5>
+                          {detail.resultTitle && <p className="text-base font-semibold text-primary-navy mb-2">{detail.resultTitle}</p>}
+                          <div className="flex flex-wrap gap-2 text-sm">
+                            {detail.primaryType && <span className="px-2.5 py-1 rounded-lg bg-primary-navy/15 text-primary-navy font-medium">Primary: {detail.primaryType}</span>}
+                            {detail.secondaryType && <span className="px-2.5 py-1 rounded-lg bg-gray-200 text-gray-700">Secondary: {detail.secondaryType}</span>}
+                          </div>
+                        </div>
+                      )}
+
+                      {assessmentType === 'course-fit' && (detail.primaryType || detail.recommendedPath) && (
+                        <div className="rounded-xl border border-gray-200 bg-gray-50/30 p-5">
+                          <h5 className="text-xs font-semibold uppercase tracking-widest text-gray-500 mb-3">Course Fit result</h5>
+                          {detail.primaryType && <p className="text-sm font-semibold text-gray-900 mb-1">Recommended stream: {detail.primaryType}</p>}
+                          {detail.secondaryType && <p className="text-sm text-gray-600 mb-2">Secondary: {detail.secondaryType}</p>}
+                          {detail.recommendedPath && <p className="text-sm text-gray-700 mt-2">{detail.recommendedPath}</p>}
+                        </div>
+                      )}
+
+                      {assessmentType === 'career-dna' && detail.suggestedCareerPaths?.length > 0 && (
+                        <div className="rounded-xl border border-gray-200 bg-gray-50/30 p-5">
+                          <h5 className="text-xs font-semibold uppercase tracking-widest text-gray-500 mb-3">Suggested career paths</h5>
+                          <ul className="list-disc list-inside text-sm text-gray-700 space-y-1">
+                            {detail.suggestedCareerPaths.map((path, i) => (
+                              <li key={i}>{path}</li>
+                            ))}
+                          </ul>
+                        </div>
+                      )}
+
+                      {(detail.suggestedCourses?.length > 0) && (
+                        <div className="rounded-xl border border-gray-200 bg-gray-50/30 p-5">
+                          <h5 className="text-xs font-semibold uppercase tracking-widest text-gray-500 mb-3">Suggested courses</h5>
+                          <ul className="list-disc list-inside text-sm text-gray-700 space-y-1">
+                            {detail.suggestedCourses.map((course, i) => (
+                              <li key={i}>{course}</li>
+                            ))}
+                          </ul>
+                        </div>
+                      )}
+
                       {detail.questionResults && detail.questionResults.length > 0 && (
                         <div className="rounded-xl border border-gray-200 bg-gray-50/30 p-5">
                           <h5 className="text-xs font-semibold uppercase tracking-widest text-gray-500 mb-3">Question-wise results</h5>

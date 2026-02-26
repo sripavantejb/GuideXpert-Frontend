@@ -303,8 +303,9 @@ export default function AssessmentFormCounsellorTest({ type = 'career-dna' }) {
     : config.title;
 
   return (
-    <div className="assessment-page-wrap py-8 px-4">
-      <div className="max-w-2xl mx-auto">
+    <div className="assessment-page-wrap">
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+        <div className="max-w-2xl">
         {/* Page-level top bar: Back (left), context label (right) */}
         <div className="flex items-center justify-between mb-6">
           <div>
@@ -345,7 +346,7 @@ export default function AssessmentFormCounsellorTest({ type = 'career-dna' }) {
           <span className="text-sm font-medium text-gray-600">{topBarRightLabel}</span>
         </div>
 
-        <div className="text-center mb-6">
+        <div className="mb-6">
           <h1 className="text-2xl font-bold" style={{ color: '#003366' }}>GuideXpert</h1>
           <p className="text-gray-600 mt-1">{config.title}</p>
           <p className="text-sm text-gray-500 mt-0.5">{config.subtitle}</p>
@@ -661,6 +662,7 @@ export default function AssessmentFormCounsellorTest({ type = 'career-dna' }) {
               </div>
             </div>
           )}
+        </div>
         </div>
       </div>
       <SuccessPopup
