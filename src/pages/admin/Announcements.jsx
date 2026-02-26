@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect } from 'react';
 import {
   getAnnouncements,
   getAnnouncementById,
@@ -7,9 +7,10 @@ import {
   deleteAnnouncement,
   publishAnnouncement,
   unpublishAnnouncement,
+  getAnnouncementAnalytics,
 } from '../../utils/adminApi';
 import ConfirmDialog from '../../components/Counsellor/ConfirmDialog';
-import { FiPlus, FiEdit2, FiTrash2, FiRadio, FiX } from 'react-icons/fi';
+import { FiPlus, FiEdit2, FiTrash2, FiRadio, FiX, FiBookmark, FiBarChart2 } from 'react-icons/fi';
 
 const PRIORITIES = [
   { value: 'normal', label: 'Normal' },
@@ -50,52 +51,6 @@ function statusBadgeClass(status) {
   }
 }
 
-function RichTextToolbar({ textareaRef, value, onChange }) {
-  const insertTag = (before, after = before) => {
-    const ta = textareaRef.current;
-    if (!ta) return;
-    const start = ta.selectionStart;
-    const end = ta.selectionEnd;
-    const text = value || '';
-    const selected = text.slice(start, end);
-    const newText = text.slice(0, start) + before + (selected || 'text') + after + text.slice(end);
-    onChange(newText);
-    setTimeout(() => {
-      ta.focus();
-      ta.setSelectionRange(start + before.length, start + before.length + (selected || 'text').length);
-    }, 0);
-  };
-
-  return (
-    <div className="flex flex-wrap gap-1 p-2 border border-gray-200 border-b-0 rounded-t-lg bg-gray-50">
-      <button
-        type="button"
-        onClick={() => insertTag('<b>', '</b>')}
-        className="px-2 py-1 text-xs font-semibold rounded border border-gray-300 bg-white hover:bg-gray-100"
-      >
-        Bold
-      </button>
-      <button
-        type="button"
-        onClick={() => insertTag('<ul>\n<li>', '</li>\n</ul>')}
-        className="px-2 py-1 text-xs rounded border border-gray-300 bg-white hover:bg-gray-100"
-      >
-        List
-      </button>
-      <button
-        type="button"
-        onClick={() => {
-          const url = window.prompt('Link URL:', 'https://');
-          if (url) insertTag(`<a href="${url}" target="_blank" rel="noopener">`, '</a>');
-        }}
-        className="px-2 py-1 text-xs rounded border border-gray-300 bg-white hover:bg-gray-100"
-      >
-        Link
-      </button>
-    </div>
-  );
-}
-
 export default function Announcements() {
   const [list, setList] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -104,13 +59,15 @@ export default function Announcements() {
   const [editingId, setEditingId] = useState(null);
   const [saveLoading, setSaveLoading] = useState(false);
   const [deleteConfirm, setDeleteConfirm] = useState(null);
+  const [analyticsId, setAnalyticsId] = useState(null);
+  const [analyticsData, setAnalyticsData] = useState(null);
+  const [analyticsLoading, setAnalyticsLoading] = useState(false);
   const [form, setForm] = useState({
     title: '',
     description: '',
     priority: 'normal',
     expiryDate: '',
   });
-  const descriptionRef = useRef(null);
 
   const loadList = async () => {
     setLoading(true);
@@ -143,6 +100,22 @@ export default function Announcements() {
       expiryDate: d.expiryDate ? String(d.expiryDate).slice(0, 16) : '',
     });
     setModalOpen(true);
+  };
+
+  const openAnalytics = async (id) => {
+    setAnalyticsId(String(id));
+    setAnalyticsData(null);
+    setAnalyticsLoading(true);
+    const res = await getAnnouncementAnalytics(String(id));
+    setAnalyticsLoading(false);
+    const data = res?.data?.data ?? res?.data;
+    setAnalyticsData(res.success && data ? data : null);
+  };
+
+  const handlePinToggle = async (id, currentPinned) => {
+    const res = await updateAnnouncement(String(id), { pinned: !currentPinned });
+    if (res.success) await loadList();
+    else alert(res.message || 'Update failed');
   };
 
   const closeModal = () => {
@@ -210,12 +183,12 @@ export default function Announcements() {
         <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
           <div>
             <h1 className="text-2xl sm:text-3xl font-bold text-gray-900 tracking-tight">Announcements</h1>
-            <p className="text-sm text-gray-500 mt-1">Create and manage system-wide announcements</p>
+            <p className="text-sm text-gray-500 mt-1.5">Create and manage system-wide announcements</p>
           </div>
           <button
             type="button"
             onClick={openCreate}
-            className="inline-flex items-center gap-2 px-5 py-2.5 rounded-xl text-sm font-semibold text-white bg-primary-navy hover:opacity-90 transition-all shadow-md hover:shadow-lg shrink-0"
+            className="inline-flex items-center gap-2 px-5 py-2.5 rounded-xl text-sm font-semibold text-white bg-primary-navy hover:bg-primary-navy/90 transition-all shadow-md hover:shadow-lg shrink-0"
           >
             <FiPlus className="w-4 h-4" /> Create Announcement
           </button>
@@ -229,21 +202,21 @@ export default function Announcements() {
         )}
 
         {loading ? (
-          <div className="rounded-2xl bg-white border border-gray-200 shadow-sm p-12 text-center">
-            <div className="inline-block w-8 h-8 border-2 border-primary-navy border-t-transparent rounded-full animate-spin mb-3" aria-hidden />
-            <p className="text-gray-500 text-sm">Loading announcements…</p>
+          <div className="rounded-2xl bg-white border border-gray-200 shadow-sm p-16 text-center">
+            <div className="inline-block w-10 h-10 border-2 border-primary-navy border-t-transparent rounded-full animate-spin mb-4" aria-hidden />
+            <p className="text-gray-500 text-sm font-medium">Loading announcements…</p>
           </div>
         ) : list.length === 0 ? (
-          <div className="rounded-2xl bg-white border border-gray-200 shadow-sm p-14 text-center">
-            <div className="w-16 h-16 rounded-2xl bg-primary-blue-50 flex items-center justify-center mx-auto mb-4">
-              <FiRadio className="w-8 h-8 text-primary-navy" />
+          <div className="rounded-2xl bg-white border border-gray-200 shadow-sm p-16 text-center">
+            <div className="w-20 h-20 rounded-2xl bg-primary-blue-50 flex items-center justify-center mx-auto mb-5">
+              <FiRadio className="w-10 h-10 text-primary-navy" />
             </div>
-            <p className="text-lg font-semibold text-gray-900">No announcements yet</p>
-            <p className="text-sm text-gray-500 mt-1 max-w-sm mx-auto">Create your first announcement to notify counsellors across the system.</p>
+            <p className="text-xl font-semibold text-gray-900">No announcements yet</p>
+            <p className="text-sm text-gray-500 mt-2 max-w-sm mx-auto">Create your first announcement to notify counsellors across the system.</p>
             <button
               type="button"
               onClick={openCreate}
-              className="mt-6 inline-flex items-center gap-2 px-5 py-2.5 rounded-xl text-sm font-semibold text-white bg-primary-navy hover:opacity-90 shadow-md"
+              className="mt-8 inline-flex items-center gap-2 px-5 py-2.5 rounded-xl text-sm font-semibold text-white bg-primary-navy hover:bg-primary-navy/90 shadow-md hover:shadow-lg transition-all"
             >
               <FiPlus className="w-4 h-4" /> Create Announcement
             </button>
@@ -253,7 +226,7 @@ export default function Announcements() {
             {list.map((item) => (
               <div
                 key={item.id}
-                className="rounded-2xl bg-white border border-gray-200/90 shadow-sm hover:shadow-md overflow-hidden transition-all duration-200"
+                className="rounded-2xl bg-white border border-gray-200 shadow-sm hover:shadow-md overflow-hidden transition-all duration-200"
               >
                 <div className="p-6">
                   <div className="flex items-start justify-between gap-3">
@@ -270,11 +243,40 @@ export default function Announcements() {
                       </span>
                     </div>
                   </div>
+                  <div className="mt-3 flex flex-wrap items-center gap-x-3 gap-y-1 text-xs text-gray-500">
+                    <span title="Views">{item.viewCount ?? 0} views</span>
+                    <span title="Reactions">
+                      {(item.reactionCounts && Object.values(item.reactionCounts).reduce((s, n) => s + n, 0)) || 0} reactions
+                      {item.reactionCounts && (
+                        <span className="ml-1 text-gray-400">
+                          ({(item.reactionCounts.helpful || 0)} 👍 {(item.reactionCounts.appreciated || 0)} ❤️ {(item.reactionCounts.great || 0)} 👏 {(item.reactionCounts.important || 0)} 🔥)
+                        </span>
+                      )}
+                    </span>
+                    {item.priority === 'urgent' && (
+                      <span title="Acknowledged">{item.acknowledgedCount ?? 0} acknowledged</span>
+                    )}
+                  </div>
                   <div className="mt-4 flex flex-wrap items-center gap-x-4 gap-y-1 text-xs text-gray-500">
                     <span>Created: {formatDate(item.createdAt)}</span>
                     <span>Updated: {formatDate(item.updatedAt)}</span>
                   </div>
                   <div className="mt-5 pt-4 border-t border-gray-100 flex flex-wrap gap-2">
+                    <button
+                      type="button"
+                      onClick={() => handlePinToggle(String(item.id), !!item.pinned)}
+                      className={`inline-flex items-center gap-1.5 px-3 py-2 rounded-xl text-sm font-medium transition-colors ${item.pinned ? 'text-amber-700 bg-amber-50 hover:bg-amber-100' : 'text-gray-600 bg-gray-100 hover:bg-gray-200'}`}
+                      title={item.pinned ? 'Unpin' : 'Pin'}
+                    >
+                      <FiBookmark className="w-3.5 h-3.5" /> {item.pinned ? 'Pinned' : 'Pin'}
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => openAnalytics(String(item.id))}
+                      className="inline-flex items-center gap-1.5 px-3 py-2 rounded-xl text-sm font-medium text-gray-700 bg-gray-100 hover:bg-gray-200 transition-colors"
+                    >
+                      <FiBarChart2 className="w-3.5 h-3.5" /> View analytics
+                    </button>
                     <button
                       type="button"
                       onClick={() => openEdit(String(item.id))}
@@ -319,7 +321,7 @@ export default function Announcements() {
       {modalOpen && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50" aria-modal="true" role="dialog">
           <div className="bg-white rounded-2xl shadow-xl max-w-xl w-full max-h-[90vh] overflow-hidden flex flex-col">
-            <div className="px-6 py-4 border-b border-gray-200 flex items-center justify-between shrink-0 bg-gray-50/50">
+            <div className="px-6 py-5 border-b border-gray-200 flex items-center justify-between shrink-0 bg-gray-50/50">
               <h2 className="text-lg font-semibold text-gray-900">
                 {editingId ? 'Edit Announcement' : 'Create Announcement'}
               </h2>
@@ -343,24 +345,21 @@ export default function Announcements() {
                       type="text"
                       value={form.title}
                       onChange={(e) => setForm((f) => ({ ...f, title: e.target.value }))}
-                      className="w-full px-3 py-2.5 rounded-xl border border-gray-300 focus:ring-2 focus:ring-primary-blue-500 focus:border-primary-blue-500 outline-none text-sm"
+                      className="w-full px-4 py-2.5 rounded-xl border border-gray-300 focus:ring-2 focus:ring-primary-navy/20 focus:border-primary-navy outline-none text-sm transition-colors"
                       placeholder="Announcement title"
                     />
                   </div>
                   <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1">Description (rich text)</label>
-                    <p className="text-xs text-gray-500 mb-1.5">You can use Bold, List, and Link from the toolbar below.</p>
-                    <RichTextToolbar
-                      textareaRef={descriptionRef}
-                      value={form.description}
-                      onChange={(v) => setForm((f) => ({ ...f, description: v }))}
-                    />
+                    <label htmlFor="ann-description" className="block text-sm font-medium text-gray-700 mb-1">Description</label>
+                    <p className="text-xs text-gray-500 mb-1.5">
+                      Plain text only. Paste URLs in the text—they will be clickable for counsellors. Use new lines for lists; lines starting with &quot;- &quot; will show as bullets.
+                    </p>
                     <textarea
-                      ref={descriptionRef}
+                      id="ann-description"
                       value={form.description}
                       onChange={(e) => setForm((f) => ({ ...f, description: e.target.value }))}
                       rows={6}
-                      className="w-full px-3 py-2.5 rounded-b-lg border border-gray-300 focus:ring-2 focus:ring-primary-blue-500 focus:border-primary-blue-500 outline-none text-sm resize-y"
+                      className="w-full min-h-[140px] px-4 py-3 rounded-xl border border-gray-300 focus:ring-2 focus:ring-primary-navy/20 focus:border-primary-navy outline-none text-sm resize-y transition-colors"
                       placeholder="Write your announcement content…"
                     />
                   </div>
@@ -375,7 +374,7 @@ export default function Announcements() {
                       id="ann-priority"
                       value={form.priority}
                       onChange={(e) => setForm((f) => ({ ...f, priority: e.target.value }))}
-                      className="w-full px-3 py-2.5 rounded-xl border border-gray-300 focus:ring-2 focus:ring-primary-blue-500 focus:border-primary-blue-500 outline-none text-sm"
+                      className="w-full px-4 py-2.5 rounded-xl border border-gray-300 focus:ring-2 focus:ring-primary-navy/20 focus:border-primary-navy outline-none text-sm transition-colors"
                     >
                       {PRIORITIES.map((p) => (
                         <option key={p.value} value={p.value}>{p.label}</option>
@@ -389,7 +388,7 @@ export default function Announcements() {
                       type="datetime-local"
                       value={form.expiryDate}
                       onChange={(e) => setForm((f) => ({ ...f, expiryDate: e.target.value }))}
-                      className="w-full px-3 py-2.5 rounded-xl border border-gray-300 focus:ring-2 focus:ring-primary-blue-500 focus:border-primary-blue-500 outline-none text-sm"
+                      className="w-full px-4 py-2.5 rounded-xl border border-gray-300 focus:ring-2 focus:ring-primary-navy/20 focus:border-primary-navy outline-none text-sm transition-colors"
                     />
                   </div>
                 </div>
@@ -415,7 +414,7 @@ export default function Announcements() {
                 type="button"
                 onClick={() => handleSave(true)}
                 disabled={saveLoading || !form.title.trim()}
-                className="px-4 py-2.5 rounded-xl text-sm font-semibold text-white bg-primary-navy hover:opacity-90 disabled:opacity-50 transition-colors shadow-sm"
+                className="px-4 py-2.5 rounded-xl text-sm font-semibold text-white bg-primary-navy hover:bg-primary-navy/90 disabled:opacity-50 transition-colors shadow-sm"
               >
                 {saveLoading ? 'Saving…' : 'Save & Publish'}
               </button>
@@ -434,6 +433,107 @@ export default function Announcements() {
         onCancel={() => setDeleteConfirm(null)}
         variant="danger"
       />
+
+      {/* Analytics modal */}
+      {analyticsId && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50" aria-modal="true" role="dialog">
+          <div className="bg-white rounded-2xl shadow-xl max-w-2xl w-full max-h-[90vh] overflow-hidden flex flex-col">
+            <div className="px-6 py-4 border-b border-gray-200 flex items-center justify-between shrink-0 bg-gray-50/50">
+              <h2 className="text-lg font-semibold text-gray-900">Announcement analytics</h2>
+              <button
+                type="button"
+                onClick={() => { setAnalyticsId(null); setAnalyticsData(null); }}
+                className="p-2 rounded-xl text-gray-500 hover:bg-gray-200 transition-colors"
+                aria-label="Close"
+              >
+                <FiX className="w-5 h-5" />
+              </button>
+            </div>
+            <div className="p-6 overflow-y-auto flex-1 min-h-0">
+              {analyticsLoading ? (
+                <div className="py-12 text-center">
+                  <div className="inline-block w-8 h-8 border-2 border-primary-navy border-t-transparent rounded-full animate-spin mb-3" aria-hidden />
+                  <p className="text-gray-500 text-sm">Loading analytics…</p>
+                </div>
+              ) : analyticsData ? (
+                <div className="space-y-6">
+                  <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+                    <div className="rounded-xl bg-gray-50 p-3 border border-gray-100">
+                      <p className="text-xs font-medium text-gray-500 uppercase tracking-wider">Views</p>
+                      <p className="text-xl font-bold text-gray-900 mt-0.5">{analyticsData.viewCount ?? 0}</p>
+                    </div>
+                    <div className="rounded-xl bg-gray-50 p-3 border border-gray-100">
+                      <p className="text-xs font-medium text-gray-500 uppercase tracking-wider">Reactions</p>
+                      <p className="text-xl font-bold text-gray-900 mt-0.5">{analyticsData.totalReactions ?? 0}</p>
+                    </div>
+                    <div className="rounded-xl bg-gray-50 p-3 border border-gray-100">
+                      <p className="text-xs font-medium text-gray-500 uppercase tracking-wider">Engagement</p>
+                      <p className="text-xl font-bold text-gray-900 mt-0.5">{analyticsData.engagementRate ?? 0}%</p>
+                    </div>
+                    <div className="rounded-xl bg-gray-50 p-3 border border-gray-100">
+                      <p className="text-xs font-medium text-gray-500 uppercase tracking-wider">Acknowledged</p>
+                      <p className="text-xl font-bold text-gray-900 mt-0.5">{analyticsData.acknowledgedCount ?? 0}</p>
+                    </div>
+                  </div>
+                  <div>
+                    <h3 className="text-sm font-semibold text-gray-800 mb-2">Reaction breakdown</h3>
+                    <div className="flex flex-wrap gap-2">
+                      <span className="px-3 py-1.5 rounded-lg bg-gray-100 text-gray-700 text-sm">👍 Helpful: {analyticsData.reactionCounts?.helpful ?? 0}</span>
+                      <span className="px-3 py-1.5 rounded-lg bg-gray-100 text-gray-700 text-sm">❤️ Appreciated: {analyticsData.reactionCounts?.appreciated ?? 0}</span>
+                      <span className="px-3 py-1.5 rounded-lg bg-gray-100 text-gray-700 text-sm">👏 Great: {analyticsData.reactionCounts?.great ?? 0}</span>
+                      <span className="px-3 py-1.5 rounded-lg bg-gray-100 text-gray-700 text-sm">🔥 Important: {analyticsData.reactionCounts?.important ?? 0}</span>
+                    </div>
+                  </div>
+                  <div>
+                    <h3 className="text-sm font-semibold text-gray-800 mb-2">Viewed ({analyticsData.viewedBy?.length ?? 0})</h3>
+                    <ul className="max-h-32 overflow-y-auto space-y-1 text-sm text-gray-700">
+                      {(analyticsData.viewedBy || []).length === 0 ? (
+                        <li className="text-gray-500">No views yet.</li>
+                      ) : (
+                        analyticsData.viewedBy.map((v, i) => (
+                          <li key={(v.counsellorId || '') + i}>{v.name} — {v.readAt ? new Date(v.readAt).toLocaleString() : '—'}</li>
+                        ))
+                      )}
+                    </ul>
+                  </div>
+                  <div>
+                    <h3 className="text-sm font-semibold text-gray-800 mb-2">Not viewed ({analyticsData.notViewedBy?.length ?? 0})</h3>
+                    <ul className="max-h-24 overflow-y-auto space-y-1 text-sm text-gray-700">
+                      {(analyticsData.notViewedBy || []).length === 0 ? (
+                        <li className="text-gray-500">Everyone has viewed.</li>
+                      ) : (
+                        analyticsData.notViewedBy.slice(0, 20).map((v, i) => (
+                          <li key={(v.counsellorId || '') + i}>{v.name}</li>
+                        ))
+                      )}
+                      {(analyticsData.notViewedBy?.length ?? 0) > 20 && (
+                        <li className="text-gray-500">+ {(analyticsData.notViewedBy?.length ?? 0) - 20} more</li>
+                      )}
+                    </ul>
+                  </div>
+                  <div>
+                    <h3 className="text-sm font-semibold text-gray-800 mb-2">Reactions by type</h3>
+                    <div className="space-y-2">
+                      {['helpful', 'appreciated', 'great', 'important'].map((type) => {
+                        const list = analyticsData.reactions?.[type] ?? [];
+                        const label = { helpful: '👍 Helpful', appreciated: '❤️ Appreciated', great: '👏 Great', important: '🔥 Important' }[type];
+                        return (
+                          <div key={type}>
+                            <p className="text-xs font-medium text-gray-600">{label} ({list.length})</p>
+                            <p className="text-sm text-gray-700">{list.length === 0 ? '—' : list.map((u) => u.name).join(', ')}</p>
+                          </div>
+                        );
+                      })}
+                    </div>
+                  </div>
+                </div>
+              ) : (
+                <p className="py-8 text-center text-gray-500">Failed to load analytics.</p>
+              )}
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

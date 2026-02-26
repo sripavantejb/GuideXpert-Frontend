@@ -231,3 +231,29 @@ export const markAnnouncementRead = async (id, token = getCounsellorToken()) => 
 export const markAllAnnouncementsRead = async (token = getCounsellorToken()) => {
   return counsellorRequest('/announcements/read-all', { method: 'POST' }, token);
 };
+
+// —— Announcements Feed ——
+export const getAnnouncementsFeed = async (params = {}, token = getCounsellorToken()) => {
+  const search = new URLSearchParams();
+  if (params.filter) search.set('filter', params.filter);
+  if (params.q) search.set('q', params.q);
+  if (params.page != null) search.set('page', String(params.page));
+  if (params.limit != null) search.set('limit', String(params.limit));
+  const query = search.toString();
+  return counsellorRequest(`/announcements/feed${query ? `?${query}` : ''}`, { method: 'GET' }, token);
+};
+
+export const setAnnouncementReaction = async (id, reactionType, token = getCounsellorToken()) => {
+  return counsellorRequest(`/announcements/${encodeURIComponent(id)}/react`, {
+    method: 'POST',
+    body: JSON.stringify({ reactionType: reactionType || null }),
+  }, token);
+};
+
+export const acknowledgeAnnouncement = async (id, token = getCounsellorToken()) => {
+  return counsellorRequest(`/announcements/${encodeURIComponent(id)}/acknowledge`, { method: 'POST' }, token);
+};
+
+export const getAnnouncementEngagement = async (id, token = getCounsellorToken()) => {
+  return counsellorRequest(`/announcements/${encodeURIComponent(id)}/engagement`, { method: 'GET' }, token);
+};

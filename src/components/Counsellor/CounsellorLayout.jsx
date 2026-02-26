@@ -17,10 +17,12 @@ import {
   FiSearch,
   FiLink,
   FiAward,
+  FiRadio,
 } from 'react-icons/fi';
 import { HiMenu as HiMenuIcon, HiX as HiXIcon } from 'react-icons/hi';
 import { useCounsellorProfile } from '../../contexts/CounsellorProfileContext';
 import { getAnnouncements, getAnnouncement, markAnnouncementRead, markAllAnnouncementsRead } from '../../utils/counsellorApi';
+import { formatAnnouncementDescription } from '../../utils/formatAnnouncementDescription';
 import NotificationDropdown from './NotificationDropdown';
 import SlideOverPanel from './SlideOverPanel';
 
@@ -31,6 +33,7 @@ const primaryNav = [
   { to: '/counsellor/sessions', label: 'Sessions', icon: FiCalendar },
 ];
 const secondaryNav = [
+  { to: '/counsellor/announcements-feed', label: 'Announcements Feed', icon: FiRadio },
   { to: '/counsellor/tools', label: 'Tools', icon: FiTool },
   { to: '/counsellor/marketing', label: 'Marketing', icon: FiTrendingUp },
   { to: '/counsellor-poster', label: 'Poster', icon: FiAward },
@@ -43,6 +46,7 @@ const pageMeta = {
   '/counsellor/students': { title: 'Students', subtitle: 'Manage student profiles and documents' },
   '/counsellor/admissions': { title: 'Admissions', subtitle: 'Track college applications and deadlines' },
   '/counsellor/sessions': { title: 'Sessions', subtitle: 'Schedule and manage counseling sessions' },
+  '/counsellor/announcements-feed': { title: 'Announcements', subtitle: 'Stay updated with the latest updates and important notices.' },
   '/counsellor/tools': { title: 'Tools', subtitle: 'Assessment and prediction tools' },
   '/counsellor/marketing': { title: 'Marketing', subtitle: 'Reach more students and grow your practice' },
   '/counsellor/college-referrals': { title: 'College Referrals', subtitle: 'Get referral links for partner colleges' },
@@ -428,8 +432,8 @@ export default function CounsellorLayout() {
             </div>
             <div className="border-t border-gray-200 pt-4">
               <div
-                className="prose prose-sm max-w-none text-gray-700 prose-p:leading-relaxed prose-ul:my-2 prose-li:my-0.5"
-                dangerouslySetInnerHTML={{ __html: detailAnnouncement.description || '' }}
+                className="prose prose-sm max-w-none text-gray-700 prose-p:leading-relaxed prose-ul:my-2 prose-li:my-0.5 prose-a:text-primary-navy prose-a:underline"
+                dangerouslySetInnerHTML={{ __html: formatAnnouncementDescription(detailAnnouncement.description) }}
               />
             </div>
           </div>

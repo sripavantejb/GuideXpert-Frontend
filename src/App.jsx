@@ -43,6 +43,7 @@ import CounsellorTools from './pages/counsellor/Tools';
 import CounsellorCertificate from './pages/counsellor/Certificate';
 const CollegeReferrals = lazy(() => import('./pages/counsellor/CollegeReferrals'));
 const CollegeReferralDetail = lazy(() => import('./pages/counsellor/CollegeReferralDetail'));
+const AnnouncementsFeed = lazy(() => import('./pages/counsellor/AnnouncementsFeed'));
 const CounsellorSettings = lazy(() => import('./pages/counsellor/Settings'));
 
 function ProtectedAdmin({ children }) {
@@ -117,6 +118,7 @@ function App() {
             <Route path="certificate" element={<ErrorBoundary><CounsellorCertificate /></ErrorBoundary>} />
             <Route path="college-referrals" element={<ErrorBoundary><Suspense fallback={<div className="flex items-center justify-center h-64 text-gray-400">Loading...</div>}><CollegeReferrals /></Suspense></ErrorBoundary>} />
             <Route path="college-referrals/:collegeSlug" element={<ErrorBoundary><Suspense fallback={<div className="flex items-center justify-center h-64 text-gray-400">Loading...</div>}><CollegeReferralDetail /></Suspense></ErrorBoundary>} />
+            <Route path="announcements-feed" element={<ErrorBoundary><Suspense fallback={<div className="flex items-center justify-center h-64 text-gray-400">Loading...</div>}><AnnouncementsFeed /></Suspense></ErrorBoundary>} />
             <Route path="settings" element={<ErrorBoundary><Suspense fallback={<div className="flex items-center justify-center h-64 text-gray-400">Loading...</div>}><CounsellorSettings /></Suspense></ErrorBoundary>} />
           </Route>
 
