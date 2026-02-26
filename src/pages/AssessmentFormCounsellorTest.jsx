@@ -12,6 +12,7 @@ import {
 import { ASSESSMENT_SECTIONS_CAREER_DNA } from '../data/assessmentQuestionsCareerDna';
 import { ASSESSMENT_SECTIONS_COURSE_FIT } from '../data/assessmentQuestionsCourseFit';
 import SuccessPopup from '../components/UI/SuccessPopup';
+import { RocketIcon, LightbulbIcon } from '../components/AssessmentIcons';
 import './AssessmentFormCounsellorTest.css';
 
 function validateName(value) {
@@ -348,7 +349,12 @@ export default function AssessmentFormCounsellorTest({ type = 'career-dna' }) {
         </div>
 
         <div className="nb-header">
-          <h1 className="nb-header-title">GuideXpert</h1>
+          <div className="flex items-center gap-2 flex-wrap">
+            <h1 className="nb-header-title">GuideXpert</h1>
+            <span className="nb-icon-wrap nb-icon-wrap--sm" aria-hidden="true">
+              <RocketIcon size={18} />
+            </span>
+          </div>
           <p className="nb-header-subtitle">{config.title}</p>
           <p className="nb-header-desc">{config.subtitle}</p>
         </div>
@@ -371,163 +377,179 @@ export default function AssessmentFormCounsellorTest({ type = 'career-dna' }) {
         </div>
 
         <div className="nb-card">
-          <div className="max-w-2xl">
           {step === 1 && (
-            <>
-              <h2 className="nb-form-title">Enter your details</h2>
-              <p className="nb-form-desc">We will send an OTP to your mobile number before the assessment.</p>
-              {successMessage && (
-                <div className="nb-alert-success">{successMessage}</div>
-              )}
-              {submitError && (
-                <div className="nb-alert-error">{submitError}</div>
-              )}
-              <form onSubmit={handleSendOtp} className="space-y-4">
-                <div className="nb-input-wrap">
-                  <label htmlFor="assessment-name" className="nb-input-label">
-                    Name <span className="text-red-500">*</span>
-                  </label>
-                  <input
-                    type="text"
-                    id="assessment-name"
-                    value={name}
-                    onChange={handleNameChange}
-                    placeholder="Full Name"
-                    className={`nb-input ${errors.name ? 'error' : ''}`}
+            <div className="nb-card-inner">
+              <div className="nb-card-main">
+                <h2 className="nb-form-title">Enter your details</h2>
+                <p className="nb-form-desc">We will send an OTP to your mobile number before the assessment.</p>
+                {successMessage && (
+                  <div className="nb-alert-success">{successMessage}</div>
+                )}
+                {submitError && (
+                  <div className="nb-alert-error">{submitError}</div>
+                )}
+                <form onSubmit={handleSendOtp} className="space-y-4">
+                  <div className="nb-input-wrap">
+                    <label htmlFor="assessment-name" className="nb-input-label">
+                      Name <span className="text-red-500">*</span>
+                    </label>
+                    <input
+                      type="text"
+                      id="assessment-name"
+                      value={name}
+                      onChange={handleNameChange}
+                      placeholder="Full Name"
+                      className={`nb-input ${errors.name ? 'error' : ''}`}
+                      disabled={loading}
+                      autoComplete="name"
+                    />
+                    {errors.name && <p className="nb-input-error">{errors.name}</p>}
+                  </div>
+                  <div className="nb-input-wrap">
+                    <label htmlFor="assessment-mobile" className="nb-input-label">
+                      Mobile Number <span className="text-red-500">*</span>
+                    </label>
+                    <input
+                      type="tel"
+                      id="assessment-mobile"
+                      value={mobileNumber}
+                      onChange={handleMobileChange}
+                      placeholder="10-digit mobile number"
+                      className={`nb-input ${errors.mobileNumber ? 'error' : ''}`}
+                      disabled={loading}
+                      autoComplete="tel"
+                      inputMode="numeric"
+                      maxLength={10}
+                    />
+                    {errors.mobileNumber && <p className="nb-input-error">{errors.mobileNumber}</p>}
+                  </div>
+                  <div className="nb-input-wrap">
+                    <label htmlFor="assessment-email" className="nb-input-label">Email <span className="text-gray-500">(optional)</span></label>
+                    <input
+                      type="email"
+                      id="assessment-email"
+                      value={email}
+                      onChange={(e) => setEmail(e.target.value)}
+                      placeholder="your@email.com"
+                      className="nb-input"
+                      disabled={loading}
+                      autoComplete="email"
+                    />
+                  </div>
+                  <div className="nb-input-wrap">
+                    <label htmlFor="assessment-school" className="nb-input-label">School <span className="text-gray-500">(optional)</span></label>
+                    <input
+                      type="text"
+                      id="assessment-school"
+                      value={school}
+                      onChange={(e) => setSchool(e.target.value)}
+                      placeholder="School name"
+                      className="nb-input"
+                      disabled={loading}
+                    />
+                  </div>
+                  <div className="nb-input-wrap">
+                    <label htmlFor="assessment-class" className="nb-input-label">Class <span className="text-gray-500">(optional)</span></label>
+                    <input
+                      type="text"
+                      id="assessment-class"
+                      value={classVal}
+                      onChange={(e) => setClassVal(e.target.value)}
+                      placeholder="e.g. 10th, 12th"
+                      className="nb-input"
+                      disabled={loading}
+                    />
+                  </div>
+                  <button
+                    type="submit"
                     disabled={loading}
-                    autoComplete="name"
-                  />
-                  {errors.name && <p className="nb-input-error">{errors.name}</p>}
-                </div>
-                <div className="nb-input-wrap">
-                  <label htmlFor="assessment-mobile" className="nb-input-label">
-                    Mobile Number <span className="text-red-500">*</span>
-                  </label>
-                  <input
-                    type="tel"
-                    id="assessment-mobile"
-                    value={mobileNumber}
-                    onChange={handleMobileChange}
-                    placeholder="10-digit mobile number"
-                    className={`nb-input ${errors.mobileNumber ? 'error' : ''}`}
-                    disabled={loading}
-                    autoComplete="tel"
-                    inputMode="numeric"
-                    maxLength={10}
-                  />
-                  {errors.mobileNumber && <p className="nb-input-error">{errors.mobileNumber}</p>}
-                </div>
-                <div className="nb-input-wrap">
-                  <label htmlFor="assessment-email" className="nb-input-label">Email <span className="text-gray-500">(optional)</span></label>
-                  <input
-                    type="email"
-                    id="assessment-email"
-                    value={email}
-                    onChange={(e) => setEmail(e.target.value)}
-                    placeholder="your@email.com"
-                    className="nb-input"
-                    disabled={loading}
-                    autoComplete="email"
-                  />
-                </div>
-                <div className="nb-input-wrap">
-                  <label htmlFor="assessment-school" className="nb-input-label">School <span className="text-gray-500">(optional)</span></label>
-                  <input
-                    type="text"
-                    id="assessment-school"
-                    value={school}
-                    onChange={(e) => setSchool(e.target.value)}
-                    placeholder="School name"
-                    className="nb-input"
-                    disabled={loading}
-                  />
-                </div>
-                <div className="nb-input-wrap">
-                  <label htmlFor="assessment-class" className="nb-input-label">Class <span className="text-gray-500">(optional)</span></label>
-                  <input
-                    type="text"
-                    id="assessment-class"
-                    value={classVal}
-                    onChange={(e) => setClassVal(e.target.value)}
-                    placeholder="e.g. 10th, 12th"
-                    className="nb-input"
-                    disabled={loading}
-                  />
-                </div>
-                <button
-                  type="submit"
-                  disabled={loading}
-                  className="nb-btn-primary nb-btn-primary-full"
-                >
-                  {loading ? 'Sending OTP...' : 'Send OTP'}
-                </button>
-              </form>
-            </>
+                    className="nb-btn-primary nb-btn-primary-full"
+                  >
+                    {loading ? 'Sending OTP...' : 'Send OTP'}
+                  </button>
+                </form>
+              </div>
+              <aside className="nb-card-side" aria-label="What happens next">
+                <h3 className="nb-side-title">What happens next</h3>
+                <p className="nb-side-desc">We&apos;ll send an OTP to your mobile number so we can verify it&apos;s you.</p>
+                <ol className="nb-side-steps">
+                  <li><span className="nb-side-step-num">1</span> Your details</li>
+                  <li><span className="nb-side-step-num">2</span> Verify OTP</li>
+                  <li><span className="nb-side-step-num">3</span> Questions</li>
+                </ol>
+              </aside>
+            </div>
           )}
 
           {step === 2 && (
-            <>
-              <h2 className="nb-form-title">Verify your number</h2>
-              <p className="nb-form-desc">Enter the 6-digit OTP sent to ****{mobileNumber.slice(-4)}</p>
-              {successMessage && (
-                <div className="nb-alert-success">{successMessage}</div>
-              )}
-              {submitError && (
-                <div className="nb-alert-error">{submitError}</div>
-              )}
-              <form onSubmit={handleVerifyOtp} className="space-y-4">
-                <div className="nb-otp-wrap">
-                  {otp.map((digit, index) => (
-                    <input
-                      key={index}
-                      ref={(el) => (otpInputRefs.current[index] = el)}
-                      type="text"
-                      inputMode="numeric"
-                      maxLength={1}
-                      value={digit}
-                      onChange={(e) => handleOtpChange(index, e.target.value)}
-                      onKeyDown={(e) => handleOtpKeyDown(index, e)}
-                      onPaste={handleOtpPaste}
-                      className="nb-otp-input"
-                      aria-label={`OTP digit ${index + 1}`}
-                      disabled={verifying}
-                    />
-                  ))}
-                </div>
-                {otpError && <p className="nb-input-error text-center">{otpError}</p>}
-                <div className="nb-btn-row">
-                  <button
-                    type="button"
-                    onClick={() => { setStep(1); setOtp(['', '', '', '', '', '']); setOtpError(''); setSuccessMessage(''); setSubmitError(''); }}
-                    disabled={verifying || loading}
-                    className="nb-btn-back"
-                  >
-                    Back
-                  </button>
-                  <button
-                    type="submit"
-                    disabled={verifying || loading}
-                    className="nb-btn-primary"
-                  >
-                    {verifying ? 'Verifying...' : 'Verify & Continue'}
-                  </button>
-                </div>
-                <div className="text-center">
-                  <button
-                    type="button"
-                    onClick={handleResendOtp}
-                    disabled={loading || verifying}
-                    className="nb-link"
-                  >
-                    {loading ? 'Resending...' : "Didn't receive OTP? Resend"}
-                  </button>
-                </div>
-              </form>
-            </>
+            <div className="nb-card-inner">
+              <div className="nb-card-main">
+                <h2 className="nb-form-title">Verify your number</h2>
+                <p className="nb-form-desc">Enter the 6-digit OTP sent to ****{mobileNumber.slice(-4)}</p>
+                {successMessage && (
+                  <div className="nb-alert-success">{successMessage}</div>
+                )}
+                {submitError && (
+                  <div className="nb-alert-error">{submitError}</div>
+                )}
+                <form onSubmit={handleVerifyOtp} className="space-y-4">
+                  <div className="nb-otp-wrap">
+                    {otp.map((digit, index) => (
+                      <input
+                        key={index}
+                        ref={(el) => (otpInputRefs.current[index] = el)}
+                        type="text"
+                        inputMode="numeric"
+                        maxLength={1}
+                        value={digit}
+                        onChange={(e) => handleOtpChange(index, e.target.value)}
+                        onKeyDown={(e) => handleOtpKeyDown(index, e)}
+                        onPaste={handleOtpPaste}
+                        className="nb-otp-input"
+                        aria-label={`OTP digit ${index + 1}`}
+                        disabled={verifying}
+                      />
+                    ))}
+                  </div>
+                  {otpError && <p className="nb-input-error text-center">{otpError}</p>}
+                  <div className="nb-btn-row">
+                    <button
+                      type="button"
+                      onClick={() => { setStep(1); setOtp(['', '', '', '', '', '']); setOtpError(''); setSuccessMessage(''); setSubmitError(''); }}
+                      disabled={verifying || loading}
+                      className="nb-btn-back"
+                    >
+                      Back
+                    </button>
+                    <button
+                      type="submit"
+                      disabled={verifying || loading}
+                      className="nb-btn-primary"
+                    >
+                      {verifying ? 'Verifying...' : 'Verify & Continue'}
+                    </button>
+                  </div>
+                  <div className="text-center">
+                    <button
+                      type="button"
+                      onClick={handleResendOtp}
+                      disabled={loading || verifying}
+                      className="nb-link"
+                    >
+                      {loading ? 'Resending...' : "Didn't receive OTP? Resend"}
+                    </button>
+                  </div>
+                </form>
+              </div>
+              <aside className="nb-card-side" aria-label="Tip">
+                <h3 className="nb-side-title">Enter the code we sent</h3>
+                <p className="nb-side-desc">Check your messages for a 6-digit code. If you don&apos;t see it, use &quot;Resend&quot; below.</p>
+              </aside>
+            </div>
           )}
 
           {step === 3 && !submittedResult && flatQuestions.length > 0 && (
-            <>
+            <div className="nb-card-inner nb-card-inner--wide">
               {submitError && (
                 <div className="nb-alert-error">{submitError}</div>
               )}
@@ -538,7 +560,12 @@ export default function AssessmentFormCounsellorTest({ type = 'career-dna' }) {
                     if (!q) return null;
                     return (
                       <div key={q.id}>
-                        <p className="nb-question-count">Question {questionIndex + 1} of {flatQuestions.length}</p>
+                        <div className="flex items-center gap-2 mb-2">
+                          <span className="nb-icon-wrap nb-icon-wrap--md" aria-hidden="true">
+                            <LightbulbIcon size={20} />
+                          </span>
+                          <p className="nb-question-count">Question {questionIndex + 1} of {flatQuestions.length}</p>
+                        </div>
                         <div className="nb-question-progress-wrap">
                           <div
                             className="nb-question-progress-fill"
@@ -611,17 +638,16 @@ export default function AssessmentFormCounsellorTest({ type = 'career-dna' }) {
                   </div>
                 </div>
               </form>
-            </>
+            </div>
           )}
 
           {step === 3 && submittedResult && (
+            <div className="nb-card-inner nb-card-inner--wide">
             <div className="nb-result-card">
               <div className="p-6 sm:p-8">
                 <div className="text-center">
                   <div className="nb-result-icon-wrap">
-                    <svg className="w-7 h-7" fill="none" stroke="currentColor" strokeWidth={2} viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
-                    </svg>
+                    <RocketIcon size={28} aria-hidden="true" />
                   </div>
                   <h2 className="nb-result-title">Assessment submitted successfully</h2>
                   <p className="nb-result-score-label">Your score</p>
@@ -657,14 +683,14 @@ export default function AssessmentFormCounsellorTest({ type = 'career-dna' }) {
                 </div>
               </div>
             </div>
+            </div>
           )}
-          </div>
         </div>
       </div>
       <SuccessPopup
         isOpen={showSuccessPopup}
         onClose={() => setShowSuccessPopup(false)}
-        variant="assessment"
+        variant="assessmentNeo"
         score={submittedResult?.score ?? 0}
         maxScore={submittedResult?.maxScore ?? 10}
       />

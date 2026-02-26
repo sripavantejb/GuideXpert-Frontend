@@ -13,6 +13,33 @@
   --nb-yellow: #FFED00;
   --nb-white: #FFFFFF;
   --nb-black: #000000;
+  /* Subtle background so the page doesn't feel blank on large viewports */
+  background: linear-gradient(135deg, rgba(138, 235, 253, 0.12) 0%, rgba(106, 62, 174, 0.06) 50%, rgba(138, 235, 253, 0.08) 100%);
+  min-height: 100%;
+}
+
+/* Neo-brutal icon wrappers (thick border + offset shadow) */
+.assessment-page-wrap .nb-icon-wrap {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0.35rem;
+  background: var(--nb-white);
+  border: var(--nb-outline-thin);
+  border-radius: 0;
+  box-shadow: var(--nb-shadow-sm);
+}
+
+.assessment-page-wrap .nb-icon-wrap--sm {
+  width: 2rem;
+  height: 2rem;
+  padding: 0.2rem;
+}
+
+.assessment-page-wrap .nb-icon-wrap--md {
+  width: 2.5rem;
+  height: 2.5rem;
+  padding: 0.25rem;
 }
 
 /* Top bar */
@@ -168,6 +195,105 @@
 @media (min-width: 640px) {
   .assessment-page-wrap .nb-card {
     padding: 2rem;
+  }
+}
+
+/* Card inner: two-column layout for steps 1–2, single wide for step 3 */
+.assessment-page-wrap .nb-card-inner {
+  display: flex;
+  flex-direction: column;
+  gap: 1.5rem;
+}
+
+@media (min-width: 768px) {
+  .assessment-page-wrap .nb-card-inner {
+    display: grid;
+    grid-template-columns: 1fr minmax(240px, 320px);
+    gap: 2rem;
+    align-items: start;
+  }
+}
+
+.assessment-page-wrap .nb-card-main {
+  min-width: 0;
+}
+
+.assessment-page-wrap .nb-card-side {
+  background: var(--nb-lime);
+  border: var(--nb-outline-thin);
+  border-radius: 0;
+  box-shadow: var(--nb-shadow-sm);
+  padding: 1.25rem;
+}
+
+@media (min-width: 768px) {
+  .assessment-page-wrap .nb-card-side {
+    padding: 1.5rem;
+    position: sticky;
+    top: 1rem;
+  }
+}
+
+.assessment-page-wrap .nb-side-title {
+  font-size: 0.875rem;
+  font-weight: 800;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: var(--nb-black);
+  margin-bottom: 0.5rem;
+}
+
+.assessment-page-wrap .nb-side-desc {
+  font-size: 0.875rem;
+  color: var(--nb-black);
+  opacity: 0.9;
+  margin-bottom: 1rem;
+  line-height: 1.4;
+}
+
+.assessment-page-wrap .nb-side-steps {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  font-size: 0.875rem;
+  font-weight: 600;
+  color: var(--nb-black);
+}
+
+.assessment-page-wrap .nb-side-steps li {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.375rem 0;
+  border-bottom: var(--nb-outline-thin);
+}
+
+.assessment-page-wrap .nb-side-steps li:last-child {
+  border-bottom: none;
+}
+
+.assessment-page-wrap .nb-side-step-num {
+  flex-shrink: 0;
+  width: 1.5rem;
+  height: 1.5rem;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 0.75rem;
+  font-weight: 800;
+  background: var(--nb-white);
+  border: var(--nb-outline-thin);
+  color: var(--nb-black);
+}
+
+/* Wide single column for step 3 (quiz + result) */
+.assessment-page-wrap .nb-card-inner--wide {
+  max-width: 56rem;
+}
+
+@media (min-width: 768px) {
+  .assessment-page-wrap .nb-card-inner--wide {
+    grid-template-columns: 1fr;
   }
 }
 

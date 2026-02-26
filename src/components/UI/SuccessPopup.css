@@ -252,3 +252,67 @@
     transform: scale(1) rotate(0deg);
   }
 }
+
+/* Neo-brutalism variant (counsellor tests only) */
+.success-popup-container--neo {
+  --nb-outline: 3px solid #000;
+  --nb-outline-thin: 2px solid #000;
+  --nb-shadow: 4px 4px 0 #000;
+  --nb-lime: #8EEBFD;
+  --nb-purple: #6A3EAE;
+  --nb-black: #000000;
+  --nb-white: #FFFFFF;
+  border-radius: 0;
+  border: var(--nb-outline);
+  box-shadow: var(--nb-shadow);
+  background: var(--nb-white);
+}
+
+.success-popup-container--neo::before {
+  display: none;
+}
+
+.success-checkmark-circle--neo {
+  border-radius: 0;
+  background: var(--nb-lime);
+  border: var(--nb-outline-thin);
+  box-shadow: 3px 3px 0 var(--nb-black);
+}
+
+.success-checkmark-wrapper--neo.success-checkmark-wrapper .success-checkmark-circle--neo {
+  box-shadow: 3px 3px 0 var(--nb-black);
+}
+
+.success-checkmark-icon--neo {
+  color: var(--nb-black);
+}
+
+.success-popup-title--neo {
+  color: var(--nb-black);
+  font-weight: 800;
+}
+
+.success-slot-info--neo {
+  background: var(--nb-lime);
+  border: var(--nb-outline-thin);
+  border-radius: 0;
+  box-shadow: 3px 3px 0 var(--nb-black);
+}
+
+.success-slot-label--neo {
+  color: var(--nb-black);
+  font-weight: 700;
+  letter-spacing: 0.05em;
+}
+
+.success-slot-value--neo {
+  color: var(--nb-black);
+  font-weight: 800;
+  font-variant-numeric: tabular-nums;
+}
+
+.success-popup-message--neo {
+  color: var(--nb-black);
+  font-weight: 500;
+  opacity: 0.9;
+}

@@ -6,7 +6,8 @@ const SuccessPopup = ({ isOpen, onClose, slotInfo, variant = 'slot', score, maxS
   const [isVisible, setIsVisible] = useState(false);
   const [checkmarkVisible, setCheckmarkVisible] = useState(false);
   const isPostRegistration = variant === 'postRegistration';
-  const isAssessment = variant === 'assessment';
+  const isAssessment = variant === 'assessment' || variant === 'assessmentNeo';
+  const isNeo = variant === 'assessmentNeo';
 
   useEffect(() => {
     if (isOpen) {
@@ -65,24 +66,24 @@ const SuccessPopup = ({ isOpen, onClose, slotInfo, variant = 'slot', score, maxS
       onClick={handleClose}
     >
       <div 
-        className={`success-popup-container ${isVisible ? 'success-popup-container-visible' : ''}`}
+        className={`success-popup-container ${isVisible ? 'success-popup-container-visible' : ''} ${isNeo ? 'success-popup-container--neo' : ''}`}
         onClick={(e) => e.stopPropagation()}
       >
         <div className="success-popup-content">
-          <div className={`success-checkmark-wrapper ${checkmarkVisible ? 'success-checkmark-animated' : ''}`}>
-            <div className="success-checkmark-circle">
-              <FiCheck className="success-checkmark-icon" />
+          <div className={`success-checkmark-wrapper ${checkmarkVisible ? 'success-checkmark-animated' : ''} ${isNeo ? 'success-checkmark-wrapper--neo' : ''}`}>
+            <div className={`success-checkmark-circle ${isNeo ? 'success-checkmark-circle--neo' : ''}`}>
+              <FiCheck className={`success-checkmark-icon ${isNeo ? 'success-checkmark-icon--neo' : ''}`} />
             </div>
           </div>
           
-          <h2 className="success-popup-title">
+          <h2 className={`success-popup-title ${isNeo ? 'success-popup-title--neo' : ''}`}>
             {isPostRegistration ? 'Registration Complete!' : isAssessment ? 'Assessment submitted successfully!' : 'Slot Booked Successfully!'}
           </h2>
           
           {isAssessment && (
-            <div className="success-slot-info">
-              <p className="success-slot-label">Your score</p>
-              <p className="success-slot-value">
+            <div className={`success-slot-info ${isNeo ? 'success-slot-info--neo' : ''}`}>
+              <p className={`success-slot-label ${isNeo ? 'success-slot-label--neo' : ''}`}>Your score</p>
+              <p className={`success-slot-value ${isNeo ? 'success-slot-value--neo' : ''}`}>
                 {score ?? 0} / {maxScore ?? 10}
               </p>
             </div>
@@ -101,7 +102,7 @@ const SuccessPopup = ({ isOpen, onClose, slotInfo, variant = 'slot', score, maxS
             </div>
           )}
           
-          <p className="success-popup-message">
+          <p className={`success-popup-message ${isNeo ? 'success-popup-message--neo' : ''}`}>
             {isAssessment
               ? 'Thank you for completing the Psychometric Test.'
               : isPostRegistration
