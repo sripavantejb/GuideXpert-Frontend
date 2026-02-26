@@ -305,8 +305,6 @@ export default function AssessmentFormCounsellorTest({ type = 'career-dna' }) {
   return (
     <div className="assessment-page-wrap">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-        {/* Content width constrained for readability; do not stretch to full width. */}
-        <div className="max-w-2xl">
         {/* Page-level top bar: Back (left), context label (right) */}
         <div className="flex items-center justify-between mb-6">
           <div>
@@ -371,6 +369,7 @@ export default function AssessmentFormCounsellorTest({ type = 'career-dna' }) {
         </div>
 
         <div className="bg-white rounded-2xl shadow-lg border border-gray-200 p-6 sm:p-8">
+          <div className="max-w-2xl">
           {step === 1 && (
             <>
               <h2 className="text-lg font-semibold tracking-tight text-gray-900 mb-1">Enter your details</h2>
@@ -663,7 +662,7 @@ export default function AssessmentFormCounsellorTest({ type = 'career-dna' }) {
               </div>
             </div>
           )}
-        </div>
+          </div>
         </div>
       </div>
       <SuccessPopup
