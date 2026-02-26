@@ -89,8 +89,7 @@ export default function CounsellorLayout() {
     setNotificationsLoading(true);
     const res = await getAnnouncements();
     setNotificationsLoading(false);
-    if (res.success && Array.isArray(res.data)) setAnnouncements(res.data);
-    else setAnnouncements([]);
+    setAnnouncements(Array.isArray(res.data?.data) ? res.data.data : []);
   }, []);
 
   const openNotifications = () => {
@@ -109,17 +108,19 @@ export default function CounsellorLayout() {
   };
 
   const handleNotificationClick = async (item) => {
+    const id = String(item.id);
     setNotificationsOpen(false);
     setDetailAnnouncement(null);
     setDetailOpen(true);
     setDetailLoading(true);
     if (!item.read) {
-      await markAnnouncementRead(item.id);
-      setAnnouncements((prev) => prev.map((a) => (a.id === item.id ? { ...a, read: true } : a)));
+      await markAnnouncementRead(id);
+      setAnnouncements((prev) => prev.map((a) => (String(a.id) === id ? { ...a, read: true } : a)));
     }
-    const res = await getAnnouncement(item.id);
+    const res = await getAnnouncement(id);
     setDetailLoading(false);
-    if (res.success && res.data) setDetailAnnouncement(res.data);
+    const doc = res.data?.data ?? res.data;
+    if (res.success && doc) setDetailAnnouncement(doc);
   };
 
   const unreadCount = announcements.filter((a) => !a.read).length;
@@ -411,24 +412,29 @@ export default function CounsellorLayout() {
         title={detailAnnouncement?.title || 'Announcement'}
       >
         {detailLoading ? (
-          <div className="py-8 text-center text-gray-500">Loading…</div>
+          <div className="py-12 text-center">
+            <div className="inline-block w-8 h-8 border-2 border-primary-navy border-t-transparent rounded-full animate-spin mb-3" aria-hidden />
+            <p className="text-gray-500 text-sm">Loading…</p>
+          </div>
         ) : detailAnnouncement ? (
-          <div className="space-y-4">
+          <div className="space-y-5">
             <div className="flex flex-wrap items-center gap-2">
-              <span className={`inline-flex px-2.5 py-1 rounded-lg text-xs font-medium ${PRIORITY_BADGE[detailAnnouncement.priority] || PRIORITY_BADGE.normal}`}>
+              <span className={`inline-flex px-2.5 py-1 rounded-lg text-xs font-semibold capitalize ${PRIORITY_BADGE[detailAnnouncement.priority] || PRIORITY_BADGE.normal}`}>
                 {detailAnnouncement.priority}
               </span>
               <span className="text-sm text-gray-500">
                 {new Date(detailAnnouncement.createdAt).toLocaleString(undefined, { dateStyle: 'medium', timeStyle: 'short' })}
               </span>
             </div>
-            <div
-              className="prose prose-sm max-w-none text-gray-700"
-              dangerouslySetInnerHTML={{ __html: detailAnnouncement.description || '' }}
-            />
+            <div className="border-t border-gray-200 pt-4">
+              <div
+                className="prose prose-sm max-w-none text-gray-700 prose-p:leading-relaxed prose-ul:my-2 prose-li:my-0.5"
+                dangerouslySetInnerHTML={{ __html: detailAnnouncement.description || '' }}
+              />
+            </div>
           </div>
         ) : (
-          <div className="py-8 text-center text-gray-500">Could not load announcement.</div>
+          <div className="py-12 text-center text-gray-500 text-sm">Could not load announcement.</div>
         )}
       </SlideOverPanel>
     </div>

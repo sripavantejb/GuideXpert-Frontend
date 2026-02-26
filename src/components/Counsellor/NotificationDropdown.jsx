@@ -56,16 +56,16 @@ export default function NotificationDropdown({
   const content = (
     <div
       ref={panelRef}
-      className="bg-white rounded-xl shadow-lg border border-gray-200 overflow-hidden flex flex-col"
+      className="bg-white rounded-2xl border border-gray-200 overflow-hidden flex flex-col shadow-xl"
       style={{
         width: isMobile ? '100%' : 380,
-        maxHeight: isMobile ? '85vh' : 400,
-        boxShadow: '0 4px 24px rgba(0,0,0,0.12), 0 1px 4px rgba(0,0,0,0.08)',
+        maxHeight: isMobile ? '85vh' : 420,
+        boxShadow: '0 10px 40px rgba(0,0,0,0.1), 0 2px 8px rgba(0,0,0,0.06)',
       }}
     >
-      <div className="px-4 py-3 border-b border-gray-100 shrink-0">
+      <div className="px-4 py-4 border-b border-gray-100 shrink-0 bg-gray-50/50">
         <div className="flex items-center justify-between">
-          <h3 className="font-semibold text-gray-900">Notifications</h3>
+          <h3 className="text-base font-semibold text-gray-900">Notifications</h3>
           {unreadCount > 0 && (
             <button
               type="button"
@@ -76,16 +76,16 @@ export default function NotificationDropdown({
             </button>
           )}
         </div>
-        <div className="flex gap-2 mt-2">
+        <div className="flex gap-1.5 mt-3">
           {['all', 'unread', 'important'].map((f) => (
             <button
               key={f}
               type="button"
               onClick={() => onFilterChange(f)}
-              className={`px-2.5 py-1 rounded-lg text-xs font-medium capitalize transition-colors ${
+              className={`px-3 py-1.5 rounded-full text-xs font-medium capitalize transition-colors ${
                 filter === f
-                  ? 'bg-primary-blue-100 text-primary-navy'
-                  : 'text-gray-500 hover:bg-gray-100'
+                  ? 'bg-primary-navy text-white shadow-sm'
+                  : 'text-gray-500 hover:bg-gray-200/80'
               }`}
             >
               {f}
@@ -95,12 +95,17 @@ export default function NotificationDropdown({
       </div>
       <div className="flex-1 overflow-y-auto min-h-0">
         {loading ? (
-          <div className="p-6 text-center text-sm text-gray-500">Loading…</div>
-        ) : filtered.length === 0 ? (
           <div className="p-8 text-center">
-            <FiBell className="w-10 h-10 text-gray-300 mx-auto mb-2" />
-            <p className="text-sm text-gray-600 font-medium">No announcements available</p>
-            <p className="text-xs text-gray-500 mt-0.5">
+            <div className="inline-block w-6 h-6 border-2 border-primary-navy border-t-transparent rounded-full animate-spin mx-auto mb-2" aria-hidden />
+            <p className="text-sm text-gray-500">Loading…</p>
+          </div>
+        ) : filtered.length === 0 ? (
+          <div className="p-10 text-center">
+            <div className="w-14 h-14 rounded-2xl bg-gray-100 flex items-center justify-center mx-auto mb-3">
+              <FiBell className="w-7 h-7 text-gray-400" />
+            </div>
+            <p className="text-sm font-medium text-gray-700">No announcements available</p>
+            <p className="text-xs text-gray-500 mt-1">
               {filter !== 'all' ? 'Try "All" to see past announcements.' : 'Check back later for updates.'}
             </p>
           </div>
@@ -111,7 +116,7 @@ export default function NotificationDropdown({
                 <button
                   type="button"
                   onClick={() => onItemClick(item)}
-                  className="w-full flex gap-3 px-4 py-3 text-left hover:bg-primary-blue-50/50 transition-colors focus:outline-none focus:ring-0"
+                  className={`w-full flex gap-3 px-4 py-3.5 text-left transition-colors focus:outline-none focus:ring-0 ${!item.read ? 'bg-primary-blue-50/40' : ''} hover:bg-primary-blue-50/60`}
                 >
                   <div
                     className={`shrink-0 w-1 rounded-full ${PRIORITY_BAR[item.priority] || PRIORITY_BAR.normal}`}
@@ -119,15 +124,15 @@ export default function NotificationDropdown({
                   />
                   <div className="min-w-0 flex-1">
                     <div className="flex items-start gap-2">
-                      <p className={`font-semibold text-gray-900 truncate ${item.read ? 'opacity-90' : ''}`}>
+                      <p className={`font-semibold text-gray-900 truncate flex-1 min-w-0 ${item.read ? 'opacity-80' : ''}`}>
                         {item.title}
                       </p>
                       {!item.read && (
                         <span className="shrink-0 w-2 h-2 rounded-full bg-primary-blue-500 mt-1.5" aria-label="Unread" />
                       )}
                     </div>
-                    <p className="mt-0.5 text-sm text-gray-600 line-clamp-2">{item.preview || '—'}</p>
-                    <p className="mt-1 text-xs text-gray-500">{relativeTime(item.createdAt)}</p>
+                    <p className="mt-0.5 text-sm text-gray-600 line-clamp-2 leading-snug">{item.preview || '—'}</p>
+                    <p className="mt-1.5 text-xs text-gray-500">{relativeTime(item.createdAt)}</p>
                   </div>
                 </button>
               </li>
