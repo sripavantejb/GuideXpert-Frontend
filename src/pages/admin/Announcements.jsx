@@ -18,6 +18,15 @@ const PRIORITIES = [
   { value: 'urgent', label: 'Urgent' },
 ];
 
+const REACTION_LABELS = { helpful: '👍 Helpful', appreciated: '❤️ Appreciated', great: '👏 Great', important: '🔥 Important' };
+
+function displayName(raw) {
+  if (raw == null || String(raw).trim() === '') return 'Unknown';
+  const s = String(raw).trim();
+  if (s.toLowerCase() === 'counsellor') return 'Unknown';
+  return s;
+}
+
 function formatDate(d) {
   if (!d) return '—';
   const date = new Date(d);
@@ -62,6 +71,7 @@ export default function Announcements() {
   const [analyticsId, setAnalyticsId] = useState(null);
   const [analyticsData, setAnalyticsData] = useState(null);
   const [analyticsLoading, setAnalyticsLoading] = useState(false);
+  const [selectedReactionType, setSelectedReactionType] = useState(null);
   const [form, setForm] = useState({
     title: '',
     description: '',
@@ -105,6 +115,7 @@ export default function Announcements() {
   const openAnalytics = async (id) => {
     setAnalyticsId(String(id));
     setAnalyticsData(null);
+    setSelectedReactionType(null);
     setAnalyticsLoading(true);
     const res = await getAnnouncementAnalytics(String(id));
     setAnalyticsLoading(false);
@@ -438,11 +449,11 @@ export default function Announcements() {
       {analyticsId && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50" aria-modal="true" role="dialog">
           <div className="bg-white rounded-2xl shadow-xl max-w-2xl w-full max-h-[90vh] overflow-hidden flex flex-col">
-            <div className="px-6 py-4 border-b border-gray-200 flex items-center justify-between shrink-0 bg-gray-50/50">
-              <h2 className="text-lg font-semibold text-gray-900">Announcement analytics</h2>
+            <div className="px-6 py-5 border-b border-gray-200 flex items-center justify-between shrink-0 bg-white">
+              <h2 className="text-xl font-semibold text-gray-900">Announcement analytics</h2>
               <button
                 type="button"
-                onClick={() => { setAnalyticsId(null); setAnalyticsData(null); }}
+                onClick={() => { setAnalyticsId(null); setAnalyticsData(null); setSelectedReactionType(null); }}
                 className="p-2 rounded-xl text-gray-500 hover:bg-gray-200 transition-colors"
                 aria-label="Close"
               >
@@ -456,75 +467,120 @@ export default function Announcements() {
                   <p className="text-gray-500 text-sm">Loading analytics…</p>
                 </div>
               ) : analyticsData ? (
-                <div className="space-y-6">
-                  <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
-                    <div className="rounded-xl bg-gray-50 p-3 border border-gray-100">
-                      <p className="text-xs font-medium text-gray-500 uppercase tracking-wider">Views</p>
-                      <p className="text-xl font-bold text-gray-900 mt-0.5">{analyticsData.viewCount ?? 0}</p>
+                <div className="space-y-8">
+                  <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
+                    <div className="rounded-xl bg-white p-4 border border-gray-200 shadow-sm">
+                      <p className="text-xs font-semibold text-gray-500 uppercase tracking-wider">Views</p>
+                      <p className="text-2xl font-bold text-gray-900 mt-1">{analyticsData.viewCount ?? 0}</p>
                     </div>
-                    <div className="rounded-xl bg-gray-50 p-3 border border-gray-100">
-                      <p className="text-xs font-medium text-gray-500 uppercase tracking-wider">Reactions</p>
-                      <p className="text-xl font-bold text-gray-900 mt-0.5">{analyticsData.totalReactions ?? 0}</p>
+                    <div className="rounded-xl bg-white p-4 border border-gray-200 shadow-sm">
+                      <p className="text-xs font-semibold text-gray-500 uppercase tracking-wider">Reactions</p>
+                      <p className="text-2xl font-bold text-gray-900 mt-1">{analyticsData.totalReactions ?? 0}</p>
                     </div>
-                    <div className="rounded-xl bg-gray-50 p-3 border border-gray-100">
-                      <p className="text-xs font-medium text-gray-500 uppercase tracking-wider">Engagement</p>
-                      <p className="text-xl font-bold text-gray-900 mt-0.5">{analyticsData.engagementRate ?? 0}%</p>
+                    <div className="rounded-xl bg-white p-4 border border-primary-navy/10 shadow-sm">
+                      <p className="text-xs font-semibold text-primary-navy uppercase tracking-wider">Engagement</p>
+                      <p className="text-2xl font-bold text-primary-navy mt-1">{analyticsData.engagementRate ?? 0}%</p>
                     </div>
-                    <div className="rounded-xl bg-gray-50 p-3 border border-gray-100">
-                      <p className="text-xs font-medium text-gray-500 uppercase tracking-wider">Acknowledged</p>
-                      <p className="text-xl font-bold text-gray-900 mt-0.5">{analyticsData.acknowledgedCount ?? 0}</p>
+                    <div className="rounded-xl bg-white p-4 border border-gray-200 shadow-sm">
+                      <p className="text-xs font-semibold text-gray-500 uppercase tracking-wider">Acknowledged</p>
+                      <p className="text-2xl font-bold text-gray-900 mt-1">{analyticsData.acknowledgedCount ?? 0}</p>
                     </div>
                   </div>
-                  <div>
-                    <h3 className="text-sm font-semibold text-gray-800 mb-2">Reaction breakdown</h3>
+                  <div className="rounded-xl border border-gray-200 bg-gray-50/50 p-5">
+                    <h3 className="text-base font-semibold text-gray-900 mb-1">Reaction breakdown</h3>
+                    <p className="text-sm text-gray-500 mb-3">Click a reaction to see who reacted and when.</p>
                     <div className="flex flex-wrap gap-2">
-                      <span className="px-3 py-1.5 rounded-lg bg-gray-100 text-gray-700 text-sm">👍 Helpful: {analyticsData.reactionCounts?.helpful ?? 0}</span>
-                      <span className="px-3 py-1.5 rounded-lg bg-gray-100 text-gray-700 text-sm">❤️ Appreciated: {analyticsData.reactionCounts?.appreciated ?? 0}</span>
-                      <span className="px-3 py-1.5 rounded-lg bg-gray-100 text-gray-700 text-sm">👏 Great: {analyticsData.reactionCounts?.great ?? 0}</span>
-                      <span className="px-3 py-1.5 rounded-lg bg-gray-100 text-gray-700 text-sm">🔥 Important: {analyticsData.reactionCounts?.important ?? 0}</span>
-                    </div>
-                  </div>
-                  <div>
-                    <h3 className="text-sm font-semibold text-gray-800 mb-2">Viewed ({analyticsData.viewedBy?.length ?? 0})</h3>
-                    <ul className="max-h-32 overflow-y-auto space-y-1 text-sm text-gray-700">
-                      {(analyticsData.viewedBy || []).length === 0 ? (
-                        <li className="text-gray-500">No views yet.</li>
-                      ) : (
-                        analyticsData.viewedBy.map((v, i) => (
-                          <li key={(v.counsellorId || '') + i}>{v.name} — {v.readAt ? new Date(v.readAt).toLocaleString() : '—'}</li>
-                        ))
-                      )}
-                    </ul>
-                  </div>
-                  <div>
-                    <h3 className="text-sm font-semibold text-gray-800 mb-2">Not viewed ({analyticsData.notViewedBy?.length ?? 0})</h3>
-                    <ul className="max-h-24 overflow-y-auto space-y-1 text-sm text-gray-700">
-                      {(analyticsData.notViewedBy || []).length === 0 ? (
-                        <li className="text-gray-500">Everyone has viewed.</li>
-                      ) : (
-                        analyticsData.notViewedBy.slice(0, 20).map((v, i) => (
-                          <li key={(v.counsellorId || '') + i}>{v.name}</li>
-                        ))
-                      )}
-                      {(analyticsData.notViewedBy?.length ?? 0) > 20 && (
-                        <li className="text-gray-500">+ {(analyticsData.notViewedBy?.length ?? 0) - 20} more</li>
-                      )}
-                    </ul>
-                  </div>
-                  <div>
-                    <h3 className="text-sm font-semibold text-gray-800 mb-2">Reactions by type</h3>
-                    <div className="space-y-2">
                       {['helpful', 'appreciated', 'great', 'important'].map((type) => {
-                        const list = analyticsData.reactions?.[type] ?? [];
-                        const label = { helpful: '👍 Helpful', appreciated: '❤️ Appreciated', great: '👏 Great', important: '🔥 Important' }[type];
+                        const count = analyticsData.reactionCounts?.[type] ?? 0;
+                        const label = REACTION_LABELS[type];
+                        const isSelected = selectedReactionType === type;
                         return (
-                          <div key={type}>
-                            <p className="text-xs font-medium text-gray-600">{label} ({list.length})</p>
-                            <p className="text-sm text-gray-700">{list.length === 0 ? '—' : list.map((u) => u.name).join(', ')}</p>
-                          </div>
+                          <button
+                            key={type}
+                            type="button"
+                            onClick={() => setSelectedReactionType(isSelected ? null : type)}
+                            className={`px-3 py-2 rounded-lg text-sm font-medium transition-colors ${isSelected ? 'bg-primary-navy text-white' : 'bg-white border border-gray-200 text-gray-700 hover:bg-gray-100'}`}
+                          >
+                            {label} ({count})
+                          </button>
                         );
                       })}
                     </div>
+                    {selectedReactionType && (
+                      <div className="mt-4 pt-4 border-t border-gray-200">
+                        <div className="flex items-center justify-between mb-3">
+                          <h4 className="text-sm font-semibold text-gray-900">
+                            Who reacted with {REACTION_LABELS[selectedReactionType]}
+                          </h4>
+                          <button
+                            type="button"
+                            onClick={() => setSelectedReactionType(null)}
+                            className="text-sm font-medium text-primary-navy hover:underline"
+                          >
+                            Back
+                          </button>
+                        </div>
+                        <ul className="max-h-44 overflow-y-auto space-y-2 text-sm">
+                          {(analyticsData.reactions?.[selectedReactionType] ?? []).length === 0 ? (
+                            <li className="text-gray-500 py-2">No one has reacted with this yet.</li>
+                          ) : (
+                            (analyticsData.reactions?.[selectedReactionType] ?? []).map((u, i) => (
+                              <li key={(u.counsellorId || '') + i} className="flex items-center gap-3 py-2 border-b border-gray-100 last:border-0">
+                                <span className="w-8 h-8 rounded-full bg-primary-blue-100 text-primary-navy flex items-center justify-center text-sm font-semibold shrink-0">
+                                  {(displayName(u.name) || '?').charAt(0).toUpperCase()}
+                                </span>
+                                <span className="font-medium text-gray-800">{displayName(u.name)}</span>
+                                <span className="text-gray-500 ml-auto shrink-0 text-xs">
+                                  {u.reactedAt ? new Date(u.reactedAt).toLocaleString() : '—'}
+                                </span>
+                              </li>
+                            ))
+                          )}
+                        </ul>
+                      </div>
+                    )}
+                  </div>
+                  <div className="rounded-xl border border-gray-200 bg-gray-50/30 p-5">
+                    <h3 className="text-base font-semibold text-gray-900 mb-3">Viewed ({analyticsData.viewedBy?.length ?? 0})</h3>
+                    <ul className="max-h-40 overflow-y-auto space-y-2 text-sm">
+                      {(analyticsData.viewedBy || []).length === 0 ? (
+                        <li className="text-gray-500 py-2">No views yet.</li>
+                      ) : (
+                        analyticsData.viewedBy.map((v, i) => (
+                          <li key={(v.counsellorId || '') + i} className="flex items-center gap-3 py-2 border-b border-gray-100 last:border-0">
+                            <span className="w-8 h-8 rounded-full bg-primary-blue-100 text-primary-navy flex items-center justify-center text-sm font-semibold shrink-0">
+                              {(displayName(v.name) || '?').charAt(0).toUpperCase()}
+                            </span>
+                            <span className="font-medium text-gray-800">{displayName(v.name)}</span>
+                            <span className="text-gray-500 ml-auto shrink-0 text-xs">
+                              {v.readAt ? new Date(v.readAt).toLocaleString() : '—'}
+                            </span>
+                          </li>
+                        ))
+                      )}
+                    </ul>
+                  </div>
+                  <div className="rounded-xl border border-gray-200 bg-gray-50/30 p-5">
+                    <h3 className="text-base font-semibold text-gray-900 mb-3">Not viewed ({analyticsData.notViewedBy?.length ?? 0})</h3>
+                    <ul className="max-h-32 overflow-y-auto space-y-2 text-sm">
+                      {(analyticsData.notViewedBy || []).length === 0 ? (
+                        <li className="text-gray-500 py-2">Everyone has viewed.</li>
+                      ) : (
+                        <>
+                          {analyticsData.notViewedBy.slice(0, 20).map((v, i) => (
+                            <li key={(v.counsellorId || '') + i} className="flex items-center gap-3 py-2 border-b border-gray-100 last:border-0">
+                              <span className="w-8 h-8 rounded-full bg-gray-200 text-gray-600 flex items-center justify-center text-sm font-semibold shrink-0">
+                                {(displayName(v.name) || '?').charAt(0).toUpperCase()}
+                              </span>
+                              <span className="font-medium text-gray-800">{displayName(v.name)}</span>
+                            </li>
+                          ))}
+                          {(analyticsData.notViewedBy?.length ?? 0) > 20 && (
+                            <li className="text-gray-500 py-2">+ {(analyticsData.notViewedBy?.length ?? 0) - 20} more</li>
+                          )}
+                        </>
+                      )}
+                    </ul>
                   </div>
                 </div>
               ) : (

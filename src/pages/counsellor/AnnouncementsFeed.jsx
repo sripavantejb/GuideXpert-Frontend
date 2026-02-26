@@ -47,6 +47,13 @@ function relativeTime(dateStr) {
   return d.toLocaleDateString();
 }
 
+function displayName(raw) {
+  if (raw == null || String(raw).trim() === '') return 'Unknown';
+  const s = String(raw).trim();
+  if (s.toLowerCase() === 'counsellor') return 'Unknown';
+  return s;
+}
+
 function formatSeenAt(dateStr) {
   const d = new Date(dateStr);
   return d.toLocaleString(undefined, { dateStyle: 'short', timeStyle: 'short' });
@@ -65,18 +72,18 @@ function EngagementDrawerContent({ data, loading }) {
 
   return (
     <div className="flex flex-col h-full min-h-0">
-      <div className="flex gap-2 border-b border-gray-200 pb-2 mb-4">
+      <div className="flex gap-2 border-b border-gray-200 pb-3 mb-4">
         <button
           type="button"
           onClick={() => setTab('viewed')}
-          className={`px-3 py-2 rounded-lg text-sm font-medium ${tab === 'viewed' ? 'bg-primary-navy text-white' : 'bg-gray-100 text-gray-700 hover:bg-gray-200'}`}
+          className={`px-3 py-2 rounded-lg text-sm font-medium transition-colors ${tab === 'viewed' ? 'bg-primary-navy text-white' : 'bg-gray-100 text-gray-700 hover:bg-gray-200'}`}
         >
           Viewed By
         </button>
         <button
           type="button"
           onClick={() => setTab('reactions')}
-          className={`px-3 py-2 rounded-lg text-sm font-medium ${tab === 'reactions' ? 'bg-primary-navy text-white' : 'bg-gray-100 text-gray-700 hover:bg-gray-200'}`}
+          className={`px-3 py-2 rounded-lg text-sm font-medium transition-colors ${tab === 'reactions' ? 'bg-primary-navy text-white' : 'bg-gray-100 text-gray-700 hover:bg-gray-200'}`}
         >
           Reactions
         </button>
@@ -85,15 +92,15 @@ function EngagementDrawerContent({ data, loading }) {
         {tab === 'viewed' && (
           <ul className="space-y-2">
             {viewedBy.length === 0 ? (
-              <li className="text-sm text-gray-500">No views yet.</li>
+              <li className="text-sm text-gray-500 py-2">No views yet.</li>
             ) : (
               viewedBy.map((v, i) => (
-                <li key={v.counsellorId + (v.readAt || '') + i} className="flex items-center gap-3 py-2 border-b border-gray-100 last:border-0">
-                  <div className="w-8 h-8 rounded-full bg-primary-navy/10 text-primary-navy flex items-center justify-center text-xs font-semibold shrink-0">
-                    {(v.name || '?').charAt(0).toUpperCase()}
+                <li key={v.counsellorId + (v.readAt || '') + i} className="flex items-center gap-3 py-2.5 border-b border-gray-100 last:border-0">
+                  <div className="w-8 h-8 rounded-full bg-primary-blue-100 text-primary-navy flex items-center justify-center text-sm font-semibold shrink-0">
+                    {(displayName(v.name) || '?').charAt(0).toUpperCase()}
                   </div>
-                  <div>
-                    <p className="text-sm font-medium text-gray-900">{v.name || 'Unknown'}</p>
+                  <div className="min-w-0 flex-1">
+                    <p className="text-sm font-medium text-gray-900">{displayName(v.name)}</p>
                     <p className="text-xs text-gray-500">Seen at {v.readAt ? formatSeenAt(v.readAt) : '—'}</p>
                   </div>
                 </li>
@@ -102,22 +109,22 @@ function EngagementDrawerContent({ data, loading }) {
           </ul>
         )}
         {tab === 'reactions' && (
-          <div className="space-y-4">
+          <div className="space-y-5">
             {REACTIONS.map((r) => {
               const list = reactions[r.type] ?? [];
               return (
                 <div key={r.type}>
-                  <h4 className="text-sm font-semibold text-gray-700 mb-2">{REACTION_LABELS[r.type]} ({list.length})</h4>
+                  <h4 className="text-base font-semibold text-gray-900 mb-2">{REACTION_LABELS[r.type]} ({list.length})</h4>
                   {list.length === 0 ? (
-                    <p className="text-xs text-gray-500">No one yet.</p>
+                    <p className="text-sm text-gray-500 py-1">No one yet.</p>
                   ) : (
-                    <ul className="space-y-1.5">
+                    <ul className="space-y-2">
                       {list.map((u, i) => (
-                        <li key={(u.counsellorId || '') + i} className="flex items-center gap-2">
-                          <div className="w-6 h-6 rounded-full bg-gray-200 text-gray-600 flex items-center justify-center text-xs font-medium">
-                            {(u.name || '?').charAt(0).toUpperCase()}
+                        <li key={(u.counsellorId || '') + i} className="flex items-center gap-3 py-2 border-b border-gray-100 last:border-0">
+                          <div className="w-8 h-8 rounded-full bg-primary-blue-100 text-primary-navy flex items-center justify-center text-sm font-semibold shrink-0">
+                            {(displayName(u.name) || '?').charAt(0).toUpperCase()}
                           </div>
-                          <span className="text-sm text-gray-800">{u.name || 'Unknown'}</span>
+                          <span className="text-sm font-medium text-gray-800">{displayName(u.name)}</span>
                         </li>
                       ))}
                     </ul>
