@@ -232,6 +232,10 @@ export const getAnnouncementById = async (id, token = getStoredToken()) => {
   return adminRequest(`/announcements/${encodeURIComponent(id)}`, { method: 'GET' }, token);
 };
 
+export const getAnnouncementAnalytics = async (id, token = getStoredToken()) => {
+  return adminRequest(`/announcements/${encodeURIComponent(id)}/analytics`, { method: 'GET' }, token);
+};
+
 export const createAnnouncement = async (payload, token = getStoredToken()) => {
   return adminRequest('/announcements', {
     method: 'POST',
