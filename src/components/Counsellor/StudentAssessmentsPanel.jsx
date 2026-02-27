@@ -1,6 +1,8 @@
 import { useState, useEffect } from 'react';
 import { FiActivity, FiCrosshair, FiCopy, FiX } from 'react-icons/fi';
 import { getAssessmentLinks, getAssessmentResults, getAssessmentResultById } from '../../utils/counsellorApi';
+import Skeleton, { ContentSkeleton } from '../UI/Skeleton';
+import TableSkeleton from '../UI/TableSkeleton';
 
 function copyToClipboard(text) {
   if (typeof navigator !== 'undefined' && navigator.clipboard && navigator.clipboard.writeText) {
@@ -94,7 +96,10 @@ export default function StudentAssessmentsPanel({ type }) {
         <section className="mb-2 pt-5 border-t border-gray-100" aria-labelledby="assessment-link-heading">
           <h4 id="assessment-link-heading" className="text-xs font-semibold uppercase tracking-widest text-gray-500 mb-3">My assessment link</h4>
           {linksLoading ? (
-            <p className="text-sm text-gray-500">Loading link…</p>
+            <div className="space-y-2">
+              <Skeleton className="h-4 w-full max-w-md rounded" />
+              <Skeleton className="h-4 w-3/4 max-w-sm rounded" />
+            </div>
           ) : links ? (
             <div className="rounded-xl border border-gray-200 bg-gray-50/60 p-4 border-l-4 border-l-primary-navy">
               <div className="flex gap-3 flex-wrap items-center">
@@ -124,7 +129,7 @@ export default function StudentAssessmentsPanel({ type }) {
         <section className="pt-2 border-t border-gray-100" aria-labelledby="results-heading">
           <h4 id="results-heading" className="text-xs font-semibold uppercase tracking-widest text-gray-500 mb-3">Results</h4>
           {resultsLoading ? (
-            <p className="text-sm text-gray-500">Loading results…</p>
+            <TableSkeleton rows={5} cols={6} />
           ) : submissions.length === 0 ? (
             <div className="rounded-xl border border-gray-200 border-dashed bg-gray-50/50 px-5 py-8 text-center">
               <p className="text-sm font-medium text-gray-600">No submissions yet</p>
@@ -204,7 +209,7 @@ export default function StudentAssessmentsPanel({ type }) {
                 </div>
                 <div className="px-6 py-5 overflow-y-auto flex-1">
                   {detailLoading ? (
-                    <p className="text-sm text-gray-500">Loading…</p>
+                    <ContentSkeleton lines={5} />
                   ) : detail ? (
                     <div className="space-y-5">
                       <div className="grid grid-cols-2 gap-x-6 gap-y-4 text-sm rounded-xl border border-gray-200 bg-gray-50/60 p-5">

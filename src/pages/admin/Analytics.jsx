@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { getAdminStats, getStoredToken } from '../../utils/adminApi';
 import { useAuth } from '../../contexts/AuthContext';
+import AnalyticsSkeleton from '../../components/UI/AnalyticsSkeleton';
 
 function defaultDateRange() {
   const to = new Date();
@@ -46,11 +47,7 @@ export default function Analytics() {
   }, [logout, dateFrom, dateTo]);
 
   if (loading) {
-    return (
-      <div className="max-w-6xl mx-auto">
-        <p className="text-gray-500">Loading analytics…</p>
-      </div>
-    );
+    return <AnalyticsSkeleton />;
   }
 
   if (error) {
@@ -63,9 +60,7 @@ export default function Analytics() {
 
   const total = stats?.total ?? 0;
   const statusData = [
-    { label: 'In progress', value: stats?.inProgress ?? 0, key: 'in_progress' },
-    { label: 'Registered', value: stats?.registered ?? 0, key: 'registered' },
-    { label: 'Completed', value: stats?.completed ?? 0, key: 'completed' },
+    { label: 'Lead in progress', value: stats?.inProgress ?? 0, key: 'in_progress' },
   ];
   const maxStatus = Math.max(...statusData.map((d) => d.value), 1);
   const formatSlotIdForDisplay = (slotId) => {
@@ -211,7 +206,7 @@ export default function Analytics() {
         <section className="bg-white rounded-lg border border-gray-200 shadow-sm p-6">
           <h3 className="font-semibold text-gray-800 mb-2">Summary</h3>
           <p className="text-sm text-gray-600">
-            Total leads: <strong>{total}</strong>. OTP verified: <strong>{stats?.otpVerified ?? 0}</strong>. Slot booked: <strong>{stats?.slotBooked ?? 0}</strong>.
+            Leads added: <strong>{total}</strong>. OTP verified: <strong>{stats?.otpVerified ?? 0}</strong>. Slot booked: <strong>{stats?.slotBooked ?? 0}</strong>. Page visited: <strong>{stats?.pageVisited ?? 0}</strong>.
           </p>
         </section>
       </div>

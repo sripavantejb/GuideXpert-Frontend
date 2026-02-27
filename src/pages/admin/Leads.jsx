@@ -3,6 +3,8 @@ import { useSearchParams } from 'react-router-dom';
 import { FiEye, FiCopy } from 'react-icons/fi';
 import { getAdminLeads, getLead, updateLeadNotes, getStoredToken } from '../../utils/adminApi';
 import { useAuth } from '../../contexts/AuthContext';
+import TableSkeleton from '../../components/UI/TableSkeleton';
+import { ContentSkeleton } from '../../components/UI/Skeleton';
 
 function formatDate(d) {
   if (!d) return '—';
@@ -90,7 +92,7 @@ export default function Leads() {
     const utm = searchParams.get('utm_content') || '';
     const slotDate = searchParams.get('slotDate') || '';
     return {
-      applicationStatus: ['in_progress', 'registered', 'completed'].includes(status) ? status : '',
+      applicationStatus: ['in_progress'].includes(status) ? status : '',
       otpVerified: '',
       slotBooked: '',
       selectedSlot: slot,
@@ -123,7 +125,7 @@ export default function Leads() {
     const slotDate = searchParams.get('slotDate') || '';
     setFilters((prev) => ({
       ...prev,
-      applicationStatus: ['in_progress', 'registered', 'completed'].includes(status) ? status : prev.applicationStatus,
+      applicationStatus: ['in_progress'].includes(status) ? status : prev.applicationStatus,
       selectedSlot: slot || prev.selectedSlot,
       slotDate: slotDate || prev.slotDate,
       utm_content: utm || prev.utm_content,
@@ -286,8 +288,6 @@ export default function Leads() {
             >
               <option value="">All statuses</option>
               <option value="in_progress">In progress</option>
-              <option value="registered">Registered</option>
-              <option value="completed">Completed</option>
             </select>
             <select
               value={filters.otpVerified}
@@ -341,9 +341,7 @@ export default function Leads() {
       )}
 
       {loading ? (
-        <div className="py-12 text-center">
-          <p className="text-gray-500 text-sm">Loading leads…</p>
-        </div>
+        <TableSkeleton rows={8} cols={14} />
       ) : (
         <>
           <div className="overflow-x-auto rounded-lg border border-gray-200 bg-white shadow-sm mb-4">
@@ -426,7 +424,7 @@ export default function Leads() {
             <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50" aria-modal="true" role="dialog">
               <div className="bg-white rounded-xl shadow-xl max-w-lg w-full max-h-[90vh] overflow-hidden flex flex-col">
                 {detailLoading ? (
-                  <div className="p-8 text-center text-gray-500">Loading…</div>
+                  <div className="p-6"><ContentSkeleton lines={5} /></div>
                 ) : detailLead ? (
                   <>
                     <div className="px-4 py-3 border-b border-gray-200 flex items-center justify-between">

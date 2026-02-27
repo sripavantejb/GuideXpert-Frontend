@@ -33,6 +33,7 @@ import CounsellorLogin from './pages/counsellor/CounsellorLogin';
 /* Counsellor portal — lazy loaded */
 import CounsellorLayout from './components/Counsellor/CounsellorLayout';
 import { ErrorBoundary } from './components/ErrorBoundary';
+import PageSkeleton from './components/UI/PageSkeleton';
 const CounsellorDashboard = lazy(() => import('./pages/counsellor/Dashboard'));
 const CounsellorStudents = lazy(() => import('./pages/counsellor/Students'));
 const CounsellorAdmissions = lazy(() => import('./pages/counsellor/Admissions'));
@@ -72,7 +73,7 @@ function App() {
           <Route path="/register" element={<LandingPage />} />
           <Route path="/meet" element={<MeetingRegistration />} />
           <Route path="/training" element={<TrainingMeeting />} />
-          <Route path="/counsellor-poster" element={<Suspense fallback={<div className="flex items-center justify-center min-h-screen text-gray-400">Loading...</div>}><CounsellorCertificate /></Suspense>} />
+          <Route path="/counsellor-poster" element={<Suspense fallback={<div className="min-h-screen"><PageSkeleton /></div>}><CounsellorCertificate /></Suspense>} />
           <Route path="/activationform" element={<FeedbackForm />} />
           <Route path="/assessment" element={<AssessmentForm />} />
           <Route path="/assessment-2" element={<AssessmentForm2 />} />
@@ -109,17 +110,17 @@ function App() {
           <Route path="/counsellor/login" element={<CounsellorLogin />} />
           <Route path="/counsellor" element={<ProtectedCounsellor><CounsellorProfileProvider><CounsellorLayout /></CounsellorProfileProvider></ProtectedCounsellor>}>
             <Route index element={<Navigate to="/counsellor/dashboard" replace />} />
-            <Route path="dashboard" element={<ErrorBoundary><Suspense fallback={<div className="flex items-center justify-center h-64 text-gray-400">Loading...</div>}><CounsellorDashboard /></Suspense></ErrorBoundary>} />
-            <Route path="students" element={<ErrorBoundary><Suspense fallback={<div className="flex items-center justify-center h-64 text-gray-400">Loading...</div>}><CounsellorStudents /></Suspense></ErrorBoundary>} />
-            <Route path="admissions" element={<ErrorBoundary><Suspense fallback={<div className="flex items-center justify-center h-64 text-gray-400">Loading...</div>}><CounsellorAdmissions /></Suspense></ErrorBoundary>} />
-            <Route path="sessions" element={<ErrorBoundary><Suspense fallback={<div className="flex items-center justify-center h-64 text-gray-400">Loading...</div>}><CounsellorSessions /></Suspense></ErrorBoundary>} />
+            <Route path="dashboard" element={<ErrorBoundary><Suspense fallback={<div className="h-64 flex items-center justify-center p-4"><PageSkeleton /></div>}><CounsellorDashboard /></Suspense></ErrorBoundary>} />
+            <Route path="students" element={<ErrorBoundary><Suspense fallback={<div className="h-64 flex items-center justify-center p-4"><PageSkeleton /></div>}><CounsellorStudents /></Suspense></ErrorBoundary>} />
+            <Route path="admissions" element={<ErrorBoundary><Suspense fallback={<div className="h-64 flex items-center justify-center p-4"><PageSkeleton /></div>}><CounsellorAdmissions /></Suspense></ErrorBoundary>} />
+            <Route path="sessions" element={<ErrorBoundary><Suspense fallback={<div className="h-64 flex items-center justify-center p-4"><PageSkeleton /></div>}><CounsellorSessions /></Suspense></ErrorBoundary>} />
             <Route path="tools" element={<ErrorBoundary><CounsellorTools /></ErrorBoundary>} />
-            <Route path="marketing" element={<ErrorBoundary><Suspense fallback={<div className="flex items-center justify-center h-64 text-gray-400">Loading...</div>}><CounsellorMarketing /></Suspense></ErrorBoundary>} />
+            <Route path="marketing" element={<ErrorBoundary><Suspense fallback={<div className="h-64 flex items-center justify-center p-4"><PageSkeleton /></div>}><CounsellorMarketing /></Suspense></ErrorBoundary>} />
             <Route path="certificate" element={<ErrorBoundary><CounsellorCertificate /></ErrorBoundary>} />
-            <Route path="college-referrals" element={<ErrorBoundary><Suspense fallback={<div className="flex items-center justify-center h-64 text-gray-400">Loading...</div>}><CollegeReferrals /></Suspense></ErrorBoundary>} />
-            <Route path="college-referrals/:collegeSlug" element={<ErrorBoundary><Suspense fallback={<div className="flex items-center justify-center h-64 text-gray-400">Loading...</div>}><CollegeReferralDetail /></Suspense></ErrorBoundary>} />
-            <Route path="announcements-feed" element={<ErrorBoundary><Suspense fallback={<div className="flex items-center justify-center h-64 text-gray-400">Loading...</div>}><AnnouncementsFeed /></Suspense></ErrorBoundary>} />
-            <Route path="settings" element={<ErrorBoundary><Suspense fallback={<div className="flex items-center justify-center h-64 text-gray-400">Loading...</div>}><CounsellorSettings /></Suspense></ErrorBoundary>} />
+            <Route path="college-referrals" element={<ErrorBoundary><Suspense fallback={<div className="h-64 flex items-center justify-center p-4"><PageSkeleton /></div>}><CollegeReferrals /></Suspense></ErrorBoundary>} />
+            <Route path="college-referrals/:collegeSlug" element={<ErrorBoundary><Suspense fallback={<div className="h-64 flex items-center justify-center p-4"><PageSkeleton /></div>}><CollegeReferralDetail /></Suspense></ErrorBoundary>} />
+            <Route path="announcements-feed" element={<ErrorBoundary><Suspense fallback={<div className="h-64 flex items-center justify-center p-4"><PageSkeleton /></div>}><AnnouncementsFeed /></Suspense></ErrorBoundary>} />
+            <Route path="settings" element={<ErrorBoundary><Suspense fallback={<div className="h-64 flex items-center justify-center p-4"><PageSkeleton /></div>}><CounsellorSettings /></Suspense></ErrorBoundary>} />
           </Route>
 
           <Route path="*" element={<Navigate to="/" replace />} />

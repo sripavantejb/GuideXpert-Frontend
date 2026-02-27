@@ -1,20 +1,39 @@
+import Skeleton from './Skeleton';
+
+/**
+ * Full table skeleton with thead and tbody. Wrapper matches admin/counsellor table styles.
+ */
 export default function TableSkeleton({ rows = 5, cols = 6 }) {
   return (
-    <div className="animate-pulse">
-      {Array.from({ length: rows }).map((_, i) => (
-        <div
-          key={i}
-          className="flex items-center gap-4 px-5 py-3.5 border-b border-gray-100"
-        >
-          {Array.from({ length: cols }).map((_, j) => (
-            <div
-              key={j}
-              className="h-4 bg-gray-200 rounded flex-1 min-w-0 max-w-[120px]"
-              style={{ maxWidth: j === 0 ? 180 : j === cols - 1 ? 80 : 120 }}
-            />
+    <div className="overflow-x-auto rounded-lg border border-gray-200 bg-white shadow-sm">
+      <table className="min-w-full text-left text-sm">
+        <thead className="bg-gray-50 border-b border-gray-200">
+          <tr>
+            {Array.from({ length: cols }).map((_, j) => (
+              <th key={j} className="px-3 py-2">
+                <Skeleton className="h-4 w-20 rounded" style={{ maxWidth: j === 0 ? 120 : 80 }} />
+              </th>
+            ))}
+          </tr>
+        </thead>
+        <tbody className="divide-y divide-gray-100">
+          {Array.from({ length: rows }).map((_, i) => (
+            <tr key={i}>
+              {Array.from({ length: cols }).map((_, j) => (
+                <td key={j} className="px-3 py-2 align-middle">
+                  <Skeleton
+                    className="h-4 rounded"
+                    style={{
+                      maxWidth: j === 0 ? 160 : j === cols - 1 ? 72 : 100,
+                      width: '100%',
+                    }}
+                  />
+                </td>
+              ))}
+            </tr>
           ))}
-        </div>
-      ))}
+        </tbody>
+      </table>
     </div>
   );
 }

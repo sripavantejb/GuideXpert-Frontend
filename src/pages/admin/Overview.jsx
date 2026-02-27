@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { getAdminStats, getAdminLeads, getStoredToken } from '../../utils/adminApi';
 import { useAuth } from '../../contexts/AuthContext';
+import OverviewSkeleton from '../../components/UI/OverviewSkeleton';
 
 const ALL_SLOT_IDS = [
   'MONDAY_7PM', 'TUESDAY_7PM', 'WEDNESDAY_7PM', 'THURSDAY_7PM',
@@ -66,11 +67,7 @@ export default function Overview() {
   }, [logout, selectedSlot]);
 
   if (loading) {
-    return (
-      <div className="max-w-6xl mx-auto">
-        <p className="text-gray-500">Loading overview…</p>
-      </div>
-    );
+    return <OverviewSkeleton />;
   }
 
   if (error) {
@@ -81,17 +78,44 @@ export default function Overview() {
     );
   }
 
-  const cards = [
-    { label: 'Total leads', value: stats?.total ?? 0, color: 'primary-navy' },
-    { label: 'In progress', value: stats?.inProgress ?? 0 },
-    { label: 'Registered', value: stats?.registered ?? 0 },
-    { label: 'Completed', value: stats?.completed ?? 0 },
-    { label: 'OTP verified', value: stats?.otpVerified ?? 0 },
-    { label: 'Slot booked', value: stats?.slotBooked ?? 0 },
-  ];
+  const total = stats?.total ?? 0;
+  const otpVerified = stats?.otpVerified ?? 0;
+  const otpNotVerified = stats?.otpNotVerified ?? 0;
+  const otpVerifiedSlotBooked = stats?.otpVerifiedSlotBooked ?? 0;
+  const otpVerifiedSlotNotBooked = stats?.otpVerifiedSlotNotBooked ?? 0;
+  const slotBooked = stats?.slotBooked ?? 0;
+  const demoAttended = stats?.demoAttended ?? 0;
+  const demoNotAttended = stats?.demoNotAttended ?? 0;
+  const maxOtp = Math.max(otpVerified, otpNotVerified, 1);
+  const maxSlot = Math.max(otpVerifiedSlotBooked, otpVerifiedSlotNotBooked, 1);
+  const maxDemo = Math.max(demoAttended, demoNotAttended, 1);
 
   const signupsOverTime = stats?.signupsOverTime ?? [];
   const maxSignups = Math.max(...signupsOverTime.map((d) => d.count), 1);
+
+  function formatCount(n) {
+    return Number(n).toLocaleString();
+  }
+
+  function FunnelCard({ label, value, widthPct, conversionPct, conversionLabel }) {
+    return (
+      <div className="bg-white rounded-xl border border-gray-200 shadow-sm hover:shadow-md hover:border-gray-300 transition-all duration-200 p-5 flex-1 min-w-0">
+        <p className="text-xs font-medium text-gray-500 uppercase tracking-wider mb-1">{label}</p>
+        <p className="text-2xl font-bold text-primary-navy tabular-nums mb-3">{formatCount(value)}</p>
+        {conversionPct != null && conversionLabel && (
+          <span className="inline-flex items-center px-2.5 py-0.5 rounded-md bg-primary-blue-50 text-primary-navy text-xs font-medium mb-3">
+            {conversionPct}% {conversionLabel}
+          </span>
+        )}
+        <div className="h-2 bg-gray-100 rounded-full overflow-hidden">
+          <div
+            className="h-full bg-primary-navy rounded-full transition-[width] duration-300 ease-out min-w-0"
+            style={{ width: `${widthPct}%` }}
+          />
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="max-w-6xl mx-auto">
@@ -119,18 +143,74 @@ export default function Overview() {
         </Link>
       </div>
 
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 mb-8">
-        {cards.map(({ label, value, color }) => (
-          <div
-            key={label}
-            className="bg-white rounded-lg border border-gray-200 shadow-sm p-5"
-          >
-            <p className="text-sm text-gray-500 mb-1">{label}</p>
-            <p className={`text-2xl font-bold ${color ? 'text-primary-navy' : 'text-gray-800'}`}>
-              {value}
-            </p>
+      {/* Lead conversion funnel (hierarchical: OTP → Slot → Demo) */}
+      <div
+        className="bg-white rounded-xl border border-gray-200 shadow-md p-6 mb-8"
+        role="img"
+        aria-label="Lead conversion funnel: OTP verified and not verified, then slot booked and not booked, then demo attended and not attended"
+      >
+        <h3 className="text-lg font-semibold text-gray-800 tracking-tight mb-2">Lead conversion funnel</h3>
+        <p className="text-sm text-gray-500 mb-6">Leads added: <strong className="text-gray-700">{formatCount(total)}</strong></p>
+
+        {/* Level 1: OTP Verified | OTP Not Verified */}
+        <div className="flex flex-wrap gap-4 mb-2">
+          <FunnelCard
+            label="OTP verified"
+            value={otpVerified}
+            widthPct={maxOtp > 0 ? (otpVerified / maxOtp) * 100 : 0}
+            conversionPct={total > 0 ? Math.round((otpVerified / total) * 100) : null}
+            conversionLabel="of leads"
+          />
+          <FunnelCard
+            label="OTP not verified"
+            value={otpNotVerified}
+            widthPct={maxOtp > 0 ? (otpNotVerified / maxOtp) * 100 : 0}
+            conversionPct={total > 0 ? Math.round((otpNotVerified / total) * 100) : null}
+            conversionLabel="of leads"
+          />
+        </div>
+
+        {/* Level 2: Under OTP Verified — Slot Booked | Slot Not Booked */}
+        <div className="border-l-2 border-gray-200 pl-4 ml-2 mt-4 mb-2">
+          <p className="text-xs font-medium text-gray-400 uppercase tracking-wider mb-3">Under OTP verified</p>
+          <div className="flex flex-wrap gap-4">
+            <FunnelCard
+              label="Slot booked"
+              value={otpVerifiedSlotBooked}
+              widthPct={maxSlot > 0 ? (otpVerifiedSlotBooked / maxSlot) * 100 : 0}
+              conversionPct={otpVerified > 0 ? Math.round((otpVerifiedSlotBooked / otpVerified) * 100) : null}
+              conversionLabel="of OTP verified"
+            />
+            <FunnelCard
+              label="Slot not booked"
+              value={otpVerifiedSlotNotBooked}
+              widthPct={maxSlot > 0 ? (otpVerifiedSlotNotBooked / maxSlot) * 100 : 0}
+              conversionPct={otpVerified > 0 ? Math.round((otpVerifiedSlotNotBooked / otpVerified) * 100) : null}
+              conversionLabel="of OTP verified"
+            />
           </div>
-        ))}
+        </div>
+
+        {/* Level 3: Under Slot Booked — Demo Attended | Demo Not Attended */}
+        <div className="border-l-2 border-gray-200 pl-4 ml-2 mt-4">
+          <p className="text-xs font-medium text-gray-400 uppercase tracking-wider mb-3">Under slot booked</p>
+          <div className="flex flex-wrap gap-4">
+            <FunnelCard
+              label="Demo attended"
+              value={demoAttended}
+              widthPct={maxDemo > 0 ? (demoAttended / maxDemo) * 100 : 0}
+              conversionPct={slotBooked > 0 ? Math.round((demoAttended / slotBooked) * 100) : null}
+              conversionLabel="of slot booked"
+            />
+            <FunnelCard
+              label="Demo not attended"
+              value={demoNotAttended}
+              widthPct={maxDemo > 0 ? (demoNotAttended / maxDemo) * 100 : 0}
+              conversionPct={slotBooked > 0 ? Math.round((demoNotAttended / slotBooked) * 100) : null}
+              conversionLabel="of slot booked"
+            />
+          </div>
+        </div>
       </div>
 
       {/* Signups over time (last 30 days) */}

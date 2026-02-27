@@ -10,6 +10,7 @@ import {
   getAnnouncementAnalytics,
 } from '../../utils/adminApi';
 import ConfirmDialog from '../../components/Counsellor/ConfirmDialog';
+import AnnouncementsListSkeleton from '../../components/UI/AnnouncementsListSkeleton';
 import { FiPlus, FiEdit2, FiTrash2, FiRadio, FiX, FiBookmark, FiBarChart2 } from 'react-icons/fi';
 
 const PRIORITIES = [
@@ -213,10 +214,7 @@ export default function Announcements() {
         )}
 
         {loading ? (
-          <div className="rounded-2xl bg-white border border-gray-200 shadow-sm p-16 text-center">
-            <div className="inline-block w-10 h-10 border-2 border-primary-navy border-t-transparent rounded-full animate-spin mb-4" aria-hidden />
-            <p className="text-gray-500 text-sm font-medium">Loading announcements…</p>
-          </div>
+          <AnnouncementsListSkeleton />
         ) : list.length === 0 ? (
           <div className="rounded-2xl bg-white border border-gray-200 shadow-sm p-16 text-center">
             <div className="w-20 h-20 rounded-2xl bg-primary-blue-50 flex items-center justify-center mx-auto mb-5">

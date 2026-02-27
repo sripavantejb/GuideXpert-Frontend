@@ -28,7 +28,7 @@ export default function AdminLogin() {
   };
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gray-50 px-4">
+    <div className="min-h-screen flex items-center justify-center bg-[#f1f5f9] px-4">
       <div className="w-full max-w-md">
         <div className="bg-white rounded-xl shadow-lg p-8" style={{ boxShadow: '0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04)' }}>
           <h1 className="text-2xl font-bold text-primary-blue-600 mb-2" style={{ color: '#003366' }}>

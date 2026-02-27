@@ -1,5 +1,6 @@
 import { useEffect, useRef } from 'react';
 import { FiBell } from 'react-icons/fi';
+import ListSkeleton from '../UI/ListSkeleton';
 
 const PRIORITY_BAR = {
   normal: 'bg-primary-blue-500',
@@ -95,9 +96,8 @@ export default function NotificationDropdown({
       </div>
       <div className="flex-1 overflow-y-auto min-h-0">
         {loading ? (
-          <div className="p-8 text-center">
-            <div className="inline-block w-6 h-6 border-2 border-primary-navy border-t-transparent rounded-full animate-spin mx-auto mb-2" aria-hidden />
-            <p className="text-sm text-gray-500">Loading…</p>
+          <div className="p-4">
+            <ListSkeleton rows={4} avatar={true} />
           </div>
         ) : filtered.length === 0 ? (
           <div className="p-10 text-center">

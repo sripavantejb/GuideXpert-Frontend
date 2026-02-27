@@ -22,6 +22,7 @@ import {
   getStoredToken,
 } from '../../utils/adminApi';
 import { useAuth } from '../../contexts/AuthContext';
+import TableSkeleton from '../../components/UI/TableSkeleton';
 
 const PLATFORMS = [
   { value: 'Instagram', label: 'Instagram' },
@@ -85,20 +86,6 @@ function getDatePresetRange(preset) {
 function normalizeInfluencerName(name) {
   if (name == null || typeof name !== 'string') return '';
   return name.trim().toLowerCase();
-}
-
-function TableSkeleton({ rows = 5, cols = 6 }) {
-  return (
-    <div className="animate-pulse">
-      {Array.from({ length: rows }).map((_, i) => (
-        <div key={i} className="flex gap-4 py-3 border-b border-gray-100">
-          {Array.from({ length: cols }).map((_, j) => (
-            <div key={j} className="h-4 bg-gray-200 rounded flex-1 max-w-[120px]" />
-          ))}
-        </div>
-      ))}
-    </div>
-  );
 }
 
 function ChartSkeleton() {

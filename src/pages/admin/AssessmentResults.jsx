@@ -2,6 +2,8 @@ import { useState, useEffect, useRef, useMemo } from 'react';
 import { getAssessmentSubmissions, getAssessmentSubmissionById, getStoredToken } from '../../utils/adminApi';
 import { useAuth } from '../../contexts/AuthContext';
 import { ASSESSMENT_SECTIONS } from '../../data/assessmentQuestions';
+import TableSkeleton from '../../components/UI/TableSkeleton';
+import { ContentSkeleton } from '../../components/UI/Skeleton';
 
 function formatDate(d) {
   if (!d) return '—';
@@ -91,7 +93,7 @@ export default function AssessmentResults() {
       )}
 
       {loading ? (
-        <div className="flex items-center justify-center py-12 text-gray-500">Loading...</div>
+        <TableSkeleton rows={8} cols={5} />
       ) : submissions.length === 0 ? (
         <div className="rounded-lg border border-gray-200 bg-gray-50 p-8 text-center text-gray-600">
           No assessment submissions yet.
@@ -187,7 +189,7 @@ export default function AssessmentResults() {
               <button type="button" onClick={closeDetail} className="p-1 rounded hover:bg-gray-100 text-gray-600" aria-label="Close">×</button>
             </div>
             <div className="p-4 overflow-y-auto flex-1">
-              {detailLoading && <div className="py-8 text-center text-gray-500">Loading...</div>}
+              {detailLoading && <div className="p-6"><ContentSkeleton lines={5} /></div>}
               {detailError && <div className="p-3 rounded-lg border border-red-200 bg-red-50 text-red-700 text-sm">{detailError}</div>}
               {!detailLoading && !detailError && detailSubmission && (
                 <>

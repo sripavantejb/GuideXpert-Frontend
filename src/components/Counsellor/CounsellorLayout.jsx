@@ -25,6 +25,7 @@ import { getAnnouncements, getAnnouncement, markAnnouncementRead, markAllAnnounc
 import { formatAnnouncementDescription } from '../../utils/formatAnnouncementDescription';
 import NotificationDropdown from './NotificationDropdown';
 import SlideOverPanel from './SlideOverPanel';
+import { ContentSkeleton } from '../UI/Skeleton';
 
 const primaryNav = [
   { to: '/counsellor/dashboard', label: 'Dashboard', icon: FiLayout },
@@ -416,10 +417,7 @@ export default function CounsellorLayout() {
         title={detailAnnouncement?.title || 'Announcement'}
       >
         {detailLoading ? (
-          <div className="py-12 text-center">
-            <div className="inline-block w-8 h-8 border-2 border-primary-navy border-t-transparent rounded-full animate-spin mb-3" aria-hidden />
-            <p className="text-gray-500 text-sm">Loading…</p>
-          </div>
+          <div className="p-6"><ContentSkeleton lines={5} /></div>
         ) : detailAnnouncement ? (
           <div className="space-y-5">
             <div className="flex flex-wrap items-center gap-2">

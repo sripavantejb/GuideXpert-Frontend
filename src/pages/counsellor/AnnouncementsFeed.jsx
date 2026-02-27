@@ -9,6 +9,7 @@ import {
 } from '../../utils/counsellorApi';
 import { formatAnnouncementDescription } from '../../utils/formatAnnouncementDescription';
 import SlideOverPanel from '../../components/Counsellor/SlideOverPanel';
+import FeedSkeleton from '../../components/UI/FeedSkeleton';
 
 const FILTERS = [
   { value: 'all', label: 'All' },
@@ -404,7 +405,7 @@ export default function AnnouncementsFeed() {
       </div>
 
       {loading ? (
-        <div className="flex items-center justify-center py-16 text-gray-500">Loading...</div>
+        <FeedSkeleton />
       ) : list.length === 0 ? (
         <div className="text-center py-16 text-gray-500">No announcements match your filters.</div>
       ) : (
