@@ -1,5 +1,4 @@
 import { useState, useEffect, useRef } from 'react';
-import { Link } from 'react-router-dom';
 import { getAdminStats, getStoredToken } from '../../utils/adminApi';
 import { useAuth } from '../../contexts/AuthContext';
 import OverviewSkeleton from '../../components/UI/OverviewSkeleton';
@@ -60,7 +59,7 @@ export default function Overview() {
 
   if (error) {
     return (
-      <div className="max-w-6xl mx-auto">
+      <div className="w-full">
         <p className="text-red-600" role="alert">{error}</p>
       </div>
     );
@@ -123,34 +122,10 @@ export default function Overview() {
   }
 
   return (
-    <div className="max-w-6xl mx-auto">
-      <h2 className="text-xl font-semibold text-gray-800 mb-6">Overview</h2>
-
-      {/* Quick actions */}
-      <div className="flex flex-wrap gap-3 mb-6">
-        <Link
-          to="/admin/leads?applicationStatus=in_progress"
-          className="inline-flex items-center gap-2 px-4 py-2 rounded-lg border border-gray-200 bg-white text-gray-700 text-sm font-medium hover:bg-gray-50 hover:border-gray-300 transition-colors"
-        >
-          View incomplete leads
-        </Link>
-        <Link
-          to="/admin/export"
-          className="inline-flex items-center gap-2 px-4 py-2 rounded-lg border border-gray-200 bg-white text-gray-700 text-sm font-medium hover:bg-gray-50 hover:border-gray-300 transition-colors"
-        >
-          Export data
-        </Link>
-        <Link
-          to="/admin/analytics"
-          className="inline-flex items-center gap-2 px-4 py-2 rounded-lg border border-gray-200 bg-white text-gray-700 text-sm font-medium hover:bg-gray-50 hover:border-gray-300 transition-colors"
-        >
-          View analytics
-        </Link>
-      </div>
-
+    <div className="w-full h-full min-h-0 flex flex-col">
       {/* Lead conversion funnel — zoomable tree layout */}
       <div
-        className="bg-gray-50/80 rounded-xl border border-gray-200 shadow-md p-8 mb-8"
+        className="bg-gray-50/80 rounded-xl border border-gray-200 shadow-md flex-1 min-h-0 flex flex-col p-4 lg:p-6"
         role="img"
         aria-label="Lead conversion funnel: OTP verified and not verified, slot booked and not booked, demo attended and not attended, assessment written and not written"
       >
@@ -190,7 +165,7 @@ export default function Overview() {
 
         <div
           ref={funnelViewportRef}
-          className="overflow-auto rounded-lg border border-gray-200 bg-white/50 min-h-[320px] max-h-[70vh] touch-pan-x touch-pan-y"
+          className="overflow-auto rounded-lg border border-gray-200 bg-white/50 min-h-0 flex-1 touch-pan-x touch-pan-y"
         >
           <div
             style={{
