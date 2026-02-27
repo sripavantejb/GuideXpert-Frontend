@@ -121,7 +121,7 @@ export default function AssessmentResults() {
               </thead>
               <tbody className="divide-y divide-gray-100">
                 {submissions.map((row) => (
-                  <tr key={row.phone || row._id} className="hover:bg-gray-50">
+                  <tr key={row._id} className="hover:bg-gray-50">
                     <td className="px-3 py-2 text-gray-900 whitespace-nowrap">
                       {row.fullName || '—'}
                     </td>

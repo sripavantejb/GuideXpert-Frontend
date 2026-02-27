@@ -470,6 +470,11 @@ export default function MeetingAttendance() {
                 </span>
               </div>
             </div>
+            {stats.duplicateCount > 0 && (
+              <p className="mt-3 text-xs text-white/80" title="Raw attendance records collapsed to one per mobile">
+                {stats.duplicateCount} duplicate{stats.duplicateCount !== 1 ? 's' : ''} removed
+              </p>
+            )}
           </div>
         </div>
       </div>
