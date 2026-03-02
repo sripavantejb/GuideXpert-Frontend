@@ -1,4 +1,5 @@
 import { useState, useEffect, useLayoutEffect, useRef } from 'react';
+import { createPortal } from 'react-dom';
 import { getAdminStats, getStoredToken } from '../../utils/adminApi';
 import { useAuth } from '../../contexts/AuthContext';
 import OverviewSkeleton from '../../components/UI/OverviewSkeleton';
@@ -11,8 +12,11 @@ export default function Overview() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
   const [isDragging, setIsDragging] = useState(false);
+  const [popoverCardId, setPopoverCardId] = useState(null);
+  const [popoverAnchor, setPopoverAnchor] = useState(null);
   const funnelScrollRef = useRef(null);
   const dragRef = useRef({ lastX: 0, lastY: 0, pointerDown: false, pastThreshold: false });
+  const justDraggedRef = useRef(false);
 
   useEffect(() => {
     let cancelled = false;
@@ -43,6 +47,30 @@ export default function Overview() {
       el.scrollTop = 0;
     }
   }, [stats]);
+
+  useEffect(() => {
+    if (!popoverCardId) return;
+    function onDocClick(ev) {
+      const target = ev.target;
+      if (target.closest('[data-funnel-popover]') || target.closest('[data-funnel-card]')) return;
+      setPopoverCardId(null);
+    }
+    const t = setTimeout(() => document.addEventListener('click', onDocClick, true), 0);
+    return () => {
+      clearTimeout(t);
+      document.removeEventListener('click', onDocClick, true);
+    };
+  }, [popoverCardId]);
+
+  useEffect(() => {
+    const el = funnelScrollRef.current;
+    if (!el) return;
+    function onScroll() {
+      setPopoverCardId(null);
+    }
+    el.addEventListener('scroll', onScroll);
+    return () => el.removeEventListener('scroll', onScroll);
+  }, []);
 
   function handlePointerDown(e) {
     if (e.button !== 0) return;
@@ -80,6 +108,7 @@ export default function Overview() {
     if (e.button !== 0) return;
     const ref = dragRef.current;
     const el = funnelScrollRef.current;
+    justDraggedRef.current = ref.pastThreshold;
     if (ref.pointerDown && el) {
       try {
         el.releasePointerCapture(e.pointerId);
@@ -87,6 +116,9 @@ export default function Overview() {
     }
     dragRef.current = { lastX: 0, lastY: 0, pointerDown: false, pastThreshold: false };
     setIsDragging(false);
+    setTimeout(() => {
+      justDraggedRef.current = false;
+    }, 0);
   }
 
   function handlePointerCancel(e) {
@@ -127,11 +159,64 @@ export default function Overview() {
     return Number(n).toLocaleString();
   }
 
+  const CARD_DESCRIPTIONS = {
+    'leads-added': 'Total leads added to the system.',
+    'otp-verified': 'Leads who completed OTP verification.',
+    'otp-not-verified': 'Leads who did not verify OTP.',
+    'slot-booked': 'Leads who booked a demo slot.',
+    'slot-not-booked': 'Leads who did not book a slot after OTP.',
+    'demo-attended': 'Leads who attended the demo.',
+    'demo-not-attended': 'Leads who did not attend the demo.',
+    'assessment-written': 'Leads who completed the assessment.',
+    'assessment-not-written': 'Leads who did not complete the assessment.',
+    'done': 'Leads who completed the activation form.',
+    'activation-form-not-done': 'Leads who have not completed the activation form.',
+  };
+
+  function getPopoverContent(cardId) {
+    const description = CARD_DESCRIPTIONS[cardId] ?? '';
+    const base = { description };
+    switch (cardId) {
+      case 'leads-added':
+        return { ...base, label: 'Leads added', value: total, conversionPct: null, conversionLabel: null };
+      case 'otp-verified':
+        return { ...base, label: 'OTP verified', value: otpVerified, conversionPct: total > 0 ? Math.round((otpVerified / total) * 100) : null, conversionLabel: 'of leads' };
+      case 'otp-not-verified':
+        return { ...base, label: 'OTP not verified', value: otpNotVerified, conversionPct: total > 0 ? Math.round((otpNotVerified / total) * 100) : null, conversionLabel: 'of leads' };
+      case 'slot-booked':
+        return { ...base, label: 'Slot booked', value: otpVerifiedSlotBooked, conversionPct: otpVerified > 0 ? Math.round((otpVerifiedSlotBooked / otpVerified) * 100) : null, conversionLabel: 'of OTP verified' };
+      case 'slot-not-booked':
+        return { ...base, label: 'Slot not booked', value: otpVerifiedSlotNotBooked, conversionPct: otpVerified > 0 ? Math.round((otpVerifiedSlotNotBooked / otpVerified) * 100) : null, conversionLabel: 'of OTP verified' };
+      case 'demo-attended':
+        return { ...base, label: 'Demo attended', value: demoAttended, conversionPct: slotBooked > 0 ? Math.round((demoAttended / slotBooked) * 100) : null, conversionLabel: 'of slot booked' };
+      case 'demo-not-attended':
+        return { ...base, label: 'Demo not attended', value: demoNotAttended, conversionPct: slotBooked > 0 ? Math.round((demoNotAttended / slotBooked) * 100) : null, conversionLabel: 'of slot booked' };
+      case 'assessment-written':
+        return { ...base, label: 'Assessment written', value: assessmentWritten, conversionPct: demoAttended > 0 ? Math.round((assessmentWritten / demoAttended) * 100) : null, conversionLabel: 'of demo attended' };
+      case 'assessment-not-written':
+        return { ...base, label: 'Assessment not written', value: assessmentNotWritten, conversionPct: demoAttended > 0 ? Math.round((assessmentNotWritten / demoAttended) * 100) : null, conversionLabel: 'of demo attended' };
+      case 'done':
+        return { ...base, label: 'Done', value: activationFormCompleted, conversionPct: assessmentWritten > 0 ? Math.round((activationFormCompleted / assessmentWritten) * 100) : null, conversionLabel: 'of assessment written' };
+      case 'activation-form-not-done':
+        return { ...base, label: 'Activation form not done', value: activationFormNotDone, conversionPct: assessmentWritten > 0 ? Math.round((activationFormNotDone / assessmentWritten) * 100) : null, conversionLabel: 'of assessment written' };
+      default:
+        return { ...base, label: '', value: 0, conversionPct: null, conversionLabel: null };
+    }
+  }
+
+  function handleCardClick(cardId, e) {
+    e.stopPropagation();
+    if (justDraggedRef.current) return;
+    const rect = e.currentTarget.getBoundingClientRect();
+    setPopoverAnchor({ left: rect.left, top: rect.top, width: rect.width, height: rect.height });
+    setPopoverCardId((prev) => (prev === cardId ? null : cardId));
+  }
+
   const CARD_WIDTH = 240;
   const CARD_MIN_HEIGHT = 132;
 
-  function FunnelNode({ label, value, widthPct, conversionPct, conversionLabel }) {
-    return (
+  function FunnelNode({ label, value, widthPct, conversionPct, conversionLabel, cardId, onCardClick }) {
+    const card = (
       <div
         className="rounded-lg border border-gray-200 bg-white shadow-sm hover:shadow-md hover:border-gray-300 transition-all duration-200 overflow-visible p-4 flex flex-col min-h-[132px] w-[240px] min-w-[240px] shrink-0 box-border"
         style={{ minHeight: CARD_MIN_HEIGHT, width: CARD_WIDTH }}
@@ -151,6 +236,23 @@ export default function Overview() {
         </div>
       </div>
     );
+    if (cardId != null && onCardClick) {
+      return (
+        <div
+          role="button"
+          tabIndex={0}
+          data-funnel-card
+          onClick={(e) => onCardClick(cardId, e)}
+          onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); onCardClick(cardId, e); } }}
+          className="cursor-pointer"
+          aria-haspopup="dialog"
+          aria-expanded={!!popoverCardId && popoverCardId === cardId}
+        >
+          {card}
+        </div>
+      );
+    }
+    return card;
   }
 
   function ConnectorV({ h = 16 }) {
@@ -203,7 +305,17 @@ export default function Overview() {
           <div className="w-max min-w-full pt-2 pb-4 inline-block px-24" style={{ minWidth: 'max(100%, 1600px)' }}>
               {/* Tree: Root */}
               <div className="flex flex-col items-center">
-          <div className="rounded-lg border-2 border-primary-navy bg-white shadow-sm p-4 flex flex-col min-h-[132px] w-[240px] box-border" style={{ minHeight: CARD_MIN_HEIGHT, width: CARD_WIDTH }}>
+          <div
+            role="button"
+            tabIndex={0}
+            data-funnel-card
+            onClick={(e) => handleCardClick('leads-added', e)}
+            onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); handleCardClick('leads-added', e); } }}
+            className="rounded-lg border-2 border-primary-navy bg-white shadow-sm p-4 flex flex-col min-h-[132px] w-[240px] box-border cursor-pointer hover:shadow-md transition-shadow"
+            style={{ minHeight: CARD_MIN_HEIGHT, width: CARD_WIDTH }}
+            aria-haspopup="dialog"
+            aria-expanded={!!popoverCardId && popoverCardId === 'leads-added'}
+          >
             <p className="text-xs font-semibold text-gray-500 uppercase tracking-wider">Leads added</p>
             <p className="text-xl font-bold text-primary-navy tabular-nums">{formatCount(total)}</p>
             <div className="mt-auto h-1.5 bg-gray-100 rounded-full overflow-hidden"><div className="h-full bg-primary-navy rounded-full w-full" /></div>
@@ -222,6 +334,8 @@ export default function Overview() {
           <div className="flex flex-col items-center shrink-0 w-[280px] rounded-lg bg-gray-50/50 py-2 px-2 order-2">
             <div className="mb-1"><ConnectorV h={16} /></div>
             <FunnelNode
+              cardId="otp-not-verified"
+              onCardClick={handleCardClick}
               label="OTP not verified"
               value={otpNotVerified}
               widthPct={maxOtp > 0 ? (otpNotVerified / maxOtp) * 100 : 0}
@@ -233,6 +347,8 @@ export default function Overview() {
           <div className="flex flex-col items-center shrink-0 min-w-[560px] order-1">
             <div className="mb-1"><ConnectorV h={16} /></div>
             <FunnelNode
+              cardId="otp-verified"
+              onCardClick={handleCardClick}
               label="OTP verified"
               value={otpVerified}
               widthPct={maxOtp > 0 ? (otpVerified / maxOtp) * 100 : 0}
@@ -247,6 +363,8 @@ export default function Overview() {
               <div className="flex flex-col items-center flex-1 min-w-0">
                 <div className="mb-1"><ConnectorV h={12} /></div>
                 <FunnelNode
+                  cardId="slot-booked"
+                  onCardClick={handleCardClick}
                   label="Slot booked"
                   value={otpVerifiedSlotBooked}
                   widthPct={maxSlot > 0 ? (otpVerifiedSlotBooked / maxSlot) * 100 : 0}
@@ -263,6 +381,8 @@ export default function Overview() {
                     <div className="flex flex-col items-center shrink-0">
                       <div className="mb-1"><ConnectorV h={16} /></div>
                       <FunnelNode
+                        cardId="demo-attended"
+                        onCardClick={handleCardClick}
                         label="Demo attended"
                         value={demoAttended}
                         widthPct={maxDemo > 0 ? (demoAttended / maxDemo) * 100 : 0}
@@ -278,6 +398,8 @@ export default function Overview() {
                         <div className="flex flex-col items-center shrink-0">
                           <div className="mb-1"><ConnectorV h={16} /></div>
                           <FunnelNode
+                            cardId="assessment-written"
+                            onCardClick={handleCardClick}
                             label="Assessment written"
                             value={assessmentWritten}
                             widthPct={maxAssessment > 0 ? (assessmentWritten / maxAssessment) * 100 : 0}
@@ -292,6 +414,8 @@ export default function Overview() {
                             <div className="flex flex-col items-center shrink-0">
                               <div className="mb-1"><ConnectorV h={16} /></div>
                               <FunnelNode
+                                cardId="done"
+                                onCardClick={handleCardClick}
                                 label="Done"
                                 value={activationFormCompleted}
                                 widthPct={maxActivation > 0 ? (activationFormCompleted / maxActivation) * 100 : 0}
@@ -302,6 +426,8 @@ export default function Overview() {
                             <div className="flex flex-col items-center shrink-0">
                               <div className="mb-1"><ConnectorV h={16} /></div>
                               <FunnelNode
+                                cardId="activation-form-not-done"
+                                onCardClick={handleCardClick}
                                 label="Activation form not done"
                                 value={activationFormNotDone}
                                 widthPct={maxActivation > 0 ? (activationFormNotDone / maxActivation) * 100 : 0}
@@ -314,6 +440,8 @@ export default function Overview() {
                         <div className="flex flex-col items-center shrink-0">
                           <div className="mb-1"><ConnectorV h={16} /></div>
                           <FunnelNode
+                            cardId="assessment-not-written"
+                            onCardClick={handleCardClick}
                             label="Assessment not written"
                             value={assessmentNotWritten}
                             widthPct={maxAssessment > 0 ? (assessmentNotWritten / maxAssessment) * 100 : 0}
@@ -326,6 +454,8 @@ export default function Overview() {
                     <div className="flex flex-col items-center shrink-0">
                       <div className="mb-1"><ConnectorV h={16} /></div>
                       <FunnelNode
+                        cardId="demo-not-attended"
+                        onCardClick={handleCardClick}
                         label="Demo not attended"
                         value={demoNotAttended}
                         widthPct={maxDemo > 0 ? (demoNotAttended / maxDemo) * 100 : 0}
@@ -339,6 +469,8 @@ export default function Overview() {
               <div className="flex flex-col items-center flex-1 min-w-0">
                 <div className="mb-1"><ConnectorV h={12} /></div>
                 <FunnelNode
+                  cardId="slot-not-booked"
+                  onCardClick={handleCardClick}
                   label="Slot not booked"
                   value={otpVerifiedSlotNotBooked}
                   widthPct={maxSlot > 0 ? (otpVerifiedSlotNotBooked / maxSlot) * 100 : 0}
@@ -353,6 +485,35 @@ export default function Overview() {
           </div>
         </div>
       </div>
+      {popoverCardId && popoverAnchor && createPortal(
+        <div
+          data-funnel-popover
+          role="dialog"
+          aria-label="Funnel stage details"
+          className="fixed z-[10000] max-w-[280px] rounded-lg border border-gray-200 bg-white shadow-lg p-3 text-left"
+          style={{
+            left: popoverAnchor.left + popoverAnchor.width / 2,
+            top: popoverAnchor.top - 8,
+            transform: 'translate(-50%, -100%)',
+          }}
+          onClick={(e) => e.stopPropagation()}
+        >
+          {(() => {
+            const c = getPopoverContent(popoverCardId);
+            return (
+              <>
+                <p className="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-1">{c.label}</p>
+                <p className="font-bold text-primary-navy tabular-nums text-lg">{formatCount(c.value)}</p>
+                {c.conversionPct != null && c.conversionLabel && (
+                  <p className="text-sm text-gray-600 mt-1">{c.conversionPct}% {c.conversionLabel}</p>
+                )}
+                {c.description && <p className="text-sm text-gray-500 mt-2 border-t border-gray-100 pt-2">{c.description}</p>}
+              </>
+            );
+          })()}
+        </div>,
+        document.body
+      )}
     </div>
   );
 }
