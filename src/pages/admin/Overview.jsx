@@ -1,5 +1,6 @@
 import { useState, useEffect, useLayoutEffect, useRef } from 'react';
 import { createPortal } from 'react-dom';
+import { Link } from 'react-router-dom';
 import { getAdminStats, getStoredToken } from '../../utils/adminApi';
 import { useAuth } from '../../contexts/AuthContext';
 import OverviewSkeleton from '../../components/UI/OverviewSkeleton';
@@ -149,11 +150,14 @@ export default function Overview() {
   const assessmentNotWritten = stats?.assessmentNotWritten ?? 0;
   const activationFormCompleted = stats?.activationFormCompleted ?? 0;
   const activationFormNotDone = stats?.activationFormNotDone ?? 0;
+  const counsellorDashboardLoggedIn = stats?.counsellorDashboardLoggedIn ?? 0;
+  const counsellorDashboardNotLoggedIn = stats?.counsellorDashboardNotLoggedIn ?? 0;
   const maxOtp = Math.max(otpVerified, otpNotVerified, 1);
   const maxSlot = Math.max(otpVerifiedSlotBooked, otpVerifiedSlotNotBooked, 1);
   const maxDemo = Math.max(demoAttended, demoNotAttended, 1);
   const maxAssessment = Math.max(assessmentWritten, assessmentNotWritten, 1);
   const maxActivation = Math.max(activationFormCompleted, activationFormNotDone, 1);
+  const maxCounsellorDashboard = Math.max(counsellorDashboardLoggedIn, counsellorDashboardNotLoggedIn, 1);
 
   function formatCount(n) {
     return Number(n).toLocaleString();
@@ -171,6 +175,8 @@ export default function Overview() {
     'assessment-not-written': 'Leads who did not complete the assessment.',
     'done': 'Leads who completed the activation form.',
     'activation-form-not-done': 'Leads who have not completed the activation form.',
+    'counsellor-dashboard-logged-in': 'Activation-complete leads who have logged in to the Counsellor dashboard.',
+    'counsellor-dashboard-not-logged-in': 'Activation-complete leads who have not yet logged in to the Counsellor dashboard.',
   };
 
   function getPopoverContent(cardId) {
@@ -196,9 +202,13 @@ export default function Overview() {
       case 'assessment-not-written':
         return { ...base, label: 'Assessment not written', value: assessmentNotWritten, conversionPct: demoAttended > 0 ? Math.round((assessmentNotWritten / demoAttended) * 100) : null, conversionLabel: 'of demo attended' };
       case 'done':
-        return { ...base, label: 'Done', value: activationFormCompleted, conversionPct: assessmentWritten > 0 ? Math.round((activationFormCompleted / assessmentWritten) * 100) : null, conversionLabel: 'of assessment written' };
+        return { ...base, label: 'Done', value: activationFormCompleted, conversionPct: assessmentWritten > 0 ? Math.round((activationFormCompleted / assessmentWritten) * 100) : null, conversionLabel: 'of assessment written', loginUrl: '/counsellor/login', loginLabel: 'Counsellor dashboard login' };
       case 'activation-form-not-done':
         return { ...base, label: 'Activation form not done', value: activationFormNotDone, conversionPct: assessmentWritten > 0 ? Math.round((activationFormNotDone / assessmentWritten) * 100) : null, conversionLabel: 'of assessment written' };
+      case 'counsellor-dashboard-logged-in':
+        return { ...base, label: 'Counsellor dashboard: Logged in', value: counsellorDashboardLoggedIn, conversionPct: activationFormCompleted > 0 ? Math.round((counsellorDashboardLoggedIn / activationFormCompleted) * 100) : null, conversionLabel: 'of activation form done' };
+      case 'counsellor-dashboard-not-logged-in':
+        return { ...base, label: 'Counsellor dashboard: Not logged in', value: counsellorDashboardNotLoggedIn, conversionPct: activationFormCompleted > 0 ? Math.round((counsellorDashboardNotLoggedIn / activationFormCompleted) * 100) : null, conversionLabel: 'of activation form done' };
       default:
         return { ...base, label: '', value: 0, conversionPct: null, conversionLabel: null };
     }
@@ -285,7 +295,7 @@ export default function Overview() {
       <div
         className="bg-gray-50/80 rounded-xl border border-gray-200 shadow-md flex-1 min-h-0 flex flex-col p-4 lg:p-6"
         role="img"
-        aria-label="Lead conversion funnel: OTP verified and not verified, slot booked and not booked, demo attended and not attended, assessment written and not written, done and activation form not done"
+        aria-label="Lead conversion funnel: OTP verified and not verified, slot booked and not booked, demo attended and not attended, assessment written and not written, done and activation form not done, counsellor dashboard logged in and not logged in"
       >
         <h3 className="text-sm font-semibold text-gray-500 uppercase tracking-wider mb-6">Lead conversion funnel</h3>
 
@@ -422,6 +432,36 @@ export default function Overview() {
                                 conversionPct={assessmentWritten > 0 ? Math.round((activationFormCompleted / assessmentWritten) * 100) : null}
                                 conversionLabel="of assessment written"
                               />
+                              <div className="mt-2 mb-1"><ConnectorV h={12} /></div>
+                              <div className="w-full" style={{ width: 2 * CARD_WIDTH + 24 }}>
+                                <ConnectorHFull className="w-full" />
+                              </div>
+                              <div className="flex gap-6 mt-2 justify-center w-full" style={{ width: 2 * CARD_WIDTH + 24 }}>
+                                <div className="flex flex-col items-center shrink-0">
+                                  <div className="mb-1"><ConnectorV h={16} /></div>
+                                  <FunnelNode
+                                    cardId="counsellor-dashboard-logged-in"
+                                    onCardClick={handleCardClick}
+                                    label="Counsellor dashboard: Logged in"
+                                    value={counsellorDashboardLoggedIn}
+                                    widthPct={maxCounsellorDashboard > 0 ? (counsellorDashboardLoggedIn / maxCounsellorDashboard) * 100 : 0}
+                                    conversionPct={activationFormCompleted > 0 ? Math.round((counsellorDashboardLoggedIn / activationFormCompleted) * 100) : null}
+                                    conversionLabel="of activation form done"
+                                  />
+                                </div>
+                                <div className="flex flex-col items-center shrink-0">
+                                  <div className="mb-1"><ConnectorV h={16} /></div>
+                                  <FunnelNode
+                                    cardId="counsellor-dashboard-not-logged-in"
+                                    onCardClick={handleCardClick}
+                                    label="Counsellor dashboard: Not logged in"
+                                    value={counsellorDashboardNotLoggedIn}
+                                    widthPct={maxCounsellorDashboard > 0 ? (counsellorDashboardNotLoggedIn / maxCounsellorDashboard) * 100 : 0}
+                                    conversionPct={activationFormCompleted > 0 ? Math.round((counsellorDashboardNotLoggedIn / activationFormCompleted) * 100) : null}
+                                    conversionLabel="of activation form done"
+                                  />
+                                </div>
+                              </div>
                             </div>
                             <div className="flex flex-col items-center shrink-0">
                               <div className="mb-1"><ConnectorV h={16} /></div>
@@ -508,6 +548,12 @@ export default function Overview() {
                   <p className="text-sm text-gray-600 mt-1">{c.conversionPct}% {c.conversionLabel}</p>
                 )}
                 {c.description && <p className="text-sm text-gray-500 mt-2 border-t border-gray-100 pt-2">{c.description}</p>}
+                {c.loginUrl && (
+                  <p className="text-sm mt-2 border-t border-gray-100 pt-2">
+                    <span className="text-gray-500">{c.loginLabel}: </span>
+                    <Link to={c.loginUrl} target="_blank" rel="noopener noreferrer" className="text-primary-navy font-medium hover:underline">{c.loginUrl}</Link>
+                  </p>
+                )}
               </>
             );
           })()}
