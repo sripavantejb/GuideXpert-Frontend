@@ -1,7 +1,6 @@
 import { useState } from 'react';
 import { Link, NavLink, Outlet } from 'react-router-dom';
 import { FiLayout, FiUsers, FiUserCheck, FiBarChart2, FiDownload, FiSettings, FiCalendar, FiVideo, FiLink, FiAward, FiMessageSquare, FiRadio } from 'react-icons/fi';
-import { HiMenu as HiMenuIcon, HiX as HiXIcon } from 'react-icons/hi';
 import { useAuth } from '../../contexts/AuthContext';
 
 const navItems = [
@@ -110,29 +109,7 @@ export default function AdminLayout() {
 
       {/* Main content */}
       <div className="flex-1 flex flex-col min-w-0 min-h-0 lg:ml-[280px]">
-        <header className="bg-white px-4 lg:px-6 py-3 flex items-center justify-between shrink-0 shadow-header">
-          <button
-            type="button"
-            onClick={() => setSidebarOpen((o) => !o)}
-            className="lg:hidden p-2 rounded-lg text-gray-600 hover:bg-gray-100"
-            aria-label={sidebarOpen ? 'Close menu' : 'Open menu'}
-          >
-            {sidebarOpen ? <HiXIcon className="w-6 h-6" /> : <HiMenuIcon className="w-6 h-6" />}
-          </button>
-          <h1 className="text-lg font-bold text-gray-900 hidden lg:block leading-tight">GuideXpert Admin</h1>
-          <div className="ml-auto flex items-center gap-3">
-            <span className="text-sm text-gray-500">{user?.username}</span>
-            <button
-              type="button"
-              onClick={logout}
-              className="text-sm px-3 py-1.5 rounded-lg border border-gray-300 hover:bg-gray-50 text-gray-700 transition-colors"
-            >
-              Logout
-            </button>
-          </div>
-        </header>
-
-        <main className="grow p-4 lg:p-6 overflow-auto">
+        <main className="grow p-4 lg:p-6 overflow-auto scrollbar-hide">
           <Outlet />
         </main>
       </div>
