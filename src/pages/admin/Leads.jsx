@@ -91,14 +91,17 @@ export default function Leads() {
     const slot = searchParams.get('selectedSlot') || '';
     const utm = searchParams.get('utm_content') || '';
     const slotDate = searchParams.get('slotDate') || '';
+    const otp = searchParams.get('otpVerified') || '';
+    const slotB = searchParams.get('slotBooked') || '';
+    const q = searchParams.get('q') || '';
     return {
       applicationStatus: ['in_progress'].includes(status) ? status : '',
-      otpVerified: '',
-      slotBooked: '',
+      otpVerified: ['true', 'false'].includes(otp) ? otp : '',
+      slotBooked: ['true', 'false'].includes(slotB) ? slotB : '',
       selectedSlot: slot,
       slotDate,
       utm_content: utm,
-      q: '',
+      q,
     };
   });
   const [searchInput, setSearchInput] = useState('');
@@ -117,19 +120,26 @@ export default function Leads() {
   const [leadsForDateLoading, setLeadsForDateLoading] = useState(false);
   const [leadsForDateError, setLeadsForDateError] = useState('');
 
-  // Sync filters from URL when landing from quick links (e.g. /admin/leads?applicationStatus=in_progress)
+  // Sync filters from URL when landing from quick links (e.g. /admin/leads?applicationStatus=in_progress or from Overview funnel)
   useEffect(() => {
     const status = searchParams.get('applicationStatus') || '';
     const slot = searchParams.get('selectedSlot') || '';
     const utm = searchParams.get('utm_content') || '';
     const slotDate = searchParams.get('slotDate') || '';
+    const otp = searchParams.get('otpVerified') || '';
+    const slotB = searchParams.get('slotBooked') || '';
+    const q = searchParams.get('q') || '';
     setFilters((prev) => ({
       ...prev,
       applicationStatus: ['in_progress'].includes(status) ? status : prev.applicationStatus,
+      otpVerified: ['true', 'false'].includes(otp) ? otp : prev.otpVerified,
+      slotBooked: ['true', 'false'].includes(slotB) ? slotB : prev.slotBooked,
       selectedSlot: slot || prev.selectedSlot,
       slotDate: slotDate || prev.slotDate,
       utm_content: utm || prev.utm_content,
+      q: q || prev.q,
     }));
+    if (q) setSearchInput(q);
     setPagination((prev) => ({ ...prev, page: 1 }));
   }, [searchParams]);
 

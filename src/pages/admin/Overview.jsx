@@ -1,9 +1,26 @@
 import { useState, useEffect, useLayoutEffect, useRef } from 'react';
 import { createPortal } from 'react-dom';
 import { Link } from 'react-router-dom';
-import { getAdminStats, getStoredToken } from '../../utils/adminApi';
+import { getAdminStats, getAdminLeads, getStoredToken } from '../../utils/adminApi';
 import { useAuth } from '../../contexts/AuthContext';
 import OverviewSkeleton from '../../components/UI/OverviewSkeleton';
+
+/** Card ID -> getAdminLeads params and optional "View related" label for unsupported stages */
+const FUNNEL_CARD_LEADS_PARAMS = {
+  'leads-added': { params: {}, hasExactList: true },
+  'otp-verified': { params: { otpVerified: 'true' }, hasExactList: true },
+  'otp-not-verified': { params: { otpVerified: 'false' }, hasExactList: true },
+  'slot-booked': { params: { otpVerified: 'true', slotBooked: 'true' }, hasExactList: true },
+  'slot-not-booked': { params: { otpVerified: 'true', slotBooked: 'false' }, hasExactList: true },
+  'demo-attended': { params: { otpVerified: 'true', slotBooked: 'true' }, hasExactList: false, viewRelatedLabel: 'Slot booked' },
+  'demo-not-attended': { params: { otpVerified: 'true', slotBooked: 'true' }, hasExactList: false, viewRelatedLabel: 'Slot booked' },
+  'assessment-written': { params: { otpVerified: 'true', slotBooked: 'true' }, hasExactList: false, viewRelatedLabel: 'Slot booked' },
+  'assessment-not-written': { params: { otpVerified: 'true', slotBooked: 'true' }, hasExactList: false, viewRelatedLabel: 'Slot booked' },
+  'done': { params: { otpVerified: 'true', slotBooked: 'true' }, hasExactList: false, viewRelatedLabel: 'Slot booked' },
+  'activation-form-not-done': { params: { otpVerified: 'true', slotBooked: 'true' }, hasExactList: false, viewRelatedLabel: 'Slot booked' },
+  'counsellor-dashboard-logged-in': { params: { otpVerified: 'true', slotBooked: 'true' }, hasExactList: false, viewRelatedLabel: 'Slot booked' },
+  'counsellor-dashboard-not-logged-in': { params: { otpVerified: 'true', slotBooked: 'true' }, hasExactList: false, viewRelatedLabel: 'Slot booked' },
+};
 
 const DRAG_THRESHOLD_PX = 5;
 
@@ -15,7 +32,11 @@ export default function Overview() {
   const [isDragging, setIsDragging] = useState(false);
   const [popoverCardId, setPopoverCardId] = useState(null);
   const [popoverAnchor, setPopoverAnchor] = useState(null);
+  const [cardLeads, setCardLeads] = useState({ list: [], total: 0, loading: false, error: '' });
+  const [scale, setScale] = useState(1);
+  const [contentSize, setContentSize] = useState(null);
   const funnelScrollRef = useRef(null);
+  const funnelContentRef = useRef(null);
   const dragRef = useRef({ lastX: 0, lastY: 0, pointerDown: false, pastThreshold: false });
   const justDraggedRef = useRef(false);
 
@@ -42,12 +63,34 @@ export default function Overview() {
   }, [logout]);
 
   useLayoutEffect(() => {
+    setContentSize(null);
+  }, [stats]);
+
+  useLayoutEffect(() => {
+    const el = funnelContentRef.current;
+    if (el && contentSize === null) {
+      setContentSize({ width: el.scrollWidth, height: el.scrollHeight });
+    }
+  }, [stats, contentSize]);
+
+  useLayoutEffect(() => {
     const el = funnelScrollRef.current;
     if (el) {
-      el.scrollLeft = 0;
       el.scrollTop = 0;
+      const maxScrollLeft = Math.max(0, el.scrollWidth - el.clientWidth);
+      el.scrollLeft = maxScrollLeft / 2;
     }
   }, [stats]);
+
+  useLayoutEffect(() => {
+    if (scale !== 1) return;
+    const el = funnelScrollRef.current;
+    if (el) {
+      el.scrollTop = 0;
+      const maxScrollLeft = Math.max(0, el.scrollWidth - el.clientWidth);
+      el.scrollLeft = maxScrollLeft / 2;
+    }
+  }, [scale]);
 
   useEffect(() => {
     if (!popoverCardId) return;
@@ -63,15 +106,35 @@ export default function Overview() {
     };
   }, [popoverCardId]);
 
+  // Fetch first page of leads for the opened card when stage maps to getAdminLeads
   useEffect(() => {
-    const el = funnelScrollRef.current;
-    if (!el) return;
-    function onScroll() {
-      setPopoverCardId(null);
+    if (!popoverCardId) {
+      setCardLeads({ list: [], total: 0, loading: false, error: '' });
+      return;
     }
-    el.addEventListener('scroll', onScroll);
-    return () => el.removeEventListener('scroll', onScroll);
-  }, []);
+    const config = FUNNEL_CARD_LEADS_PARAMS[popoverCardId];
+    if (!config?.hasExactList) {
+      setCardLeads({ list: [], total: 0, loading: false, error: '' });
+      return;
+    }
+    setCardLeads((prev) => ({ ...prev, loading: true, error: '' }));
+    getAdminLeads({ ...config.params, page: 1, limit: 10 }, getStoredToken()).then((res) => {
+      if (!res.success) {
+        setCardLeads({ list: [], total: 0, loading: false, error: res.message || 'Failed to load leads' });
+        return;
+      }
+      const data = res.data?.data ?? [];
+      const pagination = res.data?.pagination ?? {};
+      setCardLeads({
+        list: data,
+        total: pagination.total ?? 0,
+        loading: false,
+        error: '',
+      });
+    });
+  }, [popoverCardId]);
+
+  // Panel is fixed on the right, so we no longer close it on funnel scroll
 
   function handlePointerDown(e) {
     if (e.button !== 0) return;
@@ -222,6 +285,38 @@ export default function Overview() {
     setPopoverCardId((prev) => (prev === cardId ? null : cardId));
   }
 
+  function buildLeadsQuery(cardId) {
+    const config = FUNNEL_CARD_LEADS_PARAMS[cardId];
+    if (!config?.params) return '';
+    const search = new URLSearchParams();
+    Object.entries(config.params).forEach(([k, v]) => { if (v != null && v !== '') search.set(k, String(v)); });
+    return search.toString();
+  }
+
+  function handleZoomIn() {
+    setScale((s) => Math.min(2, s * 1.25));
+  }
+  function handleZoomOut() {
+    setScale((s) => Math.max(0.5, s / 1.25));
+  }
+  function handleResetView() {
+    setScale(1);
+  }
+  function handleFitToView() {
+    const el = funnelScrollRef.current;
+    if (!el || !contentSize?.width || !contentSize?.height) return;
+    const cw = el.clientWidth;
+    const ch = el.clientHeight;
+    const fitScale = Math.min(cw / contentSize.width, ch / contentSize.height, 1);
+    const capped = Math.max(0.5, fitScale);
+    setScale(capped);
+    requestAnimationFrame(() => {
+      el.scrollTop = 0;
+      const maxScrollLeft = Math.max(0, el.scrollWidth - el.clientWidth);
+      el.scrollLeft = maxScrollLeft / 2;
+    });
+  }
+
   const CARD_WIDTH = 240;
   const CARD_MIN_HEIGHT = 132;
 
@@ -297,12 +392,21 @@ export default function Overview() {
         role="img"
         aria-label="Lead conversion funnel: OTP verified and not verified, slot booked and not booked, demo attended and not attended, assessment written and not written, done and activation form not done, counsellor dashboard logged in and not logged in"
       >
-        <h3 className="text-sm font-semibold text-gray-500 uppercase tracking-wider mb-6">Lead conversion funnel</h3>
+        <div className="flex items-center justify-between gap-4 mb-6">
+          <h3 className="text-sm font-semibold text-gray-500 uppercase tracking-wider">Lead conversion funnel</h3>
+          <div className="flex items-center gap-1 rounded-lg border border-gray-200 bg-white p-1 shadow-sm" role="toolbar" aria-label="Canvas zoom and view">
+            <button type="button" onClick={handleZoomOut} className="h-8 w-8 flex items-center justify-center rounded text-gray-600 hover:bg-gray-100 font-medium" title="Zoom out" aria-label="Zoom out">−</button>
+            <button type="button" onClick={handleZoomIn} className="h-8 w-8 flex items-center justify-center rounded text-gray-600 hover:bg-gray-100 font-medium" title="Zoom in" aria-label="Zoom in">+</button>
+            <span className="text-xs text-gray-500 px-1 min-w-[3rem] text-center" aria-live="polite">{Math.round(scale * 100)}%</span>
+            <button type="button" onClick={handleFitToView} className="h-8 px-2 flex items-center justify-center rounded text-gray-600 hover:bg-gray-100 text-xs font-medium" title="Fit to view" aria-label="Fit to view">Fit</button>
+            <button type="button" onClick={handleResetView} className="h-8 px-2 flex items-center justify-center rounded text-gray-600 hover:bg-gray-100 text-xs font-medium" title="Reset view" aria-label="Reset view">Reset</button>
+          </div>
+        </div>
 
         <div className="rounded-lg border border-gray-200 overflow-hidden min-h-0 flex-1 flex flex-col">
           <div
             ref={funnelScrollRef}
-            className="flex-1 min-h-0 overflow-x-auto overflow-y-auto scrollbar-hide bg-white/50 pl-10 pr-8 pt-6 pb-8"
+            className="flex-1 min-h-0 overflow-x-auto overflow-y-auto scrollbar-hide bg-white/50 pl-48 pr-8 pt-6 pb-8"
             style={{
               cursor: isDragging ? 'grabbing' : 'grab',
               userSelect: isDragging ? 'none' : undefined,
@@ -312,7 +416,17 @@ export default function Overview() {
             onPointerUp={handlePointerUp}
             onPointerCancel={handlePointerCancel}
           >
-          <div className="w-max min-w-full pt-2 pb-4 inline-block px-24" style={{ minWidth: 'max(100%, 1600px)' }}>
+          <div
+            style={contentSize ? { width: contentSize.width * scale, height: contentSize.height * scale, position: 'relative' } : undefined}
+          >
+            <div
+              style={contentSize ? { position: 'absolute', left: 0, top: 0, width: contentSize.width, height: contentSize.height, transform: `scale(${scale})`, transformOrigin: '0 0' } : undefined}
+            >
+              <div
+                ref={funnelContentRef}
+                className="w-max min-w-full pt-2 pb-4 inline-block pl-64 pr-24"
+                style={{ minWidth: 'max(100%, 1600px)' }}
+              >
               {/* Tree: Root */}
               <div className="flex flex-col items-center">
           <div
@@ -523,6 +637,8 @@ export default function Overview() {
         </div>
           </div>
           </div>
+            </div>
+          </div>
         </div>
       </div>
       {popoverCardId && popoverAnchor && createPortal(
@@ -530,29 +646,83 @@ export default function Overview() {
           data-funnel-popover
           role="dialog"
           aria-label="Funnel stage details"
-          className="fixed z-[10000] max-w-[280px] rounded-lg border border-gray-200 bg-white shadow-lg p-3 text-left"
+          className="fixed z-[10000] w-[min(360px,calc(100vw-24px))] max-h-[min(80vh,480px)] rounded-lg border border-gray-200 bg-white shadow-xl flex flex-col overflow-hidden"
           style={{
-            left: popoverAnchor.left + popoverAnchor.width / 2,
-            top: popoverAnchor.top - 8,
-            transform: 'translate(-50%, -100%)',
+            right: 24,
+            top: '50%',
+            transform: 'translateY(-50%)',
           }}
           onClick={(e) => e.stopPropagation()}
         >
           {(() => {
             const c = getPopoverContent(popoverCardId);
+            const config = FUNNEL_CARD_LEADS_PARAMS[popoverCardId];
+            const query = buildLeadsQuery(popoverCardId);
+            const viewAllUrl = query ? `/admin/leads?${query}` : '/admin/leads';
+            const hasExactList = config?.hasExactList;
+            const viewRelatedLabel = config?.viewRelatedLabel;
             return (
               <>
-                <p className="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-1">{c.label}</p>
-                <p className="font-bold text-primary-navy tabular-nums text-lg">{formatCount(c.value)}</p>
-                {c.conversionPct != null && c.conversionLabel && (
-                  <p className="text-sm text-gray-600 mt-1">{c.conversionPct}% {c.conversionLabel}</p>
-                )}
-                {c.description && <p className="text-sm text-gray-500 mt-2 border-t border-gray-100 pt-2">{c.description}</p>}
-                {c.loginUrl && (
-                  <p className="text-sm mt-2 border-t border-gray-100 pt-2">
-                    <span className="text-gray-500">{c.loginLabel}: </span>
-                    <Link to={c.loginUrl} target="_blank" rel="noopener noreferrer" className="text-primary-navy font-medium hover:underline">{c.loginUrl}</Link>
+                <div className="p-3 border-b border-gray-100 shrink-0">
+                  <p className="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-1">{c.label}</p>
+                  <p className="font-bold text-primary-navy tabular-nums text-lg">{formatCount(c.value)}</p>
+                  {c.conversionPct != null && c.conversionLabel && (
+                    <p className="text-sm text-gray-600 mt-1">{c.conversionPct}% {c.conversionLabel}</p>
+                  )}
+                  {c.description && <p className="text-sm text-gray-500 mt-2">{c.description}</p>}
+                  {c.loginUrl && (
+                    <p className="text-sm mt-2 border-t border-gray-100 pt-2">
+                      <span className="text-gray-500">{c.loginLabel}: </span>
+                      <Link to={c.loginUrl} target="_blank" rel="noopener noreferrer" className="text-primary-navy font-medium hover:underline">{c.loginUrl}</Link>
+                    </p>
+                  )}
+                  <p className="mt-2">
+                    {viewRelatedLabel ? (
+                      <Link to={viewAllUrl} className="text-sm text-primary-navy font-medium hover:underline">
+                        View related leads ({viewRelatedLabel})
+                      </Link>
+                    ) : (
+                      <Link to={viewAllUrl} className="text-sm text-primary-navy font-medium hover:underline">
+                        View all {formatCount(c.value)} leads
+                      </Link>
+                    )}
                   </p>
+                </div>
+                {hasExactList && (
+                  <div className="flex-1 min-h-0 overflow-y-auto p-3">
+                    {cardLeads.loading && (
+                      <p className="text-sm text-gray-500">Loading leads…</p>
+                    )}
+                    {cardLeads.error && (
+                      <p className="text-sm text-red-600" role="alert">{cardLeads.error}</p>
+                    )}
+                    {!cardLeads.loading && !cardLeads.error && cardLeads.list.length === 0 && c.value > 0 && (
+                      <p className="text-sm text-gray-500">No leads to show.</p>
+                    )}
+                    {!cardLeads.loading && !cardLeads.error && cardLeads.list.length > 0 && (
+                      <ul className="space-y-2">
+                        {cardLeads.list.map((lead) => (
+                          <li key={lead.id} className="flex items-center justify-between gap-2 text-sm border-b border-gray-50 pb-2 last:border-0 last:pb-0">
+                            <span className="truncate flex-1" title={lead.fullName || lead.phone}>{lead.fullName || '—'}</span>
+                            <span className="text-gray-500 tabular-nums shrink-0">{lead.phone || '—'}</span>
+                            <Link
+                              to={`/admin/leads?q=${encodeURIComponent(lead.phone || '')}`}
+                              className="shrink-0 text-primary-navy font-medium hover:underline text-xs"
+                            >
+                              View
+                            </Link>
+                          </li>
+                        ))}
+                        {cardLeads.total > cardLeads.list.length && (
+                          <li className="pt-1">
+                            <Link to={viewAllUrl} className="text-xs text-primary-navy font-medium hover:underline">
+                              View all {formatCount(cardLeads.total)} →
+                            </Link>
+                          </li>
+                        )}
+                      </ul>
+                    )}
+                  </div>
                 )}
               </>
             );
