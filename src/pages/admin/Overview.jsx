@@ -24,6 +24,12 @@ const FUNNEL_CARD_LEADS_PARAMS = {
 
 const DRAG_THRESHOLD_PX = 5;
 
+function formatDate(d) {
+  if (!d) return '—';
+  const date = new Date(d);
+  return date.toLocaleDateString('en-IN', { dateStyle: 'short' }) + ' ' + date.toLocaleTimeString('en-IN', { timeStyle: 'short' });
+}
+
 export default function Overview() {
   const { logout } = useAuth();
   const [stats, setStats] = useState(null);
@@ -700,21 +706,42 @@ export default function Overview() {
                       <p className="text-sm text-gray-500">No leads to show.</p>
                     )}
                     {!cardLeads.loading && !cardLeads.error && cardLeads.list.length > 0 && (
-                      <ul className="space-y-2">
+                      <ul className="space-y-0">
                         {cardLeads.list.map((lead) => (
-                          <li key={lead.id} className="flex items-center justify-between gap-2 text-sm border-b border-gray-50 pb-2 last:border-0 last:pb-0">
-                            <span className="truncate flex-1" title={lead.fullName || lead.phone}>{lead.fullName || '—'}</span>
-                            <span className="text-gray-500 tabular-nums shrink-0">{lead.phone || '—'}</span>
-                            <Link
-                              to={`/admin/leads?q=${encodeURIComponent(lead.phone || '')}`}
-                              className="shrink-0 text-primary-navy font-medium hover:underline text-xs"
-                            >
-                              View
-                            </Link>
+                          <li key={lead.id} className="border-b border-gray-100 py-2.5 last:border-0">
+                            <div className="flex items-start justify-between gap-2">
+                              <span className="font-medium text-gray-900 truncate flex-1" title={lead.fullName || ''}>{lead.fullName || '—'}</span>
+                              {lead.applicationStatus ? (
+                                <span className={`shrink-0 inline-flex px-2 py-0.5 rounded text-xs font-medium ${
+                                  lead.applicationStatus === 'completed' ? 'bg-green-100 text-green-800' :
+                                  lead.applicationStatus === 'registered' ? 'bg-blue-100 text-blue-800' :
+                                  'bg-amber-100 text-amber-800'
+                                }`}>
+                                  {lead.applicationStatus}
+                                </span>
+                              ) : null}
+                            </div>
+                            <div className="mt-0.5 text-xs text-gray-500 flex flex-wrap items-center gap-x-1.5 gap-y-0.5">
+                              <span className="tabular-nums">{lead.phone || '—'}</span>
+                              {lead.phone && lead.email && <span aria-hidden>·</span>}
+                              <span className="truncate max-w-[180px]" title={lead.email || ''}>{lead.email || '—'}</span>
+                            </div>
+                            <div className="mt-0.5 text-xs text-gray-500">
+                              Added: {formatDate(lead.createdAt)}
+                              {lead.occupation ? <span className="ml-2">· Occupation: <span className="text-gray-700">{lead.occupation}</span></span> : null}
+                            </div>
+                            <p className="mt-1">
+                              <Link
+                                to={`/admin/leads?q=${encodeURIComponent(lead.phone || '')}`}
+                                className="text-xs text-primary-navy font-medium hover:underline"
+                              >
+                                View
+                              </Link>
+                            </p>
                           </li>
                         ))}
                         {cardLeads.total > cardLeads.list.length && (
-                          <li className="pt-1">
+                          <li className="pt-2 border-t border-gray-100">
                             <Link to={viewAllUrl} className="text-xs text-primary-navy font-medium hover:underline">
                               View all {formatCount(cardLeads.total)} →
                             </Link>
