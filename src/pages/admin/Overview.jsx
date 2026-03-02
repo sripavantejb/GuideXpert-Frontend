@@ -209,7 +209,11 @@ export default function Overview() {
             <div className="mt-auto h-1.5 bg-gray-100 rounded-full overflow-hidden"><div className="h-full bg-primary-navy rounded-full w-full" /></div>
           </div>
           <div className="my-1"><ConnectorV h={16} /></div>
-          <ConnectorHFull className="w-full max-w-2xl" style={{ maxWidth: 'min(100%, 32rem)' }} />
+          <div className="flex justify-center w-full">
+            <div style={{ minWidth: 280 + 560 + 40 }} className="flex justify-center">
+              <ConnectorHFull className="w-full" />
+            </div>
+          </div>
         </div>
 
         {/* Tree: Level 1 — OTP division. Right column first in DOM so left column paints on top. */}
@@ -236,7 +240,9 @@ export default function Overview() {
               conversionLabel="of leads"
             />
             <div className="mt-1 mb-1"><ConnectorV h={16} /></div>
-            <ConnectorHFull className="w-full max-w-[280px]" />
+            <div className="flex justify-center w-full">
+              <ConnectorHFull className="w-full max-w-[22rem]" style={{ maxWidth: '22rem' }} />
+            </div>
             <div className="flex gap-6 sm:gap-8 w-full max-w-[568px] justify-center mt-1">
               <div className="flex flex-col items-center flex-1 min-w-0">
                 <div className="mb-1"><ConnectorV h={12} /></div>
@@ -248,9 +254,12 @@ export default function Overview() {
                   conversionLabel="of OTP verified"
                 />
                 <div className="mt-1.5 mb-1"><ConnectorV h={12} /></div>
-                <div className="w-max flex flex-col items-stretch" style={{ minWidth: 2 * CARD_WIDTH + 12 }}>
-                  <ConnectorHFull className="w-full" />
-                  <div className="flex gap-3 mt-1 justify-center">
+                {/* Bar and row same width so both Demo cards connect: left column (Assessment block 752) + gap + right 240 */}
+                <div className="flex flex-col items-center w-full">
+                  <div className="w-full" style={{ width: (2 * CARD_WIDTH + 24) + 8 + CARD_WIDTH + 12 + CARD_WIDTH }}>
+                    <ConnectorHFull className="w-full" />
+                  </div>
+                  <div className="flex gap-3 mt-1 w-full" style={{ width: (2 * CARD_WIDTH + 24) + 8 + CARD_WIDTH + 12 + CARD_WIDTH }}>
                     <div className="flex flex-col items-center shrink-0">
                       <div className="mb-1"><ConnectorV h={16} /></div>
                       <FunnelNode
@@ -261,10 +270,13 @@ export default function Overview() {
                         conversionLabel="of slot booked"
                       />
                       <div className="mt-1 mb-1"><ConnectorV h={12} /></div>
-                      <ConnectorHFull className="w-full max-w-[100px]" />
-                      <div className="flex gap-2 mt-1">
+                      {/* Bar and row same width so both Assessment cards connect */}
+                      <div className="w-full" style={{ width: (2 * CARD_WIDTH + 24) + 8 + CARD_WIDTH }}>
+                        <ConnectorHFull className="w-full" />
+                      </div>
+                      <div className="flex gap-2 mt-1 items-start w-full" style={{ width: (2 * CARD_WIDTH + 24) + 8 + CARD_WIDTH }}>
                         <div className="flex flex-col items-center shrink-0">
-                          <div className="flex justify-center w-full"><ConnectorV h={16} /></div>
+                          <div className="mb-1"><ConnectorV h={16} /></div>
                           <FunnelNode
                             label="Assessment written"
                             value={assessmentWritten}
@@ -272,11 +284,11 @@ export default function Overview() {
                             conversionPct={demoAttended > 0 ? Math.round((assessmentWritten / demoAttended) * 100) : null}
                             conversionLabel="of demo attended"
                           />
-                          <div className="mt-1 mb-1"><ConnectorV h={12} /></div>
-                          <div className="w-full" style={{ minWidth: 2 * CARD_WIDTH + 24 }}>
+                          <div className="mt-2 mb-1"><ConnectorV h={12} /></div>
+                          <div className="w-full mt-2" style={{ width: 2 * CARD_WIDTH + 24 }}>
                             <ConnectorHFull className="w-full" />
                           </div>
-                          <div className="flex gap-6 mt-1 justify-center">
+                          <div className="flex gap-6 mt-2 justify-center w-full" style={{ width: 2 * CARD_WIDTH + 24 }}>
                             <div className="flex flex-col items-center shrink-0">
                               <div className="mb-1"><ConnectorV h={16} /></div>
                               <FunnelNode
@@ -299,14 +311,16 @@ export default function Overview() {
                             </div>
                           </div>
                         </div>
-                        <div className="flex justify-center w-full"><ConnectorV h={16} /></div>
-                        <FunnelNode
-                          label="Assessment not written"
-                          value={assessmentNotWritten}
-                          widthPct={maxAssessment > 0 ? (assessmentNotWritten / maxAssessment) * 100 : 0}
-                          conversionPct={demoAttended > 0 ? Math.round((assessmentNotWritten / demoAttended) * 100) : null}
-                          conversionLabel="of demo attended"
-                        />
+                        <div className="flex flex-col items-center shrink-0">
+                          <div className="mb-1"><ConnectorV h={16} /></div>
+                          <FunnelNode
+                            label="Assessment not written"
+                            value={assessmentNotWritten}
+                            widthPct={maxAssessment > 0 ? (assessmentNotWritten / maxAssessment) * 100 : 0}
+                            conversionPct={demoAttended > 0 ? Math.round((assessmentNotWritten / demoAttended) * 100) : null}
+                            conversionLabel="of demo attended"
+                          />
+                        </div>
                       </div>
                     </div>
                     <div className="flex flex-col items-center shrink-0">
