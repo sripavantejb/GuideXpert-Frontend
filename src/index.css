@@ -568,12 +568,3 @@
   }
 
 }
-
-/* Hide scrollbar while keeping scroll behavior (admin main content) */
-.scrollbar-hide {
-  -ms-overflow-style: none;
-  scrollbar-width: none;
-}
-.scrollbar-hide::-webkit-scrollbar {
-  display: none;
-}

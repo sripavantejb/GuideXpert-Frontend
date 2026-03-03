@@ -43,15 +43,15 @@ export default function ProgressPage() {
   const strokeDashoffset = circumference - (completionPercent / 100) * circumference;
 
   return (
-    <div className="px-4 py-4 sm:p-6 max-w-4xl mx-auto space-y-6">
+    <div className="px-4 py-4 sm:p-6 max-w-4xl mx-auto min-w-0 overflow-x-hidden space-y-6">
       <h1 className="text-xl font-semibold text-gray-800">Progress</h1>
 
       {/* Overall completion donut */}
-      <div className="rounded-2xl bg-white border border-gray-200 shadow-card p-6">
+      <div className="rounded-2xl bg-white border border-gray-200 shadow-card p-6 min-w-0">
         <h2 className="text-sm font-bold text-gray-800 uppercase tracking-wider mb-4">
           Overall completion
         </h2>
-        <div className="flex flex-col sm:flex-row items-center gap-6">
+        <div className="flex flex-col sm:flex-row items-center gap-6 min-w-0">
           <div className="relative w-32 h-32 shrink-0">
             <svg className="w-full h-full -rotate-90" viewBox="0 0 100 100">
               <circle
@@ -90,41 +90,40 @@ export default function ProgressPage() {
         </div>
       </div>
 
-      {/* Day-wise cards */}
-      <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-        {DAYS.map((day) => {
-          const completed = completedCountForDay(day.id);
-          const total = totalSessionsForDay(day.id);
-          const pct = total > 0 ? Math.round((completed / total) * 100) : 0;
-          const unlocked = isDayUnlocked(day.id);
-          return (
-            <div
-              key={day.id}
-              className={`rounded-2xl border shadow-card p-5 transition-all duration-300 ${
-                unlocked ? 'bg-white border-gray-200' : 'bg-gray-50 border-gray-200'
-              }`}
-            >
-              <div className="flex items-center justify-between mb-2">
-                <span className="font-semibold text-gray-800">{day.label}</span>
-                {!unlocked && <FiLock className="w-4 h-4 text-gray-400" aria-hidden />}
+      {/* Day summary: 3-column grid, no overflow */}
+      <div className="min-w-0">
+        <h2 className="text-sm font-bold text-gray-800 uppercase tracking-wider mb-3">
+          By day
+        </h2>
+        <div className="grid grid-cols-3 gap-3 sm:gap-6 border-b border-gray-200 pb-3">
+          {DAYS.map((day) => {
+            const completed = completedCountForDay(day.id);
+            const total = totalSessionsForDay(day.id);
+            const pct = total > 0 ? Math.round((completed / total) * 100) : 0;
+            const unlocked = isDayUnlocked(day.id);
+            return (
+              <div key={day.id} className="flex flex-col min-w-0">
+                <div className="flex items-center gap-1 mb-1">
+                  <span className="font-semibold text-sm text-gray-800 truncate">{day.label}</span>
+                  {!unlocked && <FiLock className="w-3 h-3 text-gray-400 shrink-0" aria-hidden />}
+                </div>
+                <p className="text-xs text-gray-500 mb-1.5 truncate">
+                  {completed}/{total} · {pct}%
+                </p>
+                <div className="h-1.5 rounded-full bg-gray-200 overflow-hidden">
+                  <div
+                    className="h-full rounded-full bg-primary-navy transition-all duration-300"
+                    style={{ width: `${pct}%` }}
+                  />
+                </div>
               </div>
-              <div className="flex justify-between text-xs text-gray-500 mb-1">
-                <span>{completed}/{total} sessions</span>
-                <span>{pct}%</span>
-              </div>
-              <div className="h-2 rounded-full bg-gray-200 overflow-hidden">
-                <div
-                  className="h-full rounded-full bg-primary-navy transition-all duration-300"
-                  style={{ width: `${pct}%` }}
-                />
-              </div>
-            </div>
-          );
-        })}
+            );
+          })}
+        </div>
       </div>
 
       {/* Session timeline */}
-      <div className="rounded-2xl bg-white border border-gray-200 shadow-card p-6">
+      <div className="rounded-2xl bg-white border border-gray-200 shadow-card p-6 min-w-0">
         <h2 className="text-sm font-bold text-gray-800 uppercase tracking-wider mb-4">
           Session timeline
         </h2>
@@ -135,7 +134,7 @@ export default function ProgressPage() {
             return (
               <li
                 key={session.id}
-                className="flex items-center gap-3 py-2 border-b border-gray-100 last:border-0"
+                className="flex items-center gap-3 py-2 border-b border-gray-100 last:border-0 min-w-0"
               >
                 <span
                   className={`flex-shrink-0 w-6 h-6 rounded-full flex items-center justify-center ${
@@ -154,7 +153,7 @@ export default function ProgressPage() {
 
       {/* Certificates */}
       <div
-        className={`rounded-2xl border p-6 ${
+        className={`rounded-2xl border p-6 min-w-0 ${
           day3Complete
             ? 'bg-green-50/80 border-green-200'
             : 'bg-primary-blue-50/80 border-primary-blue-200/50'

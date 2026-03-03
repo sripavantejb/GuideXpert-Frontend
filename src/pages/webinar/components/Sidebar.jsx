@@ -2,7 +2,6 @@ import { useState } from 'react';
 import { NavLink } from 'react-router-dom';
 import { useWebinar } from '../context/WebinarContext';
 import {
-  FiLayout,
   FiVideo,
   FiTrendingUp,
   FiBook,
@@ -11,11 +10,10 @@ import {
   FiChevronLeft,
   FiChevronRight,
 } from 'react-icons/fi';
-import { HiMenu as HiMenuIcon, HiX as HiXIcon } from 'react-icons/hi';
+import { HiX as HiXIcon } from 'react-icons/hi';
 
 const TRAINING_ITEMS = [
-  { id: 'dashboard', label: 'Dashboard', icon: FiLayout, to: '/webinar' },
-  { id: 'webinar', label: 'Videos', icon: FiVideo, to: '/webinar' },
+  { id: 'webinar', label: 'Webinar', icon: FiVideo, to: '/webinar' },
   { id: 'progress', label: 'Progress', icon: FiTrendingUp, to: '/webinar/progress' },
   { id: 'doubts', label: 'Doubts', icon: FiMessageCircle, to: '/webinar/doubts' },
   { id: 'resources', label: 'Resources', icon: FiBook, to: '/webinar/resources' },
@@ -121,16 +119,16 @@ export default function Sidebar({
       <aside
         className={`
           fixed inset-y-0 left-0 z-30 flex flex-col max-w-[85vw] lg:max-w-none
-          bg-white border-r border-gray-200/80
+          bg-gray-50/95 backdrop-blur border-r border-gray-200
           transform transition-[transform,width] duration-200 ease-out
           lg:transform-none
           ${width}
           ${sidebarOpen ? 'translate-x-0' : '-translate-x-full lg:translate-x-0'}
         `}
-        style={{ boxShadow: '4px 0 24px rgba(0,0,0,0.06)' }}
+        style={{ boxShadow: '2px 0 12px rgba(0,0,0,0.04)' }}
       >
-        <div className="flex items-center justify-between shrink-0 h-14 px-3 border-b border-gray-100">
-          {expanded && <span className="text-[11px] font-semibold text-gray-400 uppercase tracking-widest">Menu</span>}
+        <div className="flex items-center justify-between shrink-0 p-2 sm:p-3 border-b border-gray-200">
+          {expanded && <span className="text-xs font-semibold text-gray-500 uppercase tracking-wider hidden lg:inline">Menu</span>}
           <div className="flex items-center gap-1 ml-auto">
             {/* On mobile: only close (X). On desktop: collapse chevron. Prevents two close options and overflow. */}
             <button
@@ -153,26 +151,24 @@ export default function Sidebar({
           </div>
         </div>
 
-        <nav className="flex-1 flex flex-col min-h-0 overflow-y-auto py-2">
-          {/* Main nav: Dashboard, Videos, Progress, Doubts, Resources — centered in the middle */}
-          <div className="flex-1 flex flex-col justify-center min-h-0 py-6 px-2">
+        <nav className="flex-1 flex flex-col min-h-0 overflow-y-auto">
+          <div className="flex-1 flex flex-col justify-center min-h-0 py-4 px-3">
             {expanded && (
-              <p className="text-[10px] font-semibold text-gray-400 uppercase tracking-widest mb-3 px-2">
+              <p className="text-[10px] font-semibold text-gray-400 uppercase tracking-wider mb-2 px-3">
                 Training
               </p>
             )}
-            <div className="flex flex-col gap-0.5">
+            <div className="flex flex-col gap-1">
               {TRAINING_ITEMS.map((item) => renderItem(item, item.id === 'doubts'))}
             </div>
           </div>
-          {/* Profile & Settings — pinned to bottom */}
-          <div className="shrink-0 px-2 pt-4 pb-6 border-t border-gray-100">
+          <div className="mt-auto shrink-0 px-3 border-t border-gray-200 pt-4 pb-4">
             {expanded && (
-              <p className="text-[10px] font-semibold text-gray-400 uppercase tracking-widest mb-3 px-2">
-                Account
+              <p className="text-[10px] font-semibold text-gray-400 uppercase tracking-wider mb-2 px-3">
+                User
               </p>
             )}
-            <div className="flex flex-col gap-0.5">
+            <div className="flex flex-col gap-1">
               {USER_ITEMS.map((item) =>
                 item.id === 'profile' ? renderProfileItem() : renderItem(item)
               )}

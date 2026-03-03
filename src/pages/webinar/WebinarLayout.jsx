@@ -27,7 +27,7 @@ function WebinarLayoutInner() {
         <button
           type="button"
           onClick={() => setSidebarOpen(true)}
-          className="lg:hidden fixed top-2 left-2 z-10 p-1.5 rounded-lg bg-white border border-gray-200 shadow-card text-gray-600 hover:bg-gray-50 focus:outline-none focus-visible:ring-2 focus-visible:ring-primary-navy focus-visible:ring-offset-2"
+          className="lg:hidden fixed top-2 left-2 z-10 p-1.5 rounded-lg bg-white border border-gray-200 shadow-card text-gray-600 hover:bg-gray-50 focus:outline-none focus-visible:ring-2 focus-visible:ring-primary-navy focus-visible:ring-offset-2 min-h-[44px] min-w-[44px] flex items-center justify-center"
           aria-label="Open menu"
         >
           <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden>
