@@ -18,6 +18,7 @@ import {
   FiCompass,
   FiBriefcase,
 } from 'react-icons/fi';
+import { useCounsellorProfile } from '../../contexts/CounsellorProfileContext';
 /* ───────── Static / Demo Data ───────── */
 
 const accentStyles = {
@@ -236,6 +237,8 @@ function KPICard({ label, value, change, up, icon: Icon }) {
 /* ───────── Main Dashboard ───────── */
 
 export default function CounsellorDashboard() {
+  const { displayName } = useCounsellorProfile();
+
   return (
     <div className="max-w-7xl mx-auto space-y-12">
 
@@ -271,7 +274,7 @@ export default function CounsellorDashboard() {
           <div className="relative flex flex-col lg:flex-row lg:items-center lg:justify-between gap-8">
             {/* Left: content — unchanged */}
             <div className="space-y-3">
-              <p className="text-sm font-medium text-gray-500">Welcome back, Dr. Counsellor</p>
+              <p className="text-sm font-medium text-gray-500">Welcome back, {displayName}</p>
               <div className="h-px w-12 bg-gray-200" />
               <div className="flex items-center gap-2.5">
                 <span className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-white text-xs font-semibold uppercase tracking-wider shadow-sm bg-gradient-to-r from-primary-navy to-sidebar-blue">

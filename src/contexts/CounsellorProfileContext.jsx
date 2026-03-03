@@ -38,7 +38,7 @@ const CounsellorProfileContext = createContext(null);
 
 export function CounsellorProfileProvider({ children }) {
   const [profile, setProfileState] = useState(getStored);
-  const { accessForm } = useCounsellorAuth();
+  const { accessForm, user } = useCounsellorAuth();
 
   const setProfile = useCallback((updates) => {
     setProfileState((prev) => {
@@ -48,7 +48,7 @@ export function CounsellorProfileProvider({ children }) {
     });
   }, []);
 
-  const displayName = accessForm?.fullName ?? profile.displayName;
+  const displayName = accessForm?.fullName ?? profile.displayName ?? user?.name ?? 'Counsellor';
   const email = accessForm?.email ?? profile.email;
   const specialization = accessForm?.occupation ?? profile.specialization;
 

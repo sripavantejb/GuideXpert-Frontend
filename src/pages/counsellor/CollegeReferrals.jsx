@@ -1,28 +1,43 @@
 import { useState, useMemo } from 'react';
 import { Link } from 'react-router-dom';
 import { FiSearch, FiChevronRight } from 'react-icons/fi';
+import { COLLEGES } from '../../data/collegeReferrals';
 
-export const COLLEGES = [
-  { slug: 'iit-delhi', name: 'IIT Delhi', location: 'New Delhi' },
-  { slug: 'aiims-delhi', name: 'AIIMS Delhi', location: 'New Delhi' },
-  { slug: 'srcc', name: 'SRCC', location: 'New Delhi' },
-  { slug: 'bits-pilani', name: 'BITS Pilani', location: 'Rajasthan' },
-  { slug: 'nid-ahmedabad', name: 'NID Ahmedabad', location: 'Ahmedabad' },
-  { slug: 'du-north-campus', name: 'DU North Campus', location: 'New Delhi' },
-  { slug: 'iit-bombay', name: 'IIT Bombay', location: 'Mumbai' },
-  { slug: 'xlri-jamshedpur', name: 'XLRI Jamshedpur', location: 'Jamshedpur' },
+const SORT_OPTIONS = [
+  { value: 'name', label: 'Name (A–Z)' },
+  { value: 'location', label: 'Location (A–Z)' },
 ];
 
 export default function CollegeReferrals() {
   const [search, setSearch] = useState('');
+  const [sortBy, setSortBy] = useState('name');
+  const [locationFilter, setLocationFilter] = useState('');
 
-  const filteredColleges = useMemo(() => {
-    if (!search.trim()) return COLLEGES;
-    const q = search.toLowerCase().trim();
-    return COLLEGES.filter(
-      (c) => c.name.toLowerCase().includes(q) || c.location.toLowerCase().includes(q)
-    );
-  }, [search]);
+  const locations = useMemo(() => {
+    const set = new Set(COLLEGES.map((c) => c.location).filter(Boolean));
+    return [...set].sort();
+  }, []);
+
+  const filteredAndSortedColleges = useMemo(() => {
+    let list = COLLEGES;
+    if (search.trim()) {
+      const q = search.toLowerCase().trim();
+      list = list.filter(
+        (c) =>
+          c.name.toLowerCase().includes(q) || (c.location && c.location.toLowerCase().includes(q))
+      );
+    }
+    if (locationFilter) {
+      list = list.filter((c) => c.location === locationFilter);
+    }
+    list = [...list].sort((a, b) => {
+      if (sortBy === 'location') {
+        return (a.location || '').localeCompare(b.location || '');
+      }
+      return (a.name || '').localeCompare(b.name || '');
+    });
+    return list;
+  }, [search, sortBy, locationFilter]);
 
   return (
     <div className="max-w-7xl mx-auto">
@@ -48,26 +63,49 @@ export default function CollegeReferrals() {
             className="w-full pl-10 pr-4 py-2.5 text-sm bg-white border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#003366]/20 focus:border-[#003366]"
           />
         </div>
+        <select
+          value={locationFilter}
+          onChange={(e) => setLocationFilter(e.target.value)}
+          className="px-3 py-2.5 text-sm bg-white border border-gray-200 rounded-lg focus:ring-2 focus:ring-[#003366]/20 focus:border-[#003366]"
+        >
+          <option value="">All locations</option>
+          {locations.map((loc) => (
+            <option key={loc} value={loc}>{loc}</option>
+          ))}
+        </select>
+        <select
+          value={sortBy}
+          onChange={(e) => setSortBy(e.target.value)}
+          className="px-3 py-2.5 text-sm bg-white border border-gray-200 rounded-lg focus:ring-2 focus:ring-[#003366]/20 focus:border-[#003366]"
+        >
+          {SORT_OPTIONS.map((o) => (
+            <option key={o.value} value={o.value}>{o.label}</option>
+          ))}
+        </select>
       </div>
 
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-        {filteredColleges.map((college) => (
-          <Link
-            key={college.slug}
-            to={`/counsellor/college-referrals/${college.slug}`}
-            className="bg-white rounded-xl border border-gray-200 shadow-sm p-5 hover:shadow-md transition-shadow group flex items-center justify-between"
-          >
-            <div>
-              <h4 className="text-sm font-semibold text-gray-900 mb-0.5">{college.name}</h4>
-              <p className="text-xs text-gray-500">{college.location}</p>
-            </div>
-            <FiChevronRight className="w-5 h-5 text-gray-400 group-hover:text-[#003366] group-hover:translate-x-0.5 transition-all" />
-          </Link>
-        ))}
-      </div>
-
-      {filteredColleges.length === 0 && (
-        <div className="text-center py-12 text-gray-500">No colleges match your search.</div>
+      {COLLEGES.length === 0 ? (
+        <div className="bg-white rounded-xl border border-gray-200 shadow-sm p-12 text-center">
+          <p className="text-gray-500">No partner colleges configured yet.</p>
+        </div>
+      ) : filteredAndSortedColleges.length === 0 ? (
+        <div className="text-center py-12 text-gray-500">No colleges match your search or filter.</div>
+      ) : (
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+          {filteredAndSortedColleges.map((college) => (
+            <Link
+              key={college.slug}
+              to={`/counsellor/college-referrals/${college.slug}`}
+              className="bg-white rounded-xl border border-gray-200 shadow-sm p-5 hover:shadow-md transition-shadow group flex items-center justify-between"
+            >
+              <div>
+                <h4 className="text-sm font-semibold text-gray-900 mb-0.5">{college.name}</h4>
+                <p className="text-xs text-gray-500">{college.location}</p>
+              </div>
+              <FiChevronRight className="w-5 h-5 text-gray-400 group-hover:text-[#003366] group-hover:translate-x-0.5 transition-all" />
+            </Link>
+          ))}
+        </div>
       )}
     </div>
   );

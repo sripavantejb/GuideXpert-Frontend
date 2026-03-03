@@ -1,19 +1,28 @@
+import { useState } from 'react';
 import { Link, useParams } from 'react-router-dom';
 import { FiCopy, FiArrowLeft } from 'react-icons/fi';
-import { COLLEGES } from './CollegeReferrals';
+import { COLLEGES } from '../../data/collegeReferrals';
+import { useCounsellorProfile } from '../../contexts/CounsellorProfileContext';
 import { openWhatsAppShare } from '../../utils/shareUtils';
 
 const REF_BASE = 'https://guidexpert.in/ref';
 
 export default function CollegeReferralDetail() {
   const { collegeSlug } = useParams();
+  const { slug: counsellorSlug } = useCounsellorProfile();
+  const [copied, setCopied] = useState(false);
+
   const college = COLLEGES.find((c) => c.slug === collegeSlug);
-  const referralLink = college
-    ? `${REF_BASE}/${college.slug}/counsellor123`
-    : '';
+  const effectiveSlug = (counsellorSlug && String(counsellorSlug).trim()) || 'me';
+  const referralLink = college ? `${REF_BASE}/${college.slug}/${effectiveSlug}` : '';
+  const hasSlug = !!(counsellorSlug && String(counsellorSlug).trim());
 
   const handleCopy = () => {
-    if (referralLink) navigator.clipboard.writeText(referralLink);
+    if (referralLink) {
+      navigator.clipboard.writeText(referralLink);
+      setCopied(true);
+      setTimeout(() => setCopied(false), 2000);
+    }
   };
 
   const handleWhatsApp = () => {
@@ -54,6 +63,12 @@ export default function CollegeReferralDetail() {
         <p className="text-sm text-gray-500 mt-0.5">{college.location}</p>
       </div>
 
+      {!hasSlug && (
+        <div className="mb-4 p-3 rounded-lg bg-amber-50 border border-amber-200 text-amber-800 text-sm">
+          Set your referral slug in Settings to get your personal link. Until then, a default link is shown.
+        </div>
+      )}
+
       <div className="bg-white rounded-xl border border-gray-200 shadow-sm p-6">
         <p className="text-sm text-gray-600 mb-4">
           Share this link with students applying to {college.name}.
@@ -71,7 +86,7 @@ export default function CollegeReferralDetail() {
             className="inline-flex items-center gap-2 px-4 py-2.5 text-sm font-medium text-gray-700 bg-white border border-gray-200 rounded-lg hover:bg-gray-50 transition-colors"
           >
             <FiCopy className="w-4 h-4" />
-            Copy
+            {copied ? 'Copied!' : 'Copy'}
           </button>
           <button
             type="button"
