@@ -44,6 +44,14 @@ const CollegeReferrals = lazy(() => import('./pages/counsellor/CollegeReferrals'
 const CollegeReferralDetail = lazy(() => import('./pages/counsellor/CollegeReferralDetail'));
 const AnnouncementsFeed = lazy(() => import('./pages/counsellor/AnnouncementsFeed'));
 const CounsellorSettings = lazy(() => import('./pages/counsellor/Settings'));
+const WebinarLayout = lazy(() => import('./pages/webinar/WebinarLayout'));
+const WebinarDashboard = lazy(() => import('./pages/webinar/WebinarDashboard'));
+const ProgressPage = lazy(() => import('./pages/webinar/ProgressPage'));
+const DoubtsPage = lazy(() => import('./pages/webinar/DoubtsPage'));
+const ResourcesPage = lazy(() => import('./pages/webinar/ResourcesPage'));
+const ProfilePage = lazy(() => import('./pages/webinar/ProfilePage'));
+const SettingsPage = lazy(() => import('./pages/webinar/SettingsPage'));
+const CertificatesPage = lazy(() => import('./pages/webinar/CertificatesPage'));
 
 function ProtectedAdmin({ children }) {
   const { isAuthenticated } = useAuth();
@@ -72,6 +80,15 @@ function App() {
           <Route path="/meet" element={<MeetingRegistration />} />
           <Route path="/training" element={<TrainingMeeting />} />
           <Route path="/counsellor-poster" element={<Suspense fallback={<div className="min-h-screen"><PageSkeleton /></div>}><CounsellorCertificate /></Suspense>} />
+          <Route path="/webinar" element={<Suspense fallback={<div className="min-h-screen flex items-center justify-center bg-gray-50"><div className="animate-pulse text-gray-500">Loading...</div></div>}><WebinarLayout /></Suspense>}>
+            <Route index element={<Suspense fallback={<div className="p-4 animate-pulse text-gray-500">Loading...</div>}><WebinarDashboard /></Suspense>} />
+            <Route path="progress" element={<Suspense fallback={<div className="p-4 animate-pulse text-gray-500">Loading...</div>}><ProgressPage /></Suspense>} />
+            <Route path="doubts" element={<Suspense fallback={<div className="p-4 animate-pulse text-gray-500">Loading...</div>}><DoubtsPage /></Suspense>} />
+            <Route path="resources" element={<Suspense fallback={<div className="p-4 animate-pulse text-gray-500">Loading...</div>}><ResourcesPage /></Suspense>} />
+            <Route path="profile" element={<Suspense fallback={<div className="p-4 animate-pulse text-gray-500">Loading...</div>}><ProfilePage /></Suspense>} />
+            <Route path="settings" element={<Suspense fallback={<div className="p-4 animate-pulse text-gray-500">Loading...</div>}><SettingsPage /></Suspense>} />
+            <Route path="certificates" element={<Suspense fallback={<div className="p-4 animate-pulse text-gray-500">Loading...</div>}><CertificatesPage /></Suspense>} />
+          </Route>
           <Route path="/activationform" element={<FeedbackForm />} />
           <Route path="/assessment" element={<AssessmentForm />} />
           <Route path="/assessment-2" element={<AssessmentForm2 />} />
