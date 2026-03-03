@@ -37,7 +37,7 @@ const secondaryNav = [
   { to: '/counsellor/announcements-feed', label: 'Announcements Feed', icon: FiRadio },
   { to: '/counsellor/tools', label: 'Tools', icon: FiTool },
   { to: '/counsellor/marketing', label: 'Marketing', icon: FiTrendingUp },
-  { to: '/counsellor-poster', label: 'Poster', icon: FiAward },
+  { to: '/counsellor/certificate', label: 'Poster', icon: FiAward },
   { to: '/counsellor/college-referrals', label: 'College Referrals', icon: FiLink },
 ];
 const settingsNav = [{ to: '/counsellor/settings', label: 'Settings', icon: FiSettings }];
@@ -51,6 +51,7 @@ const pageMeta = {
   '/counsellor/tools': { title: 'Tools', subtitle: 'Assessment and prediction tools' },
   '/counsellor/marketing': { title: 'Marketing', subtitle: 'Reach more students and grow your practice' },
   '/counsellor/college-referrals': { title: 'College Referrals', subtitle: 'Get referral links for partner colleges' },
+  '/counsellor/certificate': { title: 'Poster', subtitle: 'Download your certified counsellor poster' },
   '/counsellor/settings': { title: 'Settings', subtitle: 'Manage your account and preferences' },
 };
 

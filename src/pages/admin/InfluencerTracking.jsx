@@ -692,7 +692,7 @@ export default function InfluencerTracking() {
 
       {/* Generate UTM Link */}
       <section className={cardClass}>
-        <div className={sectionHeaderClass}>
+        <div className={sectionHeaderClass + ' py-2 sm:py-3'}>
           <h2 className="text-base font-semibold text-gray-800">Generate UTM Link</h2>
           <p className="text-sm text-gray-500 mt-0.5">
             Create a unique registration link. Copy to share or Save to store below.
