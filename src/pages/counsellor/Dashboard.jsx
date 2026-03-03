@@ -1,3 +1,4 @@
+import { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import {
   FiUsers,
@@ -19,7 +20,8 @@ import {
   FiBriefcase,
 } from 'react-icons/fi';
 import { useCounsellorProfile } from '../../contexts/CounsellorProfileContext';
-/* ───────── Static / Demo Data ───────── */
+import { getStudents } from '../../utils/counsellorApi';
+/* ───────── Styles & Static Copy ───────── */
 
 const accentStyles = {
   blue: { bar: 'bg-blue-500', iconBg: 'bg-blue-50', iconColor: 'text-blue-600', accent: 'rgba(59,130,246,0.15)', border: 'rgba(59,130,246,0.2)' },
@@ -27,13 +29,6 @@ const accentStyles = {
   amber: { bar: 'bg-amber-500', iconBg: 'bg-amber-50', iconColor: 'text-amber-600', accent: 'rgba(245,158,11,0.15)', border: 'rgba(245,158,11,0.2)' },
   violet: { bar: 'bg-violet-500', iconBg: 'bg-violet-50', iconColor: 'text-violet-600', accent: 'rgba(139,92,246,0.15)', border: 'rgba(139,92,246,0.2)' },
 };
-
-const stats = [
-  { label: 'Active Students', value: '142', icon: FiUsers, accent: 'blue', pill: '+5 this week', progress: null },
-  { label: 'Ongoing Admissions', value: '38', icon: FiBookOpen, accent: 'emerald', pill: '3 action needed', progress: null },
-  { label: 'Upcoming Sessions', value: '12', icon: FiCalendar, accent: 'amber', pill: 'Next: Today 2 PM', progress: null },
-  { label: 'Conversion Rate', value: '73%', icon: FiTrendingUp, accent: 'violet', pill: null, progress: 73 },
-];
 
 const featureCards = [
   {
@@ -97,12 +92,7 @@ const toolCards = [
   },
 ];
 
-const performanceKPIs = [
-  { label: 'Students Counseled', value: '342', change: '+18', up: true, icon: FiUsers },
-  { label: 'Admission Success', value: '87%', change: '+4.2%', up: true, icon: FiCheckCircle },
-  { label: 'Session Completion', value: '94%', change: '+1.1%', up: true, icon: FiCalendar },
-  { label: 'Satisfaction Score', value: '4.8', change: '+0.2', up: true, icon: FiStar },
-];
+/* Stats and KPIs are built in the component from API + placeholders. */
 
 /* ───────── Section Header ───────── */
 
@@ -215,6 +205,7 @@ function ToolCard({ title, desc, icon: Icon, accuracy }) {
 }
 
 function KPICard({ label, value, change, up, icon: Icon }) {
+  const hasChange = change != null && change !== '—';
   return (
     <div className="portal-card portal-card-hover rounded-xl bg-white p-6 transition-shadow duration-200">
       <div className="mb-3 flex items-center gap-3">
@@ -225,10 +216,14 @@ function KPICard({ label, value, change, up, icon: Icon }) {
       </div>
       <div className="flex items-end gap-2.5">
         <p className="text-3xl font-extrabold text-gray-900 tracking-tight">{value}</p>
-        <span className={`inline-flex items-center gap-0.5 text-[0.6875rem] font-semibold mb-1 px-2 py-0.5 rounded-full ${up ? 'bg-emerald-50 text-emerald-700' : 'bg-red-50 text-red-600'}`}>
-          {up ? <FiArrowUpRight className="w-3 h-3" /> : <FiArrowDownRight className="w-3 h-3" />}
-          {change} vs last month
-        </span>
+        {hasChange ? (
+          <span className={`inline-flex items-center gap-0.5 text-[0.6875rem] font-semibold mb-1 px-2 py-0.5 rounded-full ${up ? 'bg-emerald-50 text-emerald-700' : 'bg-red-50 text-red-600'}`}>
+            {up ? <FiArrowUpRight className="w-3 h-3" /> : <FiArrowDownRight className="w-3 h-3" />}
+            {change} vs last month
+          </span>
+        ) : (
+          <span className="text-[0.6875rem] font-medium text-gray-400 mb-1">— vs last month</span>
+        )}
       </div>
     </div>
   );
@@ -238,9 +233,47 @@ function KPICard({ label, value, change, up, icon: Icon }) {
 
 export default function CounsellorDashboard() {
   const { displayName } = useCounsellorProfile();
+  const [studentCount, setStudentCount] = useState(null);
+  const [statsLoading, setStatsLoading] = useState(true);
+
+  useEffect(() => {
+    let cancelled = false;
+    getStudents({ page: 1, limit: 1 })
+      .then((res) => {
+        if (cancelled) return;
+        if (res.success && res.data != null) {
+          setStudentCount(typeof res.data.total === 'number' ? res.data.total : 0);
+        } else {
+          setStudentCount(0);
+        }
+      })
+      .catch(() => {
+        if (!cancelled) setStudentCount(0);
+      })
+      .finally(() => {
+        if (!cancelled) setStatsLoading(false);
+      });
+    return () => { cancelled = true; };
+  }, []);
+
+  const activeStudentsValue = statsLoading ? '—' : String(studentCount ?? 0);
+  const stats = [
+    { label: 'Active Students', value: activeStudentsValue, icon: FiUsers, accent: 'blue', pill: null, progress: null },
+    { label: 'Ongoing Admissions', value: '0', icon: FiBookOpen, accent: 'emerald', pill: null, progress: null },
+    { label: 'Upcoming Sessions', value: '0', icon: FiCalendar, accent: 'amber', pill: null, progress: null },
+    { label: 'Conversion Rate', value: '—', icon: FiTrendingUp, accent: 'violet', pill: null, progress: null },
+  ];
+
+  const studentsCounseledValue = statsLoading ? '—' : String(studentCount ?? 0);
+  const performanceKPIs = [
+    { label: 'Students Counseled', value: studentsCounseledValue, change: statsLoading ? '—' : null, up: true, icon: FiUsers },
+    { label: 'Admission Success', value: '—', change: '—', up: true, icon: FiCheckCircle },
+    { label: 'Session Completion', value: '—', change: '—', up: true, icon: FiCalendar },
+    { label: 'Satisfaction Score', value: '—', change: '—', up: true, icon: FiStar },
+  ];
 
   return (
-    <div className="max-w-7xl mx-auto space-y-12">
+    <div className="max-w-7xl mx-auto min-w-0 space-y-12">
 
       {/* ── Section A: Hero + Stats ── */}
       <div>
@@ -271,11 +304,11 @@ export default function CounsellorDashboard() {
             `,
           }}
         >
-          <div className="relative flex flex-col lg:flex-row lg:items-center lg:justify-between gap-8">
-            {/* Left: content — unchanged */}
-            <div className="space-y-3">
-              <p className="text-sm font-medium text-gray-500">Welcome back, {displayName}</p>
-              <div className="h-px w-12 bg-gray-200" />
+          <div className="relative flex flex-col lg:flex-row lg:items-end lg:justify-between gap-8">
+            {/* Left: greeting, badge, title, subtitle */}
+            <div className="space-y-4">
+              <p className="text-sm font-medium text-gray-600">Welcome back, {displayName}</p>
+              <div className="h-px w-12 bg-gray-200 my-0.5" />
               <div className="flex items-center gap-2.5">
                 <span className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-white text-xs font-semibold uppercase tracking-wider shadow-sm bg-gradient-to-r from-primary-navy to-sidebar-blue">
                   <FiAward className="w-4 h-4" />
@@ -283,15 +316,15 @@ export default function CounsellorDashboard() {
                 </span>
               </div>
               <div>
-                <h2 className="text-3xl md:text-4xl font-bold tracking-tight text-primary-navy">
+                <h1 className="text-3xl lg:text-4xl font-bold tracking-tight text-primary-navy">
                   Professional Tools Portal
-                </h2>
+                </h1>
                 <div className="mt-2 h-1 w-24 rounded-full bg-gradient-to-r from-primary-navy to-sidebar-blue" />
               </div>
-              <p className="text-base text-gray-500 font-medium">Manage your counseling practice efficiently</p>
+              <p className="text-base text-gray-600">Manage your counseling practice efficiently</p>
             </div>
 
-            {/* Right: purposeful CTA + mini stats */}
+            {/* Right: sessions CTA + mini stats (no mock data) */}
             <div className="hidden lg:flex shrink-0 flex-col items-end gap-3">
               <Link
                 to="/counsellor/sessions"
@@ -301,20 +334,20 @@ export default function CounsellorDashboard() {
                   <FiCalendar className="h-6 w-6 text-primary-navy" />
                 </div>
                 <div className="text-left">
-                  <p className="text-sm font-semibold text-gray-900">View today&apos;s sessions</p>
-                  <p className="text-xs text-gray-500">Next: Today 2 PM</p>
+                  <p className="text-sm font-semibold text-gray-900">View sessions</p>
+                  <p className="text-xs text-gray-500">Schedule and manage meetings</p>
                 </div>
                 <FiArrowRight className="h-5 w-5 text-gray-400 shrink-0" />
               </Link>
-              <div className="portal-card flex gap-4 rounded-xl bg-white/80 px-4 py-3">
-                <div className="text-center">
-                  <p className="text-xl font-bold tabular-nums text-primary-navy">12</p>
-                  <p className="text-[0.6875rem] font-medium text-gray-500">Upcoming</p>
+              <div className="portal-card flex gap-4 rounded-xl bg-white/90 px-5 py-4">
+                <div className="text-center min-w-[4rem]">
+                  <p className="text-2xl font-bold tabular-nums text-primary-navy">0</p>
+                  <p className="text-xs font-medium text-gray-500 mt-0.5">Upcoming</p>
                 </div>
                 <div className="w-px bg-gray-200" />
-                <div className="text-center">
-                  <p className="text-xl font-bold tabular-nums text-primary-navy">3</p>
-                  <p className="text-[0.6875rem] font-medium text-gray-500">Action needed</p>
+                <div className="text-center min-w-[4rem]">
+                  <p className="text-2xl font-bold tabular-nums text-primary-navy">0</p>
+                  <p className="text-xs font-medium text-gray-500 mt-0.5">Action needed</p>
                 </div>
               </div>
             </div>

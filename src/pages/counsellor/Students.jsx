@@ -26,6 +26,7 @@ import SlideOverPanel from '../../components/Counsellor/SlideOverPanel';
 import ConfirmDialog from '../../components/Counsellor/ConfirmDialog';
 import FilterPanel from '../../components/Counsellor/FilterPanel';
 import TableSkeleton from '../../components/UI/TableSkeleton';
+import Skeleton from '../../components/UI/Skeleton';
 
 const STATUS_OPTIONS = [
   { value: 'active', label: 'Active' },
@@ -292,7 +293,7 @@ function StudentForm({ initial, onSubmit, onCancel, submitLabel, error, submitti
               </p>
             )}
           </div>
-          <div className="grid grid-cols-2 gap-4">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <div>
               <label htmlFor="student-status" className="block text-sm font-medium text-slate-700 mb-1.5">
                 Status
@@ -518,7 +519,7 @@ export default function Students() {
   };
 
   return (
-    <div className="max-w-7xl mx-auto">
+    <div className="max-w-7xl mx-auto min-w-0">
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-6">
         <div>
           <h2 className="text-xl font-bold text-slate-900" style={{ color: '#003366' }}>
@@ -526,12 +527,12 @@ export default function Students() {
           </h2>
           <p className="text-sm text-slate-500 mt-0.5">Manage student profiles, documents, and status</p>
         </div>
-        <div className="flex items-center gap-2">
+        <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2 w-full sm:w-auto">
           <button
             type="button"
             onClick={handleExport}
             disabled={exportLoading}
-            className="flex items-center gap-2 px-4 py-2.5 text-sm font-medium text-slate-600 bg-white border border-slate-200 rounded-xl hover:bg-slate-50 disabled:opacity-50 shadow-sm"
+            className="flex items-center justify-center gap-2 px-4 py-2.5 text-sm font-medium text-slate-600 bg-white border border-slate-200 rounded-xl hover:bg-slate-50 disabled:opacity-50 shadow-sm w-full sm:w-auto"
           >
             <FiDownload className="w-4 h-4" />
             {exportLoading ? 'Exporting…' : 'Export'}
@@ -539,15 +540,15 @@ export default function Students() {
           <button
             type="button"
             onClick={() => setAddPanelOpen(true)}
-            className="flex items-center gap-2 px-4 py-2.5 bg-[#003366] text-white text-sm font-medium rounded-xl hover:bg-[#002244] transition-colors shadow-sm"
+            className="flex items-center justify-center gap-2 px-4 py-2.5 bg-[#003366] text-white text-sm font-medium rounded-xl hover:bg-[#002244] transition-colors shadow-sm w-full sm:w-auto"
           >
             <FiPlus className="w-4 h-4" /> Add Student
           </button>
         </div>
       </div>
 
-      <div className="flex flex-col sm:flex-row gap-3 mb-5">
-        <div className="relative flex-1">
+      <div className="flex flex-col sm:flex-row sm:items-center gap-3 mb-5">
+        <div className="relative flex-1 min-w-0">
           <FiSearch className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
           <input
             type="text"
@@ -557,11 +558,11 @@ export default function Students() {
             className="w-full pl-10 pr-4 py-2.5 text-sm bg-white border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-[#003366]/20 focus:border-[#003366] placeholder:text-slate-400"
           />
         </div>
-        <div className="relative flex items-center gap-2">
+        <div className="relative flex items-center gap-2 w-full sm:w-auto">
           <button
             type="button"
             onClick={() => setFilterPanelOpen((o) => !o)}
-            className={`flex items-center gap-2 px-4 py-2.5 text-sm font-medium rounded-xl border transition-colors shadow-sm ${
+            className={`flex items-center justify-center gap-2 px-4 py-2.5 text-sm font-medium rounded-xl border transition-colors shadow-sm w-full sm:w-auto ${
               activeFilterCount > 0
                 ? 'bg-[#003366]/5 border-[#003366]/30 text-[#003366]'
                 : 'text-slate-600 bg-white border-slate-200 hover:bg-slate-50'
@@ -591,7 +592,7 @@ export default function Students() {
       </div>
 
       {selectedIds.size > 0 && (
-        <div className="mb-4 flex items-center gap-3 px-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl">
+        <div className="mb-4 flex flex-wrap items-center gap-2 sm:gap-3 px-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl">
           <span className="text-sm text-gray-600">
             {selectedIds.size} selected
           </span>
@@ -619,7 +620,7 @@ export default function Students() {
           <button
             type="button"
             onClick={() => setSelectedIds(new Set())}
-            className="text-sm text-gray-500 hover:underline ml-auto"
+            className="text-sm text-gray-500 hover:underline sm:ml-auto"
           >
             Clear selection
           </button>
@@ -627,8 +628,10 @@ export default function Students() {
       )}
 
       <div className="bg-white rounded-xl border border-slate-200/90 shadow-sm overflow-hidden">
-        <div className="overflow-x-auto overflow-y-visible">
-          <table className="w-full text-sm border-collapse">
+        {/* Desktop: table (md and up) */}
+        <div className="hidden md:block">
+          <div className="overflow-x-auto overflow-y-visible">
+            <table className="w-full text-sm border-collapse">
             <thead>
               <tr className="bg-slate-50/80 border-b border-slate-200">
                 <th className="text-left px-4 py-3.5 w-11 align-middle">
@@ -722,7 +725,7 @@ export default function Students() {
                             setRowMenuAnchor({
                               id: s._id,
                               top: rect.bottom + 6,
-                              right: window.innerWidth - rect.right,
+                              right: 16,
                             });
                           }
                         }}
@@ -737,14 +740,129 @@ export default function Students() {
               )}
             </tbody>
           </table>
+          </div>
+        </div>
+
+        {/* Mobile: card list (below md) */}
+        <div className="block md:hidden">
+          {loading ? (
+            <div className="p-4 space-y-3">
+              {[1, 2, 3, 4, 5].map((i) => (
+                <div key={i} className="rounded-xl border border-slate-200/80 p-4 flex items-center gap-3">
+                  <Skeleton className="h-10 w-10 shrink-0 rounded-full" />
+                  <div className="flex-1 min-w-0 space-y-2">
+                    <Skeleton className="h-4 w-32" />
+                    <Skeleton className="h-3 w-48" />
+                  </div>
+                </div>
+              ))}
+            </div>
+          ) : data.length === 0 ? (
+            <div className="px-5 py-16 text-center">
+              <div className="flex flex-col items-center gap-4">
+                <div className="w-14 h-14 rounded-full bg-slate-100 flex items-center justify-center">
+                  <FiUsers className="w-7 h-7 text-slate-400" />
+                </div>
+                <p className="text-slate-600 font-medium">No students yet</p>
+                <p className="text-sm text-slate-500">Add your first student to get started</p>
+                <button
+                  type="button"
+                  onClick={() => setAddPanelOpen(true)}
+                  className="inline-flex items-center gap-2 px-4 py-2.5 bg-[#003366] text-white text-sm font-medium rounded-xl hover:bg-[#002244] shadow-sm"
+                >
+                  <FiPlus className="w-4 h-4" /> Add Student
+                </button>
+              </div>
+            </div>
+          ) : (
+            <div className="p-4 space-y-3">
+              {data.map((s) => (
+                <div
+                  key={s._id}
+                  role="button"
+                  tabIndex={0}
+                  onClick={() => {
+                    if (s.deletedAt) return;
+                    setEditStudent(s);
+                    setRowMenuAnchor(null);
+                  }}
+                  onKeyDown={(e) => {
+                    if (e.key === 'Enter' || e.key === ' ') {
+                      e.preventDefault();
+                      if (!s.deletedAt) {
+                        setEditStudent(s);
+                        setRowMenuAnchor(null);
+                      }
+                    }
+                  }}
+                  className={`rounded-xl border border-slate-200/80 p-4 flex items-start gap-3 transition-colors cursor-pointer hover:bg-slate-50/70 ${s.deletedAt ? 'opacity-60 bg-slate-50/50' : ''}`}
+                >
+                  <div className="flex items-start gap-3 min-w-0 flex-1">
+                    {!s.deletedAt && (
+                      <div className="shrink-0 pt-0.5" onClick={(e) => e.stopPropagation()}>
+                        <input
+                          type="checkbox"
+                          checked={selectedIds.has(s._id)}
+                          onChange={() => toggleSelect(s._id)}
+                          className="rounded border-slate-300 text-[#003366] focus:ring-[#003366] focus:ring-offset-0"
+                        />
+                      </div>
+                    )}
+                    <div className="w-9 h-9 rounded-full bg-[#003366]/10 flex items-center justify-center shrink-0">
+                      <span className="text-sm font-semibold text-[#003366]">
+                        {(s.fullName || '?').charAt(0)}
+                      </span>
+                    </div>
+                    <div className="min-w-0 flex-1">
+                      <p className="font-medium text-slate-800 truncate">{s.fullName}</p>
+                      <p className="text-sm text-slate-600 truncate">{s.email || '—'}</p>
+                      <p className="text-sm text-slate-700 mt-0.5">{s.course}</p>
+                      <div className="flex flex-wrap items-center gap-2 mt-2">
+                        <StatusPill status={s.status} />
+                        <span className="text-xs text-slate-500 tabular-nums">{formatJoined(s.joinedAt)}</span>
+                      </div>
+                    </div>
+                  </div>
+                  <button
+                    type="button"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      e.preventDefault();
+                      const rect = e.currentTarget.getBoundingClientRect();
+                      if (rowMenuAnchor?.id === s._id) {
+                        setRowMenuAnchor(null);
+                      } else {
+                        setRowMenuAnchor({
+                          id: s._id,
+                          top: rect.bottom + 6,
+                          right: 16,
+                        });
+                      }
+                    }}
+                    className="p-2 rounded-lg text-slate-500 hover:bg-slate-100 hover:text-slate-700 transition-colors shrink-0"
+                    aria-label="Row actions"
+                  >
+                    <FiMoreVertical className="w-4 h-4" />
+                  </button>
+                </div>
+              ))}
+            </div>
+          )}
         </div>
 
         {!loading && total > 0 && (
           <div className="flex flex-wrap items-center justify-between gap-3 px-4 py-3 border-t border-slate-200 bg-slate-50/70">
             <p className="text-xs text-slate-600">
-              Showing <span className="font-medium text-slate-800">{(page - 1) * limit + 1}–{Math.min(page * limit, total)}</span> of <span className="font-medium text-slate-800">{total}</span>
+              <span className="sm:hidden">
+                <span className="font-medium text-slate-800">{(page - 1) * limit + 1}–{Math.min(page * limit, total)}</span>
+                {' / '}
+                <span className="font-medium text-slate-800">{total}</span>
+              </span>
+              <span className="hidden sm:inline">
+                Showing <span className="font-medium text-slate-800">{(page - 1) * limit + 1}–{Math.min(page * limit, total)}</span> of <span className="font-medium text-slate-800">{total}</span>
+              </span>
             </p>
-            <div className="flex items-center gap-2">
+            <div className="flex flex-wrap items-center gap-2">
               <select
                 value={limit}
                 onChange={(e) => { setLimit(Number(e.target.value)); setPage(1); }}

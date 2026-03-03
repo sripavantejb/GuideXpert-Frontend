@@ -53,6 +53,7 @@ const pageMeta = {
   '/counsellor/college-referrals': { title: 'College Referrals', subtitle: 'Get referral links for partner colleges' },
   '/counsellor/certificate': { title: 'Poster', subtitle: 'Download your certified counsellor poster' },
   '/counsellor/settings': { title: 'Settings', subtitle: 'Manage your account and preferences' },
+  '/counsellor/help': { title: 'Help & Support', subtitle: 'Get in touch with our team' },
 };
 
 const PRIORITY_BADGE = {
@@ -343,6 +344,7 @@ export default function CounsellorLayout() {
             {/* Help */}
             <button
               type="button"
+              onClick={() => { setProfileOpen(false); navigate('/counsellor/help'); }}
               className="p-2 rounded-lg text-gray-500 hover:bg-gray-100 hover:text-gray-700 transition-colors hidden sm:block"
               aria-label="Help"
             >
@@ -381,15 +383,27 @@ export default function CounsellorLayout() {
                       <p className="text-sm font-semibold text-gray-900">{displayName}</p>
                       <p className="text-xs text-gray-500">{displayEmail || '—'}</p>
                     </div>
-                    <button className="w-full flex items-center gap-2.5 px-3 py-2 text-sm text-gray-700 hover:bg-gray-50 transition-colors">
+                    <button
+                      type="button"
+                      onClick={() => { setProfileOpen(false); navigate('/counsellor/settings'); }}
+                      className="w-full flex items-center gap-2.5 px-3 py-2 text-sm text-gray-700 hover:bg-gray-50 transition-colors text-left"
+                    >
                       <FiUser className="w-4 h-4 text-gray-400" /> My Profile
                     </button>
-                    <button className="w-full flex items-center gap-2.5 px-3 py-2 text-sm text-gray-700 hover:bg-gray-50 transition-colors">
+                    <Link
+                      to="/counsellor/settings"
+                      onClick={() => setProfileOpen(false)}
+                      className="w-full flex items-center gap-2.5 px-3 py-2 text-sm text-gray-700 hover:bg-gray-50 transition-colors"
+                    >
                       <FiSettings className="w-4 h-4 text-gray-400" /> Settings
-                    </button>
-                    <button className="w-full flex items-center gap-2.5 px-3 py-2 text-sm text-gray-700 hover:bg-gray-50 transition-colors">
+                    </Link>
+                    <Link
+                      to="/counsellor/help"
+                      onClick={() => setProfileOpen(false)}
+                      className="w-full flex items-center gap-2.5 px-3 py-2 text-sm text-gray-700 hover:bg-gray-50 transition-colors"
+                    >
                       <FiHelpCircle className="w-4 h-4 text-gray-400" /> Help & Support
-                    </button>
+                    </Link>
                     {user && (
                       <>
                         <div className="border-t border-gray-100 my-1" />

@@ -44,6 +44,7 @@ const CollegeReferrals = lazy(() => import('./pages/counsellor/CollegeReferrals'
 const CollegeReferralDetail = lazy(() => import('./pages/counsellor/CollegeReferralDetail'));
 const AnnouncementsFeed = lazy(() => import('./pages/counsellor/AnnouncementsFeed'));
 const CounsellorSettings = lazy(() => import('./pages/counsellor/Settings'));
+const CounsellorHelp = lazy(() => import('./pages/counsellor/Help'));
 const WebinarLayout = lazy(() => import('./pages/webinar/WebinarLayout'));
 const WebinarDashboard = lazy(() => import('./pages/webinar/WebinarDashboard'));
 const ProgressPage = lazy(() => import('./pages/webinar/ProgressPage'));
@@ -136,6 +137,7 @@ function App() {
             <Route path="college-referrals/:collegeSlug" element={<ErrorBoundary><Suspense fallback={<div className="h-64 flex items-center justify-center p-4"><PageSkeleton /></div>}><CollegeReferralDetail /></Suspense></ErrorBoundary>} />
             <Route path="announcements-feed" element={<ErrorBoundary><Suspense fallback={<div className="h-64 flex items-center justify-center p-4"><PageSkeleton /></div>}><AnnouncementsFeed /></Suspense></ErrorBoundary>} />
             <Route path="settings" element={<ErrorBoundary><Suspense fallback={<div className="h-64 flex items-center justify-center p-4"><PageSkeleton /></div>}><CounsellorSettings /></Suspense></ErrorBoundary>} />
+            <Route path="help" element={<ErrorBoundary><Suspense fallback={<div className="h-64 flex items-center justify-center p-4"><PageSkeleton /></div>}><CounsellorHelp /></Suspense></ErrorBoundary>} />
           </Route>
 
           <Route path="*" element={<Navigate to="/" replace />} />

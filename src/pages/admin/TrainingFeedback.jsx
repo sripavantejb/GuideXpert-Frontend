@@ -44,12 +44,10 @@ export default function TrainingFeedback() {
   const cancelledRef = useRef(false);
   const requestIdRef = useRef(0);
 
-  const fetchData = () => {
+  useEffect(() => {
     cancelledRef.current = false;
     requestIdRef.current += 1;
     const thisRequestId = requestIdRef.current;
-    setLoading(true);
-    setError('');
     const params = {
       page: pagination.page,
       limit: pagination.limit,
@@ -59,6 +57,11 @@ export default function TrainingFeedback() {
       gender: filters.gender || undefined,
       occupation: filters.occupation.trim() || undefined
     };
+    queueMicrotask(() => {
+      if (cancelledRef.current) return;
+      setLoading(true);
+      setError('');
+    });
     getTrainingFeedback(params, getStoredToken()).then((result) => {
       if (cancelledRef.current) return;
       if (thisRequestId !== requestIdRef.current) return;
@@ -82,12 +85,8 @@ export default function TrainingFeedback() {
         byGender: responseStats.byGender || {}
       });
     });
-  };
-
-  useEffect(() => {
-    fetchData();
     return () => { cancelledRef.current = true; };
-  }, [pagination.page, pagination.limit, filters.q, filters.from, filters.to, filters.gender, filters.occupation]);
+  }, [pagination.page, pagination.limit, filters.q, filters.from, filters.to, filters.gender, filters.occupation, logout]);
 
   const goToPage = (p) => {
     const next = Math.max(1, Math.min(p, pagination.totalPages));
@@ -111,7 +110,7 @@ export default function TrainingFeedback() {
       {/* Page header */}
       <div className="mb-8">
         <div className="flex items-center gap-3 mb-2">
-          <div className="flex items-center justify-center w-12 h-12 rounded-xl bg-gradient-to-br from-[#003366] to-[#004080] text-white shadow-lg">
+          <div className="flex items-center justify-center w-12 h-12 rounded-xl bg-linear-to-br from-[#003366] to-[#004080] text-white shadow-lg">
             <FiMessageSquare className="w-6 h-6" />
           </div>
           <div>
@@ -125,7 +124,7 @@ export default function TrainingFeedback() {
       {!loading && (
         <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-6">
           <div className="rounded-2xl bg-white border border-gray-200 shadow-sm overflow-hidden">
-            <div className="h-1 w-full bg-gradient-to-r from-[#003366] to-[#004080]" />
+            <div className="h-1 w-full bg-linear-to-r from-[#003366] to-[#004080]" />
             <div className="p-5 flex items-center gap-4">
               <div className="flex items-center justify-center w-12 h-12 rounded-xl bg-[#003366]/10 text-[#003366]">
                 <FiUsers className="w-6 h-6" />
@@ -165,7 +164,7 @@ export default function TrainingFeedback() {
 
       {/* Filters card */}
       <div className="rounded-2xl border border-gray-200 bg-white shadow-lg overflow-hidden mb-6">
-        <div className="bg-gradient-to-r from-gray-50 to-slate-50 px-5 py-3 border-b border-gray-200 flex items-center gap-2">
+        <div className="bg-linear-to-r from-gray-50 to-slate-50 px-5 py-3 border-b border-gray-200 flex items-center gap-2">
           <FiSliders className="w-5 h-5 text-gray-500" />
           <span className="font-semibold text-gray-800">Filters</span>
         </div>
@@ -274,7 +273,7 @@ export default function TrainingFeedback() {
             <div className="overflow-x-auto">
               <table className="min-w-[1000px] w-full text-left text-sm">
                 <thead>
-                  <tr className="bg-gradient-to-r from-gray-50 to-slate-50 border-b border-gray-200">
+                  <tr className="bg-linear-to-r from-gray-50 to-slate-50 border-b border-gray-200">
                     <th className="px-4 py-3.5 font-semibold text-gray-700 text-xs uppercase tracking-wider">Name</th>
                     <th className="px-4 py-3.5 font-semibold text-gray-700 text-xs uppercase tracking-wider">Mobile</th>
                     <th className="px-4 py-3.5 font-semibold text-gray-700 text-xs uppercase tracking-wider">WhatsApp</th>
@@ -290,9 +289,9 @@ export default function TrainingFeedback() {
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-gray-100">
-                  {records.map((row, i) => (
+                  {records.map((row) => (
                     <Fragment key={row.id}>
-                      <tr className="hover:bg-[#003366]/[0.04] transition-colors">
+                      <tr className="hover:bg-[#003366]/4 transition-colors">
                         <td className="px-4 py-3 align-middle font-medium text-gray-900">{row.name || '—'}</td>
                         <td className="px-4 py-3 align-middle text-gray-700 whitespace-nowrap font-mono text-xs">{row.mobileNumber || '—'}</td>
                         <td className="px-4 py-3 align-middle text-gray-700 whitespace-nowrap font-mono text-xs">{row.whatsappNumber || '—'}</td>
@@ -306,7 +305,7 @@ export default function TrainingFeedback() {
                         <td className="px-4 py-3 align-middle text-gray-700 whitespace-nowrap text-xs">{formatDob(row.dateOfBirth)}</td>
                         <td className="px-4 py-3 align-middle text-gray-700 max-w-[140px] truncate" title={row.educationQualification || ''}>{row.educationQualification || '—'}</td>
                         <td className="px-4 py-3 align-middle text-center">
-                          <span className="inline-flex items-center justify-center min-w-[2rem] px-2 py-0.5 rounded-md bg-gray-100 text-gray-700 text-xs font-medium">
+                          <span className="inline-flex items-center justify-center min-w-8 px-2 py-0.5 rounded-md bg-gray-100 text-gray-700 text-xs font-medium">
                             {row.yearsOfExperience ?? '—'}
                           </span>
                         </td>
@@ -326,7 +325,7 @@ export default function TrainingFeedback() {
                       {expandedId === row.id && (
                         <tr key={`${row.id}-exp`}>
                           <td colSpan={12} className="p-0">
-                            <div className="bg-gradient-to-r from-gray-50/80 to-slate-50/80 border-t border-gray-100 px-4 py-4">
+                            <div className="bg-linear-to-r from-gray-50/80 to-slate-50/80 border-t border-gray-100 px-4 py-4">
                               <div className="rounded-xl bg-white border border-gray-200 p-4 shadow-sm">
                                 <div className="grid grid-cols-1 md:grid-cols-3 gap-4 text-sm">
                                   <div className="md:col-span-3">
