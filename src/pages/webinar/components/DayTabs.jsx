@@ -4,8 +4,6 @@ export default function DayTabs({
   days,
   activeDay,
   onDayChange,
-  completedCountForDay,
-  totalSessionsForDay,
 }) {
   const containerRef = useRef(null);
   const tabRefs = useRef({});
@@ -41,16 +39,13 @@ export default function DayTabs({
   }, [activeDay]);
 
   return (
-    <nav
+    <div
       ref={containerRef}
-      className="relative flex items-baseline gap-6 sm:gap-8 overflow-x-auto overflow-y-hidden pb-1 min-h-0 border-b border-gray-200/80"
+      className="relative flex justify-center items-center gap-2 sm:gap-6 overflow-x-auto overflow-y-hidden pb-2 min-h-0 pl-2 pr-2 sm:pl-0 sm:pr-0 scroll-px-4"
       style={{ WebkitOverflowScrolling: 'touch' }}
-      aria-label="Training days"
     >
       {days.map((day) => {
         const isActive = activeDay === day.id;
-        const completed = completedCountForDay(day.id) ?? 0;
-        const total = totalSessionsForDay(day.id) ?? 0;
 
         return (
           <button
@@ -59,13 +54,12 @@ export default function DayTabs({
             type="button"
             onClick={() => onDayChange(day.id)}
             className={`
-              relative shrink-0 py-3 px-0.5 transition-colors duration-200 whitespace-nowrap
-              focus:outline-none focus-visible:ring-0 focus-visible:underline focus-visible:underline-offset-4 focus-visible:decoration-2
+              relative shrink-0 flex items-center justify-center min-h-[44px] py-2 px-4 sm:px-6 transition-colors duration-200 whitespace-nowrap
+              focus:outline-none focus-visible:ring-2 focus-visible:ring-primary-navy focus-visible:ring-offset-2 focus-visible:rounded
               ${isActive ? 'text-primary-navy font-semibold' : 'text-gray-500 hover:text-gray-800 font-medium'}
             `}
           >
-            <span className="text-sm">{day.label}</span>
-            <span className="ml-1.5 text-xs text-gray-400 tabular-nums font-normal">{completed}/{total}</span>
+            <span className="text-sm leading-tight">{day.label}</span>
           </button>
         );
       })}
@@ -78,6 +72,6 @@ export default function DayTabs({
         }}
         aria-hidden
       />
-    </nav>
+    </div>
   );
 }

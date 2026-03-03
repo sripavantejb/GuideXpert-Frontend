@@ -279,10 +279,10 @@ export default function VideoPlayer({
         </button>
       </div>
 
-      {/* Bottom: progress bar row (mobile) + control bar - ensures fullscreen etc. visible */}
-      <div className="absolute bottom-0 left-0 right-0 flex flex-col bg-gradient-to-t from-black/85 to-black/50">
-        {/* Full-width seek bar - own row on mobile so controls fit below */}
-        <div className="w-full px-2 sm:px-3 pt-1 flex items-center gap-2 flex-shrink-0">
+      {/* Bottom: progress bar row + control bar - glassmorphic, aligned */}
+      <div className="absolute bottom-0 left-0 right-0 flex flex-col backdrop-blur-md bg-gradient-to-t from-black/40 to-transparent border-t border-white/10">
+        {/* Seek bar - slimmer, with gap above control row */}
+        <div className="w-full px-2 sm:px-3 pt-0.5 pb-1.5 sm:pb-2 flex items-center gap-2 flex-shrink-0">
           <input
             type="range"
             min="0"
@@ -290,56 +290,42 @@ export default function VideoPlayer({
             step="0.1"
             value={progress}
             onChange={handleSeek}
-            className="flex-1 min-w-0 h-2 rounded-full bg-white/30 accent-white cursor-pointer focus:outline-none focus-visible:ring-2 focus-visible:ring-white/50 touch-none"
+            className="flex-1 min-w-0 h-1 sm:h-1.5 rounded-full bg-white/30 accent-white cursor-pointer focus:outline-none focus-visible:ring-2 focus-visible:ring-white/50 touch-none"
             aria-label="Seek"
           />
         </div>
-        {/* Control row: play, time, mute, CC, speed, then fullscreen at far right */}
+        {/* Control row - compact on mobile, aligned */}
         <div
-          className="h-12 px-2 sm:px-3 pb-1 flex items-center gap-1.5 sm:gap-2 flex-shrink-0"
+          className="h-8 sm:h-10 px-2 sm:px-3 pt-1.5 sm:pt-2 pb-0.5 sm:pb-1 flex items-center gap-1 sm:gap-2 flex-shrink-0"
           style={{ WebkitOverflowScrolling: 'touch' }}
         >
-          <div className="flex items-center gap-1.5 sm:gap-2 overflow-x-auto flex-1 min-w-0">
+          <div className="flex items-center gap-1 sm:gap-2 overflow-x-auto flex-1 min-w-0 items-center">
           <button
             type="button"
             onClick={togglePlay}
-            className="relative flex items-center justify-center w-9 h-9 sm:w-10 sm:h-10 rounded-full bg-white/90 text-primary-navy shadow flex-shrink-0 transition-transform duration-200 hover:scale-105 active:scale-95 focus:outline-none focus-visible:ring-2 focus-visible:ring-white"
+            className="flex items-center justify-center w-6 h-6 sm:w-8 sm:h-8 rounded-full bg-white/20 backdrop-blur-sm border border-white/30 text-white flex-shrink-0 transition-all duration-200 hover:bg-white/25 active:scale-95 focus:outline-none focus-visible:ring-2 focus-visible:ring-white/50"
             aria-label={playing ? 'Pause' : 'Play'}
           >
-            <svg className="absolute inset-0 w-full h-full -rotate-90" viewBox="0 0 40 40">
-              <circle cx="20" cy="20" r="18" fill="none" stroke="rgba(0,51,102,0.2)" strokeWidth="2" />
-              <circle
-                cx="20"
-                cy="20"
-                r="18"
-                fill="none"
-                stroke="currentColor"
-                strokeWidth="2"
-                strokeDasharray={`${2 * Math.PI * 18}`}
-                strokeDashoffset={2 * Math.PI * 18 * (1 - progress / 100)}
-                className="text-primary-navy transition-all duration-200"
-              />
-            </svg>
             {playing ? (
-              <FiPause className="w-5 h-5 relative z-10" />
+              <FiPause className="w-3 h-3 sm:w-4 sm:h-4" />
             ) : (
-              <FiPlay className="w-5 h-5 ml-0.5 relative z-10" />
+              <FiPlay className="w-3 h-3 sm:w-4 sm:h-4 ml-0.5" />
             )}
           </button>
-          <span className="text-white/90 text-xs tabular-nums flex-shrink-0 min-w-[4rem] sm:min-w-[4.5rem]">
+          <span className="text-white/90 text-[10px] sm:text-xs tabular-nums flex-shrink-0 min-w-[3rem] sm:min-w-[4.5rem]">
             {formatTime(currentTime)} / {formatTime(duration)}
           </span>
           <div className="flex items-center gap-0.5 sm:gap-1 flex-shrink-0">
             <button
               type="button"
               onClick={toggleMute}
-              className="p-2 rounded text-white/90 hover:bg-white/10 transition-all duration-200 hover:scale-105 focus:outline-none focus-visible:ring-2 focus-visible:ring-white/50 min-w-[44px] min-h-[44px] flex items-center justify-center sm:min-w-0 sm:min-h-0 sm:p-1.5"
+              className="p-1 sm:p-1.5 rounded text-white/90 hover:bg-white/15 transition-all duration-200 focus:outline-none focus-visible:ring-2 focus-visible:ring-white/50 min-w-[32px] min-h-[32px] sm:min-w-0 sm:min-h-0 flex items-center justify-center"
               aria-label={muted ? 'Unmute' : 'Mute'}
             >
               {muted || volume === 0 ? (
-                <FiVolumeX className="w-4 h-4" />
+                <FiVolumeX className="w-3 h-3 sm:w-4 sm:h-4" />
               ) : (
-                <FiVolume2 className="w-4 h-4" />
+                <FiVolume2 className="w-3 h-3 sm:w-4 sm:h-4" />
               )}
             </button>
             <input
@@ -349,7 +335,7 @@ export default function VideoPlayer({
               step="0.05"
               value={muted ? 0 : volume}
               onChange={handleVolumeChange}
-              className="hidden sm:block w-14 h-1 accent-white cursor-pointer"
+              className="hidden sm:block w-12 h-0.5 accent-white cursor-pointer"
               aria-label="Volume"
             />
           </div>
@@ -358,7 +344,7 @@ export default function VideoPlayer({
             title={hasCaptions ? (captionsOn ? 'Turn off captions' : 'Turn on captions') : 'No captions available'}
             disabled={!hasCaptions}
             onClick={() => hasCaptions && setCaptionsOn((c) => !c)}
-            className={`flex-shrink-0 px-2 py-2 sm:py-1 rounded text-xs font-medium min-h-[44px] sm:min-h-0 flex items-center justify-center focus:outline-none focus-visible:ring-2 focus-visible:ring-white/50 ${hasCaptions ? (captionsOn ? 'bg-white/20 text-white' : 'text-white/80 hover:bg-white/10') : 'text-white/40 cursor-not-allowed'}`}
+            className={`flex-shrink-0 px-1 py-1 sm:py-1 rounded text-[10px] sm:text-xs font-medium min-h-[32px] min-w-[28px] sm:min-h-0 sm:min-w-0 flex items-center justify-center focus:outline-none focus-visible:ring-2 focus-visible:ring-white/50 ${hasCaptions ? (captionsOn ? 'bg-white/20 text-white' : 'text-white/80 hover:bg-white/15') : 'text-white/40 cursor-not-allowed'}`}
             aria-label={hasCaptions ? 'Toggle captions' : 'No captions available'}
           >
             CC
@@ -367,7 +353,7 @@ export default function VideoPlayer({
             <button
               type="button"
               onClick={() => setSpeedOpen((o) => !o)}
-              className="flex-shrink-0 px-2 py-2 sm:py-1 rounded text-white/90 text-xs font-medium hover:bg-white/10 min-h-[44px] sm:min-h-0 flex items-center focus:outline-none focus-visible:ring-2 focus-visible:ring-white/50 min-w-[2.5rem] sm:min-w-[2.25rem]"
+              className="flex-shrink-0 px-1 py-1 sm:py-1 rounded text-white/90 text-[10px] sm:text-xs font-medium hover:bg-white/15 min-h-[32px] min-w-[24px] sm:min-h-0 sm:min-w-0 flex items-center justify-center focus:outline-none focus-visible:ring-2 focus-visible:ring-white/50"
               aria-label="Playback speed"
               aria-expanded={speedOpen}
             >
@@ -398,10 +384,10 @@ export default function VideoPlayer({
           <button
             type="button"
             onClick={toggleFullscreen}
-            className="flex-shrink-0 ml-auto p-2 sm:p-1.5 rounded text-white/90 hover:bg-white/10 transition-all duration-200 hover:scale-105 focus:outline-none focus-visible:ring-2 focus-visible:ring-white/50 min-w-[44px] min-h-[44px] flex items-center justify-center sm:min-w-0 sm:min-h-0"
+            className="flex-shrink-0 ml-auto p-1 sm:p-1.5 rounded text-white/90 hover:bg-white/15 transition-all duration-200 focus:outline-none focus-visible:ring-2 focus-visible:ring-white/50 min-w-[32px] min-h-[32px] sm:min-w-0 sm:min-h-0 flex items-center justify-center"
             aria-label={isFullscreen ? 'Exit fullscreen' : 'Fullscreen'}
           >
-            {isFullscreen ? <FiMinimize className="w-4 h-4" /> : <FiMaximize className="w-4 h-4" />}
+            {isFullscreen ? <FiMinimize className="w-3 h-3 sm:w-4 sm:h-4" /> : <FiMaximize className="w-3 h-3 sm:w-4 sm:h-4" />}
           </button>
         </div>
       </div>

@@ -153,8 +153,6 @@ export default function WebinarPage() {
             days={DAYS}
             activeDay={activeDay}
             onDayChange={setActiveDay}
-            completedCountForDay={completedCountForDay}
-            totalSessionsForDay={(dayId) => getSessionsByDay(dayId).length}
           />
         </div>
 

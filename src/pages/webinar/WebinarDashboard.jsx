@@ -105,37 +105,34 @@ export default function WebinarDashboard() {
 
   return (
     <>
-      <div className="shrink-0 px-4 sm:px-6 pt-4 pb-0 pl-14 lg:pl-6">
+      <div className="shrink-0 px-2 sm:px-4 pt-2 sm:pt-4 pb-1 pl-10 lg:pl-4">
         <DayTabs
           days={DAYS}
           activeDay={activeDay}
           onDayChange={setActiveDay}
-          completedCountForDay={completedCountForDay}
-          totalSessionsForDay={(dayId) => getSessionsByDay(dayId).length}
         />
       </div>
 
-      <div className="flex-1 grid grid-cols-1 lg:grid-cols-12 gap-4 sm:gap-6 p-4 sm:p-6 overflow-auto min-h-0">
-        <div className="lg:col-span-8 flex flex-col gap-5">
+      <div className="flex-1 grid grid-cols-1 lg:grid-cols-12 gap-3 sm:gap-4 p-3 sm:p-4 overflow-auto min-h-0">
+        <div className="lg:col-span-8 flex flex-col gap-4">
           {activeSessionId &&
               playbackPosition[activeSessionId] > 0 &&
               !completedSessions.includes(activeSessionId) && (
-                <div className="rounded-xl bg-primary-navy/5 border border-primary-navy/15 px-4 py-3 flex flex-wrap items-center justify-between gap-2">
-                  <span className="text-sm text-primary-navy font-medium">
-                    Resume from {formatResumeTime(playbackPosition[activeSessionId])}
+                <div className="rounded-xl bg-primary-blue-50/80 border border-primary-blue-200/50 px-3 sm:px-4 py-2.5 flex flex-wrap items-center justify-between gap-2">
+                  <span className="text-xs sm:text-sm text-primary-navy font-medium">
+                    Continue from {formatResumeTime(playbackPosition[activeSessionId])}
                   </span>
                   <a
                     href="#video"
-                    className="text-sm font-medium text-primary-navy hover:underline focus:outline-none focus-visible:ring-2 focus-visible:ring-primary-navy rounded inline-flex items-center"
+                    className="text-xs font-medium text-primary-navy hover:underline focus:outline-none focus-visible:ring-2 focus-visible:ring-primary-navy rounded min-h-[44px] inline-flex items-center"
                   >
                     Jump to video
                   </a>
                 </div>
               )}
-            <section
+            <div
               id="video"
-              className="rounded-2xl bg-white border border-gray-200/80 overflow-hidden shadow-sm"
-              aria-label="Video player"
+              className="rounded-[20px] bg-white p-0 sm:p-5 shadow-card overflow-hidden ring-1 ring-gray-200/50 border-t border-gray-100 transition-all duration-200 hover:shadow-card-hover hover:-translate-y-0.5"
             >
               <VideoPlayer
               session={activeSession}
@@ -164,14 +161,14 @@ export default function WebinarDashboard() {
                 />
                 </>
               )}
-            </section>
+            </div>
           <DescriptionCard session={activeSession} />
           <Link
             to="/webinar/doubts"
-            className="flex items-center gap-2.5 px-4 py-3 rounded-xl border border-gray-200 bg-white text-gray-700 hover:bg-gray-50 hover:border-gray-300 text-sm font-medium transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-primary-navy focus-visible:ring-offset-2"
+            className="flex items-center gap-2 px-3 py-2 rounded-xl border border-gray-200 bg-white text-gray-700 hover:bg-gray-50 text-sm font-medium focus:outline-none focus-visible:ring-2 focus-visible:ring-primary-navy focus-visible:ring-offset-2"
           >
-            <FiMessageCircle className="w-4 h-4 text-primary-navy" />
-            Ask a question · Doubts & answers
+            <FiMessageCircle className="w-4 h-4" />
+            Doubts & Clarifications
           </Link>
           <NotesPanel sessionId={activeSessionId} />
         </div>
@@ -203,10 +200,10 @@ export default function WebinarDashboard() {
       </div>
 
       <div
-        className={`mx-4 sm:mx-6 mb-6 px-4 py-3 rounded-xl text-sm font-medium text-center transition-colors ${
+        className={`mx-3 sm:mx-4 mb-4 px-3 py-2 rounded-md text-xs font-medium text-center transition-colors ${
           overallPercent === 100
-            ? 'bg-emerald-50 border border-emerald-200/80 text-emerald-800'
-            : 'bg-primary-navy/5 border border-primary-navy/15 text-primary-navy'
+            ? 'bg-green-50 border border-green-200 text-green-800'
+            : 'bg-primary-blue-50/80 border border-primary-blue-200/50 text-primary-navy'
         }`}
       >
         Certificate unlocked after Day 3 completion.
