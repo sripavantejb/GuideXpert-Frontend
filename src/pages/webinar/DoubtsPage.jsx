@@ -40,7 +40,7 @@ export default function DoubtsPage() {
   };
 
   return (
-    <div className="w-full max-w-[1400px] mx-auto px-4 pl-10 lg:pl-4 py-4 sm:px-6 sm:py-6 lg:px-8 lg:py-8">
+    <div className="w-full max-w-[1400px] mx-auto px-4 py-4 sm:px-6 sm:py-6 lg:px-8 lg:py-8">
       <div className="grid grid-cols-1 xl:grid-cols-[1fr_360px] gap-8 xl:gap-10">
         {/* Left column: main content */}
         <div className="min-w-0 flex flex-col">

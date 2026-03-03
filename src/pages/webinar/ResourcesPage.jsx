@@ -44,7 +44,7 @@ export default function ResourcesPage() {
   const hasActiveFilters = category !== 'All' || search.trim() !== '';
 
   return (
-    <div className="w-full max-w-[1400px] mx-auto px-4 pl-10 lg:pl-4 py-4 sm:px-6 sm:py-6 lg:px-8 lg:py-8">
+    <div className="w-full max-w-[1400px] mx-auto px-4 py-4 sm:px-6 sm:py-6 lg:px-8 lg:py-8">
       <div className="grid grid-cols-1 xl:grid-cols-[1fr_320px] gap-8 xl:gap-10">
         <div className="min-w-0 flex flex-col">
           <header className="mb-6">

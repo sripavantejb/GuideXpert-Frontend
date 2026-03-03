@@ -105,7 +105,7 @@ export default function WebinarDashboard() {
 
   return (
     <>
-      <div className="shrink-0 px-2 sm:px-4 pt-2 sm:pt-4 pb-1 pl-10 lg:pl-4">
+      <div className="shrink-0 px-2 sm:px-4 pt-2 sm:pt-4 pb-1">
         <DayTabs
           days={DAYS}
           activeDay={activeDay}

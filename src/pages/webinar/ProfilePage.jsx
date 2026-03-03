@@ -59,7 +59,7 @@ export default function ProfilePage() {
   };
 
   return (
-    <div className="px-4 pl-10 lg:pl-4 py-4 sm:p-6 max-w-4xl mx-auto space-y-6">
+    <div className="px-4 py-4 sm:p-6 max-w-4xl mx-auto space-y-6">
       <h1 className="text-xl font-semibold text-gray-800">Profile</h1>
 
       {/* Header: avatar + display name */}
