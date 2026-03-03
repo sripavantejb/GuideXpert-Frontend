@@ -929,10 +929,12 @@ export default function InfluencerTracking() {
                             <button type="button" onClick={cancelEditCost} disabled={costUpdateLoading} className="text-xs px-2 py-1 rounded border border-gray-300 hover:bg-gray-50 disabled:opacity-50">Cancel</button>
                           </div>
                         ) : (
-                          <span className="inline-flex items-center gap-1">
-                            {formatCost(link.cost)}
-                            <button type="button" onClick={() => startEditCost(link)} className="text-xs text-primary-navy hover:underline">Edit</button>
-                          </span>
+                          <div className="flex flex-col items-end gap-1.5">
+                            <span className="text-gray-700">{formatCost(link.cost)}</span>
+                            <button type="button" onClick={() => startEditCost(link)} className="text-xs px-2 py-0.5 rounded border border-gray-300 text-gray-600 hover:bg-gray-100 hover:border-gray-400">
+                              Edit cost
+                            </button>
+                          </div>
                         )}
                       </td>
                       <td className="px-6 py-3 text-sm text-gray-600 text-right">{formatCostPerLead(link.costPerLead)}</td>
