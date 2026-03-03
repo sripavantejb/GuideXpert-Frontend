@@ -16,6 +16,7 @@ import {
   getInfluencerLinks,
   createInfluencerLink,
   deleteInfluencerLink,
+  updateInfluencerLink,
   getInfluencerAnalytics,
   getInfluencerAnalyticsTrend,
   getAdminLeads,
@@ -88,6 +89,20 @@ function normalizeInfluencerName(name) {
   return name.trim().toLowerCase();
 }
 
+function formatCost(value) {
+  if (value == null || value === '' || (typeof value === 'number' && Number.isNaN(value))) return '—';
+  const n = Number(value);
+  if (Number.isNaN(n)) return '—';
+  return `₹ ${n.toLocaleString('en-IN', { minimumFractionDigits: 0, maximumFractionDigits: 2 })}`;
+}
+
+function formatCostPerLead(value) {
+  if (value == null || (typeof value === 'number' && Number.isNaN(value))) return '—';
+  const n = Number(value);
+  if (Number.isNaN(n)) return '—';
+  return `₹ ${n.toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
+}
+
 function ChartSkeleton() {
   return (
     <div className="h-[240px] flex items-center justify-center bg-gray-50 rounded-lg animate-pulse">
@@ -102,6 +117,7 @@ export default function InfluencerTracking() {
     influencerName: '',
     platform: 'Instagram',
     campaign: DEFAULT_CAMPAIGN,
+    cost: '',
   });
   const [generatedLink, setGeneratedLink] = useState(null);
   const [linkError, setLinkError] = useState('');
@@ -140,6 +156,10 @@ export default function InfluencerTracking() {
   const [detailLeads, setDetailLeads] = useState([]);
   const [detailLeadsPagination, setDetailLeadsPagination] = useState({ page: 1, limit: 10, total: 0, totalPages: 1 });
   const [detailLeadsLoading, setDetailLeadsLoading] = useState(false);
+
+  const [editingCostLinkId, setEditingCostLinkId] = useState(null);
+  const [editingCostValue, setEditingCostValue] = useState('');
+  const [costUpdateLoading, setCostUpdateLoading] = useState(false);
 
   const navigate = useNavigate();
   const token = getStoredToken();
@@ -396,12 +416,18 @@ export default function InfluencerTracking() {
     if (!form.influencerName.trim()) return;
     setSaveLoading(true);
     setLinkError('');
+    const payload = {
+      influencerName: form.influencerName.trim(),
+      platform: form.platform,
+      campaign: form.campaign.trim() || DEFAULT_CAMPAIGN,
+    };
+    const costTrimmed = typeof form.cost === 'string' ? form.cost.trim() : '';
+    if (costTrimmed !== '') {
+      const costNum = Number(costTrimmed);
+      if (!Number.isNaN(costNum) && costNum >= 0) payload.cost = costNum;
+    }
     const result = await createInfluencerLink(
-      {
-        influencerName: form.influencerName.trim(),
-        platform: form.platform,
-        campaign: form.campaign.trim() || DEFAULT_CAMPAIGN,
-      },
+      payload,
       true,
       token
     );
@@ -469,6 +495,37 @@ export default function InfluencerTracking() {
     fetchTrend();
   };
 
+  const startEditCost = (link) => {
+    setLinkError('');
+    setEditingCostLinkId(link.id);
+    setEditingCostValue(link.cost != null && link.cost !== '' ? String(link.cost) : '');
+  };
+
+  const cancelEditCost = () => {
+    setEditingCostLinkId(null);
+    setEditingCostValue('');
+  };
+
+  const saveEditCost = async () => {
+    if (editingCostLinkId == null) return;
+    const trimmed = editingCostValue.trim();
+    const costPayload = trimmed === '' ? null : (() => {
+      const n = Number(trimmed);
+      return !Number.isNaN(n) && n >= 0 ? n : null;
+    })();
+    if (costPayload === undefined) return; // invalid
+    setCostUpdateLoading(true);
+    const result = await updateInfluencerLink(editingCostLinkId, { cost: costPayload }, token);
+    setCostUpdateLoading(false);
+    if (result.success) {
+      setEditingCostLinkId(null);
+      setEditingCostValue('');
+      fetchLinks();
+    } else {
+      setLinkError(result.message || 'Failed to update cost');
+    }
+  };
+
   const toggleSelectLink = (id) => {
     setSelectedLinkIds((prev) => {
       const next = new Set(prev);
@@ -492,13 +549,17 @@ export default function InfluencerTracking() {
   };
 
   const exportLinksCsv = () => {
-    const headers = ['Influencer', 'Platform', 'Campaign', 'UTM Link', 'Date created'];
+    const headers = ['Influencer', 'Platform', 'Campaign', 'UTM Link', 'Date created', 'Leads', 'Cost', 'Cost per lead', 'Latest lead'];
     const rows = filteredSavedLinks.map((l) => [
       l.influencerName ?? '',
       l.platform ?? '',
       l.campaign ?? '',
       l.utmLink ?? '',
       l.createdAt ? formatDate(l.createdAt) : '',
+      l.leadCount ?? 0,
+      l.cost != null ? String(l.cost) : '',
+      l.costPerLead != null ? String(l.costPerLead) : '',
+      l.latestLeadAt ? formatDate(l.latestLeadAt) : '',
     ]);
     const csv = [headers.join(','), ...rows.map((r) => r.map((c) => `"${String(c).replace(/"/g, '""')}"`).join(','))].join('\n');
     const blob = new Blob([csv], { type: 'text/csv;charset=utf-8' });
@@ -638,7 +699,7 @@ export default function InfluencerTracking() {
           </p>
         </div>
         <form onSubmit={handleGenerate} className="p-6 space-y-5">
-          <div className="grid grid-cols-1 sm:grid-cols-3 gap-6">
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
             <div>
               <label htmlFor="influencerName" className="block text-sm font-medium text-gray-700 mb-1.5">Influencer Name</label>
               <input
@@ -676,6 +737,21 @@ export default function InfluencerTracking() {
                 placeholder={DEFAULT_CAMPAIGN}
                 className="w-full h-10 rounded-lg border border-gray-300 px-3 text-sm focus:ring-2 focus:ring-primary-navy/30 focus:border-primary-navy outline-none"
               />
+            </div>
+            <div>
+              <label htmlFor="cost" className="block text-sm font-medium text-gray-700 mb-1.5">Cost (₹)</label>
+              <input
+                id="cost"
+                name="cost"
+                type="number"
+                min="0"
+                step="0.01"
+                value={form.cost}
+                onChange={handleFormChange}
+                placeholder="Optional"
+                className="w-full h-10 rounded-lg border border-gray-300 px-3 text-sm focus:ring-2 focus:ring-primary-navy/30 focus:border-primary-navy outline-none"
+              />
+              <p className="text-xs text-gray-500 mt-0.5">Optional; used for cost per lead when saving.</p>
             </div>
           </div>
           {linkError && <p className="text-sm text-red-600" role="alert">{linkError}</p>}
@@ -760,7 +836,7 @@ export default function InfluencerTracking() {
           )}
         </div>
         {linksLoading ? (
-          <div className="px-6 py-8"><TableSkeleton rows={8} cols={9} /></div>
+          <div className="px-6 py-8"><TableSkeleton rows={8} cols={11} /></div>
         ) : linksError ? (
           <div className="px-6 py-6"><p className="text-red-600 text-sm" role="alert">{linksError}</p></div>
         ) : filteredSavedLinks.length === 0 ? (
@@ -788,6 +864,8 @@ export default function InfluencerTracking() {
                     <th className="px-6 py-3 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">UTM Link</th>
                     <th className="px-6 py-3 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">Date created</th>
                     <th className="px-6 py-3 text-right text-xs font-semibold text-gray-600 uppercase tracking-wider">Leads</th>
+                    <th className="px-6 py-3 text-right text-xs font-semibold text-gray-600 uppercase tracking-wider">Cost</th>
+                    <th className="px-6 py-3 text-right text-xs font-semibold text-gray-600 uppercase tracking-wider">Cost per lead</th>
                     <th className="px-6 py-3 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">Latest lead</th>
                   </tr>
                 </thead>
@@ -835,6 +913,29 @@ export default function InfluencerTracking() {
                       </td>
                       <td className="px-6 py-3 text-sm text-gray-500">{formatDate(link.createdAt)}</td>
                       <td className="px-6 py-3 text-sm text-gray-900 text-right font-medium">{link.leadCount ?? 0}</td>
+                      <td className="px-6 py-3 text-sm text-gray-600 text-right">
+                        {editingCostLinkId === link.id ? (
+                          <div className="flex items-center justify-end gap-1">
+                            <input
+                              type="number"
+                              min="0"
+                              step="0.01"
+                              value={editingCostValue}
+                              onChange={(e) => setEditingCostValue(e.target.value)}
+                              className="w-24 rounded border border-gray-300 px-2 py-1 text-sm"
+                              aria-label="Cost"
+                            />
+                            <button type="button" onClick={saveEditCost} disabled={costUpdateLoading} className="text-xs px-2 py-1 rounded bg-primary-navy text-white hover:bg-primary-navy/90 disabled:opacity-50">Save</button>
+                            <button type="button" onClick={cancelEditCost} disabled={costUpdateLoading} className="text-xs px-2 py-1 rounded border border-gray-300 hover:bg-gray-50 disabled:opacity-50">Cancel</button>
+                          </div>
+                        ) : (
+                          <span className="inline-flex items-center gap-1">
+                            {formatCost(link.cost)}
+                            <button type="button" onClick={() => startEditCost(link)} className="text-xs text-primary-navy hover:underline">Edit</button>
+                          </span>
+                        )}
+                      </td>
+                      <td className="px-6 py-3 text-sm text-gray-600 text-right">{formatCostPerLead(link.costPerLead)}</td>
                       <td className="px-6 py-3 text-sm text-gray-500">{link.latestLeadAt ? formatDate(link.latestLeadAt) : '—'}</td>
                     </tr>
                   ))}
@@ -983,6 +1084,8 @@ export default function InfluencerTracking() {
                           <th className="px-4 py-2 text-left text-xs font-semibold text-gray-600 uppercase">UTM Link</th>
                           <th className="px-4 py-2 text-left text-xs font-semibold text-gray-600 uppercase">Date created</th>
                           <th className="px-4 py-2 text-right text-xs font-semibold text-gray-600 uppercase">Leads</th>
+                          <th className="px-4 py-2 text-right text-xs font-semibold text-gray-600 uppercase">Cost</th>
+                          <th className="px-4 py-2 text-right text-xs font-semibold text-gray-600 uppercase">Cost per lead</th>
                           <th className="px-4 py-2 text-left text-xs font-semibold text-gray-600 uppercase">Latest lead</th>
                           <th className="px-4 py-2 text-right text-xs font-semibold text-gray-600 uppercase">Actions</th>
                         </tr>
@@ -999,6 +1102,8 @@ export default function InfluencerTracking() {
                             </td>
                             <td className="px-4 py-2 text-sm text-gray-500">{formatDate(link.createdAt)}</td>
                             <td className="px-4 py-2 text-sm text-gray-900 text-right font-medium">{link.leadCount ?? 0}</td>
+                            <td className="px-4 py-2 text-sm text-gray-600 text-right">{formatCost(link.cost)}</td>
+                            <td className="px-4 py-2 text-sm text-gray-600 text-right">{formatCostPerLead(link.costPerLead)}</td>
                             <td className="px-4 py-2 text-sm text-gray-500">{link.latestLeadAt ? formatDate(link.latestLeadAt) : '—'}</td>
                             <td className="px-4 py-2 text-right">
                               <button

@@ -1,9 +1,44 @@
 import { useState, useEffect, useRef, useMemo } from 'react';
-import { getAssessmentSubmissions, getAssessmentSubmissionById, getStoredToken } from '../../utils/adminApi';
+import { useSearchParams } from 'react-router-dom';
+import {
+  getAssessmentSubmissions,
+  getAssessmentSubmissionById,
+  getAssessment2Submissions,
+  getAssessment2SubmissionById,
+  getAssessment3Submissions,
+  getAssessment3SubmissionById,
+  getStoredToken,
+} from '../../utils/adminApi';
 import { useAuth } from '../../contexts/AuthContext';
 import { ASSESSMENT_SECTIONS } from '../../data/assessmentQuestions';
+import { ASSESSMENT_SECTIONS_2 } from '../../data/assessmentQuestions2';
+import { ASSESSMENT_SECTIONS_3 } from '../../data/assessmentQuestions3';
 import TableSkeleton from '../../components/UI/TableSkeleton';
 import { ContentSkeleton } from '../../components/UI/Skeleton';
+
+const ASSESSMENT_TYPES = [
+  {
+    id: 1,
+    label: 'Assessment 1',
+    getSubmissions: getAssessmentSubmissions,
+    getSubmissionById: getAssessmentSubmissionById,
+    sections: ASSESSMENT_SECTIONS,
+  },
+  {
+    id: 2,
+    label: 'Assessment 2',
+    getSubmissions: getAssessment2Submissions,
+    getSubmissionById: getAssessment2SubmissionById,
+    sections: ASSESSMENT_SECTIONS_2,
+  },
+  {
+    id: 3,
+    label: 'Assessment 3',
+    getSubmissions: getAssessment3Submissions,
+    getSubmissionById: getAssessment3SubmissionById,
+    sections: ASSESSMENT_SECTIONS_3,
+  },
+];
 
 function formatDate(d) {
   if (!d) return '—';
@@ -11,7 +46,17 @@ function formatDate(d) {
   return date.toLocaleDateString('en-IN', { dateStyle: 'short' }) + ' ' + date.toLocaleTimeString('en-IN', { timeStyle: 'short' });
 }
 
+function parseType(searchParams) {
+  const t = searchParams.get('type');
+  const n = t ? parseInt(t, 10) : 1;
+  return n >= 1 && n <= 3 ? n : 1;
+}
+
 export default function AssessmentResults() {
+  const [searchParams, setSearchParams] = useSearchParams();
+  const typeId = parseType(searchParams);
+  const activeConfig = useMemo(() => ASSESSMENT_TYPES.find((c) => c.id === typeId) ?? ASSESSMENT_TYPES[0], [typeId]);
+
   const { logout } = useAuth();
   const [submissions, setSubmissions] = useState([]);
   const [total, setTotal] = useState(0);
@@ -27,17 +72,30 @@ export default function AssessmentResults() {
 
   const questionTextMap = useMemo(() => {
     const map = {};
-    ASSESSMENT_SECTIONS.forEach((s) => {
+    activeConfig.sections.forEach((s) => {
       s.questions.forEach((q) => { map[q.id] = q.text; });
     });
     return map;
-  }, []);
+  }, [activeConfig.sections]);
+
+  const setType = (n) => {
+    setSearchParams((prev) => {
+      const next = new URLSearchParams(prev);
+      next.set('type', String(n));
+      return next;
+    });
+    setPage(1);
+    setError('');
+    setDetailOpen(false);
+    setDetailSubmission(null);
+    setDetailError('');
+  };
 
   useEffect(() => {
     cancelledRef.current = false;
     setLoading(true);
     setError('');
-    getAssessmentSubmissions(page, limit, getStoredToken()).then((result) => {
+    activeConfig.getSubmissions(page, limit, getStoredToken()).then((result) => {
       if (cancelledRef.current) return;
       setLoading(false);
       if (!result.success) {
@@ -46,14 +104,14 @@ export default function AssessmentResults() {
           window.location.href = '/admin/login';
           return;
         }
-        setError(result.message || 'Failed to load assessment submissions');
+        setError(result.message || `Failed to load ${activeConfig.label.toLowerCase()} submissions`);
         return;
       }
       setSubmissions(result.data?.submissions ?? []);
       setTotal(result.data?.total ?? 0);
     });
     return () => { cancelledRef.current = true; };
-  }, [page, logout]);
+  }, [page, activeConfig, logout]);
 
   const totalPages = Math.max(1, Math.ceil(total / limit));
 
@@ -63,7 +121,7 @@ export default function AssessmentResults() {
     setDetailSubmission(null);
     setDetailError('');
     setDetailLoading(true);
-    getAssessmentSubmissionById(row._id, getStoredToken()).then((result) => {
+    activeConfig.getSubmissionById(row._id, getStoredToken()).then((result) => {
       setDetailLoading(false);
       if (!result.success) {
         setDetailError(result.message || 'Failed to load submission details');
@@ -81,105 +139,138 @@ export default function AssessmentResults() {
 
   return (
     <div>
-      <h1 className="text-xl font-semibold mb-4" style={{ color: '#003366' }}>Assessment Results</h1>
-      <p className="text-sm text-gray-600 mb-6">
-        Counsellor assessment submissions with scores. Total: <strong>{total}</strong> submission{total !== 1 ? 's' : ''}.
+      <h1 className="text-xl font-semibold mb-2" style={{ color: '#003366' }}>Assessment Results</h1>
+      <p className="text-sm text-gray-600 mb-4">
+        Counsellor {activeConfig.label.toLowerCase()} submissions with scores. Total: <strong>{total}</strong> submission{total !== 1 ? 's' : ''}.
       </p>
 
-      {error && (
-        <div className="mb-4 p-3 rounded-lg border border-red-200 bg-red-50 text-red-700 text-sm">
-          {error}
-        </div>
-      )}
+      {/* Tab bar */}
+      <div className="flex gap-1 p-1 rounded-lg border border-gray-200 bg-gray-100/80 w-fit mb-6" role="tablist" aria-label="Assessment type">
+        {ASSESSMENT_TYPES.map((config) => (
+          <button
+            key={config.id}
+            type="button"
+            role="tab"
+            aria-selected={typeId === config.id}
+            aria-controls="assessment-results-panel"
+            id={`assessment-tab-${config.id}`}
+            tabIndex={typeId === config.id ? 0 : -1}
+            onClick={() => setType(config.id)}
+            onKeyDown={(e) => {
+              if (e.key === 'Enter' || e.key === ' ') {
+                e.preventDefault();
+                setType(config.id);
+              }
+            }}
+            className={`
+              px-4 py-2 rounded-md text-sm font-medium transition-colors
+              ${typeId === config.id
+                ? 'bg-white text-[#003366] shadow-sm border border-gray-200'
+                : 'text-gray-600 hover:text-gray-900 hover:bg-white/60'
+              }
+            `}
+          >
+            {config.label}
+          </button>
+        ))}
+      </div>
 
-      {loading ? (
-        <TableSkeleton rows={8} cols={5} />
-      ) : submissions.length === 0 ? (
-        <div className="rounded-lg border border-gray-200 bg-gray-50 p-8 text-center text-gray-600">
-          No assessment submissions yet.
-        </div>
-      ) : (
-        <>
-          <div className="overflow-x-auto rounded-lg border border-gray-200 bg-white shadow-sm">
-            <table className="min-w-full divide-y divide-gray-200 text-left text-sm">
-              <thead className="bg-gray-50 border-b border-gray-200">
-                <tr>
-                  <th scope="col" className="px-3 py-2 font-semibold text-gray-700 text-xs uppercase tracking-wider">
-                    Name
-                  </th>
-                  <th scope="col" className="px-3 py-2 font-semibold text-gray-700 text-xs uppercase tracking-wider">
-                    Phone
-                  </th>
-                  <th scope="col" className="px-3 py-2 font-semibold text-gray-700 text-xs uppercase tracking-wider text-center">
-                    Score
-                  </th>
-                  <th scope="col" className="px-3 py-2 font-semibold text-gray-700 text-xs uppercase tracking-wider">
-                    Submitted at
-                  </th>
-                  <th scope="col" className="px-3 py-2 font-semibold text-gray-700 text-xs uppercase tracking-wider">
-                    Actions
-                  </th>
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-gray-100">
-                {submissions.map((row) => (
-                  <tr key={row._id} className="hover:bg-gray-50">
-                    <td className="px-3 py-2 text-gray-900 whitespace-nowrap">
-                      {row.fullName || '—'}
-                    </td>
-                    <td className="px-3 py-2 text-gray-700 whitespace-nowrap">
-                      {row.phone || '—'}
-                    </td>
-                    <td className="px-3 py-2 text-center whitespace-nowrap">
-                      <span className="font-medium text-[#003366]">
-                        {row.score ?? 0} / {row.maxScore ?? 10}
-                      </span>
-                    </td>
-                    <td className="px-3 py-2 text-gray-600 whitespace-nowrap">
-                      {formatDate(row.submittedAt)}
-                    </td>
-                    <td className="px-3 py-2 whitespace-nowrap">
-                      <button
-                        type="button"
-                        onClick={() => openDetail(row)}
-                        className="text-sm font-medium text-[#003366] hover:underline"
-                      >
-                        View details
-                      </button>
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
+      <div id="assessment-results-panel" role="tabpanel" aria-labelledby={`assessment-tab-${typeId}`}>
+        {error && (
+          <div className="mb-4 p-3 rounded-lg border border-red-200 bg-red-50 text-red-700 text-sm">
+            {error}
           </div>
+        )}
 
-          {totalPages > 1 && (
-            <div className="mt-4 flex items-center justify-between">
-              <p className="text-sm text-gray-600">
-                Page {page} of {totalPages} ({total} total)
-              </p>
-              <div className="flex gap-2">
-                <button
-                  type="button"
-                  onClick={() => setPage((p) => Math.max(1, p - 1))}
-                  disabled={page <= 1}
-                  className="px-3 py-1.5 rounded border border-gray-300 text-sm font-medium text-gray-700 hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
-                >
-                  Previous
-                </button>
-                <button
-                  type="button"
-                  onClick={() => setPage((p) => Math.min(totalPages, p + 1))}
-                  disabled={page >= totalPages}
-                  className="px-3 py-1.5 rounded border border-[#003366] text-sm font-medium text-white bg-[#003366] hover:bg-[#004080] disabled:opacity-50 disabled:cursor-not-allowed disabled:bg-gray-200 disabled:text-gray-500 disabled:border-gray-300 disabled:hover:bg-gray-200"
-                >
-                  Next
-                </button>
-              </div>
+        {loading ? (
+          <TableSkeleton rows={8} cols={5} />
+        ) : submissions.length === 0 ? (
+          <div className="rounded-lg border border-gray-200 bg-gray-50 p-8 text-center text-gray-600">
+            No {activeConfig.label.toLowerCase()} submissions yet.
+          </div>
+        ) : (
+          <>
+            <div className="overflow-x-auto rounded-lg border border-gray-200 bg-white shadow-sm">
+              <table className="min-w-full divide-y divide-gray-200 text-left text-sm">
+                <thead className="bg-gray-50 border-b border-gray-200">
+                  <tr>
+                    <th scope="col" className="px-3 py-2 font-semibold text-gray-700 text-xs uppercase tracking-wider">
+                      Name
+                    </th>
+                    <th scope="col" className="px-3 py-2 font-semibold text-gray-700 text-xs uppercase tracking-wider">
+                      Phone
+                    </th>
+                    <th scope="col" className="px-3 py-2 font-semibold text-gray-700 text-xs uppercase tracking-wider text-center">
+                      Score
+                    </th>
+                    <th scope="col" className="px-3 py-2 font-semibold text-gray-700 text-xs uppercase tracking-wider">
+                      Submitted at
+                    </th>
+                    <th scope="col" className="px-3 py-2 font-semibold text-gray-700 text-xs uppercase tracking-wider">
+                      Actions
+                    </th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-gray-100">
+                  {submissions.map((row) => (
+                    <tr key={row._id} className="hover:bg-gray-50">
+                      <td className="px-3 py-2 text-gray-900 whitespace-nowrap">
+                        {row.fullName || '—'}
+                      </td>
+                      <td className="px-3 py-2 text-gray-700 whitespace-nowrap">
+                        {row.phone || '—'}
+                      </td>
+                      <td className="px-3 py-2 text-center whitespace-nowrap">
+                        <span className="font-medium text-[#003366]">
+                          {row.score ?? 0} / {row.maxScore ?? 10}
+                        </span>
+                      </td>
+                      <td className="px-3 py-2 text-gray-600 whitespace-nowrap">
+                        {formatDate(row.submittedAt)}
+                      </td>
+                      <td className="px-3 py-2 whitespace-nowrap">
+                        <button
+                          type="button"
+                          onClick={() => openDetail(row)}
+                          className="text-sm font-medium text-[#003366] hover:underline"
+                        >
+                          View details
+                        </button>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
             </div>
-          )}
-        </>
-      )}
+
+            {totalPages > 1 && (
+              <div className="mt-4 flex items-center justify-between">
+                <p className="text-sm text-gray-600">
+                  Page {page} of {totalPages} ({total} total)
+                </p>
+                <div className="flex gap-2">
+                  <button
+                    type="button"
+                    onClick={() => setPage((p) => Math.max(1, p - 1))}
+                    disabled={page <= 1}
+                    className="px-3 py-1.5 rounded border border-gray-300 text-sm font-medium text-gray-700 hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
+                  >
+                    Previous
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setPage((p) => Math.min(totalPages, p + 1))}
+                    disabled={page >= totalPages}
+                    className="px-3 py-1.5 rounded border border-[#003366] text-sm font-medium text-white bg-[#003366] hover:bg-[#004080] disabled:opacity-50 disabled:cursor-not-allowed disabled:bg-gray-200 disabled:text-gray-500 disabled:border-gray-300 disabled:hover:bg-gray-200"
+                  >
+                    Next
+                  </button>
+                </div>
+              </div>
+            )}
+          </>
+        )}
+      </div>
 
       {detailOpen && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50" onClick={closeDetail} role="dialog" aria-modal="true" aria-labelledby="detail-modal-title">

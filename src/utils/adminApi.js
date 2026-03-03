@@ -300,6 +300,13 @@ export const deleteInfluencerLink = async (id, token = getStoredToken()) => {
   return influencerRequest(`/influencer-links/${id}`, { method: 'DELETE' }, token);
 };
 
+export const updateInfluencerLink = async (id, payload, token = getStoredToken()) => {
+  return influencerRequest(`/influencer-links/${id}`, {
+    method: 'PATCH',
+    body: JSON.stringify(payload),
+  }, token);
+};
+
 export const getInfluencerAnalytics = async (params = {}, token = getStoredToken()) => {
   const search = new URLSearchParams();
   if (params.from) search.set('from', params.from);

@@ -24,8 +24,6 @@ import MeetingAttendance from './pages/admin/MeetingAttendance';
 import InfluencerTracking from './pages/admin/InfluencerTracking';
 import LeadStatus from './pages/admin/LeadStatus';
 import AssessmentResults from './pages/admin/AssessmentResults';
-import Assessment2Results from './pages/admin/Assessment2Results';
-import Assessment3Results from './pages/admin/Assessment3Results';
 import TrainingFeedback from './pages/admin/TrainingFeedback';
 import Announcements from './pages/admin/Announcements';
 import CounsellorLogin from './pages/counsellor/CounsellorLogin';
@@ -101,8 +99,8 @@ function App() {
             <Route path="training-feedback" element={<TrainingFeedback />} />
             <Route path="influencer-tracking" element={<InfluencerTracking />} />
             <Route path="assessment-results" element={<AssessmentResults />} />
-            <Route path="assessment-2-results" element={<Assessment2Results />} />
-            <Route path="assessment-3-results" element={<Assessment3Results />} />
+            <Route path="assessment-2-results" element={<Navigate to="/admin/assessment-results?type=2" replace />} />
+            <Route path="assessment-3-results" element={<Navigate to="/admin/assessment-results?type=3" replace />} />
             <Route path="announcements" element={<Announcements />} />
           </Route>
 
