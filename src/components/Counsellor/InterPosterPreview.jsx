@@ -1,4 +1,4 @@
-import { forwardRef, useState, useRef } from 'react';
+ import { forwardRef, useState, useRef } from 'react';
 
 /** Inter poster: 810×1440 (viewBox 0 0 810 ~1440) */
 const WIDTH = 810;
@@ -43,7 +43,7 @@ const InterPosterPreview = forwardRef(function InterPosterPreview(
 
   // Left-aligned block: name + number only, placed above the poster's existing "Certified GuideXpert Counsellor" text.
   // Export block is taller (larger padding/minHeights); position by bottom so it aligns with preview (bottom: 160).
-  const textLeft = 76;
+  const textLeft = 80;
   const textMaxWidth = 500;
   const textBlockBottom = 160;
   const exportBlockHeight = 204; // forExport layout: padding 24+24, name 16+72+6, lineGap 10, phone 4+44+4
@@ -172,3 +172,10 @@ const InterPosterPreview = forwardRef(function InterPosterPreview(
 
 export default InterPosterPreview;
 export { WIDTH as INTER_POSTER_WIDTH, HEIGHT as INTER_POSTER_HEIGHT };
+
+/** Layout for canvas drawing (mobile download); must match forExport block position. */
+export const INTER_POSTER_EXPORT_LAYOUT = {
+  blockTop: HEIGHT - 160 - 204,
+  textLeft: 80,
+  paddingH: 20,
+};

@@ -3,7 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import html2canvas from 'html2canvas';
 import { jsPDF } from 'jspdf';
 import { checkPosterEligibility } from '../utils/api';
-import InterPosterPreview, { INTER_POSTER_WIDTH as POSTER_WIDTH, INTER_POSTER_HEIGHT as POSTER_HEIGHT } from '../components/Counsellor/InterPosterPreview';
+import InterPosterPreview, { INTER_POSTER_WIDTH as POSTER_WIDTH, INTER_POSTER_HEIGHT as POSTER_HEIGHT, INTER_POSTER_EXPORT_LAYOUT } from '../components/Counsellor/InterPosterPreview';
 
 function to10Digits(val) {
   if (val == null) return '';
@@ -43,7 +43,7 @@ function loadInterPosterImage() {
   });
 }
 
-/** iOS-only: draw inter poster (background + name/phone only) left-aligned. Poster already has "Certified GuideXpert Counsellor". Coordinates match InterPosterPreview. */
+/** Mobile: draw inter poster (background + name/phone only). Position matches InterPosterPreview export layout (blockTop 1076, textLeft 80). */
 function drawInterPosterToCanvas(img, fullName, mobileNumber, scale = 2) {
   const w = POSTER_WIDTH * scale;
   const h = POSTER_HEIGHT * scale;
@@ -55,17 +55,12 @@ function drawInterPosterToCanvas(img, fullName, mobileNumber, scale = 2) {
   ctx.drawImage(img, 0, 0, w, h);
 
   const sx = scale;
-  const textLeft = 76;
-  const paddingH = 20;
-  const exportBlockHeight = 204;
-  const blockTop = POSTER_HEIGHT - 160 - exportBlockHeight;
-  const paddingTop = 24;
+  const { blockTop, textLeft, paddingH } = INTER_POSTER_EXPORT_LAYOUT;
   const nameFontSize = 42;
-  const nameLineGap = 10;
   const phoneFontSize = 30;
+  const nameBaselineY = blockTop + 24 + 16 + 42;
+  const phoneBaselineY = blockTop + 24 + (16 + 72 + 6) + 10 + 4 + 30;
   const x = (textLeft + paddingH) * sx;
-  const nameBaseline = (blockTop + paddingTop + nameFontSize) * sx;
-  const phoneBaseline = nameBaseline + (nameLineGap + phoneFontSize * 1.3) * sx;
 
   const displayName = String(fullName || ' ').trim().slice(0, NAME_MAX_LEN) || ' ';
 
@@ -76,10 +71,10 @@ function drawInterPosterToCanvas(img, fullName, mobileNumber, scale = 2) {
   ctx.shadowOffsetY = 1;
   ctx.fillStyle = '#ffffff';
   ctx.font = `700 ${nameFontSize * sx}px sans-serif`;
-  ctx.fillText(displayName, x, nameBaseline);
+  ctx.fillText(displayName, x, nameBaselineY * sx);
   ctx.fillStyle = '#fef08a';
   ctx.font = `600 ${phoneFontSize * sx}px sans-serif`;
-  ctx.fillText(mobileNumber ? `+91 ${mobileNumber}` : ' ', x, phoneBaseline);
+  ctx.fillText(mobileNumber ? `+91 ${mobileNumber}` : ' ', x, phoneBaselineY * sx);
   ctx.shadowColor = 'transparent';
   ctx.shadowBlur = 0;
   ctx.shadowOffsetY = 0;
@@ -284,7 +279,7 @@ export default function InterPosterPage() {
     setGenerating(true);
     setPendingDownload(null);
     try {
-      if (isIOS()) {
+      if (isMobileOrTablet()) {
         const img = await loadInterPosterImage();
         const scale = 2;
         const canvas = drawInterPosterToCanvas(img, fullName, mobile10, scale);
@@ -320,7 +315,7 @@ export default function InterPosterPage() {
     } catch (err) {
       console.error(err);
     } finally {
-      if (!isIOS()) hideExportWrapper();
+      if (!isMobileOrTablet()) hideExportWrapper();
     }
     setGenerating(false);
   };
@@ -329,7 +324,7 @@ export default function InterPosterPage() {
     setGenerating(true);
     setPendingDownload(null);
     try {
-      if (isIOS()) {
+      if (isMobileOrTablet()) {
         const img = await loadInterPosterImage();
         const scale = 2;
         const canvas = drawInterPosterToCanvas(img, fullName, mobile10, scale);
@@ -386,7 +381,7 @@ export default function InterPosterPage() {
     } catch (err) {
       console.error(err);
     } finally {
-      if (!isIOS()) hideExportWrapper();
+      if (!isMobileOrTablet()) hideExportWrapper();
     }
     setGenerating(false);
   };
