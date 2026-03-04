@@ -1,7 +1,8 @@
 import { useState, useEffect, useLayoutEffect, useRef } from 'react';
 import { createPortal } from 'react-dom';
 import { Link } from 'react-router-dom';
-import { BarChart, Bar, LineChart, Line, XAxis, YAxis, Tooltip, ResponsiveContainer, Legend, CartesianGrid, AreaChart, Area } from 'recharts';
+import { FiUsers, FiCheckCircle, FiCalendar, FiVideo, FiEdit3, FiAward, FiLoader, FiUserCheck, FiCheck } from 'react-icons/fi';
+import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, Legend, CartesianGrid, AreaChart, Area } from 'recharts';
 import { getAdminStats, getAdminLeads, getStoredToken } from '../../utils/adminApi';
 import { useAuth } from '../../contexts/AuthContext';
 import { useAdminDateRange } from '../../contexts/AdminDashboardContext';
@@ -468,18 +469,54 @@ export default function Overview() {
       </div>
 
       {/* Key metrics */}
-      <section aria-labelledby="section-key-metrics">
-        <h2 id="section-key-metrics" className="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-4">Key metrics</h2>
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-        <KpiCard label="Total Leads" value={total} title="Total leads added" />
-        <KpiCard label="OTP Verified" value={otpVerified} title="Leads who verified OTP" />
-        <KpiCard label="Slot Booked" value={slotBooked} title="Leads who booked a slot" />
-        <KpiCard label="Demo Attended" value={demoAttended} title="Leads who attended demo" />
-        <KpiCard label="Assessment Written" value={assessmentWritten} title="Leads who completed assessment" />
-        <KpiCard label="Activation Done" value={activationFormCompleted} title="Leads who completed activation form" />
-        <KpiCard label="In Progress" value={stats?.inProgress ?? 0} title="Leads in progress" />
-        <KpiCard label="Registered" value={stats?.registered ?? 0} title="Registered leads" />
-        <KpiCard label="Completed" value={stats?.completed ?? 0} title="Completed applications" />
+      <section aria-labelledby="section-key-metrics" className="mb-2">
+        <h2 id="section-key-metrics" className="text-sm font-bold text-gray-700 uppercase tracking-wider mb-1">Key metrics</h2>
+        <p className="text-sm text-gray-500 mb-5">Lead funnel and application status at a glance.</p>
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 lg:gap-5">
+          <KpiCard label="Total Leads" value={total} title="Total leads added" icon={FiUsers} accent="hero" />
+          <KpiCard
+            label="OTP Verified"
+            value={otpVerified}
+            title="Leads who verified OTP"
+            icon={FiCheckCircle}
+            accent
+            subtitle={total > 0 ? `${Math.round((otpVerified / total) * 100)}% of total` : ''}
+          />
+          <KpiCard
+            label="Slot Booked"
+            value={slotBooked}
+            title="Leads who booked a slot"
+            icon={FiCalendar}
+            accent
+            subtitle={otpVerified > 0 ? `${Math.round((slotBooked / otpVerified) * 100)}% of OTP verified` : ''}
+          />
+          <KpiCard
+            label="Demo Attended"
+            value={demoAttended}
+            title="Leads who attended demo"
+            icon={FiVideo}
+            accent
+            subtitle={slotBooked > 0 ? `${Math.round((demoAttended / slotBooked) * 100)}% of slot booked` : ''}
+          />
+          <KpiCard
+            label="Assessment Written"
+            value={assessmentWritten}
+            title="Leads who completed assessment"
+            icon={FiEdit3}
+            accent
+            subtitle={demoAttended > 0 ? `${Math.round((assessmentWritten / demoAttended) * 100)}% of demo attended` : ''}
+          />
+          <KpiCard
+            label="Activation Done"
+            value={activationFormCompleted}
+            title="Leads who completed activation form"
+            icon={FiAward}
+            accent
+            subtitle={assessmentWritten > 0 ? `${Math.round((activationFormCompleted / assessmentWritten) * 100)}% of assessment written` : ''}
+          />
+          <KpiCard label="In Progress" value={stats?.inProgress ?? 0} title="Leads in progress" icon={FiLoader} accent />
+          <KpiCard label="Registered" value={stats?.registered ?? 0} title="Registered leads" icon={FiUserCheck} accent />
+          <KpiCard label="Completed" value={stats?.completed ?? 0} title="Completed applications" icon={FiCheck} accent />
         </div>
       </section>
 
