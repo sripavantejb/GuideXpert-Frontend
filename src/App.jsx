@@ -41,6 +41,7 @@ const CounsellorMarketing = lazy(() => import('./pages/counsellor/Marketing'));
 import CounsellorTools from './pages/counsellor/Tools';
 import CounsellorCertificate from './pages/counsellor/Certificate';
 import HoliPosterPage from './pages/HoliPosterPage';
+import InterPosterPage from './pages/InterPosterPage';
 const CollegeReferrals = lazy(() => import('./pages/counsellor/CollegeReferrals'));
 const CollegeReferralDetail = lazy(() => import('./pages/counsellor/CollegeReferralDetail'));
 const AnnouncementsFeed = lazy(() => import('./pages/counsellor/AnnouncementsFeed'));
@@ -83,6 +84,7 @@ function App() {
           <Route path="/training" element={<TrainingMeeting />} />
           <Route path="/counsellor-poster" element={<Suspense fallback={<div className="min-h-screen"><PageSkeleton /></div>}><CounsellorCertificate /></Suspense>} />
           <Route path="/holiposter" element={<HoliPosterPage />} />
+          <Route path="/interposter" element={<InterPosterPage />} />
           <Route path="/webinar" element={<Suspense fallback={<div className="min-h-screen flex items-center justify-center bg-gray-50"><div className="animate-pulse text-gray-500">Loading...</div></div>}><WebinarLayout /></Suspense>}>
             <Route index element={<Suspense fallback={<div className="p-4 animate-pulse text-gray-500">Loading...</div>}><WebinarDashboard /></Suspense>} />
             <Route path="progress" element={<Suspense fallback={<div className="p-4 animate-pulse text-gray-500">Loading...</div>}><ProgressPage /></Suspense>} />
