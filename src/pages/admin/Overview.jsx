@@ -1,9 +1,13 @@
 import { useState, useEffect, useLayoutEffect, useRef } from 'react';
 import { createPortal } from 'react-dom';
 import { Link } from 'react-router-dom';
+import { BarChart, Bar, LineChart, Line, XAxis, YAxis, Tooltip, ResponsiveContainer, Legend, CartesianGrid, AreaChart, Area } from 'recharts';
 import { getAdminStats, getAdminLeads, getStoredToken } from '../../utils/adminApi';
 import { useAuth } from '../../contexts/AuthContext';
-import OverviewSkeleton from '../../components/UI/OverviewSkeleton';
+import { useAdminDateRange } from '../../contexts/AdminDashboardContext';
+import DashboardSkeleton from '../../components/Admin/DashboardSkeleton';
+import KpiCard from '../../components/Admin/KpiCard';
+import ChartContainer from '../../components/Admin/ChartContainer';
 
 /** Card ID -> getAdminLeads params and optional "View related" label for unsupported stages */
 const FUNNEL_CARD_LEADS_PARAMS = {
@@ -30,8 +34,27 @@ function formatDate(d) {
   return date.toLocaleDateString('en-IN', { dateStyle: 'short' }) + ' ' + date.toLocaleTimeString('en-IN', { timeStyle: 'short' });
 }
 
+function formatLastUpdated(ts) {
+  if (!ts) return null;
+  const d = (Date.now() - ts) / 60000;
+  if (d < 1) return 'Just now';
+  if (d < 60) return `${Math.floor(d)} min ago`;
+  return `${Math.floor(d / 60)} hr ago`;
+}
+
+function formatSlotIdForDisplay(slotId) {
+  if (!slotId || typeof slotId !== 'string') return slotId || '';
+  const match = slotId.match(/^(MONDAY|TUESDAY|WEDNESDAY|THURSDAY|FRIDAY|SATURDAY|SUNDAY)_(7PM|11AM|3PM|6PM)$/i);
+  if (match) {
+    const dayNames = { MONDAY: 'Mon', TUESDAY: 'Tue', WEDNESDAY: 'Wed', THURSDAY: 'Thu', FRIDAY: 'Fri', SATURDAY: 'Sat', SUNDAY: 'Sun' };
+    return `${dayNames[match[1].toUpperCase()] || match[1]} ${match[2]}`;
+  }
+  return slotId;
+}
+
 export default function Overview() {
   const { logout } = useAuth();
+  const { dateRange } = useAdminDateRange();
   const [stats, setStats] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
@@ -41,6 +64,8 @@ export default function Overview() {
   const [cardLeads, setCardLeads] = useState({ list: [], total: 0, loading: false, error: '' });
   const [scale, setScale] = useState(1);
   const [contentSize, setContentSize] = useState(null);
+  const [lastFetchedAt, setLastFetchedAt] = useState(null);
+  const [refreshTrigger, setRefreshTrigger] = useState(0);
   const funnelScrollRef = useRef(null);
   const funnelContentRef = useRef(null);
   const dragRef = useRef({ lastX: 0, lastY: 0, pointerDown: false, pastThreshold: false });
@@ -50,7 +75,10 @@ export default function Overview() {
     let cancelled = false;
     setLoading(true);
     setError('');
-    getAdminStats({}, getStoredToken()).then((statsRes) => {
+    const params = {};
+    if (dateRange.from) params.from = dateRange.from;
+    if (dateRange.to) params.to = dateRange.to;
+    getAdminStats(params, getStoredToken()).then((statsRes) => {
       if (cancelled) return;
       if (!statsRes.success) {
         if (statsRes.status === 401) {
@@ -63,10 +91,11 @@ export default function Overview() {
         return;
       }
       setStats(statsRes.data?.data || null);
+      setLastFetchedAt(Date.now());
       setLoading(false);
     });
     return () => { cancelled = true; };
-  }, [logout]);
+  }, [logout, dateRange.from, dateRange.to, refreshTrigger]);
 
   useLayoutEffect(() => {
     setContentSize(null);
@@ -196,13 +225,23 @@ export default function Overview() {
   }
 
   if (loading) {
-    return <OverviewSkeleton />;
+    return <DashboardSkeleton />;
   }
 
   if (error) {
     return (
-      <div className="w-full">
-        <p className="text-red-600" role="alert">{error}</p>
+      <div className="w-full max-w-xl">
+        <div className="rounded-xl border border-gray-200 bg-white p-6 portal-card" role="alert">
+          <p className="text-gray-800 font-medium mb-2">Could not load dashboard</p>
+          <p className="text-gray-600 text-sm mb-4">{error}</p>
+          <button
+            type="button"
+            onClick={() => { setError(''); setRefreshTrigger((t) => t + 1); }}
+            className="inline-flex items-center gap-2 h-9 px-4 rounded-lg bg-primary-navy text-white text-sm font-medium hover:bg-primary-navy/90 transition-colors focus:outline-none focus:ring-2 focus:ring-primary-navy focus:ring-offset-2"
+          >
+            Retry
+          </button>
+        </div>
       </div>
     );
   }
@@ -341,7 +380,7 @@ export default function Overview() {
         )}
         <div className="mt-auto h-1.5 bg-gray-100 rounded-full overflow-hidden">
           <div
-            className="h-full bg-primary-navy rounded-full transition-[width] duration-300 ease-out"
+            className="h-full rounded-full transition-[width] duration-300 ease-out bg-primary-navy"
             style={{ width: `${widthPct}%` }}
           />
         </div>
@@ -390,16 +429,140 @@ export default function Overview() {
     );
   }
 
+  const pipelineChartData = [
+    { name: 'Prospect', count: total },
+    { name: 'Opportunity', count: slotBooked },
+    { name: 'Customer', count: activationFormCompleted },
+    { name: 'Disqualified', count: otpNotVerified },
+    { name: 'In progress', count: stats?.inProgress ?? 0 },
+  ];
+  const pipelineEmpty = pipelineChartData.every((d) => d.count === 0);
+
+  const signupsOverTime = stats?.signupsOverTime ?? [];
+  const slotData = Object.entries(stats?.bySlot ?? {}).map(([id, value]) => ({
+    name: formatSlotIdForDisplay(id),
+    count: value,
+  }));
+
   return (
-    <div className="w-full h-full min-h-0 flex flex-col">
+    <div className="w-full min-h-0 flex flex-col gap-8">
+      <div className="flex flex-wrap items-center justify-between gap-3">
+        <p className="text-sm text-gray-600">
+          This dashboard gives you analytics insights of the leads created and conversion funnel.
+        </p>
+        <div className="flex items-center gap-3">
+          {lastFetchedAt != null && (
+            <span className="text-xs text-gray-500" aria-live="polite">
+              Last updated: {formatLastUpdated(lastFetchedAt)}
+            </span>
+          )}
+          <button
+            type="button"
+            onClick={() => setRefreshTrigger((t) => t + 1)}
+            className="inline-flex items-center gap-2 h-9 px-3 rounded-lg border border-gray-300 bg-white text-sm font-medium text-gray-700 hover:bg-gray-50 transition-colors focus:outline-none focus:ring-2 focus:ring-primary-navy focus:ring-offset-2"
+            aria-label="Refresh dashboard data"
+          >
+            Refresh
+          </button>
+        </div>
+      </div>
+
+      {/* Key metrics */}
+      <section aria-labelledby="section-key-metrics">
+        <h2 id="section-key-metrics" className="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-4">Key metrics</h2>
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+        <KpiCard label="Total Leads" value={total} title="Total leads added" />
+        <KpiCard label="OTP Verified" value={otpVerified} title="Leads who verified OTP" />
+        <KpiCard label="Slot Booked" value={slotBooked} title="Leads who booked a slot" />
+        <KpiCard label="Demo Attended" value={demoAttended} title="Leads who attended demo" />
+        <KpiCard label="Assessment Written" value={assessmentWritten} title="Leads who completed assessment" />
+        <KpiCard label="Activation Done" value={activationFormCompleted} title="Leads who completed activation form" />
+        <KpiCard label="In Progress" value={stats?.inProgress ?? 0} title="Leads in progress" />
+        <KpiCard label="Registered" value={stats?.registered ?? 0} title="Registered leads" />
+        <KpiCard label="Completed" value={stats?.completed ?? 0} title="Completed applications" />
+        </div>
+      </section>
+
+      {/* Lead pipeline */}
+      <section aria-labelledby="section-lead-pipeline">
+        <h2 id="section-lead-pipeline" className="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-4">Lead pipeline</h2>
+        <ChartContainer title="" empty={pipelineEmpty} emptyMessage="No data for the selected period">
+          {!pipelineEmpty && (
+            <div className="h-64 w-full">
+              <ResponsiveContainer width="100%" height="100%">
+                <BarChart data={pipelineChartData} margin={{ top: 8, right: 8, left: 8, bottom: 8 }}>
+                  <XAxis dataKey="name" tick={{ fontSize: 12 }} stroke="#64748b" />
+                  <YAxis tick={{ fontSize: 12 }} stroke="#64748b" />
+                  <Tooltip
+                    contentStyle={{ borderRadius: 8, border: '1px solid #e2e8f0' }}
+                    formatter={(value) => [value.toLocaleString(), 'Leads']}
+                    labelFormatter={(name) => name}
+                  />
+                  <Legend />
+                  <Bar dataKey="count" name="# Leads" fill="#003366" radius={[4, 4, 0, 0]} />
+                </BarChart>
+              </ResponsiveContainer>
+            </div>
+          )}
+        </ChartContainer>
+      </section>
+
+      {/* Signups over time + Slot distribution — two charts in a row on large screens */}
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
+        <section aria-labelledby="section-signups">
+          <h2 id="section-signups" className="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-4">Signups over time</h2>
+          <ChartContainer title="" empty={signupsOverTime.length === 0} emptyMessage="No data for the selected period">
+            {signupsOverTime.length > 0 && (
+              <div className="h-64 w-full">
+                <ResponsiveContainer width="100%" height="100%">
+                  <AreaChart data={signupsOverTime} margin={{ top: 8, right: 8, left: 8, bottom: 8 }}>
+                    <CartesianGrid strokeDasharray="3 3" stroke="#e2e8f0" />
+                    <XAxis dataKey="date" tick={{ fontSize: 11 }} stroke="#64748b" />
+                    <YAxis tick={{ fontSize: 11 }} stroke="#64748b" />
+                    <Tooltip
+                      contentStyle={{ borderRadius: 8, border: '1px solid #e2e8f0' }}
+                      formatter={(value) => [value, 'Signups']}
+                      labelFormatter={(label) => label}
+                    />
+                    <Area type="monotone" dataKey="count" name="Signups" stroke="#003366" fill="#003366" fillOpacity={0.2} />
+                  </AreaChart>
+                </ResponsiveContainer>
+              </div>
+            )}
+          </ChartContainer>
+        </section>
+        <section aria-labelledby="section-slot-distribution">
+          <h2 id="section-slot-distribution" className="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-4">Slot distribution</h2>
+          <ChartContainer title="" empty={slotData.length === 0} emptyMessage="No slot bookings yet">
+            {slotData.length > 0 && (
+              <div className="h-64 w-full">
+                <ResponsiveContainer width="100%" height="100%">
+                  <BarChart data={slotData} layout="vertical" margin={{ top: 8, right: 8, left: 8, bottom: 8 }}>
+                    <XAxis type="number" tick={{ fontSize: 11 }} stroke="#64748b" />
+                    <YAxis type="category" dataKey="name" width={80} tick={{ fontSize: 11 }} stroke="#64748b" />
+                    <Tooltip
+                      contentStyle={{ borderRadius: 8, border: '1px solid #e2e8f0' }}
+                      formatter={(value) => [value, 'Bookings']}
+                    />
+                    <Bar dataKey="count" name="Bookings" fill="#003366" radius={[0, 4, 4, 0]} />
+                  </BarChart>
+                </ResponsiveContainer>
+              </div>
+            )}
+          </ChartContainer>
+        </section>
+      </div>
+
       {/* Lead conversion funnel — tree diagram */}
+      <section aria-labelledby="section-funnel">
+        <h2 id="section-funnel" className="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-4">Lead conversion funnel</h2>
       <div
-        className="bg-gray-50/80 rounded-xl border border-gray-200 shadow-md flex-1 min-h-0 flex flex-col p-4 lg:p-6"
+        className="bg-white rounded-xl border border-gray-200 portal-card min-h-[420px] flex flex-col p-4 lg:p-6"
         role="img"
         aria-label="Lead conversion funnel: OTP verified and not verified, slot booked and not booked, demo attended and not attended, assessment written and not written, done and activation form not done, counsellor dashboard logged in and not logged in"
       >
         <div className="flex items-center justify-between gap-4 mb-6">
-          <h3 className="text-sm font-semibold text-gray-500 uppercase tracking-wider">Lead conversion funnel</h3>
+          <span className="text-sm font-semibold text-gray-500 uppercase tracking-wider">Stages</span>
           <div className="flex items-center gap-1 rounded-lg border border-gray-200 bg-white p-1 shadow-sm" role="toolbar" aria-label="Canvas zoom and view">
             <button type="button" onClick={handleZoomOut} className="h-8 w-8 flex items-center justify-center rounded text-gray-600 hover:bg-gray-100 font-medium" title="Zoom out" aria-label="Zoom out">−</button>
             <button type="button" onClick={handleZoomIn} className="h-8 w-8 flex items-center justify-center rounded text-gray-600 hover:bg-gray-100 font-medium" title="Zoom in" aria-label="Zoom in">+</button>
@@ -647,6 +810,7 @@ export default function Overview() {
           </div>
         </div>
       </div>
+      </section>
       {popoverCardId && popoverAnchor && createPortal(
         <div
           data-funnel-popover
