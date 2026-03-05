@@ -2,7 +2,7 @@ import { useState, useEffect, useLayoutEffect, useRef } from 'react';
 import { createPortal } from 'react-dom';
 import { Link } from 'react-router-dom';
 import { FiUsers, FiCheckCircle, FiCalendar, FiVideo, FiEdit3, FiAward, FiLoader, FiUserCheck, FiCheck } from 'react-icons/fi';
-import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, Legend, CartesianGrid, AreaChart, Area } from 'recharts';
+import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, Legend, CartesianGrid, AreaChart, Area, ReferenceLine } from 'recharts';
 import { getAdminStats, getAdminLeads, getInfluencerLinks, getStoredToken } from '../../utils/adminApi';
 import { useAuth } from '../../contexts/AuthContext';
 import { useAdminDateRange } from '../../contexts/AdminDashboardContext';
@@ -107,6 +107,7 @@ export default function Overview() {
   const [utmLinks, setUtmLinks] = useState([]);
   const [utmLinksLoading, setUtmLinksLoading] = useState(false);
   const [utmLinksError, setUtmLinksError] = useState('');
+  const [liveTick, setLiveTick] = useState(0);
 
   useEffect(() => {
     let cancelled = false;
@@ -133,6 +134,35 @@ export default function Overview() {
     });
     return () => { cancelled = true; };
   }, [logout, dateRange.from, dateRange.to, refreshTrigger]);
+
+  // Poll stats every second when tab is visible so the page-visits chart and KPIs stay live
+  useEffect(() => {
+    const params = {};
+    if (dateRange.from) params.from = dateRange.from;
+    if (dateRange.to) params.to = dateRange.to;
+    const fetchStats = () => {
+      if (typeof document !== 'undefined' && document.visibilityState !== 'visible') return;
+      getAdminStats(params, getStoredToken()).then((statsRes) => {
+        if (!statsRes.success) {
+          if (statsRes.status === 401) {
+            logout();
+            window.location.href = '/admin/login';
+          }
+          return;
+        }
+        setStats(statsRes.data?.data || null);
+        setLastFetchedAt(Date.now());
+      });
+    };
+    const interval = setInterval(fetchStats, 1000);
+    return () => clearInterval(interval);
+  }, [logout, dateRange.from, dateRange.to]);
+
+  // Tick every second so the "now" line and chart can update for stock-style live feel
+  useEffect(() => {
+    const interval = setInterval(() => setLiveTick((t) => t + 1), 1000);
+    return () => clearInterval(interval);
+  }, []);
 
   useEffect(() => {
     let cancelled = false;
@@ -498,6 +528,7 @@ export default function Overview() {
   const pipelineEmpty = pipelineChartData.every((d) => d.count === 0);
 
   const signupsOverTime = stats?.signupsOverTime ?? [];
+  const pageVisitsChartData = stats?.signupsOverTime ?? [];
   const slotData = Object.entries(stats?.bySlot ?? {}).map(([id, value]) => ({
     name: formatSlotIdForDisplay(id),
     count: value,
@@ -511,7 +542,7 @@ export default function Overview() {
   const utmCostPerLeadEmpty = utmCostPerLeadData.length === 0;
 
   return (
-    <div className="w-full min-h-0 flex flex-col gap-8">
+    <div className="w-full min-h-0 flex flex-col gap-5">
       <div className="flex flex-wrap items-center justify-between gap-3">
         <p className="text-sm text-gray-600">
           This dashboard gives you analytics insights of the leads created and conversion funnel.
@@ -532,6 +563,69 @@ export default function Overview() {
           </button>
         </div>
       </div>
+
+      {/* Page visits on live — stock-market themed chart */}
+      <section aria-labelledby="section-page-visits-live" className="mb-2">
+        <h2 id="section-page-visits-live" className="text-sm font-bold text-gray-700 uppercase tracking-wider mb-1 flex items-center gap-2">
+          Page visits on live
+          <span className="inline-flex items-center gap-1.5 rounded-full bg-emerald-50 px-2 py-0.5 text-xs font-medium text-emerald-700" aria-label="Live updating">
+            <span className="h-1.5 w-1.5 rounded-full bg-emerald-500 animate-pulse" />
+            Live
+          </span>
+        </h2>
+        <p className="text-sm text-gray-500 mb-5">Traffic over time. Refreshes every second while you&apos;re on this page.</p>
+        <ChartContainer
+          title=""
+          empty={pageVisitsChartData.length === 0}
+          emptyMessage="No page visit data for the selected period"
+        >
+          {pageVisitsChartData.length > 0 && (
+            <div className="h-64 w-full">
+              <ResponsiveContainer width="100%" height="100%">
+                <AreaChart
+                  data={
+                    (() => {
+                      const last = pageVisitsChartData[pageVisitsChartData.length - 1];
+                      const lastCount = last?.count ?? 0;
+                      return [...pageVisitsChartData, { date: `live-${liveTick}`, count: lastCount }];
+                    })()
+                  }
+                  margin={{ top: 8, right: 8, left: 8, bottom: 8 }}
+                >
+                  <defs>
+                    <linearGradient id="pageVisitsGradient" x1="0" y1="0" x2="0" y2="1">
+                      <stop offset="0%" stopColor="#0d9488" stopOpacity={0.35} />
+                      <stop offset="100%" stopColor="#0d9488" stopOpacity={0} />
+                    </linearGradient>
+                  </defs>
+                  <CartesianGrid strokeDasharray="3 3" stroke="#e2e8f0" />
+                  <XAxis
+                    dataKey="date"
+                    tick={{ fontSize: 11 }}
+                    stroke="#64748b"
+                    tickFormatter={(value) => (String(value).startsWith('live-') ? 'Now' : value)}
+                  />
+                  <YAxis tick={{ fontSize: 11 }} stroke="#64748b" />
+                  <Tooltip
+                    contentStyle={{ borderRadius: 8, border: '1px solid #e2e8f0' }}
+                    formatter={(value) => [value, 'Page visits']}
+                    labelFormatter={(label) => (String(label).startsWith('live-') ? 'Now' : label)}
+                  />
+                  <ReferenceLine x={`live-${liveTick}`} stroke="#0d9488" strokeDasharray="2 2" />
+                  <Area
+                    type="monotone"
+                    dataKey="count"
+                    name="Page visits"
+                    stroke="#0d9488"
+                    strokeWidth={2}
+                    fill="url(#pageVisitsGradient)"
+                  />
+                </AreaChart>
+              </ResponsiveContainer>
+            </div>
+          )}
+        </ChartContainer>
+      </section>
 
       {/* Key metrics */}
       <section aria-labelledby="section-key-metrics" className="mb-2">
