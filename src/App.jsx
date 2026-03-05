@@ -8,6 +8,7 @@ import AdminLogin from './pages/AdminLogin';
 import MeetingRegistration from './pages/MeetingRegistration';
 import TrainingMeeting from './pages/TrainingMeeting';
 import FeedbackForm from './pages/FeedbackForm';
+import TrainingForm from './pages/TrainingForm';
 import AssessmentForm from './pages/AssessmentForm';
 import AssessmentForm2 from './pages/AssessmentForm2';
 import AssessmentForm3 from './pages/AssessmentForm3';
@@ -25,6 +26,7 @@ import InfluencerTracking from './pages/admin/InfluencerTracking';
 import LeadStatus from './pages/admin/LeadStatus';
 import AssessmentResults from './pages/admin/AssessmentResults';
 import TrainingFeedback from './pages/admin/TrainingFeedback';
+import TrainingFormResponses from './pages/admin/TrainingFormResponses';
 import Announcements from './pages/admin/Announcements';
 import CounsellorLogin from './pages/counsellor/CounsellorLogin';
 
@@ -95,6 +97,7 @@ function App() {
             <Route path="certificates" element={<Suspense fallback={<div className="p-4 animate-pulse text-gray-500">Loading...</div>}><CertificatesPage /></Suspense>} />
           </Route>
           <Route path="/activationform" element={<FeedbackForm />} />
+          <Route path="/training-form" element={<TrainingForm />} />
           <Route path="/assessment" element={<AssessmentForm />} />
           <Route path="/assessment-2" element={<AssessmentForm2 />} />
           <Route path="/assessment-3" element={<AssessmentForm3 />} />
@@ -119,6 +122,7 @@ function App() {
             <Route path="settings" element={<Settings />} />
             <Route path="meeting-attendance" element={<MeetingAttendance />} />
             <Route path="training-feedback" element={<TrainingFeedback />} />
+            <Route path="training-form-responses" element={<TrainingFormResponses />} />
             <Route path="influencer-tracking" element={<InfluencerTracking />} />
             <Route path="assessment-results" element={<AssessmentResults />} />
             <Route path="assessment-2-results" element={<Navigate to="/admin/assessment-results?type=2" replace />} />

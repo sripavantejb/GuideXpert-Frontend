@@ -297,6 +297,18 @@ export const submitTrainingFeedback = async (payload) => {
 };
 
 /**
+ * Submit training form (interest/feedback) — fullName, mobileNumber, email, occupation, sessionRating 1–5, suggestions optional.
+ * @param {Object} payload - { fullName, mobileNumber, email, occupation, sessionRating, suggestions? }
+ * @returns {Promise<{success: boolean, message?: string, data?: Object, status?: number}>}
+ */
+export const submitTrainingFormResponse = async (payload) => {
+  return apiRequest('/training-form', {
+    method: 'POST',
+    body: JSON.stringify(payload),
+  });
+};
+
+/**
  * Check if mobile number is eligible for poster download (exists in training feedbacks).
  * @param {string} mobileNumber - 10-digit mobile number
  * @returns {Promise<{success: boolean, eligible?: boolean, message?: string, data?: Object, status?: number}>}
