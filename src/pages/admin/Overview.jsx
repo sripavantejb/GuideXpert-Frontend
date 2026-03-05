@@ -43,6 +43,16 @@ function formatLastUpdated(ts) {
   return `${Math.floor(d / 60)} hr ago`;
 }
 
+/** Format YYYY-MM-DD (or date string) for chart tooltip and axis: e.g. "7 Feb 2026". */
+function formatChartDateLabel(label) {
+  if (label == null || label === '') return '—';
+  const s = String(label);
+  if (s.startsWith('live-')) return 'Now';
+  const d = new Date(s);
+  if (Number.isNaN(d.getTime())) return s;
+  return d.toLocaleDateString('en-IN', { day: 'numeric', month: 'short', year: 'numeric' });
+}
+
 function formatSlotIdForDisplay(slotId) {
   if (!slotId || typeof slotId !== 'string') return slotId || '';
   const match = slotId.match(/^(MONDAY|TUESDAY|WEDNESDAY|THURSDAY|FRIDAY|SATURDAY|SUNDAY)_(7PM|11AM|3PM|6PM)$/i);
@@ -154,7 +164,8 @@ export default function Overview() {
         setLastFetchedAt(Date.now());
       });
     };
-    const interval = setInterval(fetchStats, 1000);
+    const FIVE_MINUTES_MS = 5 * 60 * 1000;
+    const interval = setInterval(fetchStats, FIVE_MINUTES_MS);
     return () => clearInterval(interval);
   }, [logout, dateRange.from, dateRange.to]);
 
@@ -573,7 +584,7 @@ export default function Overview() {
             Live
           </span>
         </h2>
-        <p className="text-sm text-gray-500 mb-5">Traffic over time. Refreshes every second while you&apos;re on this page.</p>
+        <p className="text-sm text-gray-500 mb-5">Traffic over time. Refreshes every 5 minutes while you&apos;re on this page.</p>
         <ChartContainer
           title=""
           empty={pageVisitsChartData.length === 0}
@@ -603,13 +614,13 @@ export default function Overview() {
                     dataKey="date"
                     tick={{ fontSize: 11 }}
                     stroke="#64748b"
-                    tickFormatter={(value) => (String(value).startsWith('live-') ? 'Now' : value)}
+                    tickFormatter={formatChartDateLabel}
                   />
                   <YAxis tick={{ fontSize: 11 }} stroke="#64748b" />
                   <Tooltip
                     contentStyle={{ borderRadius: 8, border: '1px solid #e2e8f0' }}
                     formatter={(value) => [value, 'Page visits']}
-                    labelFormatter={(label) => (String(label).startsWith('live-') ? 'Now' : label)}
+                    labelFormatter={formatChartDateLabel}
                   />
                   <ReferenceLine x={`live-${liveTick}`} stroke="#0d9488" strokeDasharray="2 2" />
                   <Area
