@@ -3,7 +3,7 @@ import { createPortal } from 'react-dom';
 import { Link } from 'react-router-dom';
 import { FiUsers, FiCheckCircle, FiCalendar, FiVideo, FiEdit3, FiAward, FiLoader, FiUserCheck, FiCheck } from 'react-icons/fi';
 import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, Legend, CartesianGrid, AreaChart, Area } from 'recharts';
-import { getAdminStats, getAdminLeads, getStoredToken } from '../../utils/adminApi';
+import { getAdminStats, getAdminLeads, getInfluencerLinks, getStoredToken } from '../../utils/adminApi';
 import { useAuth } from '../../contexts/AuthContext';
 import { useAdminDateRange } from '../../contexts/AdminDashboardContext';
 import DashboardSkeleton from '../../components/Admin/DashboardSkeleton';
@@ -53,6 +53,38 @@ function formatSlotIdForDisplay(slotId) {
   return slotId;
 }
 
+/** Format number as currency (INR) for tooltips and axis. */
+function formatCurrency(value) {
+  if (value == null || Number.isNaN(value)) return '—';
+  return new Intl.NumberFormat('en-IN', { style: 'currency', currency: 'INR', maximumFractionDigits: 0 }).format(value);
+}
+
+/** Aggregate influencer links by influencerName for Budget and Cost-per-lead charts. */
+function aggregateUtmLinksByInfluencer(links) {
+  if (!Array.isArray(links) || links.length === 0) return { budget: [], costPerLead: [] };
+  const byName = new Map();
+  for (const link of links) {
+    const name = (link.influencerName || '—').trim() || '—';
+    const cost = link.cost != null && typeof link.cost === 'number' ? link.cost : 0;
+    const leads = Math.max(0, Number(link.leadCount) || 0);
+    if (!byName.has(name)) {
+      byName.set(name, { name, totalCost: 0, totalLeads: 0 });
+    }
+    const row = byName.get(name);
+    row.totalCost += cost;
+    row.totalLeads += leads;
+  }
+  const budget = [...byName.entries()]
+    .filter(([, r]) => r.totalCost > 0)
+    .map(([, r]) => ({ name: r.name, cost: r.totalCost }))
+    .sort((a, b) => b.cost - a.cost);
+  const costPerLead = [...byName.entries()]
+    .filter(([, r]) => r.totalLeads > 0 && r.totalCost > 0)
+    .map(([, r]) => ({ name: r.name, costPerLead: r.totalCost / r.totalLeads }))
+    .sort((a, b) => b.costPerLead - a.costPerLead);
+  return { budget, costPerLead };
+}
+
 export default function Overview() {
   const { logout } = useAuth();
   const { dateRange } = useAdminDateRange();
@@ -71,6 +103,10 @@ export default function Overview() {
   const funnelContentRef = useRef(null);
   const dragRef = useRef({ lastX: 0, lastY: 0, pointerDown: false, pastThreshold: false });
   const justDraggedRef = useRef(false);
+
+  const [utmLinks, setUtmLinks] = useState([]);
+  const [utmLinksLoading, setUtmLinksLoading] = useState(false);
+  const [utmLinksError, setUtmLinksError] = useState('');
 
   useEffect(() => {
     let cancelled = false;
@@ -97,6 +133,28 @@ export default function Overview() {
     });
     return () => { cancelled = true; };
   }, [logout, dateRange.from, dateRange.to, refreshTrigger]);
+
+  useEffect(() => {
+    let cancelled = false;
+    setUtmLinksLoading(true);
+    setUtmLinksError('');
+    getInfluencerLinks(getStoredToken()).then((res) => {
+      if (cancelled) return;
+      if (!res.success) {
+        if (res.status === 401) {
+          logout();
+          window.location.href = '/admin/login';
+          return;
+        }
+        setUtmLinksError(res.message || 'Failed to load UTM links');
+        setUtmLinks([]);
+      } else {
+        setUtmLinks(Array.isArray(res.data?.data) ? res.data.data : []);
+      }
+      setUtmLinksLoading(false);
+    });
+    return () => { cancelled = true; };
+  }, [logout, refreshTrigger]);
 
   useLayoutEffect(() => {
     setContentSize(null);
@@ -445,6 +503,13 @@ export default function Overview() {
     count: value,
   }));
 
+  const { budget: utmBudgetData, costPerLead: utmCostPerLeadData } = aggregateUtmLinksByInfluencer(utmLinks);
+  const utmTotalBudget = utmLinks.reduce((sum, l) => sum + (l.cost != null && typeof l.cost === 'number' ? l.cost : 0), 0);
+  const utmTotalLeads = utmLinks.reduce((sum, l) => sum + Math.max(0, Number(l.leadCount) || 0), 0);
+  const utmAvgCostPerLead = utmTotalLeads > 0 && utmTotalBudget > 0 ? utmTotalBudget / utmTotalLeads : null;
+  const utmBudgetEmpty = utmBudgetData.length === 0;
+  const utmCostPerLeadEmpty = utmCostPerLeadData.length === 0;
+
   return (
     <div className="w-full min-h-0 flex flex-col gap-8">
       <div className="flex flex-wrap items-center justify-between gap-3">
@@ -542,6 +607,95 @@ export default function Overview() {
             </div>
           )}
         </ChartContainer>
+      </section>
+
+      {/* UTM Budget & ROI */}
+      <section aria-labelledby="section-utm-budget-roi" className="mb-2">
+        <h2 id="section-utm-budget-roi" className="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-1">UTM Budget & ROI</h2>
+        <p className="text-sm text-gray-500 mb-4">Spend and cost per lead by UTM source (Influencer / platform).</p>
+        {(utmTotalBudget > 0 || utmAvgCostPerLead != null) && (
+          <div className="flex flex-wrap gap-4 mb-4">
+            {utmTotalBudget > 0 && (
+              <span className="text-sm text-gray-700">
+                <span className="font-medium text-gray-500">Total budget:</span>{' '}
+                <span className="font-semibold text-primary-navy">{formatCurrency(utmTotalBudget)}</span>
+              </span>
+            )}
+            {utmAvgCostPerLead != null && (
+              <span className="text-sm text-gray-700">
+                <span className="font-medium text-gray-500">Avg cost per lead:</span>{' '}
+                <span className="font-semibold text-primary-navy">{formatCurrency(utmAvgCostPerLead)}</span>
+              </span>
+            )}
+          </div>
+        )}
+        {utmLinksError && (
+          <p className="text-sm text-amber-600 mb-4" role="alert">{utmLinksError}</p>
+        )}
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
+          <div>
+            <h3 className="text-xs font-medium text-gray-600 mb-3">Budget by UTM source</h3>
+            <ChartContainer
+              title=""
+              loading={utmLinksLoading}
+              empty={!utmLinksLoading && utmBudgetEmpty}
+              emptyMessage="No UTM links with cost data"
+            >
+              {!utmLinksLoading && !utmBudgetEmpty && (
+                <div className="h-64 w-full">
+                  <ResponsiveContainer width="100%" height="100%">
+                    <BarChart data={utmBudgetData} margin={{ top: 8, right: 8, left: 8, bottom: 8 }}>
+                      <XAxis
+                        dataKey="name"
+                        tick={{ fontSize: 11 }}
+                        stroke="#64748b"
+                        tickFormatter={(v) => (v && v.length > 12 ? `${v.slice(0, 11)}…` : v)}
+                      />
+                      <YAxis tick={{ fontSize: 11 }} stroke="#64748b" tickFormatter={(v) => (v >= 1000 ? `₹${(v / 1000).toFixed(0)}k` : `₹${v}`)} />
+                      <Tooltip
+                        contentStyle={{ borderRadius: 8, border: '1px solid #e2e8f0' }}
+                        formatter={(value) => [formatCurrency(value), 'Budget']}
+                        labelFormatter={(label) => label}
+                      />
+                      <Bar dataKey="cost" name="Budget" fill="#003366" radius={[4, 4, 0, 0]} />
+                    </BarChart>
+                  </ResponsiveContainer>
+                </div>
+              )}
+            </ChartContainer>
+          </div>
+          <div>
+            <h3 className="text-xs font-medium text-gray-600 mb-3">Cost per lead (ROI)</h3>
+            <ChartContainer
+              title=""
+              loading={utmLinksLoading}
+              empty={!utmLinksLoading && utmCostPerLeadEmpty}
+              emptyMessage="No cost-per-lead data for the selected sources"
+            >
+              {!utmLinksLoading && !utmCostPerLeadEmpty && (
+                <div className="h-64 w-full">
+                  <ResponsiveContainer width="100%" height="100%">
+                    <BarChart data={utmCostPerLeadData} margin={{ top: 8, right: 8, left: 8, bottom: 8 }}>
+                      <XAxis
+                        dataKey="name"
+                        tick={{ fontSize: 11 }}
+                        stroke="#64748b"
+                        tickFormatter={(v) => (v && v.length > 12 ? `${v.slice(0, 11)}…` : v)}
+                      />
+                      <YAxis tick={{ fontSize: 11 }} stroke="#64748b" tickFormatter={(v) => (v >= 1000 ? `₹${(v / 1000).toFixed(0)}k` : `₹${v}`)} />
+                      <Tooltip
+                        contentStyle={{ borderRadius: 8, border: '1px solid #e2e8f0' }}
+                        formatter={(value) => [formatCurrency(value), 'Cost per lead']}
+                        labelFormatter={(label) => label}
+                      />
+                      <Bar dataKey="costPerLead" name="Cost per lead" fill="#003366" radius={[4, 4, 0, 0]} />
+                    </BarChart>
+                  </ResponsiveContainer>
+                </div>
+              )}
+            </ChartContainer>
+          </div>
+        </div>
       </section>
 
       {/* Signups over time + Slot distribution — two charts in a row on large screens */}

@@ -10,7 +10,7 @@ const navItems = [
   { to: '/admin/leads', label: 'Lead Funnel', icon: FiUsers },
   { to: '/admin/analytics', label: 'Analytics', icon: FiBarChart2 },
   { to: '/admin/meeting-attendance', label: 'User Productivity', icon: FiVideo },
-  { to: '/admin/export', label: 'Revenue Reports', icon: FiDownload },
+  { to: '/admin/export', label: 'Export Data', icon: FiDownload },
   { to: '/admin/slots', label: 'Slots', icon: FiCalendar },
   { to: '/admin/influencer-tracking', label: 'Influencer / UTM Tracking', icon: FiLink },
   { to: '/admin/assessment-results', label: 'Custom Reports', icon: FiFileText },
