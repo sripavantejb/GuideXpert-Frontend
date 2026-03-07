@@ -89,7 +89,7 @@ export default function Settings() {
   };
 
   return (
-    <div className="max-w-2xl mx-auto">
+    <div className="max-w-3xl mx-auto">
       <h2 className="text-xl font-semibold text-gray-800 mb-6">Settings</h2>
 
       <div className="bg-white rounded-lg border border-gray-200 shadow-sm p-6 mb-6">
@@ -126,15 +126,15 @@ export default function Settings() {
         <>
           <div className="bg-white rounded-lg border border-gray-200 shadow-sm p-6 mb-6">
             <h3 className="text-lg font-semibold text-gray-800 mb-1">Manage admins</h3>
-            <p className="text-sm text-gray-500 mb-4">Create new admin users and set their section access.</p>
+            <p className="text-sm text-gray-500 mb-6">Create new admin users and set their section access.</p>
 
             {adminsLoading ? (
               <p className="text-sm text-gray-500">Loading admins…</p>
             ) : admins.length > 0 ? (
               <div className="mb-6">
                 <h4 className="text-sm font-semibold text-gray-700 mb-3">Existing admin users</h4>
-                <div className="rounded-lg border border-gray-200 overflow-hidden">
-                  <div className="grid grid-cols-12 gap-2 px-3 py-2 bg-gray-100 text-xs font-semibold text-gray-600 uppercase tracking-wide">
+                <div className="rounded-lg border border-gray-200 overflow-hidden shadow-sm">
+                  <div className="grid grid-cols-12 gap-2 px-4 py-3 bg-gray-50 text-xs font-semibold text-gray-500 uppercase tracking-wide">
                     <div className="col-span-4">User</div>
                     <div className="col-span-2">Role</div>
                     <div className="col-span-6">Section access</div>
@@ -142,7 +142,7 @@ export default function Settings() {
                   {admins.map((a) => (
                     <div
                       key={a.id}
-                      className="grid grid-cols-12 gap-2 px-3 py-2.5 border-t border-gray-100 bg-white hover:bg-gray-50/50 text-sm"
+                      className="grid grid-cols-12 gap-2 px-4 py-3 border-t border-gray-100 bg-white hover:bg-gray-50/50 text-sm"
                     >
                       <div className="col-span-4">
                         <span className="font-medium text-gray-800">{a.username}</span>
@@ -172,115 +172,133 @@ export default function Settings() {
               </div>
             ) : null}
 
-            <h4 className="text-sm font-semibold text-gray-700 mb-3">Create admin</h4>
-            <form onSubmit={handleSubmit} className="space-y-4">
-              <div>
-                <label htmlFor="new-admin-username" className="block text-sm font-medium text-gray-700 mb-1">
-                  Username *
-                </label>
-                <input
-                  id="new-admin-username"
-                  type="text"
-                  value={form.username}
-                  onChange={(e) => setForm((p) => ({ ...p, username: e.target.value }))}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-navy focus:border-primary-navy"
-                  placeholder="e.g. editor"
-                  autoComplete="username"
-                />
-              </div>
-              <div>
-                <label htmlFor="new-admin-password" className="block text-sm font-medium text-gray-700 mb-1">
-                  Password * (min 6 characters)
-                </label>
-                <input
-                  id="new-admin-password"
-                  type="password"
-                  value={form.password}
-                  onChange={(e) => setForm((p) => ({ ...p, password: e.target.value }))}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-navy focus:border-primary-navy"
-                  placeholder="••••••••"
-                  autoComplete="new-password"
-                />
-              </div>
-              <div>
-                <label htmlFor="new-admin-name" className="block text-sm font-medium text-gray-700 mb-1">
-                  Name (optional)
-                </label>
-                <input
-                  id="new-admin-name"
-                  type="text"
-                  value={form.name}
-                  onChange={(e) => setForm((p) => ({ ...p, name: e.target.value }))}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-navy focus:border-primary-navy"
-                  placeholder="Display name"
-                />
-              </div>
-              <div className="flex items-center gap-2">
-                <input
-                  id="new-admin-super"
-                  type="checkbox"
-                  checked={form.isSuperAdmin}
-                  onChange={(e) => setForm((p) => ({ ...p, isSuperAdmin: e.target.checked }))}
-                  className="rounded border-gray-300 text-primary-navy focus:ring-primary-navy"
-                />
-                <label htmlFor="new-admin-super" className="text-sm font-medium text-gray-700">
-                  Super admin (full access and can create other admins)
-                </label>
-              </div>
-              {!form.isSuperAdmin && (
+            <div className="border-t border-gray-200 pt-6">
+              <h4 className="text-sm font-semibold text-gray-700 mb-4">Create admin</h4>
+              <form onSubmit={handleSubmit} className="space-y-6">
                 <div>
-                  <div className="flex items-center justify-between gap-2 mb-2">
-                    <p className="text-sm font-medium text-gray-700">View section access</p>
-                    <div className="flex gap-2">
-                      <button
-                        type="button"
-                        onClick={() => setForm((p) => ({ ...p, sectionAccess: SECTION_OPTIONS.map((o) => o.sectionKey) }))}
-                        className="text-xs px-2 py-1 rounded border border-gray-300 bg-white text-gray-700 hover:bg-gray-50"
-                      >
-                        Select all
-                      </button>
-                      <button
-                        type="button"
-                        onClick={() => setForm((p) => ({ ...p, sectionAccess: [] }))}
-                        className="text-xs px-2 py-1 rounded border border-gray-300 bg-white text-gray-700 hover:bg-gray-50"
-                      >
-                        Clear all
-                      </button>
+                  <p className="text-sm font-semibold text-gray-700 mb-2">Account details</p>
+                  <div className="space-y-4">
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                      <div>
+                        <label htmlFor="new-admin-username" className="block text-sm font-medium text-gray-700 mb-1">
+                          Username *
+                        </label>
+                        <input
+                          id="new-admin-username"
+                          type="text"
+                          value={form.username}
+                          onChange={(e) => setForm((p) => ({ ...p, username: e.target.value }))}
+                          className="w-full px-3 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-navy focus:border-primary-navy outline-none"
+                          placeholder="e.g. editor"
+                          autoComplete="username"
+                        />
+                      </div>
+                      <div>
+                        <label htmlFor="new-admin-password" className="block text-sm font-medium text-gray-700 mb-1">
+                          Password * (min 6 characters)
+                        </label>
+                        <input
+                          id="new-admin-password"
+                          type="password"
+                          value={form.password}
+                          onChange={(e) => setForm((p) => ({ ...p, password: e.target.value }))}
+                          className="w-full px-3 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-navy focus:border-primary-navy outline-none"
+                          placeholder="••••••••"
+                          autoComplete="new-password"
+                        />
+                      </div>
+                    </div>
+                    <div>
+                      <label htmlFor="new-admin-name" className="block text-sm font-medium text-gray-700 mb-1">
+                        Name (optional)
+                      </label>
+                      <input
+                        id="new-admin-name"
+                        type="text"
+                        value={form.name}
+                        onChange={(e) => setForm((p) => ({ ...p, name: e.target.value }))}
+                        className="w-full px-3 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-navy focus:border-primary-navy outline-none"
+                        placeholder="Display name"
+                      />
                     </div>
                   </div>
-                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
-                    {SECTION_OPTIONS.map(({ sectionKey, label }) => (
-                      <label key={sectionKey} className="flex items-center gap-2 cursor-pointer">
-                        <input
-                          type="checkbox"
-                          checked={form.sectionAccess.includes(sectionKey)}
-                          onChange={() => handleSectionToggle(sectionKey)}
-                          className="rounded border-gray-300 text-primary-navy focus:ring-primary-navy"
-                        />
-                        <span className="text-sm text-gray-700">{label}</span>
-                      </label>
-                    ))}
+                </div>
+
+                <div>
+                  <p className="text-sm font-semibold text-gray-700 mb-2">Role</p>
+                  <div className="flex items-center gap-2">
+                    <input
+                      id="new-admin-super"
+                      type="checkbox"
+                      checked={form.isSuperAdmin}
+                      onChange={(e) => setForm((p) => ({ ...p, isSuperAdmin: e.target.checked }))}
+                      className="rounded border-gray-300 text-primary-navy focus:ring-primary-navy"
+                    />
+                    <label htmlFor="new-admin-super" className="text-sm font-medium text-gray-700">
+                      Super admin (full access and can create other admins)
+                    </label>
                   </div>
                 </div>
-              )}
-              {submitStatus.message && (
-                <p
-                  className={`text-sm ${
-                    submitStatus.type === 'success' ? 'text-green-600' : 'text-red-600'
-                  }`}
-                  role="alert"
-                >
-                  {submitStatus.message}
-                </p>
-              )}
-              <button
-                type="submit"
-                disabled={submitting}
-                className="px-4 py-2 bg-primary-navy text-white rounded-lg font-medium hover:bg-primary-navy/90 disabled:opacity-50 disabled:cursor-not-allowed"
-              >
-                {submitting ? 'Creating…' : 'Create admin'}
-              </button>
-            </form>
+
+                {!form.isSuperAdmin && (
+                  <div>
+                    <p className="text-sm font-semibold text-gray-700 mb-2">Permissions</p>
+                    <div className="border border-gray-200 rounded-lg p-4 bg-gray-50/50">
+                      <div className="flex items-center justify-between gap-2 mb-3">
+                        <span className="text-sm font-medium text-gray-700">View section access</span>
+                        <div className="flex gap-2">
+                          <button
+                            type="button"
+                            onClick={() => setForm((p) => ({ ...p, sectionAccess: SECTION_OPTIONS.map((o) => o.sectionKey) }))}
+                            className="text-xs px-2.5 py-1.5 rounded-lg border border-gray-300 bg-white text-gray-700 hover:bg-gray-50 font-medium"
+                          >
+                            Select all
+                          </button>
+                          <button
+                            type="button"
+                            onClick={() => setForm((p) => ({ ...p, sectionAccess: [] }))}
+                            className="text-xs px-2.5 py-1.5 rounded-lg border border-gray-300 bg-white text-gray-700 hover:bg-gray-50 font-medium"
+                          >
+                            Clear all
+                          </button>
+                        </div>
+                      </div>
+                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                        {SECTION_OPTIONS.map(({ sectionKey, label }) => (
+                          <label key={sectionKey} className="flex items-center gap-2 cursor-pointer">
+                            <input
+                              type="checkbox"
+                              checked={form.sectionAccess.includes(sectionKey)}
+                              onChange={() => handleSectionToggle(sectionKey)}
+                              className="rounded border-gray-300 text-primary-navy focus:ring-primary-navy"
+                            />
+                            <span className="text-sm text-gray-700">{label}</span>
+                          </label>
+                        ))}
+                      </div>
+                    </div>
+                  </div>
+                )}
+
+                {submitStatus.message && (
+                  <p
+                    className={`text-sm ${submitStatus.type === 'success' ? 'text-green-600' : 'text-red-600'}`}
+                    role="alert"
+                  >
+                    {submitStatus.message}
+                  </p>
+                )}
+                <div className="border-t border-gray-200 pt-4">
+                  <button
+                    type="submit"
+                    disabled={submitting}
+                    className="px-4 py-2.5 bg-primary-navy text-white rounded-lg font-medium hover:bg-primary-navy/90 disabled:opacity-50 disabled:cursor-not-allowed"
+                  >
+                    {submitting ? 'Creating…' : 'Create admin'}
+                  </button>
+                </div>
+              </form>
+            </div>
           </div>
         </>
       )}
