@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { useNavigate, Navigate } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
+import { getAdminApiBaseUrl } from '../utils/adminApi';
 
 export default function AdminLogin() {
   const { login, isAuthenticated } = useAuth();
@@ -8,6 +9,7 @@ export default function AdminLogin() {
   const [username, setUsername] = useState('');
   const [password, setPassword] = useState('');
   const [error, setError] = useState('');
+  const [loginHint, setLoginHint] = useState('');
   const [loading, setLoading] = useState(false);
 
   if (isAuthenticated) {
@@ -17,6 +19,7 @@ export default function AdminLogin() {
   const handleSubmit = async (e) => {
     e.preventDefault();
     setError('');
+    setLoginHint('');
     setLoading(true);
     const result = await login(username, password);
     setLoading(false);
@@ -24,6 +27,7 @@ export default function AdminLogin() {
       navigate('/admin', { replace: true });
     } else {
       setError(result.message || 'Login failed');
+      if (result.data?.hint) setLoginHint(result.data.hint);
     }
   };
 
@@ -67,9 +71,14 @@ export default function AdminLogin() {
               />
             </div>
             {error && (
-              <p className="text-sm text-red-600" role="alert">
-                {error}
-              </p>
+              <div className="space-y-1">
+                <p className="text-sm text-red-600" role="alert">
+                  {error}
+                </p>
+                {loginHint && (
+                  <p className="text-xs text-gray-500">{loginHint}</p>
+                )}
+              </div>
             )}
             <button
               type="submit"
@@ -80,9 +89,14 @@ export default function AdminLogin() {
               {loading ? 'Signing in…' : 'Sign in'}
             </button>
             {import.meta.env.DEV && (
-              <p className="mt-4 text-xs text-gray-400 text-center">
-                Dev: use <kbd className="px-1 py-0.5 bg-gray-200 rounded">admin</kbd> / <kbd className="px-1 py-0.5 bg-gray-200 rounded">admin123</kbd> (sample admin is created on first login if none exist).
-              </p>
+              <div className="mt-4 space-y-1 text-center">
+                <p className="text-xs text-gray-400">
+                  Dev: use <kbd className="px-1 py-0.5 bg-gray-200 rounded">admin</kbd> / <kbd className="px-1 py-0.5 bg-gray-200 rounded">admin123</kbd> (sample admin is created on first login if none exist).
+                </p>
+                <p className="text-xs text-gray-400">
+                  API: {getAdminApiBaseUrl()}
+                </p>
+              </div>
             )}
           </form>
         </div>

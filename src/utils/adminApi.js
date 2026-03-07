@@ -1,5 +1,14 @@
-const API_BASE_URL = import.meta.env.VITE_API_URL || 'https://guide-xpert-backend.vercel.app/api';
+const defaultApiUrl =
+  import.meta.env.DEV && !import.meta.env.VITE_API_URL
+    ? 'http://localhost:5000/api'
+    : (import.meta.env.VITE_API_URL || 'https://guide-xpert-backend.vercel.app/api');
+const API_BASE_URL = defaultApiUrl;
 const ADMIN_TOKEN_KEY = 'guidexpert_admin_token';
+
+/** Base URL used for admin API (e.g. to show on login page in dev). */
+export function getAdminApiBaseUrl() {
+  return defaultApiUrl;
+}
 
 export function getStoredToken() {
   return localStorage.getItem(ADMIN_TOKEN_KEY);
