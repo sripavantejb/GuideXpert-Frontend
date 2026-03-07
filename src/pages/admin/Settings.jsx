@@ -16,6 +16,11 @@ const SECTION_OPTIONS = [
   { sectionKey: 'settings', label: 'Settings' },
 ];
 
+function getSectionLabels(keys) {
+  if (!Array.isArray(keys)) return [];
+  return keys.map((k) => SECTION_OPTIONS.find((o) => o.sectionKey === k)?.label).filter(Boolean);
+}
+
 export default function Settings() {
   const { user } = useAuth();
   const [admins, setAdmins] = useState([]);
@@ -110,36 +115,61 @@ export default function Settings() {
 
       {!isSuperAdmin && (
         <div className="bg-amber-50 border border-amber-200 rounded-lg p-4 text-sm text-amber-800">
-          Only super admins can create and manage other admins.
+          <p className="font-medium mb-1">Only super admins can create and manage other admins.</p>
+          <p className="mt-2 text-amber-700">
+            If you should have access, log out (sidebar bottom) and log in again to refresh your permissions. If you use a self-hosted backend, run <code className="px-1 py-0.5 bg-amber-100 rounded text-xs">node scripts/migrateExistingAdminsToSuperAdmin.js</code> from the backend folder first so existing admins become super admins.
+          </p>
         </div>
       )}
 
       {isSuperAdmin && (
         <>
           <div className="bg-white rounded-lg border border-gray-200 shadow-sm p-6 mb-6">
-            <h3 className="text-lg font-semibold text-gray-800 mb-4">Manage admins</h3>
+            <h3 className="text-lg font-semibold text-gray-800 mb-1">Manage admins</h3>
+            <p className="text-sm text-gray-500 mb-4">Create new admin users and set their section access.</p>
 
             {adminsLoading ? (
               <p className="text-sm text-gray-500">Loading admins…</p>
             ) : admins.length > 0 ? (
-              <ul className="space-y-2 mb-6">
-                {admins.map((a) => (
-                  <li
-                    key={a.id}
-                    className="flex items-center justify-between py-2 px-3 rounded-lg bg-gray-50 border border-gray-100"
-                  >
-                    <span className="font-medium text-gray-800">{a.username}</span>
-                    <span className="text-xs text-gray-500">
-                      {a.name || '—'}
-                      {a.isSuperAdmin && (
-                        <span className="ml-2 px-1.5 py-0.5 rounded bg-primary-navy/10 text-primary-navy font-medium">
-                          Super admin
-                        </span>
-                      )}
-                    </span>
-                  </li>
-                ))}
-              </ul>
+              <div className="mb-6">
+                <h4 className="text-sm font-semibold text-gray-700 mb-3">Existing admin users</h4>
+                <div className="rounded-lg border border-gray-200 overflow-hidden">
+                  <div className="grid grid-cols-12 gap-2 px-3 py-2 bg-gray-100 text-xs font-semibold text-gray-600 uppercase tracking-wide">
+                    <div className="col-span-4">User</div>
+                    <div className="col-span-2">Role</div>
+                    <div className="col-span-6">Section access</div>
+                  </div>
+                  {admins.map((a) => (
+                    <div
+                      key={a.id}
+                      className="grid grid-cols-12 gap-2 px-3 py-2.5 border-t border-gray-100 bg-white hover:bg-gray-50/50 text-sm"
+                    >
+                      <div className="col-span-4">
+                        <span className="font-medium text-gray-800">{a.username}</span>
+                        {a.name && <span className="block text-xs text-gray-500">{a.name}</span>}
+                      </div>
+                      <div className="col-span-2 flex items-center">
+                        {a.isSuperAdmin ? (
+                          <span className="px-1.5 py-0.5 rounded bg-primary-navy/10 text-primary-navy font-medium text-xs">
+                            Super admin
+                          </span>
+                        ) : (
+                          <span className="text-gray-600">Admin</span>
+                        )}
+                      </div>
+                      <div className="col-span-6 text-gray-600">
+                        {a.isSuperAdmin ? (
+                          <span className="text-gray-500">All sections</span>
+                        ) : (Array.isArray(a.sectionAccess) && a.sectionAccess.length > 0) ? (
+                          <span className="text-xs">{getSectionLabels(a.sectionAccess).join(', ')}</span>
+                        ) : (
+                          <span className="text-gray-400">No sections</span>
+                        )}
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
             ) : null}
 
             <h4 className="text-sm font-semibold text-gray-700 mb-3">Create admin</h4>
@@ -199,7 +229,25 @@ export default function Settings() {
               </div>
               {!form.isSuperAdmin && (
                 <div>
-                  <p className="text-sm font-medium text-gray-700 mb-2">View section access</p>
+                  <div className="flex items-center justify-between gap-2 mb-2">
+                    <p className="text-sm font-medium text-gray-700">View section access</p>
+                    <div className="flex gap-2">
+                      <button
+                        type="button"
+                        onClick={() => setForm((p) => ({ ...p, sectionAccess: SECTION_OPTIONS.map((o) => o.sectionKey) }))}
+                        className="text-xs px-2 py-1 rounded border border-gray-300 bg-white text-gray-700 hover:bg-gray-50"
+                      >
+                        Select all
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => setForm((p) => ({ ...p, sectionAccess: [] }))}
+                        className="text-xs px-2 py-1 rounded border border-gray-300 bg-white text-gray-700 hover:bg-gray-50"
+                      >
+                        Clear all
+                      </button>
+                    </div>
+                  </div>
                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
                     {SECTION_OPTIONS.map(({ sectionKey, label }) => (
                       <label key={sectionKey} className="flex items-center gap-2 cursor-pointer">
