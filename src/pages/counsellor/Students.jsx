@@ -10,6 +10,7 @@ import {
   FiRefreshCw,
   FiDownload,
   FiUsers,
+  FiCopy,
 } from 'react-icons/fi';
 import {
   getStudents,
@@ -25,6 +26,7 @@ import {
 import SlideOverPanel from '../../components/Counsellor/SlideOverPanel';
 import ConfirmDialog from '../../components/Counsellor/ConfirmDialog';
 import FilterPanel from '../../components/Counsellor/FilterPanel';
+import CopyToSheetsModal from '../../components/Admin/CopyToSheetsModal';
 import TableSkeleton from '../../components/UI/TableSkeleton';
 import Skeleton from '../../components/UI/Skeleton';
 
@@ -35,6 +37,27 @@ const STATUS_OPTIONS = [
 ];
 
 const LIMIT_OPTIONS = [10, 20, 50];
+
+const STUDENT_COPY_FIELDS = [
+  { key: 'fullName', label: 'Name' },
+  { key: 'email', label: 'Email' },
+  { key: 'phone', label: 'Phone' },
+  { key: 'course', label: 'Course' },
+  { key: 'status', label: 'Status' },
+  { key: 'joinedAt', label: 'Joined' },
+  { key: 'notes', label: 'Notes' },
+];
+
+function getStudentCellValue(student, key) {
+  const v = student[key];
+  if (key === 'joinedAt') {
+    if (!v) return '';
+    const date = new Date(v);
+    return isNaN(date.getTime()) ? '' : date.toISOString().slice(0, 10);
+  }
+  if (v == null || v === '') return '';
+  return String(v);
+}
 
 function StatusPill({ status }) {
   const styles = {
@@ -388,6 +411,8 @@ export default function Students() {
   const [editSubmitting, setEditSubmitting] = useState(false);
   const [exportLoading, setExportLoading] = useState(false);
   const [rowMenuAnchor, setRowMenuAnchor] = useState(null); // { id, top, right } or null
+  const [viewAll, setViewAll] = useState(false);
+  const [copyModalOpen, setCopyModalOpen] = useState(false);
 
   // Debounce search
   useEffect(() => {
@@ -397,9 +422,11 @@ export default function Students() {
 
   const fetchList = useCallback(async () => {
     setLoading(true);
+    const effectivePage = viewAll ? 1 : page;
+    const effectiveLimit = viewAll ? 5000 : limit;
     const params = {
-      page,
-      limit,
+      page: effectivePage,
+      limit: effectiveLimit,
       q: searchDebounced || undefined,
       course: filters.course || undefined,
       status: filters.status || undefined,
@@ -416,13 +443,18 @@ export default function Students() {
       setData([]);
       setTotal(0);
     }
-  }, [page, limit, searchDebounced, filters]);
+  }, [viewAll, page, limit, searchDebounced, filters]);
 
   useEffect(() => {
     fetchList();
   }, [fetchList]);
 
   const activeFilterCount = [filters.course, filters.status, filters.joinedFrom, filters.joinedTo, filters.showDeleted].filter(Boolean).length;
+
+  const handleViewAllChange = (e) => {
+    setViewAll(e.target.checked);
+    if (!e.target.checked) setPage(1);
+  };
 
   const handleAddSubmit = async (payload) => {
     setAddError('');
@@ -574,6 +606,24 @@ export default function Students() {
                 {activeFilterCount}
               </span>
             )}
+          </button>
+          <label className="inline-flex items-center gap-2 cursor-pointer text-sm text-slate-700 ml-2 pl-2 border-l border-slate-200">
+            <input
+              type="checkbox"
+              checked={viewAll}
+              onChange={handleViewAllChange}
+              className="rounded border-slate-300 text-[#003366] focus:ring-[#003366]"
+              aria-label="View all students in one list"
+            />
+            View all
+          </label>
+          <button
+            type="button"
+            onClick={() => setCopyModalOpen(true)}
+            className="inline-flex items-center gap-1.5 ml-2 px-3 py-1.5 rounded-lg border border-slate-300 text-sm font-medium text-slate-700 hover:bg-slate-50 transition-colors"
+            aria-label="Copy to sheets"
+          >
+            <FiCopy className="w-4 h-4" /> Copy
           </button>
           <FilterPanel
             isOpen={filterPanelOpen}
@@ -852,47 +902,67 @@ export default function Students() {
 
         {!loading && total > 0 && (
           <div className="flex flex-wrap items-center justify-between gap-3 px-4 py-3 border-t border-slate-200 bg-slate-50/70">
-            <p className="text-xs text-slate-600">
-              <span className="sm:hidden">
-                <span className="font-medium text-slate-800">{(page - 1) * limit + 1}–{Math.min(page * limit, total)}</span>
-                {' / '}
-                <span className="font-medium text-slate-800">{total}</span>
-              </span>
-              <span className="hidden sm:inline">
-                Showing <span className="font-medium text-slate-800">{(page - 1) * limit + 1}–{Math.min(page * limit, total)}</span> of <span className="font-medium text-slate-800">{total}</span>
-              </span>
-            </p>
-            <div className="flex flex-wrap items-center gap-2">
-              <select
-                value={limit}
-                onChange={(e) => { setLimit(Number(e.target.value)); setPage(1); }}
-                className="text-xs border border-slate-200 rounded-lg px-2.5 py-1.5 bg-white text-slate-700 focus:ring-2 focus:ring-[#003366]/20 focus:border-[#003366]"
-              >
-                {LIMIT_OPTIONS.map((n) => (
-                  <option key={n} value={n}>{n} per page</option>
-                ))}
-              </select>
-              <button
-                type="button"
-                onClick={() => setPage((p) => Math.max(1, p - 1))}
-                disabled={page <= 1}
-                className="px-2.5 py-1.5 text-xs font-medium border border-slate-200 rounded-lg bg-white text-slate-600 hover:bg-slate-50 disabled:opacity-50 disabled:cursor-not-allowed"
-              >
-                Previous
-              </button>
-              <span className="text-xs text-slate-500 min-w-[4rem] text-center">Page {page}</span>
-              <button
-                type="button"
-                onClick={() => setPage((p) => p + 1)}
-                disabled={page * limit >= total}
-                className="px-2.5 py-1.5 text-xs font-medium border border-slate-200 rounded-lg bg-white text-slate-600 hover:bg-slate-50 disabled:opacity-50 disabled:cursor-not-allowed"
-              >
-                Next
-              </button>
-            </div>
+            {viewAll ? (
+              <p className="text-xs text-slate-500">
+                {total > 5000
+                  ? `Showing first 5000 of ${total} students`
+                  : `Showing all ${total} students`}
+              </p>
+            ) : (
+              <>
+                <p className="text-xs text-slate-600">
+                  <span className="sm:hidden">
+                    <span className="font-medium text-slate-800">{(page - 1) * limit + 1}–{Math.min(page * limit, total)}</span>
+                    {' / '}
+                    <span className="font-medium text-slate-800">{total}</span>
+                  </span>
+                  <span className="hidden sm:inline">
+                    Showing <span className="font-medium text-slate-800">{(page - 1) * limit + 1}–{Math.min(page * limit, total)}</span> of <span className="font-medium text-slate-800">{total}</span>
+                  </span>
+                </p>
+                <div className="flex flex-wrap items-center gap-2">
+                  <select
+                    value={limit}
+                    onChange={(e) => { setLimit(Number(e.target.value)); setPage(1); }}
+                    className="text-xs border border-slate-200 rounded-lg px-2.5 py-1.5 bg-white text-slate-700 focus:ring-2 focus:ring-[#003366]/20 focus:border-[#003366]"
+                  >
+                    {LIMIT_OPTIONS.map((n) => (
+                      <option key={n} value={n}>{n} per page</option>
+                    ))}
+                  </select>
+                  <button
+                    type="button"
+                    onClick={() => setPage((p) => Math.max(1, p - 1))}
+                    disabled={page <= 1}
+                    className="px-2.5 py-1.5 text-xs font-medium border border-slate-200 rounded-lg bg-white text-slate-600 hover:bg-slate-50 disabled:opacity-50 disabled:cursor-not-allowed"
+                  >
+                    Previous
+                  </button>
+                  <span className="text-xs text-slate-500 min-w-[4rem] text-center">Page {page}</span>
+                  <button
+                    type="button"
+                    onClick={() => setPage((p) => p + 1)}
+                    disabled={page * limit >= total}
+                    className="px-2.5 py-1.5 text-xs font-medium border border-slate-200 rounded-lg bg-white text-slate-600 hover:bg-slate-50 disabled:opacity-50 disabled:cursor-not-allowed"
+                  >
+                    Next
+                  </button>
+                </div>
+              </>
+            )}
           </div>
         )}
       </div>
+
+      <CopyToSheetsModal
+        fields={STUDENT_COPY_FIELDS}
+        records={data}
+        getCellValue={getStudentCellValue}
+        open={copyModalOpen}
+        onClose={() => setCopyModalOpen(false)}
+        recordLabel="students"
+        dedupeByPhoneKey="phone"
+      />
 
       {rowMenuAnchor && (() => {
         const menuStudent = data.find((d) => d._id === rowMenuAnchor.id);

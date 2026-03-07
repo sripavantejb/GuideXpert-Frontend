@@ -24,6 +24,7 @@ import {
 } from '../../utils/adminApi';
 import { useAuth } from '../../contexts/AuthContext';
 import TableSkeleton from '../../components/UI/TableSkeleton';
+import CopyToSheetsModal from '../../components/Admin/CopyToSheetsModal';
 
 const PLATFORMS = [
   { value: 'Instagram', label: 'Instagram' },
@@ -42,6 +43,41 @@ const LINKS_SORT_OPTIONS = [
   { value: 'name-desc', label: 'Influencer name Z–A' },
   { value: 'platform', label: 'Platform' },
 ];
+
+const LINKS_COPY_FIELDS = [
+  { key: 'influencerName', label: 'Influencer' },
+  { key: 'platform', label: 'Platform' },
+  { key: 'campaign', label: 'Campaign' },
+  { key: 'utmLink', label: 'UTM Link' },
+  { key: 'createdAt', label: 'Date created' },
+  { key: 'leadCount', label: 'Leads' },
+  { key: 'cost', label: 'Cost' },
+  { key: 'costPerLead', label: 'Cost per lead' },
+  { key: 'latestLeadAt', label: 'Latest lead' },
+];
+
+const ANALYTICS_COPY_FIELDS = [
+  { key: 'influencerName', label: 'Influencer Name' },
+  { key: 'platform', label: 'Platform' },
+  { key: 'totalRegistrations', label: 'Total Registrations' },
+  { key: 'latestRegistration', label: 'Latest Registration' },
+];
+
+function getLinkCellValue(link, key) {
+  const v = link[key];
+  if (key === 'createdAt' || key === 'latestLeadAt') return v ? formatDate(v) : '';
+  if (key === 'cost') return formatCost(v);
+  if (key === 'costPerLead') return formatCostPerLead(v);
+  if (v == null || v === '') return '';
+  return String(v);
+}
+
+function getAnalyticsCellValue(row, key) {
+  const v = row[key];
+  if (key === 'latestRegistration') return v ? formatDate(v) : '';
+  if (v == null || v === '') return '';
+  return String(v);
+}
 
 function formatDate(value) {
   if (!value) return '—';
@@ -138,6 +174,9 @@ export default function InfluencerTracking() {
   const [selectedLinkIds, setSelectedLinkIds] = useState(new Set());
   const [linkToDelete, setLinkToDelete] = useState(null);
   const [bulkDeleteConfirm, setBulkDeleteConfirm] = useState(false);
+  const [viewAllLinks, setViewAllLinks] = useState(false);
+  const [copyLinksModalOpen, setCopyLinksModalOpen] = useState(false);
+  const [copyAnalyticsModalOpen, setCopyAnalyticsModalOpen] = useState(false);
 
   const [analytics, setAnalytics] = useState([]);
   const [analyticsLoading, setAnalyticsLoading] = useState(true);
@@ -302,9 +341,12 @@ export default function InfluencerTracking() {
   }, [savedLinks, savedLinksSearch, savedLinksPlatform, linksSort]);
 
   const paginatedLinks = useMemo(() => {
+    if (viewAllLinks) return filteredSavedLinks;
     const start = (linksPage - 1) * linksPerPage;
     return filteredSavedLinks.slice(start, start + linksPerPage);
-  }, [filteredSavedLinks, linksPage, linksPerPage]);
+  }, [viewAllLinks, filteredSavedLinks, linksPage, linksPerPage]);
+
+  const linksToCopy = viewAllLinks ? filteredSavedLinks : paginatedLinks;
 
   const linksTotalPages = Math.max(1, Math.ceil(filteredSavedLinks.length / linksPerPage));
 
@@ -822,6 +864,27 @@ export default function InfluencerTracking() {
           >
             {LINKS_SORT_OPTIONS.map((o) => <option key={o.value} value={o.value}>{o.label}</option>)}
           </select>
+          <label className="inline-flex items-center gap-2 cursor-pointer text-sm text-gray-700 ml-2 pl-2 border-l border-gray-200">
+            <input
+              type="checkbox"
+              checked={viewAllLinks}
+              onChange={(e) => {
+                setViewAllLinks(e.target.checked);
+                if (!e.target.checked) setLinksPage(1);
+              }}
+              className="rounded border-gray-300 text-primary-blue-500 focus:ring-primary-blue-500"
+              aria-label="View all links in one list"
+            />
+            View all
+          </label>
+          <button
+            type="button"
+            onClick={() => setCopyLinksModalOpen(true)}
+            className="inline-flex items-center gap-1.5 ml-2 px-3 py-1.5 rounded-lg border border-gray-300 text-sm font-medium text-gray-700 hover:bg-gray-50 transition-colors"
+            aria-label="Copy to sheets"
+          >
+            <FiCopy className="w-4 h-4" /> Copy
+          </button>
           {(savedLinksSearch || savedLinksPlatform) && (
             <span className="text-sm text-gray-500 self-center">Showing {filteredSavedLinks.length} of {savedLinks.length} links</span>
           )}
@@ -944,18 +1007,35 @@ export default function InfluencerTracking() {
                 </tbody>
               </table>
             </div>
-            {linksTotalPages > 1 && (
-              <div className="px-6 py-3 border-t border-gray-100 flex items-center justify-between">
+            <div className="px-6 py-3 border-t border-gray-100 flex items-center justify-between">
+              {viewAllLinks ? (
+                <p className="text-sm text-gray-500">
+                  Showing all {filteredSavedLinks.length} links
+                </p>
+              ) : linksTotalPages > 1 ? (
+                <>
+                  <p className="text-sm text-gray-500">Page {linksPage} of {linksTotalPages}</p>
+                  <div className="flex gap-2">
+                    <button type="button" onClick={() => setLinksPage((p) => Math.max(1, p - 1))} disabled={linksPage <= 1} className="px-3 py-1 rounded border border-gray-300 text-sm disabled:opacity-50">Previous</button>
+                    <button type="button" onClick={() => setLinksPage((p) => Math.min(linksTotalPages, p + 1))} disabled={linksPage >= linksTotalPages} className="px-3 py-1 rounded border border-gray-300 text-sm disabled:opacity-50">Next</button>
+                  </div>
+                </>
+              ) : (
                 <p className="text-sm text-gray-500">Page {linksPage} of {linksTotalPages}</p>
-                <div className="flex gap-2">
-                  <button type="button" onClick={() => setLinksPage((p) => Math.max(1, p - 1))} disabled={linksPage <= 1} className="px-3 py-1 rounded border border-gray-300 text-sm disabled:opacity-50">Previous</button>
-                  <button type="button" onClick={() => setLinksPage((p) => Math.min(linksTotalPages, p + 1))} disabled={linksPage >= linksTotalPages} className="px-3 py-1 rounded border border-gray-300 text-sm disabled:opacity-50">Next</button>
-                </div>
-              </div>
-            )}
+              )}
+            </div>
           </>
         )}
       </section>
+
+      <CopyToSheetsModal
+        fields={LINKS_COPY_FIELDS}
+        records={linksToCopy}
+        getCellValue={getLinkCellValue}
+        open={copyLinksModalOpen}
+        onClose={() => setCopyLinksModalOpen(false)}
+        recordLabel="links"
+      />
 
       {/* Analytics */}
       <section className={cardClass}>
@@ -990,7 +1070,7 @@ export default function InfluencerTracking() {
             <button type="button" onClick={exportAnalyticsCsv} disabled={filteredAnalytics.length === 0} className="text-sm px-3 py-1.5 rounded-lg border border-gray-300 hover:bg-gray-50 disabled:opacity-50">Export CSV</button>
           </div>
         </div>
-        <div className="p-4 border-b border-gray-100">
+        <div className="p-4 border-b border-gray-100 flex flex-wrap items-center gap-3">
           <input
             type="search"
             placeholder="Search by influencer name"
@@ -998,6 +1078,14 @@ export default function InfluencerTracking() {
             onChange={(e) => setAnalyticsSearch(e.target.value)}
             className="rounded-lg border border-gray-300 px-3 py-2 text-sm w-56 focus:ring-2 focus:ring-primary-navy/30 focus:border-primary-navy outline-none"
           />
+          <button
+            type="button"
+            onClick={() => setCopyAnalyticsModalOpen(true)}
+            className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg border border-gray-300 text-sm font-medium text-gray-700 hover:bg-gray-50 transition-colors"
+            aria-label="Copy to sheets"
+          >
+            <FiCopy className="w-4 h-4" /> Copy
+          </button>
         </div>
         {analyticsLoading ? (
           <div className="px-6 py-8"><TableSkeleton rows={6} cols={4} /></div>
@@ -1041,6 +1129,15 @@ export default function InfluencerTracking() {
           </div>
         )}
       </section>
+
+      <CopyToSheetsModal
+        fields={ANALYTICS_COPY_FIELDS}
+        records={filteredAnalytics}
+        getCellValue={getAnalyticsCellValue}
+        open={copyAnalyticsModalOpen}
+        onClose={() => setCopyAnalyticsModalOpen(false)}
+        recordLabel="influencers"
+      />
 
       {/* Influencer detail modal: links + leads for this name */}
       {detailInfluencer && (

@@ -5,6 +5,7 @@ import { getAdminLeads, getLead, updateLeadNotes, getStoredToken } from '../../u
 import { useAuth } from '../../contexts/AuthContext';
 import TableSkeleton from '../../components/UI/TableSkeleton';
 import { ContentSkeleton } from '../../components/UI/Skeleton';
+import { dedupeByPhone } from '../../components/Admin/CopyToSheetsModal';
 
 function formatDate(d) {
   if (!d) return '—';
@@ -594,11 +595,19 @@ export default function Leads() {
                   </button>
                 </div>
                 <div className="p-4 overflow-y-auto flex-1">
+                  {(() => {
+                    const leadsToCopy = dedupeByPhone(leads, 'phone');
+                    const duplicateRemoved = leads.length !== leadsToCopy.length;
+                    return (
                   <p className="text-sm text-gray-600 mb-4">
-                    {leads.length === 0
+                    {leadsToCopy.length === 0
                       ? 'No data to copy. Load leads with the current filters first.'
-                      : `Choose columns to include. Data will be copied for the ${leads.length} lead${leads.length === 1 ? '' : 's'} currently shown.`}
+                      : duplicateRemoved
+                        ? `Choose columns to include. Data will be copied for ${leadsToCopy.length} unique lead${leadsToCopy.length === 1 ? '' : 's'} (duplicates by phone removed).`
+                        : `Choose columns to include. Data will be copied for the ${leadsToCopy.length} lead${leadsToCopy.length === 1 ? '' : 's'} currently shown.`}
                   </p>
+                    );
+                  })()}
                   <div className="space-y-3">
                     <label className="flex items-center gap-2 cursor-pointer text-sm font-medium text-gray-700">
                       <input
@@ -636,7 +645,7 @@ export default function Leads() {
                       ))}
                     </div>
                   </div>
-                  {copySelectedFields.length === 0 && leads.length > 0 && (
+                  {copySelectedFields.length === 0 && dedupeByPhone(leads, 'phone').length > 0 && (
                     <p className="text-sm text-amber-600 mt-2">Select at least one column to copy.</p>
                   )}
                 </div>
@@ -651,7 +660,8 @@ export default function Leads() {
                   <button
                     type="button"
                     onClick={() => {
-                      const tsv = buildTsv(leads, copySelectedFields);
+                      const leadsToCopy = dedupeByPhone(leads, 'phone');
+                      const tsv = buildTsv(leadsToCopy, copySelectedFields);
                       navigator.clipboard.writeText(tsv).then(() => {
                         setCopyFeedback(true);
                         setTimeout(() => {
@@ -660,7 +670,7 @@ export default function Leads() {
                         }, 1500);
                       });
                     }}
-                    disabled={leads.length === 0 || copySelectedFields.length === 0}
+                    disabled={dedupeByPhone(leads, 'phone').length === 0 || copySelectedFields.length === 0}
                     className="px-4 py-2 rounded-lg bg-primary-navy text-white text-sm font-medium hover:opacity-90 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
                   >
                     {copyFeedback ? 'Copied!' : 'Copy to clipboard'}

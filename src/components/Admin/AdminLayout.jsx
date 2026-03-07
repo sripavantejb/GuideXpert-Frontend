@@ -1,27 +1,53 @@
-import { useState } from 'react';
-import { Link, NavLink, Outlet } from 'react-router-dom';
+import { useState, useMemo, useEffect } from 'react';
+import { Link, NavLink, Outlet, useLocation, useNavigate } from 'react-router-dom';
 import { HiMenu, HiX } from 'react-icons/hi';
 import { FiLayout, FiUsers, FiBarChart2, FiDownload, FiSettings, FiCalendar, FiVideo, FiFileText, FiBell, FiLink, FiClipboard, FiMessageSquare } from 'react-icons/fi';
 import { useAuth } from '../../contexts/AuthContext';
 import { AdminDashboardProvider, useAdminDateRange } from '../../contexts/AdminDashboardContext';
 
 const navItems = [
-  { to: '/admin/dashboard', label: 'Dashboard', icon: FiLayout },
-  { to: '/admin/leads', label: 'Lead Funnel', icon: FiUsers },
-  { to: '/admin/analytics', label: 'Analytics', icon: FiBarChart2 },
-  { to: '/admin/meeting-attendance', label: 'User Productivity', icon: FiVideo },
-  { to: '/admin/export', label: 'Export Data', icon: FiDownload },
-  { to: '/admin/slots', label: 'Slots', icon: FiCalendar },
-  { to: '/admin/training-form-responses', label: 'Training Form', icon: FiClipboard },
-  { to: '/admin/training-feedback', label: 'Activation Form', icon: FiMessageSquare },
-  { to: '/admin/influencer-tracking', label: 'Influencer / UTM Tracking', icon: FiLink },
-  { to: '/admin/assessment-results', label: 'Custom Reports', icon: FiFileText },
-  { to: '/admin/settings', label: 'Settings', icon: FiSettings },
+  { to: '/admin/dashboard', label: 'Dashboard', icon: FiLayout, sectionKey: 'dashboard' },
+  { to: '/admin/leads', label: 'Lead Funnel', icon: FiUsers, sectionKey: 'leads' },
+  { to: '/admin/analytics', label: 'Analytics', icon: FiBarChart2, sectionKey: 'analytics' },
+  { to: '/admin/meeting-attendance', label: 'User Productivity', icon: FiVideo, sectionKey: 'meeting-attendance' },
+  { to: '/admin/export', label: 'Export Data', icon: FiDownload, sectionKey: 'export' },
+  { to: '/admin/slots', label: 'Slots', icon: FiCalendar, sectionKey: 'slots' },
+  { to: '/admin/training-form-responses', label: 'Training Form', icon: FiClipboard, sectionKey: 'training-form-responses' },
+  { to: '/admin/training-feedback', label: 'Activation Form', icon: FiMessageSquare, sectionKey: 'training-feedback' },
+  { to: '/admin/influencer-tracking', label: 'Influencer / UTM Tracking', icon: FiLink, sectionKey: 'influencer-tracking' },
+  { to: '/admin/assessment-results', label: 'Custom Reports', icon: FiFileText, sectionKey: 'assessment-results' },
+  { to: '/admin/settings', label: 'Settings', icon: FiSettings, sectionKey: 'settings' },
 ];
+
+function getVisibleNavItems(user) {
+  if (!user) return [];
+  if (user.isSuperAdmin) return navItems;
+  const access = user.sectionAccess;
+  if (!Array.isArray(access) || access.length === 0) return [];
+  const set = new Set(access);
+  return navItems.filter((item) => set.has(item.sectionKey));
+}
 
 export default function AdminLayout() {
   const { user, logout } = useAuth();
+  const location = useLocation();
+  const navigate = useNavigate();
+
+  const handleLogout = () => {
+    logout();
+    navigate('/admin/login', { replace: true });
+  };
   const [sidebarOpen, setSidebarOpen] = useState(false);
+  const visibleNavItems = useMemo(() => getVisibleNavItems(user), [user]);
+  const allowedPaths = useMemo(() => new Set(visibleNavItems.map((item) => item.to)), [visibleNavItems]);
+  const currentPath = location.pathname;
+  const isPathAllowed = currentPath === '/admin' || currentPath === '/admin/' || allowedPaths.has(currentPath);
+  useEffect(() => {
+    const firstAllowed = visibleNavItems[0];
+    if (user && !user.isSuperAdmin && !isPathAllowed && firstAllowed) {
+      navigate(firstAllowed.to, { replace: true });
+    }
+  }, [user, isPathAllowed, visibleNavItems, navigate, currentPath]);
   const initials = (user?.username || 'A').slice(0, 2).toUpperCase();
 
   return (
@@ -67,7 +93,7 @@ export default function AdminLayout() {
           <div>
             <p className="px-3 mb-2 text-[0.6875rem] font-semibold text-white/50 uppercase tracking-wider">Menu</p>
             <div className="space-y-0.5">
-              {navItems.map(({ to, label, icon: Icon }) => (
+              {visibleNavItems.map(({ to, label, icon: Icon }) => (
                 <NavLink
                   key={to}
                   to={to}
@@ -90,7 +116,7 @@ export default function AdminLayout() {
         </nav>
 
         {/* Profile footer */}
-        <div className="p-3 border-t border-white/10 mt-auto">
+        <div className="p-3 border-t border-white/10 mt-auto space-y-1.5">
           <div className="flex items-center gap-3 px-3 py-2.5 rounded-lg bg-white/10">
             <div className="w-9 h-9 rounded-full bg-primary-blue-400 flex items-center justify-center shrink-0 ring-2 ring-white/20">
               <span className="text-white text-xs font-semibold">{initials}</span>
@@ -100,6 +126,13 @@ export default function AdminLayout() {
               <p className="text-[0.6875rem] text-white/60 font-medium">Admin</p>
             </div>
           </div>
+          <button
+            type="button"
+            onClick={handleLogout}
+            className="w-full flex items-center justify-center gap-2 px-3 py-2 rounded-lg text-sm font-medium text-white/90 hover:bg-white/10 hover:text-white transition-colors border border-white/10"
+          >
+            Log out
+          </button>
         </div>
       </aside>
 

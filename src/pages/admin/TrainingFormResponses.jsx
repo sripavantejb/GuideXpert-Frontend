@@ -12,13 +12,32 @@ import {
   FiAlertCircle,
   FiInbox,
   FiChevronDown,
-  FiChevronUp
+  FiChevronUp,
+  FiCopy
 } from 'react-icons/fi';
+import CopyToSheetsModal from '../../components/Admin/CopyToSheetsModal';
 
 function formatDate(d) {
   if (!d) return '—';
   const date = new Date(d);
   return date.toLocaleDateString('en-IN', { dateStyle: 'short' }) + ' ' + date.toLocaleTimeString('en-IN', { timeStyle: 'short' });
+}
+
+const COPY_FIELDS = [
+  { key: 'fullName', label: 'Name' },
+  { key: 'mobileNumber', label: 'Mobile' },
+  { key: 'email', label: 'Email' },
+  { key: 'occupation', label: 'Occupation' },
+  { key: 'sessionRating', label: 'Rating' },
+  { key: 'suggestions', label: 'Suggestions' },
+  { key: 'createdAt', label: 'Submitted' },
+];
+
+function getResponseCellValue(row, key) {
+  const v = row[key];
+  if (key === 'createdAt') return v ? formatDate(v) : '';
+  if (v == null || v === '') return '';
+  return String(v);
 }
 
 export default function TrainingFormResponses() {
@@ -35,6 +54,8 @@ export default function TrainingFormResponses() {
     sessionRating: ''
   });
   const [expandedId, setExpandedId] = useState(null);
+  const [viewAll, setViewAll] = useState(false);
+  const [copyModalOpen, setCopyModalOpen] = useState(false);
   const cancelledRef = useRef(false);
   const requestIdRef = useRef(0);
 
@@ -42,9 +63,11 @@ export default function TrainingFormResponses() {
     cancelledRef.current = false;
     requestIdRef.current += 1;
     const thisRequestId = requestIdRef.current;
+    const page = viewAll ? 1 : pagination.page;
+    const limit = viewAll ? 5000 : pagination.limit;
     const params = {
-      page: pagination.page,
-      limit: pagination.limit,
+      page,
+      limit,
       q: filters.q.trim() || undefined,
       from: filters.from || undefined,
       to: filters.to || undefined,
@@ -79,7 +102,7 @@ export default function TrainingFormResponses() {
       });
     });
     return () => { cancelledRef.current = true; };
-  }, [pagination.page, pagination.limit, filters.q, filters.from, filters.to, filters.sessionRating, logout]);
+  }, [viewAll, pagination.page, pagination.limit, filters.q, filters.from, filters.to, filters.sessionRating, logout]);
 
   const goToPage = (p) => {
     const next = Math.max(1, Math.min(p, pagination.totalPages));
@@ -89,6 +112,11 @@ export default function TrainingFormResponses() {
   const handleFilterChange = (key, value) => {
     setFilters((prev) => ({ ...prev, [key]: value }));
     setPagination((prev) => ({ ...prev, page: 1 }));
+  };
+
+  const handleViewAllChange = (e) => {
+    setViewAll(e.target.checked);
+    if (!e.target.checked) setPagination((prev) => ({ ...prev, page: 1 }));
   };
 
   const clearFilters = () => {
@@ -186,6 +214,24 @@ export default function TrainingFormResponses() {
                 <option key={n} value={n}>Rating {n}</option>
               ))}
             </select>
+            <label className="inline-flex items-center gap-2 cursor-pointer text-sm text-gray-700 ml-2 pl-2 border-l border-gray-200">
+              <input
+                type="checkbox"
+                checked={viewAll}
+                onChange={handleViewAllChange}
+                className="rounded border-gray-300 text-primary-blue-500 focus:ring-primary-blue-500"
+                aria-label="View all responses in one list"
+              />
+              View all
+            </label>
+            <button
+              type="button"
+              onClick={() => { setCopyModalOpen(true); }}
+              className="inline-flex items-center gap-1.5 ml-2 px-3 py-1.5 rounded-lg border border-gray-300 text-sm font-medium text-gray-700 hover:bg-gray-50 transition-colors"
+              aria-label="Copy to sheets"
+            >
+              <FiCopy className="w-4 h-4" /> Copy
+            </button>
             {hasActiveFilters && (
               <button
                 type="button"
@@ -300,33 +346,53 @@ export default function TrainingFormResponses() {
               </table>
             </div>
 
-            {pagination.totalPages > 1 && (
-              <div className="flex flex-wrap items-center justify-between gap-4 px-4 py-4 bg-gray-50/80 border-t border-gray-200">
-                <p className="text-sm text-gray-600">
-                  Page <span className="font-semibold text-gray-900">{pagination.page}</span> of <span className="font-semibold text-gray-900">{pagination.totalPages}</span>
-                  <span className="text-gray-500 ml-1">({pagination.total} total)</span>
+            <div className="flex flex-wrap items-center justify-between gap-4 px-4 py-4 bg-gray-50/80 border-t border-gray-200">
+              {viewAll ? (
+                <p className="text-sm text-gray-500">
+                  {pagination.total > 5000
+                    ? `Showing first 5000 of ${pagination.total} responses`
+                    : `Showing all ${pagination.total} responses`}
                 </p>
-                <div className="flex items-center gap-2">
-                  <button
-                    type="button"
-                    onClick={() => goToPage(pagination.page - 1)}
-                    disabled={pagination.page <= 1}
-                    className="inline-flex items-center gap-1.5 py-2 px-4 rounded-xl border border-gray-300 text-sm font-medium text-gray-700 hover:bg-white hover:border-gray-400 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
-                  >
-                    <FiChevronLeft className="w-4 h-4" /> Previous
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => goToPage(pagination.page + 1)}
-                    disabled={pagination.page >= pagination.totalPages}
-                    className="inline-flex items-center gap-1.5 py-2 px-4 rounded-xl border border-gray-300 text-sm font-medium text-gray-700 hover:bg-white hover:border-gray-400 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
-                  >
-                    Next <FiChevronRight className="w-4 h-4" />
-                  </button>
-                </div>
-              </div>
-            )}
+              ) : (
+                <>
+                  <p className="text-sm text-gray-600">
+                    Page <span className="font-semibold text-gray-900">{pagination.page}</span> of <span className="font-semibold text-gray-900">{pagination.totalPages}</span>
+                    <span className="text-gray-500 ml-1">({pagination.total} total)</span>
+                  </p>
+                  {pagination.totalPages > 1 && (
+                    <div className="flex items-center gap-2">
+                      <button
+                        type="button"
+                        onClick={() => goToPage(pagination.page - 1)}
+                        disabled={pagination.page <= 1}
+                        className="inline-flex items-center gap-1.5 py-2 px-4 rounded-xl border border-gray-300 text-sm font-medium text-gray-700 hover:bg-white hover:border-gray-400 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                      >
+                        <FiChevronLeft className="w-4 h-4" /> Previous
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => goToPage(pagination.page + 1)}
+                        disabled={pagination.page >= pagination.totalPages}
+                        className="inline-flex items-center gap-1.5 py-2 px-4 rounded-xl border border-gray-300 text-sm font-medium text-gray-700 hover:bg-white hover:border-gray-400 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                      >
+                        Next <FiChevronRight className="w-4 h-4" />
+                      </button>
+                    </div>
+                  )}
+                </>
+              )}
+            </div>
           </div>
+
+          <CopyToSheetsModal
+            fields={COPY_FIELDS}
+            records={records}
+            getCellValue={getResponseCellValue}
+            open={copyModalOpen}
+            onClose={() => setCopyModalOpen(false)}
+            recordLabel="responses"
+            dedupeByPhoneKey="mobileNumber"
+          />
         </>
       )}
     </div>

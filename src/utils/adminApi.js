@@ -58,6 +58,19 @@ export const adminLogin = async (username, password) => {
   }, null);
 };
 
+/** GET /admin/admins — list admins (super admin only). Returns { success, data: admins[] }. */
+export const listAdmins = async (token = getStoredToken()) => {
+  return adminRequest('/admins', { method: 'GET' }, token);
+};
+
+/** POST /admin/admins — create admin (super admin only). Payload: { username, password, name?, isSuperAdmin?, sectionAccess? }. */
+export const createAdmin = async (payload, token = getStoredToken()) => {
+  return adminRequest('/admins', {
+    method: 'POST',
+    body: JSON.stringify(payload),
+  }, token);
+};
+
 export const getAdminLeads = async (params = {}, token = getStoredToken()) => {
   const search = new URLSearchParams();
   if (params.page != null) search.set('page', params.page);

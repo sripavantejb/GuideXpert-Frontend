@@ -1,7 +1,9 @@
 import { useState, useEffect, useRef } from 'react';
+import { FiCopy } from 'react-icons/fi';
 import { getMeetingAttendance, getTrainingAttendance, getStoredToken } from '../../utils/adminApi';
 import { useAuth } from '../../contexts/AuthContext';
 import TableSkeleton from '../../components/UI/TableSkeleton';
+import CopyToSheetsModal from '../../components/Admin/CopyToSheetsModal';
 
 function formatDate(d) {
   if (!d) return '—';
@@ -53,6 +55,20 @@ function getEmptyMessage({ mode, selectedDate, rangeFrom, rangeTo, query, attend
   return hasFilter ? 'No attendance found for the selected filters' : 'No attendance records yet';
 }
 
+const COPY_FIELDS = [
+  { key: 'name', label: 'Name' },
+  { key: 'mobileNumber', label: 'Mobile Number' },
+  { key: 'timestamp', label: 'Join Time' },
+  { key: 'attendanceStatus', label: 'Status' },
+];
+
+function getAttendanceCellValue(row, key) {
+  const v = row[key];
+  if (key === 'timestamp') return v ? formatDate(v) : '';
+  if (v == null || v === '') return '';
+  return String(v);
+}
+
 export default function MeetingAttendance() {
   const { logout } = useAuth();
   const [records, setRecords] = useState([]);
@@ -68,6 +84,8 @@ export default function MeetingAttendance() {
   const [viewYear, setViewYear] = useState(() => new Date().getFullYear());
   const [viewMonth, setViewMonth] = useState(() => new Date().getMonth());
   const [attendanceType, setAttendanceType] = useState('demo');
+  const [viewAll, setViewAll] = useState(false);
+  const [copyModalOpen, setCopyModalOpen] = useState(false);
   const cancelledRef = useRef(false);
   const requestIdRef = useRef(0);
   const filtersRef = useRef('');
@@ -76,10 +94,11 @@ export default function MeetingAttendance() {
     cancelledRef.current = false;
     requestIdRef.current += 1;
     const thisRequestId = requestIdRef.current;
-    const page = pagination.page;
+    const page = viewAll ? 1 : pagination.page;
+    const limit = viewAll ? 5000 : pagination.limit;
     const params = {
       page,
-      limit: pagination.limit,
+      limit,
       q: query.trim() || undefined,
       uniqueByMobile: true,
       dedupeMode: 'latest'
@@ -173,11 +192,16 @@ export default function MeetingAttendance() {
     return () => {
       cancelledRef.current = true;
     };
-  }, [attendanceType, pagination.page, mode, selectedDate, rangeFrom, rangeTo, query]);
+  }, [attendanceType, viewAll, pagination.page, mode, selectedDate, rangeFrom, rangeTo, query]);
 
   const goToPage = (p) => {
     const next = Math.max(1, Math.min(p, pagination.totalPages));
     setPagination((prev) => ({ ...prev, page: next }));
+  };
+
+  const handleViewAllChange = (e) => {
+    setViewAll(e.target.checked);
+    if (!e.target.checked) setPagination((prev) => ({ ...prev, page: 1 }));
   };
 
   const emptyMessage = getEmptyMessage({ mode, selectedDate, rangeFrom, rangeTo, query, attendanceType });
@@ -445,6 +469,26 @@ export default function MeetingAttendance() {
               </svg>
               Duplicates auto-removed (latest entry kept)
             </p>
+            <div className="mt-4 pt-4 border-t border-gray-100 flex flex-wrap items-center gap-3">
+              <label className="inline-flex items-center gap-2 cursor-pointer text-sm text-gray-700">
+                <input
+                  type="checkbox"
+                  checked={viewAll}
+                  onChange={handleViewAllChange}
+                  className="rounded border-gray-300 text-primary-blue-500 focus:ring-primary-blue-500"
+                  aria-label="View all attendance in one list"
+                />
+                View all
+              </label>
+              <button
+                type="button"
+                onClick={() => setCopyModalOpen(true)}
+                className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg border border-gray-300 text-sm font-medium text-gray-700 hover:bg-gray-50 transition-colors"
+                aria-label="Copy to sheets"
+              >
+                <FiCopy className="w-4 h-4" /> Copy
+              </button>
+            </div>
           </div>
 
           {/* Stats Card */}
@@ -552,37 +596,57 @@ export default function MeetingAttendance() {
 
           {/* Pagination */}
           <div className="flex flex-wrap items-center justify-between gap-4 px-2">
-            <p className="text-sm text-gray-500">
-              Showing <span className="font-semibold text-gray-900">{shownFrom}</span> to <span className="font-semibold text-gray-900">{shownTo}</span> of <span className="font-semibold text-gray-900">{pagination.total}</span> results
-            </p>
-            <div className="flex items-center gap-2">
-              <button
-                type="button"
-                onClick={() => goToPage(pagination.page - 1)}
-                disabled={pagination.page <= 1}
-                className="inline-flex items-center gap-1.5 px-4 py-2 rounded-xl border border-gray-200 bg-white text-sm font-medium text-gray-700 shadow-sm hover:bg-gray-50 hover:shadow transition-all disabled:opacity-50 disabled:cursor-not-allowed"
-              >
-                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
-                </svg>
-                Previous
-              </button>
-              <span className="px-4 py-2 text-sm font-medium text-gray-600">
-                Page {pagination.page} of {pagination.totalPages || 1}
-              </span>
-              <button
-                type="button"
-                onClick={() => goToPage(pagination.page + 1)}
-                disabled={pagination.page >= pagination.totalPages}
-                className="inline-flex items-center gap-1.5 px-4 py-2 rounded-xl border border-gray-200 bg-white text-sm font-medium text-gray-700 shadow-sm hover:bg-gray-50 hover:shadow transition-all disabled:opacity-50 disabled:cursor-not-allowed"
-              >
-                Next
-                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
-                </svg>
-              </button>
-            </div>
+            {viewAll ? (
+              <p className="text-sm text-gray-500">
+                {pagination.total > 5000
+                  ? `Showing first 5000 of ${pagination.total} attendees`
+                  : `Showing all ${pagination.total} attendees`}
+              </p>
+            ) : (
+              <>
+                <p className="text-sm text-gray-500">
+                  Showing <span className="font-semibold text-gray-900">{shownFrom}</span> to <span className="font-semibold text-gray-900">{shownTo}</span> of <span className="font-semibold text-gray-900">{pagination.total}</span> results
+                </p>
+                <div className="flex items-center gap-2">
+                  <button
+                    type="button"
+                    onClick={() => goToPage(pagination.page - 1)}
+                    disabled={pagination.page <= 1}
+                    className="inline-flex items-center gap-1.5 px-4 py-2 rounded-xl border border-gray-200 bg-white text-sm font-medium text-gray-700 shadow-sm hover:bg-gray-50 hover:shadow transition-all disabled:opacity-50 disabled:cursor-not-allowed"
+                  >
+                    <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
+                    </svg>
+                    Previous
+                  </button>
+                  <span className="px-4 py-2 text-sm font-medium text-gray-600">
+                    Page {pagination.page} of {pagination.totalPages || 1}
+                  </span>
+                  <button
+                    type="button"
+                    onClick={() => goToPage(pagination.page + 1)}
+                    disabled={pagination.page >= pagination.totalPages}
+                    className="inline-flex items-center gap-1.5 px-4 py-2 rounded-xl border border-gray-200 bg-white text-sm font-medium text-gray-700 shadow-sm hover:bg-gray-50 hover:shadow transition-all disabled:opacity-50 disabled:cursor-not-allowed"
+                  >
+                    Next
+                    <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+                    </svg>
+                  </button>
+                </div>
+              </>
+            )}
           </div>
+
+          <CopyToSheetsModal
+            fields={COPY_FIELDS}
+            records={records}
+            getCellValue={getAttendanceCellValue}
+            open={copyModalOpen}
+            onClose={() => setCopyModalOpen(false)}
+            recordLabel="attendees"
+            dedupeByPhoneKey="mobileNumber"
+          />
         </>
       )}
     </div>
