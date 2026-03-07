@@ -71,6 +71,11 @@ export const createAdmin = async (payload, token = getStoredToken()) => {
   }, token);
 };
 
+/** DELETE /admin/admins/:id — remove admin (super admin only). Cannot delete self. */
+export const deleteAdmin = async (id, token = getStoredToken()) => {
+  return adminRequest(`/admins/${encodeURIComponent(id)}`, { method: 'DELETE' }, token);
+};
+
 export const getAdminLeads = async (params = {}, token = getStoredToken()) => {
   const search = new URLSearchParams();
   if (params.page != null) search.set('page', params.page);

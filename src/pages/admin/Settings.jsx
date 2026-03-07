@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { useAuth } from '../../contexts/AuthContext';
-import { createAdmin, listAdmins } from '../../utils/adminApi';
+import { createAdmin, listAdmins, deleteAdmin } from '../../utils/adminApi';
 
 const SECTION_OPTIONS = [
   { sectionKey: 'dashboard', label: 'Dashboard' },
@@ -34,8 +34,29 @@ export default function Settings() {
   });
   const [submitStatus, setSubmitStatus] = useState({ type: null, message: '' });
   const [submitting, setSubmitting] = useState(false);
+  const [showPassword, setShowPassword] = useState(false);
+  const [removeModal, setRemoveModal] = useState(null);
+  const [removing, setRemoving] = useState(false);
+  const [removeError, setRemoveError] = useState('');
 
   const isSuperAdmin = user?.isSuperAdmin === true;
+
+  const handleConfirmRemove = () => {
+    if (!removeModal) return;
+    setRemoveError('');
+    setRemoving(true);
+    deleteAdmin(removeModal.id)
+      .then((res) => {
+        if (!res.success) throw new Error(res.message || 'Failed to remove admin.');
+        return listAdmins();
+      })
+      .then((res) => {
+        if (res.success && Array.isArray(res.data?.data)) setAdmins(res.data.data);
+        setRemoveModal(null);
+      })
+      .catch((err) => setRemoveError(err.message || 'Something went wrong.'))
+      .finally(() => setRemoving(false));
+  };
 
   useEffect(() => {
     if (isSuperAdmin) {
@@ -137,7 +158,8 @@ export default function Settings() {
                   <div className="grid grid-cols-12 gap-2 px-4 py-3 bg-gray-50 text-xs font-semibold text-gray-500 uppercase tracking-wide">
                     <div className="col-span-4">User</div>
                     <div className="col-span-2">Role</div>
-                    <div className="col-span-6">Section access</div>
+                    <div className="col-span-4">Section access</div>
+                    <div className="col-span-2">Actions</div>
                   </div>
                   {admins.map((a) => (
                     <div
@@ -157,7 +179,7 @@ export default function Settings() {
                           <span className="text-gray-600">Admin</span>
                         )}
                       </div>
-                      <div className="col-span-6 text-gray-600">
+                      <div className="col-span-4 text-gray-600">
                         {a.isSuperAdmin ? (
                           <span className="text-gray-500">All sections</span>
                         ) : (Array.isArray(a.sectionAccess) && a.sectionAccess.length > 0) ? (
@@ -166,11 +188,54 @@ export default function Settings() {
                           <span className="text-gray-400">No sections</span>
                         )}
                       </div>
+                      <div className="col-span-2 flex items-center">
+                        <button
+                          type="button"
+                          onClick={() => setRemoveModal(a)}
+                          disabled={String(a.id) === String(user?.id)}
+                          title={String(a.id) === String(user?.id) ? 'You cannot remove your own account.' : undefined}
+                          className="text-xs px-2.5 py-1.5 rounded-lg border border-gray-300 bg-white text-gray-700 hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:bg-white font-medium"
+                        >
+                          Remove
+                        </button>
+                      </div>
                     </div>
                   ))}
                 </div>
               </div>
             ) : null}
+
+            {removeModal && (
+              <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/40" role="dialog" aria-modal="true" aria-labelledby="remove-admin-title">
+                <div className="bg-white rounded-lg shadow-xl max-w-md w-full p-6">
+                  <h3 id="remove-admin-title" className="text-lg font-semibold text-gray-800 mb-2">Remove admin</h3>
+                  <p className="text-sm text-gray-600 mb-4">
+                    Are you sure you want to remove <strong>{removeModal.username}</strong>? This cannot be undone.
+                  </p>
+                  {removeError && (
+                    <p className="text-sm text-red-600 mb-4" role="alert">{removeError}</p>
+                  )}
+                  <div className="flex justify-end gap-2">
+                    <button
+                      type="button"
+                      onClick={() => { setRemoveModal(null); setRemoveError(''); }}
+                      disabled={removing}
+                      className="px-4 py-2 rounded-lg border border-gray-300 bg-white text-gray-700 hover:bg-gray-50 font-medium disabled:opacity-50"
+                    >
+                      Cancel
+                    </button>
+                    <button
+                      type="button"
+                      onClick={handleConfirmRemove}
+                      disabled={removing}
+                      className="px-4 py-2 rounded-lg bg-red-600 text-white hover:bg-red-700 font-medium disabled:opacity-50"
+                    >
+                      {removing ? 'Removing…' : 'Remove'}
+                    </button>
+                  </div>
+                </div>
+              </div>
+            )}
 
             <div className="border-t border-gray-200 pt-6">
               <h4 className="text-sm font-semibold text-gray-700 mb-4">Create admin</h4>
@@ -197,15 +262,29 @@ export default function Settings() {
                         <label htmlFor="new-admin-password" className="block text-sm font-medium text-gray-700 mb-1">
                           Password * (min 6 characters)
                         </label>
-                        <input
-                          id="new-admin-password"
-                          type="password"
-                          value={form.password}
-                          onChange={(e) => setForm((p) => ({ ...p, password: e.target.value }))}
-                          className="w-full px-3 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-navy focus:border-primary-navy outline-none"
-                          placeholder="••••••••"
-                          autoComplete="new-password"
-                        />
+                        <div className="relative">
+                          <input
+                            id="new-admin-password"
+                            type={showPassword ? 'text' : 'password'}
+                            value={form.password}
+                            onChange={(e) => setForm((p) => ({ ...p, password: e.target.value }))}
+                            className="w-full px-3 py-2.5 pr-20 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-navy focus:border-primary-navy outline-none"
+                            placeholder="••••••••"
+                            autoComplete="new-password"
+                            aria-describedby="new-admin-password-hint"
+                          />
+                          <button
+                            type="button"
+                            onClick={() => setShowPassword((v) => !v)}
+                            className="absolute right-2 top-1/2 -translate-y-1/2 text-xs font-medium text-gray-600 hover:text-gray-800 py-1 px-2 rounded"
+                            aria-label={showPassword ? 'Hide password' : 'Show password'}
+                          >
+                            {showPassword ? 'Hide' : 'Show'}
+                          </button>
+                        </div>
+                        <p id="new-admin-password-hint" className="mt-1 text-xs text-gray-500">
+                          Minimum 6 characters.
+                        </p>
                       </div>
                     </div>
                     <div>
