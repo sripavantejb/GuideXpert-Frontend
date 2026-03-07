@@ -1,4 +1,4 @@
-import { createContext, useContext, useState, useEffect, useMemo } from 'react';
+import { createContext, useContext, useState, useEffect, useMemo, useCallback } from 'react';
 import { SESSIONS } from '../data/mockWebinarData';
 import { normalizeDoubts } from '../utils/doubtHelpers';
 
@@ -9,6 +9,7 @@ const STORAGE_KEYS = {
   bookmarks: 'webinar_bookmarks',
   settings: 'webinar_settings',
   profile: 'webinar_profile',
+  activeSession: 'webinar_active_session',
 };
 
 const DEFAULT_SETTINGS = {
@@ -70,6 +71,36 @@ export function WebinarProvider({ children }) {
     return (p && typeof p.displayName === 'string') ? p.displayName : '';
   });
 
+  const [activeSessionId, setActiveSessionIdState] = useState(() => {
+    const stored = loadJson(STORAGE_KEYS.activeSession, null);
+    if (stored && typeof stored.sessionId === 'string' && SESSIONS.some((s) => s.id === stored.sessionId))
+      return stored.sessionId;
+    return SESSIONS[0]?.id ?? null;
+  });
+  const [activeDay, setActiveDayState] = useState(() => {
+    const stored = loadJson(STORAGE_KEYS.activeSession, null);
+    if (stored && typeof stored.sessionId === 'string') {
+      const session = SESSIONS.find((s) => s.id === stored.sessionId);
+      if (session) return session.dayId;
+    }
+    if (stored && typeof stored.dayId === 'number' && stored.dayId >= 1 && stored.dayId <= 3)
+      return stored.dayId;
+    return 1;
+  });
+
+  const setActiveSessionId = useCallback((id) => {
+    setActiveSessionIdState(id);
+    const session = SESSIONS.find((s) => s.id === id);
+    if (session) setActiveDayState(session.dayId);
+  }, []);
+  const setActiveDay = useCallback((dayId) => {
+    setActiveDayState(dayId);
+  }, []);
+
+  useEffect(() => {
+    saveJson(STORAGE_KEYS.activeSession, { sessionId: activeSessionId, dayId: activeDay });
+  }, [activeSessionId, activeDay]);
+
   useEffect(() => saveJson(STORAGE_KEYS.progress, completedSessions), [completedSessions]);
   useEffect(() => saveJson(STORAGE_KEYS.doubts, doubts), [doubts]);
   useEffect(() => saveJson(STORAGE_KEYS.resume, playbackPosition), [playbackPosition]);
@@ -122,6 +153,10 @@ export function WebinarProvider({ children }) {
     settings,
     setSettings,
     updateSetting,
+    activeSessionId,
+    setActiveSessionId,
+    activeDay,
+    setActiveDay,
   }),
   [
     sidebarOpen,
@@ -133,6 +168,8 @@ export function WebinarProvider({ children }) {
     settings,
     profileDisplayName,
     completionPercent,
+    activeSessionId,
+    activeDay,
   ]
   );
 

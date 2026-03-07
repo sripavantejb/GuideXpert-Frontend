@@ -1,23 +1,10 @@
-import { useState } from 'react';
-import { NavLink } from 'react-router-dom';
+import { useState, useCallback, useMemo, useEffect } from 'react';
+import { NavLink, useNavigate } from 'react-router-dom';
 import { useWebinar } from '../context/WebinarContext';
-import {
-  FiVideo,
-  FiTrendingUp,
-  FiBook,
-  FiSettings,
-  FiMessageCircle,
-  FiChevronLeft,
-  FiChevronRight,
-} from 'react-icons/fi';
+import { FiSettings, FiChevronLeft, FiChevronRight, FiSearch } from 'react-icons/fi';
 import { HiX as HiXIcon } from 'react-icons/hi';
-
-const TRAINING_ITEMS = [
-  { id: 'webinar', label: 'Webinar', icon: FiVideo, to: '/webinar' },
-  { id: 'progress', label: 'Progress', icon: FiTrendingUp, to: '/webinar/progress' },
-  { id: 'doubts', label: 'Doubts', icon: FiMessageCircle, to: '/webinar/doubts' },
-  { id: 'resources', label: 'Resources', icon: FiBook, to: '/webinar/resources' },
-];
+import { SessionCard } from './SessionList';
+import { SESSIONS, getSessionsByDay } from '../data/mockWebinarData';
 
 const USER_ITEMS = [
   { id: 'profile', label: 'Profile', to: '/webinar/profile' },
@@ -27,15 +14,53 @@ const USER_ITEMS = [
 export default function Sidebar({
   open,
   onOpenChange,
-  doubtsCount = 0,
 }) {
-  const { sidebarExpanded: expanded, setSidebarExpanded: setExpanded, user } = useWebinar();
+  const navigate = useNavigate();
+  const {
+    sidebarExpanded: expanded,
+    setSidebarExpanded: setExpanded,
+    user,
+    completedSessions,
+    activeSessionId,
+    setActiveSessionId,
+  } = useWebinar();
   const [internalOpen, setInternalOpen] = useState(false);
   const [avatarError, setAvatarError] = useState(false);
+  const [searchInput, setSearchInput] = useState('');
+  const [searchQuery, setSearchQuery] = useState('');
   const sidebarOpen = typeof open === 'boolean' ? open : internalOpen;
+
+  useEffect(() => {
+    const t = setTimeout(() => setSearchQuery(searchInput.trim().toLowerCase()), 200);
+    return () => clearTimeout(t);
+  }, [searchInput]);
+
+  const filteredSessions = useMemo(() => {
+    if (!searchQuery) return SESSIONS;
+    return SESSIONS.filter((s) => s.title.toLowerCase().includes(searchQuery));
+  }, [searchQuery]);
   const setSidebarOpen = typeof onOpenChange === 'function' ? onOpenChange : setInternalOpen;
 
-  const width = expanded ? 'w-[240px]' : 'w-[72px]';
+  const width = expanded ? 'w-[280px] lg:w-[30vw]' : 'w-[72px]';
+
+  const isDayUnlocked = useCallback(
+    (dayId) => {
+      if (dayId === 1) return true;
+      const prevDaySessions = getSessionsByDay(dayId - 1);
+      const prevDayIds = prevDaySessions.map((s) => s.id);
+      return prevDayIds.every((id) => completedSessions.includes(id));
+    },
+    [completedSessions]
+  );
+
+  const handleSelectSession = useCallback(
+    (sessionId) => {
+      setActiveSessionId(sessionId);
+      setSidebarOpen(false);
+      navigate('/webinar');
+    },
+    [setActiveSessionId, setSidebarOpen, navigate]
+  );
 
   const linkBase =
     'flex items-center gap-3 rounded-xl transition-all duration-200 active:scale-95 focus:outline-none focus-visible:ring-2 focus-visible:ring-primary-navy focus-visible:ring-offset-2 border-l-[3px] border-transparent transition-colors duration-200';
@@ -45,7 +70,7 @@ export default function Sidebar({
     'bg-primary-navy/10 text-primary-navy border-primary-navy font-medium';
   const inactiveClass = 'text-gray-600 hover:bg-gray-200/80 hover:text-gray-900';
 
-  const renderItem = (item, showBadge = false) => (
+  const renderItem = (item) => (
     <NavLink
       key={item.id}
       to={item.to}
@@ -61,11 +86,6 @@ export default function Sidebar({
     >
       <span className="relative flex shrink-0 items-center justify-center w-6 h-6">
         <item.icon className="w-5 h-5" />
-        {showBadge && doubtsCount > 0 && (
-          <span className="absolute -top-1 -right-1 min-w-[16px] h-4 px-1 rounded-full bg-primary-navy text-white text-[10px] font-semibold flex items-center justify-center">
-            {doubtsCount > 99 ? '99+' : doubtsCount}
-          </span>
-        )}
       </span>
       {expanded && <span className="truncate text-sm">{item.label}</span>}
     </NavLink>
@@ -128,9 +148,17 @@ export default function Sidebar({
         style={{ boxShadow: '2px 0 12px rgba(0,0,0,0.04)' }}
       >
         <div className="flex items-center justify-between shrink-0 p-2 sm:p-3 border-b border-gray-200">
-          {expanded && <span className="text-xs font-semibold text-gray-500 uppercase tracking-wider hidden lg:inline">Menu</span>}
-          <div className="flex items-center gap-1 ml-auto">
-            {/* On mobile: only close (X). On desktop: collapse chevron. Prevents two close options and overflow. */}
+          {expanded && (
+            <div className="flex flex-col min-w-0">
+              <span className="text-xs font-semibold text-gray-500 uppercase tracking-wider hidden lg:inline">
+                All sessions ({SESSIONS.length})
+              </span>
+              <p className="text-[11px] text-gray-600 hidden lg:block mt-0.5">
+                {completedSessions.length} completed
+              </p>
+            </div>
+          )}
+          <div className="flex items-center gap-1 ml-auto shrink-0">
             <button
               type="button"
               onClick={() => setExpanded((e) => !e)}
@@ -151,29 +179,67 @@ export default function Sidebar({
           </div>
         </div>
 
-        <nav className="flex-1 flex flex-col min-h-0 overflow-y-auto">
-          <div className="flex-1 flex flex-col justify-center min-h-0 py-4 px-3">
-            {expanded && (
-              <p className="text-[10px] font-semibold text-gray-400 uppercase tracking-wider mb-2 px-3">
-                Training
-              </p>
-            )}
-            <div className="flex flex-col gap-1">
-              {TRAINING_ITEMS.map((item) => renderItem(item, item.id === 'doubts'))}
+        <nav className="flex-1 flex flex-col min-h-0 overflow-hidden">
+          {expanded ? (
+            <>
+              <div className="flex-1 min-h-0 flex flex-col overflow-hidden">
+                <div className="shrink-0 px-2 xl:px-3 2xl:px-3 pt-2 pb-1.5">
+                  <label htmlFor="sidebar-search" className="sr-only">Search sessions</label>
+                  <div className="relative">
+                    <FiSearch className="absolute left-2.5 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400 pointer-events-none" aria-hidden />
+                    <input
+                      id="sidebar-search"
+                      type="search"
+                      placeholder="Search sessions..."
+                      value={searchInput}
+                      onChange={(e) => setSearchInput(e.target.value)}
+                      className="w-full pl-8 pr-3 py-2 rounded-lg border border-gray-200 bg-white text-sm text-gray-800 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-primary-navy/50 focus:border-primary-navy"
+                      aria-label="Search sessions"
+                    />
+                  </div>
+                </div>
+                <div className="flex-1 overflow-y-auto min-h-0 py-2 px-2 xl:px-3 2xl:px-3 space-y-2">
+                  {filteredSessions.length === 0 ? (
+                    <p className="text-sm text-gray-500 py-4 text-center">No sessions match your search.</p>
+                  ) : (
+                  filteredSessions.map((session) => (
+                    <SessionCard
+                      key={session.id}
+                      session={session}
+                      isActive={activeSessionId === session.id}
+                      isCompleted={completedSessions.includes(session.id)}
+                      progress={
+                        activeSessionId === session.id && !completedSessions.includes(session.id)
+                          ? 1
+                          : 0
+                      }
+                      isLocked={!isDayUnlocked(session.dayId)}
+                      onClick={handleSelectSession}
+                    />
+                  ))
+                  )}
+                </div>
+              </div>
+
+              <div className="shrink-0 px-3 border-t border-gray-200 pt-3 pb-4">
+                <div className="flex flex-col gap-1">
+                  {USER_ITEMS.map((item) =>
+                    item.id === 'profile' ? renderProfileItem() : renderItem(item)
+                  )}
+                </div>
+              </div>
+            </>
+          ) : (
+            <div className="flex-1 flex flex-col justify-center min-h-0 py-4 px-3">
+              <div className="mt-auto shrink-0 pt-4 border-t border-gray-200">
+                <div className="flex flex-col gap-1">
+                  {USER_ITEMS.map((item) =>
+                    item.id === 'profile' ? renderProfileItem() : renderItem(item)
+                  )}
+                </div>
+              </div>
             </div>
-          </div>
-          <div className="mt-auto shrink-0 px-3 border-t border-gray-200 pt-4 pb-4">
-            {expanded && (
-              <p className="text-[10px] font-semibold text-gray-400 uppercase tracking-wider mb-2 px-3">
-                User
-              </p>
-            )}
-            <div className="flex flex-col gap-1">
-              {USER_ITEMS.map((item) =>
-                item.id === 'profile' ? renderProfileItem() : renderItem(item)
-              )}
-            </div>
-          </div>
+          )}
         </nav>
       </aside>
     </>

@@ -53,7 +53,6 @@ const WebinarLayout = lazy(() => import('./pages/webinar/WebinarLayout'));
 const WebinarDashboard = lazy(() => import('./pages/webinar/WebinarDashboard'));
 const ProgressPage = lazy(() => import('./pages/webinar/ProgressPage'));
 const DoubtsPage = lazy(() => import('./pages/webinar/DoubtsPage'));
-const ResourcesPage = lazy(() => import('./pages/webinar/ResourcesPage'));
 const ProfilePage = lazy(() => import('./pages/webinar/ProfilePage'));
 const SettingsPage = lazy(() => import('./pages/webinar/SettingsPage'));
 const CertificatesPage = lazy(() => import('./pages/webinar/CertificatesPage'));
@@ -91,7 +90,6 @@ function App() {
             <Route index element={<Suspense fallback={<div className="p-4 animate-pulse text-gray-500">Loading...</div>}><WebinarDashboard /></Suspense>} />
             <Route path="progress" element={<Suspense fallback={<div className="p-4 animate-pulse text-gray-500">Loading...</div>}><ProgressPage /></Suspense>} />
             <Route path="doubts" element={<Suspense fallback={<div className="p-4 animate-pulse text-gray-500">Loading...</div>}><DoubtsPage /></Suspense>} />
-            <Route path="resources" element={<Suspense fallback={<div className="p-4 animate-pulse text-gray-500">Loading...</div>}><ResourcesPage /></Suspense>} />
             <Route path="profile" element={<Suspense fallback={<div className="p-4 animate-pulse text-gray-500">Loading...</div>}><ProfilePage /></Suspense>} />
             <Route path="settings" element={<Suspense fallback={<div className="p-4 animate-pulse text-gray-500">Loading...</div>}><SettingsPage /></Suspense>} />
             <Route path="certificates" element={<Suspense fallback={<div className="p-4 animate-pulse text-gray-500">Loading...</div>}><CertificatesPage /></Suspense>} />

@@ -7,7 +7,6 @@ function WebinarLayoutInner() {
     sidebarOpen,
     setSidebarOpen,
     sidebarExpanded,
-    doubts,
   } = useWebinar();
 
   return (
@@ -21,9 +20,8 @@ function WebinarLayoutInner() {
       <Sidebar
         open={sidebarOpen}
         onOpenChange={setSidebarOpen}
-        doubtsCount={doubts.length}
       />
-      <main id="main-content" tabIndex={-1} className={`flex-1 flex flex-col min-w-0 relative transition-[margin] duration-200 overflow-x-hidden ${sidebarExpanded ? 'lg:ml-[240px]' : 'lg:ml-[72px]'}`}>
+      <main id="main-content" tabIndex={-1} className={`flex-1 flex flex-col min-w-0 relative transition-[margin] duration-200 overflow-x-hidden ${sidebarExpanded ? 'lg:ml-[30vw]' : 'lg:ml-[72px]'}`}>
         <button
           type="button"
           onClick={() => setSidebarOpen(true)}
