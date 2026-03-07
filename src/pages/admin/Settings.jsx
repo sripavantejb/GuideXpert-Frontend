@@ -43,9 +43,14 @@ export default function Settings() {
 
   const handleConfirmRemove = () => {
     if (!removeModal) return;
+    const id = removeModal.id != null ? String(removeModal.id) : '';
+    if (!id) {
+      setRemoveError('Invalid admin id.');
+      return;
+    }
     setRemoveError('');
     setRemoving(true);
-    deleteAdmin(removeModal.id)
+    deleteAdmin(id)
       .then((res) => {
         if (!res.success) throw new Error(res.message || 'Failed to remove admin.');
         return listAdmins();
@@ -54,7 +59,10 @@ export default function Settings() {
         if (res.success && Array.isArray(res.data?.data)) setAdmins(res.data.data);
         setRemoveModal(null);
       })
-      .catch((err) => setRemoveError(err.message || 'Something went wrong.'))
+      .catch((err) => {
+        const msg = err.message || 'Something went wrong.';
+        setRemoveError(msg === 'Not found' ? 'Remove admin is not available on this server. Run the backend locally or redeploy.' : msg);
+      })
       .finally(() => setRemoving(false));
   };
 
