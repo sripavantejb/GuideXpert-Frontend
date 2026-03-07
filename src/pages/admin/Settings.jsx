@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { useAuth } from '../../contexts/AuthContext';
-import { createAdmin, listAdmins, deleteAdmin } from '../../utils/adminApi';
+import { createAdmin, listAdmins, deleteAdmin, resetAdminPassword, changeMyPassword } from '../../utils/adminApi';
 
 const SECTION_OPTIONS = [
   { sectionKey: 'dashboard', label: 'Dashboard' },
@@ -38,6 +38,14 @@ export default function Settings() {
   const [removeModal, setRemoveModal] = useState(null);
   const [removing, setRemoving] = useState(false);
   const [removeError, setRemoveError] = useState('');
+  const [resetPasswordModal, setResetPasswordModal] = useState(null);
+  const [resetPasswordValue, setResetPasswordValue] = useState('');
+  const [resetPasswordConfirm, setResetPasswordConfirm] = useState('');
+  const [resetPasswordError, setResetPasswordError] = useState('');
+  const [resetPasswordSubmitting, setResetPasswordSubmitting] = useState(false);
+  const [changePasswordForm, setChangePasswordForm] = useState({ current: '', new: '', confirm: '' });
+  const [changePasswordStatus, setChangePasswordStatus] = useState({ type: null, message: '' });
+  const [changePasswordSubmitting, setChangePasswordSubmitting] = useState(false);
 
   const isSuperAdmin = user?.isSuperAdmin === true;
 
@@ -66,15 +74,77 @@ export default function Settings() {
       .finally(() => setRemoving(false));
   };
 
-  useEffect(() => {
-    if (isSuperAdmin) {
-      setAdminsLoading(true);
-      listAdmins()
-        .then((res) => {
-          if (res.success && Array.isArray(res.data?.data)) setAdmins(res.data.data);
-        })
-        .finally(() => setAdminsLoading(false));
+  const handleConfirmResetPassword = () => {
+    if (!resetPasswordModal) return;
+    setResetPasswordError('');
+    if (!resetPasswordValue || resetPasswordValue.length < 6) {
+      setResetPasswordError('New password must be at least 6 characters.');
+      return;
     }
+    if (resetPasswordValue !== resetPasswordConfirm) {
+      setResetPasswordError('Passwords do not match.');
+      return;
+    }
+    const id = resetPasswordModal.id != null ? String(resetPasswordModal.id) : '';
+    if (!id) {
+      setResetPasswordError('Invalid admin.');
+      return;
+    }
+    setResetPasswordSubmitting(true);
+    resetAdminPassword(id, { newPassword: resetPasswordValue })
+      .then((res) => {
+        if (!res.success) throw new Error(res.message || 'Failed to update password.');
+        setResetPasswordModal(null);
+        setResetPasswordValue('');
+        setResetPasswordConfirm('');
+        listAdmins().then((r) => {
+          if (r.success && Array.isArray(r.data?.data)) setAdmins(r.data.data);
+        });
+      })
+      .catch((err) => setResetPasswordError(err.message || 'Something went wrong.'))
+      .finally(() => setResetPasswordSubmitting(false));
+  };
+
+  const handleChangeMyPassword = async (e) => {
+    e.preventDefault();
+    setChangePasswordStatus({ type: null, message: '' });
+    const { current, new: newPwd, confirm } = changePasswordForm;
+    if (!current.trim()) {
+      setChangePasswordStatus({ type: 'error', message: 'Current password is required.' });
+      return;
+    }
+    if (!newPwd || newPwd.length < 6) {
+      setChangePasswordStatus({ type: 'error', message: 'New password must be at least 6 characters.' });
+      return;
+    }
+    if (newPwd !== confirm) {
+      setChangePasswordStatus({ type: 'error', message: 'New password and confirmation do not match.' });
+      return;
+    }
+    setChangePasswordSubmitting(true);
+    const result = await changeMyPassword({ currentPassword: current, newPassword: newPwd });
+    setChangePasswordSubmitting(false);
+    if (result.success) {
+      setChangePasswordStatus({ type: 'success', message: 'Password changed successfully.' });
+      setChangePasswordForm({ current: '', new: '', confirm: '' });
+    } else {
+      setChangePasswordStatus({ type: 'error', message: result.message || 'Failed to change password.' });
+    }
+  };
+
+  useEffect(() => {
+    if (!isSuperAdmin) return;
+    let cancelled = false;
+    queueMicrotask(() => setAdminsLoading(true));
+    listAdmins()
+      .then((res) => {
+        if (cancelled) return;
+        if (res.success && Array.isArray(res.data?.data)) setAdmins(res.data.data);
+      })
+      .finally(() => {
+        if (!cancelled) setAdminsLoading(false);
+      });
+    return () => { cancelled = true; };
   }, [isSuperAdmin]);
 
   const handleSectionToggle = (sectionKey) => {
@@ -122,10 +192,61 @@ export default function Settings() {
       <h2 className="text-xl font-semibold text-gray-800 mb-6">Settings</h2>
 
       <div className="bg-white rounded-lg border border-gray-200 shadow-sm p-6 mb-6">
-        <p className="text-gray-600 mb-4">
-          Admin settings. Change password and profile options will be available here in a future update.
+        <h3 className="text-lg font-semibold text-gray-800 mb-2">Change my password</h3>
+        <p className="text-sm text-gray-500 mb-4">
+          Update your own login password. You will need to sign in again with the new password after changing it.
         </p>
-        <p className="text-sm text-gray-500">
+        <form onSubmit={handleChangeMyPassword} className="max-w-md space-y-4">
+          <div>
+            <label htmlFor="current-password" className="block text-sm font-medium text-gray-700 mb-1">Current password *</label>
+            <input
+              id="current-password"
+              type="password"
+              value={changePasswordForm.current}
+              onChange={(e) => setChangePasswordForm((p) => ({ ...p, current: e.target.value }))}
+              className="w-full px-3 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-navy focus:border-primary-navy outline-none"
+              placeholder="••••••••"
+              autoComplete="current-password"
+            />
+          </div>
+          <div>
+            <label htmlFor="new-password" className="block text-sm font-medium text-gray-700 mb-1">New password (min 6 characters) *</label>
+            <input
+              id="new-password"
+              type="password"
+              value={changePasswordForm.new}
+              onChange={(e) => setChangePasswordForm((p) => ({ ...p, new: e.target.value }))}
+              className="w-full px-3 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-navy focus:border-primary-navy outline-none"
+              placeholder="••••••••"
+              autoComplete="new-password"
+            />
+          </div>
+          <div>
+            <label htmlFor="confirm-password" className="block text-sm font-medium text-gray-700 mb-1">Confirm new password *</label>
+            <input
+              id="confirm-password"
+              type="password"
+              value={changePasswordForm.confirm}
+              onChange={(e) => setChangePasswordForm((p) => ({ ...p, confirm: e.target.value }))}
+              className="w-full px-3 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-navy focus:border-primary-navy outline-none"
+              placeholder="••••••••"
+              autoComplete="new-password"
+            />
+          </div>
+          {changePasswordStatus.message && (
+            <p className={`text-sm ${changePasswordStatus.type === 'success' ? 'text-green-600' : 'text-red-600'}`} role="alert">
+              {changePasswordStatus.message}
+            </p>
+          )}
+          <button
+            type="submit"
+            disabled={changePasswordSubmitting}
+            className="px-4 py-2.5 rounded-lg bg-primary-navy text-white hover:bg-primary-navy/90 font-medium disabled:opacity-50"
+          >
+            {changePasswordSubmitting ? 'Updating…' : 'Change password'}
+          </button>
+        </form>
+        <p className="text-sm text-gray-500 mt-6 pt-4 border-t border-gray-100">
           Use <strong>Log out</strong> in the sidebar (bottom) to sign out.
         </p>
       </div>
@@ -161,7 +282,8 @@ export default function Settings() {
               <p className="text-sm text-gray-500">Loading admins…</p>
             ) : admins.length > 0 ? (
               <div className="mb-6">
-                <h4 className="text-sm font-semibold text-gray-700 mb-3">Existing admin users</h4>
+                <h4 className="text-sm font-semibold text-gray-700 mb-1">Existing admin users</h4>
+                <p className="text-xs text-gray-500 mb-3">Passwords are not shown for security. Use <strong>Reset password</strong> to set or change an admin&apos;s login password.</p>
                 <div className="rounded-lg border border-gray-200 overflow-hidden shadow-sm">
                   <div className="grid grid-cols-12 gap-2 px-4 py-3 bg-gray-50 text-xs font-semibold text-gray-500 uppercase tracking-wide">
                     <div className="col-span-4">User</div>
@@ -196,7 +318,14 @@ export default function Settings() {
                           <span className="text-gray-400">No sections</span>
                         )}
                       </div>
-                      <div className="col-span-2 flex items-center">
+                      <div className="col-span-2 flex items-center gap-1.5 flex-wrap">
+                        <button
+                          type="button"
+                          onClick={() => setResetPasswordModal(a)}
+                          className="text-xs px-2.5 py-1.5 rounded-lg border border-gray-300 bg-white text-gray-700 hover:bg-gray-50 font-medium"
+                        >
+                          Reset password
+                        </button>
                         <button
                           type="button"
                           onClick={() => setRemoveModal(a)}
@@ -239,6 +368,65 @@ export default function Settings() {
                       className="px-4 py-2 rounded-lg bg-red-600 text-white hover:bg-red-700 font-medium disabled:opacity-50"
                     >
                       {removing ? 'Removing…' : 'Remove'}
+                    </button>
+                  </div>
+                </div>
+              </div>
+            )}
+
+            {resetPasswordModal && (
+              <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/40" role="dialog" aria-modal="true" aria-labelledby="reset-password-title">
+                <div className="bg-white rounded-lg shadow-xl max-w-md w-full p-6">
+                  <h3 id="reset-password-title" className="text-lg font-semibold text-gray-800 mb-2">Reset password</h3>
+                  <p className="text-sm text-gray-600 mb-4">
+                    Set a new password for <strong>{resetPasswordModal.username}</strong>. They will use this to log in.
+                  </p>
+                  <p className="text-xs text-gray-500 mb-2">Passwords are stored securely and cannot be viewed. Use this to set or reset their password.</p>
+                  <div className="space-y-3 mb-4">
+                    <div>
+                      <label htmlFor="reset-password-new" className="block text-sm font-medium text-gray-700 mb-1">New password (min 6 characters) *</label>
+                      <input
+                        id="reset-password-new"
+                        type="password"
+                        value={resetPasswordValue}
+                        onChange={(e) => setResetPasswordValue(e.target.value)}
+                        className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-navy focus:border-primary-navy outline-none"
+                        placeholder="••••••••"
+                        autoComplete="new-password"
+                      />
+                    </div>
+                    <div>
+                      <label htmlFor="reset-password-confirm" className="block text-sm font-medium text-gray-700 mb-1">Confirm new password *</label>
+                      <input
+                        id="reset-password-confirm"
+                        type="password"
+                        value={resetPasswordConfirm}
+                        onChange={(e) => setResetPasswordConfirm(e.target.value)}
+                        className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-navy focus:border-primary-navy outline-none"
+                        placeholder="••••••••"
+                        autoComplete="new-password"
+                      />
+                    </div>
+                  </div>
+                  {resetPasswordError && (
+                    <p className="text-sm text-red-600 mb-4" role="alert">{resetPasswordError}</p>
+                  )}
+                  <div className="flex justify-end gap-2">
+                    <button
+                      type="button"
+                      onClick={() => { setResetPasswordModal(null); setResetPasswordValue(''); setResetPasswordConfirm(''); setResetPasswordError(''); }}
+                      disabled={resetPasswordSubmitting}
+                      className="px-4 py-2 rounded-lg border border-gray-300 bg-white text-gray-700 hover:bg-gray-50 font-medium disabled:opacity-50"
+                    >
+                      Cancel
+                    </button>
+                    <button
+                      type="button"
+                      onClick={handleConfirmResetPassword}
+                      disabled={resetPasswordSubmitting}
+                      className="px-4 py-2 rounded-lg bg-primary-navy text-white hover:bg-primary-navy/90 font-medium disabled:opacity-50"
+                    >
+                      {resetPasswordSubmitting ? 'Updating…' : 'Update password'}
                     </button>
                   </div>
                 </div>

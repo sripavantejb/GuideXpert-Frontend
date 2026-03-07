@@ -76,6 +76,22 @@ export const deleteAdmin = async (id, token = getStoredToken()) => {
   return adminRequest(`/admins/${encodeURIComponent(id)}`, { method: 'DELETE' }, token);
 };
 
+/** PATCH /admin/admins/:id/password — reset another admin's password (super admin only). Payload: { newPassword }. */
+export const resetAdminPassword = async (id, payload, token = getStoredToken()) => {
+  return adminRequest(`/admins/${encodeURIComponent(id)}/password`, {
+    method: 'PATCH',
+    body: JSON.stringify(payload),
+  }, token);
+};
+
+/** PATCH /admin/me/password — change own password. Payload: { currentPassword, newPassword }. */
+export const changeMyPassword = async (payload, token = getStoredToken()) => {
+  return adminRequest('/me/password', {
+    method: 'PATCH',
+    body: JSON.stringify(payload),
+  }, token);
+};
+
 export const getAdminLeads = async (params = {}, token = getStoredToken()) => {
   const search = new URLSearchParams();
   if (params.page != null) search.set('page', params.page);
