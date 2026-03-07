@@ -76,8 +76,8 @@ function ProtectedCounsellor({ children }) {
 
 function App() {
   return (
-    <BrowserRouter>
-      <AuthProvider>
+    <AuthProvider>
+      <BrowserRouter>
         <CounsellorAuthProvider>
         <Routes>
           <Route path="/" element={<LandingPage />} />
@@ -151,8 +151,8 @@ function App() {
           <Route path="*" element={<Navigate to="/" replace />} />
         </Routes>
         </CounsellorAuthProvider>
-      </AuthProvider>
-    </BrowserRouter>
+      </BrowserRouter>
+    </AuthProvider>
   );
 }
 
