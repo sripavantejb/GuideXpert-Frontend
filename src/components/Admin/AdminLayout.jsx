@@ -21,9 +21,10 @@ const navItems = [
 
 function getVisibleNavItems(user) {
   if (!user) return [];
-  if (user.isSuperAdmin) return navItems;
+  if (user.isSuperAdmin === true) return navItems;
   const access = user.sectionAccess;
-  if (!Array.isArray(access) || access.length === 0) return [];
+  // Backward compat: no section data = full access (legacy login or super admin without flag in storage)
+  if (!Array.isArray(access) || access.length === 0) return navItems;
   const set = new Set(access);
   return navItems.filter((item) => set.has(item.sectionKey));
 }
