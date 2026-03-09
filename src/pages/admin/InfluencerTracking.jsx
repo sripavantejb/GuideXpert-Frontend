@@ -30,8 +30,11 @@ const PLATFORMS = [
   { value: 'Instagram', label: 'Instagram' },
   { value: 'YouTube', label: 'YouTube' },
   { value: 'Twitter', label: 'Twitter' },
+  { value: 'X', label: 'X' },
   { value: 'WhatsApp', label: 'WhatsApp' },
   { value: 'Telegram', label: 'Telegram' },
+  { value: 'Facebook', label: 'Facebook' },
+  { value: 'LinkedIn', label: 'LinkedIn' },
 ];
 
 const DEFAULT_CAMPAIGN = 'guide_xperts';

@@ -447,7 +447,7 @@ export default function AssessmentForm3() {
                 </div>
               )}
 
-              <form onSubmit={handleSubmitAssessment} onKeyDown={handleAssessmentFormKeyDown} className="space-y-6">
+              <form onSubmit={(e) => e.preventDefault()} onKeyDown={handleAssessmentFormKeyDown} className="space-y-6">
                 <div className="rounded-2xl bg-white/95 border border-gray-200/80 border-l-2 border-l-[#003366] shadow-md overflow-hidden p-6 sm:p-8">
                   {(() => {
                     const q = flatQuestions[questionIndex];
@@ -519,7 +519,8 @@ export default function AssessmentForm3() {
                     </button>
                   ) : (
                     <button
-                      type="submit"
+                      type="button"
+                      onClick={handleSubmitAssessment}
                       disabled={submitting || !submitUnlocked}
                       className="flex-1 py-3 px-4 bg-[#003366] hover:bg-[#004080] text-white font-medium rounded-lg transition disabled:opacity-60 disabled:cursor-not-allowed"
                     >
