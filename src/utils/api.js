@@ -427,3 +427,36 @@ export const submitCourseFitAssessment = async (name, phone, answers, utm = null
   }
   return apiRequest('/assessment-course-fit/submit', { method: 'POST', body: JSON.stringify(body) });
 };
+
+/**
+ * Create or update a webinar certificate record (for view-by-ID).
+ * @param {{ certificateId?: string, fullName: string, dateIssued: string, mobileNumber?: string }} payload - Use mobileNumber for one ID per user; use certificateId for legacy upsert.
+ * @returns {Promise<{success: boolean, data?: { certificateId, fullName, dateIssued } | { success: true, data: ... }, status?: number}>}
+ */
+export const createCertificateRecord = async (payload) => {
+  return apiRequest('/certificate', {
+    method: 'POST',
+    body: JSON.stringify(payload),
+  });
+};
+
+/**
+ * Get or create a certificate for the current user (by mobile). Returns the same certificate ID for the same mobile.
+ * @param {{ fullName: string, dateIssued: string, mobileNumber: string }} params
+ * @returns {Promise<{success: boolean, data?: { certificateId, fullName, dateIssued }, status?: number}>}
+ */
+export const getOrCreateCertificateForUser = async ({ fullName, dateIssued, mobileNumber }) => {
+  return apiRequest('/certificate', {
+    method: 'POST',
+    body: JSON.stringify({ fullName, dateIssued, mobileNumber: String(mobileNumber ?? '').trim() }),
+  });
+};
+
+/**
+ * Get certificate by ID (public).
+ * @param {string} id - certificateId
+ * @returns {Promise<{success: boolean, data?: { certificateId, fullName, dateIssued }, status?: number}>}
+ */
+export const getCertificateById = async (id) => {
+  return apiRequest(`/certificate/${encodeURIComponent(id)}`, { method: 'GET' });
+};
