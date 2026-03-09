@@ -1,4 +1,5 @@
 import { Outlet } from 'react-router-dom';
+import { useWebinarAuth } from '../../contexts/WebinarAuthContext';
 import { WebinarProvider, useWebinar } from './context/WebinarContext';
 import Sidebar from './components/Sidebar';
 
@@ -41,8 +42,9 @@ function WebinarLayoutInner() {
 }
 
 export default function WebinarLayout() {
+  const { user } = useWebinarAuth();
   return (
-    <WebinarProvider>
+    <WebinarProvider initialDisplayName={user?.name}>
       <WebinarLayoutInner />
     </WebinarProvider>
   );

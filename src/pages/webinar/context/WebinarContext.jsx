@@ -49,7 +49,7 @@ function getStoredSidebarExpanded() {
   }
 }
 
-export function WebinarProvider({ children }) {
+export function WebinarProvider({ children, initialDisplayName }) {
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [sidebarExpanded, setSidebarExpanded] = useState(getStoredSidebarExpanded);
   const [doubts, setDoubts] = useState(() => normalizeDoubts(loadJson(STORAGE_KEYS.doubts, [])));
@@ -70,6 +70,14 @@ export function WebinarProvider({ children }) {
     const p = loadJson(STORAGE_KEYS.profile, {});
     return (p && typeof p.displayName === 'string') ? p.displayName : '';
   });
+
+  // Seed profile display name from auth (e.g. name entered at login) when stored profile is empty
+  useEffect(() => {
+    const name = typeof initialDisplayName === 'string' ? initialDisplayName.trim() : '';
+    if (name) {
+      setProfileDisplayName((prev) => (prev ? prev : name));
+    }
+  }, [initialDisplayName]);
 
   const [activeSessionId, setActiveSessionIdState] = useState(() => {
     const stored = loadJson(STORAGE_KEYS.activeSession, null);
