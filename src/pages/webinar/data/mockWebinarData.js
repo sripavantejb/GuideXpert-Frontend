@@ -294,3 +294,30 @@ export const RESOURCES = [
 export function getResourceById(resourceId) {
   return RESOURCES.find((r) => r.id === resourceId);
 }
+
+// Dashboard mock data (streak, community, next live session)
+export const DASHBOARD_MOCK = {
+  notesCount: 12,
+  attendanceStreak: 3,
+  averageAttendancePercent: 93,
+  nextLiveSession: {
+    title: 'React Fundamentals',
+    instructor: 'John Smith',
+    date: 'March 12',
+    time: '7:00 PM',
+    startsAt: null, // optional: Date for countdown
+  },
+  communityLearnersCount: 38,
+  communityMessagesCount: 24,
+  communityQuestionsToday: 8,
+  communityReactions: { like: 15, fire: 4, target: 3 },
+};
+
+export function getNextIncompleteSession(completedSessionIds) {
+  return SESSIONS.find((s) => !completedSessionIds.includes(s.id)) ?? null;
+}
+
+export function getRemainingSessionsMinutes(completedSessionIds) {
+  return SESSIONS.filter((s) => !completedSessionIds.includes(s.id))
+    .reduce((acc, s) => acc + s.durationMinutes, 0);
+}

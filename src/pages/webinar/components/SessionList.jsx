@@ -1,6 +1,6 @@
 import { FiCheckCircle, FiClock, FiLock } from 'react-icons/fi';
 
-function SessionCard({
+export function SessionCard({
   session,
   isActive,
   isCompleted,

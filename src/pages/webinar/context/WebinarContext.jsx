@@ -1,4 +1,4 @@
-import { createContext, useContext, useState, useEffect, useMemo } from 'react';
+import { createContext, useContext, useState, useEffect, useMemo, useCallback } from 'react';
 import { SESSIONS } from '../data/mockWebinarData';
 import { normalizeDoubts } from '../utils/doubtHelpers';
 
@@ -9,6 +9,7 @@ const STORAGE_KEYS = {
   bookmarks: 'webinar_bookmarks',
   settings: 'webinar_settings',
   profile: 'webinar_profile',
+  activeSession: 'webinar_active_session',
 };
 
 const DEFAULT_SETTINGS = {
@@ -48,7 +49,7 @@ function getStoredSidebarExpanded() {
   }
 }
 
-export function WebinarProvider({ children }) {
+export function WebinarProvider({ children, initialDisplayName }) {
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [sidebarExpanded, setSidebarExpanded] = useState(getStoredSidebarExpanded);
   const [doubts, setDoubts] = useState(() => normalizeDoubts(loadJson(STORAGE_KEYS.doubts, [])));
@@ -69,6 +70,44 @@ export function WebinarProvider({ children }) {
     const p = loadJson(STORAGE_KEYS.profile, {});
     return (p && typeof p.displayName === 'string') ? p.displayName : '';
   });
+
+  // Seed profile display name from auth (e.g. name entered at login) when stored profile is empty
+  useEffect(() => {
+    const name = typeof initialDisplayName === 'string' ? initialDisplayName.trim() : '';
+    if (name) {
+      setProfileDisplayName((prev) => (prev ? prev : name));
+    }
+  }, [initialDisplayName]);
+
+  const [activeSessionId, setActiveSessionIdState] = useState(() => {
+    const stored = loadJson(STORAGE_KEYS.activeSession, null);
+    if (stored && typeof stored.sessionId === 'string' && SESSIONS.some((s) => s.id === stored.sessionId))
+      return stored.sessionId;
+    return SESSIONS[0]?.id ?? null;
+  });
+  const [activeDay, setActiveDayState] = useState(() => {
+    const stored = loadJson(STORAGE_KEYS.activeSession, null);
+    if (stored && typeof stored.sessionId === 'string') {
+      const session = SESSIONS.find((s) => s.id === stored.sessionId);
+      if (session) return session.dayId;
+    }
+    if (stored && typeof stored.dayId === 'number' && stored.dayId >= 1 && stored.dayId <= 3)
+      return stored.dayId;
+    return 1;
+  });
+
+  const setActiveSessionId = useCallback((id) => {
+    setActiveSessionIdState(id);
+    const session = SESSIONS.find((s) => s.id === id);
+    if (session) setActiveDayState(session.dayId);
+  }, []);
+  const setActiveDay = useCallback((dayId) => {
+    setActiveDayState(dayId);
+  }, []);
+
+  useEffect(() => {
+    saveJson(STORAGE_KEYS.activeSession, { sessionId: activeSessionId, dayId: activeDay });
+  }, [activeSessionId, activeDay]);
 
   useEffect(() => saveJson(STORAGE_KEYS.progress, completedSessions), [completedSessions]);
   useEffect(() => saveJson(STORAGE_KEYS.doubts, doubts), [doubts]);
@@ -122,6 +161,10 @@ export function WebinarProvider({ children }) {
     settings,
     setSettings,
     updateSetting,
+    activeSessionId,
+    setActiveSessionId,
+    activeDay,
+    setActiveDay,
   }),
   [
     sidebarOpen,
@@ -133,6 +176,8 @@ export function WebinarProvider({ children }) {
     settings,
     profileDisplayName,
     completionPercent,
+    activeSessionId,
+    activeDay,
   ]
   );
 

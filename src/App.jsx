@@ -2,6 +2,7 @@ import { Suspense, lazy } from 'react';
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
 import { AuthProvider, useAuth } from './contexts/AuthContext';
 import { CounsellorAuthProvider, useCounsellorAuth } from './contexts/CounsellorAuthContext';
+import { WebinarAuthProvider, useWebinarAuth } from './contexts/WebinarAuthContext';
 import { CounsellorProfileProvider } from './contexts/CounsellorProfileContext';
 import LandingPage from './pages/LandingPage';
 import AdminLogin from './pages/AdminLogin';
@@ -29,6 +30,7 @@ import TrainingFeedback from './pages/admin/TrainingFeedback';
 import TrainingFormResponses from './pages/admin/TrainingFormResponses';
 import Announcements from './pages/admin/Announcements';
 import CounsellorLogin from './pages/counsellor/CounsellorLogin';
+import WebinarLogin from './pages/webinar/WebinarLogin';
 
 /* Counsellor portal — lazy loaded */
 import CounsellorLayout from './components/Counsellor/CounsellorLayout';
@@ -53,7 +55,6 @@ const WebinarLayout = lazy(() => import('./pages/webinar/WebinarLayout'));
 const WebinarDashboard = lazy(() => import('./pages/webinar/WebinarDashboard'));
 const ProgressPage = lazy(() => import('./pages/webinar/ProgressPage'));
 const DoubtsPage = lazy(() => import('./pages/webinar/DoubtsPage'));
-const ResourcesPage = lazy(() => import('./pages/webinar/ResourcesPage'));
 const ProfilePage = lazy(() => import('./pages/webinar/ProfilePage'));
 const SettingsPage = lazy(() => import('./pages/webinar/SettingsPage'));
 const CertificatesPage = lazy(() => import('./pages/webinar/CertificatesPage'));
@@ -74,11 +75,20 @@ function ProtectedCounsellor({ children }) {
   return children;
 }
 
+function ProtectedWebinar({ children }) {
+  const { isAuthenticated } = useWebinarAuth();
+  if (!isAuthenticated) {
+    return <Navigate to="/webinar/login" replace />;
+  }
+  return children;
+}
+
 function App() {
   return (
     <AuthProvider>
       <BrowserRouter>
         <CounsellorAuthProvider>
+        <WebinarAuthProvider>
         <Routes>
           <Route path="/" element={<LandingPage />} />
           <Route path="/register" element={<LandingPage />} />
@@ -87,11 +97,11 @@ function App() {
           <Route path="/counsellor-poster" element={<Suspense fallback={<div className="min-h-screen"><PageSkeleton /></div>}><CounsellorCertificate /></Suspense>} />
           <Route path="/holiposter" element={<HoliPosterPage />} />
           <Route path="/interposter" element={<InterPosterPage />} />
-          <Route path="/webinar" element={<Suspense fallback={<div className="min-h-screen flex items-center justify-center bg-gray-50"><div className="animate-pulse text-gray-500">Loading...</div></div>}><WebinarLayout /></Suspense>}>
+          <Route path="/webinar/login" element={<WebinarLogin />} />
+          <Route path="/webinar" element={<ProtectedWebinar><Suspense fallback={<div className="min-h-screen flex items-center justify-center bg-gray-50"><div className="animate-pulse text-gray-500">Loading...</div></div>}><WebinarLayout /></Suspense></ProtectedWebinar>}>
             <Route index element={<Suspense fallback={<div className="p-4 animate-pulse text-gray-500">Loading...</div>}><WebinarDashboard /></Suspense>} />
             <Route path="progress" element={<Suspense fallback={<div className="p-4 animate-pulse text-gray-500">Loading...</div>}><ProgressPage /></Suspense>} />
             <Route path="doubts" element={<Suspense fallback={<div className="p-4 animate-pulse text-gray-500">Loading...</div>}><DoubtsPage /></Suspense>} />
-            <Route path="resources" element={<Suspense fallback={<div className="p-4 animate-pulse text-gray-500">Loading...</div>}><ResourcesPage /></Suspense>} />
             <Route path="profile" element={<Suspense fallback={<div className="p-4 animate-pulse text-gray-500">Loading...</div>}><ProfilePage /></Suspense>} />
             <Route path="settings" element={<Suspense fallback={<div className="p-4 animate-pulse text-gray-500">Loading...</div>}><SettingsPage /></Suspense>} />
             <Route path="certificates" element={<Suspense fallback={<div className="p-4 animate-pulse text-gray-500">Loading...</div>}><CertificatesPage /></Suspense>} />
@@ -150,6 +160,7 @@ function App() {
 
           <Route path="*" element={<Navigate to="/" replace />} />
         </Routes>
+        </WebinarAuthProvider>
         </CounsellorAuthProvider>
       </BrowserRouter>
     </AuthProvider>

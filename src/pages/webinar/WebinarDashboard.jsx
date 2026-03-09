@@ -1,16 +1,21 @@
 import { useState, useEffect, useCallback } from 'react';
-import { Link } from 'react-router-dom';
-import DayTabs from './components/DayTabs';
 import VideoPlayer from './components/VideoPlayer';
 import StatsBar from './components/StatsBar';
-import SessionList from './components/SessionList';
 import DescriptionCard from './components/DescriptionCard';
 import ProfileCard from './components/ProfileCard';
 import ProgressIndicator from './components/ProgressIndicator';
+import LearningStatsCard from './components/LearningStatsCard';
+import CertificateUnlockCard from './components/CertificateUnlockCard';
+import DoubtsDashboardCard from './components/DoubtsDashboardCard';
 import NotesPanel from './components/NotesPanel';
-import { FiMessageCircle } from 'react-icons/fi';
 import { useWebinar } from './context/WebinarContext';
-import { DAYS, SESSIONS, getSessionById, getSessionsByDay } from './data/mockWebinarData';
+import {
+  DAYS,
+  SESSIONS,
+  getSessionById,
+  getSessionsByDay,
+  DASHBOARD_MOCK,
+} from './data/mockWebinarData';
 
 function formatResumeTime(seconds) {
   if (!Number.isFinite(seconds) || seconds < 0) return '0:00';
@@ -28,10 +33,13 @@ export default function WebinarDashboard() {
     bookmarkedSessions,
     setBookmarkedSessions,
     settings,
+    activeSessionId,
+    setActiveSessionId,
+    activeDay,
+    setActiveDay,
+    doubts,
   } = useWebinar();
 
-  const [activeDay, setActiveDay] = useState(1);
-  const [activeSessionId, setActiveSessionId] = useState(null);
   const [sessionProgress, setSessionProgress] = useState({});
   const [autoplayNextSession, setAutoplayNextSession] = useState(false);
   const sessionsForDay = getSessionsByDay(activeDay);
@@ -43,17 +51,7 @@ export default function WebinarDashboard() {
     if (!activeSessionId || !currentInDay) {
       setActiveSessionId(sessionsForDay[0].id);
     }
-  }, [activeDay, activeSessionId, sessionsForDay]);
-
-  const isDayUnlocked = useCallback(
-    (dayId) => {
-      if (dayId === 1) return true;
-      const prevDaySessions = getSessionsByDay(dayId - 1);
-      const prevDayIds = prevDaySessions.map((s) => s.id);
-      return prevDayIds.every((id) => completedSessions.includes(id));
-    },
-    [completedSessions]
-  );
+  }, [activeDay, activeSessionId, sessionsForDay, setActiveSessionId]);
 
   const handleTimeUpdate = useCallback((sessionId, currentTime) => {
     setPlaybackPosition((prev) => ({ ...prev, [sessionId]: currentTime }));
@@ -94,25 +92,26 @@ export default function WebinarDashboard() {
     [setBookmarkedSessions]
   );
 
-  const completedCountForDay = (dayId) => {
-    const ids = getSessionsByDay(dayId).map((s) => s.id);
-    return ids.filter((id) => completedSessions.includes(id)).length;
-  };
-
   const totalSessionsCount = SESSIONS.length;
   const overallCompleted = completedSessions.length;
   const overallPercent = totalSessionsCount ? Math.round((overallCompleted / totalSessionsCount) * 100) : 0;
 
+  const completedCountForDay = useCallback(
+    (dayId) => {
+      const ids = getSessionsByDay(dayId).map((s) => s.id);
+      return ids.filter((id) => completedSessions.includes(id)).length;
+    },
+    [completedSessions]
+  );
+
+  const watchTimeMinutes = SESSIONS.filter((s) => completedSessions.includes(s.id)).reduce(
+    (acc, s) => acc + (s.durationMinutes ?? 0),
+    0
+  );
+  const mock = DASHBOARD_MOCK || {};
+
   return (
     <>
-      <div className="shrink-0 px-2 sm:px-4 pt-2 sm:pt-4 pb-1">
-        <DayTabs
-          days={DAYS}
-          activeDay={activeDay}
-          onDayChange={setActiveDay}
-        />
-      </div>
-
       <div className="flex-1 grid grid-cols-1 lg:grid-cols-12 gap-3 sm:gap-4 p-3 sm:p-4 overflow-auto min-h-0">
         <div className="lg:col-span-8 flex flex-col gap-4">
           {activeSessionId &&
@@ -163,38 +162,47 @@ export default function WebinarDashboard() {
               )}
             </div>
           <DescriptionCard session={activeSession} />
-          <Link
-            to="/webinar/doubts"
-            className="flex items-center gap-2 px-3 py-2 rounded-xl border border-gray-200 bg-white text-gray-700 hover:bg-gray-50 text-sm font-medium focus:outline-none focus-visible:ring-2 focus-visible:ring-primary-navy focus-visible:ring-offset-2"
-          >
-            <FiMessageCircle className="w-4 h-4" />
-            Doubts & Clarifications
-          </Link>
           <NotesPanel sessionId={activeSessionId} />
         </div>
 
-        <div className="lg:col-span-4 flex flex-col gap-4">
-          <SessionList
-            sessions={sessionsForDay}
-            activeSessionId={activeSessionId}
-            onSelectSession={setActiveSessionId}
-            completedSessions={completedSessions}
-            sessionProgress={sessionProgress}
-            isDayUnlocked={isDayUnlocked}
-            activeDay={activeDay}
+        <div className="lg:col-span-4 flex flex-col gap-3 overflow-y-auto min-h-0 xl:grid xl:grid-cols-2 xl:auto-rows-min xl:content-start xl:gap-3 xl:items-start">
+          <div className="xl:col-span-2">
+          <ProgressIndicator
+            completedPercent={overallPercent}
+            days={DAYS}
+            completedCountForDay={completedCountForDay}
+            totalSessionsForDay={(dayId) => getSessionsByDay(dayId).length}
+            totalCompleted={overallCompleted}
+            totalSessions={totalSessionsCount}
           />
-          <div className="flex flex-col gap-4 lg:flex-row lg:items-stretch">
-            <ProfileCard
-              completedPercent={overallPercent}
-              totalSessions={totalSessionsCount}
-              completedSessions={overallCompleted}
-            />
-            <ProgressIndicator
-              completedPercent={overallPercent}
-              days={DAYS}
-              completedCountForDay={completedCountForDay}
-              totalSessionsForDay={(dayId) => getSessionsByDay(dayId).length}
-            />
+          </div>
+          <div className="xl:col-span-2">
+          <LearningStatsCard
+            totalSessions={totalSessionsCount}
+            completed={overallCompleted}
+            remaining={totalSessionsCount - overallCompleted}
+            watchTimeMinutes={watchTimeMinutes}
+            averageAttendancePercent={mock.averageAttendancePercent}
+            notesCount={mock.notesCount}
+            questionsAsked={doubts?.length ?? 0}
+          />
+          </div>
+          <div className="xl:col-span-2">
+          <CertificateUnlockCard
+            completedPercent={overallPercent}
+            totalSessions={totalSessionsCount}
+            completedSessions={overallCompleted}
+          />
+          </div>
+          <div className="xl:col-span-2">
+            <DoubtsDashboardCard questionsCount={doubts?.length ?? 0} />
+          </div>
+          <div className="xl:col-span-2">
+          <ProfileCard
+            completedPercent={overallPercent}
+            totalSessions={totalSessionsCount}
+            completedSessions={overallCompleted}
+          />
           </div>
         </div>
       </div>
