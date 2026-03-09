@@ -1,8 +1,11 @@
 import { getStoredUtm } from './utm';
 
-// In dev, use relative /api so Vite proxy forwards to backend (avoids CORS). Otherwise use env or deployed backend.
-const API_BASE_URL = import.meta.env.VITE_API_URL
-  || (import.meta.env.DEV ? '/api' : 'https://guide-xpert-backend.vercel.app/api');
+// In dev, use relative /api so Vite proxy forwards to backend (avoids CORS). When .env points at production URL, still use proxy.
+const isDev = import.meta.env.DEV;
+const envUrl = import.meta.env.VITE_API_URL;
+const productionApi = 'https://guide-xpert-backend.vercel.app/api';
+const useProxyInDev = isDev && (!envUrl || envUrl.trim() === '' || envUrl.includes('guide-xpert-backend.vercel.app'));
+const API_BASE_URL = useProxyInDev ? '/api' : (envUrl || productionApi);
 
 /**
  * Generic API request handler
