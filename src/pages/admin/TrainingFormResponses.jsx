@@ -272,7 +272,9 @@ export default function TrainingFormResponses() {
             </div>
             <h3 className="text-lg font-semibold text-gray-900 mb-1">No responses yet</h3>
             <p className="text-gray-500 text-sm max-w-sm mx-auto">
-              {hasActiveFilters ? 'No submissions match your filters. Try clearing filters or adjusting dates.' : 'Training form responses will appear here once users submit the form.'}
+              {hasActiveFilters
+                ? 'No responses match the current filters. Try clearing the date range or search.'
+                : 'Training form responses will appear here once users submit the form. Make sure the form is submitted at /training-form and the API is reachable.'}
             </p>
             {hasActiveFilters && (
               <button
