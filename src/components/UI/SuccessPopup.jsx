@@ -2,7 +2,7 @@ import { useEffect, useState } from 'react';
 import { FiCheck } from 'react-icons/fi';
 import './SuccessPopup.css';
 
-const SuccessPopup = ({ isOpen, onClose, slotInfo, variant = 'slot', score, maxScore }) => {
+const SuccessPopup = ({ isOpen, onClose, slotInfo, variant = 'slot', score, maxScore, message }) => {
   const [isVisible, setIsVisible] = useState(false);
   const [checkmarkVisible, setCheckmarkVisible] = useState(false);
   const isPostRegistration = variant === 'postRegistration';
@@ -104,7 +104,7 @@ const SuccessPopup = ({ isOpen, onClose, slotInfo, variant = 'slot', score, maxS
           
           <p className={`success-popup-message ${isNeo ? 'success-popup-message--neo' : ''}`}>
             {isAssessment
-              ? 'Thank you for completing the Psychometric Test.'
+              ? (message ?? 'Thank you for completing the assessment.')
               : isPostRegistration
                 ? "We'll send the meeting link and updates to your email."
                 : "We'll send you a reminder before your demo session."}

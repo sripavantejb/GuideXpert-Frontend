@@ -695,6 +695,7 @@ export default function AssessmentFormCounsellorTest({ type = 'career-dna' }) {
         variant="assessmentNeo"
         score={submittedResult?.score ?? 0}
         maxScore={submittedResult?.maxScore ?? 10}
+        message="Thank you for completing the Psychometric Test."
       />
     </div>
   );

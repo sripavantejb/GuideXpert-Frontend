@@ -604,6 +604,7 @@ export default function AssessmentForm() {
         variant="assessment"
         score={submittedResult?.score ?? 0}
         maxScore={submittedResult?.maxScore ?? 10}
+        message="Thank you for completing the Counsellor Assessment 1."
       />
     </div>
   );
