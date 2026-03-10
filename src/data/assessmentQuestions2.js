@@ -1,174 +1,119 @@
 /**
  * Counsellor assessment 2: sections and questions (MCQ).
- * Question ids q1–q15 match backend scoring.
+ * Question ids q1–q10 match backend scoring.
  */
 export const ASSESSMENT_SECTIONS_2 = [
   {
-    title: 'Counselling practice',
+    title: 'Lead generation & outreach',
     questions: [
       {
         id: 'q1',
         type: 'mcq',
-        text: 'What is the FIRST step in an effective counselling session?',
+        text: 'Which platform is mainly used to generate leads online?',
         options: [
-          'Explaining available courses',
-          'Asking for documents',
-          "Understanding the student's background",
-          'Discussing fee structure'
+          'Television',
+          'Social Media',
+          'Newspapers',
+          'Radio'
         ]
       },
       {
         id: 'q2',
         type: 'mcq',
-        text: 'A student is confused between two career options. What should the counsellor do FIRST?',
+        text: 'What should counsellors do regularly on social media to attract students?',
         options: [
-          'Suggest the popular option',
-          'Push the higher-fee program',
-          'Ask questions to understand interests and goals',
-          'Ask backend to decide'
+          'Post consistently',
+          'Only share college advertisements',
+          'Post entertainment content',
+          'Avoid posting'
         ]
       },
       {
         id: 'q3',
         type: 'mcq',
-        text: 'When a student asks for guaranteed placement, the counsellor should:',
+        text: 'Sharing a Course Fit Test mainly creates what feeling in students?',
         options: [
-          'Promise placement to gain trust',
-          'Avoid answering the question',
-          'Explain the support process without guarantees',
-          'Transfer the call immediately'
+          'Curiosity and self-reflection',
+          'Fear of counsellors',
+          'Disinterest',
+          'Competition'
         ]
       },
       {
         id: 'q4',
         type: 'mcq',
-        text: "What should a counsellor do if the student's budget does not match the program?",
+        text: 'What is the result of sharing career-related content on WhatsApp?',
         options: [
-          'Convince the student to take a loan',
-          'Push for expensive options',
-          'Explain limitations and suggest suitable alternatives',
-          'Stop further discussion'
+          'Students ignore messages',
+          'Leads decrease',
+          'Higher lead generation',
+          'No change'
         ]
       },
       {
         id: 'q5',
         type: 'mcq',
-        text: 'Which approach reflects good counselling?',
+        text: 'Which method helps counsellors generate leads through known people?',
         options: [
-          'Closing admission at any cost',
-          'Using fear to convince students',
-          'Giving honest and realistic guidance',
-          'Promising fast results'
+          'Cold calling strangers',
+          'Personal network',
+          'Random messaging',
+          'Paid advertising only'
         ]
       },
       {
         id: 'q6',
         type: 'mcq',
-        text: 'Counselling conversations should focus MORE on:',
+        text: 'When talking to people at events, how should counsellors start?',
         options: [
-          'Talking continuously',
-          'Selling benefits',
-          'Listening and understanding student needs',
-          'Discussing competitors'
+          'Directly ask for admissions',
+          'Start casual conversations about students',
+          'Promote colleges immediately',
+          'Discuss fees first'
         ]
       },
       {
         id: 'q7',
         type: 'mcq',
-        text: 'When should a lead be paused or dropped?',
+        text: 'What is the advantage of referrals?',
         options: [
-          'When student asks many questions',
-          'When student compares options',
-          'When there is no response after multiple follow-ups',
-          'When fee discussion starts'
+          'One lead can bring many more leads',
+          'Reduces communication',
+          'Limits network growth',
+          'Only one student joins'
         ]
       },
       {
         id: 'q8',
         type: 'mcq',
-        text: "What is the counsellor's MAIN responsibility?",
+        text: 'When approaching college authorities, what should you talk about first?',
         options: [
-          'Closing admissions',
-          'Collecting documents',
-          'Providing clarity and guidance to students',
-          'Backend coordination'
+          'Commission',
+          'College promotions',
+          'Student career confusion after Intermediate',
+          'Seat availability'
         ]
       },
       {
         id: 'q9',
         type: 'mcq',
-        text: 'Backend team mainly supports with:',
+        text: 'What should counsellors say instead of "I want leads"?',
         options: [
-          'Counselling sessions',
-          'Student motivation',
-          'Admissions process and documentation',
-          'Career guidance'
+          'I want admissions',
+          'I want to promote colleges',
+          'I want to help your students',
+          'I want commissions'
         ]
       },
       {
         id: 'q10',
         type: 'mcq',
-        text: 'What builds long-term trust with students?',
+        text: 'Posting like an admissions agent leads to what result?',
         options: [
-          'Quick closures',
-          'Discounts and offers',
-          'Transparency and honest communication',
-          'Aggressive follow-ups'
-        ]
-      },
-      {
-        id: 'q11',
-        type: 'mcq',
-        text: 'What does "Right Student Identification" mean?',
-        options: [
-          'Closing every lead',
-          'Increasing admission numbers',
-          'Identifying students who genuinely fit the program',
-          'Convincing casual leads'
-        ]
-      },
-      {
-        id: 'q12',
-        type: 'mcq',
-        text: 'Why is filtering leads important in counselling?',
-        options: [
-          'To reduce follow-up calls',
-          'To speed up closures',
-          'To protect students and save time',
-          'To increase discounts'
-        ]
-      },
-      {
-        id: 'q13',
-        type: 'mcq',
-        text: 'Why should a counsellor confirm the decision maker?',
-        options: [
-          'To avoid counselling the student',
-          'To pressure parents',
-          'To ensure the right person is involved in decisions',
-          'To close faster'
-        ]
-      },
-      {
-        id: 'q14',
-        type: 'mcq',
-        text: 'Why should a counsellor avoid taking sides between parent and student?',
-        options: [
-          'It slows the process',
-          'It reduces confidence',
-          'It can break trust with one side',
-          'It affects admission speed'
-        ]
-      },
-      {
-        id: 'q15',
-        type: 'mcq',
-        text: "What is the counsellor's MAIN role according to Day-2 training?",
-        options: [
-          'Selling seats',
-          'Closing admissions',
-          'Creating balance between parent and student expectations',
-          'Managing documentation'
+          'High trust',
+          'Short-term enquiries and low trust',
+          'More referrals',
+          'Long-term credibility'
         ]
       }
     ]
