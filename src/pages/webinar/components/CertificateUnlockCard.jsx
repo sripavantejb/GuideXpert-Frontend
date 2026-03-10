@@ -3,7 +3,18 @@ import { Link, useNavigate } from 'react-router-dom';
 import { FiCheck, FiLock, FiDownload, FiEye } from 'react-icons/fi';
 import { useWebinarAuth } from '../../../contexts/WebinarAuthContext';
 import { formatCertificateDate, downloadCertificatePng, downloadCertificatePdf } from '../utils/certificateWebinar';
-import { getOrCreateCertificateForUser, createCertificateRecord } from '../../../utils/api';
+import { getOrCreateCertificateForUser, createCertificateRecord, migrateCertificateToShortId } from '../../../utils/api';
+
+function isLegacyCertificateId(id) {
+  return !id || typeof id !== 'string' || !String(id).trim().toUpperCase().startsWith('GX');
+}
+
+function generateShortCertificateId() {
+  const bytes = new Uint8Array(4);
+  crypto.getRandomValues(bytes);
+  const hex = Array.from(bytes, (b) => b.toString(16).padStart(2, '0')).join('').toUpperCase();
+  return 'GX' + hex;
+}
 
 const CARD_BASE = 'rounded-xl bg-white shadow-card overflow-hidden p-3 transition-all duration-300';
 const CARD_LOCKED = `${CARD_BASE} border border-gray-200 hover:shadow-card-hover hover:-translate-y-0.5`;
@@ -42,20 +53,42 @@ export default function CertificateUnlockCard({
     document.cookie = `${name}=${encodeURIComponent(value)};max-age=${maxAge};path=/;SameSite=Lax`;
   };
 
+  const clearCertCookie = (name) => {
+    if (!name) return;
+    document.cookie = `${name}=; Max-Age=0; path=/`;
+  };
+
   useEffect(() => {
     if (!unlocked) return;
     let cancelled = false;
     (async () => {
       try {
-        // 1. Check cookie first
+        // 1. Check cookie first — only set state if upsert succeeds; migrate legacy UUID to GX
         if (certCookieName) {
           const stored = getCertCookie(certCookieName);
           if (stored) {
-            if (!cancelled) setUserCertificateId(stored);
-            return;
+            let idToUse = stored;
+            if (isLegacyCertificateId(stored) && authUser?.phone) {
+              try {
+                const migrateRes = await migrateCertificateToShortId(authUser.phone);
+                const migPayload = migrateRes.data?.data ?? migrateRes.data;
+                if (migrateRes?.success && migPayload?.certificateId) {
+                  idToUse = migPayload.certificateId;
+                  setCertCookie(certCookieName, idToUse);
+                }
+              } catch (_) {}
+            }
+            try {
+              const result = await createCertificateRecord({ certificateId: idToUse, fullName: displayName, dateIssued: dateStr });
+              if (result?.success && !cancelled) {
+                setUserCertificateId(idToUse);
+                return;
+              }
+            } catch (_) {}
+            clearCertCookie(certCookieName);
           }
         }
-        // 2. Try backend mobile API
+        // 2. Try backend mobile API; migrate legacy UUID to GX if needed
         if (authUser?.phone) {
           const result = await getOrCreateCertificateForUser({
             fullName: displayName,
@@ -65,15 +98,23 @@ export default function CertificateUnlockCard({
           if (cancelled) return;
           const payload = result.data?.data ?? result.data;
           if (result.success && payload?.certificateId) {
-            setCertCookie(certCookieName, payload.certificateId);
-            setUserCertificateId(payload.certificateId);
+            let idToUse = payload.certificateId;
+            if (isLegacyCertificateId(idToUse)) {
+              try {
+                const migrateRes = await migrateCertificateToShortId(authUser.phone);
+                const migPayload = migrateRes.data?.data ?? migrateRes.data;
+                if (migrateRes?.success && migPayload?.certificateId) idToUse = migPayload.certificateId;
+              } catch (_) {}
+            }
+            setCertCookie(certCookieName, idToUse);
+            setUserCertificateId(idToUse);
             return;
           }
         }
-        // 3. Generate once, save to DB and cookie
-        const certificateId = crypto.randomUUID();
-        await createCertificateRecord({ certificateId, fullName: displayName, dateIssued: dateStr });
-        if (!cancelled) {
+        // 3. Generate once, save to DB and cookie (only if create succeeds)
+        const certificateId = generateShortCertificateId();
+        const createResult = await createCertificateRecord({ certificateId, fullName: displayName, dateIssued: dateStr });
+        if (createResult?.success && !cancelled) {
           setCertCookie(certCookieName, certificateId);
           setUserCertificateId(certificateId);
         }
@@ -85,32 +126,59 @@ export default function CertificateUnlockCard({
   }, [unlocked, authUser?.phone, displayName, dateStr, certCookieName]);
 
   const getOrEnsureCertificateId = async () => {
-    // 1. Already in state
+    // 1. Already in state (only set after successful upsert/create)
     if (userCertificateId) return userCertificateId;
-    // 2. Check cookie
+    // 2. Check cookie — only use if upsert succeeds; migrate legacy UUID to GX
     if (certCookieName) {
       const stored = getCertCookie(certCookieName);
       if (stored) {
-        setUserCertificateId(stored);
-        try { await createCertificateRecord({ certificateId: stored, fullName: displayName, dateIssued: dateStr }); } catch (_) {}
-        return stored;
+        let idToUse = stored;
+        if (isLegacyCertificateId(stored) && authUser?.phone) {
+          try {
+            const migrateRes = await migrateCertificateToShortId(authUser.phone);
+            const migPayload = migrateRes.data?.data ?? migrateRes.data;
+            if (migrateRes?.success && migPayload?.certificateId) {
+              idToUse = migPayload.certificateId;
+              setCertCookie(certCookieName, idToUse);
+            }
+          } catch (_) {}
+        }
+        try {
+          const result = await createCertificateRecord({ certificateId: idToUse, fullName: displayName, dateIssued: dateStr });
+          if (result?.success) {
+            setUserCertificateId(idToUse);
+            return idToUse;
+          }
+        } catch (_) {}
+        clearCertCookie(certCookieName);
       }
     }
-    // 3. Try backend mobile API
+    // 3. Try backend mobile API; migrate legacy UUID to GX if needed
     if (authUser?.phone) {
       try {
         const result = await getOrCreateCertificateForUser({ fullName: displayName, dateIssued: dateStr, mobileNumber: authUser.phone });
         const payload = result.data?.data ?? result.data;
         if (result.success && payload?.certificateId) {
-          setCertCookie(certCookieName, payload.certificateId);
-          setUserCertificateId(payload.certificateId);
-          return payload.certificateId;
+          let idToUse = payload.certificateId;
+          if (isLegacyCertificateId(idToUse)) {
+            try {
+              const migrateRes = await migrateCertificateToShortId(authUser.phone);
+              const migPayload = migrateRes.data?.data ?? migrateRes.data;
+              if (migrateRes?.success && migPayload?.certificateId) idToUse = migPayload.certificateId;
+            } catch (_) {}
+          }
+          setCertCookie(certCookieName, idToUse);
+          setUserCertificateId(idToUse);
+          return idToUse;
         }
       } catch (_) {}
     }
-    // 4. Generate once, save to DB and cookie
-    const certificateId = crypto.randomUUID();
-    await createCertificateRecord({ certificateId, fullName: displayName, dateIssued: dateStr });
+    // 4. Generate once, save to DB and cookie (only use ID if create succeeds)
+    const certificateId = generateShortCertificateId();
+    const createResult = await createCertificateRecord({ certificateId, fullName: displayName, dateIssued: dateStr });
+    if (!createResult?.success) {
+      throw new Error(createResult?.message || 'Could not create certificate');
+    }
     setCertCookie(certCookieName, certificateId);
     setUserCertificateId(certificateId);
     return certificateId;
@@ -144,7 +212,15 @@ export default function CertificateUnlockCard({
     setPreviewLoading(true);
     try {
       const certificateId = await getOrEnsureCertificateId();
-      navigate(`/certificate/${certificateId}`);
+      navigate(`/certificate/${certificateId}`, {
+        state: {
+          certificate: {
+            certificateId,
+            fullName: displayName,
+            dateIssued: dateStr,
+          },
+        },
+      });
     } catch (e) {
       console.error(e);
     } finally {

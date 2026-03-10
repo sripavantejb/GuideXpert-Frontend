@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { Link, useParams } from 'react-router-dom';
+import { Link, useParams, useLocation } from 'react-router-dom';
 import { getCertificateById } from '../utils/api';
 import {
   loadCertificateImage,
@@ -63,6 +63,7 @@ function ErrorState() {
 
 export default function CertificateViewPage() {
   const { id } = useParams();
+  const location = useLocation();
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [certificateUrl, setCertificateUrl] = useState(null);
@@ -70,42 +71,79 @@ export default function CertificateViewPage() {
   const [downloading, setDownloading] = useState(null);
 
   useEffect(() => {
-    if (!id) {
+    const trimmedId = (id != null ? String(id) : '').trim();
+    if (!trimmedId) {
       setError(true);
       setLoading(false);
       return;
     }
+    const stateCertificate = location.state?.certificate;
     let cancelled = false;
     (async () => {
       try {
-        const result = await getCertificateById(id);
+        const result = await getCertificateById(trimmedId);
         if (cancelled) return;
         const raw = result.data;
         const payload = raw?.data ?? raw;
-        const certificateId = payload?.certificateId ?? id;
+        const storedCertificateId = (payload?.certificateId != null && String(payload.certificateId).trim())
+          ? String(payload.certificateId).trim()
+          : trimmedId;
         const fullName = payload?.fullName ?? raw?.fullName ?? '';
         const dateIssued = payload?.dateIssued ?? raw?.dateIssued ?? '';
-        if (!result.success || (!fullName && !dateIssued)) {
-          setError(true);
+        if (result.success && (fullName || dateIssued)) {
+          const img = await loadCertificateImage();
+          if (cancelled) return;
+          const canvas = drawCertificateToCanvas(img, fullName, dateIssued, storedCertificateId);
+          setCertificateUrl(canvas.toDataURL('image/png'));
+          setData({ fullName, dateIssued, certificateId: storedCertificateId });
           setLoading(false);
           return;
         }
-        const img = await loadCertificateImage();
-        if (cancelled) return;
-        const canvas = drawCertificateToCanvas(img, fullName, dateIssued, certificateId);
-        setCertificateUrl(canvas.toDataURL('image/png'));
-        setData({ fullName, dateIssued, certificateId });
+        if (stateCertificate?.certificateId && (stateCertificate?.fullName || stateCertificate?.dateIssued)) {
+          const fullNameFallback = stateCertificate.fullName || '';
+          const dateIssuedFallback = stateCertificate.dateIssued || '';
+          const idFallback = String(stateCertificate.certificateId || trimmedId).trim();
+          const img = await loadCertificateImage();
+          if (cancelled) return;
+          const canvas = drawCertificateToCanvas(img, fullNameFallback, dateIssuedFallback, idFallback);
+          setCertificateUrl(canvas.toDataURL('image/png'));
+          setData({ fullName: fullNameFallback, dateIssued: dateIssuedFallback, certificateId: idFallback });
+          setLoading(false);
+          return;
+        }
+        if (import.meta.env.DEV && result.status === 404) {
+          console.warn('[CertificateViewPage] 404 — requested id:', trimmedId, 'response:', result.data);
+        }
+        setError(true);
       } catch (e) {
-        if (!cancelled) {
+        if (cancelled) {
+          setLoading(false);
+          return;
+        }
+        if (stateCertificate?.certificateId && (stateCertificate?.fullName || stateCertificate?.dateIssued)) {
+          const fullNameFallback = stateCertificate.fullName || '';
+          const dateIssuedFallback = stateCertificate.dateIssued || '';
+          const idFallback = String(stateCertificate.certificateId || trimmedId).trim();
+          try {
+            const img = await loadCertificateImage();
+            if (cancelled) return;
+            const canvas = drawCertificateToCanvas(img, fullNameFallback, dateIssuedFallback, idFallback);
+            setCertificateUrl(canvas.toDataURL('image/png'));
+            setData({ fullName: fullNameFallback, dateIssued: dateIssuedFallback, certificateId: idFallback });
+          } catch (imgErr) {
+            if (import.meta.env.DEV) console.warn('[CertificateViewPage]', imgErr);
+            setError(true);
+          }
+        } else {
+          if (import.meta.env.DEV) console.warn('[CertificateViewPage]', trimmedId, e);
           setError(true);
-          if (import.meta.env.DEV) console.warn('[CertificateViewPage]', id, e);
         }
       } finally {
         if (!cancelled) setLoading(false);
       }
     })();
     return () => { cancelled = true; };
-  }, [id]);
+  }, [id, location.state]);
 
   const handleDownloadPng = async () => {
     if (!data) return;

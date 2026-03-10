@@ -453,6 +453,18 @@ export const getOrCreateCertificateForUser = async ({ fullName, dateIssued, mobi
 };
 
 /**
+ * Migrate existing certificate (by mobile) from legacy UUID to short GX id.
+ * @param {string} mobileNumber - 10-digit mobile
+ * @returns {Promise<{success: boolean, data?: { certificateId } }>}
+ */
+export const migrateCertificateToShortId = async (mobileNumber) => {
+  return apiRequest('/certificate/migrate-short-id', {
+    method: 'POST',
+    body: JSON.stringify({ mobileNumber: String(mobileNumber ?? '').trim() }),
+  });
+};
+
+/**
  * Get certificate by ID (public).
  * @param {string} id - certificateId
  * @returns {Promise<{success: boolean, data?: { certificateId, fullName, dateIssued }, status?: number}>}
