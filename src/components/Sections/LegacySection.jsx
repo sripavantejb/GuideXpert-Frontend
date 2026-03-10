@@ -141,7 +141,7 @@ const LegacySection = () => {
               lineHeight: '1.7',
               color: '#475569'
             }}>
-              GuideXpert has a strong track record of empowering students and counselors alike, with a legacy built on trust, innovation, and measurable excellence.
+              GuideXpert has a strong track record of empowering students and counselors alike across India, with a legacy built on trust, innovation, and measurable excellence in career counselling and engineering admissions.
             </p>
           </AnimatedElement>
         </div>

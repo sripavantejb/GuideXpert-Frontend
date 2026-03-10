@@ -145,24 +145,25 @@ export default function NotesPanel({ sessionId }) {
 
   if (!sessionId) {
     return (
-      <div className="rounded-[20px] bg-white border border-gray-200 shadow-card p-5">
-        <h3 className="text-sm font-bold text-gray-800 uppercase tracking-wider">My notes</h3>
-        <p className="text-sm text-gray-500 mt-2">Select a session to view or add notes.</p>
+      <div className="rounded-2xl bg-white border border-gray-200 shadow-sm p-5">
+        <h3 className="text-xs font-semibold uppercase tracking-widest text-gray-500">My notes</h3>
+        <p className="text-sm text-gray-400 mt-2">Select a session to view or add notes.</p>
       </div>
     );
   }
 
   return (
-    <div className="rounded-[20px] bg-white border border-gray-200 shadow-card overflow-hidden">
-      <div className="border-b border-gray-100 px-4 py-3 flex items-center justify-between">
-        <h3 className="text-sm font-bold text-gray-800 uppercase tracking-wider">My notes</h3>
+    <div className="rounded-2xl bg-white border border-gray-200 shadow-sm overflow-hidden transition-shadow duration-200 hover:shadow-md">
+      {/* Header */}
+      <div className="border-b border-gray-100 px-5 py-3.5 flex items-center justify-between">
+        <h3 className="text-xs font-semibold uppercase tracking-widest text-gray-500">My notes</h3>
         {!showDetail && (
           <button
             type="button"
             onClick={handleNewNote}
-            className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-primary-navy text-white text-xs font-medium hover:bg-primary-navy/90 focus:outline-none focus-visible:ring-2 focus-visible:ring-primary-navy focus-visible:ring-offset-2"
+            className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-primary-navy text-white text-xs font-semibold hover:bg-primary-navy/90 transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-primary-navy focus-visible:ring-offset-2 shadow-sm"
           >
-            <FiPlus className="w-4 h-4" />
+            <FiPlus className="w-3.5 h-3.5" />
             New note
           </button>
         )}
@@ -170,11 +171,11 @@ export default function NotesPanel({ sessionId }) {
 
       {showDetail ? (
         <div className="flex flex-col">
-          <div className="flex flex-wrap items-center justify-between gap-2 px-3 sm:px-4 py-2 border-b border-gray-100 min-h-[44px]">
+          <div className="flex items-center justify-between gap-2 px-4 py-2.5 border-b border-gray-100 min-h-[44px] bg-gray-50/60">
             <button
               type="button"
               onClick={handleBack}
-              className="flex items-center gap-1 text-sm font-medium text-primary-navy hover:underline focus:outline-none focus-visible:ring-2 focus-visible:ring-primary-navy/50 rounded min-h-[44px] px-2"
+              className="inline-flex items-center gap-1.5 text-sm font-medium text-primary-navy hover:underline focus:outline-none focus-visible:ring-2 focus-visible:ring-primary-navy/50 rounded px-1 min-h-[36px]"
             >
               <FiChevronLeft className="w-4 h-4" />
               Done
@@ -183,21 +184,21 @@ export default function NotesPanel({ sessionId }) {
               <button
                 type="button"
                 onClick={handleDelete}
-                className="p-2 min-h-[44px] min-w-[44px] flex items-center justify-center text-gray-400 hover:text-red-600 rounded-lg focus:outline-none focus-visible:ring-2 focus-visible:ring-red-500/50"
+                className="w-9 h-9 flex items-center justify-center text-gray-400 hover:text-red-600 hover:bg-red-50 rounded-lg transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-red-500/50"
                 aria-label="Delete note"
               >
                 <FiTrash2 className="w-4 h-4" />
               </button>
             )}
           </div>
-          <div className="p-3 sm:p-4">
+          <div className="p-5">
             <textarea
               value={editingText}
               onChange={(e) => handleTextChange(e.target.value)}
               onBlur={handleBlur}
-              placeholder="Start typing..."
+              placeholder="Start typing your note…"
               rows={8}
-              className="w-full px-0 py-2 text-sm text-gray-800 border-0 focus:outline-none focus:ring-0 resize-none placeholder:text-gray-400"
+              className="w-full text-sm text-gray-800 border-0 focus:outline-none focus:ring-0 resize-none placeholder:text-gray-400 bg-transparent"
               aria-label="Note content"
               style={{ minHeight: '120px' }}
             />
@@ -206,14 +207,17 @@ export default function NotesPanel({ sessionId }) {
       ) : (
         <div className="max-h-64 overflow-y-auto">
           {sortedNotes.length === 0 ? (
-            <div className="p-6 text-center">
-              <p className="text-sm text-gray-500">No notes for this session yet.</p>
+            <div className="p-8 flex flex-col items-center text-center">
+              <span className="w-10 h-10 rounded-xl bg-gray-100 flex items-center justify-center mb-3">
+                <FiPlus className="w-5 h-5 text-gray-400" aria-hidden />
+              </span>
+              <p className="text-sm text-gray-500 font-medium">No notes yet</p>
               <button
                 type="button"
                 onClick={handleNewNote}
-                className="mt-3 text-sm font-medium text-primary-navy hover:underline focus:outline-none focus-visible:ring-2 focus-visible:ring-primary-navy/50 rounded"
+                className="mt-2 text-sm font-semibold text-primary-navy hover:underline focus:outline-none focus-visible:ring-2 focus-visible:ring-primary-navy/50 rounded"
               >
-                Add note
+                Add your first note
               </button>
             </div>
           ) : (
@@ -227,15 +231,16 @@ export default function NotesPanel({ sessionId }) {
                       setIsNewNote(false);
                       setEditingText(n.text || '');
                     }}
-                    className="w-full text-left px-3 py-3 flex items-start gap-3 min-h-[44px] hover:bg-gray-50/80 transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-primary-navy/30 focus-visible:ring-inset"
+                    className="w-full text-left px-5 py-3.5 flex items-start gap-3 min-h-[52px] hover:bg-gray-50 transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-primary-navy/30 focus-visible:ring-inset"
                   >
+                    <span className="w-2 h-2 rounded-full bg-primary-navy/30 mt-2 flex-shrink-0" aria-hidden />
                     <div className="min-w-0 flex-1">
-                      <p className="text-sm font-medium text-gray-900 truncate">{getTitle(n.text)}</p>
+                      <p className="text-sm font-semibold text-gray-900 truncate">{getTitle(n.text)}</p>
                       {getPreview(n.text) && (
                         <p className="text-xs text-gray-500 truncate mt-0.5">{getPreview(n.text)}</p>
                       )}
                     </div>
-                    <span className="text-xs text-gray-400 shrink-0">{formatTimestamp(n.timestamp)}</span>
+                    <span className="text-xs text-gray-400 shrink-0 mt-0.5">{formatTimestamp(n.timestamp)}</span>
                   </button>
                 </li>
               ))}

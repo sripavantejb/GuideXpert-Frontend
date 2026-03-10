@@ -16,9 +16,9 @@ function generateShortCertificateId() {
   return 'GX' + hex;
 }
 
-const CARD_BASE = 'rounded-xl bg-white shadow-card overflow-hidden p-3 transition-all duration-300';
-const CARD_LOCKED = `${CARD_BASE} border border-gray-200 hover:shadow-card-hover hover:-translate-y-0.5`;
-const CARD_UNLOCKED = `${CARD_BASE} border-2 border-green-200 ring-2 ring-green-100`;
+const CARD_BASE = 'rounded-2xl bg-white shadow-sm overflow-hidden p-5 transition-all duration-200';
+const CARD_LOCKED = `${CARD_BASE} border border-gray-200 hover:shadow-md`;
+const CARD_UNLOCKED = `${CARD_BASE} border border-green-200 bg-green-50/30`;
 
 export default function CertificateUnlockCard({
   completedPercent = 0,
@@ -230,28 +230,28 @@ export default function CertificateUnlockCard({
 
   return (
     <div className={unlocked ? CARD_UNLOCKED : CARD_LOCKED}>
-      <header className="mb-2">
-        <h3 className="text-xs font-semibold uppercase tracking-wider text-gray-500">
+      <header className="mb-4">
+        <h3 className="text-xs font-semibold uppercase tracking-widest text-gray-500">
           Certificate progress
         </h3>
       </header>
       {unlocked ? (
-        <div className="space-y-2">
-          <div className="flex items-center gap-3 p-3 rounded-lg bg-green-50 border border-green-200 min-w-0">
-            <span className="w-8 h-8 rounded-full bg-green-100 flex items-center justify-center flex-shrink-0">
-              <FiCheck className="w-4 h-4 text-green-700" aria-hidden />
+        <div className="space-y-4">
+          <div className="flex items-center gap-3 p-4 rounded-xl bg-green-50 border border-green-200/80 min-w-0">
+            <span className="w-10 h-10 rounded-full bg-green-100 flex items-center justify-center flex-shrink-0">
+              <FiCheck className="w-5 h-5 text-green-700" aria-hidden />
             </span>
             <div className="min-w-0 flex-1">
               <p className="text-sm font-semibold text-green-800 leading-tight">Certificate ready</p>
               <p className="text-xs text-green-700 leading-tight mt-0.5">You have completed all sessions.</p>
             </div>
           </div>
-          <div className="grid grid-cols-1 sm:grid-cols-3 gap-2">
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
             <button
               type="button"
               onClick={handleDownloadPng}
               disabled={!!downloading}
-              className="inline-flex items-center justify-center gap-2 min-h-[40px] px-3 py-2 rounded-xl bg-primary-navy text-white text-xs font-medium hover:bg-primary-navy/90 transition-colors w-full disabled:opacity-60"
+              className="inline-flex items-center justify-center gap-2 min-h-[44px] px-4 py-2.5 rounded-xl bg-primary-navy text-white text-sm font-medium hover:bg-primary-navy/90 transition-colors w-full disabled:opacity-60 shadow-sm"
             >
               <FiDownload className="w-4 h-4" aria-hidden />
               {downloading === 'png' ? 'Preparing…' : 'Download PNG'}
@@ -260,7 +260,7 @@ export default function CertificateUnlockCard({
               type="button"
               onClick={handleDownloadPdf}
               disabled={!!downloading}
-              className="inline-flex items-center justify-center gap-2 min-h-[40px] px-3 py-2 rounded-xl border-2 border-gray-300 text-gray-700 text-xs font-medium hover:bg-gray-50 hover:border-gray-400 transition-colors w-full disabled:opacity-60"
+              className="inline-flex items-center justify-center gap-2 min-h-[44px] px-4 py-2.5 rounded-xl border-2 border-gray-200 text-gray-700 text-sm font-medium hover:bg-gray-50 hover:border-gray-300 transition-colors w-full disabled:opacity-60"
             >
               <FiDownload className="w-4 h-4" aria-hidden />
               {downloading === 'pdf' ? 'Preparing…' : 'Download PDF'}
@@ -269,17 +269,17 @@ export default function CertificateUnlockCard({
               type="button"
               onClick={handlePreview}
               disabled={!!previewLoading}
-              className="inline-flex items-center justify-center gap-2 min-h-[40px] px-3 py-2 rounded-xl bg-primary-navy/10 text-primary-navy text-xs font-medium hover:bg-primary-navy/20 transition-colors w-full border border-green-200 disabled:opacity-60"
+              className="inline-flex items-center justify-center gap-2 min-h-[44px] px-4 py-2.5 rounded-xl bg-primary-navy/10 text-primary-navy text-sm font-medium hover:bg-primary-navy/20 transition-colors w-full border border-primary-navy/20 disabled:opacity-60"
             >
-              <FiEye className="w-3.5 h-3.5" aria-hidden />
+              <FiEye className="w-4 h-4" aria-hidden />
               {previewLoading ? 'Loading…' : 'Preview'}
             </button>
           </div>
         </div>
       ) : (
-        <div className="space-y-3">
-          <div className="flex items-center justify-between text-xs">
-            <span className="text-gray-600 font-medium">Certificate progress</span>
+        <div className="space-y-4">
+          <div className="flex items-center justify-between text-sm">
+            <span className="text-gray-600 font-medium">Progress</span>
             <span className="font-semibold text-gray-900 tabular-nums">{completedPercent}%</span>
           </div>
           <div className="h-2.5 rounded-full bg-gray-200 overflow-hidden w-full">
@@ -288,21 +288,21 @@ export default function CertificateUnlockCard({
               style={{ width: `${completedPercent}%` }}
             />
           </div>
-          <p className="text-xs text-gray-600">
+          <p className="text-sm text-gray-600">
             Complete {remaining} more session{remaining !== 1 ? 's' : ''} to unlock.
           </p>
-          <div className="flex items-center gap-3 p-3 rounded-lg border-2 border-dashed border-gray-200 bg-gray-50/50 min-w-0">
-            <span className="w-9 h-9 rounded-full bg-gray-200 flex items-center justify-center shrink-0 flex-shrink-0">
-              <FiLock className="w-4 h-4 text-gray-500" aria-hidden />
+          <div className="flex items-center gap-3 p-4 rounded-xl border-2 border-dashed border-gray-200 bg-gray-50/80 min-w-0">
+            <span className="w-10 h-10 rounded-full bg-gray-200 flex items-center justify-center shrink-0 flex-shrink-0">
+              <FiLock className="w-5 h-5 text-gray-500" aria-hidden />
             </span>
             <div className="min-w-0 flex-1">
-              <p className="text-xs font-semibold text-gray-700">Certificate of Completion</p>
-              <p className="text-[10px] text-gray-500">Unlock after completing Day 3</p>
+              <p className="text-sm font-semibold text-gray-700">Certificate of Completion</p>
+              <p className="text-xs text-gray-500 mt-0.5">Unlock after completing Day 3</p>
             </div>
           </div>
           <Link
             to="/webinar/progress"
-            className="inline-flex items-center justify-center gap-2 w-full min-h-[40px] px-3 py-2.5 rounded-xl bg-primary-navy text-white text-sm font-medium hover:bg-primary-navy/90 transition-colors"
+            className="inline-flex items-center justify-center gap-2 w-full min-h-[44px] px-4 py-2.5 rounded-xl bg-primary-navy text-white text-sm font-medium hover:bg-primary-navy/90 transition-colors shadow-sm"
           >
             View progress to unlock
           </Link>

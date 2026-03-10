@@ -50,6 +50,13 @@
   --shadow-card-hover: 0 8px 24px rgba(0, 0, 0, 0.08), 0 2px 6px rgba(0, 0, 0, 0.04);
 }
 
+/* Imperial Script – certificate name (loaded via index.html) */
+.imperial-script-regular {
+  font-family: "Imperial Script", cursive;
+  font-weight: 400;
+  font-style: normal;
+}
+
 /* Homepage hero gradient – single source of truth for landing and assessment pages */
 :root {
   --gradient-home-hero: linear-gradient(to bottom right, #e8f0fa 0%, #eef4fa 25%, #f2f4f8 50%, #f5f4f2 75%, #f7f4eb 100%);

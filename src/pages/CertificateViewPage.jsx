@@ -93,7 +93,7 @@ export default function CertificateViewPage() {
         if (result.success && (fullName || dateIssued)) {
           const img = await loadCertificateImage();
           if (cancelled) return;
-          const canvas = drawCertificateToCanvas(img, fullName, dateIssued, storedCertificateId);
+          const canvas = await drawCertificateToCanvas(img, fullName, dateIssued, storedCertificateId);
           setCertificateUrl(canvas.toDataURL('image/png'));
           setData({ fullName, dateIssued, certificateId: storedCertificateId });
           setLoading(false);
@@ -105,7 +105,7 @@ export default function CertificateViewPage() {
           const idFallback = String(stateCertificate.certificateId || trimmedId).trim();
           const img = await loadCertificateImage();
           if (cancelled) return;
-          const canvas = drawCertificateToCanvas(img, fullNameFallback, dateIssuedFallback, idFallback);
+          const canvas = await drawCertificateToCanvas(img, fullNameFallback, dateIssuedFallback, idFallback);
           setCertificateUrl(canvas.toDataURL('image/png'));
           setData({ fullName: fullNameFallback, dateIssued: dateIssuedFallback, certificateId: idFallback });
           setLoading(false);
@@ -127,7 +127,7 @@ export default function CertificateViewPage() {
           try {
             const img = await loadCertificateImage();
             if (cancelled) return;
-            const canvas = drawCertificateToCanvas(img, fullNameFallback, dateIssuedFallback, idFallback);
+            const canvas = await drawCertificateToCanvas(img, fullNameFallback, dateIssuedFallback, idFallback);
             setCertificateUrl(canvas.toDataURL('image/png'));
             setData({ fullName: fullNameFallback, dateIssued: dateIssuedFallback, certificateId: idFallback });
           } catch (imgErr) {
@@ -221,7 +221,7 @@ export default function CertificateViewPage() {
                   </span>
                   <div>
                     <p className="text-xs text-gray-400 font-medium uppercase tracking-wider">Recipient</p>
-                    <p className="text-sm font-semibold text-gray-800 mt-0.5">{data.fullName}</p>
+                    <p className="text-lg font-semibold text-gray-800 mt-0.5">{data.fullName}</p>
                   </div>
                 </div>
                 <div className="flex items-start gap-3">
@@ -230,7 +230,7 @@ export default function CertificateViewPage() {
                   </span>
                   <div>
                     <p className="text-xs text-gray-400 font-medium uppercase tracking-wider">Date Issued</p>
-                    <p className="text-sm font-semibold text-gray-800 mt-0.5">{data.dateIssued}</p>
+                    <p className="text-base font-semibold text-gray-800 mt-0.5">{data.dateIssued}</p>
                   </div>
                 </div>
                 <div className="flex items-start gap-3 sm:col-span-2">
@@ -239,7 +239,7 @@ export default function CertificateViewPage() {
                   </span>
                   <div className="min-w-0">
                     <p className="text-xs text-gray-400 font-medium uppercase tracking-wider">Certificate ID</p>
-                    <p className="text-xs font-mono text-gray-600 mt-0.5 break-all">{data.certificateId}</p>
+                    <p className="text-base font-mono text-gray-600 mt-0.5 break-all">{data.certificateId}</p>
                   </div>
                 </div>
               </div>

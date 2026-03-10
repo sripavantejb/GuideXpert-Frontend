@@ -1,4 +1,4 @@
-import { FiCheckCircle, FiClock, FiLock } from 'react-icons/fi';
+import { FiCheckCircle, FiClock, FiLock, FiPlay } from 'react-icons/fi';
 
 export function SessionCard({
   session,
@@ -8,51 +8,61 @@ export function SessionCard({
   isLocked,
   onClick,
 }) {
-  const statusIcon = isLocked ? (
-    <FiLock className="w-5 h-5 text-gray-400" aria-label="Locked" />
-  ) : isCompleted ? (
-    <FiCheckCircle className="w-5 h-5 text-green-600" aria-label="Completed" />
-  ) : progress > 0 ? (
-    <span className="w-5 h-5 rounded-full border-2 border-primary-navy border-t-transparent animate-spin" aria-label="In progress" />
-  ) : (
-    <span className="w-5 h-5 rounded-full border-2 border-gray-300" aria-label="Not started" />
-  );
-
   return (
     <button
       type="button"
       onClick={() => !isLocked && onClick(session.id)}
       disabled={isLocked}
       className={`
-        w-full text-left flex items-center gap-2 sm:gap-3 p-3 rounded-xl border transition-all duration-200 min-h-[44px]
+        w-full text-left flex items-center gap-3 p-3 rounded-xl border transition-all duration-200
         focus:outline-none focus-visible:ring-2 focus-visible:ring-primary-navy focus-visible:ring-offset-2
         ${isActive
-          ? 'bg-primary-blue-50 border-gray-200 border-l-4 border-l-primary-navy shadow-card'
+          ? 'bg-primary-navy text-white border-primary-navy shadow-sm'
           : isLocked
-            ? 'bg-gray-50 border-gray-200 opacity-75 cursor-not-allowed'
-            : 'bg-white border-gray-200 hover:border-gray-300 hover:shadow-card-hover hover:-translate-y-0.5'
+            ? 'bg-gray-50 border-gray-200 opacity-60 cursor-not-allowed'
+            : 'bg-white border-gray-200 hover:border-gray-300 hover:shadow-sm hover:bg-gray-50/60'
         }
       `}
-      style={{ borderRadius: '14px' }}
     >
-      <div className="w-14 h-14 sm:w-16 sm:h-16 rounded-lg overflow-hidden bg-gray-200 shrink-0">
+      {/* Thumbnail */}
+      <div className="w-12 h-12 rounded-lg overflow-hidden bg-gray-200 shrink-0 relative">
         {session.thumbnail ? (
-          <img
-            src={session.thumbnail}
-            alt=""
-            className="w-full h-full object-cover"
-          />
+          <img src={session.thumbnail} alt="" className="w-full h-full object-cover" />
         ) : (
-          <div className="w-full h-full flex items-center justify-center text-gray-400 text-xs">
-            No thumb
+          <div className={`w-full h-full flex items-center justify-center ${isActive ? 'bg-white/10' : 'bg-gray-100'}`}>
+            <FiPlay className={`w-4 h-4 ${isActive ? 'text-white/60' : 'text-gray-400'}`} aria-hidden />
+          </div>
+        )}
+        {/* Progress bar overlay */}
+        {!isLocked && !isCompleted && progress > 0 && progress < 100 && (
+          <div className="absolute bottom-0 left-0 right-0 h-1 bg-black/20">
+            <div className="h-full bg-amber-400" style={{ width: `${progress}%` }} />
           </div>
         )}
       </div>
+
+      {/* Text */}
       <div className="min-w-0 flex-1">
-        <p className="font-semibold text-gray-900 text-sm truncate">{session.title}</p>
-        <p className="text-xs text-gray-500">• {session.duration}</p>
+        <p className={`text-sm font-semibold leading-tight truncate ${isActive ? 'text-white' : 'text-gray-900'}`}>
+          {session.title}
+        </p>
+        <p className={`text-xs mt-0.5 ${isActive ? 'text-white/70' : 'text-gray-500'}`}>
+          {session.duration}
+        </p>
       </div>
-      <div className="shrink-0">{statusIcon}</div>
+
+      {/* Status icon */}
+      <div className="shrink-0">
+        {isLocked ? (
+          <FiLock className="w-4 h-4 text-gray-400" aria-label="Locked" />
+        ) : isCompleted ? (
+          <FiCheckCircle className={`w-5 h-5 ${isActive ? 'text-white/80' : 'text-green-600'}`} aria-label="Completed" />
+        ) : progress > 0 ? (
+          <span className={`w-5 h-5 rounded-full border-2 ${isActive ? 'border-white/60 border-t-transparent' : 'border-amber-500 border-t-transparent'} animate-spin inline-block`} aria-label="In progress" />
+        ) : (
+          <span className={`w-4 h-4 rounded-full border-2 inline-block ${isActive ? 'border-white/40' : 'border-gray-300'}`} aria-label="Not started" />
+        )}
+      </div>
     </button>
   );
 }
@@ -66,23 +76,37 @@ export default function SessionList({
   isDayUnlocked,
   activeDay,
 }) {
+  const completedCount = sessions.filter((s) => completedSessions.includes(s.id)).length;
+
   return (
-    <div
-      className="rounded-[20px] bg-white border border-gray-200 overflow-hidden shadow-card flex flex-col transition-shadow duration-300"
-    >
-      <div className="px-4 py-3 border-b border-gray-100 flex items-center justify-between gap-2 flex-wrap">
-        <h2 className="text-xs font-semibold uppercase tracking-wider text-gray-500">
-          Sessions
-        </h2>
-        <span className="text-xs text-gray-500 font-medium">
-          Day {activeDay ?? 1} · {sessions.length} session{sessions.length !== 1 ? 's' : ''}
+    <div className="rounded-2xl bg-white border border-gray-200 shadow-sm overflow-hidden transition-shadow duration-200 hover:shadow-md">
+      {/* Header */}
+      <div className="px-4 py-3.5 border-b border-gray-100 flex items-center justify-between gap-2">
+        <div className="flex items-center gap-2.5">
+          <h2 className="text-xs font-semibold uppercase tracking-widest text-gray-500">Sessions</h2>
+          <span className="text-xs text-gray-400 font-medium">Day {activeDay ?? 1}</span>
+        </div>
+        <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-primary-navy/8 text-primary-navy text-xs font-semibold">
+          {completedCount}/{sessions.length} done
         </span>
       </div>
-      <div className="flex-1 overflow-y-auto min-h-0 max-h-[40vh] sm:max-h-[320px] p-3 space-y-3">
+
+      {/* Progress bar */}
+      {sessions.length > 0 && (
+        <div className="h-0.5 bg-gray-100 w-full">
+          <div
+            className="h-full bg-primary-navy transition-all duration-500"
+            style={{ width: `${sessions.length ? (completedCount / sessions.length) * 100 : 0}%` }}
+          />
+        </div>
+      )}
+
+      {/* List */}
+      <div className="overflow-y-auto max-h-[40vh] sm:max-h-[320px] p-3 space-y-2">
         {sessions.length === 0 ? (
-          <div className="flex flex-col items-center justify-center py-8 text-center">
-            <FiClock className="w-10 h-10 text-gray-300 mb-2" aria-hidden />
-            <p className="text-sm text-gray-500">No sessions for this day.</p>
+          <div className="flex flex-col items-center justify-center py-10 text-center">
+            <FiClock className="w-9 h-9 text-gray-200 mb-2" aria-hidden />
+            <p className="text-sm text-gray-400">No sessions for this day.</p>
           </div>
         ) : (
           sessions.map((session) => (

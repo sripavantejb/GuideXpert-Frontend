@@ -127,7 +127,7 @@ export default function WebinarPage() {
   const overallPercent = totalSessionsCount ? Math.round((overallCompleted / totalSessionsCount) * 100) : 0;
 
   return (
-    <div className="min-h-screen bg-gray-50 flex" style={{ fontFamily: 'Inter, system-ui, sans-serif' }}>
+    <div className="min-h-screen bg-gray-50 flex">
       <Sidebar
         activeId="webinar"
         open={sidebarOpen}
@@ -140,15 +140,16 @@ export default function WebinarPage() {
         <button
           type="button"
           onClick={() => setSidebarOpen(true)}
-          className="lg:hidden fixed top-4 left-4 z-10 p-2 rounded-xl bg-white border border-gray-200 shadow-card text-gray-600 hover:bg-gray-50 focus:outline-none focus-visible:ring-2 focus-visible:ring-primary-navy focus-visible:ring-offset-2"
+          className="lg:hidden fixed top-4 left-4 z-10 p-2 rounded-xl bg-white border border-gray-200 shadow-sm text-gray-600 hover:bg-gray-50 focus:outline-none focus-visible:ring-2 focus-visible:ring-primary-navy focus-visible:ring-offset-2"
           aria-label="Open menu"
         >
-          <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden>
+          <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden>
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6h16M4 12h16M4 18h16" />
           </svg>
         </button>
-        {/* Top: Day tabs */}
-        <div className="shrink-0 px-4 pt-4 pb-2 pl-14 lg:pl-4">
+
+        {/* Day tabs */}
+        <div className="shrink-0 px-4 sm:px-5 pt-4 pb-3 pl-14 lg:pl-5 border-b border-gray-100 bg-white/80 backdrop-blur-sm">
           <DayTabs
             days={DAYS}
             activeDay={activeDay}
@@ -156,15 +157,12 @@ export default function WebinarPage() {
           />
         </div>
 
-        {/* Main grid: video + sessions | description + doubts + profile */}
-        <div className="flex-1 grid grid-cols-1 lg:grid-cols-12 gap-4 p-4 overflow-auto min-h-0">
-          {/* Left column: video + stats + description */}
-          <div className="lg:col-span-8 flex flex-col gap-4">
-            {/* Video + Stats */}
-            <div
-              className="rounded-2xl bg-white p-4 shadow-card overflow-hidden ring-1 ring-gray-200/50"
-              style={{ borderRadius: '16px' }}
-            >
+        {/* Main grid */}
+        <div className="flex-1 grid grid-cols-1 lg:grid-cols-12 gap-4 sm:gap-5 p-4 sm:p-5 overflow-auto min-h-0">
+          {/* Left column */}
+          <div className="lg:col-span-8 flex flex-col gap-4 sm:gap-5">
+            {/* Video + StatsBar */}
+            <div className="rounded-2xl bg-white border border-gray-200 shadow-sm overflow-hidden p-0 sm:p-5 transition-shadow duration-200 hover:shadow-md">
               <VideoPlayer
                 session={activeSession}
                 initialPosition={activeSessionId ? playbackPosition[activeSessionId] : 0}
@@ -175,30 +173,29 @@ export default function WebinarPage() {
                 onToggleBookmark={() => activeSessionId && toggleBookmark(activeSessionId)}
               />
               {activeSession && (
-                <StatsBar
-                  type={activeSession.type}
-                  duration={activeSession.duration}
-                  totalDuration={`${getSessionsByDay(activeSession.dayId).reduce((a, s) => a + s.durationMinutes, 0)}m`}
-                  status={
-                    completedSessions.includes(activeSession.id)
-                      ? 'Completed'
-                      : sessionProgress[activeSession.id] > 0
-                        ? 'In Progress'
-                        : 'Not started'
-                  }
-                />
+                <div className="px-4 sm:px-0">
+                  <StatsBar
+                    type={activeSession.type}
+                    duration={activeSession.duration}
+                    totalDuration={`${getSessionsByDay(activeSession.dayId).reduce((a, s) => a + s.durationMinutes, 0)}m`}
+                    status={
+                      completedSessions.includes(activeSession.id)
+                        ? 'Completed'
+                        : sessionProgress[activeSession.id] > 0
+                          ? 'In Progress'
+                          : 'Not started'
+                    }
+                  />
+                </div>
               )}
             </div>
 
-            {/* Description */}
             <DescriptionCard session={activeSession} />
-
-            {/* Notes (collapsible) */}
             <NotesPanel sessionId={activeSessionId} />
           </div>
 
-          {/* Right column: sessions list + doubts + profile */}
-          <div className="lg:col-span-4 flex flex-col gap-4">
+          {/* Right column */}
+          <div className="lg:col-span-4 flex flex-col gap-4 sm:gap-5">
             <SessionList
               sessions={sessionsForDay}
               activeSessionId={activeSessionId}
@@ -208,34 +205,33 @@ export default function WebinarPage() {
               isDayUnlocked={isDayUnlocked}
               activeDay={activeDay}
             />
-
-            <div className="flex flex-col gap-4 lg:flex-row lg:items-stretch">
-              <ProfileCard
-                completedPercent={overallPercent}
-                totalSessions={totalSessionsCount}
-                completedSessions={overallCompleted}
-              />
-              <ProgressIndicator
-                completedPercent={overallPercent}
-                days={DAYS}
-                completedCountForDay={completedCountForDay}
-                totalSessionsForDay={(dayId) => getSessionsByDay(dayId).length}
-              />
-            </div>
+            <ProfileCard
+              completedPercent={overallPercent}
+              totalSessions={totalSessionsCount}
+              completedSessions={overallCompleted}
+            />
+            <ProgressIndicator
+              completedPercent={overallPercent}
+              days={DAYS}
+              completedCountForDay={completedCountForDay}
+              totalSessionsForDay={(dayId) => getSessionsByDay(dayId).length}
+              totalCompleted={overallCompleted}
+              totalSessions={totalSessionsCount}
+            />
           </div>
         </div>
 
-        {/* Certification banner: slim bar */}
-        <div
-          className={`mx-4 mb-4 px-4 py-2 rounded-lg text-xs font-medium text-center transition-colors ${
-            overallPercent === 100
-              ? 'bg-green-50 border border-green-200 text-green-800'
-              : 'bg-primary-blue-50/80 border border-primary-blue-200/50 text-primary-navy'
-          }`}
-          style={{ borderRadius: '10px' }}
-        >
-          Certificate unlocked after Day 3 completion.
-        </div>
+        {/* Certificate banner */}
+        {overallPercent < 100 && (
+          <div className="mx-4 sm:mx-5 mb-4 sm:mb-5 px-4 py-2.5 rounded-xl text-sm font-medium text-center bg-primary-blue-50/80 border border-primary-blue-200/50 text-primary-navy">
+            Complete all Day 3 sessions to unlock your certificate.
+          </div>
+        )}
+        {overallPercent === 100 && (
+          <div className="mx-4 sm:mx-5 mb-4 sm:mb-5 px-4 py-2.5 rounded-xl text-sm font-semibold text-center bg-green-50 border border-green-200 text-green-800">
+            All sessions complete — your certificate is ready to download!
+          </div>
+        )}
       </main>
     </div>
   );

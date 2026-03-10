@@ -15,12 +15,12 @@ export const OUTPUT_SCALE = 2;
 export const OUTPUT_WIDTH = CERT_WIDTH * OUTPUT_SCALE;
 export const OUTPUT_HEIGHT = CERT_HEIGHT * OUTPUT_SCALE;
 
-/** Name: below "This is proudly presented to", centered. Coordinates in CERT space. */
+/** Name: below "This is proudly presented to", centered. Imperial Script for signature-style name. */
 export const NAME = {
   x: CERT_WIDTH / 2,
-  y: 320,
-  fontSize: 28,
-  fontFamily: 'Georgia, "Times New Roman", serif',
+  y: 313,
+  fontSize: 48,
+  fontFamily: '"Imperial Script", cursive',
   fillStyle: '#1f2937',
   textAlign: 'center',
   textBaseline: 'middle',
@@ -28,7 +28,7 @@ export const NAME = {
 
 /** Date: on the underlined blank above "DATE" label. Format: "9 March 2026". */
 export const DATE = {
-  x: 120,
+  x: 140,
   y: 460,
   fontSize: 14,
   fontFamily: 'Georgia, "Times New Roman", serif',
@@ -37,11 +37,11 @@ export const DATE = {
   textBaseline: 'alphabetic',
 };
 
-/** Unique certificate ID: below the "DATE" label, left-aligned. */
+/** Unique certificate ID: below the "DATE" label, left-aligned, smaller size. */
 export const CERTIFICATE_ID = {
   x: 120,
-  y: 518,
-  fontSize: 11,
+  y: 508,
+  fontSize: 9,
   fontFamily: 'Georgia, "Times New Roman", serif',
   fillStyle: '#374151',
   textAlign: 'left',

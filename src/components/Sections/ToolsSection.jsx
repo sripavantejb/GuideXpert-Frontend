@@ -127,7 +127,7 @@ const ToolsSection = () => {
               lineHeight: '1.6',
               color: '#475569'
             }}>
-              GuideXpert provides you with a suite of professional tools and resources to streamline your counseling process.
+              GuideXpert provides you with a suite of professional tools and resources to streamline your counseling process—including college predictor, rank predictor (JEE, MHT CET, BITSAT, WBJEE, KCET), psychometric test, and course fit assessments for student career guidance across India.
             </p>
           </AnimatedElement>
         </div>

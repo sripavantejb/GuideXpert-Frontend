@@ -47,9 +47,9 @@ export function loadCertificateImage() {
  * @param {string} name - Recipient name (from training form)
  * @param {string} dateStr - Formatted date string (e.g. from formatCertificateDate)
  * @param {string} [certificateId] - Unique certificate ID to draw below the date
- * @returns {HTMLCanvasElement}
+ * @returns {Promise<HTMLCanvasElement>}
  */
-export function drawCertificateToCanvas(img, name, dateStr, certificateId) {
+export async function drawCertificateToCanvas(img, name, dateStr, certificateId) {
   const canvas = document.createElement('canvas');
   canvas.width = OUTPUT_WIDTH;
   canvas.height = OUTPUT_HEIGHT;
@@ -61,6 +61,9 @@ export function drawCertificateToCanvas(img, name, dateStr, certificateId) {
   ctx.drawImage(img, 0, 0, OUTPUT_WIDTH, OUTPUT_HEIGHT);
 
   ctx.save();
+
+  // Ensure Imperial Script (name font) is loaded before drawing so canvas renders it correctly
+  await document.fonts.load(`${NAME_CONFIG.fontSize * scale}px ${NAME_CONFIG.fontFamily}`);
 
   ctx.fillStyle = NAME_CONFIG.fillStyle;
   ctx.font = `${NAME_CONFIG.fontSize * scale}px ${NAME_CONFIG.fontFamily}`;
@@ -95,7 +98,7 @@ export function drawCertificateToCanvas(img, name, dateStr, certificateId) {
  */
 export async function getCertificatePngDataUrl(name, dateStr = formatCertificateDate(), certificateId) {
   const img = await loadCertificateImage();
-  const canvas = drawCertificateToCanvas(img, name, dateStr, certificateId);
+  const canvas = await drawCertificateToCanvas(img, name, dateStr, certificateId);
   return canvas.toDataURL('image/png');
 }
 
@@ -124,7 +127,7 @@ export async function downloadCertificatePng(name, dateStr = formatCertificateDa
  */
 export async function downloadCertificatePdf(name, dateStr = formatCertificateDate(), certificateId) {
   const img = await loadCertificateImage();
-  const canvas = drawCertificateToCanvas(img, name, dateStr, certificateId);
+  const canvas = await drawCertificateToCanvas(img, name, dateStr, certificateId);
   const imgData = canvas.toDataURL('image/png');
 
   const pdf = new jsPDF({

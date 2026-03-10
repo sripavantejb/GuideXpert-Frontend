@@ -42,7 +42,7 @@ const CertificationSection = () => {
               lineHeight: '1.6',
               color: '#475569'
             }}>
-              Our comprehensive certification program equips you with the knowledge and skills to excel as a professional career counselor.
+              Our comprehensive certification program equips you with the knowledge and skills to excel as a professional career counselor for admission counselling and student career guidance across India.
             </p>
           </AnimatedElement>
         </div>
