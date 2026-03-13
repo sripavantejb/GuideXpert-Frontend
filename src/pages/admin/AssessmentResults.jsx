@@ -127,6 +127,7 @@ export default function AssessmentResults() {
   const [total, setTotal] = useState(0);
   const [duplicateCount, setDuplicateCount] = useState(0);
   const [activationFormCount, setActivationFormCount] = useState(0);
+  const [activationFormDuplicateCount, setActivationFormDuplicateCount] = useState(0);
   const [assessment3Total, setAssessment3Total] = useState(0);
   const [page, setPage] = useState(1);
   const limit = 50;
@@ -138,6 +139,7 @@ export default function AssessmentResults() {
   const [detailSubmission, setDetailSubmission] = useState(null);
   const [detailLoading, setDetailLoading] = useState(false);
   const [detailError, setDetailError] = useState('');
+  const [copyFeedback, setCopyFeedback] = useState(false);
 
   const filters = filtersByType[typeId] ?? DEFAULT_FILTERS();
   const { mode, selectedDate, rangeFrom, rangeTo, query, viewYear, viewMonth } = filters;
@@ -218,10 +220,12 @@ export default function AssessmentResults() {
       if (typeId === 4) {
         setDuplicateCount(result.data?.duplicateCount ?? 0);
         setActivationFormCount(result.data?.activationFormCount ?? 0);
+        setActivationFormDuplicateCount(result.data?.activationFormDuplicateCount ?? 0);
         setAssessment3Total(result.data?.assessment3Total ?? 0);
       } else {
         setDuplicateCount(0);
         setActivationFormCount(0);
+        setActivationFormDuplicateCount(0);
         setAssessment3Total(0);
       }
     });
@@ -280,6 +284,34 @@ export default function AssessmentResults() {
     setDetailSubmission(null);
     setDetailError('');
   };
+
+  const copyMissingLeadsToClipboard = useCallback(() => {
+    if (typeId !== 4 || submissions.length === 0) return;
+    const escape = (v) => {
+      const s = String(v ?? '').trim();
+      if (s.includes(',') || s.includes('"') || s.includes('\n') || s.includes('\r')) {
+        return '"' + s.replace(/"/g, '""') + '"';
+      }
+      return s;
+    };
+    const header = 'Name,Phone,Score,Submitted at';
+    const rows = submissions.map((row) =>
+      [
+        escape(row.fullName),
+        escape(row.phone),
+        `${row.score ?? 0}/${row.maxScore ?? 10}`,
+        row.submittedAt ? formatDate(row.submittedAt) : '',
+      ].join(',')
+    );
+    const csv = [header, ...rows].join('\n');
+    navigator.clipboard.writeText(csv).then(
+      () => {
+        setCopyFeedback(true);
+        setTimeout(() => setCopyFeedback(false), 2000);
+      },
+      () => {}
+    );
+  }, [typeId, submissions]);
 
   return (
     <div className="max-w-[1400px] mx-auto px-4 py-6">
@@ -523,8 +555,12 @@ export default function AssessmentResults() {
                   </div>
                   <div className="rounded-lg bg-white/15 backdrop-blur-sm border border-white/20 p-3 space-y-2.5">
                     <p className="flex justify-between items-center text-sm">
-                      <span className="text-white font-medium">Activation form</span>
+                      <span className="text-white font-medium">Activation form (unique)</span>
                       <span className="text-white font-bold tabular-nums">{activationFormCount}</span>
+                    </p>
+                    <p className="flex justify-between items-center text-xs text-white/90">
+                      <span className="text-white/90">Duplicates removed in activation form</span>
+                      <span className="font-medium tabular-nums">{activationFormDuplicateCount}</span>
                     </p>
                     <p className="flex justify-between items-center text-sm">
                       <span className="text-white font-medium">Assessment 3 submissions</span>
@@ -571,6 +607,32 @@ export default function AssessmentResults() {
             </div>
           </div>
         </div>
+
+        {typeId === 4 && !loading && submissions.length > 0 && (
+          <div className="mb-4 flex justify-start">
+            <button
+              type="button"
+              onClick={copyMissingLeadsToClipboard}
+              className="inline-flex items-center gap-2 px-5 py-2.5 rounded-xl border-2 border-[#003366] bg-[#003366] text-white text-sm font-semibold hover:bg-[#004080] hover:border-[#004080] transition-colors shadow-sm"
+            >
+              {copyFeedback ? (
+                <>
+                  <svg className="w-5 h-5 text-green-300" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                  </svg>
+                  Copied to clipboard!
+                </>
+              ) : (
+                <>
+                  <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z" />
+                  </svg>
+                  Copy list (this page)
+                </>
+              )}
+            </button>
+          </div>
+        )}
 
         {loading ? (
           <div className="rounded-2xl border border-gray-200 bg-white shadow-lg overflow-hidden mb-6">

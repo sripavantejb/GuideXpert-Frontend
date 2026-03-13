@@ -56,7 +56,7 @@ export default function TrainingFeedback() {
   const [pagination, setPagination] = useState({ page: 1, limit: 25, total: 0, totalPages: 1 });
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
-  const [stats, setStats] = useState({ total: 0, byGender: {} });
+  const [stats, setStats] = useState({ totalSubmissions: 0, uniqueCount: 0, duplicateCount: 0, byGender: {} });
   const [filters, setFilters] = useState({
     q: '',
     from: '',
@@ -100,16 +100,20 @@ export default function TrainingFeedback() {
           window.location.href = '/admin/login';
           return;
         }
+        setRecords([]);
         setError(result.message || 'Failed to load training feedback');
         return;
       }
-      const dataList = result.data?.data || [];
-      const paginationData = result.data?.pagination || { page: 1, limit: 25, total: 0, totalPages: 1 };
-      const responseStats = result.data?.stats || {};
+      const raw = result.data;
+      const dataList = Array.isArray(raw?.data) ? raw.data : (Array.isArray(raw) ? raw : []);
+      const paginationData = raw?.pagination ?? { page: 1, limit: 25, total: 0, totalPages: 1 };
+      const responseStats = raw?.stats ?? {};
       setRecords(dataList);
       setPagination(paginationData);
       setStats({
-        total: responseStats.total ?? paginationData.total ?? 0,
+        totalSubmissions: responseStats.totalSubmissions ?? 0,
+        uniqueCount: responseStats.uniqueCount ?? paginationData.total ?? 0,
+        duplicateCount: responseStats.duplicateCount ?? 0,
         byGender: responseStats.byGender || {}
       });
     });
@@ -155,7 +159,7 @@ export default function TrainingFeedback() {
 
       {/* Stats cards */}
       {!loading && (
-        <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-6">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
           <div className="rounded-2xl bg-white border border-gray-200 shadow-sm overflow-hidden">
             <div className="h-1 w-full bg-linear-to-r from-[#003366] to-[#004080]" />
             <div className="p-5 flex items-center gap-4">
@@ -164,31 +168,43 @@ export default function TrainingFeedback() {
               </div>
               <div>
                 <p className="text-sm font-medium text-gray-500">Total submissions</p>
-                <p className="text-2xl font-bold text-gray-900">{stats.total}</p>
+                <p className="text-2xl font-bold text-gray-900">{stats.totalSubmissions}</p>
               </div>
             </div>
           </div>
           <div className="rounded-2xl bg-white border border-gray-200 shadow-sm overflow-hidden">
-            <div className="h-1 w-full bg-blue-400" />
+            <div className="h-1 w-full bg-emerald-500" />
             <div className="p-5 flex items-center gap-4">
-              <div className="flex items-center justify-center w-12 h-12 rounded-xl bg-blue-50 text-blue-600">
-                <FiUser className="w-6 h-6" />
+              <div className="flex items-center justify-center w-12 h-12 rounded-xl bg-emerald-50 text-emerald-600">
+                <FiUsers className="w-6 h-6" />
               </div>
               <div>
-                <p className="text-sm font-medium text-gray-500">Male</p>
-                <p className="text-2xl font-bold text-gray-900">{stats.byGender?.Male ?? 0}</p>
+                <p className="text-sm font-medium text-gray-500">Unique (after dedupe)</p>
+                <p className="text-2xl font-bold text-gray-900">{stats.uniqueCount}</p>
               </div>
             </div>
           </div>
           <div className="rounded-2xl bg-white border border-gray-200 shadow-sm overflow-hidden">
-            <div className="h-1 w-full bg-purple-400" />
+            <div className="h-1 w-full bg-amber-500" />
             <div className="p-5 flex items-center gap-4">
-              <div className="flex items-center justify-center w-12 h-12 rounded-xl bg-purple-50 text-purple-600">
-                <FiUser className="w-6 h-6" />
+              <div className="flex items-center justify-center w-12 h-12 rounded-xl bg-amber-50 text-amber-600">
+                <FiAlertCircle className="w-6 h-6" />
               </div>
               <div>
-                <p className="text-sm font-medium text-gray-500">Female</p>
-                <p className="text-2xl font-bold text-gray-900">{stats.byGender?.Female ?? 0}</p>
+                <p className="text-sm font-medium text-gray-500">Duplicates removed</p>
+                <p className="text-2xl font-bold text-gray-900">{stats.duplicateCount}</p>
+              </div>
+            </div>
+          </div>
+          <div className="rounded-2xl bg-white border border-gray-200 shadow-sm overflow-hidden">
+            <div className="h-1 w-full bg-slate-400" />
+            <div className="p-5 flex items-center gap-4">
+              <div className="flex items-center justify-center w-12 h-12 rounded-xl bg-slate-100 text-slate-600">
+                <FiUser className="w-6 h-6" />
+              </div>
+              <div className="flex-1">
+                <p className="text-sm font-medium text-gray-500">By gender (unique)</p>
+                <p className="text-sm font-bold text-gray-900">Male {stats.byGender?.Male ?? 0} · Female {stats.byGender?.Female ?? 0}</p>
               </div>
             </div>
           </div>
@@ -340,7 +356,7 @@ export default function TrainingFeedback() {
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-gray-100">
-                  {records.map((row) => (
+                  {(Array.isArray(records) ? records : []).map((row) => (
                     <Fragment key={row.id}>
                       <tr className="hover:bg-[#003366]/4 transition-colors">
                         <td className="px-4 py-3 align-middle font-medium text-gray-900">{row.name || '—'}</td>
