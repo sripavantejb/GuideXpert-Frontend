@@ -63,12 +63,12 @@ export default function Sidebar({
   );
 
   const linkBase =
-    'flex items-center gap-3 rounded-xl transition-all duration-200 active:scale-95 focus:outline-none focus-visible:ring-2 focus-visible:ring-primary-navy focus-visible:ring-offset-2 border-l-[3px] border-transparent transition-colors duration-200';
+    'flex items-center gap-3 rounded-xl transition-all duration-200 active:scale-95 focus:outline-none focus-visible:ring-2 focus-visible:ring-white/50 focus-visible:ring-offset-2 focus-visible:ring-offset-[#041e30] border-l-[3px] border-transparent transition-colors duration-200';
   const linkCollapsed = 'justify-center px-0 py-0 w-12 h-12 min-w-[48px] hover:scale-105';
   const linkExpanded = 'justify-start px-3 py-2.5 w-full';
   const activeClass =
-    'bg-primary-navy/10 text-primary-navy border-primary-navy font-medium';
-  const inactiveClass = 'text-gray-600 hover:bg-gray-200/80 hover:text-gray-900';
+    'bg-primary-navy/90 text-white border-primary-blue-400 font-medium shadow-[inset_3px_0_0_0_#4d8ec7]';
+  const inactiveClass = 'text-slate-400 hover:bg-white/5 hover:text-slate-200';
 
   const renderItem = (item) => (
     <NavLink
@@ -108,7 +108,7 @@ export default function Sidebar({
       title={!expanded ? 'Profile' : undefined}
       aria-label="Profile"
     >
-      <span className={`relative flex shrink-0 items-center justify-center rounded-full overflow-hidden bg-gray-300 text-gray-600 text-sm font-medium ${expanded ? 'w-8 h-8 min-w-[32px] min-h-[32px]' : 'w-9 h-9 min-w-[36px] min-h-[36px]'}`}>
+      <span className={`relative flex shrink-0 items-center justify-center rounded-full overflow-hidden bg-white/20 text-slate-200 text-sm font-medium ${expanded ? 'w-8 h-8 min-w-[32px] min-h-[32px]' : 'w-9 h-9 min-w-[36px] min-h-[36px]'}`}>
         {showAvatar ? (
           <img
             src={user.avatarUrl}
@@ -139,15 +139,15 @@ export default function Sidebar({
       <aside
         className={`
           fixed inset-y-0 left-0 z-30 flex flex-col max-w-[85vw] lg:max-w-none
-          bg-gray-50/95 backdrop-blur border-r border-gray-200
+          bg-sidebar-blue border-r border-white/10
           transform transition-[transform,width] duration-200 ease-out
           lg:transform-none
           ${width}
           ${sidebarOpen ? 'translate-x-0' : '-translate-x-full lg:translate-x-0'}
         `}
-        style={{ boxShadow: '2px 0 12px rgba(0,0,0,0.04)' }}
+        style={{ boxShadow: '1px 0 0 0 rgba(255,255,255,0.04), 8px 0 32px rgba(0,0,0,0.16)' }}
       >
-        <div className="flex items-center justify-between shrink-0 p-2 sm:p-3 border-b border-gray-200">
+        <div className="flex items-center justify-between shrink-0 px-3 py-3.5 border-b border-white/10">
           <div className={`flex items-center min-w-0 shrink-0 ${expanded ? 'gap-2' : 'flex-1 justify-center min-w-0 overflow-hidden'}`}>
             <Link
               to="/webinar"
@@ -162,10 +162,10 @@ export default function Sidebar({
             </Link>
             {expanded && (
               <div className="flex flex-col min-w-0 hidden lg:block">
-                <span className="text-xs font-semibold text-gray-500 uppercase tracking-wider">
+                <span className="text-[11px] font-semibold text-white/95 uppercase tracking-[0.05em]">
                   All sessions ({SESSIONS.length})
                 </span>
-                <p className="text-[11px] text-gray-600 mt-0.5">
+                <p className="text-xs text-slate-400 mt-1">
                   {completedSessions.length} completed
                 </p>
               </div>
@@ -175,7 +175,7 @@ export default function Sidebar({
             <button
               type="button"
               onClick={() => setExpanded((e) => !e)}
-              className="hidden lg:flex p-2 rounded-lg text-gray-500 hover:bg-gray-200 hover:text-gray-800 transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-primary-navy/50"
+              className="hidden lg:flex p-2 rounded-lg text-slate-400 hover:bg-white/5 hover:text-slate-200 transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-white/50 focus-visible:ring-offset-2 focus-visible:ring-offset-sidebar-blue"
               aria-label={expanded ? 'Collapse sidebar' : 'Expand sidebar'}
               title={expanded ? 'Collapse' : 'Expand'}
             >
@@ -184,7 +184,7 @@ export default function Sidebar({
             <button
               type="button"
               onClick={() => setSidebarOpen(false)}
-              className="lg:hidden p-2 rounded-lg text-gray-600 hover:bg-gray-200 transition-colors min-h-[44px] min-w-[44px] flex items-center justify-center focus:outline-none focus-visible:ring-2 focus-visible:ring-primary-navy focus-visible:ring-offset-2"
+              className="lg:hidden p-2 rounded-lg text-slate-400 hover:bg-white/5 hover:text-slate-200 transition-colors min-h-[44px] min-w-[44px] flex items-center justify-center focus:outline-none focus-visible:ring-2 focus-visible:ring-white/50 focus-visible:ring-offset-2 focus-visible:ring-offset-sidebar-blue"
               aria-label="Close menu"
             >
               <HiXIcon className="w-5 h-5" />
@@ -196,24 +196,24 @@ export default function Sidebar({
           {expanded ? (
             <>
               <div className="flex-1 min-h-0 flex flex-col overflow-hidden">
-                <div className="shrink-0 px-2 xl:px-3 2xl:px-3 pt-2 pb-1.5">
+                <div className="shrink-0 px-3 pt-3 pb-2">
                   <label htmlFor="sidebar-search" className="sr-only">Search sessions</label>
                   <div className="relative">
-                    <FiSearch className="absolute left-2.5 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400 pointer-events-none" aria-hidden />
+                    <FiSearch className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400 pointer-events-none" aria-hidden />
                     <input
                       id="sidebar-search"
                       type="search"
                       placeholder="Search sessions..."
                       value={searchInput}
                       onChange={(e) => setSearchInput(e.target.value)}
-                      className="w-full pl-8 pr-3 py-2 rounded-lg border border-gray-200 bg-white text-sm text-gray-800 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-primary-navy/50 focus:border-primary-navy"
+                      className="w-full pl-9 pr-3 py-2.5 rounded-xl border border-white/20 bg-white/10 text-sm text-white placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-primary-blue-400/50 focus:border-primary-blue-400/40 focus:bg-white/12 transition-colors"
                       aria-label="Search sessions"
                     />
                   </div>
                 </div>
-                <div className="flex-1 overflow-y-auto min-h-0 py-2 px-2 xl:px-3 2xl:px-3 space-y-2">
+                <div className="flex-1 overflow-y-auto min-h-0 py-1 px-3 pb-3 space-y-2.5">
                   {filteredSessions.length === 0 ? (
-                    <p className="text-sm text-gray-500 py-4 text-center">No sessions match your search.</p>
+                    <p className="text-sm text-slate-400 py-4 text-center">No sessions match your search.</p>
                   ) : (
                   filteredSessions.map((session) => (
                     <SessionCard
@@ -228,13 +228,14 @@ export default function Sidebar({
                       }
                       isLocked={!isDayUnlocked(session.dayId)}
                       onClick={handleSelectSession}
+                      darkVariant
                     />
                   ))
                   )}
                 </div>
               </div>
 
-              <div className="shrink-0 px-3 border-t border-gray-200 pt-3 pb-4">
+              <div className="shrink-0 px-3 border-t border-white/10 pt-3 pb-4">
                 <div className="flex flex-col gap-1">
                   {USER_ITEMS.map((item) =>
                     item.id === 'profile' ? renderProfileItem() : renderItem(item)
@@ -244,7 +245,7 @@ export default function Sidebar({
             </>
           ) : (
             <div className="flex-1 flex flex-col justify-center min-h-0 py-4 px-3">
-              <div className="mt-auto shrink-0 pt-4 border-t border-gray-200">
+              <div className="mt-auto shrink-0 pt-4 border-t border-white/10">
                 <div className="flex flex-col gap-1">
                   {USER_ITEMS.map((item) =>
                     item.id === 'profile' ? renderProfileItem() : renderItem(item)

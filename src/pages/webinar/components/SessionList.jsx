@@ -7,60 +7,91 @@ export function SessionCard({
   progress,
   isLocked,
   onClick,
+  darkVariant = false,
 }) {
+  const activeClass = 'bg-primary-navy text-white border-primary-navy shadow-sm';
+  const activeDarkClass =
+    'bg-primary-navy text-white border-primary-blue-400/50 shadow-[0_2px_8px_rgba(0,0,0,0.25),inset_3px_0_0_0_#4d8ec7]';
+  const lockedClass = darkVariant
+    ? 'bg-white/[0.06] border-white/10 text-slate-500 opacity-70 cursor-not-allowed'
+    : 'bg-gray-50 border-gray-200 opacity-60 cursor-not-allowed';
+  const inactiveClass = darkVariant
+    ? 'bg-white/[0.08] border-white/10 text-white hover:bg-white/[0.12] hover:border-white/20 focus-visible:bg-white/[0.12]'
+    : 'bg-white border-gray-200 hover:border-gray-300 hover:shadow-sm hover:bg-gray-50/60';
+
+  const isDarkActive = darkVariant && isActive;
+
   return (
     <button
       type="button"
       onClick={() => !isLocked && onClick(session.id)}
       disabled={isLocked}
       className={`
-        w-full text-left flex items-center gap-3 p-3 rounded-xl border transition-all duration-200
+        w-full text-left flex items-center gap-3 rounded-xl border transition-all duration-200
         focus:outline-none focus-visible:ring-2 focus-visible:ring-primary-navy focus-visible:ring-offset-2
-        ${isActive
-          ? 'bg-primary-navy text-white border-primary-navy shadow-sm'
-          : isLocked
-            ? 'bg-gray-50 border-gray-200 opacity-60 cursor-not-allowed'
-            : 'bg-white border-gray-200 hover:border-gray-300 hover:shadow-sm hover:bg-gray-50/60'
-        }
+        ${darkVariant ? 'focus-visible:ring-offset-sidebar-blue focus-visible:ring-white/50 p-3.5' : 'p-3'}
+        ${isActive ? (darkVariant ? activeDarkClass : activeClass) : isLocked ? lockedClass : inactiveClass}
       `}
     >
       {/* Thumbnail */}
-      <div className="w-12 h-12 rounded-lg overflow-hidden bg-gray-200 shrink-0 relative">
+      <div
+        className={`
+          w-12 h-12 rounded-lg overflow-hidden shrink-0 relative
+          ${darkVariant && !isActive ? 'bg-white/10 ring-1 ring-white/10' : 'bg-gray-200'}
+          ${isDarkActive ? 'ring-2 ring-white/20' : ''}
+        `}
+      >
         {session.thumbnail ? (
           <img src={session.thumbnail} alt="" className="w-full h-full object-cover" />
         ) : (
-          <div className={`w-full h-full flex items-center justify-center ${isActive ? 'bg-white/10' : 'bg-gray-100'}`}>
-            <FiPlay className={`w-4 h-4 ${isActive ? 'text-white/60' : 'text-gray-400'}`} aria-hidden />
+          <div className={`w-full h-full flex items-center justify-center ${isActive ? 'bg-white/10' : darkVariant ? 'bg-white/10' : 'bg-gray-100'}`}>
+            <FiPlay className={`w-4 h-4 ${isActive || darkVariant ? 'text-white/60' : 'text-gray-400'}`} aria-hidden />
           </div>
         )}
         {/* Progress bar overlay */}
         {!isLocked && !isCompleted && progress > 0 && progress < 100 && (
-          <div className="absolute bottom-0 left-0 right-0 h-1 bg-black/20">
-            <div className="h-full bg-amber-400" style={{ width: `${progress}%` }} />
+          <div className="absolute bottom-0 left-0 right-0 h-0.5 bg-black/30 rounded-b-lg overflow-hidden">
+            <div className="h-full bg-accent-gold transition-all duration-300" style={{ width: `${progress}%` }} />
           </div>
         )}
       </div>
 
       {/* Text */}
       <div className="min-w-0 flex-1">
-        <p className={`text-sm font-semibold leading-tight truncate ${isActive ? 'text-white' : 'text-gray-900'}`}>
+        <p
+          className={`
+            text-sm font-semibold leading-tight truncate tracking-tight
+            ${isActive || darkVariant ? 'text-white' : 'text-gray-900'}
+          `}
+        >
           {session.title}
         </p>
-        <p className={`text-xs mt-0.5 ${isActive ? 'text-white/70' : 'text-gray-500'}`}>
+        <p
+          className={`
+            text-xs mt-1
+            ${isActive ? 'text-white/70' : darkVariant ? 'text-slate-400' : 'text-gray-500'}
+          `}
+        >
           {session.duration}
         </p>
       </div>
 
       {/* Status icon */}
-      <div className="shrink-0">
+      <div className="shrink-0 flex items-center justify-center w-6 h-6">
         {isLocked ? (
-          <FiLock className="w-4 h-4 text-gray-400" aria-label="Locked" />
+          <FiLock className={`w-4 h-4 ${darkVariant ? 'text-slate-500' : 'text-gray-400'}`} aria-label="Locked" />
         ) : isCompleted ? (
-          <FiCheckCircle className={`w-5 h-5 ${isActive ? 'text-white/80' : 'text-green-600'}`} aria-label="Completed" />
+          <FiCheckCircle className={`w-5 h-5 ${isActive ? 'text-white/90' : 'text-accent-green'}`} aria-label="Completed" />
         ) : progress > 0 ? (
-          <span className={`w-5 h-5 rounded-full border-2 ${isActive ? 'border-white/60 border-t-transparent' : 'border-amber-500 border-t-transparent'} animate-spin inline-block`} aria-label="In progress" />
+          <span
+            className={`w-5 h-5 rounded-full border-2 border-t-transparent animate-spin inline-block ${isActive ? 'border-white/70' : 'border-accent-gold'}`}
+            aria-label="In progress"
+          />
         ) : (
-          <span className={`w-4 h-4 rounded-full border-2 inline-block ${isActive ? 'border-white/40' : 'border-gray-300'}`} aria-label="Not started" />
+          <span
+            className={`w-4 h-4 rounded-full border-2 inline-block ${isActive ? 'border-white/50' : darkVariant ? 'border-slate-500' : 'border-gray-300'}`}
+            aria-label="Not started"
+          />
         )}
       </div>
     </button>
@@ -75,11 +106,13 @@ export default function SessionList({
   sessionProgress,
   isDayUnlocked,
   activeDay,
+  embedded = false,
 }) {
   const completedCount = sessions.filter((s) => completedSessions.includes(s.id)).length;
+  const wrapperClass = embedded ? '' : 'rounded-2xl bg-white border border-gray-200 shadow-card overflow-hidden transition-shadow duration-200 hover:shadow-card-hover';
 
   return (
-    <div className="rounded-2xl bg-white border border-gray-200 shadow-sm overflow-hidden transition-shadow duration-200 hover:shadow-md">
+    <div className={wrapperClass}>
       {/* Header */}
       <div className="px-4 py-3.5 border-b border-gray-100 flex items-center justify-between gap-2">
         <div className="flex items-center gap-2.5">

@@ -145,7 +145,7 @@ export default function NotesPanel({ sessionId }) {
 
   if (!sessionId) {
     return (
-      <div className="rounded-2xl bg-white border border-gray-200 shadow-sm p-5">
+      <div className="rounded-2xl bg-white border border-gray-100 shadow-sm p-5">
         <h3 className="text-xs font-semibold uppercase tracking-widest text-gray-500">My notes</h3>
         <p className="text-sm text-gray-400 mt-2">Select a session to view or add notes.</p>
       </div>
@@ -153,7 +153,7 @@ export default function NotesPanel({ sessionId }) {
   }
 
   return (
-    <div className="rounded-2xl bg-white border border-gray-200 shadow-sm overflow-hidden transition-shadow duration-200 hover:shadow-md">
+    <div className="rounded-2xl bg-white border border-gray-100 shadow-sm overflow-hidden">
       {/* Header */}
       <div className="border-b border-gray-100 px-5 py-3.5 flex items-center justify-between">
         <h3 className="text-xs font-semibold uppercase tracking-widest text-gray-500">My notes</h3>

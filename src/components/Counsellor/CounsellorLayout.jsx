@@ -26,6 +26,7 @@ import { formatAnnouncementDescription } from '../../utils/formatAnnouncementDes
 import NotificationDropdown from './NotificationDropdown';
 import SlideOverPanel from './SlideOverPanel';
 import { ContentSkeleton } from '../UI/Skeleton';
+import TrainingSidebar from './TrainingSidebar';
 
 const primaryNav = [
   { to: '/counsellor/dashboard', label: 'Dashboard', icon: FiLayout },
@@ -52,6 +53,7 @@ const pageMeta = {
   '/counsellor/marketing': { title: 'Marketing', subtitle: 'Reach more students and grow your practice' },
   '/counsellor/college-referrals': { title: 'College Referrals', subtitle: 'Get referral links for partner colleges' },
   '/counsellor/certificate': { title: 'Poster', subtitle: 'Download your certified counsellor poster' },
+  '/counsellor/training': { title: 'Counsellor Training', subtitle: 'Complete modules to earn your certificate' },
   '/counsellor/settings': { title: 'Settings', subtitle: 'Manage your account and preferences' },
   '/counsellor/help': { title: 'Help & Support', subtitle: 'Get in touch with our team' },
 };
@@ -230,6 +232,11 @@ export default function CounsellorLayout() {
                 </NavLink>
               ))}
             </div>
+          </div>
+
+          {/* Counsellor Training */}
+          <div className="min-h-0 flex flex-col">
+            <TrainingSidebar onCloseSidebar={() => setSidebarOpen(false)} />
           </div>
 
           {/* Account */}

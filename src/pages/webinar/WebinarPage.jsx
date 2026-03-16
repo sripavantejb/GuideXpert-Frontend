@@ -5,7 +5,6 @@ import VideoPlayer from './components/VideoPlayer';
 import StatsBar from './components/StatsBar';
 import SessionList from './components/SessionList';
 import DescriptionCard from './components/DescriptionCard';
-import ProfileCard from './components/ProfileCard';
 import ProgressIndicator from './components/ProgressIndicator';
 import NotesPanel from './components/NotesPanel';
 import { DAYS, SESSIONS, getSessionById, getSessionsByDay } from './data/mockWebinarData';
@@ -159,10 +158,9 @@ export default function WebinarPage() {
 
         {/* Main grid */}
         <div className="flex-1 grid grid-cols-1 lg:grid-cols-12 gap-4 sm:gap-5 p-4 sm:p-5 overflow-auto min-h-0">
-          {/* Left column */}
+          {/* Left column: one session card (video + stats + description) */}
           <div className="lg:col-span-8 flex flex-col gap-4 sm:gap-5">
-            {/* Video + StatsBar */}
-            <div className="rounded-2xl bg-white border border-gray-200 shadow-sm overflow-hidden p-0 sm:p-5 transition-shadow duration-200 hover:shadow-md">
+            <div className="rounded-2xl bg-white border border-gray-200 shadow-card overflow-hidden transition-shadow duration-200 hover:shadow-card-hover">
               <VideoPlayer
                 session={activeSession}
                 initialPosition={activeSessionId ? playbackPosition[activeSessionId] : 0}
@@ -173,51 +171,61 @@ export default function WebinarPage() {
                 onToggleBookmark={() => activeSessionId && toggleBookmark(activeSessionId)}
               />
               {activeSession && (
-                <div className="px-4 sm:px-0">
-                  <StatsBar
-                    type={activeSession.type}
-                    duration={activeSession.duration}
-                    totalDuration={`${getSessionsByDay(activeSession.dayId).reduce((a, s) => a + s.durationMinutes, 0)}m`}
-                    status={
-                      completedSessions.includes(activeSession.id)
-                        ? 'Completed'
-                        : sessionProgress[activeSession.id] > 0
-                          ? 'In Progress'
-                          : 'Not started'
-                    }
-                  />
+                <>
+                  <div className="border-t border-gray-100 px-4 sm:px-5 py-4">
+                    <StatsBar
+                      type={activeSession.type}
+                      duration={activeSession.duration}
+                      totalDuration={`${getSessionsByDay(activeSession.dayId).reduce((a, s) => a + s.durationMinutes, 0)}m`}
+                      status={
+                        completedSessions.includes(activeSession.id)
+                          ? 'Completed'
+                          : sessionProgress[activeSession.id] > 0
+                            ? 'In Progress'
+                            : 'Not started'
+                      }
+                    />
+                  </div>
+                  <div className="border-t border-gray-100 px-4 sm:px-5 py-4">
+                    <DescriptionCard session={activeSession} embedded />
+                  </div>
+                </>
+              )}
+              {!activeSession && (
+                <div className="border-t border-gray-100 px-4 sm:px-5 py-4">
+                  <DescriptionCard session={null} embedded />
                 </div>
               )}
             </div>
 
-            <DescriptionCard session={activeSession} />
             <NotesPanel sessionId={activeSessionId} />
           </div>
 
-          {/* Right column */}
-          <div className="lg:col-span-4 flex flex-col gap-4 sm:gap-5">
-            <SessionList
-              sessions={sessionsForDay}
-              activeSessionId={activeSessionId}
-              onSelectSession={setActiveSessionId}
-              completedSessions={completedSessions}
-              sessionProgress={sessionProgress}
-              isDayUnlocked={isDayUnlocked}
-              activeDay={activeDay}
-            />
-            <ProfileCard
-              completedPercent={overallPercent}
-              totalSessions={totalSessionsCount}
-              completedSessions={overallCompleted}
-            />
-            <ProgressIndicator
-              completedPercent={overallPercent}
-              days={DAYS}
-              completedCountForDay={completedCountForDay}
-              totalSessionsForDay={(dayId) => getSessionsByDay(dayId).length}
-              totalCompleted={overallCompleted}
-              totalSessions={totalSessionsCount}
-            />
+          {/* Right column: one panel (sessions + progress + profile) */}
+          <div className="lg:col-span-4 flex flex-col">
+            <div className="rounded-2xl border border-gray-200 shadow-card bg-white overflow-hidden flex flex-col">
+              <SessionList
+                sessions={sessionsForDay}
+                activeSessionId={activeSessionId}
+                onSelectSession={setActiveSessionId}
+                completedSessions={completedSessions}
+                sessionProgress={sessionProgress}
+                isDayUnlocked={isDayUnlocked}
+                activeDay={activeDay}
+                embedded
+              />
+              <div className="border-t border-gray-100">
+                <ProgressIndicator
+                  completedPercent={overallPercent}
+                  days={DAYS}
+                  completedCountForDay={completedCountForDay}
+                  totalSessionsForDay={(dayId) => getSessionsByDay(dayId).length}
+                  totalCompleted={overallCompleted}
+                  totalSessions={totalSessionsCount}
+                  embedded
+                />
+              </div>
+            </div>
           </div>
         </div>
 
@@ -228,7 +236,7 @@ export default function WebinarPage() {
           </div>
         )}
         {overallPercent === 100 && (
-          <div className="mx-4 sm:mx-5 mb-4 sm:mb-5 px-4 py-2.5 rounded-xl text-sm font-semibold text-center bg-green-50 border border-green-200 text-green-800">
+          <div className="mx-4 sm:mx-5 mb-4 sm:mb-5 px-4 py-2.5 rounded-xl text-sm font-semibold text-center bg-accent-green/10 border border-accent-green/30 text-accent-green">
             All sessions complete — your certificate is ready to download!
           </div>
         )}

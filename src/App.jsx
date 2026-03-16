@@ -4,6 +4,7 @@ import { AuthProvider, useAuth } from './contexts/AuthContext';
 import { CounsellorAuthProvider, useCounsellorAuth } from './contexts/CounsellorAuthContext';
 import { WebinarAuthProvider, useWebinarAuth } from './contexts/WebinarAuthContext';
 import { CounsellorProfileProvider } from './contexts/CounsellorProfileContext';
+import { CounsellorTrainingProvider } from './contexts/CounsellorTrainingContext';
 import LandingPage from './pages/LandingPage';
 import AdminLogin from './pages/AdminLogin';
 import MeetingRegistration from './pages/MeetingRegistration';
@@ -51,6 +52,7 @@ const CollegeReferralDetail = lazy(() => import('./pages/counsellor/CollegeRefer
 const AnnouncementsFeed = lazy(() => import('./pages/counsellor/AnnouncementsFeed'));
 const CounsellorSettings = lazy(() => import('./pages/counsellor/Settings'));
 const CounsellorHelp = lazy(() => import('./pages/counsellor/Help'));
+const CounsellorTraining = lazy(() => import('./pages/counsellor/Training'));
 const WebinarLayout = lazy(() => import('./pages/webinar/WebinarLayout'));
 const WebinarDashboard = lazy(() => import('./pages/webinar/WebinarDashboard'));
 const ProgressPage = lazy(() => import('./pages/webinar/ProgressPage'));
@@ -146,7 +148,7 @@ function App() {
 
           {/* Counsellor Portal */}
           <Route path="/counsellor/login" element={<CounsellorLogin />} />
-          <Route path="/counsellor" element={<ProtectedCounsellor><CounsellorProfileProvider><CounsellorLayout /></CounsellorProfileProvider></ProtectedCounsellor>}>
+          <Route path="/counsellor" element={<ProtectedCounsellor><CounsellorProfileProvider><CounsellorTrainingProvider><CounsellorLayout /></CounsellorTrainingProvider></CounsellorProfileProvider></ProtectedCounsellor>}>
             <Route index element={<Navigate to="/counsellor/dashboard" replace />} />
             <Route path="dashboard" element={<ErrorBoundary><Suspense fallback={<div className="h-64 flex items-center justify-center p-4"><PageSkeleton /></div>}><CounsellorDashboard /></Suspense></ErrorBoundary>} />
             <Route path="students" element={<ErrorBoundary><Suspense fallback={<div className="h-64 flex items-center justify-center p-4"><PageSkeleton /></div>}><CounsellorStudents /></Suspense></ErrorBoundary>} />
@@ -158,6 +160,7 @@ function App() {
             <Route path="college-referrals" element={<ErrorBoundary><Suspense fallback={<div className="h-64 flex items-center justify-center p-4"><PageSkeleton /></div>}><CollegeReferrals /></Suspense></ErrorBoundary>} />
             <Route path="college-referrals/:collegeSlug" element={<ErrorBoundary><Suspense fallback={<div className="h-64 flex items-center justify-center p-4"><PageSkeleton /></div>}><CollegeReferralDetail /></Suspense></ErrorBoundary>} />
             <Route path="announcements-feed" element={<ErrorBoundary><Suspense fallback={<div className="h-64 flex items-center justify-center p-4"><PageSkeleton /></div>}><AnnouncementsFeed /></Suspense></ErrorBoundary>} />
+            <Route path="training" element={<ErrorBoundary><Suspense fallback={<div className="h-64 flex items-center justify-center p-4"><PageSkeleton /></div>}><CounsellorTraining /></Suspense></ErrorBoundary>} />
             <Route path="settings" element={<ErrorBoundary><Suspense fallback={<div className="h-64 flex items-center justify-center p-4"><PageSkeleton /></div>}><CounsellorSettings /></Suspense></ErrorBoundary>} />
             <Route path="help" element={<ErrorBoundary><Suspense fallback={<div className="h-64 flex items-center justify-center p-4"><PageSkeleton /></div>}><CounsellorHelp /></Suspense></ErrorBoundary>} />
           </Route>

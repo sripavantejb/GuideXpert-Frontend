@@ -23,7 +23,7 @@ export default {
           },
         },
         sidebar: {
-          blue: '#1d4ed8',
+          blue: '#041e30',
           bg: '#0f172a',
         },
         accent: {
@@ -32,7 +32,8 @@ export default {
             500: '#f59e0b',
             600: '#d97706',
           },
-          gold: '#fbbf24',
+          gold: '#d97706',
+          green: '#15803d',
         },
       },
       boxShadow: {

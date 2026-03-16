@@ -2,16 +2,18 @@ import { FiFileText, FiTarget, FiBookOpen, FiAlertCircle, FiTag } from 'react-ic
 
 const SECTION_META = {
   'Start point':         { icon: FiTarget,      accent: 'bg-primary-navy/8 text-primary-navy border-primary-navy/15' },
-  'Key topics covered':  { icon: FiTag,         accent: 'bg-violet-50 text-violet-700 border-violet-200/60' },
-  'Learning outcome':    { icon: FiBookOpen,     accent: 'bg-emerald-50 text-emerald-700 border-emerald-200/60' },
-  'Important notes':     { icon: FiAlertCircle, accent: 'bg-amber-50 text-amber-800 border-amber-200/60' },
+  'Key topics covered':  { icon: FiTag,         accent: 'bg-primary-blue-50 text-primary-navy border-primary-blue-200/60' },
+  'Learning outcome':    { icon: FiBookOpen,   accent: 'bg-accent-green/10 text-accent-green border-accent-green/20' },
+  'Important notes':     { icon: FiAlertCircle, accent: 'bg-accent-gold/10 text-accent-gold border-accent-gold/20' },
 };
 
-export default function DescriptionCard({ session }) {
+export default function DescriptionCard({ session, embedded = false }) {
+  const cardWrapper = embedded ? '' : 'rounded-2xl bg-white border border-gray-200 shadow-card overflow-hidden transition-shadow duration-200 hover:shadow-card-hover';
+
   if (!session?.description) {
     return (
-      <div className="rounded-2xl bg-white border border-gray-200 shadow-sm overflow-hidden transition-shadow duration-200 hover:shadow-md">
-        <div className="px-5 py-3.5 border-b border-gray-100 flex items-center gap-2.5">
+      <div className={cardWrapper}>
+        <div className={`flex items-center gap-2.5 ${embedded ? 'pt-0' : 'px-5 py-3.5 border-b border-gray-100'}`}>
           <FiFileText className="w-4 h-4 text-primary-navy" aria-hidden />
           <h2 className="text-xs font-semibold uppercase tracking-widest text-gray-500">Description</h2>
         </div>
@@ -41,15 +43,15 @@ export default function DescriptionCard({ session }) {
   ].filter((s) => s.content || (s.chips && s.chips.length > 0));
 
   return (
-    <div className="rounded-2xl bg-white border border-gray-200 shadow-sm overflow-hidden transition-shadow duration-200 hover:shadow-md">
+    <div className={cardWrapper}>
       {/* Header */}
-      <div className="px-5 py-3.5 border-b border-gray-100 flex items-center gap-2.5">
+      <div className={`flex items-center gap-2.5 ${embedded ? 'pt-0 pb-2' : 'px-5 py-3.5 border-b border-gray-100'}`}>
         <FiFileText className="w-4 h-4 text-primary-navy" aria-hidden />
         <h2 className="text-xs font-semibold uppercase tracking-widest text-gray-500">Description</h2>
       </div>
 
       {/* Sections */}
-      <div className="overflow-y-auto max-h-[300px] sm:max-h-[340px] p-5 space-y-4">
+      <div className={`overflow-y-auto max-h-[300px] sm:max-h-[340px] space-y-4 ${embedded ? 'pt-0' : 'p-5'}`}>
         {sections.map((section, i) => {
           const meta = SECTION_META[section.label] || {
             icon: FiFileText,
@@ -72,7 +74,7 @@ export default function DescriptionCard({ session }) {
                   {section.chips.map((topic, j) => (
                     <span
                       key={j}
-                      className="inline-flex px-3 py-1 rounded-lg bg-white/80 text-violet-900 text-xs font-semibold border border-violet-200/80 shadow-sm"
+                      className="inline-flex px-3 py-1 rounded-lg bg-white/80 text-primary-navy text-xs font-semibold border border-primary-blue-200/80 shadow-sm"
                     >
                       {topic}
                     </span>

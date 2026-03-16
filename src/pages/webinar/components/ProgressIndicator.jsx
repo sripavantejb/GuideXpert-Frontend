@@ -7,8 +7,10 @@ export default function ProgressIndicator({
   totalSessionsForDay,
   totalCompleted = 0,
   totalSessions = 0,
+  embedded = false,
 }) {
   const segmentLength = 100 / 3;
+  const wrapperClass = embedded ? '' : 'rounded-2xl overflow-hidden border border-gray-200 shadow-card bg-white transition-all duration-200 hover:shadow-card-hover';
 
   const segments = days.map((day) => {
     const completed = completedCountForDay(day.id) ?? 0;
@@ -25,9 +27,9 @@ export default function ProgressIndicator({
   const isFullComplete = completedPercent >= 100;
 
   return (
-    <div className="rounded-2xl overflow-hidden border border-gray-200 shadow-sm bg-white transition-all duration-200 hover:shadow-md">
+    <div className={wrapperClass}>
       {/* Header with subtle gradient accent */}
-      <div className="px-5 pt-5 pb-1">
+      <div className={`px-5 pb-1 ${embedded ? 'pt-4' : 'pt-5'}`}>
         <div className="flex items-center justify-between gap-3 w-full">
           <h3 className="text-xs font-semibold uppercase tracking-widest text-gray-500">
             Course progress overview
@@ -69,7 +71,7 @@ export default function ProgressIndicator({
                         ? 'url(#progressGradient)'
                         : '#003366'
                       : seg.status === 'pending'
-                        ? '#f59e0b'
+                        ? '#d97706'
                         : '#e5e7eb'
                   }
                   strokeWidth="2.5"
@@ -106,16 +108,16 @@ export default function ProgressIndicator({
                   key={day.id}
                   className={`flex items-center justify-between gap-3 px-3 py-2 rounded-xl border transition-colors ${
                     isDone
-                      ? 'bg-green-50/80 border-green-200/60'
+                      ? 'bg-accent-green/10 border-accent-green/20'
                       : isPending
-                        ? 'bg-amber-50/80 border-amber-200/60'
+                        ? 'bg-accent-gold/10 border-accent-gold/20'
                         : 'bg-gray-50 border-gray-100'
                   }`}
                 >
                   <div className="flex items-center gap-2.5 min-w-0">
                     <span
                       className={`flex-shrink-0 w-7 h-7 rounded-lg flex items-center justify-center ${
-                        isDone ? 'bg-green-100 text-green-700' : isPending ? 'bg-amber-100 text-amber-700' : 'bg-gray-200 text-gray-400'
+                        isDone ? 'bg-accent-green/20 text-accent-green' : isPending ? 'bg-accent-gold/20 text-accent-gold' : 'bg-gray-200 text-gray-400'
                       }`}
                     >
                       {isDone ? (
@@ -137,12 +139,12 @@ export default function ProgressIndicator({
           {/* Status badges */}
           <div className="flex flex-wrap gap-2 mt-4 justify-center items-center">
             {completedCount > 0 && (
-              <span className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-green-100 text-green-800 text-xs font-semibold border border-green-200/80">
+              <span className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-accent-green/10 text-accent-green text-xs font-semibold border border-accent-green/20">
                 <FiCheck className="w-3.5 h-3.5" aria-hidden /> Done
               </span>
             )}
             {pendingCount > 0 && (
-              <span className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-amber-100 text-amber-800 text-xs font-semibold border border-amber-200/80">
+              <span className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-accent-gold/10 text-accent-gold text-xs font-semibold border border-accent-gold/20">
                 In progress
               </span>
             )}

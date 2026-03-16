@@ -2,11 +2,8 @@ import { useState, useEffect, useCallback } from 'react';
 import VideoPlayer from './components/VideoPlayer';
 import StatsBar from './components/StatsBar';
 import DescriptionCard from './components/DescriptionCard';
-import ProfileCard from './components/ProfileCard';
 import ProgressIndicator from './components/ProgressIndicator';
-import LearningStatsCard from './components/LearningStatsCard';
 import CertificateUnlockCard from './components/CertificateUnlockCard';
-import DoubtsDashboardCard from './components/DoubtsDashboardCard';
 import NotesPanel from './components/NotesPanel';
 import { useWebinar } from './context/WebinarContext';
 import {
@@ -14,7 +11,6 @@ import {
   SESSIONS,
   getSessionById,
   getSessionsByDay,
-  DASHBOARD_MOCK,
 } from './data/mockWebinarData';
 
 function formatResumeTime(seconds) {
@@ -104,12 +100,6 @@ export default function WebinarDashboard() {
     [completedSessions]
   );
 
-  const watchTimeMinutes = SESSIONS.filter((s) => completedSessions.includes(s.id)).reduce(
-    (acc, s) => acc + (s.durationMinutes ?? 0),
-    0
-  );
-  const mock = DASHBOARD_MOCK || {};
-
   return (
     <>
       <div className="flex-1 grid grid-cols-1 lg:grid-cols-12 gap-4 sm:gap-5 p-4 sm:p-5 overflow-auto min-h-0">
@@ -177,28 +167,7 @@ export default function WebinarDashboard() {
           />
           </div>
           <div className="xl:col-span-2">
-          <LearningStatsCard
-            totalSessions={totalSessionsCount}
-            completed={overallCompleted}
-            remaining={totalSessionsCount - overallCompleted}
-            watchTimeMinutes={watchTimeMinutes}
-            averageAttendancePercent={mock.averageAttendancePercent}
-            notesCount={mock.notesCount}
-            questionsAsked={doubts?.length ?? 0}
-          />
-          </div>
-          <div className="xl:col-span-2">
           <CertificateUnlockCard
-            completedPercent={overallPercent}
-            totalSessions={totalSessionsCount}
-            completedSessions={overallCompleted}
-          />
-          </div>
-          <div className="xl:col-span-2">
-            <DoubtsDashboardCard questionsCount={doubts?.length ?? 0} />
-          </div>
-          <div className="xl:col-span-2">
-          <ProfileCard
             completedPercent={overallPercent}
             totalSessions={totalSessionsCount}
             completedSessions={overallCompleted}

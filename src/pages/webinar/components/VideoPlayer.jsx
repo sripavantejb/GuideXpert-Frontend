@@ -362,7 +362,7 @@ export default function VideoPlayer({
             {speedOpen && (
               <>
                 <div className="fixed inset-0 z-10" aria-hidden onClick={() => setSpeedOpen(false)} />
-                <div className="absolute bottom-full left-0 mb-1 py-1 bg-gray-800 rounded-lg shadow-lg z-20 min-w-[5rem]">
+                <div className="absolute bottom-full left-0 mb-1 py-1 bg-primary-navy rounded-lg shadow-lg z-20 min-w-[5rem]">
                   {SPEED_OPTIONS.map((s) => (
                     <button
                       key={s}
