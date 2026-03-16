@@ -41,8 +41,6 @@ const secondaryNav = [
   { to: '/counsellor/certificate', label: 'Poster', icon: FiAward },
   { to: '/counsellor/college-referrals', label: 'College Referrals', icon: FiLink },
 ];
-const settingsNav = [{ to: '/counsellor/settings', label: 'Settings', icon: FiSettings }];
-
 const pageMeta = {
   '/counsellor/dashboard': { title: 'Dashboard', subtitle: 'Overview of your counseling practice' },
   '/counsellor/students': { title: 'Students', subtitle: 'Manage student profiles and documents' },
@@ -239,90 +237,69 @@ export default function CounsellorLayout() {
             <TrainingSidebar onCloseSidebar={() => setSidebarOpen(false)} />
           </div>
 
-          {/* Account */}
-          <div>
-            <p className="px-3 mb-2 text-[0.6875rem] font-semibold text-slate-500 uppercase tracking-wider">Account</p>
-            <div className="space-y-0.5">
-              {settingsNav.map(({ to, label, icon: Icon }) => (
-                <NavLink
-                  key={to}
-                  to={to}
-                  onClick={() => setSidebarOpen(false)}
-                  className={({ isActive }) =>
-                    `flex items-center gap-3 px-3 py-2.5 rounded-lg text-[0.8125rem] font-medium transition-all duration-200 ${
-                      isActive
-                        ? 'bg-primary-navy/90 text-white shadow-[inset_3px_0_0_0_#4d8ec7]'
-                        : 'text-slate-400 hover:bg-white/5 hover:text-slate-200'
-                    }`
-                  }
-                >
-                  <Icon className="w-[1.125rem] h-[1.125rem] shrink-0 opacity-90" />
-                  <span>{label}</span>
-                </NavLink>
-              ))}
-            </div>
-          </div>
         </nav>
-
-        {/* Profile footer */}
-        <div className="p-3 border-t border-white/5 mt-auto">
-          <div className="flex items-center gap-3 px-3 py-2.5 rounded-lg bg-white/5">
-            <div className="w-9 h-9 rounded-full bg-primary-navy flex items-center justify-center shrink-0 ring-2 ring-white/10">
-              <span className="text-white text-xs font-semibold">{initials}</span>
-            </div>
-            <div className="min-w-0 flex-1">
-              <p className="text-sm font-semibold text-white truncate">{displayName}</p>
-              <p className="text-[0.6875rem] text-slate-500 font-medium">Counsellor</p>
-            </div>
-          </div>
-        </div>
       </aside>
 
       {/* ── Main Content Area ── */}
       <div className="flex-1 flex flex-col min-w-0 min-h-0 lg:ml-[280px]">
-        {/* Top Header */}
-        <header className="bg-white px-4 lg:px-6 py-3 flex items-center justify-between shrink-0 shadow-header">
-          {/* Left: Mobile toggle + Page title */}
-          <div className="flex items-center gap-3">
-            <button
-              type="button"
-              onClick={() => setSidebarOpen((o) => !o)}
-              className="lg:hidden p-2 rounded-lg text-gray-600 hover:bg-gray-100"
-              aria-label={sidebarOpen ? 'Close menu' : 'Open menu'}
-            >
-              {sidebarOpen ? <HiXIcon className="w-6 h-6" /> : <HiMenuIcon className="w-6 h-6" />}
-            </button>
-            <div className="hidden sm:block">
-              <h1 className="text-lg font-bold text-gray-900 leading-tight">
-                {currentPage.title}
-              </h1>
-              {currentPage.subtitle && (
-                <p className="text-xs text-gray-500 mt-0.5 leading-snug">
-                  {currentPage.subtitle}
-                </p>
-              )}
+        {/* Top Navbar: logo, search, profile/settings */}
+        <header className="bg-white border-b border-gray-200 shrink-0 shadow-sm" role="banner">
+          <div className="flex items-center justify-between gap-3 px-4 lg:px-6 py-3 min-h-[3.25rem]">
+            {/* Left: Mobile menu + Logo + Page title */}
+            <div className="flex items-center gap-3 min-w-0 flex-1">
+              <button
+                type="button"
+                onClick={() => setSidebarOpen((o) => !o)}
+                className="lg:hidden p-2 -ml-1 rounded-lg text-gray-600 hover:bg-gray-100 shrink-0 transition-colors"
+                aria-label={sidebarOpen ? 'Close menu' : 'Open menu'}
+              >
+                {sidebarOpen ? <HiXIcon className="w-6 h-6" /> : <HiMenuIcon className="w-6 h-6" />}
+              </button>
+              <Link
+                to="/counsellor/dashboard"
+                className="shrink-0 flex items-center focus:outline-none focus-visible:ring-2 focus-visible:ring-primary-navy/40 focus-visible:ring-offset-2 rounded"
+                aria-label="GuideXpert Home"
+              >
+                <img
+                  src="https://res.cloudinary.com/dfqdb1xws/image/upload/v1773394005/GuideXpert_Logo_inbaz5.png"
+                  alt="GuideXpert"
+                  className="h-8 w-auto object-contain"
+                />
+              </Link>
+              <div className="hidden sm:block min-w-0 ml-1">
+                <h1 className="text-lg font-bold text-gray-900 leading-tight truncate">
+                  {currentPage.title}
+                </h1>
+                {currentPage.subtitle && (
+                  <p className="text-xs text-gray-500 mt-0.5 leading-snug truncate">
+                    {currentPage.subtitle}
+                  </p>
+                )}
+              </div>
             </div>
-          </div>
 
-          {/* Center: Search Bar */}
-          <div className="hidden md:flex items-center flex-1 max-w-xs mx-6">
-            <div className="relative w-full">
-              <FiSearch className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
-              <input
-                type="text"
-                placeholder="Search students, tools..."
-                className="w-full pl-9 pr-4 py-2 text-sm bg-gray-50 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-sidebar-blue/20 focus:border-sidebar-blue/40 focus:bg-white placeholder:text-gray-400 transition-colors"
-              />
+            {/* Center: Search bar - prominent, professional (visible from sm up) */}
+            <div className="hidden sm:flex items-center flex-1 max-w-md mx-4 min-w-0">
+              <label htmlFor="counsellor-nav-search" className="sr-only">Search</label>
+              <div className="relative w-full">
+                <FiSearch className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400 pointer-events-none" aria-hidden />
+                <input
+                  id="counsellor-nav-search"
+                  type="search"
+                  placeholder="Search students, tools..."
+                  autoComplete="off"
+                  className="w-full pl-9 pr-4 py-2 text-sm bg-gray-50 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-navy/20 focus:border-primary-navy/40 focus:bg-white placeholder:text-gray-400 transition-colors"
+                />
+              </div>
             </div>
-          </div>
 
-          {/* Right: Notifications + Help + Profile */}
-          <div className="flex items-center gap-1.5 relative">
+            {/* Right: Nav items - Notifications, Help, Profile, Settings, Account */}
+            <nav className="flex items-center gap-0.5 relative shrink-0" aria-label="Account and tools">
             {/* Notifications */}
             <button
               type="button"
               onClick={openNotifications}
-              className="relative p-2 rounded-lg text-gray-500 hover:bg-gray-100 hover:text-gray-700 transition-colors"
+              className="relative p-2 rounded-lg text-gray-500 hover:bg-gray-100 hover:text-gray-700 transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-primary-navy/30 focus-visible:ring-offset-2"
               aria-label="Notifications"
               aria-expanded={notificationsOpen}
             >
@@ -352,21 +329,56 @@ export default function CounsellorLayout() {
             <button
               type="button"
               onClick={() => { setProfileOpen(false); navigate('/counsellor/help'); }}
-              className="p-2 rounded-lg text-gray-500 hover:bg-gray-100 hover:text-gray-700 transition-colors hidden sm:block"
+              className="p-2 rounded-lg text-gray-500 hover:bg-gray-100 hover:text-gray-700 transition-colors hidden sm:block focus:outline-none focus-visible:ring-2 focus-visible:ring-primary-navy/30 focus-visible:ring-offset-2"
               aria-label="Help"
             >
               <FiHelpCircle className="w-5 h-5" />
             </button>
 
             {/* Divider */}
-            <div className="w-px h-6 bg-gray-200 mx-1 hidden sm:block" />
+            <div className="w-px h-6 bg-gray-200 mx-0.5 hidden md:block" />
+
+            {/* Profile (nav link) */}
+            <NavLink
+              to="/counsellor/settings"
+              onClick={() => setProfileOpen(false)}
+              className={({ isActive }) =>
+                `flex items-center gap-2 px-2.5 py-1.5 rounded-lg text-sm font-medium transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-primary-navy/30 focus-visible:ring-offset-2 ${
+                  isActive ? 'text-primary-navy bg-primary-navy/10' : 'text-gray-600 hover:bg-gray-100 hover:text-gray-800'
+                }`
+              }
+              aria-label="Profile"
+            >
+              <FiUser className="w-4 h-4 shrink-0" />
+              <span className="hidden md:inline">Profile</span>
+            </NavLink>
+
+            {/* Settings (nav link) */}
+            <NavLink
+              to="/counsellor/settings"
+              onClick={() => setProfileOpen(false)}
+              className={({ isActive }) =>
+                `flex items-center gap-2 px-2.5 py-1.5 rounded-lg text-sm font-medium transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-primary-navy/30 focus-visible:ring-offset-2 ${
+                  isActive ? 'text-primary-navy bg-primary-navy/10' : 'text-gray-600 hover:bg-gray-100 hover:text-gray-800'
+                }`
+              }
+              aria-label="Settings"
+            >
+              <FiSettings className="w-4 h-4 shrink-0" />
+              <span className="hidden md:inline">Settings</span>
+            </NavLink>
+
+            {/* Divider before avatar */}
+            <div className="w-px h-6 bg-gray-200 mx-0.5 hidden sm:block" />
 
             {/* Profile Dropdown */}
             <div className="relative">
               <button
                 type="button"
                 onClick={() => setProfileOpen((o) => !o)}
-                className="flex items-center gap-2.5 px-2 py-1.5 rounded-lg hover:bg-gray-50 transition-colors"
+                className="flex items-center gap-2.5 px-2 py-1.5 rounded-lg hover:bg-gray-50 transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-primary-navy/30 focus-visible:ring-offset-2"
+                aria-label="Account menu"
+                aria-expanded={profileOpen}
               >
                 <div className="w-9 h-9 rounded-full bg-primary-navy flex items-center justify-center ring-2 ring-gray-100">
                   <span className="text-white text-xs font-bold">{initials}</span>
@@ -423,6 +435,7 @@ export default function CounsellorLayout() {
                 </>
               )}
             </div>
+          </nav>
           </div>
         </header>
 
