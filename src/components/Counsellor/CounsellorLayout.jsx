@@ -171,7 +171,7 @@ export default function CounsellorLayout() {
         >
           <div className="w-full flex flex-col items-center justify-center py-3 px-4 gap-1.5">
             <img
-              src="https://res.cloudinary.com/dqataciy5/image/upload/v1769258985/Gemini_Generated_Image_ybdgvrybdgvrybdg_fgmdnj.png"
+              src="https://res.cloudinary.com/dfqdb1xws/image/upload/v1773394005/GuideXpert_Logo_inbaz5.png"
               alt="GuideXpert"
               className="h-8 w-auto object-contain"
             />

@@ -59,6 +59,7 @@ const ProfilePage = lazy(() => import('./pages/webinar/ProfilePage'));
 const SettingsPage = lazy(() => import('./pages/webinar/SettingsPage'));
 const CertificatesPage = lazy(() => import('./pages/webinar/CertificatesPage'));
 const CertificateViewPage = lazy(() => import('./pages/CertificateViewPage'));
+import CollegePredictorPage from './pages/CollegePredictorPage';
 
 function ProtectedAdmin({ children }) {
   const { isAuthenticated } = useAuth();
@@ -99,6 +100,7 @@ function App() {
           <Route path="/holiposter" element={<HoliPosterPage />} />
           <Route path="/interposter" element={<InterPosterPage />} />
           <Route path="/certificate/:id" element={<Suspense fallback={<div className="min-h-screen flex items-center justify-center bg-gray-50"><div className="animate-pulse text-gray-500">Loading...</div></div>}><CertificateViewPage /></Suspense>} />
+          <Route path="/collegepredictor" element={<CollegePredictorPage />} />
           <Route path="/webinar/login" element={<WebinarLogin />} />
           <Route path="/webinar" element={<ProtectedWebinar><Suspense fallback={<div className="min-h-screen flex items-center justify-center bg-gray-50"><div className="animate-pulse text-gray-500">Loading...</div></div>}><WebinarLayout /></Suspense></ProtectedWebinar>}>
             <Route index element={<Suspense fallback={<div className="p-4 animate-pulse text-gray-500">Loading...</div>}><WebinarDashboard /></Suspense>} />

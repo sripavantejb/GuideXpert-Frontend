@@ -10,7 +10,7 @@ const FAQSection = () => {
     },
     {
       title: 'How long does the certification program take?',
-      content: 'The certification program consists of 25 hours of comprehensive training. You can complete it at your own pace, though most counselors finish within 4-6 weeks.',
+      content: 'The certification program consists of 8 hours of comprehensive training. You can complete it at your own pace, though most counselors finish within 4-6 weeks.',
     },
     {
       title: 'What kind of support do I receive?',

@@ -619,11 +619,14 @@ const ApplySection = () => {
           <p className="apply-desc">
             Work from home. Guide students with confidence. Earn income while transforming lives.
           </p>
+          <p className="apply-desc apply-desc-sub">
+            For Professionals from All Backgrounds
+          </p>
 
           <div className="apply-stats">
             <div className="apply-stat">
-              <span className="apply-stat-value apply-stat-value-blue">12L+</span>
-              <span className="apply-stat-label">Students Annually</span>
+              <span className="apply-stat-value apply-stat-value-blue">110+</span>
+              <span className="apply-stat-label">counsellors joined this week</span>
             </div>
             <div className="apply-stat">
               <span className="apply-stat-value apply-stat-value-gold">₹6L</span>

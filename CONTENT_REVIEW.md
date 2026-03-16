@@ -26,9 +26,12 @@ This document contains all text content from the GuideXpert website, organized b
 ### Tagline / Description
 Work from home. Guide students with confidence. Earn income while transforming lives.
 
+### Value Prop (sub-tagline)
+For Professionals from All Backgrounds
+
 ### Statistics Display
-- **12L+** - Students Annually
-- **₹9L** - Earning Potential
+- **110+** - counsellors joined this week
+- **₹6L** - Earning Potential
 - **PAN-India** - Opportunities
 
 ### Feature Cards
@@ -75,6 +78,23 @@ Work from home. Guide students with confidence. Earn income while transforming l
 
 ---
 
+## 2.5. PROBLEM STATEMENT SECTION (after hero)
+
+### Section Header
+Why We Need More Career Counsellors
+
+### Badge Label
+The Gap in India
+
+### Section Description
+India faces a critical shortage of trained career counsellors. Here's the scale of the opportunity.
+
+### Statistics / Statements
+- **15 Lakhs** - Career Counsellors are needed in India
+- **99%** - of schools in India don't have career counsellors
+
+---
+
 ## 3. WHY BECOME A GUIDEXPERT COUNSELOR SECTION
 
 ### Section Header
@@ -98,8 +118,8 @@ Why Join Us
    - Be part of a movement that transforms lives and creates lasting impact.
 
 ### Statistics Display
-- **121+** - Active Counselors
-- **₹75L** - Earning Potential
+- **110+** - counsellors joined this week
+- **₹6L** - Earning Potential
 - **PAN-India** - Presence
 
 ### Call-to-Action Button
@@ -331,9 +351,9 @@ Launch your counseling career today.
 - **Duration:** 3-5 Days
 - **Process:** Agreement signing and platform onboarding
 
-#### Step 4: 25-Hour Training
-- **Description:** Complete our comprehensive 25-hour training program.
-- **Duration:** 25 Hours
+#### Step 4: 8-Hour Training
+- **Description:** Complete our comprehensive 8-hour training program.
+- **Duration:** 8 Hours
 - **Format:** Online + Practical sessions
 
 #### Step 5: Get Certified!
@@ -369,7 +389,7 @@ Find answers to common questions about becoming a GuideXpert Counselor.
 A: To become a GuideXpert Counselor, you should have a passion for helping students, relevant educational background or experience in counseling, and the ability to commit to our training program. No prior certification is required.
 
 **Q2: How long does the certification program take?**
-A: The certification program consists of 25 hours of comprehensive training. You can complete it at your own pace, though most counselors finish within 4-6 weeks.
+A: The certification program consists of 8 hours of comprehensive training. You can complete it at your own pace, though most counselors finish within 4-6 weeks.
 
 **Q3: What kind of support do I receive?**
 A: As a GuideXpert Counselor, you receive ongoing support including access to our counselor toolkit, marketing assistance, performance dashboards, and a dedicated support team to help you succeed.
@@ -400,8 +420,6 @@ Our Legacy
 GuideXpert has a strong track record of empowering students and counselors alike, with a legacy built on trust, innovation, and measurable excellence.
 
 ### Statistics Display
-- **1,700+** - Students Guided
-- **1,000+** - Success Stories
 - **100+** - Certified Counselors
 
 ### Industry Veterans Section

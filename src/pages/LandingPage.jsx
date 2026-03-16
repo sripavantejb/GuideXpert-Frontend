@@ -5,6 +5,7 @@ import ApplySection from '../components/Sections/ApplySection';
 import LoadingFallback from '../components/UI/LoadingFallback';
 import { ApplyModalProvider } from '../contexts/ApplyModalContext';
 
+const ProblemStatementSection = lazy(() => import('../components/Sections/ProblemStatementSection'));
 const WhyBecomeSection = lazy(() => import('../components/Sections/WhyBecomeSection'));
 const ShapeCareersSection = lazy(() => import('../components/Sections/ShapeCareersSection'));
 const CertificationSection = lazy(() => import('../components/Sections/CertificationSection'));
@@ -21,6 +22,9 @@ export default function LandingPage() {
         <Header />
         <main className="flex-grow">
           <ApplySection />
+          <Suspense fallback={<LoadingFallback />}>
+            <ProblemStatementSection />
+          </Suspense>
           <Suspense fallback={<LoadingFallback />}>
             <WhyBecomeSection />
           </Suspense>

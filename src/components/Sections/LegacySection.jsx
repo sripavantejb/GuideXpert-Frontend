@@ -1,12 +1,10 @@
 import { useState, useEffect, useRef } from 'react';
-import { FiUser, FiStar, FiAward, FiCheckCircle, FiTrendingUp, FiShield } from 'react-icons/fi';
+import { FiAward, FiCheckCircle, FiTrendingUp, FiShield, FiStar } from 'react-icons/fi';
 import Button from '../UI/Button';
 import AnimatedElement from '../UI/AnimatedElement';
 
 const LegacySection = () => {
   const [animatedStats, setAnimatedStats] = useState({
-    students: 0,
-    success: 0,
     counselors: 0
   });
   
@@ -14,22 +12,6 @@ const LegacySection = () => {
   const hasAnimated = useRef(false);
 
   const stats = [
-    { 
-      icon: FiUser, 
-      value: 1700, 
-      suffix: '+', 
-      label: 'Students Guided', 
-      key: 'students', 
-      color: '#003366', 
-    },
-    { 
-      icon: FiStar, 
-      value: 1000, 
-      suffix: '+', 
-      label: 'Success Stories', 
-      key: 'success', 
-      color: '#d97706', 
-    },
     { 
       icon: FiAward, 
       value: 100, 
@@ -99,16 +81,12 @@ const LegacySection = () => {
       const easeOut = 1 - Math.pow(1 - progress, 3);
 
       setAnimatedStats({
-        students: Math.floor(1700 * easeOut),
-        success: Math.floor(1000 * easeOut),
         counselors: Math.floor(100 * easeOut),
       });
 
       if (currentStep >= steps) {
         clearInterval(interval);
         setAnimatedStats({
-          students: 1700,
-          success: 1000,
           counselors: 100,
         });
       }
@@ -146,8 +124,9 @@ const LegacySection = () => {
           </AnimatedElement>
         </div>
 
-        {/* Statistics Grid - Professional Cards */}
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-16" ref={statsRef}>
+        {/* Statistics - single centered card */}
+        <div className="flex justify-center mb-16" ref={statsRef}>
+          <div className="grid grid-cols-1 gap-6 w-full max-w-sm">
           {stats.map((stat, index) => {
             const Icon = stat.icon;
             return (
@@ -206,6 +185,7 @@ const LegacySection = () => {
               </AnimatedElement>
             );
           })}
+          </div>
         </div>
 
         {/* Industry Veterans Card */}

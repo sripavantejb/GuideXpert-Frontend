@@ -113,7 +113,7 @@ export default function WebinarDashboard() {
   return (
     <>
       <div className="flex-1 grid grid-cols-1 lg:grid-cols-12 gap-4 sm:gap-5 p-4 sm:p-5 overflow-auto min-h-0">
-        <div className="lg:col-span-8 flex flex-col gap-5">
+        <div className="lg:col-span-8 flex flex-col gap-5 min-w-0">
           {activeSessionId &&
               playbackPosition[activeSessionId] > 0 &&
               !completedSessions.includes(activeSessionId) && (
@@ -131,7 +131,7 @@ export default function WebinarDashboard() {
               )}
             <div
               id="video"
-              className="rounded-2xl bg-white p-0 sm:p-5 shadow-sm overflow-hidden border border-gray-200 transition-all duration-200 hover:shadow-md"
+              className="rounded-2xl bg-white p-0 sm:p-5 shadow-sm overflow-hidden border border-gray-200 transition-all duration-200 hover:shadow-md min-w-0"
             >
               <VideoPlayer
               session={activeSession}

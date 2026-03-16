@@ -68,11 +68,11 @@ const HowToBecomeSection = () => {
     },
     {
       number: 4,
-      title: "25-Hour Training",
+      title: "8-Hour Training",
       icon: FiClock,
       description: "Complete our comprehensive 8-hour training program.",
       details: {
-        duration: "25 Hours",
+        duration: "8 Hours",
         format: "Online + Practical sessions"
       }
     },

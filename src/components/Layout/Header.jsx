@@ -70,9 +70,9 @@ const Header = ({ standalone = false }) => {
                   aria-label="Go to home"
                 >
                   <img
-                    src="https://res.cloudinary.com/dfqdb1xws/image/upload/v1771938860/guidexpert-logo-3Ifn2ZP2_ljlxlc_ydiqc6.png"
+                    src="https://res.cloudinary.com/dfqdb1xws/image/upload/v1773394627/GuideXpert_Logo_2_icepsv.png"
                     alt="GuideXpert Logo"
-                    className="h-28 md:h-40 object-contain"
+                    className="h-[1.5rem] md:h-[2.1rem] object-contain"
                   />
                 </Link>
               ) : (
@@ -82,9 +82,9 @@ const Header = ({ standalone = false }) => {
                   aria-label="Go to top"
                 >
                   <img
-                    src="https://res.cloudinary.com/dfqdb1xws/image/upload/v1771938860/guidexpert-logo-3Ifn2ZP2_ljlxlc_ydiqc6.png"
+                    src="https://res.cloudinary.com/dfqdb1xws/image/upload/v1773394627/GuideXpert_Logo_2_icepsv.png"
                     alt="GuideXpert Logo"
-                    className="h-28 md:h-40 object-contain"
+                    className="h-[1.5rem] md:h-[2.1rem] object-contain"
                   />
                 </button>
               )}

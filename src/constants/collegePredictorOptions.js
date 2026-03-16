@@ -1,25 +1,31 @@
 /**
  * Option lists for the College Predictor form (NW College Predictor API v1).
- * Replace with real enums from earlywave or an options API when available.
+ * Aligned with earlywave API spec: KCET, JEE, TS_EAMCET, AP_EAMCET, COMEDK, WBJEE; GENERAL, MANAGEMENT, NRI; CSE, IT, ECE, EEE, ME, CE.
  */
 
 export const ENTRANCE_EXAMS = [
+  { value: 'KCET', label: 'KCET' },
   { value: 'JEE', label: 'JEE' },
+  { value: 'TS_EAMCET', label: 'TS EAMCET' },
+  { value: 'AP_EAMCET', label: 'AP EAMCET' },
+  { value: 'COMEDK', label: 'COMEDK' },
+  { value: 'WBJEE', label: 'WBJEE' },
   { value: 'MHT_CET', label: 'MHT CET' },
   { value: 'BITSAT', label: 'BITSAT' },
-  { value: 'WBJEE', label: 'WBJEE' },
-  { value: 'KCET', label: 'KCET' },
 ];
 
 export const ADMISSION_CATEGORIES = [
+  { value: 'GENERAL', label: 'General' },
+  { value: 'MANAGEMENT', label: 'Management' },
+  { value: 'NRI', label: 'NRI' },
   { value: 'NORTH_EASTERN', label: 'North Eastern' },
   { value: 'ALL_INDIA', label: 'All India' },
   { value: 'STATE', label: 'State' },
-  { value: 'MANAGEMENT', label: 'Management' },
 ];
 
 export const RESERVATION_CATEGORIES = [
   { value: 'GEN', label: 'General' },
+  { value: 'GNT2S', label: 'GNT 2S' },
   { value: 'OBC', label: 'OBC' },
   { value: 'SC', label: 'SC' },
   { value: 'ST', label: 'ST' },
@@ -32,8 +38,8 @@ export const BRANCH_CODES = [
   { value: 'IT', label: 'IT' },
   { value: 'ECE', label: 'ECE' },
   { value: 'EEE', label: 'EEE' },
-  { value: 'MECH', label: 'Mechanical' },
-  { value: 'CIVIL', label: 'Civil' },
+  { value: 'ME', label: 'Mechanical' },
+  { value: 'CE', label: 'Civil' },
 ];
 
 export const SORT_ORDER_OPTIONS = [

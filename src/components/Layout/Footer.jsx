@@ -31,7 +31,7 @@ const Footer = () => {
               aria-label="GuideXpert home"
             >
               <img
-                src="https://res.cloudinary.com/dqataciy5/image/upload/v1769258985/Gemini_Generated_Image_ybdgvrybdgvrybdg_fgmdnj.png"
+                src="https://res.cloudinary.com/dqataciy5/image/upload/v1769173121/guidexpert-logo-3Ifn2ZP2_ljlxlc.png"
                 alt="GuideXpert"
                 className="h-12 md:h-14 object-contain"
               />

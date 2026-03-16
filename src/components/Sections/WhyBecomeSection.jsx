@@ -31,7 +31,7 @@ const WhyBecomeSection = () => {
   ];
 
   const stats = [
-    { icon: FiUser, value: '121+', label: 'Active Counselors' },
+    { icon: FiUser, value: '110+', label: 'counsellors joined this week' },
     { icon: FiDollarSign, value: '₹6L', label: 'Earning Potential' },
     { icon: FiMapPin, value: 'PAN-India', label: 'Presence' },
   ];

@@ -1,5 +1,5 @@
 import { useState, useCallback, useMemo, useEffect } from 'react';
-import { NavLink, useNavigate } from 'react-router-dom';
+import { Link, NavLink, useNavigate } from 'react-router-dom';
 import { useWebinar } from '../context/WebinarContext';
 import { FiSettings, FiChevronLeft, FiChevronRight, FiSearch } from 'react-icons/fi';
 import { HiX as HiXIcon } from 'react-icons/hi';
@@ -148,16 +148,29 @@ export default function Sidebar({
         style={{ boxShadow: '2px 0 12px rgba(0,0,0,0.04)' }}
       >
         <div className="flex items-center justify-between shrink-0 p-2 sm:p-3 border-b border-gray-200">
-          {expanded && (
-            <div className="flex flex-col min-w-0">
-              <span className="text-xs font-semibold text-gray-500 uppercase tracking-wider hidden lg:inline">
-                All sessions ({SESSIONS.length})
-              </span>
-              <p className="text-[11px] text-gray-600 hidden lg:block mt-0.5">
-                {completedSessions.length} completed
-              </p>
-            </div>
-          )}
+          <div className={`flex items-center min-w-0 shrink-0 ${expanded ? 'gap-2' : 'flex-1 justify-center min-w-0 overflow-hidden'}`}>
+            <Link
+              to="/webinar"
+              className={`flex items-center focus:outline-none focus-visible:ring-2 focus-visible:ring-primary-navy focus-visible:ring-offset-2 rounded ${expanded ? 'shrink-0' : 'min-w-0 overflow-hidden justify-center max-w-[56px]'}`}
+              aria-label="GuideXpert Webinar"
+            >
+              <img
+                src="https://res.cloudinary.com/dfqdb1xws/image/upload/v1773394627/GuideXpert_Logo_2_icepsv.png"
+                alt="GuideXpert"
+                className={expanded ? 'h-9 w-auto max-w-[140px] object-contain' : 'h-8 w-full max-w-[56px] object-contain object-left'}
+              />
+            </Link>
+            {expanded && (
+              <div className="flex flex-col min-w-0 hidden lg:block">
+                <span className="text-xs font-semibold text-gray-500 uppercase tracking-wider">
+                  All sessions ({SESSIONS.length})
+                </span>
+                <p className="text-[11px] text-gray-600 mt-0.5">
+                  {completedSessions.length} completed
+                </p>
+              </div>
+            )}
+          </div>
           <div className="flex items-center gap-1 ml-auto shrink-0">
             <button
               type="button"

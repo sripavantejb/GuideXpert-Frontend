@@ -116,6 +116,13 @@
   color: #6b7280;
   line-height: 1.6;
   margin-bottom: 2.5rem;
+}
+
+.apply-desc-sub {
+  margin-top: -1.25rem;
+  margin-bottom: 2.5rem;
+  font-size: 0.95rem;
+  color: #4b5563;
   max-width: 28rem;
 }
 

@@ -472,3 +472,18 @@ export const migrateCertificateToShortId = async (mobileNumber) => {
 export const getCertificateById = async (id) => {
   return apiRequest(`/certificate/${encodeURIComponent(id)}`, { method: 'GET' });
 };
+
+/**
+ * Get predicted colleges from the public College Predictor API (no auth).
+ * Same request/response shape as the counsellor endpoint for consistent UI handling.
+ * @param {{ offset?: number, limit?: number, entrance_exam_name_enum: string, admission_category_name_enum: string, cutoff_from: number, cutoff_to: number, reservation_category_code: string, branch_codes?: string[], districts?: string[], sort_order?: string }} params
+ * @returns {Promise<{ success: boolean, data?: { total_no_of_colleges: number, admission_category_name: string, colleges: object[], _demo?: boolean }, message?: string, status?: number }>}
+ */
+export const getPredictedCollegesPublic = async (params = {}) => {
+  const { offset = 0, limit = 10, ...body } = params;
+  const query = new URLSearchParams({ offset: String(offset), limit: String(limit) });
+  return apiRequest(`/college-predictor/colleges?${query.toString()}`, {
+    method: 'POST',
+    body: JSON.stringify(body),
+  });
+};

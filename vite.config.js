@@ -7,11 +7,12 @@ export default defineConfig({
   plugins: [react(), tailwindcss()],
   server: {
     proxy: {
-      // In dev, proxy /api to the deployed backend (override with VITE_API_URL for local backend)
+      // In dev, proxy /api to local backend by default so /api/college-predictor etc. work locally.
+      // Set VITE_PROXY_TARGET=https://guide-xpert-backend.vercel.app to use deployed backend instead.
       '/api': {
-        target: 'https://guide-xpert-backend.vercel.app',
+        target: process.env.VITE_PROXY_TARGET || 'http://localhost:5000',
         changeOrigin: true,
-        secure: true,
+        secure: process.env.VITE_PROXY_TARGET?.startsWith('https') ?? false,
       },
     },
   },

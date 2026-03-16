@@ -219,7 +219,7 @@ export default function VideoPlayer({
       className="relative w-full rounded-none sm:rounded-xl overflow-hidden bg-gray-900 focus:outline-none focus-visible:ring-2 focus-visible:ring-primary-navy focus-visible:ring-offset-2"
       style={{ boxShadow: '0 2px 8px rgba(0,0,0,0.08)' }}
     >
-      <div className="relative w-full aspect-video bg-black min-h-0">
+      <div className="relative w-full aspect-video bg-black min-h-0 min-w-0 overflow-hidden rounded-none sm:rounded-xl">
         {loading && (
           <div className="absolute inset-0 flex flex-col justify-between bg-gray-800/95 p-4" aria-hidden aria-busy="true">
             <div className="flex-1 flex items-center justify-center">
@@ -247,7 +247,7 @@ export default function VideoPlayer({
         )}
         <video
           ref={videoRef}
-          className="w-full h-full aspect-video object-cover sm:object-contain"
+          className="absolute inset-0 w-full h-full object-contain"
           poster={session.thumbnail ?? undefined}
           playsInline
           onClick={togglePlay}
