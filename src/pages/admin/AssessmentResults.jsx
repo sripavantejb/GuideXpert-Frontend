@@ -319,7 +319,7 @@ export default function AssessmentResults() {
       [
         escape(row.fullName),
         escape(row.phone),
-        `${row.score ?? 0}/${row.maxScore ?? 10}`,
+                  `${row.score ?? 0}/${row.maxScore ?? 5}`,
         row.submittedAt ? formatDate(row.submittedAt) : '',
       ].join(',')
     );
@@ -373,7 +373,7 @@ export default function AssessmentResults() {
       <div id="assessment-results-panel" role="tabpanel" aria-labelledby={`assessment-tab-${typeId}`}>
         {error && (
           <div className="mb-6 p-4 rounded-xl bg-red-50 border border-red-200 flex items-center gap-3">
-            <svg className="w-5 h-5 text-red-500 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <svg className="w-5 h-5 text-red-500 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
             </svg>
             <p className="text-sm text-red-700">{error}</p>
@@ -383,7 +383,7 @@ export default function AssessmentResults() {
         <div className="grid gap-6 lg:grid-cols-[0.8fr_1.2fr] items-start mb-8">
           {/* Calendar Card */}
           <div className="rounded-2xl border border-gray-200 bg-white shadow-lg overflow-hidden">
-            <div className="bg-gradient-to-r from-primary-blue-50 to-indigo-50 px-4 py-3 border-b border-gray-200">
+            <div className="bg-linear-to-r from-primary-blue-50 to-indigo-50 px-4 py-3 border-b border-gray-200">
               <div className="flex items-center justify-between gap-2">
                 <div className="flex items-center gap-1 p-0.5 bg-white rounded-lg shadow-sm">
                   <button
@@ -562,7 +562,7 @@ export default function AssessmentResults() {
               </div>
             </div>
 
-            <div className="rounded-2xl border border-gray-200 bg-gradient-to-br from-primary-blue-500 via-primary-blue-600 to-indigo-600 shadow-lg p-5 text-white">
+            <div className="rounded-2xl border border-gray-200 bg-linear-to-br from-primary-blue-500 via-primary-blue-600 to-indigo-600 shadow-lg p-5 text-white">
               {typeId === 6 ? (
                 <>
                   <h3 className="text-base font-bold text-white mb-0.5">Missing leads</h3>
@@ -717,7 +717,7 @@ export default function AssessmentResults() {
                         <td className="px-5 py-4 text-gray-700 whitespace-nowrap">{row.phone || '—'}</td>
                         <td className="px-5 py-4 text-center whitespace-nowrap">
                           <span className="font-medium text-[#003366]">
-                            {row.score ?? 0} / {row.maxScore ?? 10}
+                            {row.score ?? 0} / {row.maxScore ?? 5}
                           </span>
                         </td>
                         <td className="px-5 py-4 text-gray-600 whitespace-nowrap">{formatDate(row.submittedAt)}</td>
@@ -829,7 +829,7 @@ export default function AssessmentResults() {
                     <h3 className="text-xs font-semibold text-gray-400 uppercase tracking-wider mb-3">Score / Rating</h3>
                     <div className="flex items-center gap-4 p-4 rounded-xl bg-primary-blue-50 border border-primary-blue-100">
                       <div className="text-3xl font-bold text-[#003366]">
-                        {detailSubmission.score ?? 0} <span className="text-lg font-normal text-gray-500">/ {detailSubmission.maxScore ?? 10}</span>
+                        {detailSubmission.score ?? 0} <span className="text-lg font-normal text-gray-500">/ {detailSubmission.maxScore ?? 5}</span>
                       </div>
                       {typeof detailSubmission.maxScore === 'number' && detailSubmission.maxScore > 0 && (
                         <span className="text-sm text-gray-600">

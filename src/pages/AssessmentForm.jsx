@@ -388,7 +388,7 @@ export default function AssessmentForm() {
                   <button
                     type="submit"
                     disabled={verifying || loading}
-                    className="flex-[2] py-3 px-4 bg-[#003366] hover:bg-[#004080] text-white font-medium rounded-lg transition disabled:opacity-60"
+                    className="flex-2 py-3 px-4 bg-[#003366] hover:bg-[#004080] text-white font-medium rounded-lg transition disabled:opacity-60"
                   >
                     {verifying ? 'Verifying...' : 'Verify & Continue'}
                   </button>
