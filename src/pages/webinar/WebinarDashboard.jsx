@@ -45,6 +45,8 @@ export default function WebinarDashboard() {
 
   const [sessionProgress, setSessionProgress] = useState({});
   const [autoplayNextSession, setAutoplayNextSession] = useState(false);
+  const [videoDurationFormatted, setVideoDurationFormatted] = useState(null);
+  const [videoSessionType, setVideoSessionType] = useState(null);
   const modulesForDay = getModulesByDay(activeDay);
   const sessionsForDay = getSessionsByDay(activeDay);
   const activeModule = activeSessionId ? getModuleById(activeSessionId) : null;
@@ -57,6 +59,11 @@ export default function WebinarDashboard() {
       : completedSessions.includes(activeSessionId)
     : false;
   const showNextButton = nextModule && currentModuleComplete;
+
+  useEffect(() => {
+    setVideoDurationFormatted(null);
+    setVideoSessionType(null);
+  }, [activeSessionId]);
 
   useEffect(() => {
     if (!modulesForDay.length) return;
@@ -95,6 +102,25 @@ export default function WebinarDashboard() {
     },
     [setCompletedSessions]
   );
+
+  const handleMetadataReady = useCallback(({ formattedDuration }) => {
+    setVideoDurationFormatted(formattedDuration ?? null);
+    setVideoSessionType('Recorded Webinar');
+  }, []);
+
+  const handleNextSession = useCallback(() => {
+    const list = getSessionsByDay(activeDay);
+    const idx = list.findIndex((s) => s.id === activeSessionId);
+    if (idx >= 0 && idx < list.length - 1) {
+      setActiveSessionId(list[idx + 1].id);
+    }
+  }, [activeDay, activeSessionId, setActiveSessionId]);
+
+  const hasNextSession = (() => {
+    const list = getSessionsByDay(activeDay);
+    const idx = list.findIndex((s) => s.id === activeSessionId);
+    return idx >= 0 && idx < list.length - 1;
+  })();
 
   const toggleBookmark = useCallback(
     (sessionId) => {
@@ -140,7 +166,7 @@ export default function WebinarDashboard() {
               )}
             <div
               id="video"
-              className="rounded-2xl bg-white p-0 sm:p-5 shadow-sm overflow-hidden border border-gray-200 transition-all duration-200 hover:shadow-md min-w-0"
+              className="rounded-2xl bg-white p-0 sm:p-5 shadow-sm overflow-hidden border border-gray-200 transition-all duration-200 hover:shadow-md min-w-0 flex-shrink-0"
             >
               {activeModule?.type === 'Assessment' ? (
                 activeModule.id === 'a1' ? (
@@ -182,6 +208,9 @@ export default function WebinarDashboard() {
                     onTimeUpdate={handleTimeUpdate}
                     onEnded={handleVideoEnded}
                     onProgress={handleProgressUpdate}
+                    onMetadataReady={handleMetadataReady}
+                    onNextSession={handleNextSession}
+                    hasNextSession={hasNextSession}
                     isBookmarked={activeSessionId ? bookmarkedSessions.includes(activeSessionId) : false}
                     onToggleBookmark={() => activeSessionId && toggleBookmark(activeSessionId)}
                     autoplayOnLoad={autoplayNextSession}
@@ -190,9 +219,9 @@ export default function WebinarDashboard() {
                   {activeSession && (
                     <>
                       <StatsBar
-                        type={activeSession.type}
-                        duration={activeSession.duration}
-                        totalDuration={`${getSessionsByDay(activeSession.dayId).reduce((a, s) => a + s.durationMinutes, 0)}m`}
+                        type={videoSessionType ?? activeSession.type}
+                        duration={videoDurationFormatted ?? activeSession.duration}
+                        totalDuration={videoDurationFormatted ?? `${getSessionsByDay(activeSession.dayId).reduce((a, s) => a + s.durationMinutes, 0)}m`}
                         status={
                           completedSessions.includes(activeSession.id)
                             ? 'Completed'
@@ -203,8 +232,6 @@ export default function WebinarDashboard() {
                       />
                     </>
                   )}
-                </>
-              )}
               {showNextButton && (
                 <div className="border-t border-gray-100 px-4 sm:px-5 py-4 flex justify-end">
                   <button
@@ -221,6 +248,8 @@ export default function WebinarDashboard() {
                     </svg>
                   </button>
                 </div>
+              )}
+                </>
               )}
             </div>
           <DescriptionCard session={activeSession} />
@@ -250,7 +279,7 @@ export default function WebinarDashboard() {
 
       {overallPercent < 100 && (
         <div className="mx-4 sm:mx-5 mb-5 px-4 py-2.5 rounded-xl text-sm font-medium text-center bg-primary-blue-50/80 border border-primary-blue-200/50 text-primary-navy">
-          Complete all Day 3 sessions to unlock your certificate.
+          Complete the intro video to unlock your certificate.
         </div>
       )}
     </>

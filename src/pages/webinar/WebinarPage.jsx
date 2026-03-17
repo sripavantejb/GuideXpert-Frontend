@@ -47,6 +47,8 @@ export default function WebinarPage() {
     loadJson('webinar_bookmarks', [])
   );
   const [sidebarOpen, setSidebarOpen] = useState(false);
+  const [videoDurationFormatted, setVideoDurationFormatted] = useState(null);
+  const [videoSessionType, setVideoSessionType] = useState(null);
 
   const activeModule = activeSessionId ? getModuleById(activeSessionId) : null;
   const activeSession = activeModule?.type === 'Assessment' ? null : (activeSessionId ? getSessionById(activeSessionId) : null);
@@ -69,6 +71,12 @@ export default function WebinarPage() {
   useEffect(() => {
     saveJson('webinar_bookmarks', bookmarkedSessions);
   }, [bookmarkedSessions]);
+
+  // Reset video metadata when session changes
+  useEffect(() => {
+    setVideoDurationFormatted(null);
+    setVideoSessionType(null);
+  }, [activeSessionId]);
 
   // Set first session of the day when day changes and none selected, or when selected module is not in current day
   useEffect(() => {
@@ -110,6 +118,26 @@ export default function WebinarPage() {
       setCompletedSessions((prev) => (prev.includes(sessionId) ? prev : [...prev, sessionId]));
     }
   }, []);
+
+  const handleMetadataReady = useCallback(({ formattedDuration }) => {
+    setVideoDurationFormatted(formattedDuration ?? null);
+    setVideoSessionType('Recorded Webinar');
+  }, []);
+
+  const handleNextSession = useCallback(() => {
+    const list = getSessionsByDay(activeDay);
+    const idx = list.findIndex((s) => s.id === activeSessionId);
+    if (idx >= 0 && idx < list.length - 1) {
+      setActiveSessionId(list[idx + 1].id);
+    }
+  }, [activeDay, activeSessionId]);
+
+  const hasNextSession =
+    (() => {
+      const list = getSessionsByDay(activeDay);
+      const idx = list.findIndex((s) => s.id === activeSessionId);
+      return idx >= 0 && idx < list.length - 1;
+    })();
 
   const toggleBookmark = useCallback((sessionId) => {
     setBookmarkedSessions((prev) =>
@@ -161,7 +189,7 @@ export default function WebinarPage() {
         <div className="flex-1 grid grid-cols-1 lg:grid-cols-12 gap-4 sm:gap-5 p-4 sm:p-5 overflow-auto min-h-0">
           {/* Left column: one session card (video + stats + description) */}
           <div className="lg:col-span-8 flex flex-col gap-4 sm:gap-5">
-            <div className="rounded-2xl bg-white border border-gray-200 shadow-card overflow-hidden transition-shadow duration-200 hover:shadow-card-hover">
+            <div className="rounded-2xl bg-white border border-gray-200 shadow-card overflow-hidden transition-shadow duration-200 hover:shadow-card-hover flex-shrink-0">
               {activeModule?.type === 'Assessment' ? (
                 <div className="aspect-video bg-gray-100 flex flex-col items-center justify-center px-6 py-8 text-center">
                   <p className="text-lg font-semibold text-gray-800">{activeModule.title}</p>
@@ -176,6 +204,9 @@ export default function WebinarPage() {
                     onTimeUpdate={handleTimeUpdate}
                     onEnded={handleVideoEnded}
                     onProgress={handleProgressUpdate}
+                    onMetadataReady={handleMetadataReady}
+                    onNextSession={handleNextSession}
+                    hasNextSession={hasNextSession}
                     isBookmarked={activeSessionId ? bookmarkedSessions.includes(activeSessionId) : false}
                     onToggleBookmark={() => activeSessionId && toggleBookmark(activeSessionId)}
                   />
@@ -183,9 +214,9 @@ export default function WebinarPage() {
                     <>
                       <div className="border-t border-gray-100 px-4 sm:px-5 py-4">
                         <StatsBar
-                          type={activeSession.type}
-                          duration={activeSession.duration}
-                          totalDuration={`${getSessionsByDay(activeSession.dayId).reduce((a, s) => a + s.durationMinutes, 0)}m`}
+                          type={videoSessionType ?? activeSession.type}
+                          duration={videoDurationFormatted ?? activeSession.duration}
+                          totalDuration={videoDurationFormatted ?? `${getSessionsByDay(activeSession.dayId).reduce((a, s) => a + s.durationMinutes, 0)}m`}
                           status={
                             completedSessions.includes(activeSession.id)
                               ? 'Completed'
@@ -243,7 +274,7 @@ export default function WebinarPage() {
         {/* Certificate banner */}
         {overallPercent < 100 && (
           <div className="mx-4 sm:mx-5 mb-4 sm:mb-5 px-4 py-2.5 rounded-xl text-sm font-medium text-center bg-primary-blue-50/80 border border-primary-blue-200/50 text-primary-navy">
-            Complete all Day 3 sessions to unlock your certificate.
+            Complete the intro video to unlock your certificate.
           </div>
         )}
         {overallPercent === 100 && (
