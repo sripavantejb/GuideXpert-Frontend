@@ -10,8 +10,14 @@ import {
   DAYS,
   SESSIONS,
   getSessionById,
+  getModuleById,
   getSessionsByDay,
+  getModulesByDay,
+  isAssessmentId,
 } from './data/mockWebinarData';
+import { Link } from 'react-router-dom';
+import WebinarAssessment1 from './components/WebinarAssessment1';
+import WebinarAssessment2 from './components/WebinarAssessment2';
 
 function formatResumeTime(seconds) {
   if (!Number.isFinite(seconds) || seconds < 0) return '0:00';
@@ -38,16 +44,18 @@ export default function WebinarDashboard() {
 
   const [sessionProgress, setSessionProgress] = useState({});
   const [autoplayNextSession, setAutoplayNextSession] = useState(false);
+  const modulesForDay = getModulesByDay(activeDay);
   const sessionsForDay = getSessionsByDay(activeDay);
+  const activeModule = activeSessionId ? getModuleById(activeSessionId) : null;
   const activeSession = activeSessionId ? getSessionById(activeSessionId) : null;
 
   useEffect(() => {
-    if (!sessionsForDay.length) return;
-    const currentInDay = activeSessionId && sessionsForDay.some((s) => s.id === activeSessionId);
+    if (!modulesForDay.length) return;
+    const currentInDay = activeSessionId && modulesForDay.some((m) => m.id === activeSessionId);
     if (!activeSessionId || !currentInDay) {
-      setActiveSessionId(sessionsForDay[0].id);
+      setActiveSessionId(modulesForDay[0].id);
     }
-  }, [activeDay, activeSessionId, sessionsForDay, setActiveSessionId]);
+  }, [activeDay, activeSessionId, modulesForDay, setActiveSessionId]);
 
   const handleTimeUpdate = useCallback((sessionId, currentTime) => {
     setPlaybackPosition((prev) => ({ ...prev, [sessionId]: currentTime }));
@@ -89,15 +97,16 @@ export default function WebinarDashboard() {
   );
 
   const totalSessionsCount = SESSIONS.length;
-  const overallCompleted = completedSessions.length;
-  const overallPercent = totalSessionsCount ? Math.round((overallCompleted / totalSessionsCount) * 100) : 0;
+  const completedVideoIds = completedSessions.filter((id) => SESSIONS.some((s) => s.id === id));
+  const overallCompleted = completedVideoIds.length;
+  const overallPercent = totalSessionsCount ? Math.min(100, Math.round((overallCompleted / totalSessionsCount) * 100)) : 0;
 
   const completedCountForDay = useCallback(
     (dayId) => {
       const ids = getSessionsByDay(dayId).map((s) => s.id);
-      return ids.filter((id) => completedSessions.includes(id)).length;
+      return ids.filter((id) => completedVideoIds.includes(id)).length;
     },
-    [completedSessions]
+    [completedVideoIds]
   );
 
   return (
@@ -105,6 +114,7 @@ export default function WebinarDashboard() {
       <div className="flex-1 grid grid-cols-1 lg:grid-cols-12 gap-4 sm:gap-5 p-4 sm:p-5 overflow-auto min-h-0">
         <div className="lg:col-span-8 flex flex-col gap-5 min-w-0">
           {activeSessionId &&
+              activeSession &&
               playbackPosition[activeSessionId] > 0 &&
               !completedSessions.includes(activeSessionId) && (
                 <div className="rounded-xl bg-primary-blue-50/80 border border-primary-blue-200/50 px-4 py-3 flex flex-wrap items-center justify-between gap-2">
@@ -123,31 +133,63 @@ export default function WebinarDashboard() {
               id="video"
               className="rounded-2xl bg-white p-0 sm:p-5 shadow-sm overflow-hidden border border-gray-200 transition-all duration-200 hover:shadow-md min-w-0"
             >
-              <VideoPlayer
-              session={activeSession}
-              initialPosition={activeSessionId ? playbackPosition[activeSessionId] : 0}
-              onTimeUpdate={handleTimeUpdate}
-              onEnded={handleVideoEnded}
-              onProgress={handleProgressUpdate}
-              isBookmarked={activeSessionId ? bookmarkedSessions.includes(activeSessionId) : false}
-              onToggleBookmark={() => activeSessionId && toggleBookmark(activeSessionId)}
-              autoplayOnLoad={autoplayNextSession}
-              onAutoplayDone={() => setAutoplayNextSession(false)}
-              />
-              {activeSession && (
+              {activeModule?.type === 'Assessment' ? (
+                activeModule.id === 'a1' ? (
+                  <div className="flex flex-col min-h-[360px] p-5 sm:p-6">
+                    <WebinarAssessment1
+                      onComplete={() => setCompletedSessions((prev) => (prev.includes('a1') ? prev : [...prev, 'a1']))}
+                    />
+                  </div>
+                ) : activeModule.id === 'a2' ? (
+                  <div className="flex flex-col min-h-[360px] p-5 sm:p-6">
+                    <WebinarAssessment2
+                      onComplete={() => setCompletedSessions((prev) => (prev.includes('a2') ? prev : [...prev, 'a2']))}
+                    />
+                  </div>
+                ) : (
+                  <div className="aspect-video bg-gray-100 flex flex-col items-center justify-center px-6 py-8 text-center">
+                    <p className="text-lg font-semibold text-gray-800">{activeModule.title}</p>
+                    <p className="text-sm text-gray-500 mt-1">{activeModule.duration}</p>
+                    <p className="text-sm text-gray-600 mt-4 max-w-md">Complete the questions below to check your understanding before moving to the next session.</p>
+                    {isAssessmentId(activeModule.id) && (
+                      <Link
+                        to="/assessment-3"
+                        className="mt-6 inline-flex items-center justify-center px-5 py-2.5 rounded-lg font-medium text-white bg-primary-navy hover:bg-primary-navy/90 focus:outline-none focus-visible:ring-2 focus-visible:ring-primary-navy focus-visible:ring-offset-2"
+                      >
+                        Start {activeModule.title}
+                      </Link>
+                    )}
+                  </div>
+                )
+              ) : (
                 <>
-                <StatsBar
-                type={activeSession.type}
-                duration={activeSession.duration}
-                totalDuration={`${getSessionsByDay(activeSession.dayId).reduce((a, s) => a + s.durationMinutes, 0)}m`}
-                status={
-                  completedSessions.includes(activeSession.id)
-                    ? 'Completed'
-                    : sessionProgress[activeSession.id] > 0
-                      ? 'In Progress'
-                        : 'Not started'
-                }
-                />
+                  <VideoPlayer
+                    session={activeSession}
+                    initialPosition={activeSessionId ? playbackPosition[activeSessionId] : 0}
+                    onTimeUpdate={handleTimeUpdate}
+                    onEnded={handleVideoEnded}
+                    onProgress={handleProgressUpdate}
+                    isBookmarked={activeSessionId ? bookmarkedSessions.includes(activeSessionId) : false}
+                    onToggleBookmark={() => activeSessionId && toggleBookmark(activeSessionId)}
+                    autoplayOnLoad={autoplayNextSession}
+                    onAutoplayDone={() => setAutoplayNextSession(false)}
+                  />
+                  {activeSession && (
+                    <>
+                      <StatsBar
+                        type={activeSession.type}
+                        duration={activeSession.duration}
+                        totalDuration={`${getSessionsByDay(activeSession.dayId).reduce((a, s) => a + s.durationMinutes, 0)}m`}
+                        status={
+                          completedSessions.includes(activeSession.id)
+                            ? 'Completed'
+                            : sessionProgress[activeSession.id] > 0
+                              ? 'In Progress'
+                              : 'Not started'
+                        }
+                      />
+                    </>
+                  )}
                 </>
               )}
             </div>

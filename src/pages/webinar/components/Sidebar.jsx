@@ -15,6 +15,7 @@ export default function Sidebar({
     sidebarExpanded: expanded,
     setSidebarExpanded: setExpanded,
     completedSessions,
+    completedVideoCount,
     activeSessionId,
     setActiveSessionId,
   } = useWebinar();
@@ -88,7 +89,7 @@ export default function Sidebar({
                 </span>
                 <div className="flex items-baseline gap-1.5 mt-1">
                   <span className="text-sm font-semibold tabular-nums text-white">
-                    {completedSessions.length}
+                    {completedVideoCount ?? completedSessions.filter((id) => SESSIONS.some((s) => s.id === id)).length}
                     <span className="text-slate-500 font-normal"> / </span>
                     {SESSIONS.length}
                   </span>
@@ -121,7 +122,7 @@ export default function Sidebar({
             <div className="hidden lg:block h-0.5 bg-white/6 mx-4 mb-1 rounded-full overflow-hidden">
               <div
                 className="h-full bg-primary-blue-400/80 transition-all duration-500 rounded-full"
-                style={{ width: `${SESSIONS.length ? (completedSessions.length / SESSIONS.length) * 100 : 0}%` }}
+                style={{ width: `${SESSIONS.length ? Math.min(100, ((completedVideoCount ?? completedSessions.length) / SESSIONS.length) * 100) : 0}%` }}
               />
             </div>
           )}
@@ -152,8 +153,8 @@ export default function Sidebar({
           ) : (
             <div
               className="flex-1 min-h-0 hidden lg:flex flex-col items-center justify-center py-4"
-              aria-label={`${completedSessions.length} of ${SESSIONS.length} sessions completed`}
-              title={`${completedSessions.length} of ${SESSIONS.length} completed`}
+              aria-label={`${completedVideoCount ?? completedSessions.length} of ${SESSIONS.length} sessions completed`}
+              title={`${completedVideoCount ?? completedSessions.length} of ${SESSIONS.length} completed`}
             >
               {/* Vertical bar with dots on top: bar as track, dots overlaid along it */}
               <div className="flex-1 min-h-[120px] w-5 flex flex-col items-center relative">
@@ -162,7 +163,7 @@ export default function Sidebar({
                   <div
                     className="w-full bg-primary-blue-400/80 transition-all duration-500 rounded-full shrink-0"
                     style={{
-                      height: `${SESSIONS.length ? (completedSessions.length / SESSIONS.length) * 100 : 0}%`,
+                      height: `${SESSIONS.length ? Math.min(100, ((completedVideoCount ?? completedSessions.length) / SESSIONS.length) * 100) : 0}%`,
                     }}
                   />
                 </div>

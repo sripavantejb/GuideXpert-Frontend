@@ -119,8 +119,11 @@ export function WebinarProvider({ children, initialDisplayName }) {
   }, [profileDisplayName]);
 
   const totalSessions = SESSIONS.length;
+  const completedVideoCount = completedSessions.filter((id) =>
+    SESSIONS.some((s) => s.id === id)
+  ).length;
   const completionPercent = totalSessions
-    ? Math.round((completedSessions.length / totalSessions) * 100)
+    ? Math.min(100, Math.round((completedVideoCount / totalSessions) * 100))
     : 0;
 
   useEffect(() => {
@@ -154,6 +157,7 @@ export function WebinarProvider({ children, initialDisplayName }) {
     setDoubts,
     completedSessions,
     setCompletedSessions,
+    completedVideoCount,
     playbackPosition,
     setPlaybackPosition,
     bookmarkedSessions,
@@ -171,6 +175,7 @@ export function WebinarProvider({ children, initialDisplayName }) {
     sidebarExpanded,
     doubts,
     completedSessions,
+    completedVideoCount,
     playbackPosition,
     bookmarkedSessions,
     settings,

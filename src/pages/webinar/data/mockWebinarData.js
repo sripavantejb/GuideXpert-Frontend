@@ -186,6 +186,11 @@ export function getSessionsByDay(dayId) {
   return SESSIONS.filter((s) => s.dayId === dayId);
 }
 
+/** All modules (sessions + assessments) for a day, in display order. */
+export function getModulesByDay(dayId) {
+  return ALL_MODULES.filter((m) => m.dayId === dayId);
+}
+
 export function getSessionById(sessionId) {
   return SESSIONS.find((s) => s.id === sessionId);
 }
