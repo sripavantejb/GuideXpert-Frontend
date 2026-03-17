@@ -14,11 +14,8 @@ import {
   getNextModule,
   getSessionsByDay,
   getModulesByDay,
-  isAssessmentId,
 } from './data/mockWebinarData';
-import { Link } from 'react-router-dom';
-import WebinarAssessment1 from './components/WebinarAssessment1';
-import WebinarAssessment2 from './components/WebinarAssessment2';
+import WebinarAssessment from './components/WebinarAssessment';
 
 function formatResumeTime(seconds) {
   if (!Number.isFinite(seconds) || seconds < 0) return '0:00';
@@ -168,38 +165,26 @@ export default function WebinarDashboard() {
               id="video"
               className="rounded-2xl bg-white p-0 sm:p-5 shadow-sm overflow-hidden border border-gray-200 transition-all duration-200 hover:shadow-md min-w-0 flex-shrink-0"
             >
-              {activeModule?.type === 'Assessment' ? (
-                activeModule.id === 'a1' ? (
-                  <div className="flex flex-col min-h-[360px] p-5 sm:p-6">
-                    <WebinarAssessment1
-                      onComplete={() => setCompletedSessions((prev) => (prev.includes('a1') ? prev : [...prev, 'a1']))}
-                      nextLabel={nextModule?.title}
-                      onGoNext={nextModule ? () => { setActiveSessionId(nextModule.id); setActiveDay(nextModule.dayId); } : undefined}
-                    />
-                  </div>
-                ) : activeModule.id === 'a2' ? (
-                  <div className="flex flex-col min-h-[360px] p-5 sm:p-6">
-                    <WebinarAssessment2
-                      onComplete={() => setCompletedSessions((prev) => (prev.includes('a2') ? prev : [...prev, 'a2']))}
-                      nextLabel={nextModule?.title}
-                      onGoNext={nextModule ? () => { setActiveSessionId(nextModule.id); setActiveDay(nextModule.dayId); } : undefined}
-                    />
-                  </div>
-                ) : (
-                  <div className="aspect-video bg-gray-100 flex flex-col items-center justify-center px-6 py-8 text-center">
-                    <p className="text-lg font-semibold text-gray-800">{activeModule.title}</p>
-                    <p className="text-sm text-gray-500 mt-1">{activeModule.duration}</p>
-                    <p className="text-sm text-gray-600 mt-4 max-w-md">Complete the questions below to check your understanding before moving to the next session.</p>
-                    {isAssessmentId(activeModule.id) && (
-                      <Link
-                        to="/assessment-3"
-                        className="mt-6 inline-flex items-center justify-center px-5 py-2.5 rounded-lg font-medium text-white bg-primary-navy hover:bg-primary-navy/90 focus:outline-none focus-visible:ring-2 focus-visible:ring-primary-navy focus-visible:ring-offset-2"
-                      >
-                        Start {activeModule.title}
-                      </Link>
-                    )}
-                  </div>
-                )
+              {activeModule?.type === 'Assessment' && ['a1', 'a2', 'a3', 'a4', 'a5'].includes(activeModule.id) ? (
+                (() => {
+                  const typeNum = { a1: 1, a2: 2, a3: 3, a4: 4, a5: 5 }[activeModule.id];
+                  return (
+                    <div className="flex flex-col min-h-[360px] p-5 sm:p-6">
+                      <WebinarAssessment
+                        assessmentType={typeNum}
+                        onComplete={() => setCompletedSessions((prev) => (prev.includes(activeModule.id) ? prev : [...prev, activeModule.id]))}
+                        nextLabel={nextModule?.title}
+                        onGoNext={nextModule ? () => { setActiveSessionId(nextModule.id); setActiveDay(nextModule.dayId); } : undefined}
+                      />
+                    </div>
+                  );
+                })()
+              ) : activeModule?.type === 'Assessment' ? (
+                <div className="aspect-video bg-gray-100 flex flex-col items-center justify-center px-6 py-8 text-center">
+                  <p className="text-lg font-semibold text-gray-800">{activeModule?.title}</p>
+                  <p className="text-sm text-gray-500 mt-1">{activeModule?.duration}</p>
+                  <p className="text-sm text-gray-600 mt-4 max-w-md">No questions available for this assessment.</p>
+                </div>
               ) : (
                 <>
                   <VideoPlayer

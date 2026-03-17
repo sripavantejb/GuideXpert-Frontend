@@ -1,6 +1,5 @@
 import { useState, useRef, useMemo, useEffect } from 'react';
-import { sendOtp, verifyOtp, submitAssessment2 } from '../utils/api';
-import { ASSESSMENT_SECTIONS_2 } from '../data/assessmentQuestions2';
+import { sendOtp, verifyOtp, submitAssessment2, getAssessmentQuestions } from '../utils/api';
 import SuccessPopup from '../components/UI/SuccessPopup';
 
 const MAX_SCORE_2 = 5;
@@ -20,9 +19,9 @@ function validateMobile(value) {
   return '';
 }
 
-function getInitialAnswers() {
+function getInitialAnswersFromSections(sections) {
   const initial = {};
-  ASSESSMENT_SECTIONS_2.forEach((section) => {
+  sections.forEach((section) => {
     section.questions.forEach((q) => {
       initial[q.id] = '';
     });
@@ -41,7 +40,10 @@ export default function AssessmentForm2() {
   const [successMessage, setSuccessMessage] = useState('');
   const [loading, setLoading] = useState(false);
   const [verifying, setVerifying] = useState(false);
-  const [answers, setAnswers] = useState(getInitialAnswers);
+  const [sections, setSections] = useState([]);
+  const [questionsLoading, setQuestionsLoading] = useState(true);
+  const [questionsError, setQuestionsError] = useState('');
+  const [answers, setAnswers] = useState({});
   const [submitting, setSubmitting] = useState(false);
   const [submittedResult, setSubmittedResult] = useState(null);
   const [showSuccessPopup, setShowSuccessPopup] = useState(false);
@@ -50,21 +52,47 @@ export default function AssessmentForm2() {
 
   const otpInputRefs = useRef([]);
 
+  useEffect(() => {
+    let cancelled = false;
+    getAssessmentQuestions(2).then((res) => {
+      if (cancelled) return;
+      setQuestionsLoading(false);
+      if (res.success && res.data?.questions?.length) {
+        const questions = res.data.questions.map((q) => ({
+          id: q.id,
+          type: 'mcq',
+          text: q.question,
+          options: Array.isArray(q.options) ? q.options : [],
+        }));
+        setSections([{ title: 'Session - 2', questions }]);
+        setAnswers(questions.reduce((acc, q) => ({ ...acc, [q.id]: '' }), {}));
+      } else {
+        setQuestionsError(res.message || 'Failed to load questions');
+      }
+    }).catch(() => {
+      if (!cancelled) {
+        setQuestionsLoading(false);
+        setQuestionsError('Failed to load questions');
+      }
+    });
+    return () => { cancelled = true; };
+  }, []);
+
   const flatQuestions = useMemo(
     () =>
-      ASSESSMENT_SECTIONS_2.flatMap((s) =>
+      sections.flatMap((s) =>
         s.questions.map((q) => ({ ...q, sectionTitle: s.title }))
       ),
-    []
+    [sections]
   );
 
   const questionTextMap = useMemo(() => {
     const map = {};
-    ASSESSMENT_SECTIONS_2.forEach((s) => {
+    sections.forEach((s) => {
       s.questions.forEach((q) => { map[q.id] = q.text; });
     });
     return map;
-  }, []);
+  }, [sections]);
 
   // Unlock Submit button only after a short delay on the last question so double-clicking "Next" doesn't submit
   const isOnLastQuestion = questionIndex === flatQuestions.length - 1;
@@ -252,7 +280,7 @@ export default function AssessmentForm2() {
   const handleWriteAgain = () => {
     setStep(1);
     setSubmittedResult(null);
-    setAnswers(getInitialAnswers());
+    setAnswers(getInitialAnswersFromSections(sections));
     setQuestionIndex(0);
     setShowSuccessPopup(false);
     setSubmitError('');
@@ -423,6 +451,15 @@ export default function AssessmentForm2() {
             </>
           )}
 
+          {step === 3 && !submittedResult && questionsLoading && (
+            <div className="py-8 text-center text-gray-500">Loading questions...</div>
+          )}
+          {step === 3 && !submittedResult && !questionsLoading && questionsError && (
+            <div className="py-8 p-4 rounded-lg border border-red-200 bg-red-50 text-red-700">{questionsError}</div>
+          )}
+          {step === 3 && !submittedResult && !questionsLoading && !questionsError && flatQuestions.length === 0 && (
+            <div className="py-8 text-center text-gray-500">No questions available.</div>
+          )}
           {step === 3 && !submittedResult && flatQuestions.length > 0 && (
             <>
               <h2 className="text-lg font-semibold mb-1" style={{ color: '#003366' }}>Assessment questions</h2>
