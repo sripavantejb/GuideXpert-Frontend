@@ -7,7 +7,7 @@ import SessionList from './components/SessionList';
 import DescriptionCard from './components/DescriptionCard';
 import ProgressIndicator from './components/ProgressIndicator';
 import NotesPanel from './components/NotesPanel';
-import { DAYS, SESSIONS, getSessionById, getSessionsByDay } from './data/mockWebinarData';
+import { DAYS, SESSIONS, getSessionById, getModuleById, getSessionsByDay } from './data/mockWebinarData';
 
 const STORAGE_KEYS = {
   progress: 'webinar_progress',
@@ -48,7 +48,8 @@ export default function WebinarPage() {
   );
   const [sidebarOpen, setSidebarOpen] = useState(false);
 
-  const activeSession = activeSessionId ? getSessionById(activeSessionId) : null;
+  const activeModule = activeSessionId ? getModuleById(activeSessionId) : null;
+  const activeSession = activeModule?.type === 'Assessment' ? null : (activeSessionId ? getSessionById(activeSessionId) : null);
   const sessionsForDay = getSessionsByDay(activeDay);
 
   // Persist progress (completed session ids)
@@ -69,11 +70,11 @@ export default function WebinarPage() {
     saveJson('webinar_bookmarks', bookmarkedSessions);
   }, [bookmarkedSessions]);
 
-  // Set first session of the day when day changes and none selected, or ensure selected is in current day
+  // Set first session of the day when day changes and none selected, or when selected module is not in current day
   useEffect(() => {
     if (!sessionsForDay.length) return;
-    const currentInDay = activeSessionId && sessionsForDay.some((s) => s.id === activeSessionId);
-    if (!activeSessionId || !currentInDay) {
+    const activeModuleForDay = activeSessionId ? getModuleById(activeSessionId)?.dayId === activeDay : false;
+    if (!activeSessionId || !activeModuleForDay) {
       setActiveSessionId(sessionsForDay[0].id);
     }
   }, [activeDay, activeSessionId, sessionsForDay]);
@@ -161,40 +162,50 @@ export default function WebinarPage() {
           {/* Left column: one session card (video + stats + description) */}
           <div className="lg:col-span-8 flex flex-col gap-4 sm:gap-5">
             <div className="rounded-2xl bg-white border border-gray-200 shadow-card overflow-hidden transition-shadow duration-200 hover:shadow-card-hover">
-              <VideoPlayer
-                session={activeSession}
-                initialPosition={activeSessionId ? playbackPosition[activeSessionId] : 0}
-                onTimeUpdate={handleTimeUpdate}
-                onEnded={handleVideoEnded}
-                onProgress={handleProgressUpdate}
-                isBookmarked={activeSessionId ? bookmarkedSessions.includes(activeSessionId) : false}
-                onToggleBookmark={() => activeSessionId && toggleBookmark(activeSessionId)}
-              />
-              {activeSession && (
-                <>
-                  <div className="border-t border-gray-100 px-4 sm:px-5 py-4">
-                    <StatsBar
-                      type={activeSession.type}
-                      duration={activeSession.duration}
-                      totalDuration={`${getSessionsByDay(activeSession.dayId).reduce((a, s) => a + s.durationMinutes, 0)}m`}
-                      status={
-                        completedSessions.includes(activeSession.id)
-                          ? 'Completed'
-                          : sessionProgress[activeSession.id] > 0
-                            ? 'In Progress'
-                            : 'Not started'
-                      }
-                    />
-                  </div>
-                  <div className="border-t border-gray-100 px-4 sm:px-5 py-4">
-                    <DescriptionCard session={activeSession} embedded />
-                  </div>
-                </>
-              )}
-              {!activeSession && (
-                <div className="border-t border-gray-100 px-4 sm:px-5 py-4">
-                  <DescriptionCard session={null} embedded />
+              {activeModule?.type === 'Assessment' ? (
+                <div className="aspect-video bg-gray-100 flex flex-col items-center justify-center px-6 py-8 text-center">
+                  <p className="text-lg font-semibold text-gray-800">{activeModule.title}</p>
+                  <p className="text-sm text-gray-500 mt-1">{activeModule.duration}</p>
+                  <p className="text-sm text-gray-600 mt-4 max-w-md">Complete the questions below to check your understanding before moving to the next session.</p>
                 </div>
+              ) : (
+                <>
+                  <VideoPlayer
+                    session={activeSession}
+                    initialPosition={activeSessionId ? playbackPosition[activeSessionId] : 0}
+                    onTimeUpdate={handleTimeUpdate}
+                    onEnded={handleVideoEnded}
+                    onProgress={handleProgressUpdate}
+                    isBookmarked={activeSessionId ? bookmarkedSessions.includes(activeSessionId) : false}
+                    onToggleBookmark={() => activeSessionId && toggleBookmark(activeSessionId)}
+                  />
+                  {activeSession && (
+                    <>
+                      <div className="border-t border-gray-100 px-4 sm:px-5 py-4">
+                        <StatsBar
+                          type={activeSession.type}
+                          duration={activeSession.duration}
+                          totalDuration={`${getSessionsByDay(activeSession.dayId).reduce((a, s) => a + s.durationMinutes, 0)}m`}
+                          status={
+                            completedSessions.includes(activeSession.id)
+                              ? 'Completed'
+                              : sessionProgress[activeSession.id] > 0
+                                ? 'In Progress'
+                                : 'Not started'
+                          }
+                        />
+                      </div>
+                      <div className="border-t border-gray-100 px-4 sm:px-5 py-4">
+                        <DescriptionCard session={activeSession} embedded />
+                      </div>
+                    </>
+                  )}
+                  {!activeSession && (
+                    <div className="border-t border-gray-100 px-4 sm:px-5 py-4">
+                      <DescriptionCard session={null} embedded />
+                    </div>
+                  )}
+                </>
               )}
             </div>
 

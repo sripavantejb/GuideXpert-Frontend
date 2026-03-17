@@ -1,4 +1,4 @@
-import { FiCheckCircle, FiClock, FiLock, FiPlay } from 'react-icons/fi';
+import { FiCheckCircle, FiClock, FiEdit3, FiLock, FiPlay } from 'react-icons/fi';
 
 export function SessionCard({
   session,
@@ -11,12 +11,12 @@ export function SessionCard({
 }) {
   const activeClass = 'bg-primary-navy text-white border-primary-navy shadow-sm';
   const activeDarkClass =
-    'bg-primary-navy text-white border-primary-blue-400/50 shadow-[0_2px_8px_rgba(0,0,0,0.25),inset_3px_0_0_0_#4d8ec7]';
+    'bg-primary-navy/95 text-white border-primary-blue-400/40 shadow-[0_2px_12px_rgba(0,0,0,0.2),inset_3px_0_0_0_#4d8ec7]';
   const lockedClass = darkVariant
-    ? 'bg-white/[0.06] border-white/10 text-slate-500 opacity-70 cursor-not-allowed'
+    ? 'bg-white/[0.04] border-white/[0.08] text-slate-500 opacity-80 cursor-not-allowed'
     : 'bg-gray-50 border-gray-200 opacity-60 cursor-not-allowed';
   const inactiveClass = darkVariant
-    ? 'bg-white/[0.08] border-white/10 text-white hover:bg-white/[0.12] hover:border-white/20 focus-visible:bg-white/[0.12]'
+    ? 'bg-white/[0.06] border-white/[0.08] text-white hover:bg-white/[0.10] hover:border-white/[0.14] focus-visible:bg-white/[0.10] focus-visible:border-white/[0.14]'
     : 'bg-white border-gray-200 hover:border-gray-300 hover:shadow-sm hover:bg-gray-50/60';
 
   const isDarkActive = darkVariant && isActive;
@@ -27,25 +27,29 @@ export function SessionCard({
       onClick={() => !isLocked && onClick(session.id)}
       disabled={isLocked}
       className={`
-        w-full text-left flex items-center gap-3 rounded-xl border transition-all duration-200
+        w-full text-left flex items-center gap-3 rounded-lg border transition-all duration-200
         focus:outline-none focus-visible:ring-2 focus-visible:ring-primary-navy focus-visible:ring-offset-2
-        ${darkVariant ? 'focus-visible:ring-offset-sidebar-blue focus-visible:ring-white/50 p-3.5' : 'p-3'}
+        ${darkVariant ? 'focus-visible:ring-offset-sidebar-blue focus-visible:ring-white/40 p-3.5' : 'p-3'}
         ${isActive ? (darkVariant ? activeDarkClass : activeClass) : isLocked ? lockedClass : inactiveClass}
       `}
     >
       {/* Thumbnail */}
       <div
         className={`
-          w-12 h-12 rounded-lg overflow-hidden shrink-0 relative
-          ${darkVariant && !isActive ? 'bg-white/10 ring-1 ring-white/10' : 'bg-gray-200'}
-          ${isDarkActive ? 'ring-2 ring-white/20' : ''}
+          w-11 h-11 rounded-md overflow-hidden shrink-0 relative
+          ${darkVariant && !isActive ? 'bg-white/8 ring-1 ring-white/8' : 'bg-gray-200'}
+          ${isDarkActive ? 'ring-2 ring-white/25' : ''}
         `}
       >
         {session.thumbnail ? (
           <img src={session.thumbnail} alt="" className="w-full h-full object-cover" />
         ) : (
           <div className={`w-full h-full flex items-center justify-center ${isActive ? 'bg-white/10' : darkVariant ? 'bg-white/10' : 'bg-gray-100'}`}>
-            <FiPlay className={`w-4 h-4 ${isActive || darkVariant ? 'text-white/60' : 'text-gray-400'}`} aria-hidden />
+            {session.type === 'Assessment' ? (
+              <FiEdit3 className={`w-4 h-4 ${isActive || darkVariant ? 'text-white/60' : 'text-gray-400'}`} aria-hidden />
+            ) : (
+              <FiPlay className={`w-4 h-4 ${isActive || darkVariant ? 'text-white/60' : 'text-gray-400'}`} aria-hidden />
+            )}
           </div>
         )}
         {/* Progress bar overlay */}
@@ -60,7 +64,7 @@ export function SessionCard({
       <div className="min-w-0 flex-1">
         <p
           className={`
-            text-sm font-semibold leading-tight truncate tracking-tight
+            text-sm font-medium leading-snug truncate
             ${isActive || darkVariant ? 'text-white' : 'text-gray-900'}
           `}
         >
@@ -68,8 +72,8 @@ export function SessionCard({
         </p>
         <p
           className={`
-            text-xs mt-1
-            ${isActive ? 'text-white/70' : darkVariant ? 'text-slate-400' : 'text-gray-500'}
+            text-xs mt-0.5 font-medium tabular-nums
+            ${isActive ? 'text-white/60' : darkVariant ? 'text-slate-400' : 'text-gray-500'}
           `}
         >
           {session.duration}

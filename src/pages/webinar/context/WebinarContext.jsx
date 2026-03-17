@@ -1,5 +1,5 @@
 import { createContext, useContext, useState, useEffect, useMemo, useCallback } from 'react';
-import { SESSIONS } from '../data/mockWebinarData';
+import { SESSIONS, ALL_MODULES } from '../data/mockWebinarData';
 import { normalizeDoubts } from '../utils/doubtHelpers';
 
 const STORAGE_KEYS = {
@@ -81,15 +81,15 @@ export function WebinarProvider({ children, initialDisplayName }) {
 
   const [activeSessionId, setActiveSessionIdState] = useState(() => {
     const stored = loadJson(STORAGE_KEYS.activeSession, null);
-    if (stored && typeof stored.sessionId === 'string' && SESSIONS.some((s) => s.id === stored.sessionId))
+    if (stored && typeof stored.sessionId === 'string' && ALL_MODULES.some((m) => m.id === stored.sessionId))
       return stored.sessionId;
     return SESSIONS[0]?.id ?? null;
   });
   const [activeDay, setActiveDayState] = useState(() => {
     const stored = loadJson(STORAGE_KEYS.activeSession, null);
     if (stored && typeof stored.sessionId === 'string') {
-      const session = SESSIONS.find((s) => s.id === stored.sessionId);
-      if (session) return session.dayId;
+      const module = ALL_MODULES.find((m) => m.id === stored.sessionId);
+      if (module) return module.dayId;
     }
     if (stored && typeof stored.dayId === 'number' && stored.dayId >= 1 && stored.dayId <= 3)
       return stored.dayId;
@@ -98,8 +98,8 @@ export function WebinarProvider({ children, initialDisplayName }) {
 
   const setActiveSessionId = useCallback((id) => {
     setActiveSessionIdState(id);
-    const session = SESSIONS.find((s) => s.id === id);
-    if (session) setActiveDayState(session.dayId);
+    const module = ALL_MODULES.find((m) => m.id === id);
+    if (module) setActiveDayState(module.dayId);
   }, []);
   const setActiveDay = useCallback((dayId) => {
     setActiveDayState(dayId);

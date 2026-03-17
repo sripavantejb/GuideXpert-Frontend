@@ -15,7 +15,7 @@ export const SESSIONS = [
   {
     id: 's1',
     dayId: 1,
-    title: 'Company Overview',
+    title: 'Intro',
     duration: '8 mins',
     durationMinutes: 8,
     type: 'Overview',
@@ -31,7 +31,7 @@ export const SESSIONS = [
   {
     id: 's2',
     dayId: 1,
-    title: 'Terms & Conditions Part 1',
+    title: 'Session - 1',
     duration: '12 mins',
     durationMinutes: 12,
     type: 'Compliance',
@@ -47,7 +47,7 @@ export const SESSIONS = [
   {
     id: 's3',
     dayId: 1,
-    title: 'Privacy Policy',
+    title: 'Session - 2',
     duration: '10 mins',
     durationMinutes: 10,
     type: 'Compliance',
@@ -63,7 +63,7 @@ export const SESSIONS = [
   {
     id: 's4',
     dayId: 1,
-    title: 'Code of Conduct',
+    title: 'Session - 3',
     duration: '15 mins',
     durationMinutes: 15,
     type: 'Compliance',
@@ -80,7 +80,7 @@ export const SESSIONS = [
   {
     id: 's5',
     dayId: 2,
-    title: 'Terms & Conditions Part 2',
+    title: 'Session - 4',
     duration: '14 mins',
     durationMinutes: 14,
     type: 'Compliance',
@@ -96,7 +96,7 @@ export const SESSIONS = [
   {
     id: 's6',
     dayId: 2,
-    title: 'Internal Onboarding',
+    title: 'Session - 5',
     duration: '20 mins',
     durationMinutes: 20,
     type: 'Training',
@@ -112,7 +112,7 @@ export const SESSIONS = [
   {
     id: 's7',
     dayId: 2,
-    title: 'Security & Confidentiality',
+    title: 'Session - 6',
     duration: '12 mins',
     durationMinutes: 12,
     type: 'Compliance',
@@ -129,7 +129,7 @@ export const SESSIONS = [
   {
     id: 's8',
     dayId: 3,
-    title: 'Final Assessment Overview',
+    title: 'Session - 7',
     duration: '6 mins',
     durationMinutes: 6,
     type: 'Training',
@@ -145,7 +145,7 @@ export const SESSIONS = [
   {
     id: 's9',
     dayId: 3,
-    title: 'Certification & Next Steps',
+    title: 'Session - 8',
     duration: '8 mins',
     durationMinutes: 8,
     type: 'Training',
@@ -160,12 +160,42 @@ export const SESSIONS = [
   },
 ];
 
+// Assessments shown after each session: Intro → Session - 1 → Assessment 1 → Session - 2 → Assessment 2 → ...
+export const ASSESSMENTS = [
+  { id: 'a1', dayId: 1, title: 'Assessment 1', duration: '5 mins', type: 'Assessment', thumbnail: null },
+  { id: 'a2', dayId: 1, title: 'Assessment 2', duration: '5 mins', type: 'Assessment', thumbnail: null },
+  { id: 'a3', dayId: 1, title: 'Assessment 3', duration: '5 mins', type: 'Assessment', thumbnail: null },
+  { id: 'a4', dayId: 1, title: 'Assessment 4', duration: '5 mins', type: 'Assessment', thumbnail: null },
+  { id: 'a5', dayId: 2, title: 'Assessment 5', duration: '5 mins', type: 'Assessment', thumbnail: null },
+  { id: 'a6', dayId: 2, title: 'Assessment 6', duration: '5 mins', type: 'Assessment', thumbnail: null },
+  { id: 'a7', dayId: 2, title: 'Assessment 7', duration: '5 mins', type: 'Assessment', thumbnail: null },
+  { id: 'a8', dayId: 3, title: 'Assessment 8', duration: '5 mins', type: 'Assessment', thumbnail: null },
+];
+
+// Ordered list: Intro, Session - 1, Assessment 1, Session - 2, Assessment 2, ... Session - 8, Assessment 8
+export const ALL_MODULES = (() => {
+  const list = [];
+  for (let i = 0; i < SESSIONS.length; i++) {
+    list.push(SESSIONS[i]);
+    if (i > 0 && i <= ASSESSMENTS.length) list.push(ASSESSMENTS[i - 1]);
+  }
+  return list;
+})();
+
 export function getSessionsByDay(dayId) {
   return SESSIONS.filter((s) => s.dayId === dayId);
 }
 
 export function getSessionById(sessionId) {
   return SESSIONS.find((s) => s.id === sessionId);
+}
+
+export function getModuleById(moduleId) {
+  return ALL_MODULES.find((m) => m.id === moduleId) ?? null;
+}
+
+export function isAssessmentId(id) {
+  return ASSESSMENTS.some((a) => a.id === id);
 }
 
 export function getTotalDurationForDay(dayId) {
