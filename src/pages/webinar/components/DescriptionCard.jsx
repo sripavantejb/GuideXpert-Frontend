@@ -28,6 +28,48 @@ export default function DescriptionCard({ session, embedded = false }) {
   }
 
   const d = session.description;
+  const outline = Array.isArray(d.outline) ? d.outline : null;
+
+  if (outline && outline.length > 0) {
+    return (
+      <div className={cardWrapper}>
+        <div className={`flex items-center gap-2.5 ${embedded ? 'pt-0 pb-2' : 'px-5 py-3.5 border-b border-gray-100'}`}>
+          <FiFileText className="w-4 h-4 text-primary-navy" aria-hidden />
+          <h2 className="text-xs font-semibold uppercase tracking-widest text-gray-500">Description</h2>
+        </div>
+        <div className={`overflow-y-auto max-h-[300px] sm:max-h-[380px] space-y-3 ${embedded ? 'pt-0' : 'p-5'}`}>
+          {outline.map((section, i) => (
+            <div
+              key={i}
+              className="rounded-xl border border-gray-200/80 bg-gray-50/50 p-3.5"
+            >
+              <div className="flex items-start gap-2">
+                <span className="flex-shrink-0 w-6 h-6 rounded-md bg-primary-navy/10 text-primary-navy text-xs font-bold flex items-center justify-center">
+                  {i + 1}
+                </span>
+                <div className="min-w-0 flex-1">
+                  <p className="text-sm font-semibold text-primary-navy leading-tight">
+                    {section.title}
+                  </p>
+                  {section.points && section.points.length > 0 && (
+                    <ul className="mt-1.5 space-y-0.5 list-none pl-0">
+                      {section.points.map((point, j) => (
+                        <li key={j} className="text-xs text-gray-600 leading-relaxed flex items-start gap-1.5">
+                          <span className="text-primary-navy/60 mt-0.5">•</span>
+                          <span>{point}</span>
+                        </li>
+                      ))}
+                    </ul>
+                  )}
+                </div>
+              </div>
+            </div>
+          ))}
+        </div>
+      </div>
+    );
+  }
+
   const keyTopicsRaw = d.keyTopics;
   const keyTopicsList = Array.isArray(keyTopicsRaw)
     ? keyTopicsRaw
@@ -44,13 +86,10 @@ export default function DescriptionCard({ session, embedded = false }) {
 
   return (
     <div className={cardWrapper}>
-      {/* Header */}
       <div className={`flex items-center gap-2.5 ${embedded ? 'pt-0 pb-2' : 'px-5 py-3.5 border-b border-gray-100'}`}>
         <FiFileText className="w-4 h-4 text-primary-navy" aria-hidden />
         <h2 className="text-xs font-semibold uppercase tracking-widest text-gray-500">Description</h2>
       </div>
-
-      {/* Sections */}
       <div className={`overflow-y-auto max-h-[300px] sm:max-h-[340px] space-y-4 ${embedded ? 'pt-0' : 'p-5'}`}>
         {sections.map((section, i) => {
           const meta = SECTION_META[section.label] || {
