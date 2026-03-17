@@ -370,6 +370,26 @@ export const submitAssessment3 = async (name, phone, answers) => {
   });
 };
 
+/**
+ * Submit counsellor assessment 4 (after OTP verification).
+ */
+export const submitAssessment4 = async (name, phone, answers) => {
+  return apiRequest('/assessment-4/submit', {
+    method: 'POST',
+    body: JSON.stringify({ name, phone, answers }),
+  });
+};
+
+/**
+ * Submit counsellor assessment 5 (after OTP verification).
+ */
+export const submitAssessment5 = async (name, phone, answers) => {
+  return apiRequest('/assessment-5/submit', {
+    method: 'POST',
+    body: JSON.stringify({ name, phone, answers }),
+  });
+};
+
 const ASSESSMENT_UTM_KEY = 'guidexpert_assessment_utm';
 
 /**

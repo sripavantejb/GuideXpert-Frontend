@@ -3,7 +3,7 @@ import { sendOtp, verifyOtp, submitAssessment3 } from '../utils/api';
 import { ASSESSMENT_SECTIONS_3 } from '../data/assessmentQuestions3';
 import SuccessPopup from '../components/UI/SuccessPopup';
 
-const MAX_SCORE_3 = 20;
+const MAX_SCORE_3 = 5;
 
 function validateName(value) {
   const trimmed = typeof value === 'string' ? value.trim() : '';

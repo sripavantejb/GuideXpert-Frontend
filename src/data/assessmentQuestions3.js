@@ -1,229 +1,64 @@
 /**
- * Counsellor assessment 3: single section, 20 MCQs (no section names).
- * Question ids q1–q20 match backend scoring.
+ * Counsellor assessment 3 (Session 3): Lead generation, social media, college outreach.
+ * Question ids q1–q5 match backend scoring.
  */
 export const ASSESSMENT_SECTIONS_3 = [
   {
-    title: '',
+    title: 'Session - 3: Lead generation & outreach',
     questions: [
       {
         id: 'q1',
         type: 'mcq',
-        text: 'What is the primary objective of a GuideXpert counsellor?',
+        text: 'What is the first step to generate leads through social media?',
         options: [
-          'Fill seats quickly',
-          'Help students make informed decisions',
-          'Promote only selected colleges',
-          'Reduce counselling time'
+          'a) Run paid ads',
+          'b) Post consistently on social media',
+          'c) Contact students directly',
+          'd) Create a website'
         ]
       },
       {
         id: 'q2',
         type: 'mcq',
-        text: 'While suggesting a course, the most important factor is:',
+        text: 'What is the main purpose of sharing career-related content on WhatsApp?',
         options: [
-          'Highest salary package',
-          "Student's long-term goals and interests",
-          'College building size',
-          'Peer suggestions'
+          'a) Promote colleges',
+          'b) Sell courses',
+          'c) Collect fees',
+          'd) Create curiosity and engagement'
         ]
       },
       {
         id: 'q3',
         type: 'mcq',
-        text: 'If a student is unsure about career direction, you should:',
+        text: 'What should you do after a student takes the Career Clarity Test?',
         options: [
-          'Decide for them',
-          'End session',
-          'Help them explore options systematically',
-          'Suggest trending course'
+          'a) Follow up based on their results',
+          'b) Ignore and wait',
+          'c) Send college list directly',
+          'd) Ask for payment'
         ]
       },
       {
         id: 'q4',
         type: 'mcq',
-        text: 'A good recommendation is based on:',
+        text: 'What is the correct approach while talking to college authorities?',
         options: [
-          'Student profile analysis',
-          'Personal preference',
-          'Commission value',
-          'Fast closure'
+          'a) Ask for leads directly',
+          'b) Start with student problems and offer value',
+          'c) Promote colleges',
+          'd) Talk about commissions'
         ]
       },
       {
         id: 'q5',
         type: 'mcq',
-        text: 'When a new lead is assigned, the best first action is:',
+        text: 'Which of the following represents a serious lead?',
         options: [
-          'Share fee structure immediately',
-          'Review details and plan the conversation',
-          'Forward lead',
-          'Mark as contacted'
-        ]
-      },
-      {
-        id: 'q6',
-        type: 'mcq',
-        text: 'Lead qualification helps in:',
-        options: [
-          'Increasing call duration',
-          'Identifying seriousness and readiness',
-          'Avoiding follow-ups',
-          'Reducing workload'
-        ]
-      },
-      {
-        id: 'q7',
-        type: 'mcq',
-        text: "If a student doesn't answer, you should:",
-        options: [
-          'Close the lead',
-          'Follow structured follow-up process',
-          'Stop trying',
-          'Send warning message'
-        ]
-      },
-      {
-        id: 'q8',
-        type: 'mcq',
-        text: 'A well-qualified lead usually has clarity about:',
-        options: [
-          'Random interest',
-          'Budget, timeline, and goal',
-          "Friend's suggestion",
-          'Social media trend'
-        ]
-      },
-      {
-        id: 'q9',
-        type: 'mcq',
-        text: 'Active listening in counselling means:',
-        options: [
-          'Allowing student to speak without interruption',
-          'Speaking continuously',
-          'Reading brochure',
-          'Correcting immediately'
-        ]
-      },
-      {
-        id: 'q10',
-        type: 'mcq',
-        text: 'When parents ask detailed questions, you should:',
-        options: [
-          'Avoid answering',
-          'Respond with clear and accurate information',
-          'Transfer call',
-          'Rush conversation'
-        ]
-      },
-      {
-        id: 'q11',
-        type: 'mcq',
-        text: 'When a student raises a concern, the first step is:',
-        options: [
-          'Convince immediately',
-          'Understand the concern fully',
-          'Change topic',
-          'Offer discount'
-        ]
-      },
-      {
-        id: 'q12',
-        type: 'mcq',
-        text: 'A counselling session should close with:',
-        options: [
-          'Clear agreed next step',
-          'Immediate payment pressure',
-          'Multiple brochures',
-          'Open-ended confusion'
-        ]
-      },
-      {
-        id: 'q13',
-        type: 'mcq',
-        text: 'Updating CRM regularly ensures:',
-        options: [
-          'Better tracking and follow-up',
-          'Extra work',
-          'Delay in process',
-          'Management pressure'
-        ]
-      },
-      {
-        id: 'q14',
-        type: 'mcq',
-        text: 'CRM notes should include:',
-        options: [
-          'Important discussion summary and next action',
-          'Personal comments',
-          'Only payment',
-          'Nothing detailed'
-        ]
-      },
-      {
-        id: 'q15',
-        type: 'mcq',
-        text: 'Once student confirms interest, next step is:',
-        options: [
-          'Wait silently',
-          'Guide through documentation and payment steps',
-          'Close lead',
-          'Transfer lead'
-        ]
-      },
-      {
-        id: 'q16',
-        type: 'mcq',
-        text: 'Payment confirmation must be:',
-        options: [
-          'Assumed',
-          'Verified properly before status update',
-          'Ignored',
-          'Taken verbally only'
-        ]
-      },
-      {
-        id: 'q17',
-        type: 'mcq',
-        text: 'A professional counsellor maintains consistency by:',
-        options: [
-          'Following defined counselling process',
-          'Changing approach randomly',
-          'Skipping steps',
-          'Rushing calls'
-        ]
-      },
-      {
-        id: 'q18',
-        type: 'mcq',
-        text: 'If unsure about a college detail, you should:',
-        options: [
-          'Guess answer',
-          'Verify and respond correctly',
-          'Avoid question',
-          'Delay indefinitely'
-        ]
-      },
-      {
-        id: 'q19',
-        type: 'mcq',
-        text: 'Long-term student satisfaction depends on:',
-        options: [
-          'Clear communication',
-          'Fast closure',
-          'Higher fees',
-          'Short calls'
-        ]
-      },
-      {
-        id: 'q20',
-        type: 'mcq',
-        text: 'A strong counsellor performance is reflected in:',
-        options: [
-          'Structured process + student clarity',
-          'Call quantity only',
-          'Commission value',
-          'Speed of closure'
+          'a) Just exploring options',
+          'b) Not sure about budget',
+          'c) Clear interest with defined goals',
+          'd) No urgency'
         ]
       }
     ]

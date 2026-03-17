@@ -216,7 +216,7 @@ export default function AssessmentForm() {
       if (result.success) {
         setSubmittedResult({
           score: result.data?.score ?? 0,
-          maxScore: result.data?.maxScore ?? 10,
+          maxScore: result.data?.maxScore ?? 5,
           questionResults: result.data?.questionResults ?? []
         });
         setShowSuccessPopup(true);
@@ -603,7 +603,7 @@ export default function AssessmentForm() {
         onClose={() => setShowSuccessPopup(false)}
         variant="assessment"
         score={submittedResult?.score ?? 0}
-        maxScore={submittedResult?.maxScore ?? 10}
+        maxScore={submittedResult?.maxScore ?? 5}
         message="Thank you for completing the Counsellor Assessment 1."
       />
     </div>

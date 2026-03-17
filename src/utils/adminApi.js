@@ -290,6 +290,38 @@ export const getAssessment3SubmissionById = async (id, token = getStoredToken())
   return adminRequest(`/assessment-3-submissions/${encodeURIComponent(id)}`, { method: 'GET' }, token);
 };
 
+/** GET /admin/assessment-4-submissions — list with pagination. options: { from, to, q }. */
+export const getAssessment4Submissions = async (page = 1, limit = 50, optionsOrToken = {}, token = getStoredToken()) => {
+  const options = typeof optionsOrToken === 'string' ? {} : optionsOrToken;
+  const actualToken = typeof optionsOrToken === 'string' ? optionsOrToken : token;
+  const params = new URLSearchParams({ page: String(page), limit: String(limit) });
+  if (options.from != null) params.set('from', options.from);
+  if (options.to != null) params.set('to', options.to);
+  if (options.q != null && String(options.q).trim() !== '') params.set('q', String(options.q).trim());
+  return adminRequest(`/assessment-4-submissions?${params}`, { method: 'GET' }, actualToken);
+};
+
+/** GET /admin/assessment-4-submissions/:id — single submission with questionResults. */
+export const getAssessment4SubmissionById = async (id, token = getStoredToken()) => {
+  return adminRequest(`/assessment-4-submissions/${encodeURIComponent(id)}`, { method: 'GET' }, token);
+};
+
+/** GET /admin/assessment-5-submissions — list with pagination. options: { from, to, q }. */
+export const getAssessment5Submissions = async (page = 1, limit = 50, optionsOrToken = {}, token = getStoredToken()) => {
+  const options = typeof optionsOrToken === 'string' ? {} : optionsOrToken;
+  const actualToken = typeof optionsOrToken === 'string' ? optionsOrToken : token;
+  const params = new URLSearchParams({ page: String(page), limit: String(limit) });
+  if (options.from != null) params.set('from', options.from);
+  if (options.to != null) params.set('to', options.to);
+  if (options.q != null && String(options.q).trim() !== '') params.set('q', String(options.q).trim());
+  return adminRequest(`/assessment-5-submissions?${params}`, { method: 'GET' }, actualToken);
+};
+
+/** GET /admin/assessment-5-submissions/:id — single submission with questionResults. */
+export const getAssessment5SubmissionById = async (id, token = getStoredToken()) => {
+  return adminRequest(`/assessment-5-submissions/${encodeURIComponent(id)}`, { method: 'GET' }, token);
+};
+
 /** GET /admin/missing-leads — list with pagination. Leads in Assessment 3 not in activation form. options: { from, to, q }. */
 export const getMissingLeads = async (page = 1, limit = 50, optionsOrToken = {}, token = getStoredToken()) => {
   const options = typeof optionsOrToken === 'string' ? {} : optionsOrToken;

@@ -1,9 +1,9 @@
 import { useState, useRef, useMemo, useEffect } from 'react';
-import { sendOtp, verifyOtp, submitAssessment2 } from '../utils/api';
-import { ASSESSMENT_SECTIONS_2 } from '../data/assessmentQuestions2';
+import { sendOtp, verifyOtp, submitAssessment5 } from '../utils/api';
+import { ASSESSMENT_SECTIONS_5 } from '../data/assessmentQuestions5';
 import SuccessPopup from '../components/UI/SuccessPopup';
 
-const MAX_SCORE_2 = 5;
+const MAX_SCORE_5 = 5;
 
 function validateName(value) {
   const trimmed = typeof value === 'string' ? value.trim() : '';
@@ -22,7 +22,7 @@ function validateMobile(value) {
 
 function getInitialAnswers() {
   const initial = {};
-  ASSESSMENT_SECTIONS_2.forEach((section) => {
+  ASSESSMENT_SECTIONS_5.forEach((section) => {
     section.questions.forEach((q) => {
       initial[q.id] = '';
     });
@@ -30,7 +30,7 @@ function getInitialAnswers() {
   return initial;
 }
 
-export default function AssessmentForm2() {
+export default function AssessmentForm5() {
   const [step, setStep] = useState(1);
   const [name, setName] = useState('');
   const [mobileNumber, setMobileNumber] = useState('');
@@ -52,7 +52,7 @@ export default function AssessmentForm2() {
 
   const flatQuestions = useMemo(
     () =>
-      ASSESSMENT_SECTIONS_2.flatMap((s) =>
+      ASSESSMENT_SECTIONS_5.flatMap((s) =>
         s.questions.map((q) => ({ ...q, sectionTitle: s.title }))
       ),
     []
@@ -60,13 +60,12 @@ export default function AssessmentForm2() {
 
   const questionTextMap = useMemo(() => {
     const map = {};
-    ASSESSMENT_SECTIONS_2.forEach((s) => {
+    ASSESSMENT_SECTIONS_5.forEach((s) => {
       s.questions.forEach((q) => { map[q.id] = q.text; });
     });
     return map;
   }, []);
 
-  // Unlock Submit button only after a short delay on the last question so double-clicking "Next" doesn't submit
   const isOnLastQuestion = questionIndex === flatQuestions.length - 1;
   useEffect(() => {
     if (isOnLastQuestion) {
@@ -109,7 +108,7 @@ export default function AssessmentForm2() {
     setSuccessMessage('');
     setLoading(true);
     try {
-      const result = await sendOtp(name.trim(), normalizedPhone, 'Counsellor Assessment 2');
+      const result = await sendOtp(name.trim(), normalizedPhone, 'Counsellor Assessment 5');
       if (result.success) {
         setSuccessMessage('OTP sent successfully to your mobile number');
         setStep(2);
@@ -184,7 +183,7 @@ export default function AssessmentForm2() {
     setOtp(['', '', '', '', '', '']);
     setLoading(true);
     try {
-      const result = await sendOtp(name.trim(), normalizedPhone, 'Counsellor Assessment 2');
+      const result = await sendOtp(name.trim(), normalizedPhone, 'Counsellor Assessment 5');
       if (result.success) {
         setSuccessMessage('OTP resent successfully');
         otpInputRefs.current[0]?.focus();
@@ -212,7 +211,6 @@ export default function AssessmentForm2() {
 
   const handleAssessmentFormKeyDown = (e) => {
     if (e.key !== 'Enter') return;
-    // Prevent Enter from submitting the form so submission only happens on explicit "Submit Assessment" click
     e.preventDefault();
     const target = e.target;
     const isRadio = target.type === 'radio';
@@ -227,11 +225,11 @@ export default function AssessmentForm2() {
     setSubmitError('');
     setSubmitting(true);
     try {
-      const result = await submitAssessment2(name.trim(), normalizedPhone, answers);
+      const result = await submitAssessment5(name.trim(), normalizedPhone, answers);
       if (result.success) {
         setSubmittedResult({
           score: result.data?.score ?? 0,
-          maxScore: result.data?.maxScore ?? MAX_SCORE_2,
+          maxScore: result.data?.maxScore ?? MAX_SCORE_5,
           questionResults: result.data?.questionResults ?? []
         });
         setShowSuccessPopup(true);
@@ -270,10 +268,9 @@ export default function AssessmentForm2() {
       <div className="max-w-2xl mx-auto">
         <div className="text-center mb-6">
           <h1 className="text-2xl font-bold" style={{ color: '#003366' }}>GuideXpert</h1>
-          <p className="text-gray-600 mt-1">Counsellor Assessment 2</p>
+          <p className="text-gray-600 mt-1">Counsellor Assessment 5</p>
         </div>
 
-        {/* Step indicator */}
         <div className="mb-6">
           <div className="flex items-center justify-between text-xs text-gray-500 mb-1">
             <span>Step {step} of 3</span>
@@ -308,12 +305,12 @@ export default function AssessmentForm2() {
               )}
               <form onSubmit={handleSendOtp} className="space-y-4">
                 <div>
-                  <label htmlFor="assessment2-name" className="block text-sm font-medium text-gray-700 mb-1">
+                  <label htmlFor="assessment5-name" className="block text-sm font-medium text-gray-700 mb-1">
                     Name <span className="text-red-500">*</span>
                   </label>
                   <input
                     type="text"
-                    id="assessment2-name"
+                    id="assessment5-name"
                     value={name}
                     onChange={handleNameChange}
                     placeholder="Full Name"
@@ -326,12 +323,12 @@ export default function AssessmentForm2() {
                   {errors.name && <p className="mt-1 text-sm text-red-600">{errors.name}</p>}
                 </div>
                 <div>
-                  <label htmlFor="assessment2-mobile" className="block text-sm font-medium text-gray-700 mb-1">
+                  <label htmlFor="assessment5-mobile" className="block text-sm font-medium text-gray-700 mb-1">
                     Mobile Number <span className="text-red-500">*</span>
                   </label>
                   <input
                     type="tel"
-                    id="assessment2-mobile"
+                    id="assessment5-mobile"
                     value={mobileNumber}
                     onChange={handleMobileChange}
                     placeholder="10-digit mobile number"
@@ -428,7 +425,6 @@ export default function AssessmentForm2() {
               <h2 className="text-lg font-semibold mb-1" style={{ color: '#003366' }}>Assessment questions</h2>
               <p className="text-sm text-gray-600 mb-4">You can go back to the previous step to change your details.</p>
 
-              {/* Question progress bar */}
               <div className="mb-6">
                 <div className="flex items-center justify-between text-xs text-gray-500 mb-1">
                   <span>Question {questionIndex + 1} of {flatQuestions.length}</span>
@@ -550,7 +546,7 @@ export default function AssessmentForm2() {
                       : 'Review the suggestions below to improve.'}
                   </p>
                   <p className="mt-3 text-sm text-gray-500">
-                    Thank you for completing the counsellor assessment 2.
+                    Thank you for completing the counsellor assessment 5.
                   </p>
                 </div>
 
@@ -606,8 +602,8 @@ export default function AssessmentForm2() {
         onClose={() => setShowSuccessPopup(false)}
         variant="assessment"
         score={submittedResult?.score ?? 0}
-        maxScore={submittedResult?.maxScore ?? MAX_SCORE_2}
-        message="Thank you for completing the Counsellor Assessment 2."
+        maxScore={submittedResult?.maxScore ?? MAX_SCORE_5}
+        message="Thank you for completing the Counsellor Assessment 5."
       />
     </div>
   );

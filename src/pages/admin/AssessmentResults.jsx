@@ -7,6 +7,10 @@ import {
   getAssessment2SubmissionById,
   getAssessment3Submissions,
   getAssessment3SubmissionById,
+  getAssessment4Submissions,
+  getAssessment4SubmissionById,
+  getAssessment5Submissions,
+  getAssessment5SubmissionById,
   getMissingLeads,
   getStoredToken,
 } from '../../utils/adminApi';
@@ -14,6 +18,8 @@ import { useAuth } from '../../contexts/AuthContext';
 import { ASSESSMENT_SECTIONS } from '../../data/assessmentQuestions';
 import { ASSESSMENT_SECTIONS_2 } from '../../data/assessmentQuestions2';
 import { ASSESSMENT_SECTIONS_3 } from '../../data/assessmentQuestions3';
+import { ASSESSMENT_SECTIONS_4 } from '../../data/assessmentQuestions4';
+import { ASSESSMENT_SECTIONS_5 } from '../../data/assessmentQuestions5';
 import TableSkeleton from '../../components/UI/TableSkeleton';
 import { ContentSkeleton } from '../../components/UI/Skeleton';
 
@@ -41,6 +47,20 @@ const ASSESSMENT_TYPES = [
   },
   {
     id: 4,
+    label: 'Assessment 4',
+    getSubmissions: getAssessment4Submissions,
+    getSubmissionById: getAssessment4SubmissionById,
+    sections: ASSESSMENT_SECTIONS_4,
+  },
+  {
+    id: 5,
+    label: 'Assessment 5',
+    getSubmissions: getAssessment5Submissions,
+    getSubmissionById: getAssessment5SubmissionById,
+    sections: ASSESSMENT_SECTIONS_5,
+  },
+  {
+    id: 6,
     label: 'Missing Leads',
     getSubmissions: getMissingLeads,
     getSubmissionById: getAssessment3SubmissionById,
@@ -101,11 +121,11 @@ function formatDate(d) {
 function parseType(searchParams) {
   const t = searchParams.get('type');
   const n = t ? parseInt(t, 10) : 1;
-  return n >= 1 && n <= 4 ? n : 1;
+  return n >= 1 && n <= 6 ? n : 1;
 }
 
 function getEmptyMessage(hasFilter, typeId) {
-  if (typeId === 4) {
+  if (typeId === 6) {
     return hasFilter ? 'No missing leads for the selected filters' : 'No missing leads';
   }
   return hasFilter ? 'No submissions for the selected filters' : 'No submissions yet';
@@ -212,12 +232,12 @@ export default function AssessmentResults() {
           window.location.href = '/admin/login';
           return;
         }
-        setError(result.message || (typeId === 4 ? 'Failed to load missing leads' : `Failed to load ${activeConfig.label.toLowerCase()} submissions`));
+        setError(result.message || (typeId === 6 ? 'Failed to load missing leads' : `Failed to load ${activeConfig.label.toLowerCase()} submissions`));
         return;
       }
       setSubmissions(result.data?.submissions ?? []);
       setTotal(result.data?.total ?? 0);
-      if (typeId === 4) {
+      if (typeId === 6) {
         setDuplicateCount(result.data?.duplicateCount ?? 0);
         setActivationFormCount(result.data?.activationFormCount ?? 0);
         setActivationFormDuplicateCount(result.data?.activationFormDuplicateCount ?? 0);
@@ -286,7 +306,7 @@ export default function AssessmentResults() {
   };
 
   const copyMissingLeadsToClipboard = useCallback(() => {
-    if (typeId !== 4 || submissions.length === 0) return;
+    if (typeId !== 6 || submissions.length === 0) return;
     const escape = (v) => {
       const s = String(v ?? '').trim();
       if (s.includes(',') || s.includes('"') || s.includes('\n') || s.includes('\r')) {
@@ -543,7 +563,7 @@ export default function AssessmentResults() {
             </div>
 
             <div className="rounded-2xl border border-gray-200 bg-gradient-to-br from-primary-blue-500 via-primary-blue-600 to-indigo-600 shadow-lg p-5 text-white">
-              {typeId === 4 ? (
+              {typeId === 6 ? (
                 <>
                   <h3 className="text-base font-bold text-white mb-0.5">Missing leads</h3>
                   <p className="text-sm text-white/90 mb-4">{statsLabel} · Not in activation form</p>
@@ -608,7 +628,7 @@ export default function AssessmentResults() {
           </div>
         </div>
 
-        {typeId === 4 && !loading && submissions.length > 0 && (
+        {typeId === 6 && !loading && submissions.length > 0 && (
           <div className="mb-4 flex justify-start">
             <button
               type="button"

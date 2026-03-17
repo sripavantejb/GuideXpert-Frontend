@@ -1,119 +1,64 @@
 /**
- * Counsellor assessment 2: sections and questions (MCQ).
- * Question ids q1–q10 match backend scoring.
+ * Counsellor assessment 2 (Session 2): 4-Step flow, communication, placement ethics.
+ * Question ids q1–q5 match backend scoring.
  */
 export const ASSESSMENT_SECTIONS_2 = [
   {
-    title: 'Lead generation & outreach',
+    title: 'SESSION-2: 4-Step flow & communication',
     questions: [
       {
         id: 'q1',
         type: 'mcq',
-        text: 'Which platform is mainly used to generate leads online?',
+        text: 'What is the first step in the 4-Step Counselling Flow?',
         options: [
-          'Television',
-          'Social Media',
-          'Newspapers',
-          'Radio'
+          'a) Guide',
+          'b) Balance',
+          'c) Acknowledge',
+          'd) Validate'
         ]
       },
       {
         id: 'q2',
         type: 'mcq',
-        text: 'What should counsellors do regularly on social media to attract students?',
+        text: 'When parents and students have different expectations, what should a counsellor do first?',
         options: [
-          'Post consistently',
-          'Only share college advertisements',
-          'Post entertainment content',
-          'Avoid posting'
+          'a) Support only parents',
+          'b) Support only students',
+          'c) Acknowledge both sides',
+          'd) Reject both opinions'
         ]
       },
       {
         id: 'q3',
         type: 'mcq',
-        text: 'Sharing a Course Fit Test mainly creates what feeling in students?',
+        text: 'According to counselling communication principles, how should the counsellor\'s tone be?',
         options: [
-          'Curiosity and self-reflection',
-          'Fear of counsellors',
-          'Disinterest',
-          'Competition'
+          'a) Aggressive and convincing',
+          'b) Calm and guiding',
+          'c) Fast and forceful',
+          'd) Sales-focused'
         ]
       },
       {
         id: 'q4',
         type: 'mcq',
-        text: 'What is the result of sharing career-related content on WhatsApp?',
+        text: 'What are the correct steps in the 4-step counselling flow?',
         options: [
-          'Students ignore messages',
-          'Leads decrease',
-          'Higher lead generation',
-          'No change'
+          'A. Guide → Balance → Validate → Acknowledge',
+          'B. Acknowledge → Validate → Balance → Guide',
+          'C. Balance → Guide → Acknowledge → Validate',
+          'D. Validate → Balance → Guide → Acknowledge'
         ]
       },
       {
         id: 'q5',
         type: 'mcq',
-        text: 'Which method helps counsellors generate leads through known people?',
+        text: 'Why should counsellors never guarantee placement?',
         options: [
-          'Cold calling strangers',
-          'Personal network',
-          'Random messaging',
-          'Paid advertising only'
-        ]
-      },
-      {
-        id: 'q6',
-        type: 'mcq',
-        text: 'When talking to people at events, how should counsellors start?',
-        options: [
-          'Directly ask for admissions',
-          'Start casual conversations about students',
-          'Promote colleges immediately',
-          'Discuss fees first'
-        ]
-      },
-      {
-        id: 'q7',
-        type: 'mcq',
-        text: 'What is the advantage of referrals?',
-        options: [
-          'One lead can bring many more leads',
-          'Reduces communication',
-          'Limits network growth',
-          'Only one student joins'
-        ]
-      },
-      {
-        id: 'q8',
-        type: 'mcq',
-        text: 'When approaching college authorities, what should you talk about first?',
-        options: [
-          'Commission',
-          'College promotions',
-          'Student career confusion after Intermediate',
-          'Seat availability'
-        ]
-      },
-      {
-        id: 'q9',
-        type: 'mcq',
-        text: 'What should counsellors say instead of "I want leads"?',
-        options: [
-          'I want admissions',
-          'I want to promote colleges',
-          'I want to help your students',
-          'I want commissions'
-        ]
-      },
-      {
-        id: 'q10',
-        type: 'mcq',
-        text: 'Posting like an admissions agent leads to what result?',
-        options: [
-          'High trust',
-          'Short-term enquiries and low trust',
-          'More referrals',
-          'Long-term credibility'
+          'A. Companies do not provide placements',
+          'B. Placements depend on student skills, companies visiting, and past records',
+          'C. Colleges do not allow placements',
+          'D. Only government colleges provide placements'
         ]
       }
     ]

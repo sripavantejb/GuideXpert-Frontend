@@ -14,6 +14,8 @@ import TrainingForm from './pages/TrainingForm';
 import AssessmentForm from './pages/AssessmentForm';
 import AssessmentForm2 from './pages/AssessmentForm2';
 import AssessmentForm3 from './pages/AssessmentForm3';
+import AssessmentForm4 from './pages/AssessmentForm4';
+import AssessmentForm5 from './pages/AssessmentForm5';
 import AssessmentFormCounsellorTest from './pages/AssessmentFormCounsellorTest';
 import AssessmentLayout from './components/Layout/AssessmentLayout';
 import AdminLayout from './components/Admin/AdminLayout';
@@ -117,6 +119,8 @@ function App() {
           <Route path="/assessment" element={<AssessmentForm />} />
           <Route path="/assessment-2" element={<AssessmentForm2 />} />
           <Route path="/assessment-3" element={<AssessmentForm3 />} />
+          <Route path="/assessment-4" element={<AssessmentForm4 />} />
+          <Route path="/assessment-5" element={<AssessmentForm5 />} />
           <Route path="/assessment-career-dna" element={<AssessmentLayout hideNavAndFooter><AssessmentFormCounsellorTest type="career-dna" /></AssessmentLayout>} />
           <Route path="/assessment-course-fit" element={<AssessmentLayout hideNavAndFooter><AssessmentFormCounsellorTest type="course-fit" /></AssessmentLayout>} />
           <Route path="/admin/login" element={<AdminLogin />} />
