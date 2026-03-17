@@ -31,11 +31,13 @@ async function apiRequest(endpoint, options = {}) {
 
   try {
     const response = await fetch(url, config);
-    const text = await response.text();
     let data;
+    
     try {
-      data = text ? JSON.parse(text) : null;
+      data = await response.json();
     } catch (jsonError) {
+      // If response is not JSON, get text instead
+      const text = await response.text();
       console.error('[API] Non-JSON response:', text);
       return {
         success: false,
@@ -54,19 +56,18 @@ async function apiRequest(endpoint, options = {}) {
       });
     }
 
-    const safeData = data ?? {};
     if (!response.ok) {
       return {
         success: false,
-        message: safeData.message || 'An error occurred',
+        message: data.message || 'An error occurred',
         status: response.status,
-        data: safeData,
+        data: data,
       };
     }
 
     return {
       success: true,
-      data: safeData,
+      data: data,
       status: response.status,
     };
   } catch (error) {
@@ -325,19 +326,6 @@ export const checkPosterEligibility = async (mobileNumber) => {
     method: 'POST',
     body: JSON.stringify({ mobileNumber: String(mobileNumber || '').replace(/\D/g, '').slice(0, 10) }),
   });
-};
-
-/**
- * Fetch assessment questions by type (1–5). Same shape as Assessment 1 & 2.
- * @param {number} type - 1, 2, 3, 4, or 5
- * @returns {Promise<{success: boolean, data?: { questions: Array<{ id, question, options, correctAnswer }> }, message?: string, status?: number}>}
- */
-export const getAssessmentQuestions = async (type) => {
-  const t = typeof type === 'number' ? type : parseInt(String(type), 10);
-  if (Number.isNaN(t) || t < 1 || t > 5) {
-    return { success: false, message: 'Invalid assessment type' };
-  }
-  return apiRequest(`/assessments?type=${t}`, { method: 'GET' });
 };
 
 /**
