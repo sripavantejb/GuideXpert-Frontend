@@ -1,7 +1,7 @@
 import { useState, useCallback } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useWebinar } from '../context/WebinarContext';
-import { FiChevronLeft, FiChevronRight } from 'react-icons/fi';
+import { FiChevronLeft, FiChevronRight, FiLock, FiAward } from 'react-icons/fi';
 import { HiX as HiXIcon } from 'react-icons/hi';
 import { SessionCard } from './SessionList';
 import { SESSIONS, ALL_MODULES, getSessionsByDay } from '../data/mockWebinarData';
@@ -42,6 +42,24 @@ export default function Sidebar({
       navigate('/webinar');
     },
     [setActiveSessionId, setSidebarOpen, navigate]
+  );
+
+  const completedVideoCountResolved = completedVideoCount ?? completedSessions.filter((id) => SESSIONS.some((s) => s.id === id)).length;
+  const certificateUnlocked = SESSIONS.length > 0 && completedVideoCountResolved >= SESSIONS.length;
+
+  const handleCertificateClick = useCallback(() => {
+    if (!certificateUnlocked) return;
+    setSidebarOpen(false);
+    navigate('/webinar/certificates');
+  }, [certificateUnlocked, setSidebarOpen, navigate]);
+
+  // Show unlocked modules; also show Session - 4, Session - 5, and Assessment 5 in order when locked (so order is correct)
+  const visibleModules = ALL_MODULES.filter(
+    (module) =>
+      isDayUnlocked(module.dayId) ||
+      module.id === 's5' || // Session - 4 (Day 2)
+      module.id === 's6' || // Session - 5 (Day 2)
+      module.id === 'a5'    // Assessment 5 (Day 2)
   );
 
   return (
@@ -132,7 +150,9 @@ export default function Sidebar({
           {expanded ? (
             <div className="flex-1 min-h-0 flex flex-col overflow-hidden">
               <div className="flex-1 overflow-y-auto min-h-0 py-4 px-4 pb-5 space-y-2.5">
-                {ALL_MODULES.map((module) => (
+                {visibleModules.map((module) => {
+                  const isUnlocked = isDayUnlocked(module.dayId);
+                  return (
                     <SessionCard
                       key={module.id}
                       session={module}
@@ -143,11 +163,54 @@ export default function Sidebar({
                           ? 1
                           : 0
                       }
-                      isLocked={!isDayUnlocked(module.dayId)}
+                      isLocked={!isUnlocked}
                       onClick={handleSelectSession}
                       darkVariant
                     />
-                ))}
+                  );
+                })}
+              </div>
+              {/* Certificate row - always visible, premium styling with gold shimmer */}
+              <div className="shrink-0 px-4 pb-4 pt-2">
+                <button
+                  type="button"
+                  onClick={handleCertificateClick}
+                  disabled={!certificateUnlocked}
+                  className={`
+                    relative overflow-hidden w-full text-left flex items-center gap-3 rounded-lg border transition-all duration-200
+                    focus:outline-none focus-visible:ring-2 focus-visible:ring-amber-300 focus-visible:ring-offset-2 focus-visible:ring-offset-sidebar-blue
+                    p-3.5
+                    ${certificateUnlocked
+                      ? 'bg-linear-to-br from-amber-500/20 via-yellow-600/15 to-amber-700/20 border-amber-400/40 text-white hover:from-amber-500/30 hover:via-yellow-600/25 hover:to-amber-700/30 hover:border-amber-400/60 shadow-[0_0_12px_rgba(251,191,36,0.15)] certificate-glow-unlocked'
+                      : 'bg-white/5 border-amber-900/30 text-slate-500 opacity-90 cursor-not-allowed'
+                    }
+                  `}
+                  aria-label={certificateUnlocked ? 'View certificate' : 'Certificate locked — complete all sessions to unlock'}
+                >
+                  <div className="certificate-shimmer" aria-hidden />
+                  <div className="w-11 h-11 rounded-md overflow-hidden shrink-0 flex items-center justify-center bg-amber-500/20 ring-1 ring-amber-400/30 relative z-10">
+                    <FiAward className="w-5 h-5 text-amber-300" aria-hidden />
+                  </div>
+                  <div className="min-w-0 flex-1 relative z-10">
+                    <p className="text-sm font-semibold leading-snug truncate text-white">
+                      Certificate
+                    </p>
+                    <p className="text-xs mt-0.5 font-medium text-slate-400">
+                      {certificateUnlocked ? 'Ready — view or download' : 'Complete all sessions to unlock'}
+                    </p>
+                  </div>
+                  <div className="shrink-0 flex items-center justify-center w-6 h-6 relative z-10">
+                    {certificateUnlocked ? (
+                      <span className="w-5 h-5 rounded-full bg-amber-400/30 flex items-center justify-center" aria-label="Unlocked">
+                        <svg className="w-3 h-3 text-amber-300" fill="currentColor" viewBox="0 0 20 20" aria-hidden>
+                          <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
+                        </svg>
+                      </span>
+                    ) : (
+                      <FiLock className="w-4 h-4 text-slate-500" aria-label="Locked" />
+                    )}
+                  </div>
+                </button>
               </div>
             </div>
           ) : (

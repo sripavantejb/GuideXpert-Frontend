@@ -13,6 +13,7 @@ export const WEBINAR_ASSESSMENT_1_QUESTIONS = [
       'C. Increase admissions in partner colleges',
       'D. Promote engineering courses only',
     ],
+    correctAnswer: 'B. Help students with honest, ethical and personalised career guidance',
   },
   {
     id: 'q2',
@@ -24,6 +25,7 @@ export const WEBINAR_ASSESSMENT_1_QUESTIONS = [
       'C. Sharing facts only',
       'D. Giving personal advice',
     ],
+    correctAnswer: 'C. Sharing facts only',
   },
   {
     id: 'q3',
@@ -35,6 +37,7 @@ export const WEBINAR_ASSESSMENT_1_QUESTIONS = [
       'C. Forcing students to choose a course',
       'D. Guaranteeing placements',
     ],
+    correctAnswer: 'A. Suggesting options or recommendations',
   },
   {
     id: 'q4',
@@ -46,6 +49,7 @@ export const WEBINAR_ASSESSMENT_1_QUESTIONS = [
       'C. Give admission forms',
       'D. Explain fee structure',
     ],
+    correctAnswer: "A. Listen to the student's needs",
   },
   {
     id: 'q5',
@@ -57,5 +61,6 @@ export const WEBINAR_ASSESSMENT_1_QUESTIONS = [
       'C. Help students make informed decisions',
       'D. Convince students to join a specific college',
     ],
+    correctAnswer: 'C. Help students make informed decisions',
   },
 ];

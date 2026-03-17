@@ -11,6 +11,7 @@ import {
   SESSIONS,
   getSessionById,
   getModuleById,
+  getNextModule,
   getSessionsByDay,
   getModulesByDay,
   isAssessmentId,
@@ -48,6 +49,14 @@ export default function WebinarDashboard() {
   const sessionsForDay = getSessionsByDay(activeDay);
   const activeModule = activeSessionId ? getModuleById(activeSessionId) : null;
   const activeSession = activeSessionId ? getSessionById(activeSessionId) : null;
+  const nextModule = activeSessionId ? getNextModule(activeSessionId) : null;
+  const isVideoSession = activeModule && activeModule.type !== 'Assessment';
+  const currentModuleComplete = activeSessionId
+    ? isVideoSession
+      ? completedSessions.includes(activeSessionId) || (sessionProgress[activeSessionId] ?? 0) >= 100
+      : completedSessions.includes(activeSessionId)
+    : false;
+  const showNextButton = nextModule && currentModuleComplete;
 
   useEffect(() => {
     if (!modulesForDay.length) return;
@@ -138,12 +147,16 @@ export default function WebinarDashboard() {
                   <div className="flex flex-col min-h-[360px] p-5 sm:p-6">
                     <WebinarAssessment1
                       onComplete={() => setCompletedSessions((prev) => (prev.includes('a1') ? prev : [...prev, 'a1']))}
+                      nextLabel={nextModule?.title}
+                      onGoNext={nextModule ? () => { setActiveSessionId(nextModule.id); setActiveDay(nextModule.dayId); } : undefined}
                     />
                   </div>
                 ) : activeModule.id === 'a2' ? (
                   <div className="flex flex-col min-h-[360px] p-5 sm:p-6">
                     <WebinarAssessment2
                       onComplete={() => setCompletedSessions((prev) => (prev.includes('a2') ? prev : [...prev, 'a2']))}
+                      nextLabel={nextModule?.title}
+                      onGoNext={nextModule ? () => { setActiveSessionId(nextModule.id); setActiveDay(nextModule.dayId); } : undefined}
                     />
                   </div>
                 ) : (
@@ -191,6 +204,23 @@ export default function WebinarDashboard() {
                     </>
                   )}
                 </>
+              )}
+              {showNextButton && (
+                <div className="border-t border-gray-100 px-4 sm:px-5 py-4 flex justify-end">
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setActiveSessionId(nextModule.id);
+                      setActiveDay(nextModule.dayId);
+                    }}
+                    className="inline-flex items-center gap-2 px-5 py-2.5 rounded-lg font-medium text-white bg-primary-navy hover:bg-primary-navy/90 focus:outline-none focus-visible:ring-2 focus-visible:ring-primary-navy focus-visible:ring-offset-2 transition-colors"
+                  >
+                    Next: {nextModule.title}
+                    <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden>
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+                    </svg>
+                  </button>
+                </div>
               )}
             </div>
           <DescriptionCard session={activeSession} />

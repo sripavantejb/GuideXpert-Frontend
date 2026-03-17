@@ -1,7 +1,7 @@
 import { useState, useCallback } from 'react';
 import { WEBINAR_ASSESSMENT_1_QUESTIONS } from '../data/webinarAssessment1Questions';
 
-export default function WebinarAssessment1({ onComplete }) {
+export default function WebinarAssessment1({ onComplete, nextLabel, onGoNext }) {
   const [questionIndex, setQuestionIndex] = useState(0);
   const [answers, setAnswers] = useState(() => {
     const initial = {};
@@ -10,7 +10,7 @@ export default function WebinarAssessment1({ onComplete }) {
     });
     return initial;
   });
-  const [submitted, setSubmitted] = useState(false);
+  const [report, setReport] = useState(null);
 
   const setAnswer = useCallback((questionId, value) => {
     setAnswers((prev) => ({ ...prev, [questionId]: value }));
@@ -23,22 +23,105 @@ export default function WebinarAssessment1({ onComplete }) {
 
   const handleSubmit = useCallback(() => {
     if (!allAnswered) return;
-    setSubmitted(true);
-    onComplete?.();
-  }, [allAnswered, onComplete]);
+    let score = 0;
+    const results = questions.map((q) => {
+      const userAnswer = (answers[q.id] || '').trim();
+      const correct = userAnswer === q.correctAnswer;
+      if (correct) score += 1;
+      return {
+        questionId: q.id,
+        text: q.text,
+        correct,
+        userAnswer: userAnswer || '—',
+        correctAnswer: q.correctAnswer,
+      };
+    });
+    setReport({ score, total: questions.length, results });
+  }, [allAnswered, answers, questions]);
 
-  if (submitted) {
+  const handleContinue = useCallback(() => {
+    onComplete?.();
+  }, [onComplete]);
+
+  const handleGoNext = useCallback(() => {
+    onComplete?.();
+    onGoNext?.();
+  }, [onComplete, onGoNext]);
+
+  if (report) {
     return (
-      <div className="flex flex-col items-center justify-center px-6 py-10 text-center">
-        <div className="inline-flex items-center justify-center w-14 h-14 rounded-full bg-primary-navy/10 text-primary-navy mb-4">
-          <svg className="w-7 h-7" fill="none" stroke="currentColor" strokeWidth={2} viewBox="0 0 24 24">
-            <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
-          </svg>
+      <div className="flex flex-col h-full min-h-0">
+        <div className="flex flex-col items-center px-6 py-6 text-center">
+          <div className="inline-flex items-center justify-center w-14 h-14 rounded-full bg-primary-navy/10 text-primary-navy mb-4">
+            <svg className="w-7 h-7" fill="none" stroke="currentColor" strokeWidth={2} viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
+            </svg>
+          </div>
+          <h2 className="text-xl font-semibold text-primary-navy">Assessment 1 completed</h2>
+          <p className="mt-2 text-base font-medium text-gray-800">
+            You scored {report.score} out of {report.total}.
+          </p>
         </div>
-        <h2 className="text-xl font-semibold text-primary-navy">Assessment 1 completed</h2>
-        <p className="mt-2 text-sm text-gray-600 max-w-sm">
-          You can move on to the next session or assessment in the sidebar.
-        </p>
+
+        <div className="flex-1 min-h-0 overflow-y-auto px-1">
+          <div className="rounded-xl bg-white border border-gray-200 border-l-2 border-l-primary-navy p-5 sm:p-6 space-y-4">
+            <h3 className="text-sm font-semibold text-gray-700 uppercase tracking-wide">Report</h3>
+            {report.results.map((r, idx) => (
+              <div
+                key={r.questionId}
+                className={`rounded-lg border-2 p-4 ${
+                  r.correct ? 'border-green-200 bg-green-50/80' : 'border-red-200 bg-red-50/80'
+                }`}
+              >
+                <div className="flex items-start gap-2">
+                  <span
+                    className={`shrink-0 w-6 h-6 rounded-full flex items-center justify-center text-xs font-bold ${
+                      r.correct ? 'bg-green-600 text-white' : 'bg-red-600 text-white'
+                    }`}
+                  >
+                    {r.correct ? '✓' : '✕'}
+                  </span>
+                  <div className="min-w-0 flex-1">
+                    <p className="text-sm font-medium text-gray-900">
+                      {idx + 1}. {r.text}
+                    </p>
+                    {r.correct ? (
+                      <p className="mt-1 text-xs text-green-800">Your answer: {r.userAnswer}</p>
+                    ) : (
+                      <div className="mt-2 space-y-1 text-xs">
+                        <p className="text-red-800">Your answer: {r.userAnswer}</p>
+                        <p className="text-green-800">Correct answer: {r.correctAnswer}</p>
+                      </div>
+                    )}
+                  </div>
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+
+        <div className="shrink-0 pt-5 mt-auto">
+          {nextLabel && onGoNext ? (
+            <button
+              type="button"
+              onClick={handleGoNext}
+              className="w-full py-2.5 px-4 bg-primary-navy hover:bg-primary-navy/90 text-white font-medium rounded-lg transition inline-flex items-center justify-center gap-2"
+            >
+              Next: {nextLabel}
+              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden>
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+              </svg>
+            </button>
+          ) : (
+            <button
+              type="button"
+              onClick={handleContinue}
+              className="w-full py-2.5 px-4 bg-primary-navy hover:bg-primary-navy/90 text-white font-medium rounded-lg transition"
+            >
+              Continue
+            </button>
+          )}
+        </div>
       </div>
     );
   }

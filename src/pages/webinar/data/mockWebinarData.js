@@ -199,6 +199,13 @@ export function getModuleById(moduleId) {
   return ALL_MODULES.find((m) => m.id === moduleId) ?? null;
 }
 
+/** Next module in course order (ALL_MODULES), or null if at end. */
+export function getNextModule(moduleId) {
+  const idx = ALL_MODULES.findIndex((m) => m.id === moduleId);
+  if (idx < 0 || idx >= ALL_MODULES.length - 1) return null;
+  return ALL_MODULES[idx + 1];
+}
+
 export function isAssessmentId(id) {
   return ASSESSMENTS.some((a) => a.id === id);
 }

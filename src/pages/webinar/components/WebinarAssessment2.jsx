@@ -1,7 +1,7 @@
 import { useState, useCallback } from 'react';
 import { WEBINAR_ASSESSMENT_2_QUESTIONS } from '../data/webinarAssessment2Questions';
 
-export default function WebinarAssessment2({ onComplete }) {
+export default function WebinarAssessment2({ onComplete, nextLabel, onGoNext }) {
   const [questionIndex, setQuestionIndex] = useState(0);
   const [answers, setAnswers] = useState(() => {
     const initial = {};
@@ -42,6 +42,11 @@ export default function WebinarAssessment2({ onComplete }) {
   const handleContinue = useCallback(() => {
     onComplete?.();
   }, [onComplete]);
+
+  const handleGoNext = useCallback(() => {
+    onComplete?.();
+    onGoNext?.();
+  }, [onComplete, onGoNext]);
 
   if (report) {
     return (
@@ -96,13 +101,26 @@ export default function WebinarAssessment2({ onComplete }) {
         </div>
 
         <div className="shrink-0 pt-5 mt-auto">
-          <button
-            type="button"
-            onClick={handleContinue}
-            className="w-full py-2.5 px-4 bg-primary-navy hover:bg-primary-navy/90 text-white font-medium rounded-lg transition"
-          >
-            Continue
-          </button>
+          {nextLabel && onGoNext ? (
+            <button
+              type="button"
+              onClick={handleGoNext}
+              className="w-full py-2.5 px-4 bg-primary-navy hover:bg-primary-navy/90 text-white font-medium rounded-lg transition inline-flex items-center justify-center gap-2"
+            >
+              Next: {nextLabel}
+              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden>
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+              </svg>
+            </button>
+          ) : (
+            <button
+              type="button"
+              onClick={handleContinue}
+              className="w-full py-2.5 px-4 bg-primary-navy hover:bg-primary-navy/90 text-white font-medium rounded-lg transition"
+            >
+              Continue
+            </button>
+          )}
         </div>
       </div>
     );
