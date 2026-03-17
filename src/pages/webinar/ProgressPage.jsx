@@ -163,12 +163,12 @@ export default function ProgressPage() {
           <FiAward className={`w-8 h-8 shrink-0 ${day3Complete ? 'text-green-600' : 'text-primary-navy'}`} />
           <div>
             <h2 className="font-semibold text-gray-800">
-              {day3Complete ? 'Certificate available' : 'Certificate unlocked after Day 3 completion'}
+              {day3Complete ? 'Certificate available' : 'Certificate unlocked after completing the intro video'}
             </h2>
             <p className="text-sm text-gray-600 mt-0.5">
               {day3Complete
                 ? 'You have completed all days. Your certificate is available.'
-                : 'Complete all Day 3 sessions to unlock your certificate.'}
+                : 'Complete the intro video to unlock your certificate.'}
             </p>
           </div>
         </div>

@@ -243,7 +243,7 @@ export default function CertificatesPage() {
           </span>
           <p className="text-gray-700 font-medium">Certificate locked</p>
           <p className="text-sm text-gray-500 mt-2">
-            Complete all Day 3 sessions to unlock your Certified GuideXpert Career Counsellor certificate.
+            Complete the intro video to unlock your Certified GuideXpert Career Counsellor certificate.
           </p>
           <Link
             to="/webinar/progress"

@@ -297,7 +297,7 @@ export default function CertificateUnlockCard({
             </span>
             <div className="min-w-0 flex-1">
               <p className="text-sm font-semibold text-gray-700">Certificate of Completion</p>
-              <p className="text-xs text-gray-500 mt-0.5">Unlock after completing Day 3</p>
+              <p className="text-xs text-gray-500 mt-0.5">Unlock after completing the intro video</p>
             </div>
           </div>
           <Link
