@@ -5,6 +5,7 @@ import VideoPlayer from './components/VideoPlayer';
 import StatsBar from './components/StatsBar';
 import SessionList from './components/SessionList';
 import DescriptionCard from './components/DescriptionCard';
+import SessionDoubtsCard from './components/SessionDoubtsCard';
 import ProgressIndicator from './components/ProgressIndicator';
 import NotesPanel from './components/NotesPanel';
 import { DAYS, SESSIONS, getSessionById, getModuleById, getSessionsByDay } from './data/mockWebinarData';
@@ -222,12 +223,30 @@ export default function WebinarPage() {
                       <div className="border-t border-gray-100 px-4 sm:px-5 py-4">
                         <DescriptionCard session={activeSession} embedded />
                       </div>
+                      <div className="border-t border-gray-100 px-4 sm:px-5 py-4">
+                        <SessionDoubtsCard
+                          sessionId={activeSessionId}
+                          doubts={doubts}
+                          onDoubtsChange={setDoubts}
+                          embedded
+                        />
+                      </div>
                     </>
                   )}
                   {!activeSession && (
-                    <div className="border-t border-gray-100 px-4 sm:px-5 py-4">
-                      <DescriptionCard session={null} embedded />
-                    </div>
+                    <>
+                      <div className="border-t border-gray-100 px-4 sm:px-5 py-4">
+                        <DescriptionCard session={null} embedded />
+                      </div>
+                      <div className="border-t border-gray-100 px-4 sm:px-5 py-4">
+                        <SessionDoubtsCard
+                          sessionId={activeSessionId}
+                          doubts={doubts}
+                          onDoubtsChange={setDoubts}
+                          embedded
+                        />
+                      </div>
+                    </>
                   )}
                 </>
               )}

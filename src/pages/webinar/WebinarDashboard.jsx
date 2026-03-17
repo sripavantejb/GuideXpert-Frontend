@@ -2,6 +2,7 @@ import { useState, useEffect, useCallback } from 'react';
 import VideoPlayer from './components/VideoPlayer';
 import StatsBar from './components/StatsBar';
 import DescriptionCard from './components/DescriptionCard';
+import SessionDoubtsCard from './components/SessionDoubtsCard';
 import ProgressIndicator from './components/ProgressIndicator';
 import CertificateUnlockCard from './components/CertificateUnlockCard';
 import NotesPanel from './components/NotesPanel';
@@ -42,6 +43,7 @@ export default function WebinarDashboard() {
     activeDay,
     setActiveDay,
     doubts,
+    setDoubts,
   } = useWebinar();
 
   const [sessionProgress, setSessionProgress] = useState({});
@@ -270,6 +272,11 @@ export default function WebinarDashboard() {
               )}
             </div>
           <DescriptionCard session={activeSession} />
+          <SessionDoubtsCard
+            sessionId={activeSessionId}
+            doubts={doubts}
+            onDoubtsChange={setDoubts}
+          />
           <NotesPanel sessionId={activeSessionId} />
         </div>
 
