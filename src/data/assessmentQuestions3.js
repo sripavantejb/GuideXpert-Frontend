@@ -1,6 +1,6 @@
 /**
  * Counsellor assessment 3 (Session 3): Lead generation, social media, college outreach.
- * Question ids q1–q5 match backend scoring.
+ * Sourced from Training workflow CSV. Question ids q1–q5 match backend scoring.
  */
 export const ASSESSMENT_SECTIONS_3 = [
   {

@@ -1,6 +1,6 @@
 /**
  * Counsellor assessment 4 (Session 4): Positioning, admissions agent, online bio.
- * Question ids q1–q5 match backend scoring.
+ * Sourced from Training workflow CSV. Question ids q1–q5 match backend scoring.
  */
 export const ASSESSMENT_SECTIONS_4 = [
   {

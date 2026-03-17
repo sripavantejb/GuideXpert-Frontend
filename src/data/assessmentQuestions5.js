@@ -1,6 +1,6 @@
 /**
  * Counsellor assessment 5 (Session 5): Portal login, referral, NIAT, Rank Predictor.
- * Question ids q1–q5 match backend scoring.
+ * Sourced from Training workflow CSV. Question ids q1–q5 match backend scoring.
  */
 export const ASSESSMENT_SECTIONS_5 = [
   {

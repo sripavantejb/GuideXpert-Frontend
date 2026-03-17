@@ -142,6 +142,7 @@ export default function AssessmentResults() {
     2: DEFAULT_FILTERS(),
     3: DEFAULT_FILTERS(),
     4: DEFAULT_FILTERS(),
+    5: DEFAULT_FILTERS(),
   }));
   const [submissions, setSubmissions] = useState([]);
   const [total, setTotal] = useState(0);

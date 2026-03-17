@@ -454,11 +454,9 @@ export default function AssessmentForm3() {
                     if (!q) return null;
                     return (
                       <div key={q.id}>
-                        {q.sectionTitle && (
-                          <h3 className="text-sm font-semibold uppercase tracking-wide text-[#003366] mb-4">
-                            {q.sectionTitle}
-                          </h3>
-                        )}
+                        <h3 className="text-sm font-semibold uppercase tracking-wide text-[#003366] mb-4">
+                          {q.sectionTitle}
+                        </h3>
                         <p className="text-lg font-semibold text-gray-900 mb-6">{q.text}</p>
                         {q.type === 'mcq' && (
                           <div className="space-y-4">
