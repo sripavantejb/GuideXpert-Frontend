@@ -54,18 +54,19 @@ async function apiRequest(endpoint, options = {}) {
       });
     }
 
+    const safeData = data ?? {};
     if (!response.ok) {
       return {
         success: false,
-        message: data.message || 'An error occurred',
+        message: safeData.message || 'An error occurred',
         status: response.status,
-        data: data,
+        data: safeData,
       };
     }
 
     return {
       success: true,
-      data: data,
+      data: safeData,
       status: response.status,
     };
   } catch (error) {
