@@ -14,11 +14,12 @@ import {
   getNextModule,
   getSessionsByDay,
   getModulesByDay,
-  isAssessmentId,
 } from './data/mockWebinarData';
-import { Link } from 'react-router-dom';
 import WebinarAssessment1 from './components/WebinarAssessment1';
 import WebinarAssessment2 from './components/WebinarAssessment2';
+import WebinarAssessment3 from './components/WebinarAssessment3';
+import WebinarAssessment4 from './components/WebinarAssessment4';
+import WebinarAssessment5 from './components/WebinarAssessment5';
 
 function formatResumeTime(seconds) {
   if (!Number.isFinite(seconds) || seconds < 0) return '0:00';
@@ -185,19 +186,35 @@ export default function WebinarDashboard() {
                       onGoNext={nextModule ? () => { setActiveSessionId(nextModule.id); setActiveDay(nextModule.dayId); } : undefined}
                     />
                   </div>
+                ) : activeModule.id === 'a3' ? (
+                  <div className="flex flex-col min-h-[360px] p-5 sm:p-6">
+                    <WebinarAssessment3
+                      onComplete={() => setCompletedSessions((prev) => (prev.includes('a3') ? prev : [...prev, 'a3']))}
+                      nextLabel={nextModule?.title}
+                      onGoNext={nextModule ? () => { setActiveSessionId(nextModule.id); setActiveDay(nextModule.dayId); } : undefined}
+                    />
+                  </div>
+                ) : activeModule.id === 'a4' ? (
+                  <div className="flex flex-col min-h-[360px] p-5 sm:p-6">
+                    <WebinarAssessment4
+                      onComplete={() => setCompletedSessions((prev) => (prev.includes('a4') ? prev : [...prev, 'a4']))}
+                      nextLabel={nextModule?.title}
+                      onGoNext={nextModule ? () => { setActiveSessionId(nextModule.id); setActiveDay(nextModule.dayId); } : undefined}
+                    />
+                  </div>
+                ) : activeModule.id === 'a5' ? (
+                  <div className="flex flex-col min-h-[360px] p-5 sm:p-6">
+                    <WebinarAssessment5
+                      onComplete={() => setCompletedSessions((prev) => (prev.includes('a5') ? prev : [...prev, 'a5']))}
+                      nextLabel={nextModule?.title}
+                      onGoNext={nextModule ? () => { setActiveSessionId(nextModule.id); setActiveDay(nextModule.dayId); } : undefined}
+                    />
+                  </div>
                 ) : (
                   <div className="aspect-video bg-gray-100 flex flex-col items-center justify-center px-6 py-8 text-center">
                     <p className="text-lg font-semibold text-gray-800">{activeModule.title}</p>
                     <p className="text-sm text-gray-500 mt-1">{activeModule.duration}</p>
                     <p className="text-sm text-gray-600 mt-4 max-w-md">Complete the questions below to check your understanding before moving to the next session.</p>
-                    {isAssessmentId(activeModule.id) && (
-                      <Link
-                        to="/assessment-3"
-                        className="mt-6 inline-flex items-center justify-center px-5 py-2.5 rounded-lg font-medium text-white bg-primary-navy hover:bg-primary-navy/90 focus:outline-none focus-visible:ring-2 focus-visible:ring-primary-navy focus-visible:ring-offset-2"
-                      >
-                        Start {activeModule.title}
-                      </Link>
-                    )}
                   </div>
                 )
               ) : (
