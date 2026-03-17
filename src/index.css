@@ -639,3 +639,14 @@
   }
 
 }
+
+/* YouTube embed: ensure iframe fills container so video is not cropped */
+.yt-player-mount iframe {
+  position: absolute !important;
+  top: 0 !important;
+  left: 0 !important;
+  width: 100% !important;
+  height: 100% !important;
+  pointer-events: none !important;
+  border: 0 !important;
+}

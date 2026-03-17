@@ -12,12 +12,497 @@ function formatTime(seconds) {
   return `${m}:${s.toString().padStart(2, '0')}`;
 }
 
+function isYoutubeSession(session) {
+  if (!session?.videoUrl) return false;
+  if (session.isYoutube === true) return true;
+  const url = session.videoUrl;
+  return url.includes('youtube.com/embed') || url.includes('youtube.com/watch') || url.includes('youtu.be/');
+}
+
+function getYouTubeVideoId(videoUrl) {
+  if (!videoUrl || typeof videoUrl !== 'string') return null;
+  const embedMatch = videoUrl.match(/embed\/([^/?&]+)/);
+  if (embedMatch) return embedMatch[1];
+  const vMatch = videoUrl.match(/[?&]v=([^&]+)/);
+  if (vMatch) return vMatch[1];
+  const shortMatch = videoUrl.match(/youtu\.be\/([^/?&]+)/);
+  if (shortMatch) return shortMatch[1];
+  return null;
+}
+
+const YOUTUBE_IFRAME_API_URL = 'https://www.youtube.com/iframe_api';
+
+function useYouTubeIFrameAPI() {
+  const [ready, setReady] = useState(false);
+
+  useEffect(() => {
+    if (typeof window === 'undefined') return;
+    const applyReady = () => setReady(true);
+    if (window.YT?.Player) {
+      setReady(true);
+      return;
+    }
+    const prev = window.onYouTubeIframeAPIReady;
+    window.onYouTubeIframeAPIReady = () => {
+      if (prev) prev();
+      applyReady();
+    };
+    const existing = document.querySelector(`script[src="${YOUTUBE_IFRAME_API_URL}"]`);
+    if (!existing) {
+      const script = document.createElement('script');
+      script.src = YOUTUBE_IFRAME_API_URL;
+      script.async = true;
+      document.head.appendChild(script);
+    }
+    const t = setInterval(() => {
+      if (window.YT?.Player) {
+        clearInterval(t);
+        applyReady();
+      }
+    }, 100);
+    return () => {
+      clearInterval(t);
+      window.onYouTubeIframeAPIReady = prev;
+    };
+  }, []);
+
+  return ready;
+}
+
+const YT_PLAYER_STATE_ENDED = 0;
+
+function CompletionOverlay({ visible, onNextSession, onWatchAgain, hasNextSession }) {
+  const [mounted, setMounted] = useState(false);
+  useEffect(() => {
+    if (visible) {
+      const t = requestAnimationFrame(() => requestAnimationFrame(() => setMounted(true)));
+      return () => cancelAnimationFrame(t);
+    }
+    setMounted(false);
+  }, [visible]);
+  if (!visible) return null;
+  return (
+    <div
+      className="absolute inset-0 z-[20] flex items-center justify-center p-4 bg-black/60 backdrop-blur-[20px] transition-opacity duration-300"
+      role="status"
+      aria-live="polite"
+      aria-label="Session completed"
+    >
+      <div
+        className={`max-w-sm w-full p-4 sm:p-6 rounded-[20px] border border-white/20 transition-all duration-300 ease-out ${
+          mounted ? 'opacity-100 scale-100' : 'opacity-0 scale-95'
+        }`}
+        style={{
+          background: 'rgba(255,255,255,0.1)',
+          backdropFilter: 'blur(20px)',
+          boxShadow: '0 20px 50px rgba(0,0,0,0.25)',
+        }}
+      >
+        <h2 className="text-lg sm:text-xl font-semibold text-white mb-2">Session Completed</h2>
+        <p className="text-white/90 text-sm mb-5">You have successfully completed this webinar.</p>
+        <div className="flex flex-col sm:flex-row gap-3">
+          {typeof onNextSession === 'function' && hasNextSession !== false && (
+            <button
+              type="button"
+              onClick={onNextSession}
+              className="flex-1 py-2.5 px-4 rounded-xl bg-primary-navy text-white font-medium hover:opacity-90 focus:outline-none focus-visible:ring-2 focus-visible:ring-white focus-visible:ring-offset-2 transition-opacity flex items-center justify-center gap-1.5"
+              aria-label="Go to next session"
+            >
+              Next Session
+              <span aria-hidden>→</span>
+            </button>
+          )}
+          <button
+            type="button"
+            onClick={onWatchAgain}
+            className="flex-1 py-2.5 px-4 rounded-xl bg-white/20 text-white font-medium hover:bg-white/30 border border-white/30 focus:outline-none focus-visible:ring-2 focus-visible:ring-white focus-visible:ring-offset-2 transition-colors"
+            aria-label="Watch again"
+          >
+            Watch Again
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function YouTubePlayerWithControls({
+  session,
+  onTimeUpdate,
+  onEnded,
+  onProgress,
+  onMetadataReady,
+  onNextSession,
+  hasNextSession,
+}) {
+  const containerRef = useRef(null);
+  const playerRef = useRef(null);
+  const progressIntervalRef = useRef(null);
+  const metadataSentRef = useRef(false);
+  const endedRef = useRef(false);
+  const apiReady = useYouTubeIFrameAPI();
+  const videoId = getYouTubeVideoId(session?.videoUrl);
+
+  const [ytPlaying, setYtPlaying] = useState(false);
+  const [ytProgress, setYtProgress] = useState(0);
+  const [ytCurrentTime, setYtCurrentTime] = useState(0);
+  const [ytDuration, setYtDuration] = useState(0);
+  const [showCompletionOverlay, setShowCompletionOverlay] = useState(false);
+  const [playerReady, setPlayerReady] = useState(false);
+  const [containerHasSize, setContainerHasSize] = useState(false);
+  const [hasStarted, setHasStarted] = useState(false);
+  const [ytFullscreen, setYtFullscreen] = useState(false);
+
+  const playerContainerId = `yt-player-${session?.id ?? 'default'}`;
+
+  // Wait for 16:9 container to have real dimensions before creating YT iframe (avoids cropped video)
+  useEffect(() => {
+    const el = containerRef.current;
+    if (!el) return;
+    const check = () => {
+      const rect = el.getBoundingClientRect();
+      if (rect.width >= 100 && rect.height >= 56) setContainerHasSize(true);
+    };
+    check();
+    const ro = new ResizeObserver(() => check());
+    ro.observe(el);
+    return () => ro.disconnect();
+  }, [session?.id]);
+
+  useEffect(() => {
+    if (!apiReady || !videoId || !containerHasSize || typeof window === 'undefined' || !window.YT?.Player) return;
+    endedRef.current = false;
+    metadataSentRef.current = false;
+    const id = playerContainerId;
+    const timeoutId = setTimeout(() => {
+      if (!document.getElementById(id)) return;
+      try {
+        const player = new window.YT.Player(id, {
+          videoId,
+          host: 'https://www.youtube-nocookie.com',
+          width: '100%',
+          height: '100%',
+          playerVars: {
+            controls: 0,
+            rel: 0,
+            modestbranding: 1,
+            disablekb: 1,
+            fs: 0,
+            iv_load_policy: 3,
+            playsinline: 1,
+            enablejsapi: 1,
+            origin: typeof window !== 'undefined' ? window.location.origin : undefined,
+            autoplay: 0,
+          },
+          events: {
+            onReady(event) {
+              const iframeEl = event.target.getIframe?.();
+              if (iframeEl) {
+                iframeEl.setAttribute('tabindex', '-1');
+                iframeEl.setAttribute('aria-hidden', 'true');
+              }
+              setPlayerReady(true);
+              const d = event.target.getDuration?.();
+              if (Number.isFinite(d) && d > 0) {
+                setYtDuration(d);
+                if (!metadataSentRef.current && onMetadataReady) {
+                  metadataSentRef.current = true;
+                  onMetadataReady({ durationSeconds: d, formattedDuration: formatTime(d) });
+                }
+              }
+            },
+            onStateChange(event) {
+              if (event.data === YT_PLAYER_STATE_ENDED) {
+                event.target.pauseVideo();
+                setYtPlaying(false);
+                endedRef.current = true;
+                const d = typeof event.target.getDuration === 'function' ? event.target.getDuration() : 0;
+                if (Number.isFinite(d)) {
+                  setYtDuration(d);
+                  setYtCurrentTime(d);
+                }
+                setYtProgress(100);
+                setShowCompletionOverlay(true);
+                onEnded?.(session?.id);
+              }
+            },
+          },
+        });
+        playerRef.current = player;
+      } catch (err) {
+        console.error('YouTube player init error:', err);
+      }
+    }, 350);
+
+    return () => {
+      clearTimeout(timeoutId);
+      if (progressIntervalRef.current) {
+        clearInterval(progressIntervalRef.current);
+        progressIntervalRef.current = null;
+      }
+      if (playerRef.current?.destroy) {
+        try {
+          playerRef.current.destroy();
+        } catch (_) {}
+        playerRef.current = null;
+      }
+      setPlayerReady(false);
+    };
+  }, [apiReady, videoId, containerHasSize, session?.id, playerContainerId, onEnded, onMetadataReady]);
+
+  useEffect(() => {
+    if (!playerRef.current?.getCurrentTime || endedRef.current) return;
+    const interval = setInterval(() => {
+      const player = playerRef.current;
+      if (!player?.getCurrentTime) return;
+      const state = typeof player.getPlayerState === 'function' ? player.getPlayerState() : null;
+      if (state === YT_PLAYER_STATE_ENDED) {
+        endedRef.current = true;
+        return;
+      }
+      const currentTime = player.getCurrentTime();
+      const duration = typeof player.getDuration === 'function' ? player.getDuration() : ytDuration;
+      if (Number.isFinite(duration) && duration > 0) {
+        setYtDuration(duration);
+        if (!metadataSentRef.current && onMetadataReady) {
+          metadataSentRef.current = true;
+          onMetadataReady({ durationSeconds: duration, formattedDuration: formatTime(duration) });
+        }
+      }
+      if (state === 1) setYtPlaying(true);
+      else if (state === 2) setYtPlaying(false);
+      if (Number.isFinite(currentTime)) {
+        setYtCurrentTime(currentTime);
+        if (Number.isFinite(duration) && duration > 0) {
+          const pct = Math.min(100, (currentTime / duration) * 100);
+          setYtProgress(pct);
+          onTimeUpdate?.(session?.id, currentTime);
+          onProgress?.(session?.id, pct);
+        }
+      }
+    }, 500);
+    progressIntervalRef.current = interval;
+    return () => {
+      if (progressIntervalRef.current) {
+        clearInterval(progressIntervalRef.current);
+        progressIntervalRef.current = null;
+      }
+    };
+  }, [session?.id, ytDuration, onTimeUpdate, onProgress, onMetadataReady]);
+
+  useEffect(() => {
+    setShowCompletionOverlay(false);
+    setContainerHasSize(false);
+    setHasStarted(false);
+    endedRef.current = false;
+    metadataSentRef.current = false;
+  }, [session?.id]);
+
+  const handleWatchAgain = useCallback(() => {
+    const player = playerRef.current;
+    if (player?.seekTo && player?.playVideo) {
+      player.seekTo(0);
+      player.playVideo();
+      setHasStarted(true);
+      setShowCompletionOverlay(false);
+      setYtPlaying(true);
+    }
+  }, []);
+
+  const toggleYtPlay = useCallback(() => {
+    const player = playerRef.current;
+    if (!player?.playVideo || !player?.pauseVideo) return;
+    if (ytPlaying) {
+      player.pauseVideo();
+      setYtPlaying(false);
+    } else {
+      setHasStarted(true);
+      player.playVideo();
+      setYtPlaying(true);
+    }
+  }, [ytPlaying]);
+
+  const toggleYtFullscreen = useCallback(() => {
+    const el = containerRef.current;
+    if (!el) return;
+    if (!document.fullscreenElement) {
+      el.requestFullscreen?.().then(() => setYtFullscreen(true)).catch(() => {});
+    } else {
+      document.exitFullscreen?.().then(() => setYtFullscreen(false)).catch(() => {});
+    }
+  }, []);
+
+  useEffect(() => {
+    const container = containerRef.current;
+    if (!container) return;
+    const onKeyDown = (e) => {
+      if (e.target.closest('input') || e.target.closest('button') || showCompletionOverlay) return;
+      if (e.code === 'Space') {
+        e.preventDefault();
+        toggleYtPlay();
+      }
+    };
+    const onContextMenu = (e) => e.preventDefault();
+    container.setAttribute('tabIndex', '0');
+    container.addEventListener('keydown', onKeyDown);
+    container.addEventListener('contextmenu', onContextMenu);
+    return () => {
+      container.removeEventListener('keydown', onKeyDown);
+      container.removeEventListener('contextmenu', onContextMenu);
+    };
+  }, [showCompletionOverlay, toggleYtPlay]);
+
+  useEffect(() => {
+    const onFullscreenChange = () => setYtFullscreen(!!document.fullscreenElement);
+    document.addEventListener('fullscreenchange', onFullscreenChange);
+    return () => document.removeEventListener('fullscreenchange', onFullscreenChange);
+  }, []);
+
+  const handleYtSeek = useCallback(
+    (e) => {
+      const player = playerRef.current;
+      if (!player?.seekTo || !Number.isFinite(ytDuration) || ytDuration <= 0) return;
+      const pct = parseFloat(e.target.value);
+      const time = (pct / 100) * ytDuration;
+      player.seekTo(time, true);
+      setYtCurrentTime(time);
+      setYtProgress(pct);
+    },
+    [ytDuration]
+  );
+
+  if (!session) return null;
+
+  return (
+    <div
+      ref={containerRef}
+      className="relative w-full flex-shrink-0 rounded-none sm:rounded-xl overflow-hidden bg-black focus:outline-none focus-visible:ring-2 focus-visible:ring-primary-navy focus-visible:ring-offset-2"
+      style={{ boxShadow: '0 2px 8px rgba(0,0,0,0.08)' }}
+    >
+      {/* Clean 16:9 video area with no top gradients/overlays */}
+      <div
+        key={`yt-wrap-${session?.id}`}
+        className="relative w-full bg-black overflow-hidden"
+        style={{ aspectRatio: '16 / 9' }}
+      >
+        <div className="absolute inset-0 w-full h-full">
+          {/* Thumbnail / loading until player is ready - player stays visible after completion */}
+          {!playerReady && session?.thumbnail && (
+            <div
+              className="absolute inset-0 w-full h-full bg-cover bg-center transition-opacity duration-300 z-0"
+              style={{ backgroundImage: `url(${session.thumbnail})` }}
+              aria-hidden
+            />
+          )}
+          {!playerReady && (
+            <div className="absolute inset-0 flex items-center justify-center bg-gray-900 z-0" aria-hidden>
+              <div className="h-10 w-10 rounded-full border-2 border-white/30 border-t-white animate-spin" />
+            </div>
+          )}
+          {/* Player mount: always visible so no white screen when video ends */}
+          <div
+            id={playerContainerId}
+            className="absolute inset-0 w-full h-full z-[1] yt-player-mount"
+          />
+          {/* Block iframe hover/click so YouTube hover chrome never appears */}
+          <div className="absolute inset-0 z-[3]" aria-hidden />
+          {/* Opaque paused/start cover fully hides native YouTube title/watch-later/share overlays */}
+          {!ytPlaying && !showCompletionOverlay && (
+            <button
+              type="button"
+              onClick={toggleYtPlay}
+              className="absolute inset-0 z-[4] flex items-center justify-center focus:outline-none focus-visible:ring-2 focus-visible:ring-white/50 bg-black"
+              style={session?.thumbnail ? { backgroundImage: `url(${session.thumbnail})`, backgroundSize: 'cover', backgroundPosition: 'center' } : undefined}
+              aria-label={hasStarted ? 'Resume webinar' : 'Play webinar'}
+            >
+              <span className="absolute inset-0 bg-black/20" aria-hidden />
+              <span className="flex items-center justify-center w-14 h-14 rounded-full bg-white/90 text-black shadow-lg">
+                <FiPlay className="w-7 h-7 ml-0.5" />
+              </span>
+            </button>
+          )}
+          {/* End-card blocker: only show after completion to hide YouTube recommendations */}
+          {showCompletionOverlay && (
+            <div
+              className="absolute bottom-0 left-0 w-full h-[40%] bg-black pointer-events-none z-[2]"
+              aria-hidden
+            />
+          )}
+          <CompletionOverlay
+            visible={showCompletionOverlay}
+            onNextSession={onNextSession}
+            onWatchAgain={handleWatchAgain}
+            hasNextSession={hasNextSession}
+          />
+        </div>
+      </div>
+      {/* Glassmorphism controls overlay (transparent/blurred, not black) */}
+      <div className="absolute bottom-0 left-0 right-0 z-[5] flex flex-col backdrop-blur-md bg-white/10 border-t border-white/20">
+        <div className="w-full px-2 sm:px-3 pt-1 pb-1.5 sm:pb-2 flex items-center gap-2 relative">
+          <div className="flex-1 min-w-0 h-1.5 sm:h-2 rounded-full bg-white/25 overflow-hidden">
+            <div
+              className="h-full bg-white rounded-full transition-all duration-300 ease-out"
+              style={{ width: `${Math.min(100, Math.max(0, ytProgress))}%` }}
+            />
+          </div>
+          <input
+            type="range"
+            min={0}
+            max={100}
+            step={0.1}
+            value={ytProgress}
+            onChange={handleYtSeek}
+            className="absolute inset-0 w-full h-full opacity-0 cursor-pointer"
+            style={{ left: '0.5rem', right: '0.5rem' }}
+            aria-label="Seek"
+          />
+        </div>
+        <div className="h-8 sm:h-10 px-2 sm:px-3 pt-1 pb-1 flex items-center gap-2">
+          <button
+            type="button"
+            onClick={toggleYtPlay}
+            className="flex items-center justify-center w-6 h-6 sm:w-8 sm:h-8 rounded-full bg-white/15 border border-white/30 text-white flex-shrink-0 transition-all duration-200 hover:bg-white/25 active:scale-95 focus:outline-none focus-visible:ring-2 focus-visible:ring-white/50"
+            aria-label={ytPlaying ? 'Pause' : 'Play'}
+          >
+            {ytPlaying ? (
+              <FiPause className="w-3 h-3 sm:w-4 sm:h-4" />
+            ) : (
+              <FiPlay className="w-3 h-3 sm:w-4 sm:h-4 ml-0.5" />
+            )}
+          </button>
+          <span
+            className="text-white/90 text-[10px] sm:text-xs tabular-nums flex-shrink-0 min-w-[3rem] sm:min-w-[4.5rem]"
+            aria-live="polite"
+          >
+            {formatTime(ytCurrentTime)} / {formatTime(ytDuration)}
+          </span>
+          <button
+            type="button"
+            onClick={toggleYtFullscreen}
+            className="ml-auto flex items-center justify-center w-6 h-6 sm:w-8 sm:h-8 rounded-full bg-white/15 border border-white/30 text-white flex-shrink-0 transition-all duration-200 hover:bg-white/25 active:scale-95 focus:outline-none focus-visible:ring-2 focus-visible:ring-white/50"
+            aria-label={ytFullscreen ? 'Exit fullscreen' : 'Fullscreen'}
+          >
+            {ytFullscreen ? (
+              <FiMinimize className="w-3 h-3 sm:w-4 sm:h-4" />
+            ) : (
+              <FiMaximize className="w-3 h-3 sm:w-4 sm:h-4" />
+            )}
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
 export default function VideoPlayer({
   session,
   initialPosition = 0,
   onTimeUpdate,
   onEnded,
   onProgress,
+  onMetadataReady,
+  onNextSession,
+  hasNextSession,
   isBookmarked,
   onToggleBookmark,
   autoplayOnLoad = false,
@@ -210,6 +695,21 @@ export default function VideoPlayer({
       >
         <p className="text-sm">Select a session to play</p>
       </div>
+    );
+  }
+
+  // YouTube: IFrame API with custom controls
+  if (isYoutubeSession(session)) {
+    return (
+      <YouTubePlayerWithControls
+        session={session}
+        onTimeUpdate={onTimeUpdate}
+        onEnded={onEnded}
+        onProgress={onProgress}
+        onMetadataReady={onMetadataReady}
+        onNextSession={onNextSession}
+        hasNextSession={hasNextSession}
+      />
     );
   }
 

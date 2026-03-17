@@ -94,7 +94,7 @@ export default function Sidebar({
                 aria-label="GuideXpert"
               >
                 <img
-                  src="https://res.cloudinary.com/dfqdb1xws/image/upload/v1773394627/GuideXpert_Logo_2_icepsv.png"
+                  src="https://res.cloudinary.com/dfqdb1xws/image/upload/v1773394005/GuideXpert_Logo_inbaz5.png"
                   alt="GuideXpert"
                   className={expanded ? 'h-6 w-auto max-w-[110px] object-contain object-left' : 'h-5 w-full max-w-[44px] object-contain object-left'}
                 />
