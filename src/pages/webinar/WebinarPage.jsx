@@ -87,15 +87,8 @@ export default function WebinarPage() {
     }
   }, [activeDay, activeSessionId, sessionsForDay]);
 
-  const isDayUnlocked = useCallback(
-    (dayId) => {
-      if (dayId === 1) return true;
-      const prevDaySessions = getSessionsByDay(dayId - 1);
-      const prevDayIds = prevDaySessions.map((s) => s.id);
-      return prevDayIds.every((id) => completedSessions.includes(id));
-    },
-    [completedSessions]
-  );
+  // Unlock all days for now (no progression gate)
+  const isDayUnlocked = useCallback(() => true, []);
 
   const handleTimeUpdate = useCallback(
     (sessionId, currentTime) => {

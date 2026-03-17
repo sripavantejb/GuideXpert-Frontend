@@ -24,11 +24,8 @@ export default function ProgressPage() {
   };
   const totalSessionsForDay = (dayId) => getSessionsByDay(dayId).length;
 
-  const isDayUnlocked = (dayId) => {
-    if (dayId === 1) return true;
-    const prevIds = getSessionsByDay(dayId - 1).map((s) => s.id);
-    return prevIds.every((id) => completedSessions.includes(id));
-  };
+  // Unlock all days for now (no progression gate)
+  const isDayUnlocked = () => true;
 
   const totalWatchSeconds = useMemo(() => {
     return Object.values(playbackPosition || {}).reduce((a, b) => a + (Number(b) || 0), 0);

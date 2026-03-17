@@ -107,55 +107,6 @@ export const SESSIONS = [
       importantNotes: 'IT will follow up on access requests.',
     },
   },
-  {
-    id: 's7',
-    dayId: 2,
-    title: 'Session - 6',
-    duration: '12 mins',
-    durationMinutes: 12,
-    type: 'Compliance',
-    videoUrl: 'https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/ForBiggerMeltdowns.mp4',
-    thumbnail: 'https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/images/ForBiggerMeltdowns.jpg',
-    description: {
-      startPoint: 'Handling sensitive information and security practices.',
-      keyTopics: ['Classified information', 'Passwords', 'Devices', 'Reporting'],
-      learningOutcome: 'Protect company and client data.',
-      importantNotes: 'Annual refresh required.',
-    },
-  },
-  // Day 3
-  {
-    id: 's8',
-    dayId: 3,
-    title: 'Session - 7',
-    duration: '6 mins',
-    durationMinutes: 6,
-    type: 'Training',
-    videoUrl: 'https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/Sintel.mp4',
-    thumbnail: 'https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/images/Sintel.jpg',
-    description: {
-      startPoint: 'What the final assessment covers and how to prepare.',
-      keyTopics: ['Topics covered', 'Format', 'Pass criteria'],
-      learningOutcome: 'Ready to take the final assessment.',
-      importantNotes: 'Certificate unlocked after Day 3 completion.',
-    },
-  },
-  {
-    id: 's9',
-    dayId: 3,
-    title: 'Session - 8',
-    duration: '8 mins',
-    durationMinutes: 8,
-    type: 'Training',
-    videoUrl: 'https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/SubaruOutbackOnStreetAndDirt.mp4',
-    thumbnail: 'https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/images/SubaruOutbackOnStreetAndDirt.jpg',
-    description: {
-      startPoint: 'How to obtain your certificate and what happens next.',
-      keyTopics: ['Certificate process', 'Ongoing training', 'Support channels'],
-      learningOutcome: 'Know how to get certified and where to get help.',
-      importantNotes: 'Certificate unlocked after Day 3 completion.',
-    },
-  },
 ];
 
 // Assessments shown after each session: Intro → Session - 1 → Assessment 1 → Session - 2 → Assessment 2 → ...
@@ -165,12 +116,9 @@ export const ASSESSMENTS = [
   { id: 'a3', dayId: 1, title: 'Assessment 3', duration: '5 mins', type: 'Assessment', thumbnail: null },
   { id: 'a4', dayId: 1, title: 'Assessment 4', duration: '5 mins', type: 'Assessment', thumbnail: null },
   { id: 'a5', dayId: 2, title: 'Assessment 5', duration: '5 mins', type: 'Assessment', thumbnail: null },
-  { id: 'a6', dayId: 2, title: 'Assessment 6', duration: '5 mins', type: 'Assessment', thumbnail: null },
-  { id: 'a7', dayId: 2, title: 'Assessment 7', duration: '5 mins', type: 'Assessment', thumbnail: null },
-  { id: 'a8', dayId: 3, title: 'Assessment 8', duration: '5 mins', type: 'Assessment', thumbnail: null },
 ];
 
-// Ordered list: Intro, Session - 1, Assessment 1, Session - 2, Assessment 2, ... Session - 8, Assessment 8
+// Ordered list: Intro, Session - 1, Assessment 1, Session - 2, Assessment 2, ... Session - 5, Assessment 5
 export const ALL_MODULES = (() => {
   const list = [];
   for (let i = 0; i < SESSIONS.length; i++) {

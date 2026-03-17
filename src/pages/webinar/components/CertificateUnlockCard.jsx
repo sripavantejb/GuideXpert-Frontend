@@ -32,7 +32,8 @@ export default function CertificateUnlockCard({
   const [previewLoading, setPreviewLoading] = useState(false);
   const [userCertificateId, setUserCertificateId] = useState(null);
 
-  const unlocked = completedPercent >= 100;
+  // Unlock all for now (no completion gate)
+  const unlocked = true;
   const remaining = Math.max(0, totalSessions - completedSessions);
 
   const dateStr = formatCertificateDate();

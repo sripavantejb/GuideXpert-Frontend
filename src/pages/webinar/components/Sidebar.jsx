@@ -25,15 +25,8 @@ export default function Sidebar({
 
   const width = expanded ? 'w-[280px] lg:w-[30vw]' : 'w-[72px]';
 
-  const isDayUnlocked = useCallback(
-    (dayId) => {
-      if (dayId === 1) return true;
-      const prevDaySessions = getSessionsByDay(dayId - 1);
-      const prevDayIds = prevDaySessions.map((s) => s.id);
-      return prevDayIds.every((id) => completedSessions.includes(id));
-    },
-    [completedSessions]
-  );
+  // Unlock all days for now (no progression gate)
+  const isDayUnlocked = useCallback(() => true, []);
 
   const handleSelectSession = useCallback(
     (sessionId) => {
@@ -45,7 +38,8 @@ export default function Sidebar({
   );
 
   const completedVideoCountResolved = completedVideoCount ?? completedSessions.filter((id) => SESSIONS.some((s) => s.id === id)).length;
-  const certificateUnlocked = SESSIONS.length > 0 && completedVideoCountResolved >= SESSIONS.length;
+  // Unlock certificate for now (no completion gate)
+  const certificateUnlocked = true;
 
   const handleCertificateClick = useCallback(() => {
     if (!certificateUnlocked) return;

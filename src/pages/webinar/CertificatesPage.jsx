@@ -27,10 +27,8 @@ export default function CertificatesPage() {
   const { user: authUser } = useWebinarAuth();
   const displayName = authUser?.name || 'Trainee';
 
-  const day3Complete = useMemo(() => {
-    const day3Ids = getSessionsByDay(3).map((s) => s.id);
-    return day3Ids.length > 0 && day3Ids.every((id) => completedSessions.includes(id));
-  }, [completedSessions]);
+  // Unlock all for now (no completion gate)
+  const day3Complete = true;
 
   const navigate = useNavigate();
   const [downloading, setDownloading] = useState(null);
