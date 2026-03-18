@@ -329,6 +329,24 @@ export const checkPosterEligibility = async (mobileNumber) => {
 };
 
 /**
+ * Check if mobile number exists in AssessmentSubmission3 (training completed).
+ * @param {string} mobileNumber - 10-digit mobile number
+ * @returns {Promise<{success: boolean, eligible?: boolean, data?: { exists?: boolean, phone?: string }, message?: string, status?: number}>}
+ */
+export const checkAssessment3Eligibility = async (mobileNumber) => {
+  const phone = String(mobileNumber || '').replace(/\D/g, '').slice(0, 10);
+  const result = await apiRequest(`/assessment-3/check?phone=${encodeURIComponent(phone)}`, {
+    method: 'GET',
+  });
+  if (!result.success) return result;
+  const payload = result.data?.data ?? result.data;
+  return {
+    ...result,
+    eligible: Boolean(payload?.exists ?? result.data?.eligible ?? false),
+  };
+};
+
+/**
  * Submit counsellor assessment (after OTP verification).
  * @param {string} name - User's full name
  * @param {string} phone - 10-digit phone number
