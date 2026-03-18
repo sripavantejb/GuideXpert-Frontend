@@ -9,6 +9,8 @@ import { SESSIONS, ALL_MODULES, getSessionsByDay } from '../data/mockWebinarData
 export default function Sidebar({
   open,
   onOpenChange,
+  activeModuleId,
+  onSelectModule,
 }) {
   const navigate = useNavigate();
   const {
@@ -16,7 +18,7 @@ export default function Sidebar({
     setSidebarExpanded: setExpanded,
     completedSessions,
     completedVideoCount,
-    activeSessionId,
+    activeSessionId: contextActiveSessionId,
     setActiveSessionId,
   } = useWebinar();
   const [internalOpen, setInternalOpen] = useState(false);
@@ -28,13 +30,16 @@ export default function Sidebar({
   // Unlock all days for now (no progression gate)
   const isDayUnlocked = useCallback(() => true, []);
 
+  const resolvedActiveSessionId = activeModuleId ?? contextActiveSessionId;
+
   const handleSelectSession = useCallback(
     (sessionId) => {
+      onSelectModule?.(sessionId);
       setActiveSessionId(sessionId);
       setSidebarOpen(false);
       navigate('/webinar');
     },
-    [setActiveSessionId, setSidebarOpen, navigate]
+    [onSelectModule, setActiveSessionId, setSidebarOpen, navigate]
   );
 
   const completedVideoCountResolved = completedVideoCount ?? completedSessions.filter((id) => SESSIONS.some((s) => s.id === id)).length;
@@ -150,10 +155,10 @@ export default function Sidebar({
                     <SessionCard
                       key={module.id}
                       session={module}
-                      isActive={activeSessionId === module.id}
+                      isActive={resolvedActiveSessionId === module.id}
                       isCompleted={module.type === 'Assessment' ? false : completedSessions.includes(module.id)}
                       progress={
-                        activeSessionId === module.id && module.type !== 'Assessment' && !completedSessions.includes(module.id)
+                        resolvedActiveSessionId === module.id && module.type !== 'Assessment' && !completedSessions.includes(module.id)
                           ? 1
                           : 0
                       }

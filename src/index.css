@@ -678,3 +678,29 @@
   pointer-events: none !important;
   border: 0 !important;
 }
+
+/* Webinar video controls: theme blue timeline for visibility on blurred background */
+.video-seek-primary-navy {
+  accent-color: var(--color-primary-navy, #003366);
+}
+.video-seek-primary-navy::-webkit-slider-runnable-track {
+  background: rgba(0, 51, 102, 0.35);
+  border-radius: 9999px;
+}
+.video-seek-primary-navy::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  appearance: none;
+  background: var(--color-primary-navy, #003366);
+  border-radius: 9999px;
+  cursor: pointer;
+}
+.video-seek-primary-navy::-moz-range-track {
+  background: rgba(0, 51, 102, 0.35);
+  border-radius: 9999px;
+}
+.video-seek-primary-navy::-moz-range-thumb {
+  background: var(--color-primary-navy, #003366);
+  border-radius: 9999px;
+  cursor: pointer;
+  border: 0;
+}

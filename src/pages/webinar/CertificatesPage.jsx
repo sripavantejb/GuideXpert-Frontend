@@ -34,6 +34,7 @@ export default function CertificatesPage() {
   const [downloading, setDownloading] = useState(null);
   const [previewLoading, setPreviewLoading] = useState(false);
   const [userCertificateId, setUserCertificateId] = useState(null);
+  const [actionError, setActionError] = useState('');
 
   const dateStr = formatCertificateDate();
 
@@ -186,11 +187,13 @@ export default function CertificatesPage() {
 
   const handleDownloadPng = async () => {
     setDownloading('png');
+    setActionError('');
     try {
       const certificateId = await getOrEnsureCertificateId();
       await downloadCertificatePng(displayName, dateStr, certificateId);
     } catch (e) {
       console.error(e);
+      setActionError(e?.message || 'Unable to download certificate PNG. Please try again.');
     } finally {
       setDownloading(null);
     }
@@ -198,11 +201,13 @@ export default function CertificatesPage() {
 
   const handleDownloadPdf = async () => {
     setDownloading('pdf');
+    setActionError('');
     try {
       const certificateId = await getOrEnsureCertificateId();
       await downloadCertificatePdf(displayName, dateStr, certificateId);
     } catch (e) {
       console.error(e);
+      setActionError(e?.message || 'Unable to download certificate PDF. Please try again.');
     } finally {
       setDownloading(null);
     }
@@ -210,6 +215,7 @@ export default function CertificatesPage() {
 
   const handlePreview = async () => {
     setPreviewLoading(true);
+    setActionError('');
     try {
       const certificateId = await getOrEnsureCertificateId();
       navigate(`/certificate/${certificateId}`, {
@@ -223,6 +229,7 @@ export default function CertificatesPage() {
       });
     } catch (e) {
       console.error(e);
+      setActionError(e?.message || 'Unable to open certificate preview. Please try again.');
     } finally {
       setPreviewLoading(false);
     }
@@ -297,6 +304,11 @@ export default function CertificatesPage() {
               {previewLoading ? 'Loading…' : 'Preview'}
             </button>
           </div>
+          {actionError && (
+            <div className="rounded-lg border border-red-200 bg-red-50 text-red-700 text-sm px-3 py-2">
+              {actionError}
+            </div>
+          )}
         </div>
       </div>
     </div>

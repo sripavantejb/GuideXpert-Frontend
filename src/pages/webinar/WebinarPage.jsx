@@ -166,6 +166,12 @@ export default function WebinarPage() {
         open={sidebarOpen}
         onOpenChange={setSidebarOpen}
         doubtsCount={doubts.length}
+        activeModuleId={activeSessionId}
+        onSelectModule={(sessionId) => {
+          setActiveSessionId(sessionId);
+          const module = getModuleById(sessionId);
+          if (module) setActiveDay(module.dayId);
+        }}
       />
 
       <main className="flex-1 flex flex-col min-w-0 lg:ml-[72px] relative">

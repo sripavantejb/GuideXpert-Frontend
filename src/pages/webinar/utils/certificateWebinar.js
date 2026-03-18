@@ -26,18 +26,36 @@ export function formatCertificateDate(d = new Date()) {
 
 /** Load certificate background image (SVG). */
 export function loadCertificateImage() {
+  const candidates = Array.from(new Set([
+    CERTIFICATE_SVG_URL,
+    '/certificate-webinar.svg',
+    '/downloadcertificate.svg',
+  ]));
   return new Promise((resolve, reject) => {
+    let idx = 0;
+    let timeout = null;
     const img = new Image();
-    const timeout = setTimeout(() => reject(new Error('Certificate image load timeout')), 20000);
+    const tryNext = () => {
+      if (timeout) clearTimeout(timeout);
+      if (idx >= candidates.length) {
+        reject(new Error('Failed to load certificate image'));
+        return;
+      }
+      timeout = setTimeout(() => {
+        idx += 1;
+        tryNext();
+      }, 20000);
+      img.src = candidates[idx];
+      idx += 1;
+    };
     img.onload = () => {
-      clearTimeout(timeout);
+      if (timeout) clearTimeout(timeout);
       resolve(img);
     };
     img.onerror = () => {
-      clearTimeout(timeout);
-      reject(new Error('Failed to load certificate image'));
+      tryNext();
     };
-    img.src = CERTIFICATE_SVG_URL;
+    tryNext();
   });
 }
 

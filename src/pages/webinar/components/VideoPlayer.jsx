@@ -1,5 +1,5 @@
 import { useRef, useState, useEffect, useCallback } from 'react';
-import { FiPlay, FiPause, FiVolume2, FiVolumeX, FiMaximize, FiMinimize } from 'react-icons/fi';
+import { FiPlay, FiPause, FiVolume2, FiVolumeX, FiMaximize, FiMinimize, FiRotateCcw } from 'react-icons/fi';
 import { HiHeart } from 'react-icons/hi';
 import { useWebinar } from '../context/WebinarContext';
 
@@ -138,6 +138,7 @@ function YouTubePlayerWithControls({
   const containerRef = useRef(null);
   const playerRef = useRef(null);
   const progressIntervalRef = useRef(null);
+  const lastLeftTapRef = useRef(0);
   const metadataSentRef = useRef(false);
   const endedRef = useRef(false);
   const apiReady = useYouTubeIFrameAPI();
@@ -336,21 +337,36 @@ function YouTubePlayerWithControls({
     const container = containerRef.current;
     if (!container) return;
     const onKeyDown = (e) => {
-      if (e.target.closest('input') || e.target.closest('button') || showCompletionOverlay) return;
+      const target = e.target;
+      const isTypingTarget = target instanceof HTMLElement
+        && (target.closest('input,textarea,select,[contenteditable="true"]') != null);
+      if (isTypingTarget || showCompletionOverlay) return;
       if (e.code === 'Space') {
         e.preventDefault();
         toggleYtPlay();
       }
+      if (e.code === 'ArrowLeft') {
+        e.preventDefault();
+        const player = playerRef.current;
+        if (!player?.seekTo) return;
+        const now = typeof player.getCurrentTime === 'function' ? player.getCurrentTime() : ytCurrentTime;
+        const newTime = Math.max(0, (Number(now) || 0) - 10);
+        player.seekTo(newTime, true);
+        setYtCurrentTime(newTime);
+        const pct = ytDuration > 0 ? (newTime / ytDuration) * 100 : 0;
+        setYtProgress(pct);
+        onTimeUpdate?.(session?.id, newTime);
+        onProgress?.(session?.id, pct);
+      }
     };
     const onContextMenu = (e) => e.preventDefault();
-    container.setAttribute('tabIndex', '0');
-    container.addEventListener('keydown', onKeyDown);
+    window.addEventListener('keydown', onKeyDown);
     container.addEventListener('contextmenu', onContextMenu);
     return () => {
-      container.removeEventListener('keydown', onKeyDown);
+      window.removeEventListener('keydown', onKeyDown);
       container.removeEventListener('contextmenu', onContextMenu);
     };
-  }, [showCompletionOverlay, toggleYtPlay]);
+  }, [showCompletionOverlay, toggleYtPlay, onTimeUpdate, onProgress, session?.id, ytCurrentTime, ytDuration]);
 
   useEffect(() => {
     const onFullscreenChange = () => setYtFullscreen(!!document.fullscreenElement);
@@ -370,6 +386,47 @@ function YouTubePlayerWithControls({
     },
     [ytDuration]
   );
+
+  const handleYtBack10 = useCallback(() => {
+    const player = playerRef.current;
+    if (!player?.seekTo) return;
+    const now = typeof player.getCurrentTime === 'function' ? player.getCurrentTime() : ytCurrentTime;
+    const newTime = Math.max(0, (Number(now) || 0) - 10);
+    player.seekTo(newTime, true);
+    setYtCurrentTime(newTime);
+    const pct = ytDuration > 0 ? (newTime / ytDuration) * 100 : 0;
+    setYtProgress(pct);
+    onTimeUpdate?.(session?.id, newTime);
+    onProgress?.(session?.id, pct);
+  }, [ytCurrentTime, ytDuration, onTimeUpdate, onProgress, session?.id]);
+
+  const handleYtVideoTouchEnd = useCallback((e) => {
+    if (showCompletionOverlay) return;
+    const container = containerRef.current;
+    if (!container) return;
+    const touch = e.changedTouches?.[0];
+    if (!touch) return;
+    const rect = container.getBoundingClientRect();
+    const isLeftHalf = touch.clientX <= rect.left + (rect.width / 2);
+    if (!isLeftHalf) return;
+    const now = Date.now();
+    const delta = now - lastLeftTapRef.current;
+    lastLeftTapRef.current = now;
+    if (delta <= 320) {
+      e.preventDefault();
+      handleYtBack10();
+    }
+  }, [showCompletionOverlay, handleYtBack10]);
+
+  const handleYtVideoDoubleClick = useCallback((e) => {
+    const container = containerRef.current;
+    if (!container || showCompletionOverlay) return;
+    const rect = container.getBoundingClientRect();
+    const isLeftHalf = e.clientX <= rect.left + (rect.width / 2);
+    if (!isLeftHalf) return;
+    e.preventDefault();
+    handleYtBack10();
+  }, [showCompletionOverlay, handleYtBack10]);
 
   if (!session) return null;
 
@@ -405,7 +462,12 @@ function YouTubePlayerWithControls({
             className="absolute inset-0 w-full h-full z-[1] yt-player-mount"
           />
           {/* Block iframe hover/click so YouTube hover chrome never appears */}
-          <div className="absolute inset-0 z-[3]" aria-hidden />
+          <div
+            className="absolute inset-0 z-[3]"
+            aria-hidden
+            onTouchEnd={handleYtVideoTouchEnd}
+            onDoubleClick={handleYtVideoDoubleClick}
+          />
           {/* Opaque paused/start cover fully hides native YouTube title/watch-later/share overlays */}
           {!ytPlaying && !showCompletionOverlay && (
             <button
@@ -436,12 +498,12 @@ function YouTubePlayerWithControls({
           />
         </div>
       </div>
-      {/* Glassmorphism controls overlay (transparent/blurred, not black) */}
-      <div className="absolute bottom-0 left-0 right-0 z-[5] flex flex-col backdrop-blur-md bg-white/10 border-t border-white/20">
+      {/* Controls overlay: transparent dark blue (theme) for visibility */}
+      <div className="absolute bottom-0 left-0 right-0 z-[5] flex flex-col backdrop-blur-md bg-primary-navy/80 border-t border-primary-navy/60">
         <div className="w-full px-2 sm:px-3 pt-1 pb-1.5 sm:pb-2 flex items-center gap-2 relative">
-          <div className="flex-1 min-w-0 h-1.5 sm:h-2 rounded-full bg-white/25 overflow-hidden">
+          <div className="flex-1 min-w-0 h-1.5 sm:h-2 rounded-full bg-white/30 overflow-hidden">
             <div
-              className="h-full bg-white rounded-full transition-all duration-300 ease-out"
+              className="h-full bg-white/85 rounded-full transition-all duration-300 ease-out"
               style={{ width: `${Math.min(100, Math.max(0, ytProgress))}%` }}
             />
           </div>
@@ -458,6 +520,15 @@ function YouTubePlayerWithControls({
           />
         </div>
         <div className="h-8 sm:h-10 px-2 sm:px-3 pt-1 pb-1 flex items-center gap-2">
+          <button
+            type="button"
+            onClick={handleYtBack10}
+            className="flex items-center justify-center gap-1 px-1.5 w-auto h-6 sm:h-8 rounded-full bg-white/20 border border-white/40 text-white flex-shrink-0 transition-all duration-200 hover:bg-white/30 active:scale-95 focus:outline-none focus-visible:ring-2 focus-visible:ring-white/50"
+            aria-label="Back 10 seconds"
+            title="Back 10 seconds"
+          >
+            <FiRotateCcw className="w-3 h-3 sm:w-4 sm:h-4" />
+          </button>
           <button
             type="button"
             onClick={toggleYtPlay}
@@ -511,6 +582,8 @@ export default function VideoPlayer({
   const { settings } = useWebinar();
   const containerRef = useRef(null);
   const videoRef = useRef(null);
+  const lastLeftTapRef = useRef(0);
+  const lastRewindGestureAtRef = useRef(0);
   const [playing, setPlaying] = useState(false);
   const [progress, setProgress] = useState(0);
   const [currentTime, setCurrentTime] = useState(0);
@@ -637,6 +710,55 @@ export default function VideoPlayer({
     setProgress(pct);
   };
 
+  const handleBack10 = useCallback(() => {
+    const v = videoRef.current;
+    if (!v) return;
+    const now = v.currentTime;
+    const dur = v.duration;
+    const newTime = Math.max(0, (Number(now) || 0) - 10);
+    v.currentTime = newTime;
+    setCurrentTime(newTime);
+    const pct = Number.isFinite(dur) && dur > 0 ? (newTime / dur) * 100 : 0;
+    setProgress(pct);
+    onTimeUpdate?.(session?.id, newTime);
+    onProgress?.(session?.id, pct);
+  }, [onTimeUpdate, onProgress, session?.id]);
+
+  const handleVideoTouchEnd = useCallback((e) => {
+    const v = videoRef.current;
+    if (!v) return;
+    const touch = e.changedTouches?.[0];
+    if (!touch) return;
+    const rect = v.getBoundingClientRect();
+    const isLeftHalf = touch.clientX <= rect.left + (rect.width / 2);
+    if (!isLeftHalf) return;
+    const now = Date.now();
+    const delta = now - lastLeftTapRef.current;
+    lastLeftTapRef.current = now;
+    if (delta <= 320) {
+      e.preventDefault();
+      e.stopPropagation();
+      lastRewindGestureAtRef.current = Date.now();
+      handleBack10();
+    }
+  }, [handleBack10]);
+
+  const handleVideoDoubleClick = useCallback((e) => {
+    const v = videoRef.current;
+    if (!v) return;
+    const rect = v.getBoundingClientRect();
+    const isLeftHalf = e.clientX <= rect.left + (rect.width / 2);
+    if (!isLeftHalf) return;
+    e.preventDefault();
+    lastRewindGestureAtRef.current = Date.now();
+    handleBack10();
+  }, [handleBack10]);
+
+  const handleVideoClick = useCallback((e) => {
+    if (Date.now() - lastRewindGestureAtRef.current < 380) return;
+    togglePlay(e);
+  }, [togglePlay]);
+
   const handleVolumeChange = (e) => {
     const val = parseFloat(e.target.value);
     setVolume(val);
@@ -673,19 +795,23 @@ export default function VideoPlayer({
   }, []);
 
   useEffect(() => {
-    const container = containerRef.current;
-    if (!container) return;
     const onKeyDown = (e) => {
-      if (e.target.closest('input') || e.target.closest('button')) return;
+      const target = e.target;
+      const isTypingTarget = target instanceof HTMLElement
+        && (target.closest('input,textarea,select,[contenteditable="true"]') != null);
+      if (isTypingTarget) return;
       if (e.code === 'Space') {
         e.preventDefault();
         togglePlay();
       }
+      if (e.code === 'ArrowLeft') {
+        e.preventDefault();
+        handleBack10();
+      }
     };
-    container.setAttribute('tabIndex', '0');
-    container.addEventListener('keydown', onKeyDown);
-    return () => container.removeEventListener('keydown', onKeyDown);
-  }, [togglePlay]);
+    window.addEventListener('keydown', onKeyDown);
+    return () => window.removeEventListener('keydown', onKeyDown);
+  }, [togglePlay, handleBack10]);
 
   if (!session) {
     return (
@@ -750,7 +876,9 @@ export default function VideoPlayer({
           className="absolute inset-0 w-full h-full object-contain"
           poster={session.thumbnail ?? undefined}
           playsInline
-          onClick={togglePlay}
+          onClick={handleVideoClick}
+          onTouchEnd={handleVideoTouchEnd}
+          onDoubleClick={handleVideoDoubleClick}
           style={{ visibility: error ? 'hidden' : 'visible' }}
         />
       </div>
@@ -779,9 +907,9 @@ export default function VideoPlayer({
         </button>
       </div>
 
-      {/* Bottom: progress bar row + control bar - glassmorphic, aligned */}
-      <div className="absolute bottom-0 left-0 right-0 flex flex-col backdrop-blur-md bg-gradient-to-t from-black/40 to-transparent border-t border-white/10">
-        {/* Seek bar - slimmer, with gap above control row */}
+      {/* Bottom: progress bar row + control bar - transparent dark blue (theme) */}
+      <div className="absolute bottom-0 left-0 right-0 flex flex-col backdrop-blur-md bg-gradient-to-t from-primary-navy/95 to-primary-navy/65 border-t border-primary-navy/60">
+        {/* Seek bar - theme blue for visibility on blurred background */}
         <div className="w-full px-2 sm:px-3 pt-0.5 pb-1.5 sm:pb-2 flex items-center gap-2 flex-shrink-0">
           <input
             type="range"
@@ -790,7 +918,7 @@ export default function VideoPlayer({
             step="0.1"
             value={progress}
             onChange={handleSeek}
-            className="flex-1 min-w-0 h-1 sm:h-1.5 rounded-full bg-white/30 accent-white cursor-pointer focus:outline-none focus-visible:ring-2 focus-visible:ring-white/50 touch-none"
+            className="flex-1 min-w-0 h-1.5 sm:h-2 rounded-full bg-white/30 accent-white cursor-pointer focus:outline-none focus-visible:ring-2 focus-visible:ring-white/50 touch-none"
             aria-label="Seek"
           />
         </div>
@@ -800,6 +928,15 @@ export default function VideoPlayer({
           style={{ WebkitOverflowScrolling: 'touch' }}
         >
           <div className="flex items-center gap-1 sm:gap-2 overflow-x-auto flex-1 min-w-0 items-center">
+          <button
+            type="button"
+            onClick={handleBack10}
+            className="flex items-center justify-center gap-1 px-1.5 w-auto h-6 sm:h-8 rounded-full bg-white/20 backdrop-blur-sm border border-white/40 text-white flex-shrink-0 transition-all duration-200 hover:bg-white/30 active:scale-95 focus:outline-none focus-visible:ring-2 focus-visible:ring-white/50"
+            aria-label="Back 10 seconds"
+            title="Back 10 seconds"
+          >
+            <FiRotateCcw className="w-3 h-3 sm:w-4 sm:h-4" />
+          </button>
           <button
             type="button"
             onClick={togglePlay}

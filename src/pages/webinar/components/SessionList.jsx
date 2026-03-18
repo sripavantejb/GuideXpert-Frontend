@@ -9,7 +9,9 @@ export function SessionCard({
   onClick,
   darkVariant = false,
 }) {
-  const activeClass = 'bg-primary-navy text-white border-primary-navy shadow-sm';
+  const activeClass = darkVariant
+    ? 'bg-white/[0.14] border-white/[0.10] text-white shadow-[inset_0_1px_0_rgba(255,255,255,0.08),0_10px_24px_rgba(2,6,23,0.35)]'
+    : 'bg-primary-navy text-white border-primary-navy shadow-sm';
   const lockedClass = darkVariant
     ? 'bg-white/[0.04] border-white/[0.08] text-slate-500 opacity-80 cursor-not-allowed'
     : 'bg-gray-50 border-gray-200 opacity-60 cursor-not-allowed';
@@ -17,25 +19,29 @@ export function SessionCard({
     ? 'bg-white/[0.06] border-white/[0.08] text-white hover:bg-white/[0.10] hover:border-white/[0.14]'
     : 'bg-white border-gray-200 hover:border-gray-300 hover:shadow-sm hover:bg-gray-50/60';
 
-  const darkVariantUseInactiveLook = darkVariant;
-
   return (
     <button
       type="button"
       onClick={() => !isLocked && onClick(session.id)}
       disabled={isLocked}
       className={`
-        w-full text-left flex items-center gap-3 rounded-lg border transition-all duration-200
+        relative overflow-hidden w-full text-left flex items-center gap-3 rounded-lg border transition-all duration-200
         focus:outline-none
         ${darkVariant ? 'p-3.5' : 'p-3'}
-        ${darkVariantUseInactiveLook ? (isLocked ? lockedClass : inactiveClass) : isActive ? activeClass : isLocked ? lockedClass : inactiveClass}
+        ${isLocked ? lockedClass : isActive ? activeClass : inactiveClass}
       `}
     >
       {/* Thumbnail */}
       <div
         className={`
           w-11 h-11 rounded-md overflow-hidden shrink-0 relative
-          ${darkVariant ? 'bg-white/8 ring-1 ring-white/8' : 'bg-gray-200'}
+          ${
+            darkVariant
+              ? isActive
+                ? 'bg-white/15 ring-1 ring-white/25 shadow-[inset_0_1px_0_rgba(255,255,255,0.12)]'
+                : 'bg-white/8 ring-1 ring-white/8'
+              : 'bg-gray-200'
+          }
         `}
       >
         {session.thumbnail ? (
@@ -64,18 +70,25 @@ export function SessionCard({
 
       {/* Text */}
       <div className="min-w-0 flex-1">
-        <p
-          className={`
-            text-sm font-medium leading-snug truncate
-            ${darkVariant ? 'text-white' : isActive ? 'text-white' : 'text-gray-900'}
-          `}
-        >
-          {session.title}
-        </p>
+        <div className="flex items-center justify-between gap-2">
+          <p
+            className={`
+              text-sm font-medium leading-snug truncate
+              ${darkVariant ? (isActive ? 'text-white font-semibold' : 'text-white') : isActive ? 'text-white' : 'text-gray-900'}
+            `}
+          >
+            {session.title}
+          </p>
+          {darkVariant && isActive && (
+            <span className="shrink-0 inline-flex items-center px-2 py-0.5 rounded-full bg-white/12 text-white/90 text-[10px] font-semibold tracking-wide uppercase">
+              Current
+            </span>
+          )}
+        </div>
         <p
           className={`
             text-xs mt-0.5 font-medium tabular-nums
-            ${darkVariant ? 'text-slate-400' : isActive ? 'text-white/60' : 'text-gray-500'}
+            ${darkVariant ? (isActive ? 'text-white/80' : 'text-slate-400') : isActive ? 'text-white/60' : 'text-gray-500'}
           `}
         >
           {session.duration}
@@ -90,12 +103,12 @@ export function SessionCard({
           <FiCheckCircle className={`w-5 h-5 ${darkVariant ? 'text-accent-green' : isActive ? 'text-white/90' : 'text-accent-green'}`} aria-label="Completed" />
         ) : progress > 0 ? (
           <span
-            className={`w-5 h-5 rounded-full border-2 border-t-transparent animate-spin inline-block ${darkVariant ? 'border-accent-gold' : isActive ? 'border-white/70' : 'border-accent-gold'}`}
+            className={`w-5 h-5 rounded-full border-2 border-t-transparent animate-spin inline-block ${darkVariant ? (isActive ? 'border-white/80' : 'border-accent-gold') : isActive ? 'border-white/70' : 'border-accent-gold'}`}
             aria-label="In progress"
           />
         ) : (
           <span
-            className={`w-4 h-4 rounded-full border-2 inline-block ${darkVariant ? 'border-slate-500' : isActive ? 'border-white/50' : 'border-gray-300'}`}
+            className={`w-4 h-4 rounded-full border-2 inline-block ${darkVariant ? (isActive ? 'border-white/75' : 'border-slate-500') : isActive ? 'border-white/50' : 'border-gray-300'}`}
             aria-label="Not started"
           />
         )}

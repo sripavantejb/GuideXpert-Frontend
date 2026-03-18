@@ -31,6 +31,7 @@ export default function CertificateUnlockCard({
   const [downloading, setDownloading] = useState(null);
   const [previewLoading, setPreviewLoading] = useState(false);
   const [userCertificateId, setUserCertificateId] = useState(null);
+  const [actionError, setActionError] = useState('');
 
   // Unlock all for now (no completion gate)
   const unlocked = true;
@@ -187,11 +188,13 @@ export default function CertificateUnlockCard({
 
   const handleDownloadPng = async () => {
     setDownloading('png');
+    setActionError('');
     try {
       const certificateId = await getOrEnsureCertificateId();
       await downloadCertificatePng(displayName, dateStr, certificateId);
     } catch (e) {
       console.error(e);
+      setActionError(e?.message || 'Unable to download certificate PNG. Please try again.');
     } finally {
       setDownloading(null);
     }
@@ -199,11 +202,13 @@ export default function CertificateUnlockCard({
 
   const handleDownloadPdf = async () => {
     setDownloading('pdf');
+    setActionError('');
     try {
       const certificateId = await getOrEnsureCertificateId();
       await downloadCertificatePdf(displayName, dateStr, certificateId);
     } catch (e) {
       console.error(e);
+      setActionError(e?.message || 'Unable to download certificate PDF. Please try again.');
     } finally {
       setDownloading(null);
     }
@@ -211,6 +216,7 @@ export default function CertificateUnlockCard({
 
   const handlePreview = async () => {
     setPreviewLoading(true);
+    setActionError('');
     try {
       const certificateId = await getOrEnsureCertificateId();
       navigate(`/certificate/${certificateId}`, {
@@ -224,6 +230,7 @@ export default function CertificateUnlockCard({
       });
     } catch (e) {
       console.error(e);
+      setActionError(e?.message || 'Unable to open certificate preview. Please try again.');
     } finally {
       setPreviewLoading(false);
     }
@@ -276,6 +283,11 @@ export default function CertificateUnlockCard({
               {previewLoading ? 'Loading…' : 'Preview'}
             </button>
           </div>
+          {actionError && (
+            <div className="rounded-lg border border-red-200 bg-red-50 text-red-700 text-sm px-3 py-2">
+              {actionError}
+            </div>
+          )}
         </div>
       ) : (
         <div className="space-y-4">

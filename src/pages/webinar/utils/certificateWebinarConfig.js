@@ -3,7 +3,7 @@
  * Canvas size matches SVG viewBox; text positions tuned for the design.
  * Adjust nameX, nameY, dateX, dateY if the overlay does not align with the template.
  */
-export const CERTIFICATE_SVG_URL = '/certificate-webinar.svg';
+export const CERTIFICATE_SVG_URL = '/downloadcertificate.svg';
 
 /** ViewBox from certificate SVG: 0 0 842.25 595.5 (A4 landscape). */
 export const CERT_WIDTH = 842;

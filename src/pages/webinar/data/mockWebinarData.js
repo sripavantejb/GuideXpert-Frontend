@@ -55,27 +55,39 @@ export const SESSIONS = [
     isYoutube: true,
     thumbnail: 'https://img.youtube.com/vi/WQ2YttHj2EE/hqdefault.jpg',
     description: {
-      startPoint: 'Introduction to GuideXpert and career counselling for students after intermediate.',
-      keyTopics: ['Career clarity', 'Course options', 'GuideXpert vision'],
-      learningOutcome: 'Understand what students need and how GuideXpert helps with career roadmap and upskilling.',
-      importantNotes: 'Complete this session before moving to later sessions.',
+      startPoint: 'This session builds the foundation of ethical, student-centric counselling at GuideXpert.',
+      keyTopics: ['GuideXpert mission', 'Counselling principles', 'Counselling flow', 'Information vs guidance vs counselling', "Do's and don'ts", 'Handling common questions'],
+      learningOutcome: 'Use a structured counselling approach that is honest, practical, and focused on student outcomes.',
+      importantNotes: 'Always avoid false promises on admission, placements, or shortcuts.',
       outline: [
-        { title: 'Welcome to GuideXpert', points: ['Intro session opening', 'Session start context'] },
-        { title: 'Problems Students Face After Intermediate', points: ['Confusion & lack of clarity', 'Wrong college/course selection', 'Skill gap & unemployment'] },
-        { title: 'What Students Actually Need', points: ['Clarity', 'Career roadmap', 'Proper support'] },
-        { title: 'How GuideXpert Solves This', points: ['Industry-aligned curriculum', 'Modern technologies (AI/ML, Full Stack)', 'Real-world projects', 'Industry-ready upskilling'] },
-        { title: 'GuideXpert Vision / Network', points: ["Building India's trusted counselling network", 'Presence across locations'] },
-        { title: 'Courses After 12th (Overview)', points: ['Introduction to all career paths'] },
-        { title: 'Professional Courses', points: ['CA', 'CS', 'CMA', 'Law (LLB)'] },
-        { title: 'Degree Courses', points: ['B.Sc, B.Com, BBA, BA', 'Future paths (MBA, Govt Jobs, Masters)'] },
-        { title: 'Engineering Courses (B.Tech / B.E.)', points: ['Branch overview', 'Popular options'] },
-        { title: 'Engineering Overview', points: ['Transition slide to deep dive'] },
-        { title: 'Computer Science Engineering (CSE)', points: ['Focus areas', 'Career opportunities'] },
-        { title: 'Electronics & Communication (ECE)', points: ['Focus areas', 'Career opportunities'] },
-        { title: 'Electrical Engineering (EEE)', points: ['Focus areas', 'Career opportunities'] },
-        { title: 'Mechanical Engineering', points: ['Focus areas', 'Career opportunities'] },
-        { title: 'Civil Engineering', points: ['Focus areas', 'Career opportunities'] },
-        { title: 'Training Importance & Next Steps', points: ['Importance of upcoming sessions', 'Activation journey'] },
+        {
+          title: 'Introduction to GuideXpert',
+          points: ['Mission and vision of GuideXpert', 'Role and responsibility of a career counsellor'],
+        },
+        {
+          title: 'GuideXpert Counselling Principles',
+          points: ['Student-centric approach', 'Integrity and transparency', 'Professional mentorship', 'Quality-driven and future-ready counselling'],
+        },
+        {
+          title: 'Student-Centric Counselling Flow',
+          points: ['Listen to student needs', 'Share clear and accurate information', 'Guide toward the right choice', 'Support throughout admission'],
+        },
+        {
+          title: 'Information vs Guidance vs Counselling',
+          points: ['Information: facts only', 'Guidance: directional support', 'Counselling: deep, personalized decision support'],
+        },
+        {
+          title: 'Counselling Process and Ethics',
+          points: ['Counselling is a two-way process', 'Ask questions to understand student and parent concerns', 'Help families make informed decisions'],
+        },
+        {
+          title: 'Counselling Dos and Donts',
+          points: ['Be honest about fees, scholarships, and eligibility', 'Do not guarantee admission or placements', 'Never manipulate ranks or suggest shortcuts'],
+        },
+        {
+          title: 'Handling Common Questions',
+          points: ['Placement guarantee concerns', 'Government vs private college confusion', 'Fee concerns and parent objections'],
+        },
       ],
     },
   },
@@ -86,13 +98,48 @@ export const SESSIONS = [
     duration: '10 mins',
     durationMinutes: 10,
     type: 'Compliance',
-    videoUrl: 'https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/ForBiggerBlazes.mp4',
-    thumbnail: 'https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/images/ForBiggerBlazes.jpg',
+    videoUrl: 'https://www.youtube.com/watch?v=cQ6h1ZwM_qs',
+    isYoutube: true,
+    thumbnail: 'https://img.youtube.com/vi/cQ6h1ZwM_qs/hqdefault.jpg',
     description: {
-      startPoint: 'How we collect, use, and protect personal data.',
-      keyTopics: ['Data we collect', 'Legal basis', 'Your rights', 'Retention'],
-      learningOutcome: 'Apply privacy principles in daily work.',
-      importantNotes: 'Mandatory for all staff.',
+      startPoint: 'This session teaches how to handle counselling objections with calm, structured communication.',
+      keyTopics: ['Objection handling', 'Parent vs student conflict', '4-step response flow', 'Communication skills', 'Body language', 'Lead generation basics'],
+      learningOutcome: 'Respond to difficult counselling situations with empathy, clarity, and practical guidance.',
+      importantNotes: 'Avoid pressure language; guide students with balanced options and realistic outcomes.',
+      outline: [
+        {
+          title: 'Handling Objections in Counselling',
+          points: ['Understand conflicts between parent expectations and student preferences'],
+        },
+        {
+          title: 'Real Counselling Situations',
+          points: ['Parent expectations vs student goals', 'Budget vs college preference', 'Placement vs passion', 'Safety vs exposure', 'Career confusion and urgency'],
+        },
+        {
+          title: 'Counsellor Response Strategy',
+          points: ['Acknowledge both sides', 'Validate emotions', 'Balance expectations', 'Guide toward practical options'],
+        },
+        {
+          title: '4-Step Counselling Flow',
+          points: ['Acknowledge', 'Validate', 'Balance', 'Guide'],
+        },
+        {
+          title: 'Communication Skills',
+          points: ['Keep tone calm and steady', 'Speak clearly and avoid aggressive sales tone', 'Use phrases like "Let us explore" and "Based on your goals"'],
+        },
+        {
+          title: 'Body Language in Counselling',
+          points: ['Maintain eye contact and open posture', 'Avoid looking at phone, crossing arms, or casual disengaged posture'],
+        },
+        {
+          title: 'Practice and Improvement',
+          points: ['Record mock counselling', 'Identify filler words', 'Practice objection handling', 'Collect feedback consistently'],
+        },
+        {
+          title: 'Lead Generation Basics',
+          points: ['Use social media, network, and referrals', 'Learn to identify serious vs casual leads'],
+        },
+      ],
     },
   },
   {
@@ -105,10 +152,48 @@ export const SESSIONS = [
     videoUrl: 'https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/ForBiggerEscapes.mp4',
     thumbnail: 'https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/images/ForBiggerEscapes.jpg',
     description: {
-      startPoint: 'Expected behavior and ethical standards.',
-      keyTopics: ['Integrity', 'Respect', 'Confidentiality', 'Conflict of interest'],
-      learningOutcome: 'Demonstrate conduct aligned with company standards.',
-      importantNotes: 'Acknowledgment may be required.',
+      startPoint: 'This session explains practical online lead generation for counsellors.',
+      keyTopics: ['Digital presence', 'Social media leads', 'Personal network', 'Referrals', 'College outreach', 'Lead qualification'],
+      learningOutcome: 'Create a repeatable lead flow using online channels, referrals, and college relationships.',
+      importantNotes: 'Focus on trust and clarity; avoid hard selling while engaging students and parents.',
+      outline: [
+        {
+          title: 'Introduction and Session Overview',
+          points: ['Welcome to GuideXpert', 'Understand the lead generation framework'],
+        },
+        {
+          title: 'Generating Leads Online',
+          points: ['Build digital presence', 'Stay visible with useful career content'],
+        },
+        {
+          title: 'Lead Generation Through Social Media',
+          points: ['Post consistently', 'Share career guidance content', 'Create curiosity with relevant topics'],
+        },
+        {
+          title: 'Lead Generation Through Personal Network',
+          points: ['Start meaningful conversations', 'Ask the right qualifying questions', 'Share Career Clarity Test links and follow up'],
+        },
+        {
+          title: 'Building Trust and Authority',
+          points: ['Hold meaningful discussions', 'Build a professional image', 'Guide before you pitch'],
+        },
+        {
+          title: 'Lead Generation Through Referrals',
+          points: ['Encourage student and parent referrals', 'Build a consistent network effect'],
+        },
+        {
+          title: 'College-Based Lead Generation',
+          points: ['Build relationships with college authorities', 'Conduct career guidance sessions'],
+        },
+        {
+          title: 'Approaching Authorities and Running Sessions',
+          points: ['Begin with student problems', 'Offer value through tests and sessions', 'Use soft closing without pressure'],
+        },
+        {
+          title: 'Identifying Right Leads',
+          points: ['Differentiate serious and casual leads', 'Evaluate interest, budget, timeline, and decision maker'],
+        },
+      ],
     },
   },
   // Day 2
@@ -122,10 +207,44 @@ export const SESSIONS = [
     videoUrl: 'https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/ForBiggerFun.mp4',
     thumbnail: 'https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/images/ForBiggerFun.jpg',
     description: {
-      startPoint: 'Extended terms, indemnity, and dispute resolution.',
-      keyTopics: ['Liability', 'Indemnity', 'Dispute resolution', 'Governing law'],
-      learningOutcome: 'Understand full T&C framework.',
-      importantNotes: 'Complete after Part 1.',
+      startPoint: 'This session focuses on counsellor positioning and personal branding online.',
+      keyTopics: ['Personal branding', 'Right positioning', 'Professional bio', 'Perception building', 'Trust-based enquiries', 'GuideXpert network'],
+      learningOutcome: 'Position yourself as a trusted career counsellor and attract high-quality long-term enquiries.',
+      importantNotes: 'Avoid seat-first or fee-first messaging; lead with career clarity and transparency.',
+      outline: [
+        {
+          title: 'Introduction and Session Objective',
+          points: ['Welcome to GuideXpert', 'Understand why online positioning matters'],
+        },
+        {
+          title: 'Positioning Yourself Online',
+          points: ['Build a professional counsellor identity', 'Use consistent and value-driven messaging'],
+        },
+        {
+          title: 'Wrong Approach to Avoid',
+          points: ['Agent-style content', 'Seat-focused and fee-focused posts', 'Pressure-driven communication'],
+        },
+        {
+          title: 'Right Approach to Follow',
+          points: ['Post as a career counsellor', 'Explain branches and outcomes clearly', 'Share practical and transparent guidance'],
+        },
+        {
+          title: 'Professional Bio and Perception Building',
+          points: ['Highlight counsellor identity and structured process', 'Build image as guide, not seller', 'Be seen as honest and reliable'],
+        },
+        {
+          title: 'Outcomes of Right Positioning',
+          points: ['Trust-based enquiries', 'Better conversion quality', 'Long-term referral growth'],
+        },
+        {
+          title: 'GuideXpert Collaboration and Presence',
+          points: ['Partnered colleges across India', 'PAN India counselling support'],
+        },
+        {
+          title: 'College Lists and Locations',
+          points: ['Coverage across South, West, North, and Central India'],
+        },
+      ],
     },
   },
   {
@@ -138,10 +257,44 @@ export const SESSIONS = [
     videoUrl: 'https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/ForBiggerJoyrides.mp4',
     thumbnail: 'https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/images/ForBiggerJoyrides.jpg',
     description: {
-      startPoint: 'Tools, access, and workflows for new joiners.',
-      keyTopics: ['Systems access', 'Key workflows', 'Contacts', 'Checklist'],
-      learningOutcome: 'Be operational on day one.',
-      importantNotes: 'IT will follow up on access requests.',
+      startPoint: 'This session covers counsellor platform usage and the NIAT admission and referral workflow.',
+      keyTopics: ['Session recap', 'Counsellor login', 'Dashboard overview', 'AI predictors', 'Counsellor tools', 'NIAT referral and journey'],
+      learningOutcome: 'Use the dashboard confidently to manage students, track admissions, and handle referrals end to end.',
+      importantNotes: 'Track every student stage in the dashboard to avoid follow-up gaps and delays.',
+      outline: [
+        {
+          title: 'Introduction and Session Recap',
+          points: ['Welcome to GuideXpert', 'Quick revision of Session 1 to Session 4 learnings'],
+        },
+        {
+          title: 'Counsellor Login Process',
+          points: ['Login with mobile number', 'Verify using OTP', 'Access counsellor dashboard'],
+        },
+        {
+          title: 'GuideXpert Dashboard Overview',
+          points: ['Professional tools portal', 'Student and admission tracking', 'Session and activity overview'],
+        },
+        {
+          title: 'AI and Prediction Tools',
+          points: ['College Predictor', 'Rank Predictor'],
+        },
+        {
+          title: 'Counsellor Tools and Features',
+          points: ['Student management', 'Admissions tracker', 'Session scheduler', 'Assessment tools'],
+        },
+        {
+          title: 'Referral System (NIAT)',
+          points: ['Referral dashboard overview', 'Share referral links', 'Earn referral rewards'],
+        },
+        {
+          title: 'NIAT Admission Journey',
+          points: ['Application fee', 'NIAT exam', 'Interview or campus visit', 'Admission fee', 'Enrollment'],
+        },
+        {
+          title: 'Tracking and System Issues',
+          points: ['Monitor student progress regularly', 'Resolve tracking gaps quickly'],
+        },
+      ],
     },
   },
 ];
