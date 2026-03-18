@@ -390,6 +390,53 @@ export const submitAssessment5 = async (name, phone, answers) => {
   });
 };
 
+/**
+ * Submit webinar in-panel assessment (a1–a5). Saves an attempt to DB.
+ * @param {string} assessmentId - 'a1' | 'a2' | 'a3' | 'a4' | 'a5'
+ * @param {{ score: number, total: number, results: Array<{ questionId, text?, correct, userAnswer, correctAnswer }>, answers: Object }} payload
+ * @param {string} [webinarToken] - Optional webinar JWT (from useWebinarAuth) to associate submission with user
+ * @returns {Promise<{ success: boolean, message?: string, data?: Object, status?: number }>}
+ */
+export const submitWebinarAssessment = async (assessmentId, payload, webinarToken) => {
+  const headers = { 'Content-Type': 'application/json' };
+  if (webinarToken && typeof webinarToken === 'string') {
+    headers.Authorization = `Bearer ${webinarToken}`;
+  }
+  return apiRequest('/webinar-assessment/submit', {
+    method: 'POST',
+    headers,
+    body: JSON.stringify({
+      assessmentId,
+      score: payload.score,
+      total: payload.total,
+      results: payload.results || [],
+      answers: payload.answers || {},
+    }),
+  });
+};
+
+/**
+ * Fetch webinar assessment attempt history (latest first).
+ * @param {string} assessmentId - 'a1' | 'a2' | 'a3' | 'a4' | 'a5'
+ * @param {string} [webinarToken] - Webinar JWT (required for user history)
+ * @param {number} [limit=5]
+ * @returns {Promise<{ success: boolean, message?: string, data?: { attempts: Array<{ score: number, total: number, submittedAt: string }> }, status?: number }>}
+ */
+export const getWebinarAssessmentHistory = async (assessmentId, webinarToken, limit = 5) => {
+  const headers = { 'Content-Type': 'application/json' };
+  if (webinarToken && typeof webinarToken === 'string') {
+    headers.Authorization = `Bearer ${webinarToken}`;
+  }
+  const safeLimit = Math.max(1, Math.min(20, Number(limit) || 5));
+  return apiRequest(
+    `/webinar-assessment/history?assessmentId=${encodeURIComponent(assessmentId)}&limit=${safeLimit}`,
+    {
+      method: 'GET',
+      headers,
+    }
+  );
+};
+
 const ASSESSMENT_UTM_KEY = 'guidexpert_assessment_utm';
 
 /**

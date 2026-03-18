@@ -143,7 +143,7 @@ export default function Sidebar({
         <nav className="flex-1 flex flex-col min-h-0 overflow-hidden" aria-label="Sessions">
           {expanded ? (
             <div className="flex-1 min-h-0 flex flex-col overflow-hidden">
-              <div className="flex-1 overflow-y-auto min-h-0 py-4 px-4 pb-5 space-y-2.5">
+              <div className="sidebar-nav-scroll flex-1 overflow-y-auto min-h-0 py-4 px-4 pb-5 space-y-2.5">
                 {visibleModules.map((module) => {
                   const isUnlocked = isDayUnlocked(module.dayId);
                   return (

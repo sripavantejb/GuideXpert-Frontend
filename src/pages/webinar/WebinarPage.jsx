@@ -22,6 +22,7 @@ import WebinarAssessment2 from './components/WebinarAssessment2';
 import WebinarAssessment3 from './components/WebinarAssessment3';
 import WebinarAssessment4 from './components/WebinarAssessment4';
 import WebinarAssessment5 from './components/WebinarAssessment5';
+import { useWebinarAuth } from '../../contexts/WebinarAuthContext';
 
 const STORAGE_KEYS = {
   progress: 'webinar_progress',
@@ -47,6 +48,7 @@ function saveJson(key, value) {
 }
 
 export default function WebinarPage() {
+  const { token: webinarToken } = useWebinarAuth();
   const [activeDay, setActiveDay] = useState(1);
   const [activeSessionId, setActiveSessionId] = useState(null);
   const [completedSessions, setCompletedSessions] = useState(() =>
@@ -200,6 +202,7 @@ export default function WebinarPage() {
                       onComplete={() => setCompletedSessions((prev) => (prev.includes('a1') ? prev : [...prev, 'a1']))}
                       nextLabel={nextModule?.title}
                       onGoNext={nextModule ? () => { setActiveSessionId(nextModule.id); setActiveDay(nextModule.dayId); } : undefined}
+                      webinarToken={webinarToken}
                     />
                   </div>
                 ) : activeModule.id === 'a2' ? (
@@ -208,6 +211,7 @@ export default function WebinarPage() {
                       onComplete={() => setCompletedSessions((prev) => (prev.includes('a2') ? prev : [...prev, 'a2']))}
                       nextLabel={nextModule?.title}
                       onGoNext={nextModule ? () => { setActiveSessionId(nextModule.id); setActiveDay(nextModule.dayId); } : undefined}
+                      webinarToken={webinarToken}
                     />
                   </div>
                 ) : activeModule.id === 'a3' ? (
@@ -216,6 +220,7 @@ export default function WebinarPage() {
                       onComplete={() => setCompletedSessions((prev) => (prev.includes('a3') ? prev : [...prev, 'a3']))}
                       nextLabel={nextModule?.title}
                       onGoNext={nextModule ? () => { setActiveSessionId(nextModule.id); setActiveDay(nextModule.dayId); } : undefined}
+                      webinarToken={webinarToken}
                     />
                   </div>
                 ) : activeModule.id === 'a4' ? (
@@ -224,6 +229,7 @@ export default function WebinarPage() {
                       onComplete={() => setCompletedSessions((prev) => (prev.includes('a4') ? prev : [...prev, 'a4']))}
                       nextLabel={nextModule?.title}
                       onGoNext={nextModule ? () => { setActiveSessionId(nextModule.id); setActiveDay(nextModule.dayId); } : undefined}
+                      webinarToken={webinarToken}
                     />
                   </div>
                 ) : activeModule.id === 'a5' ? (
@@ -232,6 +238,7 @@ export default function WebinarPage() {
                       onComplete={() => setCompletedSessions((prev) => (prev.includes('a5') ? prev : [...prev, 'a5']))}
                       nextLabel={nextModule?.title}
                       onGoNext={nextModule ? () => { setActiveSessionId(nextModule.id); setActiveDay(nextModule.dayId); } : undefined}
+                      webinarToken={webinarToken}
                     />
                   </div>
                 ) : (
@@ -273,21 +280,6 @@ export default function WebinarPage() {
                       </div>
                       <div className="border-t border-gray-100 px-4 sm:px-5 py-4">
                         <DescriptionCard session={activeSession} embedded />
-                      </div>
-                      <div className="border-t border-gray-100 px-4 sm:px-5 py-4">
-                        <SessionDoubtsCard
-                          sessionId={activeSessionId}
-                          doubts={doubts}
-                          onDoubtsChange={setDoubts}
-                          embedded
-                        />
-                      </div>
-                    </>
-                  )}
-                  {!activeSession && (
-                    <>
-                      <div className="border-t border-gray-100 px-4 sm:px-5 py-4">
-                        <DescriptionCard session={null} embedded />
                       </div>
                       <div className="border-t border-gray-100 px-4 sm:px-5 py-4">
                         <SessionDoubtsCard

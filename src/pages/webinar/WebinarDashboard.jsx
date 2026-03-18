@@ -7,6 +7,7 @@ import ProgressIndicator from './components/ProgressIndicator';
 import CertificateUnlockCard from './components/CertificateUnlockCard';
 import NotesPanel from './components/NotesPanel';
 import { useWebinar } from './context/WebinarContext';
+import { useWebinarAuth } from '../../contexts/WebinarAuthContext';
 import {
   DAYS,
   SESSIONS,
@@ -30,6 +31,7 @@ function formatResumeTime(seconds) {
 }
 
 export default function WebinarDashboard() {
+  const { token: webinarToken } = useWebinarAuth();
   const {
     completedSessions,
     setCompletedSessions,
@@ -174,6 +176,7 @@ export default function WebinarDashboard() {
                       onComplete={() => setCompletedSessions((prev) => (prev.includes('a1') ? prev : [...prev, 'a1']))}
                       nextLabel={nextModule?.title}
                       onGoNext={nextModule ? () => { setActiveSessionId(nextModule.id); setActiveDay(nextModule.dayId); } : undefined}
+                      webinarToken={webinarToken}
                     />
                   </div>
                 ) : activeModule.id === 'a2' ? (
@@ -182,6 +185,7 @@ export default function WebinarDashboard() {
                       onComplete={() => setCompletedSessions((prev) => (prev.includes('a2') ? prev : [...prev, 'a2']))}
                       nextLabel={nextModule?.title}
                       onGoNext={nextModule ? () => { setActiveSessionId(nextModule.id); setActiveDay(nextModule.dayId); } : undefined}
+                      webinarToken={webinarToken}
                     />
                   </div>
                 ) : activeModule.id === 'a3' ? (
@@ -190,6 +194,7 @@ export default function WebinarDashboard() {
                       onComplete={() => setCompletedSessions((prev) => (prev.includes('a3') ? prev : [...prev, 'a3']))}
                       nextLabel={nextModule?.title}
                       onGoNext={nextModule ? () => { setActiveSessionId(nextModule.id); setActiveDay(nextModule.dayId); } : undefined}
+                      webinarToken={webinarToken}
                     />
                   </div>
                 ) : activeModule.id === 'a4' ? (
@@ -198,6 +203,7 @@ export default function WebinarDashboard() {
                       onComplete={() => setCompletedSessions((prev) => (prev.includes('a4') ? prev : [...prev, 'a4']))}
                       nextLabel={nextModule?.title}
                       onGoNext={nextModule ? () => { setActiveSessionId(nextModule.id); setActiveDay(nextModule.dayId); } : undefined}
+                      webinarToken={webinarToken}
                     />
                   </div>
                 ) : activeModule.id === 'a5' ? (
@@ -206,6 +212,7 @@ export default function WebinarDashboard() {
                       onComplete={() => setCompletedSessions((prev) => (prev.includes('a5') ? prev : [...prev, 'a5']))}
                       nextLabel={nextModule?.title}
                       onGoNext={nextModule ? () => { setActiveSessionId(nextModule.id); setActiveDay(nextModule.dayId); } : undefined}
+                      webinarToken={webinarToken}
                     />
                   </div>
                 ) : (
@@ -267,12 +274,16 @@ export default function WebinarDashboard() {
                 </>
               )}
             </div>
-          <DescriptionCard session={activeSession} />
-          <SessionDoubtsCard
-            sessionId={activeSessionId}
-            doubts={doubts}
-            onDoubtsChange={setDoubts}
-          />
+          {activeSession && (
+            <>
+              <DescriptionCard session={activeSession} />
+              <SessionDoubtsCard
+                sessionId={activeSessionId}
+                doubts={doubts}
+                onDoubtsChange={setDoubts}
+              />
+            </>
+          )}
           <NotesPanel sessionId={activeSessionId} />
         </div>
 
