@@ -346,6 +346,19 @@ export const checkAssessment3Eligibility = async (mobileNumber) => {
   };
 };
 
+export const checkActivationEligibility = async (mobileNumber) => {
+  const phone = String(mobileNumber || '').replace(/\D/g, '').slice(0, 10);
+  const result = await apiRequest(`/assessment-3/check-activation?phone=${encodeURIComponent(phone)}`, {
+    method: 'GET',
+  });
+  if (!result.success) return result;
+  const payload = result.data?.data ?? result.data;
+  return {
+    ...result,
+    eligible: Boolean(payload?.exists ?? result.data?.eligible ?? false),
+  };
+};
+
 /**
  * Submit counsellor assessment (after OTP verification).
  * @param {string} name - User's full name

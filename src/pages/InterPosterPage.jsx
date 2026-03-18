@@ -2,7 +2,7 @@ import { useState, useRef, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import html2canvas from 'html2canvas';
 import { jsPDF } from 'jspdf';
-import { checkAssessment3Eligibility } from '../utils/api';
+import { checkActivationEligibility } from '../utils/api';
 import InterPosterPreview, {
   INTER_POSTER_WIDTH as POSTER_WIDTH,
   INTER_POSTER_HEIGHT as POSTER_HEIGHT,
@@ -101,8 +101,6 @@ export default function InterPosterPage() {
   const [mobileNumber, setMobileNumber] = useState('');
   const [showIneligibleModal, setShowIneligibleModal] = useState(false);
   const [ineligibleMessage, setIneligibleMessage] = useState('');
-  const [checkingEligibility, setCheckingEligibility] = useState(false);
-  const [eligible, setEligible] = useState(false);
   const [generating, setGenerating] = useState(false);
   const [exportImageReady, setExportImageReady] = useState(false);
   const [pendingDownload, setPendingDownload] = useState(null);
@@ -114,7 +112,6 @@ export default function InterPosterPage() {
   const captureContainerRef = useRef(null);
   const exportImageReadyRef = useRef(false);
   const pendingDownloadRef = useRef({ url: null, filename: null, revoke: false });
-  const lastCheckedPhoneRef = useRef('');
   const previewBoxRef = useRef(null);
   const [previewScale, setPreviewScale] = useState(PREVIEW_MAX_PX / POSTER_WIDTH);
 
@@ -137,30 +134,17 @@ export default function InterPosterPage() {
     return () => ro.disconnect();
   }, []);
 
-  useEffect(() => {
-    if (!eligible) { setExportImageReady(false); exportImageReadyRef.current = false; }
-  }, [eligible]);
+  const canDownload = displayName.length > 0 && mobile10.length === 10;
 
-  useEffect(() => {
-    let cancelled = false;
-    const run = async () => {
-      if (mobile10.length !== 10) { setCheckingEligibility(false); setEligible(false); return; }
-      if (mobile10 === lastCheckedPhoneRef.current) return;
-      setCheckingEligibility(true); setEligible(false); setIneligibleMessage('');
-      const result = await checkAssessment3Eligibility(mobile10);
-      if (cancelled) return;
-      setCheckingEligibility(false);
-      lastCheckedPhoneRef.current = mobile10;
-      const payload = result.data?.data ?? result.data;
-      const isEligible = Boolean(result.eligible ?? payload?.exists ?? payload?.eligible ?? false);
-      if (result.success && isEligible) { setEligible(true); setShowIneligibleModal(false); return; }
-      setEligible(false);
-      setIneligibleMessage(result.message || payload?.message || 'You have not completed training yet. Please complete your training first.');
-      setShowIneligibleModal(true);
-    };
-    run();
-    return () => { cancelled = true; };
-  }, [mobile10]);
+  async function verifyEligibility() {
+    const result = await checkActivationEligibility(mobile10);
+    const payload = result.data?.data ?? result.data;
+    const isEligible = Boolean(result.eligible ?? payload?.exists ?? payload?.eligible ?? false);
+    if (result.success && isEligible) return true;
+    setIneligibleMessage(result.message || payload?.message || 'You have not completed the activation form yet. Please complete it first.');
+    setShowIneligibleModal(true);
+    return false;
+  }
 
   function waitForExportReady(ms) {
     return new Promise((resolve) => {
@@ -229,6 +213,7 @@ export default function InterPosterPage() {
   }
 
   const handlePng = async () => {
+    if (!(await verifyEligibility())) return;
     setGenerating(true); setPendingDownload(null);
     try {
       if (isMobileOrTablet()) {
@@ -253,6 +238,7 @@ export default function InterPosterPage() {
   };
 
   const handlePdf = async () => {
+    if (!(await verifyEligibility())) return;
     setGenerating(true); setPendingDownload(null);
     try {
       if (isMobileOrTablet()) {
@@ -324,7 +310,7 @@ export default function InterPosterPage() {
         {/* Header */}
         <div className="text-center mb-8">
           <h1 className="text-xl sm:text-2xl font-bold text-primary-navy tracking-tight">Download Your Counsellor Poster</h1>
-          <p className="text-sm text-slate-500 mt-1.5 max-w-lg mx-auto">Enter your details below. We verify eligibility automatically from your training completion.</p>
+          <p className="text-sm text-slate-500 mt-1.5 max-w-lg mx-auto">Enter your details below. Eligibility is verified when you click download.</p>
         </div>
 
         {/* Main card */}
@@ -358,45 +344,26 @@ export default function InterPosterPage() {
                 Please double-check your name — it will appear on the poster exactly as entered.
               </div>
 
-              {/* Status */}
-              <div className="mt-4 space-y-2">
-                {mobile10.length === 10 && checkingEligibility && (
-                  <div className="flex items-center gap-2.5 rounded-lg bg-primary-navy/5 border border-primary-navy/10 px-3 py-2.5">
-                    <div className="w-3.5 h-3.5 rounded-full border-2 border-primary-navy border-t-transparent animate-spin shrink-0" />
-                    <span className="text-xs font-medium text-primary-navy">Verifying eligibility…</span>
-                  </div>
+              {/* Download buttons — always visible when form is valid */}
+              <div className="mt-5 flex flex-col gap-2.5">
+                <button onClick={handlePng} disabled={generating || !canDownload}
+                  className="w-full rounded-lg bg-primary-navy py-2.5 text-sm font-semibold text-white shadow-md shadow-primary-navy/20 hover:shadow-lg hover:shadow-primary-navy/30 active:scale-[0.98] transition disabled:opacity-50 disabled:cursor-not-allowed">
+                  {generating ? 'Generating…' : 'Download as PNG'}
+                </button>
+                <button onClick={handlePdf} disabled={generating || !canDownload}
+                  className="w-full rounded-lg border border-slate-200 bg-white py-2.5 text-sm font-semibold text-slate-700 shadow-sm hover:bg-slate-50 active:scale-[0.98] transition disabled:opacity-50 disabled:cursor-not-allowed">
+                  {generating ? 'Generating…' : 'Download as PDF'}
+                </button>
+                {!canDownload && (
+                  <p className="text-xs text-slate-400 text-center">Enter your name and a valid 10-digit number to enable download.</p>
                 )}
-                {mobile10.length === 10 && !checkingEligibility && eligible && (
-                  <div className="rounded-lg bg-emerald-50 border border-emerald-200/60 px-3 py-2.5 text-xs font-semibold text-emerald-700">
-                    Eligible — your poster is ready to download.
-                  </div>
-                )}
-                {mobile10.length < 10 && (
-                  <div className="rounded-lg bg-slate-50 border border-slate-200 px-3 py-2.5 text-xs text-slate-500">
-                    Enter a valid 10-digit number to verify eligibility.
-                  </div>
+                {pendingDownload && (
+                  <button onClick={triggerPending}
+                    className="w-full rounded-lg bg-amber-500 py-2.5 text-sm font-semibold text-white hover:bg-amber-600 transition">
+                    Tap to save file
+                  </button>
                 )}
               </div>
-
-              {/* Download buttons */}
-              {eligible && (
-                <div className="mt-5 flex flex-col gap-2.5">
-                  <button onClick={handlePng} disabled={generating}
-                    className="w-full rounded-lg bg-primary-navy py-2.5 text-sm font-semibold text-white shadow-md shadow-primary-navy/20 hover:shadow-lg hover:shadow-primary-navy/30 active:scale-[0.98] transition disabled:opacity-50">
-                    {generating ? 'Generating…' : 'Download as PNG'}
-                  </button>
-                  <button onClick={handlePdf} disabled={generating}
-                    className="w-full rounded-lg border border-slate-200 bg-white py-2.5 text-sm font-semibold text-slate-700 shadow-sm hover:bg-slate-50 active:scale-[0.98] transition disabled:opacity-50">
-                    {generating ? 'Generating…' : 'Download as PDF'}
-                  </button>
-                  {pendingDownload && (
-                    <button onClick={triggerPending}
-                      className="w-full rounded-lg bg-amber-500 py-2.5 text-sm font-semibold text-white hover:bg-amber-600 transition">
-                      Tap to save file
-                    </button>
-                  )}
-                </div>
-              )}
             </div>
 
             {/* Right — Preview */}
@@ -404,11 +371,6 @@ export default function InterPosterPage() {
               <h2 className="text-sm font-bold text-slate-800 uppercase tracking-wider mb-4 self-start">Preview</h2>
 
               <div ref={previewBoxRef} className="relative w-full flex justify-center" style={{ maxWidth: PREVIEW_MAX_PX }}>
-                {checkingEligibility && (
-                  <div className="absolute inset-0 z-10 flex items-center justify-center bg-white/70 backdrop-blur-[1px] rounded-lg">
-                    <span className="text-xs font-medium text-slate-600">Checking…</span>
-                  </div>
-                )}
                 <div
                   className="rounded-lg overflow-hidden shadow-md border border-slate-200/80"
                   style={{ width: scaledW, height: scaledH }}
@@ -419,24 +381,20 @@ export default function InterPosterPage() {
                 </div>
               </div>
 
-              <p className="text-[11px] text-slate-400 mt-3 text-center">
-                {eligible ? 'Ready to download.' : 'Live preview — updates as you type.'}
-              </p>
+              <p className="text-[11px] text-slate-400 mt-3 text-center">Live preview — updates as you type.</p>
             </div>
           </div>
         </div>
 
-        {/* Hidden export node */}
-        {eligible && (
-          <div ref={captureContainerRef} aria-hidden="true"
-            style={{ position: 'fixed', left: 0, top: 0, width: POSTER_WIDTH, height: POSTER_HEIGHT, minWidth: POSTER_WIDTH, maxWidth: POSTER_WIDTH, minHeight: POSTER_HEIGHT, maxHeight: POSTER_HEIGHT, overflow: 'hidden', pointerEvents: 'none', zIndex: -1 }}>
-            <div ref={exportWrapperRef} aria-hidden="true"
-              style={{ position: 'fixed', left: 0, top: 0, width: POSTER_WIDTH, height: POSTER_HEIGHT, minWidth: POSTER_WIDTH, maxWidth: POSTER_WIDTH, minHeight: POSTER_HEIGHT, maxHeight: POSTER_HEIGHT, overflow: 'hidden', opacity: 0, pointerEvents: 'none', zIndex: -1 }}>
-              <InterPosterPreview ref={exportRef} fullName={displayName || fullName} mobileNumber={mobile10 || undefined} forExport
-                onExportImageLoad={() => { exportImageReadyRef.current = true; setExportImageReady(true); }} />
-            </div>
+        {/* Hidden export node — always mounted so it's ready when download is clicked */}
+        <div ref={captureContainerRef} aria-hidden="true"
+          style={{ position: 'fixed', left: 0, top: 0, width: POSTER_WIDTH, height: POSTER_HEIGHT, minWidth: POSTER_WIDTH, maxWidth: POSTER_WIDTH, minHeight: POSTER_HEIGHT, maxHeight: POSTER_HEIGHT, overflow: 'hidden', pointerEvents: 'none', zIndex: -1 }}>
+          <div ref={exportWrapperRef} aria-hidden="true"
+            style={{ position: 'fixed', left: 0, top: 0, width: POSTER_WIDTH, height: POSTER_HEIGHT, minWidth: POSTER_WIDTH, maxWidth: POSTER_WIDTH, minHeight: POSTER_HEIGHT, maxHeight: POSTER_HEIGHT, overflow: 'hidden', opacity: 0, pointerEvents: 'none', zIndex: -1 }}>
+            <InterPosterPreview ref={exportRef} fullName={displayName || fullName} mobileNumber={mobile10 || undefined} forExport
+              onExportImageLoad={() => { exportImageReadyRef.current = true; setExportImageReady(true); }} />
           </div>
-        )}
+        </div>
 
         {/* Ineligible modal */}
         {showIneligibleModal && (
@@ -445,8 +403,8 @@ export default function InterPosterPage() {
               <div className="w-12 h-12 rounded-full bg-red-50 flex items-center justify-center mx-auto mb-4">
                 <svg className="w-6 h-6 text-red-500" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" d="M12 9v3.75m9-.75a9 9 0 1 1-18 0 9 9 0 0 1 18 0Zm-9 3.75h.008v.008H12v-.008Z" /></svg>
               </div>
-              <h2 className="text-lg font-bold text-slate-900 mb-1.5">Training Not Completed</h2>
-              <p className="text-sm text-slate-500 mb-5">{ineligibleMessage || 'Complete your training first, then return here.'}</p>
+              <h2 className="text-lg font-bold text-slate-900 mb-1.5">Activation Form Not Submitted</h2>
+              <p className="text-sm text-slate-500 mb-5">{ineligibleMessage || 'Please complete the activation form first, then return here to download your poster.'}</p>
               <button onClick={() => { setShowIneligibleModal(false); navigate('/'); }}
                 className="w-full py-2.5 text-sm font-semibold text-white bg-primary-navy rounded-xl hover:opacity-90 transition">
                 Go to Home
