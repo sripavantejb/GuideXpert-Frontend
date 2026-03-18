@@ -18,8 +18,8 @@ const FallbackInterSvg = () => (
   </svg>
 );
 
-const NAME_ANCHOR = { x: 14, y: 738, maxWidth: 260, fontSize: 14, fontWeight: 700, color: '#003366' };
-const PHONE_ANCHOR = { x: 640, y: 726, maxWidth: 120, fontSize: 13, fontWeight: 700, color: '#003366' };
+const NAME_ANCHOR = { x: 14, y: 712, maxWidth: 320, fontSize: 20, fontWeight: 700, color: '#003366' };
+const PHONE_ANCHOR = { x: 644, y: 720, maxWidth: 140, fontSize: 20, fontWeight: 700, color: '#003366' };
 
 const InterPosterPreview = forwardRef(function InterPosterPreview(
   { fullName = '', mobileNumber = '', forExport = false, onExportImageLoad },
@@ -127,13 +127,13 @@ export { WIDTH as INTER_POSTER_WIDTH, HEIGHT as INTER_POSTER_HEIGHT };
 
 export const INTER_POSTER_EXPORT_LAYOUT = {
   name: {
-    x: 14, y: 738, maxWidth: 260,
-    fontSize: 14, minFontSize: 9, fontWeight: 700,
+    x: 14, y: 712, maxWidth: 320,
+    fontSize: 20, minFontSize: 12, fontWeight: 700,
     color: '#003366', fontFamily: 'sans-serif', textAlign: 'left',
   },
   phone: {
-    x: 640, y: 726, maxWidth: 120,
-    fontSize: 13, minFontSize: 8, fontWeight: 700,
+    x: 644, y: 722, maxWidth: 140,
+    fontSize: 20, minFontSize: 12, fontWeight: 700,
     color: '#003366',
     fontFamily: '-apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif',
     textAlign: 'left',
