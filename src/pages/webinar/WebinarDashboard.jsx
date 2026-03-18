@@ -112,18 +112,14 @@ export default function WebinarDashboard() {
   }, []);
 
   const handleNextSession = useCallback(() => {
-    const list = getSessionsByDay(activeDay);
-    const idx = list.findIndex((s) => s.id === activeSessionId);
-    if (idx >= 0 && idx < list.length - 1) {
-      setActiveSessionId(list[idx + 1].id);
+    const next = getNextModule(activeSessionId);
+    if (next) {
+      setActiveSessionId(next.id);
+      setActiveDay(next.dayId);
     }
-  }, [activeDay, activeSessionId, setActiveSessionId]);
+  }, [activeSessionId, setActiveSessionId]);
 
-  const hasNextSession = (() => {
-    const list = getSessionsByDay(activeDay);
-    const idx = list.findIndex((s) => s.id === activeSessionId);
-    return idx >= 0 && idx < list.length - 1;
-  })();
+  const hasNextSession = !!nextModule;
 
   const toggleBookmark = useCallback(
     (sessionId) => {

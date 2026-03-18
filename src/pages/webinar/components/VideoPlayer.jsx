@@ -106,9 +106,9 @@ function CompletionOverlay({ visible, onNextSession, onWatchAgain, hasNextSessio
               type="button"
               onClick={onNextSession}
               className="flex-1 py-2.5 px-4 rounded-xl bg-primary-navy text-white font-medium hover:opacity-90 focus:outline-none focus-visible:ring-2 focus-visible:ring-white focus-visible:ring-offset-2 transition-opacity flex items-center justify-center gap-1.5"
-              aria-label="Go to next session"
+              aria-label="Go to assessment"
             >
-              Next Session
+              Assessment
               <span aria-hidden>→</span>
             </button>
           )}

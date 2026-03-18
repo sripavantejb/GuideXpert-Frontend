@@ -8,7 +8,20 @@ import DescriptionCard from './components/DescriptionCard';
 import SessionDoubtsCard from './components/SessionDoubtsCard';
 import ProgressIndicator from './components/ProgressIndicator';
 import NotesPanel from './components/NotesPanel';
-import { DAYS, SESSIONS, getSessionById, getModuleById, getSessionsByDay } from './data/mockWebinarData';
+import {
+  DAYS,
+  SESSIONS,
+  getSessionById,
+  getModuleById,
+  getSessionsByDay,
+  getModulesByDay,
+  getNextModule,
+} from './data/mockWebinarData';
+import WebinarAssessment1 from './components/WebinarAssessment1';
+import WebinarAssessment2 from './components/WebinarAssessment2';
+import WebinarAssessment3 from './components/WebinarAssessment3';
+import WebinarAssessment4 from './components/WebinarAssessment4';
+import WebinarAssessment5 from './components/WebinarAssessment5';
 
 const STORAGE_KEYS = {
   progress: 'webinar_progress',
@@ -53,7 +66,8 @@ export default function WebinarPage() {
 
   const activeModule = activeSessionId ? getModuleById(activeSessionId) : null;
   const activeSession = activeModule?.type === 'Assessment' ? null : (activeSessionId ? getSessionById(activeSessionId) : null);
-  const sessionsForDay = getSessionsByDay(activeDay);
+  const modulesForDay = getModulesByDay(activeDay);
+  const nextModule = activeSessionId ? getNextModule(activeSessionId) : null;
 
   // Persist progress (completed session ids)
   useEffect(() => {
@@ -79,14 +93,14 @@ export default function WebinarPage() {
     setVideoSessionType(null);
   }, [activeSessionId]);
 
-  // Set first session of the day when day changes and none selected, or when selected module is not in current day
+  // Set first module of the day when day changes and none selected, or when selected module is not in current day
   useEffect(() => {
-    if (!sessionsForDay.length) return;
+    if (!modulesForDay.length) return;
     const activeModuleForDay = activeSessionId ? getModuleById(activeSessionId)?.dayId === activeDay : false;
     if (!activeSessionId || !activeModuleForDay) {
-      setActiveSessionId(sessionsForDay[0].id);
+      setActiveSessionId(modulesForDay[0].id);
     }
-  }, [activeDay, activeSessionId, sessionsForDay]);
+  }, [activeDay, activeSessionId, modulesForDay]);
 
   // Unlock all days for now (no progression gate)
   const isDayUnlocked = useCallback(() => true, []);
@@ -119,19 +133,14 @@ export default function WebinarPage() {
   }, []);
 
   const handleNextSession = useCallback(() => {
-    const list = getSessionsByDay(activeDay);
-    const idx = list.findIndex((s) => s.id === activeSessionId);
-    if (idx >= 0 && idx < list.length - 1) {
-      setActiveSessionId(list[idx + 1].id);
+    const next = getNextModule(activeSessionId);
+    if (next) {
+      setActiveSessionId(next.id);
+      setActiveDay(next.dayId);
     }
-  }, [activeDay, activeSessionId]);
+  }, [activeSessionId]);
 
-  const hasNextSession =
-    (() => {
-      const list = getSessionsByDay(activeDay);
-      const idx = list.findIndex((s) => s.id === activeSessionId);
-      return idx >= 0 && idx < list.length - 1;
-    })();
+  const hasNextSession = !!nextModule;
 
   const toggleBookmark = useCallback((sessionId) => {
     setBookmarkedSessions((prev) =>
@@ -140,8 +149,8 @@ export default function WebinarPage() {
   }, []);
 
   const completedCountForDay = (dayId) => {
-    const ids = getSessionsByDay(dayId).map((s) => s.id);
-    return ids.filter((id) => completedSessions.includes(id)).length;
+    const modules = getModulesByDay(dayId);
+    return modules.filter((m) => completedSessions.includes(m.id)).length;
   };
 
   const totalSessionsCount = SESSIONS.length;
@@ -185,11 +194,53 @@ export default function WebinarPage() {
           <div className="lg:col-span-8 flex flex-col gap-4 sm:gap-5">
             <div className="rounded-2xl bg-white border border-gray-200 shadow-card overflow-hidden transition-shadow duration-200 hover:shadow-card-hover flex-shrink-0">
               {activeModule?.type === 'Assessment' ? (
-                <div className="aspect-video bg-gray-100 flex flex-col items-center justify-center px-6 py-8 text-center">
-                  <p className="text-lg font-semibold text-gray-800">{activeModule.title}</p>
-                  <p className="text-sm text-gray-500 mt-1">{activeModule.duration}</p>
-                  <p className="text-sm text-gray-600 mt-4 max-w-md">Complete the questions below to check your understanding before moving to the next session.</p>
-                </div>
+                activeModule.id === 'a1' ? (
+                  <div className="flex flex-col min-h-[360px] p-5 sm:p-6">
+                    <WebinarAssessment1
+                      onComplete={() => setCompletedSessions((prev) => (prev.includes('a1') ? prev : [...prev, 'a1']))}
+                      nextLabel={nextModule?.title}
+                      onGoNext={nextModule ? () => { setActiveSessionId(nextModule.id); setActiveDay(nextModule.dayId); } : undefined}
+                    />
+                  </div>
+                ) : activeModule.id === 'a2' ? (
+                  <div className="flex flex-col min-h-[360px] p-5 sm:p-6">
+                    <WebinarAssessment2
+                      onComplete={() => setCompletedSessions((prev) => (prev.includes('a2') ? prev : [...prev, 'a2']))}
+                      nextLabel={nextModule?.title}
+                      onGoNext={nextModule ? () => { setActiveSessionId(nextModule.id); setActiveDay(nextModule.dayId); } : undefined}
+                    />
+                  </div>
+                ) : activeModule.id === 'a3' ? (
+                  <div className="flex flex-col min-h-[360px] p-5 sm:p-6">
+                    <WebinarAssessment3
+                      onComplete={() => setCompletedSessions((prev) => (prev.includes('a3') ? prev : [...prev, 'a3']))}
+                      nextLabel={nextModule?.title}
+                      onGoNext={nextModule ? () => { setActiveSessionId(nextModule.id); setActiveDay(nextModule.dayId); } : undefined}
+                    />
+                  </div>
+                ) : activeModule.id === 'a4' ? (
+                  <div className="flex flex-col min-h-[360px] p-5 sm:p-6">
+                    <WebinarAssessment4
+                      onComplete={() => setCompletedSessions((prev) => (prev.includes('a4') ? prev : [...prev, 'a4']))}
+                      nextLabel={nextModule?.title}
+                      onGoNext={nextModule ? () => { setActiveSessionId(nextModule.id); setActiveDay(nextModule.dayId); } : undefined}
+                    />
+                  </div>
+                ) : activeModule.id === 'a5' ? (
+                  <div className="flex flex-col min-h-[360px] p-5 sm:p-6">
+                    <WebinarAssessment5
+                      onComplete={() => setCompletedSessions((prev) => (prev.includes('a5') ? prev : [...prev, 'a5']))}
+                      nextLabel={nextModule?.title}
+                      onGoNext={nextModule ? () => { setActiveSessionId(nextModule.id); setActiveDay(nextModule.dayId); } : undefined}
+                    />
+                  </div>
+                ) : (
+                  <div className="aspect-video bg-gray-100 flex flex-col items-center justify-center px-6 py-8 text-center">
+                    <p className="text-lg font-semibold text-gray-800">{activeModule.title}</p>
+                    <p className="text-sm text-gray-500 mt-1">{activeModule.duration}</p>
+                    <p className="text-sm text-gray-600 mt-4 max-w-md">Complete the questions below to check your understanding before moving to the next session.</p>
+                  </div>
+                )
               ) : (
                 <>
                   <VideoPlayer
@@ -259,7 +310,7 @@ export default function WebinarPage() {
           <div className="lg:col-span-4 flex flex-col">
             <div className="rounded-2xl border border-gray-200 shadow-card bg-white overflow-hidden flex flex-col">
               <SessionList
-                sessions={sessionsForDay}
+                sessions={modulesForDay}
                 activeSessionId={activeSessionId}
                 onSelectSession={setActiveSessionId}
                 completedSessions={completedSessions}
@@ -273,7 +324,7 @@ export default function WebinarPage() {
                   completedPercent={overallPercent}
                   days={DAYS}
                   completedCountForDay={completedCountForDay}
-                  totalSessionsForDay={(dayId) => getSessionsByDay(dayId).length}
+                  totalSessionsForDay={(dayId) => getModulesByDay(dayId).length}
                   totalCompleted={overallCompleted}
                   totalSessions={totalSessionsCount}
                   embedded
