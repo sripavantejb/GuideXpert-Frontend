@@ -1,15 +1,14 @@
-import { useState, useMemo, useEffect } from 'react';
-import { Link, useNavigate } from 'react-router-dom';
-import { useWebinar } from './context/WebinarContext';
+import { useState, useEffect } from 'react';
+import { Link } from 'react-router-dom';
 import { useWebinarAuth } from '../../contexts/WebinarAuthContext';
-import { getSessionsByDay } from './data/mockWebinarData';
 import {
   formatCertificateDate,
   downloadCertificatePng,
   downloadCertificatePdf,
+  getCertificatePngDataUrl,
 } from './utils/certificateWebinar';
 import { getOrCreateCertificateForUser, createCertificateRecord, migrateCertificateToShortId } from '../../utils/api';
-import { FiDownload, FiLock, FiAward, FiEye } from 'react-icons/fi';
+import { FiDownload, FiLock, FiAward, FiExternalLink } from 'react-icons/fi';
 
 function isLegacyCertificateId(id) {
   return !id || typeof id !== 'string' || !String(id).trim().toUpperCase().startsWith('GX');
@@ -23,16 +22,16 @@ function generateShortCertificateId() {
 }
 
 export default function CertificatesPage() {
-  const { completedSessions } = useWebinar();
   const { user: authUser } = useWebinarAuth();
   const displayName = authUser?.name || 'Trainee';
 
   // Unlock all for now (no completion gate)
   const day3Complete = true;
 
-  const navigate = useNavigate();
   const [downloading, setDownloading] = useState(null);
-  const [previewLoading, setPreviewLoading] = useState(false);
+  const [previewLoading, setPreviewLoading] = useState(true);
+  const [previewImageUrl, setPreviewImageUrl] = useState(null);
+  const [previewCertificateId, setPreviewCertificateId] = useState(null);
   const [userCertificateId, setUserCertificateId] = useState(null);
   const [actionError, setActionError] = useState('');
 
@@ -126,6 +125,27 @@ export default function CertificatesPage() {
     return () => { cancelled = true; };
   }, [day3Complete, authUser?.phone, displayName, dateStr, certCookieName]);
 
+  // Load certificate preview image when we have a certificate ID (show on screen always)
+  useEffect(() => {
+    if (!day3Complete || !userCertificateId || !displayName) return;
+    let cancelled = false;
+    setPreviewLoading(true);
+    getCertificatePngDataUrl(displayName, dateStr, userCertificateId)
+      .then((dataUrl) => {
+        if (!cancelled) {
+          setPreviewImageUrl(dataUrl);
+          setPreviewCertificateId(userCertificateId);
+        }
+      })
+      .catch((e) => {
+        if (!cancelled) setActionError(e?.message || 'Could not load certificate preview.');
+      })
+      .finally(() => {
+        if (!cancelled) setPreviewLoading(false);
+      });
+    return () => { cancelled = true; };
+  }, [day3Complete, userCertificateId, displayName, dateStr]);
+
   const getOrEnsureCertificateId = async () => {
     // 1. Already in state (only set after successful upsert/create)
     if (userCertificateId) return userCertificateId;
@@ -213,25 +233,29 @@ export default function CertificatesPage() {
     }
   };
 
-  const handlePreview = async () => {
-    setPreviewLoading(true);
-    setActionError('');
+  const handlePreviewDownloadPng = async () => {
+    if (!previewCertificateId) return;
+    setDownloading('png');
     try {
-      const certificateId = await getOrEnsureCertificateId();
-      navigate(`/certificate/${certificateId}`, {
-        state: {
-          certificate: {
-            certificateId,
-            fullName: displayName,
-            dateIssued: dateStr,
-          },
-        },
-      });
+      await downloadCertificatePng(displayName, dateStr, previewCertificateId);
     } catch (e) {
       console.error(e);
-      setActionError(e?.message || 'Unable to open certificate preview. Please try again.');
+      setActionError(e?.message || 'Unable to download certificate PNG. Please try again.');
     } finally {
-      setPreviewLoading(false);
+      setDownloading(null);
+    }
+  };
+
+  const handlePreviewDownloadPdf = async () => {
+    if (!previewCertificateId) return;
+    setDownloading('pdf');
+    try {
+      await downloadCertificatePdf(displayName, dateStr, previewCertificateId);
+    } catch (e) {
+      console.error(e);
+      setActionError(e?.message || 'Unable to download certificate PDF. Please try again.');
+    } finally {
+      setDownloading(null);
     }
   };
 
@@ -294,19 +318,68 @@ export default function CertificatesPage() {
               <FiDownload className="w-4 h-4" aria-hidden />
               {downloading === 'pdf' ? 'Preparing…' : 'Download PDF'}
             </button>
-            <button
-              type="button"
-              onClick={handlePreview}
-              disabled={!!previewLoading}
-              className="inline-flex items-center gap-2 px-5 py-3 rounded-xl bg-primary-navy/10 text-primary-navy text-sm font-medium hover:bg-primary-navy/20 transition-colors border border-primary-navy/20 disabled:opacity-60"
-            >
-              <FiEye className="w-4 h-4" aria-hidden />
-              {previewLoading ? 'Loading…' : 'Preview'}
-            </button>
           </div>
           {actionError && (
             <div className="rounded-lg border border-red-200 bg-red-50 text-red-700 text-sm px-3 py-2">
               {actionError}
+            </div>
+          )}
+        </div>
+      </div>
+
+      {/* Certificate preview — always visible on page */}
+      <div className="mt-6 rounded-2xl bg-white border border-gray-200 shadow-lg overflow-hidden">
+        <div className="px-5 py-4 border-b border-gray-100">
+          <h2 className="text-lg font-semibold text-gray-900">Certificate preview</h2>
+          <p className="text-sm text-gray-500 mt-0.5">Your Certified GuideXpert Career Counsellor certificate</p>
+        </div>
+        <div className="p-5 flex flex-col items-center">
+          {previewImageUrl ? (
+            <>
+              <img
+                src={previewImageUrl}
+                alt={`Certificate for ${displayName}`}
+                className="max-w-full w-auto max-h-[70vh] object-contain rounded-lg shadow-sm border border-gray-100"
+              />
+              {previewCertificateId && (
+                <p className="mt-3 text-xs text-gray-500">
+                  Verified · Certificate ID: <span className="font-mono">{previewCertificateId}</span>
+                </p>
+              )}
+              <div className="mt-4 flex flex-wrap items-center justify-center gap-3">
+                <button
+                  type="button"
+                  onClick={handlePreviewDownloadPng}
+                  disabled={!!downloading}
+                  className="inline-flex items-center gap-2 px-5 py-2.5 rounded-xl bg-primary-navy text-white text-sm font-medium hover:bg-primary-navy/90 disabled:opacity-60 transition-colors shadow-sm"
+                >
+                  <FiDownload className="w-4 h-4" aria-hidden />
+                  {downloading === 'png' ? 'Preparing…' : 'Download PNG'}
+                </button>
+                <button
+                  type="button"
+                  onClick={handlePreviewDownloadPdf}
+                  disabled={!!downloading}
+                  className="inline-flex items-center gap-2 px-5 py-2.5 rounded-xl border-2 border-gray-200 text-gray-700 text-sm font-medium hover:bg-gray-50 hover:border-gray-300 disabled:opacity-60 transition-colors"
+                >
+                  <FiDownload className="w-4 h-4" aria-hidden />
+                  {downloading === 'pdf' ? 'Preparing…' : 'Download PDF'}
+                </button>
+                {previewCertificateId && (
+                  <Link
+                    to={`/certificate/${previewCertificateId}`}
+                    state={{ certificate: { certificateId: previewCertificateId, fullName: displayName, dateIssued: dateStr } }}
+                    className="inline-flex items-center gap-2 px-5 py-2.5 rounded-xl border-2 border-gray-200 text-gray-700 text-sm font-medium hover:bg-gray-50 hover:border-gray-300 transition-colors"
+                  >
+                    <FiExternalLink className="w-4 h-4" aria-hidden />
+                    View full page
+                  </Link>
+                )}
+              </div>
+            </>
+          ) : (
+            <div className="w-full max-w-md aspect-[842/596] rounded-xl bg-gray-100 animate-pulse flex items-center justify-center">
+              <span className="text-sm text-gray-400">{previewLoading ? 'Loading certificate…' : 'Certificate will appear here'}</span>
             </div>
           )}
         </div>

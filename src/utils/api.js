@@ -31,13 +31,11 @@ async function apiRequest(endpoint, options = {}) {
 
   try {
     const response = await fetch(url, config);
+    const text = await response.text();
     let data;
-    
     try {
-      data = await response.json();
+      data = text ? JSON.parse(text) : {};
     } catch (jsonError) {
-      // If response is not JSON, get text instead
-      const text = await response.text();
       console.error('[API] Non-JSON response:', text);
       return {
         success: false,
