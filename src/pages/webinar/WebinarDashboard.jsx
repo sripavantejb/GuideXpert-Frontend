@@ -63,6 +63,7 @@ export default function WebinarDashboard() {
   const [videoDurationFormatted, setVideoDurationFormatted] = useState(null);
   const [videoSessionType, setVideoSessionType] = useState(null);
   const [showCompletionModal, setShowCompletionModal] = useState(false);
+  const [showInPageCongratulations, setShowInPageCongratulations] = useState(false);
   const [showFormModal, setShowFormModal] = useState(false);
   const hasShownModal = useRef(false);
   const [unlockToast, setUnlockToast] = useState(null);
@@ -113,7 +114,12 @@ export default function WebinarDashboard() {
 
   const handleCompletionContinue = useCallback(() => {
     setShowCompletionModal(false);
+    setShowInPageCongratulations(true);
     setShowFormModal(true);
+  }, []);
+
+  const handleCompletionClose = useCallback(() => {
+    setShowCompletionModal(false);
   }, []);
 
   const handleFormClose = useCallback(() => {
@@ -212,6 +218,21 @@ export default function WebinarDashboard() {
     <>
       <div className="flex-1 grid grid-cols-1 lg:grid-cols-12 gap-4 sm:gap-5 p-4 sm:p-5 overflow-auto min-h-0">
         <div className="lg:col-span-8 flex flex-col gap-5 min-w-0">
+          {showInPageCongratulations && (
+            <div className="rounded-2xl border border-gray-200/80 bg-white shadow-lg overflow-hidden">
+              <div className="h-1 bg-gradient-to-r from-emerald-400 via-teal-400 to-blue-500" />
+              <div className="px-6 sm:px-8 pb-6 pt-6 text-center">
+                <div className="mx-auto mb-4 flex h-16 w-16 items-center justify-center rounded-full bg-gradient-to-br from-amber-400 to-orange-500 shadow-lg shadow-amber-200/40 ring-4 ring-amber-100/80">
+                  <span className="text-3xl leading-none" role="img" aria-hidden>🏆</span>
+                </div>
+                <h2 className="mb-1 text-xl font-semibold tracking-tight text-gray-900">Congratulations!</h2>
+                <p className="mb-3 text-sm font-medium text-amber-600">You did it</p>
+                <p className="text-sm sm:text-base leading-relaxed text-gray-500">
+                  You have successfully completed the <span className="font-semibold text-gray-800">GuideXpert Training</span> and earned your certificate.
+                </p>
+              </div>
+            </div>
+          )}
           {activeSessionId &&
               activeSession &&
               playbackPosition[activeSessionId] > 0 &&
@@ -442,7 +463,7 @@ export default function WebinarDashboard() {
       )}
 
       {showCompletionModal && (
-        <CompletionModal onContinue={handleCompletionContinue} />
+        <CompletionModal onContinue={handleCompletionContinue} onClose={handleCompletionClose} />
       )}
 
       {showFormModal && (

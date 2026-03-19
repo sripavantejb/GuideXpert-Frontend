@@ -10,7 +10,6 @@ export default function ExternalFormModal({ onClose }) {
 
   const [visible, setVisible] = useState(false);
   const [exiting, setExiting] = useState(false);
-  const [iframeBlocked, setIframeBlocked] = useState(false);
   const [iframeLoaded, setIframeLoaded] = useState(false);
 
   useEffect(() => {
@@ -22,22 +21,7 @@ export default function ExternalFormModal({ onClose }) {
 
   const handleIframeLoad = () => {
     setIframeLoaded(true);
-    try {
-      // Accessing cross-origin contentWindow.location throws SecurityError if X-Frame-Options blocks
-      const loc = iframeRef.current?.contentWindow?.location?.href;
-      if (!loc || loc === 'about:blank') {
-        setIframeBlocked(true);
-      }
-    } catch {
-      setIframeBlocked(true);
-    }
   };
-
-  useEffect(() => {
-    if (iframeBlocked) {
-      window.open(FORM_URL, '_blank', 'noopener,noreferrer');
-    }
-  }, [iframeBlocked]);
 
   const handleContinue = () => {
     setExiting(true);
@@ -54,103 +38,96 @@ export default function ExternalFormModal({ onClose }) {
 
   return (
     <div
-      className={`fixed inset-0 z-9999 flex items-center justify-center p-4 transition-opacity duration-300 ease-in-out ${
-        isIn ? 'opacity-100' : 'opacity-0'
+      className={`fixed inset-0 z-[9999] flex items-center justify-center p-4 sm:p-6 transition-opacity duration-300 ease-out ${
+        isIn ? 'opacity-100' : 'opacity-0 pointer-events-none'
       }`}
+      role="dialog"
+      aria-modal="true"
+      aria-labelledby="registration-modal-title"
     >
       {/* Backdrop */}
-      <div className="absolute inset-0 bg-black/60 backdrop-blur-sm" />
+      <div
+        className="absolute inset-0 bg-black/50 backdrop-blur-md transition-opacity duration-300"
+        aria-hidden
+      />
 
       {/* Modal card */}
       <div
-        className={`relative z-10 flex w-full max-w-3xl flex-col overflow-hidden rounded-2xl bg-white shadow-2xl transition-all duration-300 ease-in-out ${
-          isIn ? 'opacity-100 scale-100 translate-y-0' : 'opacity-0 scale-95 translate-y-3'
+        className={`relative z-10 flex w-full max-w-3xl flex-col overflow-hidden rounded-2xl border border-gray-200/80 bg-white shadow-xl transition-all duration-300 ease-out ${
+          isIn ? 'opacity-100 scale-100 translate-y-0' : 'opacity-0 scale-[0.98] translate-y-4'
         }`}
-        style={{ height: 'min(88vh, 680px)' }}
+        style={{ height: 'min(90vh, 720px)' }}
       >
-        {/* Top gradient bar */}
-        <div className="h-1.5 shrink-0 bg-linear-to-r from-emerald-400 via-teal-400 to-blue-500" />
+        {/* Accent bar */}
+        <div className="h-1 shrink-0 bg-gradient-to-r from-emerald-400 via-teal-400 to-blue-500" />
 
         {/* Header */}
-        <div className="flex shrink-0 items-center justify-between border-b border-gray-100 bg-white px-6 py-4">
-          <div>
-            <h3 className="text-lg font-bold text-gray-900">Complete Your Registration</h3>
-            <p className="mt-0.5 text-sm text-gray-500">Fill in your details to continue</p>
+        <div className="flex shrink-0 items-start justify-between gap-4 border-b border-gray-100 bg-white px-5 py-4 sm:px-6">
+          <div className="min-w-0">
+            <h2
+              id="registration-modal-title"
+              className="text-xl font-semibold tracking-tight text-gray-900"
+            >
+              Complete Your Registration
+            </h2>
+            <p className="mt-1 text-sm text-gray-500">
+              Fill in your details below to continue to your dashboard.
+            </p>
           </div>
           <button
             type="button"
             onClick={handleClose}
-            className="rounded-lg p-2 text-gray-400 transition-colors hover:bg-gray-100 hover:text-gray-600 focus:outline-none focus-visible:ring-2 focus-visible:ring-gray-300"
-            aria-label="Close"
+            className="shrink-0 rounded-full p-2.5 text-gray-400 transition-colors hover:bg-gray-100 hover:text-gray-600 focus:outline-none focus-visible:ring-2 focus-visible:ring-gray-400 focus-visible:ring-offset-2"
+            aria-label="Close modal"
           >
             <FiX className="h-5 w-5" />
           </button>
         </div>
 
-        {/* Iframe / fallback body */}
-        <div className="relative min-h-0 flex-1 bg-gray-50">
-          {iframeBlocked ? (
-            /* Fallback: iframe was blocked by X-Frame-Options */
-            <div className="flex h-full flex-col items-center justify-center gap-5 p-8 text-center">
-              <div className="flex h-16 w-16 items-center justify-center rounded-full bg-amber-50 ring-1 ring-amber-200/60">
-                <FiExternalLink className="h-7 w-7 text-amber-500" />
-              </div>
-              <div className="max-w-sm">
-                <p className="mb-1.5 text-base font-semibold text-gray-900">
-                  Form opened in a new tab
-                </p>
-                <p className="text-sm leading-relaxed text-gray-500">
-                  The registration form has been opened in a new browser tab. Complete it there,
-                  then click{' '}
-                  <span className="font-semibold text-gray-700">Continue to Dashboard</span>{' '}
-                  below.
-                </p>
-              </div>
-              <a
-                href={FORM_URL}
-                target="_blank"
-                rel="noopener noreferrer"
-                className="inline-flex items-center gap-1.5 text-sm font-medium text-[#003366] underline-offset-2 hover:underline"
-              >
-                Reopen form
-                <FiExternalLink className="h-3.5 w-3.5" />
-              </a>
+        {/* Form area — in-page iframe */}
+        <div className="relative min-h-[320px] flex-1 bg-gray-50/80">
+          {!iframeLoaded && (
+            <div className="absolute inset-0 flex flex-col items-center justify-center gap-4 bg-gray-50/90">
+              <div className="h-10 w-10 animate-spin rounded-full border-2 border-gray-200 border-t-[#003366]" />
+              <p className="text-sm font-medium text-gray-500">Loading registration form…</p>
+              <p className="text-xs text-gray-400">This may take a moment</p>
             </div>
-          ) : (
-            <>
-              {/* Loading shimmer */}
-              {!iframeLoaded && (
-                <div className="absolute inset-0 flex items-center justify-center bg-gray-50">
-                  <div className="flex flex-col items-center gap-3">
-                    <div className="h-8 w-8 animate-spin rounded-full border-2 border-gray-200 border-t-[#003366]" />
-                    <p className="text-sm text-gray-400">Loading registration form…</p>
-                  </div>
-                </div>
-              )}
-              <iframe
-                ref={iframeRef}
-                src={FORM_URL}
-                title="GuideXpert Registration Form"
-                className="h-full w-full border-0"
-                onLoad={handleIframeLoad}
-                allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
-              />
-            </>
           )}
+          <iframe
+            ref={iframeRef}
+            src={FORM_URL}
+            title="GuideXpert Registration Form"
+            className="h-full min-h-[320px] w-full border-0"
+            onLoad={handleIframeLoad}
+            allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+          />
         </div>
 
         {/* Footer */}
-        <div className="flex shrink-0 items-center justify-between border-t border-gray-100 bg-white px-6 py-4">
-          <p className="text-xs text-gray-400">
-            Complete the form above, then proceed to your dashboard.
-          </p>
+        <div className="flex shrink-0 flex-col gap-4 border-t border-gray-100 bg-white px-5 py-4 sm:flex-row sm:items-center sm:justify-between sm:px-6">
+          <div className="flex flex-col gap-1 sm:gap-0">
+            <p className="text-xs text-gray-500">
+              Complete the form above, then proceed to your dashboard.
+            </p>
+            <a
+              href={FORM_URL}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="inline-flex items-center gap-1.5 text-xs font-medium text-[#003366] underline-offset-2 hover:underline"
+            >
+              Open form in new tab
+              <FiExternalLink className="h-3.5 w-3.5 shrink-0" />
+            </a>
+          </div>
           <button
             type="button"
             onClick={handleContinue}
-            className="inline-flex items-center gap-2 rounded-xl bg-linear-to-r from-[#003366] to-sidebar-blue px-6 py-3 text-sm font-semibold text-white shadow-md transition-all duration-200 hover:opacity-90 hover:shadow-lg focus:outline-none focus-visible:ring-2 focus-visible:ring-[#003366] focus-visible:ring-offset-2"
+            className="order-first w-full shrink-0 rounded-xl bg-gradient-to-r from-[#003366] to-[#041e30] px-6 py-3.5 text-sm font-semibold text-white shadow-md transition-all duration-200 hover:shadow-lg hover:opacity-95 focus:outline-none focus-visible:ring-2 focus-visible:ring-[#003366] focus-visible:ring-offset-2 sm:order-none sm:w-auto"
           >
-            Continue to Dashboard
-            <FiArrowRight className="h-4 w-4 shrink-0" />
+            <span className="inline-flex items-center gap-2">
+              Continue to Dashboard
+              <FiArrowRight className="h-4 w-4 shrink-0" />
+            </span>
           </button>
         </div>
       </div>
