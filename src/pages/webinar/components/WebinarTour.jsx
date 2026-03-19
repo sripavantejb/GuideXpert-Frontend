@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useRef } from 'react';
 
 const TOUR_SEEN_KEY = 'webinar_tour_seen';
 
@@ -68,13 +68,28 @@ function getTargetRect(targetId) {
   return el.getBoundingClientRect();
 }
 
+const STEP_TRANSITION_MS = 220;
+
 export default function WebinarTour({ onDone, storageKey = TOUR_SEEN_KEY }) {
   const [stepIndex, setStepIndex] = useState(0);
   const [spotlightRect, setSpotlightRect] = useState(null);
+  const [isTransitioning, setIsTransitioning] = useState(false);
+  const [hasEntered, setHasEntered] = useState(false);
+  const stepTimeoutRef = useRef(null);
 
   const step = STEPS[stepIndex];
-  const isFirst = stepIndex === 0;
   const isLast = stepIndex === STEPS.length - 1;
+
+  useEffect(() => {
+    const id = requestAnimationFrame(() => setHasEntered(true));
+    return () => cancelAnimationFrame(id);
+  }, []);
+
+  useEffect(() => {
+    return () => {
+      if (stepTimeoutRef.current) clearTimeout(stepTimeoutRef.current);
+    };
+  }, []);
 
   const updateSpotlight = useCallback(() => {
     if (step.target) {
@@ -112,7 +127,12 @@ export default function WebinarTour({ onDone, storageKey = TOUR_SEEN_KEY }) {
     if (stepIndex === STEPS.length - 1) {
       finishTour();
     } else {
-      setStepIndex((i) => i + 1);
+      setIsTransitioning(true);
+      stepTimeoutRef.current = setTimeout(() => {
+        stepTimeoutRef.current = null;
+        setStepIndex((i) => i + 1);
+        setIsTransitioning(false);
+      }, STEP_TRANSITION_MS);
     }
   }, [stepIndex, finishTour]);
 
@@ -124,12 +144,6 @@ export default function WebinarTour({ onDone, storageKey = TOUR_SEEN_KEY }) {
     return () => window.removeEventListener('keydown', handleKeyDown);
   }, [handleSkip]);
 
-  const tooltipPlacement = spotlightRect
-    ? spotlightRect.bottom + 16 + 220 <= window.innerHeight
-      ? 'below'
-      : 'above'
-    : 'center';
-
   return (
     <div
       className="fixed inset-0 z-100 flex items-center justify-center pointer-events-none"
@@ -140,7 +154,7 @@ export default function WebinarTour({ onDone, storageKey = TOUR_SEEN_KEY }) {
       {/* Full overlay only for welcome step; other steps use spotlight box-shadow for dark area */}
       {!step.target && (
         <div
-          className="absolute inset-0 bg-black/60 transition-opacity duration-300 pointer-events-auto"
+          className="absolute inset-0 bg-black/60 pointer-events-auto transition-opacity duration-350 ease-[cubic-bezier(0.33,1,0.68,1)] motion-reduce:transition-none"
           aria-hidden="true"
         />
       )}
@@ -148,7 +162,7 @@ export default function WebinarTour({ onDone, storageKey = TOUR_SEEN_KEY }) {
       {/* Spotlight: transparent box with huge box-shadow to create cutout (other steps) */}
       {spotlightRect && (
         <div
-          className="absolute pointer-events-none transition-all duration-300"
+          className="absolute pointer-events-none transition-[left,top,width,height] duration-350 ease-[cubic-bezier(0.33,1,0.68,1)] motion-reduce:transition-none"
           style={{
             left: spotlightRect.left,
             top: spotlightRect.top,
@@ -160,30 +174,25 @@ export default function WebinarTour({ onDone, storageKey = TOUR_SEEN_KEY }) {
         />
       )}
 
-      {/* Tooltip card - pointer-events auto so buttons work */}
+      {/* Tooltip card - fixed bottom-center so it stays visible for every step */}
       <div
-        className="relative z-10 w-full max-w-md mx-4 pointer-events-auto transition-all duration-300"
-        style={
-          tooltipPlacement === 'center'
-            ? {}
-            : spotlightRect
-              ? tooltipPlacement === 'below'
-                ? {
-                    position: 'fixed',
-                    left: spotlightRect.left + spotlightRect.width / 2,
-                    top: spotlightRect.bottom + 16,
-                    transform: 'translateX(-50%)',
-                  }
-                : {
-                    position: 'fixed',
-                    left: spotlightRect.left + spotlightRect.width / 2,
-                    top: spotlightRect.top - 16,
-                    transform: 'translate(-50%, -100%)',
-                  }
-              : {}
-        }
+        className="relative z-10 w-full max-w-md mx-4 pointer-events-auto transition-[opacity,transform] duration-350 ease-[cubic-bezier(0.33,1,0.68,1)] motion-reduce:transition-none"
+        style={{
+          position: 'fixed',
+          left: '50%',
+          bottom: '40px',
+          transform: 'translateX(-50%)',
+        }}
       >
-        <div className="rounded-2xl bg-white shadow-xl border border-gray-200 p-5 sm:p-6">
+        <div
+          className={`rounded-2xl bg-white shadow-xl border border-gray-200 p-5 sm:p-6 transition-[opacity,transform] duration-350 ease-[cubic-bezier(0.33,1,0.68,1)] motion-reduce:transition-none motion-reduce:transform-none ${
+            !hasEntered
+              ? 'opacity-0 translate-y-2 scale-[0.98]'
+              : isTransitioning
+                ? 'opacity-0 translate-y-1.5 scale-100'
+                : 'opacity-100 translate-y-0 scale-100'
+          }`}
+        >
           <p className="text-sm font-medium text-primary-navy/70">
             Step {stepIndex + 1} of {STEPS.length}
           </p>
@@ -193,14 +202,14 @@ export default function WebinarTour({ onDone, storageKey = TOUR_SEEN_KEY }) {
             <button
               type="button"
               onClick={handleSkip}
-              className="text-sm font-medium text-gray-500 hover:text-gray-700 focus:outline-none focus-visible:ring-2 focus-visible:ring-primary-navy/20 focus-visible:ring-offset-2 rounded-lg px-3 py-2"
+              className="text-sm font-medium text-gray-500 hover:text-gray-700 focus:outline-none focus-visible:ring-2 focus-visible:ring-primary-navy/20 focus-visible:ring-offset-2 rounded-lg px-3 py-2 transition-colors duration-200 ease-out motion-reduce:transition-none"
             >
               Skip tour
             </button>
             <button
               type="button"
               onClick={handleNext}
-              className="inline-flex items-center gap-2 px-4 py-2.5 rounded-lg font-medium text-white bg-primary-navy hover:bg-primary-navy/90 focus:outline-none focus-visible:ring-2 focus-visible:ring-primary-navy focus-visible:ring-offset-2 transition-colors"
+              className="inline-flex items-center gap-2 px-4 py-2.5 rounded-lg font-medium text-white bg-primary-navy hover:bg-primary-navy/90 hover:-translate-y-0.5 active:translate-y-0 focus:outline-none focus-visible:ring-2 focus-visible:ring-primary-navy focus-visible:ring-offset-2 transition-[color,transform] duration-200 ease-out motion-reduce:transition-none motion-reduce:transform-none"
             >
               {isLast ? 'Done' : 'Next'}
               {!isLast && (
