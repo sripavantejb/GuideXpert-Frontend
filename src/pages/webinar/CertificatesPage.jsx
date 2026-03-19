@@ -8,7 +8,7 @@ import {
   getCertificatePngDataUrl,
 } from './utils/certificateWebinar';
 import { getOrCreateCertificateForUser, createCertificateRecord, migrateCertificateToShortId } from '../../utils/api';
-import { FiDownload, FiLock, FiAward, FiExternalLink } from 'react-icons/fi';
+import { FiDownload, FiLock, FiAward, FiExternalLink, FiCheckCircle, FiUser, FiCalendar, FiHash } from 'react-icons/fi';
 
 function isLegacyCertificateId(id) {
   return !id || typeof id !== 'string' || !String(id).trim().toUpperCase().startsWith('GX');
@@ -205,34 +205,6 @@ export default function CertificatesPage() {
     return certificateId;
   };
 
-  const handleDownloadPng = async () => {
-    setDownloading('png');
-    setActionError('');
-    try {
-      const certificateId = await getOrEnsureCertificateId();
-      await downloadCertificatePng(displayName, dateStr, certificateId);
-    } catch (e) {
-      console.error(e);
-      setActionError(e?.message || 'Unable to download certificate PNG. Please try again.');
-    } finally {
-      setDownloading(null);
-    }
-  };
-
-  const handleDownloadPdf = async () => {
-    setDownloading('pdf');
-    setActionError('');
-    try {
-      const certificateId = await getOrEnsureCertificateId();
-      await downloadCertificatePdf(displayName, dateStr, certificateId);
-    } catch (e) {
-      console.error(e);
-      setActionError(e?.message || 'Unable to download certificate PDF. Please try again.');
-    } finally {
-      setDownloading(null);
-    }
-  };
-
   const handlePreviewDownloadPng = async () => {
     if (!previewCertificateId) return;
     setDownloading('png');
@@ -262,21 +234,21 @@ export default function CertificatesPage() {
   if (!day3Complete) {
     return (
       <div className="p-4 sm:p-6 max-w-2xl">
-        <div className="rounded-2xl bg-gradient-to-br from-primary-navy/5 to-transparent px-4 py-3 mb-6">
-          <h1 className="text-xl font-semibold text-gray-800">My Certificates</h1>
-          <p className="text-sm text-gray-500 mt-0.5">Unlock your certificate after completing all sessions.</p>
+        <div className="mb-6">
+          <h1 className="text-2xl font-bold text-gray-900 tracking-tight">My Certificates</h1>
+          <p className="text-sm text-gray-500 mt-1">Unlock your certificate after completing all sessions.</p>
         </div>
-        <div className="mt-6 rounded-2xl bg-white border border-gray-200 shadow-lg overflow-hidden p-8 flex flex-col items-center text-center">
-          <span className="w-16 h-16 rounded-full bg-gray-100 flex items-center justify-center text-gray-400 mb-4">
+        <div className="rounded-2xl bg-white border border-gray-200 shadow-sm p-12 flex flex-col items-center text-center">
+          <span className="w-16 h-16 rounded-full bg-gray-100 flex items-center justify-center text-gray-400 mb-5">
             <FiLock className="w-8 h-8" aria-hidden />
           </span>
-          <p className="text-gray-700 font-medium">Certificate locked</p>
-          <p className="text-sm text-gray-500 mt-2">
-            Complete the intro video to unlock your Certified GuideXpert Career Counsellor certificate.
+          <p className="text-base font-semibold text-gray-800">Certificate locked</p>
+          <p className="text-sm text-gray-500 mt-2 max-w-xs leading-relaxed">
+            Complete all sessions to unlock your Certified GuideXpert Career Counsellor certificate.
           </p>
           <Link
             to="/webinar/progress"
-            className="mt-4 inline-flex items-center justify-center px-5 py-2.5 rounded-xl bg-primary-navy text-white text-sm font-medium hover:bg-primary-navy/90 transition-colors"
+            className="mt-6 inline-flex items-center justify-center px-6 py-2.5 rounded-xl bg-primary-navy text-white text-sm font-medium hover:bg-primary-navy/90 transition-colors shadow-sm"
           >
             View progress
           </Link>
@@ -286,104 +258,123 @@ export default function CertificatesPage() {
   }
 
   return (
-    <div className="p-4 sm:p-6 max-w-4xl">
-      <div className="rounded-2xl bg-gradient-to-br from-primary-navy/5 to-transparent px-4 py-4 mb-6 flex items-center gap-3">
-        <span className="w-12 h-12 rounded-xl bg-primary-navy/10 flex items-center justify-center text-primary-navy flex-shrink-0">
-          <FiAward className="w-6 h-6" aria-hidden />
+    <div className="p-4 sm:p-6 max-w-4xl space-y-6">
+
+      {/* Page header */}
+      <div className="flex items-center gap-3">
+        <span className="w-10 h-10 rounded-xl bg-primary-navy/10 flex items-center justify-center text-primary-navy shrink-0">
+          <FiAward className="w-5 h-5" aria-hidden />
         </span>
         <div>
-          <h1 className="text-xl font-semibold text-gray-800">My Certificates</h1>
-          <p className="text-sm text-gray-500 mt-0.5">Download your Certified GuideXpert Career Counsellor certificate in PNG or PDF.</p>
+          <h1 className="text-2xl font-bold text-gray-900 tracking-tight">My Certificates</h1>
+          <p className="text-sm text-gray-500 mt-0.5">Certified GuideXpert Career Counsellor</p>
         </div>
       </div>
 
-      <div className="rounded-2xl bg-white border border-gray-200 shadow-lg overflow-hidden">
-        <div className="p-5 border-b border-gray-100 space-y-3">
-          <div className="flex flex-wrap items-center gap-3">
-            <button
-              type="button"
-              onClick={handleDownloadPng}
-              disabled={!!downloading}
-              className="inline-flex items-center gap-2 px-5 py-3 rounded-xl bg-primary-navy text-white text-sm font-medium hover:bg-primary-navy/90 disabled:opacity-60 transition-colors shadow-sm"
-            >
-              <FiDownload className="w-4 h-4" aria-hidden />
-              {downloading === 'png' ? 'Preparing…' : 'Download PNG'}
-            </button>
-            <button
-              type="button"
-              onClick={handleDownloadPdf}
-              disabled={!!downloading}
-              className="inline-flex items-center gap-2 px-5 py-3 rounded-xl border-2 border-gray-300 text-gray-700 text-sm font-medium hover:bg-gray-50 hover:border-gray-400 disabled:opacity-60 transition-colors"
-            >
-              <FiDownload className="w-4 h-4" aria-hidden />
-              {downloading === 'pdf' ? 'Preparing…' : 'Download PDF'}
-            </button>
-          </div>
-          {actionError && (
-            <div className="rounded-lg border border-red-200 bg-red-50 text-red-700 text-sm px-3 py-2">
-              {actionError}
-            </div>
-          )}
-        </div>
-      </div>
+      {/* Main certificate card */}
+      <div className="rounded-2xl bg-white border border-gray-200 shadow-sm overflow-hidden">
 
-      {/* Certificate preview — always visible on page */}
-      <div className="mt-6 rounded-2xl bg-white border border-gray-200 shadow-lg overflow-hidden">
-        <div className="px-5 py-4 border-b border-gray-100">
-          <h2 className="text-lg font-semibold text-gray-900">Certificate preview</h2>
-          <p className="text-sm text-gray-500 mt-0.5">Your Certified GuideXpert Career Counsellor certificate</p>
+        {/* Verified banner */}
+        <div className="flex items-center gap-3 px-5 py-3 bg-green-50 border-b border-green-100">
+          <FiCheckCircle className="w-4 h-4 text-green-600 shrink-0" aria-hidden />
+          <span className="text-sm font-semibold text-green-800">Verified Certificate</span>
+          <span className="ml-auto text-xs text-green-600 font-medium">GuideXpert · {dateStr}</span>
         </div>
-        <div className="p-5 flex flex-col items-center">
+
+        {/* Certificate image area */}
+        <div className="bg-gray-50 px-6 py-8 flex justify-center">
           {previewImageUrl ? (
-            <>
-              <img
-                src={previewImageUrl}
-                alt={`Certificate for ${displayName}`}
-                className="max-w-full w-auto max-h-[70vh] object-contain rounded-lg shadow-sm border border-gray-100"
-              />
-              {previewCertificateId && (
-                <p className="mt-3 text-xs text-gray-500">
-                  Verified · Certificate ID: <span className="font-mono">{previewCertificateId}</span>
-                </p>
-              )}
-              <div className="mt-4 flex flex-wrap items-center justify-center gap-3">
-                <button
-                  type="button"
-                  onClick={handlePreviewDownloadPng}
-                  disabled={!!downloading}
-                  className="inline-flex items-center gap-2 px-5 py-2.5 rounded-xl bg-primary-navy text-white text-sm font-medium hover:bg-primary-navy/90 disabled:opacity-60 transition-colors shadow-sm"
-                >
-                  <FiDownload className="w-4 h-4" aria-hidden />
-                  {downloading === 'png' ? 'Preparing…' : 'Download PNG'}
-                </button>
-                <button
-                  type="button"
-                  onClick={handlePreviewDownloadPdf}
-                  disabled={!!downloading}
-                  className="inline-flex items-center gap-2 px-5 py-2.5 rounded-xl border-2 border-gray-200 text-gray-700 text-sm font-medium hover:bg-gray-50 hover:border-gray-300 disabled:opacity-60 transition-colors"
-                >
-                  <FiDownload className="w-4 h-4" aria-hidden />
-                  {downloading === 'pdf' ? 'Preparing…' : 'Download PDF'}
-                </button>
-                {previewCertificateId && (
-                  <Link
-                    to={`/certificate/${previewCertificateId}`}
-                    state={{ certificate: { certificateId: previewCertificateId, fullName: displayName, dateIssued: dateStr } }}
-                    className="inline-flex items-center gap-2 px-5 py-2.5 rounded-xl border-2 border-gray-200 text-gray-700 text-sm font-medium hover:bg-gray-50 hover:border-gray-300 transition-colors"
-                  >
-                    <FiExternalLink className="w-4 h-4" aria-hidden />
-                    View full page
-                  </Link>
-                )}
-              </div>
-            </>
+            <img
+              src={previewImageUrl}
+              alt={`Certificate for ${displayName}`}
+              className="w-full max-w-3xl rounded-xl shadow-lg border border-gray-200 object-contain"
+            />
           ) : (
-            <div className="w-full max-w-md aspect-[842/596] rounded-xl bg-gray-100 animate-pulse flex items-center justify-center">
-              <span className="text-sm text-gray-400">{previewLoading ? 'Loading certificate…' : 'Certificate will appear here'}</span>
+            <div className="w-full max-w-3xl aspect-842/596 rounded-xl bg-gray-200 animate-pulse flex flex-col items-center justify-center gap-2">
+              <div className="w-8 h-8 rounded-full border-2 border-gray-400 border-t-transparent animate-spin" />
+              <span className="text-sm text-gray-500 font-medium">
+                {previewLoading ? 'Generating your certificate…' : 'Certificate will appear here'}
+              </span>
             </div>
           )}
         </div>
+
+        {/* Metadata row */}
+        {previewImageUrl && (
+          <div className="grid grid-cols-1 sm:grid-cols-3 divide-y sm:divide-y-0 sm:divide-x divide-gray-100 border-t border-gray-100">
+            <div className="flex items-center gap-3 px-5 py-4">
+              <span className="w-8 h-8 rounded-lg bg-primary-navy/8 flex items-center justify-center shrink-0">
+                <FiUser className="w-4 h-4 text-primary-navy" aria-hidden />
+              </span>
+              <div className="min-w-0">
+                <p className="text-[10px] font-semibold text-gray-400 uppercase tracking-wider">Recipient</p>
+                <p className="text-sm font-semibold text-gray-800 mt-0.5 truncate">{displayName}</p>
+              </div>
+            </div>
+            <div className="flex items-center gap-3 px-5 py-4">
+              <span className="w-8 h-8 rounded-lg bg-primary-navy/8 flex items-center justify-center shrink-0">
+                <FiCalendar className="w-4 h-4 text-primary-navy" aria-hidden />
+              </span>
+              <div>
+                <p className="text-[10px] font-semibold text-gray-400 uppercase tracking-wider">Date Issued</p>
+                <p className="text-sm font-semibold text-gray-800 mt-0.5">{dateStr}</p>
+              </div>
+            </div>
+            <div className="flex items-center gap-3 px-5 py-4">
+              <span className="w-8 h-8 rounded-lg bg-primary-navy/8 flex items-center justify-center shrink-0">
+                <FiHash className="w-4 h-4 text-primary-navy" aria-hidden />
+              </span>
+              <div className="min-w-0">
+                <p className="text-[10px] font-semibold text-gray-400 uppercase tracking-wider">Certificate ID</p>
+                <p className="text-sm font-mono text-gray-600 mt-0.5 truncate">{previewCertificateId}</p>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* Action footer */}
+        <div className="px-5 py-4 border-t border-gray-100 flex flex-wrap items-center gap-3">
+          <button
+            type="button"
+            onClick={handlePreviewDownloadPng}
+            disabled={!!downloading || !previewCertificateId}
+            className="inline-flex items-center gap-2 px-5 py-2.5 rounded-xl bg-primary-navy text-white text-sm font-medium hover:bg-primary-navy/90 disabled:opacity-50 transition-colors shadow-sm"
+          >
+            <FiDownload className="w-4 h-4" aria-hidden />
+            {downloading === 'png' ? 'Preparing…' : 'Download PNG'}
+          </button>
+          <button
+            type="button"
+            onClick={handlePreviewDownloadPdf}
+            disabled={!!downloading || !previewCertificateId}
+            className="inline-flex items-center gap-2 px-5 py-2.5 rounded-xl border-2 border-gray-200 text-gray-700 text-sm font-medium hover:bg-gray-50 hover:border-gray-300 disabled:opacity-50 transition-colors"
+          >
+            <FiDownload className="w-4 h-4" aria-hidden />
+            {downloading === 'pdf' ? 'Preparing…' : 'Download PDF'}
+          </button>
+          {previewCertificateId && (
+            <Link
+              to={`/certificate/${previewCertificateId}`}
+              state={{ certificate: { certificateId: previewCertificateId, fullName: displayName, dateIssued: dateStr } }}
+              className="inline-flex items-center gap-2 px-5 py-2.5 rounded-xl border-2 border-gray-200 text-gray-700 text-sm font-medium hover:bg-gray-50 hover:border-gray-300 transition-colors ml-auto"
+            >
+              <FiExternalLink className="w-4 h-4" aria-hidden />
+              View full page
+            </Link>
+          )}
+        </div>
+
+        {actionError && (
+          <div className="mx-5 mb-4 rounded-xl border border-red-200 bg-red-50 text-red-700 text-sm px-4 py-3">
+            {actionError}
+          </div>
+        )}
       </div>
+
+      {/* Footer note */}
+      <p className="text-center text-xs text-gray-400 pb-2">
+        This certificate was officially issued by GuideXpert. The Certificate ID can be used to verify authenticity.
+      </p>
     </div>
   );
 }
