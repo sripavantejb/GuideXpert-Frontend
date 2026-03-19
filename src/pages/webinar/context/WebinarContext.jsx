@@ -197,20 +197,42 @@ export function WebinarProvider({ children, initialDisplayName }) {
   // --- Backend sync ---
   const syncTimerRef = useRef(null);
   const hasFetchedRef = useRef(false);
+  const restoredRef = useRef(false);
   const sessionProgressRef = useRef(sessionProgress);
   sessionProgressRef.current = sessionProgress;
 
+  const skipNextImmediateSyncRef = useRef(false);
+
   const doSync = useCallback(() => {
-    if (!webinarToken) return;
+    if (!webinarToken || !restoredRef.current) return;
     const payload = buildSyncPayload(completedSessions, maxWatched, playbackPosition, activeSessionId, sessionProgressRef.current);
     syncWebinarProgress(webinarToken, payload).then((res) => {
-      if (import.meta.env.DEV && res && !res.success) {
-        console.warn('[webinar sync] failed', res.message || 'Unknown error', { status: res.status, data: res.data });
+      if (!res?.success) {
+        if (import.meta.env.DEV) console.warn('[webinar sync] failed', res?.message);
+        return;
+      }
+      const remote = res.data?.data || res.data;
+      if (!remote) return;
+
+      if (Array.isArray(remote.completedModules)) {
+        skipNextImmediateSyncRef.current = true;
+        setCompletedSessions(remote.completedModules);
+      }
+      if (remote.modules && typeof remote.modules === 'object') {
+        setMaxWatched((prev) => {
+          const next = { ...prev };
+          let changed = false;
+          for (const [id, mod] of Object.entries(remote.modules)) {
+            if (typeof mod.maxWatchedSeconds === 'number' && mod.maxWatchedSeconds > (prev[id] || 0)) {
+              next[id] = mod.maxWatchedSeconds;
+              changed = true;
+            }
+          }
+          return changed ? next : prev;
+        });
       }
     }).catch((err) => {
-      if (import.meta.env.DEV) {
-        console.warn('[webinar sync] error', err?.message || err, err?.status != null ? { status: err.status } : '', err?.data != null ? { data: err.data } : '');
-      }
+      if (import.meta.env.DEV) console.warn('[webinar sync] error', err?.message || err);
     });
   }, [webinarToken, completedSessions, maxWatched, playbackPosition, activeSessionId]);
 
@@ -235,6 +257,11 @@ export function WebinarProvider({ children, initialDisplayName }) {
   const prevCompletedRef = useRef(completedSessions);
   useEffect(() => {
     if (!webinarToken) return;
+    if (skipNextImmediateSyncRef.current) {
+      skipNextImmediateSyncRef.current = false;
+      prevCompletedRef.current = completedSessions;
+      return;
+    }
     if (prevCompletedRef.current !== completedSessions && completedSessions.length > prevCompletedRef.current.length) {
       doSync();
     }
@@ -246,9 +273,10 @@ export function WebinarProvider({ children, initialDisplayName }) {
     if (!webinarToken || hasFetchedRef.current) return;
     hasFetchedRef.current = true;
     getWebinarProgress(webinarToken).then((res) => {
-      if (!res.success || !res.data) return;
-      const remote = res.data;
+      if (!res.success || !res.data) { restoredRef.current = true; return; }
+      const remote = res.data?.data || res.data;
       if (Array.isArray(remote.completedModules)) {
+        skipNextImmediateSyncRef.current = true;
         setCompletedSessions(remote.completedModules);
       }
       if (remote.modules && typeof remote.modules === 'object') {
@@ -269,29 +297,63 @@ export function WebinarProvider({ children, initialDisplayName }) {
           setPlaybackPosition((prev) => ({ ...prev, ...restoredPlayback }));
         }
       }
-    }).catch(() => {});
+      restoredRef.current = true;
+    }).catch(() => { restoredRef.current = true; });
   }, [webinarToken]);
 
-  // Sync when user returns to tab (e.g. after background tab or switch)
+  // Fetch latest from backend when user returns to tab, then sync local state
   useEffect(() => {
     if (!webinarToken) return;
-    const handleVisibility = () => {
-      if (document.visibilityState === 'visible') doSync();
+    const handleVisibility = async () => {
+      if (document.visibilityState !== 'visible') return;
+      try {
+        const res = await getWebinarProgress(webinarToken);
+        if (res.success && res.data) {
+          const remote = res.data?.data || res.data;
+          if (Array.isArray(remote.completedModules)) {
+            skipNextImmediateSyncRef.current = true;
+            setCompletedSessions(remote.completedModules);
+          }
+          if (remote.modules && typeof remote.modules === 'object') {
+            const restoredMW = {};
+            const restoredPB = {};
+            for (const [moduleId, mod] of Object.entries(remote.modules)) {
+              if (mod.maxWatchedSeconds > 0) restoredMW[moduleId] = mod.maxWatchedSeconds;
+              if (mod.watchedSeconds > 0) restoredPB[moduleId] = mod.watchedSeconds;
+            }
+            if (Object.keys(restoredMW).length > 0) {
+              setMaxWatched((prev) => ({ ...prev, ...restoredMW }));
+            }
+            if (Object.keys(restoredPB).length > 0) {
+              setPlaybackPosition((prev) => ({ ...prev, ...restoredPB }));
+            }
+          }
+        }
+      } catch { /* best-effort */ }
     };
     document.addEventListener('visibilitychange', handleVisibility);
     return () => document.removeEventListener('visibilitychange', handleVisibility);
-  }, [webinarToken, doSync]);
+  }, [webinarToken]);
 
-  // beforeunload: flush progress
+  // beforeunload: flush ONLY playback data (not completedModules/statuses)
+  // to avoid overwriting admin edits during page refresh
   useEffect(() => {
     if (!webinarToken) return;
     const handleUnload = () => {
-      const payload = buildSyncPayload(completedSessions, maxWatched, playbackPosition, activeSessionId, sessionProgressRef.current);
-      syncWebinarProgressBeacon(webinarToken, payload);
+      const playbackOnly = { modules: {}, lastActiveModule: activeSessionId || null };
+      for (const m of ALL_MODULES) {
+        if (m.type !== 'Assessment') {
+          playbackOnly.modules[m.id] = {
+            watchedSeconds: Math.round(playbackPosition?.[m.id] || 0),
+            maxWatchedSeconds: Math.round(maxWatched?.[m.id] || 0),
+          };
+        }
+      }
+      syncWebinarProgressBeacon(webinarToken, playbackOnly);
     };
     window.addEventListener('beforeunload', handleUnload);
     return () => window.removeEventListener('beforeunload', handleUnload);
-  }, [webinarToken, completedSessions, maxWatched, playbackPosition, activeSessionId]);
+  }, [webinarToken, maxWatched, playbackPosition, activeSessionId]);
 
   const updateSessionProgress = useCallback((sessionId, percent) => {
     setSessionProgress((prev) => ({ ...prev, [sessionId]: percent }));
