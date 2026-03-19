@@ -86,10 +86,9 @@ const InterPosterPreview = forwardRef(function InterPosterPreview(
           fontSize: NAME_ANCHOR.fontSize,
           fontWeight: NAME_ANCHOR.fontWeight,
           color: NAME_ANCHOR.color,
-          lineHeight: 1.1,
+          lineHeight: 1.35,
           whiteSpace: 'nowrap',
-          overflow: 'hidden',
-          textOverflow: 'ellipsis',
+          overflow: 'visible',
           textAlign: 'left',
         }}>
           {displayName}
@@ -109,10 +108,9 @@ const InterPosterPreview = forwardRef(function InterPosterPreview(
           fontSize: PHONE_ANCHOR.fontSize,
           fontWeight: PHONE_ANCHOR.fontWeight,
           color: PHONE_ANCHOR.color,
-          lineHeight: 1.1,
+          lineHeight: 1.35,
           whiteSpace: 'nowrap',
-          overflow: 'hidden',
-          textOverflow: 'ellipsis',
+          overflow: 'visible',
           textAlign: 'left',
         }}>
           {mobileNumber ? mobileNumber : '\u00A0'}
@@ -132,7 +130,7 @@ export const INTER_POSTER_EXPORT_LAYOUT = {
     color: '#003366', fontFamily: 'sans-serif', textAlign: 'left',
   },
   phone: {
-    x: 644, y: 722, maxWidth: 140,
+    x: 644, y: 720, maxWidth: 140,
     fontSize: 20, minFontSize: 12, fontWeight: 700,
     color: '#003366',
     fontFamily: '-apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif',
