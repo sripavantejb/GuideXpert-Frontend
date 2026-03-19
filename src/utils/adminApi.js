@@ -447,15 +447,27 @@ export const getWebinarProgressList = async (params = {}, token = getStoredToken
   if (params.status) search.set('status', params.status);
   if (params.sort) search.set('sort', params.sort);
   const query = search.toString();
-  return adminRequest(`/webinar-progress${query ? `?${query}` : ''}`, { method: 'GET' }, token);
+  return adminRequest(`/webinar-progress${query ? `?${query}` : ''}`, { method: 'GET', cache: 'no-store' }, token);
 };
 
 export const getWebinarProgressStats = async (token = getStoredToken()) => {
-  return adminRequest('/webinar-progress/stats', { method: 'GET' }, token);
+  return adminRequest('/webinar-progress/stats', { method: 'GET', cache: 'no-store' }, token);
 };
 
 export const getWebinarProgressDetail = async (phone, token = getStoredToken()) => {
-  return adminRequest(`/webinar-progress/${encodeURIComponent(phone)}`, { method: 'GET' }, token);
+  return adminRequest(`/webinar-progress/${encodeURIComponent(phone)}`, { method: 'GET', cache: 'no-store' }, token);
+};
+
+export const getWebinarUserAssessments = async (phone, token = getStoredToken()) => {
+  return adminRequest(`/webinar-progress/${encodeURIComponent(phone)}/assessments`, { method: 'GET', cache: 'no-store' }, token);
+};
+
+export const adminUpdateWebinarProgress = async (phone, payload, token = getStoredToken()) => {
+  return adminRequest(`/webinar-progress/${encodeURIComponent(phone)}`, {
+    method: 'PATCH',
+    body: JSON.stringify(payload),
+    cache: 'no-store',
+  }, token);
 };
 
 export const getWebinarProgressExport = async (token = getStoredToken()) => {

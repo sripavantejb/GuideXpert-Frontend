@@ -203,8 +203,14 @@ export function WebinarProvider({ children, initialDisplayName }) {
   const doSync = useCallback(() => {
     if (!webinarToken) return;
     const payload = buildSyncPayload(completedSessions, maxWatched, playbackPosition, activeSessionId, sessionProgressRef.current);
-    syncWebinarProgress(webinarToken, payload).catch((err) => {
-      if (import.meta.env.DEV) console.warn('[webinar sync] failed', err);
+    syncWebinarProgress(webinarToken, payload).then((res) => {
+      if (import.meta.env.DEV && res && !res.success) {
+        console.warn('[webinar sync] failed', res.message || 'Unknown error', { status: res.status, data: res.data });
+      }
+    }).catch((err) => {
+      if (import.meta.env.DEV) {
+        console.warn('[webinar sync] error', err?.message || err, err?.status != null ? { status: err.status } : '', err?.data != null ? { data: err.data } : '');
+      }
     });
   }, [webinarToken, completedSessions, maxWatched, playbackPosition, activeSessionId]);
 
@@ -242,7 +248,7 @@ export function WebinarProvider({ children, initialDisplayName }) {
     getWebinarProgress(webinarToken).then((res) => {
       if (!res.success || !res.data) return;
       const remote = res.data;
-      if (Array.isArray(remote.completedModules) && remote.completedModules.length > completedSessions.length) {
+      if (Array.isArray(remote.completedModules)) {
         setCompletedSessions(remote.completedModules);
       }
       if (remote.modules && typeof remote.modules === 'object') {
@@ -265,6 +271,16 @@ export function WebinarProvider({ children, initialDisplayName }) {
       }
     }).catch(() => {});
   }, [webinarToken]);
+
+  // Sync when user returns to tab (e.g. after background tab or switch)
+  useEffect(() => {
+    if (!webinarToken) return;
+    const handleVisibility = () => {
+      if (document.visibilityState === 'visible') doSync();
+    };
+    document.addEventListener('visibilitychange', handleVisibility);
+    return () => document.removeEventListener('visibilitychange', handleVisibility);
+  }, [webinarToken, doSync]);
 
   // beforeunload: flush progress
   useEffect(() => {
