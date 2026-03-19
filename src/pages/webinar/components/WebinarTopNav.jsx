@@ -22,7 +22,7 @@ export default function WebinarTopNav({ sidebarOpen, onSidebarToggle }) {
   const navButtonClass = 'p-2 rounded-md text-gray-500 hover:text-gray-700 hover:bg-gray-100 transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-primary-navy/20 focus-visible:ring-offset-1';
 
   return (
-    <header className="bg-white border-b border-gray-100 shrink-0" role="banner">
+    <header data-tour="top-nav" className="bg-white border-b border-gray-100 shrink-0" role="banner">
       <div className="flex items-center justify-between gap-4 px-4 sm:px-5 lg:px-6 h-14">
         {/* Left: Mobile menu */}
         <div className="flex items-center min-w-0 flex-1">

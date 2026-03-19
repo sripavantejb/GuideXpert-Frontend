@@ -1,15 +1,20 @@
+import { useState } from 'react';
 import { Outlet } from 'react-router-dom';
 import { useWebinarAuth } from '../../contexts/WebinarAuthContext';
 import { WebinarProvider, useWebinar } from './context/WebinarContext';
 import Sidebar from './components/Sidebar';
 import WebinarTopNav from './components/WebinarTopNav';
+import WebinarTour from './components/WebinarTour';
 
-function WebinarLayoutInner() {
+function WebinarLayoutInner({ tourSeenKey }) {
   const {
     sidebarOpen,
     setSidebarOpen,
     sidebarExpanded,
   } = useWebinar();
+  const [showTour, setShowTour] = useState(() =>
+    typeof window !== 'undefined' && tourSeenKey && !localStorage.getItem(tourSeenKey)
+  );
 
   return (
     <div className="min-h-screen bg-gray-50 flex" style={{ fontFamily: 'Inter, system-ui, sans-serif' }}>
@@ -32,15 +37,18 @@ function WebinarLayoutInner() {
           <Outlet />
         </main>
       </div>
+      {showTour && <WebinarTour storageKey={tourSeenKey} onDone={() => setShowTour(false)} />}
     </div>
   );
 }
 
 export default function WebinarLayout() {
   const { user } = useWebinarAuth();
+  const tourSeenKey =
+    'webinar_tour_seen_' + (user?.id ?? user?.phone ?? user?.email ?? 'anon');
   return (
     <WebinarProvider initialDisplayName={user?.name}>
-      <WebinarLayoutInner />
+      <WebinarLayoutInner tourSeenKey={tourSeenKey} />
     </WebinarProvider>
   );
 }

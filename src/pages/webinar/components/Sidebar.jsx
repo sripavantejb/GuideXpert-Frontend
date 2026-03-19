@@ -74,6 +74,7 @@ export default function Sidebar({
       />
 
       <aside
+        data-tour="sidebar"
         className={`
           fixed inset-y-0 left-0 z-30 flex flex-col max-w-[85vw] lg:max-w-none
           bg-sidebar-blue border-r border-white/8

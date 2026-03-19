@@ -167,6 +167,7 @@ export default function WebinarDashboard() {
               )}
             <div
               id="video"
+              data-tour="video-player"
               className="rounded-2xl bg-white p-0 sm:p-5 shadow-sm overflow-hidden border border-gray-200 transition-all duration-200 hover:shadow-md min-w-0 flex-shrink-0"
             >
               {activeModule?.type === 'Assessment' ? (
@@ -240,18 +241,20 @@ export default function WebinarDashboard() {
                   />
                   {activeSession && (
                     <>
-                      <StatsBar
-                        type={videoSessionType ?? activeSession.type}
-                        duration={videoDurationFormatted ?? activeSession.duration}
-                        totalDuration={videoDurationFormatted ?? `${getSessionsByDay(activeSession.dayId).reduce((a, s) => a + s.durationMinutes, 0)}m`}
-                        status={
-                          completedSessions.includes(activeSession.id)
-                            ? 'Completed'
-                            : sessionProgress[activeSession.id] > 0
-                              ? 'In Progress'
-                              : 'Not started'
-                        }
-                      />
+                      <div data-tour="stats-bar">
+                        <StatsBar
+                          type={videoSessionType ?? activeSession.type}
+                          duration={videoDurationFormatted ?? activeSession.duration}
+                          totalDuration={videoDurationFormatted ?? `${getSessionsByDay(activeSession.dayId).reduce((a, s) => a + s.durationMinutes, 0)}m`}
+                          status={
+                            completedSessions.includes(activeSession.id)
+                              ? 'Completed'
+                              : sessionProgress[activeSession.id] > 0
+                                ? 'In Progress'
+                                : 'Not started'
+                          }
+                        />
+                      </div>
                     </>
                   )}
               {showNextButton && (
@@ -277,14 +280,18 @@ export default function WebinarDashboard() {
           {activeSession && (
             <>
               <DescriptionCard session={activeSession} />
-              <SessionDoubtsCard
-                sessionId={activeSessionId}
-                doubts={doubts}
-                onDoubtsChange={setDoubts}
-              />
+              <div data-tour="doubts-card">
+                <SessionDoubtsCard
+                  sessionId={activeSessionId}
+                  doubts={doubts}
+                  onDoubtsChange={setDoubts}
+                />
+              </div>
             </>
           )}
-          <NotesPanel sessionId={activeSessionId} />
+          <div data-tour="notes-panel">
+            <NotesPanel sessionId={activeSessionId} />
+          </div>
         </div>
 
         <div className="lg:col-span-4 flex flex-col gap-4 overflow-y-auto min-h-0 xl:grid xl:grid-cols-2 xl:auto-rows-min xl:content-start xl:gap-4 xl:items-start">
