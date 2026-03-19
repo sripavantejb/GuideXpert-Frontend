@@ -32,6 +32,7 @@ import AssessmentResults from './pages/admin/AssessmentResults';
 import TrainingFeedback from './pages/admin/TrainingFeedback';
 import TrainingFormResponses from './pages/admin/TrainingFormResponses';
 import Announcements from './pages/admin/Announcements';
+import WebinarProgressAdmin from './pages/admin/WebinarProgress';
 import CounsellorLogin from './pages/counsellor/CounsellorLogin';
 import WebinarLogin from './pages/webinar/WebinarLogin';
 
@@ -148,6 +149,7 @@ function App() {
             <Route path="assessment-2-results" element={<Navigate to="/admin/assessment-results?type=2" replace />} />
             <Route path="assessment-3-results" element={<Navigate to="/admin/assessment-results?type=3" replace />} />
             <Route path="announcements" element={<Announcements />} />
+            <Route path="webinar-progress" element={<WebinarProgressAdmin />} />
           </Route>
 
           {/* Counsellor Portal */}

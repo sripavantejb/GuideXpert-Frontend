@@ -71,7 +71,7 @@ function useYouTubeIFrameAPI() {
 
 const YT_PLAYER_STATE_ENDED = 0;
 
-function CompletionOverlay({ visible, onNextSession, onWatchAgain, hasNextSession }) {
+function CompletionOverlay({ visible, onNextSession, onWatchAgain, hasNextSession, isIntro }) {
   const [mounted, setMounted] = useState(false);
   useEffect(() => {
     if (visible) {
@@ -81,12 +81,20 @@ function CompletionOverlay({ visible, onNextSession, onWatchAgain, hasNextSessio
     setMounted(false);
   }, [visible]);
   if (!visible) return null;
+
+  const heading = isIntro ? 'Intro Completed' : 'Session Completed';
+  const subtitle = isIntro
+    ? 'Great job! You can now start the first session.'
+    : 'You have successfully completed this webinar.';
+  const nextLabel = isIntro ? 'Start Session' : 'Assessment';
+  const replayLabel = isIntro ? 'Rewatch Intro' : 'Watch Again';
+
   return (
     <div
       className="absolute inset-0 z-[20] flex items-center justify-center p-4 bg-black/60 backdrop-blur-[20px] transition-opacity duration-300"
       role="status"
       aria-live="polite"
-      aria-label="Session completed"
+      aria-label={heading}
     >
       <div
         className={`max-w-sm w-full p-4 sm:p-6 rounded-[20px] border border-white/20 transition-all duration-300 ease-out ${
@@ -98,17 +106,17 @@ function CompletionOverlay({ visible, onNextSession, onWatchAgain, hasNextSessio
           boxShadow: '0 20px 50px rgba(0,0,0,0.25)',
         }}
       >
-        <h2 className="text-lg sm:text-xl font-semibold text-white mb-2">Session Completed</h2>
-        <p className="text-white/90 text-sm mb-5">You have successfully completed this webinar.</p>
+        <h2 className="text-lg sm:text-xl font-semibold text-white mb-2">{heading}</h2>
+        <p className="text-white/90 text-sm mb-5">{subtitle}</p>
         <div className="flex flex-col sm:flex-row gap-3">
           {typeof onNextSession === 'function' && hasNextSession !== false && (
             <button
               type="button"
               onClick={onNextSession}
               className="flex-1 py-2.5 px-4 rounded-xl bg-primary-navy text-white font-medium hover:opacity-90 focus:outline-none focus-visible:ring-2 focus-visible:ring-white focus-visible:ring-offset-2 transition-opacity flex items-center justify-center gap-1.5"
-              aria-label="Go to assessment"
+              aria-label={nextLabel}
             >
-              Assessment
+              {nextLabel}
               <span aria-hidden>→</span>
             </button>
           )}
@@ -116,9 +124,9 @@ function CompletionOverlay({ visible, onNextSession, onWatchAgain, hasNextSessio
             type="button"
             onClick={onWatchAgain}
             className="flex-1 py-2.5 px-4 rounded-xl bg-white/20 text-white font-medium hover:bg-white/30 border border-white/30 focus:outline-none focus-visible:ring-2 focus-visible:ring-white focus-visible:ring-offset-2 transition-colors"
-            aria-label="Watch again"
+            aria-label={replayLabel}
           >
-            Watch Again
+            {replayLabel}
           </button>
         </div>
       </div>
@@ -136,6 +144,7 @@ function YouTubePlayerWithControls({
   onMetadataReady,
   onNextSession,
   hasNextSession,
+  isIntro = false,
 }) {
   const containerRef = useRef(null);
   const playerRef = useRef(null);
@@ -525,6 +534,7 @@ function YouTubePlayerWithControls({
             onNextSession={onNextSession}
             onWatchAgain={handleWatchAgain}
             hasNextSession={hasNextSession}
+            isIntro={isIntro}
           />
         </div>
       </div>
@@ -638,6 +648,7 @@ export default function VideoPlayer({
   onToggleBookmark,
   autoplayOnLoad = false,
   onAutoplayDone,
+  isIntro = false,
 }) {
   const { settings } = useWebinar();
   const containerRef = useRef(null);
@@ -926,6 +937,7 @@ export default function VideoPlayer({
         onMetadataReady={onMetadataReady}
         onNextSession={onNextSession}
         hasNextSession={hasNextSession}
+        isIntro={isIntro}
       />
     );
   }

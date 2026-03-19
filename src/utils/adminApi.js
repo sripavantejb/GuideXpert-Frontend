@@ -437,6 +437,50 @@ export const getInfluencerAnalyticsTrend = async (params = {}, token = getStored
   return influencerRequest(`/influencer-analytics/trend${query ? `?${query}` : ''}`, { method: 'GET' }, token);
 };
 
+// ——— Webinar Progress (Admin) ———
+
+export const getWebinarProgressList = async (params = {}, token = getStoredToken()) => {
+  const search = new URLSearchParams();
+  if (params.page != null) search.set('page', params.page);
+  if (params.limit != null) search.set('limit', params.limit);
+  if (params.search) search.set('search', params.search);
+  if (params.status) search.set('status', params.status);
+  if (params.sort) search.set('sort', params.sort);
+  const query = search.toString();
+  return adminRequest(`/webinar-progress${query ? `?${query}` : ''}`, { method: 'GET' }, token);
+};
+
+export const getWebinarProgressStats = async (token = getStoredToken()) => {
+  return adminRequest('/webinar-progress/stats', { method: 'GET' }, token);
+};
+
+export const getWebinarProgressDetail = async (phone, token = getStoredToken()) => {
+  return adminRequest(`/webinar-progress/${encodeURIComponent(phone)}`, { method: 'GET' }, token);
+};
+
+export const getWebinarProgressExport = async (token = getStoredToken()) => {
+  const url = `${API_BASE_URL}/admin/webinar-progress/export`;
+  const headers = {};
+  if (token) headers.Authorization = `Bearer ${token}`;
+  const response = await fetch(url, { method: 'GET', headers });
+  if (!response.ok) {
+    return { success: false, message: 'Export failed', status: response.status };
+  }
+  const blob = await response.blob();
+  const disposition = response.headers.get('Content-Disposition');
+  let filename = `webinar-progress-${new Date().toISOString().slice(0, 10)}.csv`;
+  if (disposition) {
+    const match = /filename="?([^"]+)"?/.exec(disposition);
+    if (match) filename = match[1];
+  }
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(blob);
+  a.download = filename;
+  a.click();
+  URL.revokeObjectURL(a.href);
+  return { success: true };
+};
+
 export async function getAdminLeadsExport(params = {}, token = getStoredToken()) {
   const search = new URLSearchParams();
   if (params.from) search.set('from', params.from);
