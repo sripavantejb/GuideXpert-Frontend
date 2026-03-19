@@ -70,7 +70,7 @@ function getTargetRect(targetId) {
 
 const STEP_TRANSITION_MS = 220;
 
-export default function WebinarTour({ onDone, storageKey = TOUR_SEEN_KEY }) {
+export default function WebinarTour({ onDone, storageKey = TOUR_SEEN_KEY, isOpen = true }) {
   const [stepIndex, setStepIndex] = useState(0);
   const [spotlightRect, setSpotlightRect] = useState(null);
   const [isTransitioning, setIsTransitioning] = useState(false);
@@ -79,6 +79,8 @@ export default function WebinarTour({ onDone, storageKey = TOUR_SEEN_KEY }) {
 
   const step = STEPS[stepIndex];
   const isLast = stepIndex === STEPS.length - 1;
+
+  if (!isOpen) return null;
 
   useEffect(() => {
     const id = requestAnimationFrame(() => setHasEntered(true));
@@ -146,7 +148,7 @@ export default function WebinarTour({ onDone, storageKey = TOUR_SEEN_KEY }) {
 
   return (
     <div
-      className="fixed inset-0 z-100 flex items-center justify-center pointer-events-none"
+      className="fixed inset-0 z-[100] flex items-center justify-center pointer-events-none"
       aria-modal="true"
       role="dialog"
       aria-label="Product tour"

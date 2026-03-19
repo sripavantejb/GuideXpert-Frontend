@@ -37,7 +37,7 @@ function WebinarLayoutInner({ tourSeenKey }) {
           <Outlet />
         </main>
       </div>
-      {showTour && <WebinarTour storageKey={tourSeenKey} onDone={() => setShowTour(false)} />}
+      <WebinarTour storageKey={tourSeenKey} onDone={() => setShowTour(false)} isOpen={showTour} />
     </div>
   );
 }

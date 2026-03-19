@@ -345,6 +345,7 @@ export default function WebinarDashboard() {
                     autoplayOnLoad={autoplayNextSession}
                     onAutoplayDone={() => setAutoplayNextSession(false)}
                     isIntro={isIntro}
+                    allowFullSeek={completedSessions.includes(activeSessionId)}
                   />
                   {activeSession && (
                     <>
@@ -435,7 +436,7 @@ export default function WebinarDashboard() {
         </div>
 
         <div className="lg:col-span-4 flex flex-col gap-4 overflow-y-auto min-h-0 xl:grid xl:grid-cols-2 xl:auto-rows-min xl:content-start xl:gap-4 xl:items-start">
-          <div className="xl:col-span-2">
+          <div key="progress-indicator" className="xl:col-span-2">
           <ProgressIndicator
             completedPercent={overallPercent}
             days={DAYS}
@@ -445,7 +446,7 @@ export default function WebinarDashboard() {
             totalSessions={totalSessionsCount}
           />
           </div>
-          <div className="xl:col-span-2">
+          <div key="certificate-unlock-card" className="xl:col-span-2">
           <CertificateUnlockCard
             completedPercent={overallPercent}
             totalSessions={totalSessionsCount}

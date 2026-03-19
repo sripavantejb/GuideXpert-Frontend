@@ -316,6 +316,7 @@ export default function WebinarPage() {
                     hasNextSession={hasNextSession}
                     isBookmarked={activeSessionId ? bookmarkedSessions.includes(activeSessionId) : false}
                     onToggleBookmark={() => activeSessionId && toggleBookmark(activeSessionId)}
+                    allowFullSeek={completedSessions.includes(activeSessionId)}
                   />
                   {activeSession && (
                     <>

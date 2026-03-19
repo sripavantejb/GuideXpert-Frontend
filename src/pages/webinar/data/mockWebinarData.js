@@ -197,7 +197,7 @@ export const SESSIONS = [
       ],
     },
   },
-  // Day 2
+  // Day 2 — Session 4: How to Position Yourself as a Trusted Career Counsellor
   {
     id: 's5',
     dayId: 2,
@@ -256,8 +256,9 @@ export const SESSIONS = [
     duration: '20 mins',
     durationMinutes: 20,
     type: 'Training',
-    videoUrl: 'https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/ForBiggerJoyrides.mp4',
-    thumbnail: 'https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/images/ForBiggerJoyrides.jpg',
+    videoUrl: 'https://www.youtube.com/embed/eNnDD9MdWs0',
+    isYoutube: true,
+    thumbnail: 'https://img.youtube.com/vi/eNnDD9MdWs0/hqdefault.jpg',
     description: {
       startPoint: 'This session covers counsellor platform usage and the NIAT admission and referral workflow.',
       keyTopics: ['Session recap', 'Counsellor login', 'Dashboard overview', 'AI predictors', 'Counsellor tools', 'NIAT referral and journey'],

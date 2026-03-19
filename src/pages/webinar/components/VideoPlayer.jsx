@@ -1,5 +1,5 @@
 import { useRef, useState, useEffect, useCallback } from 'react';
-import { FiPlay, FiPause, FiVolume2, FiVolumeX, FiMaximize, FiMinimize, FiRotateCcw, FiLock } from 'react-icons/fi';
+import { FiPlay, FiPause, FiVolume2, FiVolumeX, FiMaximize, FiMinimize, FiRotateCcw, FiRotateCw, FiLock } from 'react-icons/fi';
 import { HiHeart } from 'react-icons/hi';
 import { useWebinar } from '../context/WebinarContext';
 
@@ -145,6 +145,7 @@ function YouTubePlayerWithControls({
   onNextSession,
   hasNextSession,
   isIntro = false,
+  allowFullSeek = false,
 }) {
   const containerRef = useRef(null);
   const playerRef = useRef(null);
@@ -363,6 +364,63 @@ function YouTubePlayerWithControls({
   }, []);
 
   useEffect(() => {
+    const onFullscreenChange = () => setYtFullscreen(!!document.fullscreenElement);
+    document.addEventListener('fullscreenchange', onFullscreenChange);
+    return () => document.removeEventListener('fullscreenchange', onFullscreenChange);
+  }, []);
+
+  const handleYtSeek = useCallback(
+    (e) => {
+      const player = playerRef.current;
+      if (!player?.seekTo || !Number.isFinite(ytDuration) || ytDuration <= 0) return;
+      const pct = parseFloat(e.target.value);
+      let time = (pct / 100) * ytDuration;
+      if (!allowFullSeek) {
+        const maxAllowed = ytMaxWatchedRef.current + 2;
+        if (time > maxAllowed) time = maxAllowed;
+      }
+      const clampedPct = (time / ytDuration) * 100;
+      player.seekTo(time, true);
+      setYtCurrentTime(time);
+      setYtProgress(clampedPct);
+    },
+    [ytDuration, allowFullSeek]
+  );
+
+  const changeYtSpeed = useCallback((rate) => {
+    setYtPlaybackRate(rate);
+    setYtSpeedOpen(false);
+    const player = playerRef.current;
+    if (player?.setPlaybackRate) player.setPlaybackRate(rate);
+  }, []);
+
+  const handleYtBack10 = useCallback(() => {
+    const player = playerRef.current;
+    if (!player?.seekTo) return;
+    const now = typeof player.getCurrentTime === 'function' ? player.getCurrentTime() : ytCurrentTime;
+    const newTime = Math.max(0, (Number(now) || 0) - 10);
+    player.seekTo(newTime, true);
+    setYtCurrentTime(newTime);
+    const pct = ytDuration > 0 ? (newTime / ytDuration) * 100 : 0;
+    setYtProgress(pct);
+    onTimeUpdate?.(session?.id, newTime);
+    onProgress?.(session?.id, pct);
+  }, [ytCurrentTime, ytDuration, onTimeUpdate, onProgress, session?.id]);
+
+  const handleYtForward10 = useCallback(() => {
+    const player = playerRef.current;
+    if (!player?.seekTo || !Number.isFinite(ytDuration) || ytDuration <= 0) return;
+    const now = typeof player.getCurrentTime === 'function' ? player.getCurrentTime() : ytCurrentTime;
+    const newTime = Math.min(ytDuration, (Number(now) || 0) + 10);
+    player.seekTo(newTime, true);
+    setYtCurrentTime(newTime);
+    const pct = (newTime / ytDuration) * 100;
+    setYtProgress(pct);
+    onTimeUpdate?.(session?.id, newTime);
+    onProgress?.(session?.id, pct);
+  }, [ytCurrentTime, ytDuration, onTimeUpdate, onProgress, session?.id]);
+
+  useEffect(() => {
     const container = containerRef.current;
     if (!container) return;
     const onKeyDown = (e) => {
@@ -387,6 +445,10 @@ function YouTubePlayerWithControls({
         onTimeUpdate?.(session?.id, newTime);
         onProgress?.(session?.id, pct);
       }
+      if (allowFullSeek && e.code === 'ArrowRight') {
+        e.preventDefault();
+        handleYtForward10();
+      }
     };
     const onContextMenu = (e) => e.preventDefault();
     window.addEventListener('keydown', onKeyDown);
@@ -395,49 +457,7 @@ function YouTubePlayerWithControls({
       window.removeEventListener('keydown', onKeyDown);
       container.removeEventListener('contextmenu', onContextMenu);
     };
-  }, [showCompletionOverlay, toggleYtPlay, onTimeUpdate, onProgress, session?.id, ytCurrentTime, ytDuration]);
-
-  useEffect(() => {
-    const onFullscreenChange = () => setYtFullscreen(!!document.fullscreenElement);
-    document.addEventListener('fullscreenchange', onFullscreenChange);
-    return () => document.removeEventListener('fullscreenchange', onFullscreenChange);
-  }, []);
-
-  const handleYtSeek = useCallback(
-    (e) => {
-      const player = playerRef.current;
-      if (!player?.seekTo || !Number.isFinite(ytDuration) || ytDuration <= 0) return;
-      const pct = parseFloat(e.target.value);
-      let time = (pct / 100) * ytDuration;
-      const maxAllowed = ytMaxWatchedRef.current + 2;
-      if (time > maxAllowed) time = maxAllowed;
-      const clampedPct = (time / ytDuration) * 100;
-      player.seekTo(time, true);
-      setYtCurrentTime(time);
-      setYtProgress(clampedPct);
-    },
-    [ytDuration]
-  );
-
-  const changeYtSpeed = useCallback((rate) => {
-    setYtPlaybackRate(rate);
-    setYtSpeedOpen(false);
-    const player = playerRef.current;
-    if (player?.setPlaybackRate) player.setPlaybackRate(rate);
-  }, []);
-
-  const handleYtBack10 = useCallback(() => {
-    const player = playerRef.current;
-    if (!player?.seekTo) return;
-    const now = typeof player.getCurrentTime === 'function' ? player.getCurrentTime() : ytCurrentTime;
-    const newTime = Math.max(0, (Number(now) || 0) - 10);
-    player.seekTo(newTime, true);
-    setYtCurrentTime(newTime);
-    const pct = ytDuration > 0 ? (newTime / ytDuration) * 100 : 0;
-    setYtProgress(pct);
-    onTimeUpdate?.(session?.id, newTime);
-    onProgress?.(session?.id, pct);
-  }, [ytCurrentTime, ytDuration, onTimeUpdate, onProgress, session?.id]);
+  }, [showCompletionOverlay, toggleYtPlay, onTimeUpdate, onProgress, session?.id, ytCurrentTime, ytDuration, allowFullSeek, handleYtForward10]);
 
   const handleYtVideoTouchEnd = useCallback((e) => {
     if (showCompletionOverlay) return;
@@ -569,6 +589,17 @@ function YouTubePlayerWithControls({
           >
             <FiRotateCcw className="w-3 h-3 sm:w-4 sm:h-4" />
           </button>
+          {allowFullSeek && (
+            <button
+              type="button"
+              onClick={handleYtForward10}
+              className="flex items-center justify-center gap-1 px-1.5 w-auto h-6 sm:h-8 rounded-full bg-white/20 border border-white/40 text-white flex-shrink-0 transition-all duration-200 hover:bg-white/30 active:scale-95 focus:outline-none focus-visible:ring-2 focus-visible:ring-white/50"
+              aria-label="Forward 10 seconds"
+              title="Forward 10 seconds"
+            >
+              <FiRotateCw className="w-3 h-3 sm:w-4 sm:h-4" />
+            </button>
+          )}
           <button
             type="button"
             onClick={toggleYtPlay}
@@ -649,6 +680,7 @@ export default function VideoPlayer({
   autoplayOnLoad = false,
   onAutoplayDone,
   isIntro = false,
+  allowFullSeek = false,
 }) {
   const { settings } = useWebinar();
   const containerRef = useRef(null);
@@ -782,8 +814,10 @@ export default function VideoPlayer({
     if (!v || !duration) return;
     const pct = parseFloat(e.target.value);
     let time = (pct / 100) * duration;
-    const maxAllowed = nativeMaxWatchedRef.current + 2;
-    if (time > maxAllowed) time = maxAllowed;
+    if (!allowFullSeek) {
+      const maxAllowed = nativeMaxWatchedRef.current + 2;
+      if (time > maxAllowed) time = maxAllowed;
+    }
     const clampedPct = (time / duration) * 100;
     v.currentTime = time;
     setCurrentTime(time);
@@ -803,6 +837,19 @@ export default function VideoPlayer({
     onTimeUpdate?.(session?.id, newTime);
     onProgress?.(session?.id, pct);
   }, [onTimeUpdate, onProgress, session?.id]);
+
+  const handleForward10 = useCallback(() => {
+    const v = videoRef.current;
+    if (!v || !Number.isFinite(duration) || duration <= 0) return;
+    const now = v.currentTime;
+    const newTime = Math.min(duration, (Number(now) || 0) + 10);
+    v.currentTime = newTime;
+    setCurrentTime(newTime);
+    const pct = (newTime / duration) * 100;
+    setProgress(pct);
+    onTimeUpdate?.(session?.id, newTime);
+    onProgress?.(session?.id, pct);
+  }, [duration, onTimeUpdate, onProgress, session?.id]);
 
   const handleVideoTouchEnd = useCallback((e) => {
     const v = videoRef.current;
@@ -888,10 +935,14 @@ export default function VideoPlayer({
         e.preventDefault();
         handleBack10();
       }
+      if (allowFullSeek && e.code === 'ArrowRight') {
+        e.preventDefault();
+        handleForward10();
+      }
     };
     window.addEventListener('keydown', onKeyDown);
     return () => window.removeEventListener('keydown', onKeyDown);
-  }, [togglePlay, handleBack10]);
+  }, [togglePlay, handleBack10, allowFullSeek, handleForward10]);
 
   if (!session) {
     return (
@@ -938,6 +989,7 @@ export default function VideoPlayer({
         onNextSession={onNextSession}
         hasNextSession={hasNextSession}
         isIntro={isIntro}
+        allowFullSeek={allowFullSeek}
       />
     );
   }
@@ -1040,6 +1092,17 @@ export default function VideoPlayer({
           >
             <FiRotateCcw className="w-3 h-3 sm:w-4 sm:h-4" />
           </button>
+          {allowFullSeek && (
+            <button
+              type="button"
+              onClick={handleForward10}
+              className="flex items-center justify-center gap-1 px-1.5 w-auto h-6 sm:h-8 rounded-full bg-white/20 backdrop-blur-sm border border-white/40 text-white flex-shrink-0 transition-all duration-200 hover:bg-white/30 active:scale-95 focus:outline-none focus-visible:ring-2 focus-visible:ring-white/50"
+              aria-label="Forward 10 seconds"
+              title="Forward 10 seconds"
+            >
+              <FiRotateCw className="w-3 h-3 sm:w-4 sm:h-4" />
+            </button>
+          )}
           <button
             type="button"
             onClick={togglePlay}

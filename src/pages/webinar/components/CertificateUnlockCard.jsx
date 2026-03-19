@@ -269,41 +269,49 @@ export default function CertificateUnlockCard({
         <span className="tabular-nums text-sm font-semibold text-gray-900">{completedPercent}%</span>
       </header>
 
-      {/* Certificate preview — aspect 842/596, blur by progress */}
+      {/* Certificate preview — aspect 842/596, blur by progress. Single stable child to avoid removeChild issues. */}
       <div
         className="relative w-full overflow-hidden rounded-xl bg-gray-100"
         style={{ aspectRatio: '842/596' }}
       >
-        {certLoading ? (
-          <div className="absolute inset-0 animate-pulse bg-gray-200" aria-hidden />
-        ) : certDataUrl ? (
-          <img
-            src={certDataUrl}
-            alt="Certificate preview"
-            className="h-full w-full object-cover"
-            style={{
-              filter: `blur(${blurPx}px)`,
-              transition: 'filter 0.6s ease-in-out',
-              transform: 'scale(1.04)',
-            }}
-          />
-        ) : (
-          <div className="absolute inset-0 flex items-center justify-center text-sm text-gray-400">
-            Preview unavailable
-          </div>
-        )}
-        {(completedPercent < 100 || !unlocked) && (
-          <div className="absolute inset-0 flex flex-col items-center justify-center bg-black/30">
-            <span className="flex h-10 w-10 items-center justify-center rounded-full bg-white/90 shadow-sm">
-              <FiLock className="h-5 w-5 text-gray-600" aria-hidden />
-            </span>
-            <p className="mt-2 text-center text-sm font-medium text-white drop-shadow-sm">
-              {!unlocked
-                ? 'Complete Assessment 5 to unlock'
-                : `${remaining} session${remaining !== 1 ? 's' : ''} remaining`}
-            </p>
-          </div>
-        )}
+        <div className="absolute inset-0">
+          {certLoading && (
+            <div className="absolute inset-0 animate-pulse bg-gray-200" aria-hidden />
+          )}
+          {!certLoading && certDataUrl && (
+            <img
+              src={certDataUrl}
+              alt="Certificate preview"
+              className="h-full w-full object-cover"
+              style={{
+                filter: `blur(${blurPx}px)`,
+                transition: 'filter 0.6s ease-in-out',
+                transform: 'scale(1.04)',
+              }}
+            />
+          )}
+          {!certLoading && !certDataUrl && (
+            <div className="absolute inset-0 flex items-center justify-center text-sm text-gray-400">
+              Preview unavailable
+            </div>
+          )}
+        </div>
+        {/* Lock overlay: always in DOM, visibility toggled to avoid removeChild during reconciliation */}
+        <div
+          className={`absolute inset-0 flex flex-col items-center justify-center bg-black/30 transition-opacity duration-200 ${
+            completedPercent < 100 || !unlocked ? 'opacity-100 pointer-events-auto' : 'opacity-0 pointer-events-none'
+          }`}
+          aria-hidden={completedPercent >= 100 && unlocked}
+        >
+          <span className="flex h-10 w-10 items-center justify-center rounded-full bg-white/90 shadow-sm">
+            <FiLock className="h-5 w-5 text-gray-600" aria-hidden />
+          </span>
+          <p className="mt-2 text-center text-sm font-medium text-white drop-shadow-sm">
+            {!unlocked
+              ? 'Complete Assessment 5 to unlock'
+              : `${remaining} session${remaining !== 1 ? 's' : ''} remaining`}
+          </p>
+        </div>
       </div>
 
       {/* Progress bar */}
@@ -319,7 +327,7 @@ export default function CertificateUnlockCard({
       </div>
 
       {completedPercent >= 100 && unlocked ? (
-        <div className="mt-4 space-y-4">
+        <div key="cert-unlocked-actions" className="mt-4 space-y-4">
           <div className="flex items-center gap-3 rounded-xl border border-green-200/80 bg-green-50 p-4 min-w-0">
             <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-green-100">
               <FiCheck className="h-5 w-5 text-green-700" aria-hidden />
@@ -365,7 +373,7 @@ export default function CertificateUnlockCard({
           )}
         </div>
       ) : (
-        <div className="mt-4 space-y-3">
+        <div key="cert-locked-actions" className="mt-4 space-y-3">
           <p className="text-sm text-gray-600">
             {unlocked
               ? `Complete ${remaining} more session${remaining !== 1 ? 's' : ''} to unlock.`
