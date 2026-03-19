@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
+import DashboardSuccessBanner from '../../components/Counsellor/DashboardSuccessBanner';
 import {
   FiUsers,
   FiBookOpen,
@@ -274,6 +275,8 @@ export default function CounsellorDashboard() {
 
   return (
     <div className="max-w-7xl mx-auto min-w-0 space-y-12">
+
+      <DashboardSuccessBanner />
 
       {/* ── Section A: Hero + Stats ── */}
       <div>

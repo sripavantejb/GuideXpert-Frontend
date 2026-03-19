@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useRef } from 'react';
 import VideoPlayer from './components/VideoPlayer';
 import StatsBar from './components/StatsBar';
 import DescriptionCard from './components/DescriptionCard';
@@ -6,17 +6,21 @@ import SessionDoubtsCard from './components/SessionDoubtsCard';
 import ProgressIndicator from './components/ProgressIndicator';
 import CertificateUnlockCard from './components/CertificateUnlockCard';
 import NotesPanel from './components/NotesPanel';
+import CompletionModal from './components/CompletionModal';
+import ExternalFormModal from './components/ExternalFormModal';
 import { useWebinar } from './context/WebinarContext';
 import { useWebinarAuth } from '../../contexts/WebinarAuthContext';
 import {
   DAYS,
   SESSIONS,
+  ALL_MODULES,
   getSessionById,
   getModuleById,
   getNextModule,
   getSessionsByDay,
   getModulesByDay,
 } from './data/mockWebinarData';
+import { getUnlockProgress } from './utils/unlockLogic';
 import WebinarAssessment1 from './components/WebinarAssessment1';
 import WebinarAssessment2 from './components/WebinarAssessment2';
 import WebinarAssessment3 from './components/WebinarAssessment3';
@@ -52,6 +56,9 @@ export default function WebinarDashboard() {
   const [autoplayNextSession, setAutoplayNextSession] = useState(false);
   const [videoDurationFormatted, setVideoDurationFormatted] = useState(null);
   const [videoSessionType, setVideoSessionType] = useState(null);
+  const [showCompletionModal, setShowCompletionModal] = useState(false);
+  const [showFormModal, setShowFormModal] = useState(false);
+  const hasShownModal = useRef(false);
   const modulesForDay = getModulesByDay(activeDay);
   const sessionsForDay = getSessionsByDay(activeDay);
   const activeModule = activeSessionId ? getModuleById(activeSessionId) : null;
@@ -77,6 +84,29 @@ export default function WebinarDashboard() {
       setActiveSessionId(modulesForDay[0].id);
     }
   }, [activeDay, activeSessionId, modulesForDay, setActiveSessionId]);
+
+  // Detect all-modules completion and show the congratulations modal once
+  useEffect(() => {
+    if (hasShownModal.current) return;
+    const { completed, total } = getUnlockProgress(completedSessions);
+    if (total > 0 && completed >= total) {
+      hasShownModal.current = true;
+      setShowCompletionModal(true);
+    }
+  }, [completedSessions]);
+
+  const handleCertificateDownload = useCallback(() => {
+    window.open('/certificate/webinar-training', '_blank', 'noopener,noreferrer');
+  }, []);
+
+  const handleCompletionContinue = useCallback(() => {
+    setShowCompletionModal(false);
+    setShowFormModal(true);
+  }, []);
+
+  const handleFormClose = useCallback(() => {
+    setShowFormModal(false);
+  }, []);
 
   const handleTimeUpdate = useCallback((sessionId, currentTime) => {
     setPlaybackPosition((prev) => ({ ...prev, [sessionId]: currentTime }));
@@ -310,6 +340,7 @@ export default function WebinarDashboard() {
             completedPercent={overallPercent}
             totalSessions={totalSessionsCount}
             completedSessions={overallCompleted}
+            completedSessionIds={completedSessions}
           />
           </div>
         </div>
@@ -319,6 +350,17 @@ export default function WebinarDashboard() {
         <div className="mx-4 sm:mx-5 mb-5 px-4 py-2.5 rounded-xl text-sm font-medium text-center bg-primary-blue-50/80 border border-primary-blue-200/50 text-primary-navy">
           Complete the intro video to unlock your certificate.
         </div>
+      )}
+
+      {showCompletionModal && (
+        <CompletionModal
+          onDownload={handleCertificateDownload}
+          onContinue={handleCompletionContinue}
+        />
+      )}
+
+      {showFormModal && (
+        <ExternalFormModal onClose={handleFormClose} />
       )}
     </>
   );

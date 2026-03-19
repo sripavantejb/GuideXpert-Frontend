@@ -2,7 +2,13 @@ import { useState, useEffect } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { FiCheck, FiLock, FiDownload, FiEye } from 'react-icons/fi';
 import { useWebinarAuth } from '../../../contexts/WebinarAuthContext';
-import { formatCertificateDate, downloadCertificatePng, downloadCertificatePdf } from '../utils/certificateWebinar';
+import {
+  formatCertificateDate,
+  loadCertificateImage,
+  drawCertificateToCanvas,
+  downloadCertificatePng,
+  downloadCertificatePdf,
+} from '../utils/certificateWebinar';
 import { getOrCreateCertificateForUser, createCertificateRecord, migrateCertificateToShortId } from '../../../utils/api';
 
 function isLegacyCertificateId(id) {
@@ -17,13 +23,14 @@ function generateShortCertificateId() {
 }
 
 const CARD_BASE = 'rounded-2xl bg-white shadow-sm overflow-hidden p-5 transition-all duration-200';
-const CARD_LOCKED = `${CARD_BASE} border border-gray-200 hover:shadow-md`;
-const CARD_UNLOCKED = `${CARD_BASE} border border-green-200 bg-green-50/30`;
+
+const FINAL_ASSESSMENT_ID = 'a5';
 
 export default function CertificateUnlockCard({
   completedPercent = 0,
   totalSessions = 0,
   completedSessions = 0,
+  completedSessionIds = [],
 }) {
   const { user: authUser } = useWebinarAuth();
   const navigate = useNavigate();
@@ -32,10 +39,12 @@ export default function CertificateUnlockCard({
   const [previewLoading, setPreviewLoading] = useState(false);
   const [userCertificateId, setUserCertificateId] = useState(null);
   const [actionError, setActionError] = useState('');
+  const [certDataUrl, setCertDataUrl] = useState(null);
+  const [certLoading, setCertLoading] = useState(true);
 
-  // Unlock all for now (no completion gate)
-  const unlocked = true;
+  const unlocked = Array.isArray(completedSessionIds) && completedSessionIds.includes(FINAL_ASSESSMENT_ID);
   const remaining = Math.max(0, totalSessions - completedSessions);
+  const blurPx = Math.max(0, 20 * (1 - completedPercent / 100));
 
   const dateStr = formatCertificateDate();
 
@@ -60,12 +69,31 @@ export default function CertificateUnlockCard({
     document.cookie = `${name}=; Max-Age=0; path=/`;
   };
 
+  // Generate certificate preview image once (name + date; cert ID optional)
+  useEffect(() => {
+    let cancelled = false;
+    (async () => {
+      try {
+        const img = await loadCertificateImage();
+        if (cancelled) return;
+        const certId = userCertificateId || '';
+        const canvas = await drawCertificateToCanvas(img, displayName, dateStr, certId);
+        if (cancelled) return;
+        setCertDataUrl(canvas.toDataURL('image/png'));
+      } catch (e) {
+        if (!cancelled) console.warn('Certificate preview failed', e);
+      } finally {
+        if (!cancelled) setCertLoading(false);
+      }
+    })();
+    return () => { cancelled = true; };
+  }, [displayName, dateStr, userCertificateId]);
+
   useEffect(() => {
     if (!unlocked) return;
     let cancelled = false;
     (async () => {
       try {
-        // 1. Check cookie first — only set state if upsert succeeds; migrate legacy UUID to GX
         if (certCookieName) {
           const stored = getCertCookie(certCookieName);
           if (stored) {
@@ -90,7 +118,6 @@ export default function CertificateUnlockCard({
             clearCertCookie(certCookieName);
           }
         }
-        // 2. Try backend mobile API; migrate legacy UUID to GX if needed
         if (authUser?.phone) {
           const result = await getOrCreateCertificateForUser({
             fullName: displayName,
@@ -113,7 +140,6 @@ export default function CertificateUnlockCard({
             return;
           }
         }
-        // 3. Generate once, save to DB and cookie (only if create succeeds)
         const certificateId = generateShortCertificateId();
         const createResult = await createCertificateRecord({ certificateId, fullName: displayName, dateIssued: dateStr });
         if (createResult?.success && !cancelled) {
@@ -128,9 +154,7 @@ export default function CertificateUnlockCard({
   }, [unlocked, authUser?.phone, displayName, dateStr, certCookieName]);
 
   const getOrEnsureCertificateId = async () => {
-    // 1. Already in state (only set after successful upsert/create)
     if (userCertificateId) return userCertificateId;
-    // 2. Check cookie — only use if upsert succeeds; migrate legacy UUID to GX
     if (certCookieName) {
       const stored = getCertCookie(certCookieName);
       if (stored) {
@@ -155,7 +179,6 @@ export default function CertificateUnlockCard({
         clearCertCookie(certCookieName);
       }
     }
-    // 3. Try backend mobile API; migrate legacy UUID to GX if needed
     if (authUser?.phone) {
       try {
         const result = await getOrCreateCertificateForUser({ fullName: displayName, dateIssued: dateStr, mobileNumber: authUser.phone });
@@ -175,7 +198,6 @@ export default function CertificateUnlockCard({
         }
       } catch (_) {}
     }
-    // 4. Generate once, save to DB and cookie (only use ID if create succeeds)
     const certificateId = generateShortCertificateId();
     const createResult = await createCertificateRecord({ certificateId, fullName: displayName, dateIssued: dateStr });
     if (!createResult?.success) {
@@ -237,87 +259,121 @@ export default function CertificateUnlockCard({
   };
 
   return (
-    <div className={unlocked ? CARD_UNLOCKED : CARD_LOCKED}>
-      <header className="mb-4">
+    <div className={`${CARD_BASE} border ${completedPercent >= 100 ? 'border-green-200 bg-green-50/30' : 'border-gray-200 hover:shadow-md'}`}>
+      <header className="mb-3 flex items-center justify-between">
         <h3 className="text-xs font-semibold uppercase tracking-widest text-gray-500">
           Certificate progress
         </h3>
+        <span className="tabular-nums text-sm font-semibold text-gray-900">{completedPercent}%</span>
       </header>
-      {unlocked ? (
-        <div className="space-y-4">
-          <div className="flex items-center gap-3 p-4 rounded-xl bg-green-50 border border-green-200/80 min-w-0">
-            <span className="w-10 h-10 rounded-full bg-green-100 flex items-center justify-center flex-shrink-0">
-              <FiCheck className="w-5 h-5 text-green-700" aria-hidden />
+
+      {/* Certificate preview — aspect 842/596, blur by progress */}
+      <div
+        className="relative w-full overflow-hidden rounded-xl bg-gray-100"
+        style={{ aspectRatio: '842/596' }}
+      >
+        {certLoading ? (
+          <div className="absolute inset-0 animate-pulse bg-gray-200" aria-hidden />
+        ) : certDataUrl ? (
+          <img
+            src={certDataUrl}
+            alt="Certificate preview"
+            className="h-full w-full object-cover"
+            style={{
+              filter: `blur(${blurPx}px)`,
+              transition: 'filter 0.6s ease-in-out',
+              transform: 'scale(1.04)',
+            }}
+          />
+        ) : (
+          <div className="absolute inset-0 flex items-center justify-center text-sm text-gray-400">
+            Preview unavailable
+          </div>
+        )}
+        {(completedPercent < 100 || !unlocked) && (
+          <div className="absolute inset-0 flex flex-col items-center justify-center bg-black/30">
+            <span className="flex h-10 w-10 items-center justify-center rounded-full bg-white/90 shadow-sm">
+              <FiLock className="h-5 w-5 text-gray-600" aria-hidden />
+            </span>
+            <p className="mt-2 text-center text-sm font-medium text-white drop-shadow-sm">
+              {!unlocked
+                ? 'Complete Assessment 5 to unlock'
+                : `${remaining} session${remaining !== 1 ? 's' : ''} remaining`}
+            </p>
+          </div>
+        )}
+      </div>
+
+      {/* Progress bar */}
+      <div className="mt-3 flex items-center justify-between text-sm">
+        <span className="text-gray-600 font-medium">Progress</span>
+        <span className="font-semibold tabular-nums text-gray-900">{completedPercent}%</span>
+      </div>
+      <div className="mt-1.5 h-2.5 w-full overflow-hidden rounded-full bg-gray-200">
+        <div
+          className="h-full rounded-full bg-primary-navy transition-all duration-500 ease-in-out"
+          style={{ width: `${completedPercent}%` }}
+        />
+      </div>
+
+      {completedPercent >= 100 && unlocked ? (
+        <div className="mt-4 space-y-4">
+          <div className="flex items-center gap-3 rounded-xl border border-green-200/80 bg-green-50 p-4 min-w-0">
+            <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-green-100">
+              <FiCheck className="h-5 w-5 text-green-700" aria-hidden />
             </span>
             <div className="min-w-0 flex-1">
-              <p className="text-sm font-semibold text-green-800 leading-tight">Certificate ready</p>
-              <p className="text-xs text-green-700 leading-tight mt-0.5">You have completed all sessions.</p>
+              <p className="text-sm font-semibold leading-tight text-green-800">Certificate ready</p>
+              <p className="mt-0.5 text-xs leading-tight text-green-700">You have completed all sessions.</p>
             </div>
           </div>
-          <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+          <div className="grid grid-cols-1 gap-3 sm:grid-cols-3">
             <button
               type="button"
               onClick={handleDownloadPng}
               disabled={!!downloading}
-              className="inline-flex items-center justify-center gap-2 min-h-[44px] px-4 py-2.5 rounded-xl bg-primary-navy text-white text-sm font-medium hover:bg-primary-navy/90 transition-colors w-full disabled:opacity-60 shadow-sm"
+              className="inline-flex min-h-[44px] w-full items-center justify-center gap-2 rounded-xl bg-primary-navy px-4 py-2.5 text-sm font-medium text-white shadow-sm transition-colors hover:bg-primary-navy/90 disabled:opacity-60"
             >
-              <FiDownload className="w-4 h-4" aria-hidden />
+              <FiDownload className="h-4 w-4" aria-hidden />
               {downloading === 'png' ? 'Preparing…' : 'Download PNG'}
             </button>
             <button
               type="button"
               onClick={handleDownloadPdf}
               disabled={!!downloading}
-              className="inline-flex items-center justify-center gap-2 min-h-[44px] px-4 py-2.5 rounded-xl border-2 border-gray-200 text-gray-700 text-sm font-medium hover:bg-gray-50 hover:border-gray-300 transition-colors w-full disabled:opacity-60"
+              className="inline-flex min-h-[44px] w-full items-center justify-center gap-2 rounded-xl border-2 border-gray-200 px-4 py-2.5 text-sm font-medium text-gray-700 transition-colors hover:border-gray-300 hover:bg-gray-50 disabled:opacity-60"
             >
-              <FiDownload className="w-4 h-4" aria-hidden />
+              <FiDownload className="h-4 w-4" aria-hidden />
               {downloading === 'pdf' ? 'Preparing…' : 'Download PDF'}
             </button>
             <button
               type="button"
               onClick={handlePreview}
               disabled={!!previewLoading}
-              className="inline-flex items-center justify-center gap-2 min-h-[44px] px-4 py-2.5 rounded-xl bg-primary-navy/10 text-primary-navy text-sm font-medium hover:bg-primary-navy/20 transition-colors w-full border border-primary-navy/20 disabled:opacity-60"
+              className="inline-flex min-h-[44px] w-full items-center justify-center gap-2 rounded-xl border border-primary-navy/20 bg-primary-navy/10 px-4 py-2.5 text-sm font-medium text-primary-navy transition-colors hover:bg-primary-navy/20 disabled:opacity-60"
             >
-              <FiEye className="w-4 h-4" aria-hidden />
+              <FiEye className="h-4 w-4" aria-hidden />
               {previewLoading ? 'Loading…' : 'Preview'}
             </button>
           </div>
           {actionError && (
-            <div className="rounded-lg border border-red-200 bg-red-50 text-red-700 text-sm px-3 py-2">
+            <div className="rounded-lg border border-red-200 bg-red-50 px-3 py-2 text-sm text-red-700">
               {actionError}
             </div>
           )}
         </div>
       ) : (
-        <div className="space-y-4">
-          <div className="flex items-center justify-between text-sm">
-            <span className="text-gray-600 font-medium">Progress</span>
-            <span className="font-semibold text-gray-900 tabular-nums">{completedPercent}%</span>
-          </div>
-          <div className="h-2.5 rounded-full bg-gray-200 overflow-hidden w-full">
-            <div
-              className="h-full rounded-full bg-primary-navy transition-all duration-300"
-              style={{ width: `${completedPercent}%` }}
-            />
-          </div>
+        <div className="mt-4 space-y-3">
           <p className="text-sm text-gray-600">
-            Complete {remaining} more session{remaining !== 1 ? 's' : ''} to unlock.
+            {unlocked
+              ? `Complete ${remaining} more session${remaining !== 1 ? 's' : ''} to unlock.`
+              : 'Complete Assessment 5 (final assessment) to unlock your certificate.'}
           </p>
-          <div className="flex items-center gap-3 p-4 rounded-xl border-2 border-dashed border-gray-200 bg-gray-50/80 min-w-0">
-            <span className="w-10 h-10 rounded-full bg-gray-200 flex items-center justify-center shrink-0 flex-shrink-0">
-              <FiLock className="w-5 h-5 text-gray-500" aria-hidden />
-            </span>
-            <div className="min-w-0 flex-1">
-              <p className="text-sm font-semibold text-gray-700">Certificate of Completion</p>
-              <p className="text-xs text-gray-500 mt-0.5">Unlock after completing the intro video</p>
-            </div>
-          </div>
           <Link
             to="/webinar/progress"
-            className="inline-flex items-center justify-center gap-2 w-full min-h-[44px] px-4 py-2.5 rounded-xl bg-primary-navy text-white text-sm font-medium hover:bg-primary-navy/90 transition-colors shadow-sm"
+            className="inline-flex w-full min-h-[44px] items-center justify-center gap-2 rounded-xl bg-primary-navy px-4 py-2.5 text-sm font-medium text-white shadow-sm transition-colors hover:bg-primary-navy/90"
           >
-            View progress to unlock
+            {unlocked ? 'View progress to unlock' : 'Go to training'}
           </Link>
         </div>
       )}
