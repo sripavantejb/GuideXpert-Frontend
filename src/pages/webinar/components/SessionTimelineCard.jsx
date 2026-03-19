@@ -1,5 +1,6 @@
 import { FiCheck, FiClock, FiLock, FiPlay, FiMessageCircle } from 'react-icons/fi';
 import { Link } from 'react-router-dom';
+import { isModuleUnlocked } from '../utils/unlockLogic';
 
 const CARD_CLASS = 'rounded-xl bg-white border border-gray-200 shadow-card overflow-hidden p-3 transition-all duration-300 hover:shadow-card-hover hover:-translate-y-0.5';
 
@@ -7,12 +8,11 @@ export default function SessionTimelineCard({
   sessions = [],
   completedSessionIds = [],
   activeSessionId,
-  isDayUnlocked,
   onSelectSession,
 }) {
   const getStatus = (session) => {
     if (completedSessionIds.includes(session.id)) return 'completed';
-    if (!isDayUnlocked(session.dayId)) return 'locked';
+    if (!isModuleUnlocked(session.id, completedSessionIds)) return 'locked';
     if (activeSessionId === session.id) return 'current';
     return 'upcoming';
   };

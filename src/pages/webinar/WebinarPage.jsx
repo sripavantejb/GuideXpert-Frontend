@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useRef } from 'react';
 import Sidebar from './components/Sidebar';
 import DayTabs from './components/DayTabs';
 import VideoPlayer from './components/VideoPlayer';
@@ -17,18 +17,23 @@ import {
   getModulesByDay,
   getNextModule,
 } from './data/mockWebinarData';
+import { isModuleUnlocked, getPreviousModule, getUnlockProgress } from './utils/unlockLogic';
 import WebinarAssessment1 from './components/WebinarAssessment1';
 import WebinarAssessment2 from './components/WebinarAssessment2';
 import WebinarAssessment3 from './components/WebinarAssessment3';
 import WebinarAssessment4 from './components/WebinarAssessment4';
 import WebinarAssessment5 from './components/WebinarAssessment5';
 import { useWebinarAuth } from '../../contexts/WebinarAuthContext';
+import { FiLock } from 'react-icons/fi';
 
 const STORAGE_KEYS = {
   progress: 'webinar_progress',
   doubts: 'webinar_doubts',
   resume: 'webinar_resume',
+  maxWatched: 'webinar_max_watched',
 };
+
+const COMPLETION_THRESHOLD = 90;
 
 function loadJson(key, fallback) {
   try {
@@ -65,11 +70,15 @@ export default function WebinarPage() {
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [videoDurationFormatted, setVideoDurationFormatted] = useState(null);
   const [videoSessionType, setVideoSessionType] = useState(null);
+  const [maxWatched, setMaxWatched] = useState(() => loadJson(STORAGE_KEYS.maxWatched, {}));
+  const [unlockToast, setUnlockToast] = useState(null);
+  const justCompletedRef = useRef(new Set());
 
   const activeModule = activeSessionId ? getModuleById(activeSessionId) : null;
   const activeSession = activeModule?.type === 'Assessment' ? null : (activeSessionId ? getSessionById(activeSessionId) : null);
   const modulesForDay = getModulesByDay(activeDay);
   const nextModule = activeSessionId ? getNextModule(activeSessionId) : null;
+  const isActiveModuleLocked = activeModule ? !isModuleUnlocked(activeModule.id, completedSessions) : false;
 
   // Persist progress (completed session ids)
   useEffect(() => {
@@ -104,12 +113,17 @@ export default function WebinarPage() {
     }
   }, [activeDay, activeSessionId, modulesForDay]);
 
-  // Unlock all days for now (no progression gate)
-  const isDayUnlocked = useCallback(() => true, []);
+  useEffect(() => {
+    saveJson(STORAGE_KEYS.maxWatched, maxWatched);
+  }, [maxWatched]);
 
   const handleTimeUpdate = useCallback(
     (sessionId, currentTime) => {
       setPlaybackPosition((prev) => ({ ...prev, [sessionId]: currentTime }));
+      setMaxWatched((prev) => {
+        const prevMax = prev[sessionId] || 0;
+        return currentTime > prevMax ? { ...prev, [sessionId]: currentTime } : prev;
+      });
     },
     []
   );
@@ -124,8 +138,22 @@ export default function WebinarPage() {
 
   const handleProgressUpdate = useCallback((sessionId, percent) => {
     setSessionProgress((prev) => ({ ...prev, [sessionId]: percent }));
-    if (percent >= 100) {
-      setCompletedSessions((prev) => (prev.includes(sessionId) ? prev : [...prev, sessionId]));
+    if (percent >= COMPLETION_THRESHOLD) {
+      setCompletedSessions((prev) => {
+        if (prev.includes(sessionId)) return prev;
+        if (!justCompletedRef.current.has(sessionId)) {
+          justCompletedRef.current.add(sessionId);
+          const next = getNextModule(sessionId);
+          const label = next ? next.title : 'Course';
+          setUnlockToast(`${label} Unlocked!`);
+          setTimeout(() => setUnlockToast(null), 3500);
+          import('canvas-confetti').then((mod) => {
+            const confetti = mod.default || mod;
+            confetti({ particleCount: 120, spread: 70, origin: { y: 0.65 } });
+          }).catch(() => {});
+        }
+        return [...prev, sessionId];
+      });
     }
   }, []);
 
@@ -155,9 +183,7 @@ export default function WebinarPage() {
     return modules.filter((m) => completedSessions.includes(m.id)).length;
   };
 
-  const totalSessionsCount = SESSIONS.length;
-  const overallCompleted = completedSessions.length;
-  const overallPercent = totalSessionsCount ? Math.round((overallCompleted / totalSessionsCount) * 100) : 0;
+  const { completed: overallCompleted, total: totalSessionsCount, percent: overallPercent } = getUnlockProgress(completedSessions);
 
   return (
     <div className="min-h-screen bg-gray-50 flex">
@@ -201,7 +227,28 @@ export default function WebinarPage() {
           {/* Left column: one session card (video + stats + description) */}
           <div className="lg:col-span-8 flex flex-col gap-4 sm:gap-5">
             <div className="rounded-2xl bg-white border border-gray-200 shadow-card overflow-hidden transition-shadow duration-200 hover:shadow-card-hover flex-shrink-0">
-              {activeModule?.type === 'Assessment' ? (
+              {activeModule?.type === 'Assessment' && isActiveModuleLocked ? (
+                <div className="aspect-video bg-gradient-to-b from-slate-100 to-slate-50 flex flex-col items-center justify-center px-6 py-8 text-center">
+                  <div className="w-16 h-16 rounded-full bg-slate-200/80 flex items-center justify-center mb-5">
+                    <FiLock className="w-7 h-7 text-slate-400" />
+                  </div>
+                  <h2 className="text-lg font-bold text-slate-800 mb-1.5">Complete this session to unlock the assessment</h2>
+                  <p className="text-sm text-slate-500 max-w-sm">Watch the full video to proceed.</p>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      const prev = getPreviousModule(activeModule.id);
+                      if (prev) {
+                        setActiveSessionId(prev.id);
+                        setActiveDay(prev.dayId);
+                      }
+                    }}
+                    className="mt-5 px-5 py-2.5 rounded-xl bg-primary-navy text-white text-sm font-semibold hover:opacity-90 transition-opacity focus:outline-none focus-visible:ring-2 focus-visible:ring-primary-navy focus-visible:ring-offset-2"
+                  >
+                    Go to Session
+                  </button>
+                </div>
+              ) : activeModule?.type === 'Assessment' ? (
                 activeModule.id === 'a1' ? (
                   <div className="flex flex-col min-h-[360px] p-5 sm:p-6">
                     <WebinarAssessment1
@@ -258,7 +305,9 @@ export default function WebinarPage() {
                 <>
                   <VideoPlayer
                     session={activeSession}
+                    isLocked={isActiveModuleLocked}
                     initialPosition={activeSessionId ? playbackPosition[activeSessionId] : 0}
+                    maxWatchedTime={activeSessionId ? (maxWatched[activeSessionId] || 0) : 0}
                     onTimeUpdate={handleTimeUpdate}
                     onEnded={handleVideoEnded}
                     onProgress={handleProgressUpdate}
@@ -313,7 +362,7 @@ export default function WebinarPage() {
                 onSelectSession={setActiveSessionId}
                 completedSessions={completedSessions}
                 sessionProgress={sessionProgress}
-                isDayUnlocked={isDayUnlocked}
+                completedSessionsForUnlock={completedSessions}
                 activeDay={activeDay}
                 embedded
               />
@@ -344,6 +393,22 @@ export default function WebinarPage() {
           </div>
         )}
       </main>
+
+      {unlockToast && (
+        <div
+          className="fixed bottom-6 left-1/2 -translate-x-1/2 z-[9999] px-5 py-3 rounded-2xl bg-primary-navy text-white text-sm font-semibold shadow-xl animate-[slideUp_0.35s_ease-out]"
+          style={{ animation: 'slideUp 0.35s ease-out' }}
+        >
+          <span className="mr-1.5">🎉</span>{unlockToast}
+        </div>
+      )}
+
+      <style>{`
+        @keyframes slideUp {
+          from { opacity: 0; transform: translate(-50%, 20px); }
+          to { opacity: 1; transform: translate(-50%, 0); }
+        }
+      `}</style>
     </div>
   );
 }

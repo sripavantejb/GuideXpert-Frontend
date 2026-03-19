@@ -24,8 +24,6 @@ export default function ProgressPage() {
   };
   const totalSessionsForDay = (dayId) => getSessionsByDay(dayId).length;
 
-  // Unlock all days for now (no progression gate)
-  const isDayUnlocked = () => true;
 
   const totalWatchSeconds = useMemo(() => {
     return Object.values(playbackPosition || {}).reduce((a, b) => a + (Number(b) || 0), 0);
@@ -97,12 +95,10 @@ export default function ProgressPage() {
             const completed = completedCountForDay(day.id);
             const total = totalSessionsForDay(day.id);
             const pct = total > 0 ? Math.round((completed / total) * 100) : 0;
-            const unlocked = isDayUnlocked(day.id);
             return (
               <div key={day.id} className="flex flex-col min-w-0">
                 <div className="flex items-center gap-1 mb-1">
                   <span className="font-semibold text-sm text-gray-800 truncate">{day.label}</span>
-                  {!unlocked && <FiLock className="w-3 h-3 text-gray-400 shrink-0" aria-hidden />}
                 </div>
                 <p className="text-xs text-gray-500 mb-1.5 truncate">
                   {completed}/{total} · {pct}%

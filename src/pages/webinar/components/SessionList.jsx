@@ -1,4 +1,5 @@
 import { FiCheckCircle, FiClock, FiClipboard, FiLock, FiPlay } from 'react-icons/fi';
+import { isModuleUnlocked } from '../utils/unlockLogic';
 
 export function SessionCard({
   session,
@@ -13,8 +14,8 @@ export function SessionCard({
     ? 'bg-white/[0.14] border-white/[0.10] text-white shadow-[inset_0_1px_0_rgba(255,255,255,0.08),0_10px_24px_rgba(2,6,23,0.35)]'
     : 'bg-primary-navy text-white border-primary-navy shadow-sm';
   const lockedClass = darkVariant
-    ? 'bg-white/[0.04] border-white/[0.08] text-slate-500 opacity-80 cursor-not-allowed'
-    : 'bg-gray-50 border-gray-200 opacity-60 cursor-not-allowed';
+    ? 'bg-white/[0.03] border-white/[0.06] text-slate-500 opacity-55 cursor-not-allowed grayscale-[0.4]'
+    : 'bg-gray-50/60 border-gray-200 opacity-50 cursor-not-allowed grayscale-[0.4]';
   const inactiveClass = darkVariant
     ? 'bg-white/[0.06] border-white/[0.08] text-white hover:bg-white/[0.10] hover:border-white/[0.14]'
     : 'bg-white border-gray-200 hover:border-gray-300 hover:shadow-sm hover:bg-gray-50/60';
@@ -25,7 +26,8 @@ export function SessionCard({
       onClick={() => !isLocked && onClick(session.id)}
       disabled={isLocked}
       className={`
-        relative overflow-hidden w-full text-left flex items-center gap-3 rounded-lg border transition-all duration-200
+        relative overflow-hidden w-full text-left flex items-center gap-3 rounded-lg border
+        transition-all duration-500 ease-out
         focus:outline-none
         ${darkVariant ? 'p-3.5' : 'p-3'}
         ${isLocked ? lockedClass : isActive ? activeClass : inactiveClass}
@@ -35,6 +37,7 @@ export function SessionCard({
       <div
         className={`
           w-11 h-11 rounded-md overflow-hidden shrink-0 relative
+          transition-all duration-500
           ${
             darkVariant
               ? isActive
@@ -45,10 +48,12 @@ export function SessionCard({
         `}
       >
         {session.thumbnail ? (
-          <img src={session.thumbnail} alt="" className="w-full h-full object-cover" />
+          <img src={session.thumbnail} alt="" className={`w-full h-full object-cover transition-all duration-500 ${isLocked ? 'grayscale brightness-75' : ''}`} />
         ) : (
           <div className="w-full h-full flex items-center justify-center bg-transparent">
-            {session.type === 'Assessment' ? (
+            {isLocked ? (
+              <FiLock className={`w-4 h-4 ${darkVariant ? 'text-slate-600' : 'text-gray-400'}`} aria-hidden />
+            ) : session.type === 'Assessment' ? (
               <FiClipboard
                 className={`w-4 h-4 ${
                   darkVariant ? 'text-primary-blue-300' : isActive ? 'text-white' : 'text-gray-500'
@@ -60,7 +65,6 @@ export function SessionCard({
             )}
           </div>
         )}
-        {/* Progress bar overlay */}
         {!isLocked && !isCompleted && progress > 0 && progress < 100 && (
           <div className="absolute bottom-0 left-0 right-0 h-0.5 bg-black/30 rounded-b-lg overflow-hidden">
             <div className="h-full bg-accent-gold transition-all duration-300" style={{ width: `${progress}%` }} />
@@ -74,12 +78,12 @@ export function SessionCard({
           <p
             className={`
               text-sm font-medium leading-snug truncate
-              ${darkVariant ? (isActive ? 'text-white font-semibold' : 'text-white') : isActive ? 'text-white' : 'text-gray-900'}
+              ${darkVariant ? (isActive ? 'text-white font-semibold' : isLocked ? 'text-slate-500' : 'text-white') : isActive ? 'text-white' : isLocked ? 'text-gray-400' : 'text-gray-900'}
             `}
           >
             {session.title}
           </p>
-          {darkVariant && isActive && (
+          {darkVariant && isActive && !isLocked && (
             <span className="shrink-0 inline-flex items-center px-2 py-0.5 rounded-full bg-white/12 text-white/90 text-[10px] font-semibold tracking-wide uppercase">
               Current
             </span>
@@ -98,14 +102,14 @@ export function SessionCard({
       {/* Status icon */}
       <div className="shrink-0 flex items-center justify-center w-6 h-6">
         {isLocked ? (
-          <FiLock className={`w-4 h-4 ${darkVariant ? 'text-slate-500' : 'text-gray-400'}`} aria-label="Locked" />
+          <FiLock className={`w-4 h-4 ${darkVariant ? 'text-slate-600' : 'text-gray-400'}`} aria-label="Locked" />
         ) : isCompleted ? (
           <FiCheckCircle className={`w-5 h-5 ${darkVariant ? 'text-accent-green' : isActive ? 'text-white/90' : 'text-accent-green'}`} aria-label="Completed" />
         ) : progress > 0 ? (
-          <span
-            className={`w-5 h-5 rounded-full border-2 border-t-transparent animate-spin inline-block ${darkVariant ? (isActive ? 'border-white/80' : 'border-accent-gold') : isActive ? 'border-white/70' : 'border-accent-gold'}`}
-            aria-label="In progress"
-          />
+          <span className="relative w-5 h-5 flex items-center justify-center">
+            <span className={`absolute inset-0 w-5 h-5 rounded-full border-2 border-t-transparent animate-spin ${darkVariant ? (isActive ? 'border-white/80' : 'border-accent-gold') : isActive ? 'border-white/70' : 'border-accent-gold'}`} />
+            <span className={`w-1.5 h-1.5 rounded-full ${darkVariant ? 'bg-accent-gold' : 'bg-accent-gold'}`} />
+          </span>
         ) : (
           <span
             className={`w-4 h-4 rounded-full border-2 inline-block ${darkVariant ? (isActive ? 'border-white/75' : 'border-slate-500') : isActive ? 'border-white/50' : 'border-gray-300'}`}
@@ -123,12 +127,13 @@ export default function SessionList({
   onSelectSession,
   completedSessions,
   sessionProgress,
-  isDayUnlocked,
+  completedSessionsForUnlock,
   activeDay,
   embedded = false,
 }) {
   const completedCount = sessions.filter((s) => completedSessions.includes(s.id)).length;
   const wrapperClass = embedded ? '' : 'rounded-2xl bg-white border border-gray-200 shadow-card overflow-hidden transition-shadow duration-200 hover:shadow-card-hover';
+  const unlockList = completedSessionsForUnlock ?? completedSessions;
 
   return (
     <div className={wrapperClass}>
@@ -168,7 +173,7 @@ export default function SessionList({
               isActive={activeSessionId === session.id}
               isCompleted={completedSessions.includes(session.id)}
               progress={sessionProgress[session.id] ?? 0}
-              isLocked={!isDayUnlocked(session.dayId)}
+              isLocked={!isModuleUnlocked(session.id, unlockList)}
               onClick={onSelectSession}
             />
           ))

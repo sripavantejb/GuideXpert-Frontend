@@ -149,8 +149,9 @@ export const SESSIONS = [
     duration: '15 mins',
     durationMinutes: 15,
     type: 'Compliance',
-    videoUrl: 'https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/ForBiggerEscapes.mp4',
-    thumbnail: 'https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/images/ForBiggerEscapes.jpg',
+    videoUrl: 'https://www.youtube.com/embed/aEe6b2l8Nbk',
+    isYoutube: true,
+    thumbnail: 'https://img.youtube.com/vi/aEe6b2l8Nbk/hqdefault.jpg',
     description: {
       startPoint: 'This session explains practical online lead generation for counsellors.',
       keyTopics: ['Digital presence', 'Social media leads', 'Personal network', 'Referrals', 'College outreach', 'Lead qualification'],
@@ -204,8 +205,9 @@ export const SESSIONS = [
     duration: '14 mins',
     durationMinutes: 14,
     type: 'Compliance',
-    videoUrl: 'https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/ForBiggerFun.mp4',
-    thumbnail: 'https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/images/ForBiggerFun.jpg',
+    videoUrl: 'https://www.youtube.com/embed/A8TCyFUIKbo',
+    isYoutube: true,
+    thumbnail: 'https://img.youtube.com/vi/A8TCyFUIKbo/hqdefault.jpg',
     description: {
       startPoint: 'This session focuses on counsellor positioning and personal branding online.',
       keyTopics: ['Personal branding', 'Right positioning', 'Professional bio', 'Perception building', 'Trust-based enquiries', 'GuideXpert network'],

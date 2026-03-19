@@ -4,7 +4,8 @@ import { useWebinar } from '../context/WebinarContext';
 import { FiChevronLeft, FiChevronRight, FiLock, FiAward } from 'react-icons/fi';
 import { HiX as HiXIcon } from 'react-icons/hi';
 import { SessionCard } from './SessionList';
-import { SESSIONS, ALL_MODULES, getSessionsByDay } from '../data/mockWebinarData';
+import { SESSIONS, ALL_MODULES } from '../data/mockWebinarData';
+import { isModuleUnlocked, getUnlockProgress } from '../utils/unlockLogic';
 
 export default function Sidebar({
   open,
@@ -26,9 +27,6 @@ export default function Sidebar({
   const setSidebarOpen = typeof onOpenChange === 'function' ? onOpenChange : setInternalOpen;
 
   const width = expanded ? 'w-[280px] lg:w-[30vw]' : 'w-[72px]';
-
-  // Unlock all days for now (no progression gate)
-  const isDayUnlocked = useCallback(() => true, []);
 
   const resolvedActiveSessionId = activeModuleId ?? contextActiveSessionId;
 
@@ -52,14 +50,7 @@ export default function Sidebar({
     navigate('/webinar/certificates');
   }, [certificateUnlocked, setSidebarOpen, navigate]);
 
-  // Show unlocked modules; also show Session - 4, Session - 5, and Assessment 5 in order when locked (so order is correct)
-  const visibleModules = ALL_MODULES.filter(
-    (module) =>
-      isDayUnlocked(module.dayId) ||
-      module.id === 's5' || // Session - 4 (Day 2)
-      module.id === 's6' || // Session - 5 (Day 2)
-      module.id === 'a5'    // Assessment 5 (Day 2)
-  );
+  const { completed: progressCompleted, total: progressTotal, percent: progressPercent } = getUnlockProgress(completedSessions);
 
   return (
     <>
@@ -103,13 +94,13 @@ export default function Sidebar({
             {expanded && (
               <div className="hidden lg:flex flex-1 flex-col items-end justify-center min-h-8 min-w-0">
                 <span className="text-[11px] font-semibold uppercase tracking-widest text-slate-400 leading-tight">
-                  Sessions
+                  Progress
                 </span>
                 <div className="flex items-baseline gap-1.5 mt-1">
                   <span className="text-sm font-semibold tabular-nums text-white">
-                    {completedVideoCount ?? completedSessions.filter((id) => SESSIONS.some((s) => s.id === id)).length}
+                    {progressCompleted}
                     <span className="text-slate-500 font-normal"> / </span>
-                    {SESSIONS.length}
+                    {progressTotal}
                   </span>
                   <span className="text-[11px] text-slate-500 font-medium">completed</span>
                 </div>
@@ -140,7 +131,7 @@ export default function Sidebar({
             <div className="hidden lg:block h-0.5 bg-white/6 mx-4 mb-1 rounded-full overflow-hidden">
               <div
                 className="h-full bg-primary-blue-400/80 transition-all duration-500 rounded-full"
-                style={{ width: `${SESSIONS.length ? Math.min(100, ((completedVideoCount ?? completedSessions.length) / SESSIONS.length) * 100) : 0}%` }}
+                style={{ width: `${progressPercent}%` }}
               />
             </div>
           )}
@@ -150,20 +141,20 @@ export default function Sidebar({
           {expanded ? (
             <div className="flex-1 min-h-0 flex flex-col overflow-hidden">
               <div className="sidebar-nav-scroll flex-1 overflow-y-auto min-h-0 py-4 px-4 pb-5 space-y-2.5">
-                {visibleModules.map((module) => {
-                  const isUnlocked = isDayUnlocked(module.dayId);
+                {ALL_MODULES.map((module) => {
+                  const unlocked = isModuleUnlocked(module.id, completedSessions);
                   return (
                     <SessionCard
                       key={module.id}
                       session={module}
                       isActive={resolvedActiveSessionId === module.id}
-                      isCompleted={module.type === 'Assessment' ? false : completedSessions.includes(module.id)}
+                      isCompleted={completedSessions.includes(module.id)}
                       progress={
-                        resolvedActiveSessionId === module.id && module.type !== 'Assessment' && !completedSessions.includes(module.id)
+                        resolvedActiveSessionId === module.id && !completedSessions.includes(module.id)
                           ? 1
                           : 0
                       }
-                      isLocked={!isUnlocked}
+                      isLocked={!unlocked}
                       onClick={handleSelectSession}
                       darkVariant
                     />
@@ -216,27 +207,22 @@ export default function Sidebar({
           ) : (
             <div
               className="flex-1 min-h-0 hidden lg:flex flex-col items-center justify-center py-4"
-              aria-label={`${completedVideoCount ?? completedSessions.length} of ${SESSIONS.length} sessions completed`}
-              title={`${completedVideoCount ?? completedSessions.length} of ${SESSIONS.length} completed`}
+              aria-label={`${progressCompleted} of ${progressTotal} completed`}
+              title={`${progressCompleted} of ${progressTotal} completed`}
             >
-              {/* Vertical bar with dots on top: bar as track, dots overlaid along it */}
               <div className="flex-1 min-h-[120px] w-5 flex flex-col items-center relative">
-                {/* Bar track + fill */}
                 <div className="absolute inset-0 w-2 rounded-full bg-white/6 overflow-hidden flex flex-col">
                   <div
                     className="w-full bg-primary-blue-400/80 transition-all duration-500 rounded-full shrink-0"
-                    style={{
-                      height: `${SESSIONS.length ? Math.min(100, ((completedVideoCount ?? completedSessions.length) / SESSIONS.length) * 100) : 0}%`,
-                    }}
+                    style={{ height: `${progressPercent}%` }}
                   />
                 </div>
-                {/* Dots on top of the bar, spaced along its height */}
                 <div className="relative flex flex-col justify-between h-full w-5 py-0.5">
-                  {SESSIONS.map((session) => (
+                  {ALL_MODULES.map((m) => (
                     <span
-                      key={session.id}
+                      key={m.id}
                       className={`block w-2 h-2 rounded-full shrink-0 transition-colors duration-300 ring-2 ring-sidebar-blue ${
-                        completedSessions.includes(session.id)
+                        completedSessions.includes(m.id)
                           ? 'bg-primary-blue-400/80'
                           : 'bg-white/6'
                       }`}

@@ -1,5 +1,5 @@
 import { useRef, useState, useEffect, useCallback } from 'react';
-import { FiPlay, FiPause, FiVolume2, FiVolumeX, FiMaximize, FiMinimize, FiRotateCcw } from 'react-icons/fi';
+import { FiPlay, FiPause, FiVolume2, FiVolumeX, FiMaximize, FiMinimize, FiRotateCcw, FiLock } from 'react-icons/fi';
 import { HiHeart } from 'react-icons/hi';
 import { useWebinar } from '../context/WebinarContext';
 
@@ -128,6 +128,8 @@ function CompletionOverlay({ visible, onNextSession, onWatchAgain, hasNextSessio
 
 function YouTubePlayerWithControls({
   session,
+  initialPosition = 0,
+  maxWatchedTime = 0,
   onTimeUpdate,
   onEnded,
   onProgress,
@@ -141,6 +143,8 @@ function YouTubePlayerWithControls({
   const lastLeftTapRef = useRef(0);
   const metadataSentRef = useRef(false);
   const endedRef = useRef(false);
+  const ytMaxWatchedRef = useRef(maxWatchedTime);
+  const resumedRef = useRef(false);
   const apiReady = useYouTubeIFrameAPI();
   const videoId = getYouTubeVideoId(session?.videoUrl);
 
@@ -153,6 +157,8 @@ function YouTubePlayerWithControls({
   const [containerHasSize, setContainerHasSize] = useState(false);
   const [hasStarted, setHasStarted] = useState(false);
   const [ytFullscreen, setYtFullscreen] = useState(false);
+  const [ytPlaybackRate, setYtPlaybackRate] = useState(1);
+  const [ytSpeedOpen, setYtSpeedOpen] = useState(false);
 
   const playerContainerId = `yt-player-${session?.id ?? 'default'}`;
 
@@ -273,6 +279,7 @@ function YouTubePlayerWithControls({
       if (state === 1) setYtPlaying(true);
       else if (state === 2) setYtPlaying(false);
       if (Number.isFinite(currentTime)) {
+        if (currentTime > ytMaxWatchedRef.current) ytMaxWatchedRef.current = currentTime;
         setYtCurrentTime(currentTime);
         if (Number.isFinite(duration) && duration > 0) {
           const pct = Math.min(100, (currentTime / duration) * 100);
@@ -297,7 +304,20 @@ function YouTubePlayerWithControls({
     setHasStarted(false);
     endedRef.current = false;
     metadataSentRef.current = false;
+    resumedRef.current = false;
+    ytMaxWatchedRef.current = maxWatchedTime;
   }, [session?.id]);
+
+  useEffect(() => {
+    if (!playerReady || resumedRef.current) return;
+    const pos = initialPosition;
+    if (pos > 0 && playerRef.current?.seekTo) {
+      resumedRef.current = true;
+      playerRef.current.seekTo(pos, true);
+      setYtCurrentTime(pos);
+      if (ytDuration > 0) setYtProgress((pos / ytDuration) * 100);
+    }
+  }, [playerReady, initialPosition, ytDuration]);
 
   const handleWatchAgain = useCallback(() => {
     const player = playerRef.current;
@@ -379,13 +399,23 @@ function YouTubePlayerWithControls({
       const player = playerRef.current;
       if (!player?.seekTo || !Number.isFinite(ytDuration) || ytDuration <= 0) return;
       const pct = parseFloat(e.target.value);
-      const time = (pct / 100) * ytDuration;
+      let time = (pct / 100) * ytDuration;
+      const maxAllowed = ytMaxWatchedRef.current + 2;
+      if (time > maxAllowed) time = maxAllowed;
+      const clampedPct = (time / ytDuration) * 100;
       player.seekTo(time, true);
       setYtCurrentTime(time);
-      setYtProgress(pct);
+      setYtProgress(clampedPct);
     },
     [ytDuration]
   );
+
+  const changeYtSpeed = useCallback((rate) => {
+    setYtPlaybackRate(rate);
+    setYtSpeedOpen(false);
+    const player = playerRef.current;
+    if (player?.setPlaybackRate) player.setPlaybackRate(rate);
+  }, []);
 
   const handleYtBack10 = useCallback(() => {
     const player = playerRef.current;
@@ -547,6 +577,34 @@ function YouTubePlayerWithControls({
           >
             {formatTime(ytCurrentTime)} / {formatTime(ytDuration)}
           </span>
+          <div className="relative flex-shrink-0">
+            <button
+              type="button"
+              onClick={() => setYtSpeedOpen((o) => !o)}
+              className="flex-shrink-0 px-1 py-1 rounded text-white/90 text-[10px] sm:text-xs font-medium hover:bg-white/15 min-h-[24px] min-w-[24px] sm:min-h-0 sm:min-w-0 flex items-center justify-center focus:outline-none focus-visible:ring-2 focus-visible:ring-white/50"
+              aria-label="Playback speed"
+              aria-expanded={ytSpeedOpen}
+            >
+              {ytPlaybackRate}x
+            </button>
+            {ytSpeedOpen && (
+              <>
+                <div className="fixed inset-0 z-10" aria-hidden onClick={() => setYtSpeedOpen(false)} />
+                <div className="absolute bottom-full left-0 mb-1 py-1 bg-primary-navy rounded-lg shadow-lg z-20 min-w-[5rem]">
+                  {SPEED_OPTIONS.map((s) => (
+                    <button
+                      key={s}
+                      type="button"
+                      onClick={() => changeYtSpeed(s)}
+                      className={`block w-full text-left px-3 py-1.5 text-sm text-white hover:bg-white/10 ${ytPlaybackRate === s ? 'bg-white/15 font-medium' : ''}`}
+                    >
+                      {s}x
+                    </button>
+                  ))}
+                </div>
+              </>
+            )}
+          </div>
           <button
             type="button"
             onClick={toggleYtFullscreen}
@@ -567,7 +625,9 @@ function YouTubePlayerWithControls({
 
 export default function VideoPlayer({
   session,
+  isLocked = false,
   initialPosition = 0,
+  maxWatchedTime = 0,
   onTimeUpdate,
   onEnded,
   onProgress,
@@ -584,6 +644,7 @@ export default function VideoPlayer({
   const videoRef = useRef(null);
   const lastLeftTapRef = useRef(0);
   const lastRewindGestureAtRef = useRef(0);
+  const nativeMaxWatchedRef = useRef(maxWatchedTime);
   const [playing, setPlaying] = useState(false);
   const [progress, setProgress] = useState(0);
   const [currentTime, setCurrentTime] = useState(0);
@@ -598,6 +659,10 @@ export default function VideoPlayer({
   const [isFullscreen, setIsFullscreen] = useState(false);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
+
+  useEffect(() => {
+    nativeMaxWatchedRef.current = maxWatchedTime;
+  }, [session?.id]);
 
   useEffect(() => {
     const v = videoRef.current;
@@ -635,6 +700,7 @@ export default function VideoPlayer({
     const onCanPlay = () => setLoading(false);
     const onTimeUpdateHandler = () => {
       const t = v.currentTime;
+      if (t > nativeMaxWatchedRef.current) nativeMaxWatchedRef.current = t;
       setCurrentTime(t);
       setProgress(v.duration ? (t / v.duration) * 100 : 0);
       onTimeUpdate?.(session?.id, t);
@@ -704,10 +770,13 @@ export default function VideoPlayer({
     const v = videoRef.current;
     if (!v || !duration) return;
     const pct = parseFloat(e.target.value);
-    const time = (pct / 100) * duration;
+    let time = (pct / 100) * duration;
+    const maxAllowed = nativeMaxWatchedRef.current + 2;
+    if (time > maxAllowed) time = maxAllowed;
+    const clampedPct = (time / duration) * 100;
     v.currentTime = time;
     setCurrentTime(time);
-    setProgress(pct);
+    setProgress(clampedPct);
   };
 
   const handleBack10 = useCallback(() => {
@@ -824,11 +893,33 @@ export default function VideoPlayer({
     );
   }
 
-  // YouTube: IFrame API with custom controls
+  if (isLocked) {
+    return (
+      <div className="relative w-full rounded-none sm:rounded-xl overflow-hidden bg-gray-900" style={{ aspectRatio: '16 / 9' }}>
+        {session.thumbnail && (
+          <div
+            className="absolute inset-0 w-full h-full bg-cover bg-center"
+            style={{ backgroundImage: `url(${session.thumbnail})`, filter: 'blur(8px) grayscale(0.6) brightness(0.45)', transform: 'scale(1.1)' }}
+            aria-hidden
+          />
+        )}
+        <div className="absolute inset-0 flex flex-col items-center justify-center text-center p-6 z-10">
+          <div className="w-16 h-16 rounded-full bg-white/10 backdrop-blur-sm border border-white/20 flex items-center justify-center mb-4">
+            <FiLock className="w-7 h-7 text-white/80" />
+          </div>
+          <h3 className="text-white text-lg font-semibold mb-1.5">Locked Session</h3>
+          <p className="text-white/70 text-sm max-w-xs">Complete previous session & assessment to unlock</p>
+        </div>
+      </div>
+    );
+  }
+
   if (isYoutubeSession(session)) {
     return (
       <YouTubePlayerWithControls
         session={session}
+        initialPosition={initialPosition}
+        maxWatchedTime={maxWatchedTime}
         onTimeUpdate={onTimeUpdate}
         onEnded={onEnded}
         onProgress={onProgress}
