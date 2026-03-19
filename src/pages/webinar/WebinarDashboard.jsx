@@ -111,10 +111,6 @@ export default function WebinarDashboard() {
     }
   }, [completedSessions]);
 
-  const handleCertificateDownload = useCallback(() => {
-    window.open('/certificate/webinar-training', '_blank', 'noopener,noreferrer');
-  }, []);
-
   const handleCompletionContinue = useCallback(() => {
     setShowCompletionModal(false);
     setShowFormModal(true);
@@ -446,10 +442,7 @@ export default function WebinarDashboard() {
       )}
 
       {showCompletionModal && (
-        <CompletionModal
-          onDownload={handleCertificateDownload}
-          onContinue={handleCompletionContinue}
-        />
+        <CompletionModal onContinue={handleCompletionContinue} />
       )}
 
       {showFormModal && (

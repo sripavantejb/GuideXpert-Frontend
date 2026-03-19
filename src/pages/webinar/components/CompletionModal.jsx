@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
-import { FiDownload, FiArrowRight } from 'react-icons/fi';
+import { FiArrowRight } from 'react-icons/fi';
 
-export default function CompletionModal({ onDownload, onContinue }) {
+export default function CompletionModal({ onContinue }) {
   const [visible, setVisible] = useState(false);
   const [exiting, setExiting] = useState(false);
 
@@ -53,20 +53,11 @@ export default function CompletionModal({ onDownload, onContinue }) {
             your certificate.
           </p>
 
-          <div className="flex flex-col gap-3 sm:flex-row">
-            <button
-              type="button"
-              onClick={onDownload}
-              className="flex flex-1 items-center justify-center gap-2 rounded-xl border border-gray-200 bg-white px-5 py-3 text-sm font-semibold text-gray-700 shadow-sm transition-all duration-200 hover:border-gray-300 hover:bg-gray-50 hover:shadow-md focus:outline-none focus-visible:ring-2 focus-visible:ring-gray-400 focus-visible:ring-offset-2"
-            >
-              <FiDownload className="h-4 w-4 shrink-0" />
-              Download Certificate
-            </button>
-
+          <div className="flex justify-center">
             <button
               type="button"
               onClick={() => triggerExit(onContinue)}
-              className="flex flex-1 items-center justify-center gap-2 rounded-xl bg-linear-to-r from-[#003366] to-sidebar-blue px-5 py-3 text-sm font-semibold text-white shadow-md transition-all duration-200 hover:opacity-90 hover:shadow-lg focus:outline-none focus-visible:ring-2 focus-visible:ring-[#003366] focus-visible:ring-offset-2"
+              className="flex items-center justify-center gap-2 rounded-xl bg-linear-to-r from-[#003366] to-sidebar-blue px-8 py-3 text-sm font-semibold text-white shadow-md transition-all duration-200 hover:opacity-90 hover:shadow-lg focus:outline-none focus-visible:ring-2 focus-visible:ring-[#003366] focus-visible:ring-offset-2"
             >
               Continue
               <FiArrowRight className="h-4 w-4 shrink-0" />
