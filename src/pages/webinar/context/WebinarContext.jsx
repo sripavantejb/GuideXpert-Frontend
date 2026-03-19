@@ -203,8 +203,19 @@ export function WebinarProvider({ children, initialDisplayName }) {
   const doSync = useCallback(() => {
     if (!webinarToken) return;
     const payload = buildSyncPayload(completedSessions, maxWatched, playbackPosition, activeSessionId, sessionProgressRef.current);
-    syncWebinarProgress(webinarToken, payload).catch(() => {});
+    syncWebinarProgress(webinarToken, payload).catch((err) => {
+      if (import.meta.env.DEV) console.warn('[webinar sync] failed', err);
+    });
   }, [webinarToken, completedSessions, maxWatched, playbackPosition, activeSessionId]);
+
+  // Initial sync shortly after mount
+  const initialSyncDoneRef = useRef(false);
+  useEffect(() => {
+    if (!webinarToken || initialSyncDoneRef.current) return;
+    initialSyncDoneRef.current = true;
+    const t = setTimeout(doSync, 2000);
+    return () => clearTimeout(t);
+  }, [webinarToken, doSync]);
 
   // Debounced sync on state changes
   useEffect(() => {

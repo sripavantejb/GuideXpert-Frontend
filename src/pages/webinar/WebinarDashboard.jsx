@@ -296,6 +296,7 @@ export default function WebinarDashboard() {
                     onToggleBookmark={() => activeSessionId && toggleBookmark(activeSessionId)}
                     autoplayOnLoad={autoplayNextSession}
                     onAutoplayDone={() => setAutoplayNextSession(false)}
+                    isIntro={isIntro}
                   />
                   {activeSession && (
                     <>

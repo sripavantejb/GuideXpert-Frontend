@@ -12,14 +12,12 @@ const API_BASE_URL = useProxyInDev ? '/api' : (envUrl || productionApi);
  */
 async function apiRequest(endpoint, options = {}) {
   const url = `${API_BASE_URL}${endpoint}`;
-  
-  const config = {
-    headers: {
-      'Content-Type': 'application/json',
-      ...options.headers,
-    },
-    ...options,
+
+  const headers = {
+    'Content-Type': 'application/json',
+    ...options.headers,
   };
+  const config = { ...options, headers };
 
   // Log request in development
   if (import.meta.env.DEV) {
@@ -589,7 +587,7 @@ export const getPredictedCollegesPublic = async (params = {}) => {
 export const syncWebinarProgress = async (token, payload) => {
   return apiRequest('/webinar-progress/sync', {
     method: 'POST',
-    headers: { Authorization: `Bearer ${token}` },
+    headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
     body: JSON.stringify(payload),
   });
 };
@@ -597,7 +595,7 @@ export const syncWebinarProgress = async (token, payload) => {
 export const getWebinarProgress = async (token) => {
   return apiRequest('/webinar-progress', {
     method: 'GET',
-    headers: { Authorization: `Bearer ${token}` },
+    headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
   });
 };
 
