@@ -1,6 +1,5 @@
 import { useState, useRef, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import html2canvas from 'html2canvas';
 import { jsPDF } from 'jspdf';
 import { checkActivationEligibility } from '../utils/api';
 import InterPosterPreview, {
@@ -102,16 +101,9 @@ export default function InterPosterPage() {
   const [showIneligibleModal, setShowIneligibleModal] = useState(false);
   const [ineligibleMessage, setIneligibleMessage] = useState('');
   const [generating, setGenerating] = useState(false);
-  const [exportImageReady, setExportImageReady] = useState(false);
-  const [pendingDownload, setPendingDownload] = useState(null);
   const [iosResult, setIosResult] = useState(null);
   const iosResultBlobUrlRef = useRef(null);
   const posterRef = useRef(null);
-  const exportRef = useRef(null);
-  const exportWrapperRef = useRef(null);
-  const captureContainerRef = useRef(null);
-  const exportImageReadyRef = useRef(false);
-  const pendingDownloadRef = useRef({ url: null, filename: null, revoke: false });
   const previewBoxRef = useRef(null);
   const [previewScale, setPreviewScale] = useState(PREVIEW_MAX_PX / POSTER_WIDTH);
 
@@ -146,125 +138,41 @@ export default function InterPosterPage() {
     return false;
   }
 
-  function waitForExportReady(ms) {
-    return new Promise((resolve) => {
-      if (exportImageReadyRef.current) return resolve();
-      const deadline = Date.now() + ms;
-      const id = setInterval(() => { if (exportImageReadyRef.current || Date.now() >= deadline) { clearInterval(id); resolve(); } }, 50);
-    });
-  }
-
-  function showExportWrapper() {
-    const wrapper = exportWrapperRef.current;
-    const container = captureContainerRef.current;
-    if (!wrapper) return;
-    if (isIOS()) {
-      wrapper.style.position = 'absolute'; wrapper.style.left = '0'; wrapper.style.top = '0';
-      if (container) { container.style.zIndex = '9998'; container.style.overflow = 'visible'; }
-    } else if (isMobileOrTablet()) { wrapper.style.left = '-9999px'; wrapper.style.top = '0'; }
-    Object.assign(wrapper.style, { opacity: '1', zIndex: '9998', overflow: 'visible', minWidth: `${POSTER_WIDTH}px`, maxWidth: `${POSTER_WIDTH}px`, minHeight: `${POSTER_HEIGHT}px`, maxHeight: `${POSTER_HEIGHT}px`, transform: 'translateZ(0)' });
-  }
-
-  function hideExportWrapper() {
-    const wrapper = exportWrapperRef.current;
-    const container = captureContainerRef.current;
-    if (!wrapper) return;
-    Object.assign(wrapper.style, { opacity: '0', zIndex: '-1', overflow: 'hidden', left: '', top: '', minWidth: '', maxWidth: '', minHeight: '', maxHeight: '', transform: '' });
-    if (isIOS()) { wrapper.style.position = ''; if (container) { container.style.zIndex = '-1'; container.style.overflow = 'hidden'; } }
-  }
-
-  function getH2cOptions(scale, target) {
-    const ios = isIOS();
-    const el = target || exportRef.current;
-    return {
-      scale,
-      ...(ios ? { width: POSTER_WIDTH * scale, height: POSTER_HEIGHT * scale } : { width: POSTER_WIDTH, height: POSTER_HEIGHT }),
-      windowWidth: ios ? (el?.scrollWidth || POSTER_WIDTH) : POSTER_WIDTH + 20,
-      windowHeight: ios ? (el?.scrollHeight || POSTER_HEIGHT) : POSTER_HEIGHT + 20,
-      scrollX: 0, scrollY: 0, useCORS: true, backgroundColor: '#ffffff', logging: false, allowTaint: true, imageTimeout: 0,
-      onclone: (doc, clone) => {
-        doc.documentElement.style.overflow = 'visible';
-        if (doc.body) doc.body.style.overflow = 'visible';
-        if (ios) {
-          const d = { width: `${POSTER_WIDTH}px`, height: `${POSTER_HEIGHT}px`, minWidth: `${POSTER_WIDTH}px`, minHeight: `${POSTER_HEIGHT}px` };
-          Object.assign(doc.documentElement.style, d);
-          if (doc.body) Object.assign(doc.body.style, d);
-          let n = clone; while (n && n !== doc.body) { Object.assign(n.style, { ...d, overflow: 'visible' }); n = n.parentElement; }
-        }
-        Object.assign(clone.style, { opacity: '1', visibility: 'visible', zIndex: '9999', overflow: 'visible', position: 'relative', left: '0', top: '0' });
-        let p = clone.parentElement;
-        while (p && p !== doc.body) {
-          if (p.style.position === 'fixed') { p.style.position = 'absolute'; p.style.left = '0'; p.style.top = '0'; }
-          p = p.parentElement;
-        }
-      },
-    };
-  }
-
-  const waitImg = isMobileOrTablet() ? 800 : 3000;
-  const waitLayout = isMobileOrTablet() ? 100 : 400;
-
-  function triggerPending() {
-    const { url, filename, revoke } = pendingDownloadRef.current;
-    if (!url) return;
-    const a = document.createElement('a'); a.download = filename; a.href = url; a.click();
-    if (revoke) setTimeout(() => URL.revokeObjectURL(url), 2000);
-    pendingDownloadRef.current = { url: null, filename: null, revoke: false }; setPendingDownload(null);
-  }
-
   const handlePng = async () => {
     if (!(await verifyEligibility())) return;
-    setGenerating(true); setPendingDownload(null);
+    setGenerating(true);
     try {
+      const img = await loadInterPosterImage();
+      const c = drawInterPosterToCanvas(img, fullName, mobile10, 2);
+      const url = c.toDataURL('image/png');
       if (isMobileOrTablet()) {
-        const img = await loadInterPosterImage();
-        const c = drawInterPosterToCanvas(img, fullName, mobile10, 2);
-        setIosResult({ url: c.toDataURL('image/png'), type: 'image' });
+        setIosResult({ url, type: 'image' });
       } else {
-        const t = exportRef.current || posterRef.current; if (!t) return;
-        await waitForExportReady(waitImg); await new Promise(r => setTimeout(r, waitLayout));
-        showExportWrapper(); await new Promise(r => requestAnimationFrame(r));
-        const c = await html2canvas(t, getH2cOptions(2, t));
-        const w = POSTER_WIDTH * 2, h = POSTER_HEIGHT * 2;
-        const crop = document.createElement('canvas'); crop.width = w; crop.height = h;
-        crop.getContext('2d')?.drawImage(c, 0, 0, Math.min(c.width, w), Math.min(c.height, h), 0, 0, w, h);
-        const url = crop.toDataURL('image/png');
         const fn = `GuideXpert-Poster-${safeFilename(fullName)}-${Date.now()}.png`;
         const a = document.createElement('a'); a.download = fn; a.href = url; a.click();
-        if (isMobileOrTablet()) { pendingDownloadRef.current = { url, filename: fn }; setPendingDownload('png'); }
       }
-    } catch (e) { console.error(e); } finally { if (!isMobileOrTablet()) hideExportWrapper(); }
+    } catch (e) { console.error(e); }
     setGenerating(false);
   };
 
   const handlePdf = async () => {
     if (!(await verifyEligibility())) return;
-    setGenerating(true); setPendingDownload(null);
+    setGenerating(true);
     try {
+      const img = await loadInterPosterImage();
+      const c = drawInterPosterToCanvas(img, fullName, mobile10, 2);
+      const pdf = new jsPDF({ orientation: 'portrait', unit: 'px', format: [POSTER_WIDTH, POSTER_HEIGHT], compress: true });
+      pdf.addImage(c.toDataURL('image/png'), 'PNG', 0, 0, POSTER_WIDTH, POSTER_HEIGHT);
       if (isMobileOrTablet()) {
-        const img = await loadInterPosterImage();
-        const c = drawInterPosterToCanvas(img, fullName, mobile10, 2);
-        const pdf = new jsPDF({ orientation: 'portrait', unit: 'px', format: [POSTER_WIDTH, POSTER_HEIGHT], compress: true });
-        pdf.addImage(c.toDataURL('image/png'), 'PNG', 0, 0, POSTER_WIDTH, POSTER_HEIGHT);
         const u = URL.createObjectURL(pdf.output('blob'));
         iosResultBlobUrlRef.current = u; setIosResult({ url: u, type: 'pdf' });
       } else {
-        const t = exportRef.current || posterRef.current; if (!t) return;
-        await waitForExportReady(waitImg); await new Promise(r => setTimeout(r, waitLayout));
-        showExportWrapper(); await new Promise(r => requestAnimationFrame(r));
-        const c = await html2canvas(t, getH2cOptions(2, t));
-        const w = POSTER_WIDTH * 2, h = POSTER_HEIGHT * 2;
-        const crop = document.createElement('canvas'); crop.width = w; crop.height = h;
-        crop.getContext('2d')?.drawImage(c, 0, 0, Math.min(c.width, w), Math.min(c.height, h), 0, 0, w, h);
-        const pdf = new jsPDF({ orientation: 'portrait', unit: 'px', format: [POSTER_WIDTH, POSTER_HEIGHT], compress: true });
-        pdf.addImage(crop.toDataURL('image/png'), 'PNG', 0, 0, POSTER_WIDTH, POSTER_HEIGHT);
         const fn = `GuideXpert-Poster-${safeFilename(fullName)}-${Date.now()}.pdf`;
         const blob = pdf.output('blob'); const u = URL.createObjectURL(blob);
         const a = document.createElement('a'); a.download = fn; a.href = u; a.click();
-        if (isMobileOrTablet()) { pendingDownloadRef.current = { url: u, filename: fn, revoke: true }; setPendingDownload('pdf'); }
-        else setTimeout(() => URL.revokeObjectURL(u), 5000);
+        setTimeout(() => URL.revokeObjectURL(u), 5000);
       }
-    } catch (e) { console.error(e); } finally { if (!isMobileOrTablet()) hideExportWrapper(); }
+    } catch (e) { console.error(e); }
     setGenerating(false);
   };
 
@@ -357,12 +265,6 @@ export default function InterPosterPage() {
                 {!canDownload && (
                   <p className="text-xs text-slate-400 text-center">Enter your name and a valid 10-digit number to enable download.</p>
                 )}
-                {pendingDownload && (
-                  <button onClick={triggerPending}
-                    className="w-full rounded-lg bg-amber-500 py-2.5 text-sm font-semibold text-white hover:bg-amber-600 transition">
-                    Tap to save file
-                  </button>
-                )}
               </div>
             </div>
 
@@ -383,16 +285,6 @@ export default function InterPosterPage() {
 
               <p className="text-[11px] text-slate-400 mt-3 text-center">Live preview — updates as you type.</p>
             </div>
-          </div>
-        </div>
-
-        {/* Hidden export node — always mounted so it's ready when download is clicked */}
-        <div ref={captureContainerRef} aria-hidden="true"
-          style={{ position: 'fixed', left: 0, top: 0, width: POSTER_WIDTH, height: POSTER_HEIGHT, minWidth: POSTER_WIDTH, maxWidth: POSTER_WIDTH, minHeight: POSTER_HEIGHT, maxHeight: POSTER_HEIGHT, overflow: 'hidden', pointerEvents: 'none', zIndex: -1 }}>
-          <div ref={exportWrapperRef} aria-hidden="true"
-            style={{ position: 'fixed', left: 0, top: 0, width: POSTER_WIDTH, height: POSTER_HEIGHT, minWidth: POSTER_WIDTH, maxWidth: POSTER_WIDTH, minHeight: POSTER_HEIGHT, maxHeight: POSTER_HEIGHT, overflow: 'hidden', opacity: 0, pointerEvents: 'none', zIndex: -1 }}>
-            <InterPosterPreview ref={exportRef} fullName={displayName || fullName} mobileNumber={mobile10 || undefined} forExport
-              onExportImageLoad={() => { exportImageReadyRef.current = true; setExportImageReady(true); }} />
           </div>
         </div>
 
