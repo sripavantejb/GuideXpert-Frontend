@@ -12,13 +12,13 @@ export const SESSIONS = [
   {
     id: 'intro',
     dayId: 1,
-    title: 'Intro',
+    title: 'Introduction to GuideXpert Counsellor training program',
     duration: '8 mins',
     durationMinutes: 8,
     type: 'Overview',
-    videoUrl: 'https://www.youtube.com/embed/_DTXIf_V5Fk?si=yWfGagUAqfPvAxdH',
+    videoUrl: 'https://www.youtube.com/embed/2MzzVkijtPo',
     isYoutube: true,
-    thumbnail: 'https://img.youtube.com/vi/_DTXIf_V5Fk/hqdefault.jpg',
+    thumbnail: 'https://img.youtube.com/vi/2MzzVkijtPo/hqdefault.jpg',
     description: {
       startPoint: 'Introduction to GuideXpert and career counselling for students after intermediate.',
       keyTopics: ['Career clarity', 'Course options', 'GuideXpert vision'],
@@ -47,7 +47,7 @@ export const SESSIONS = [
   {
     id: 's2',
     dayId: 1,
-    title: 'Session - 1',
+    title: 'Introduction to GuideXpert Counselling & Core Principles',
     duration: '12 mins',
     durationMinutes: 12,
     type: 'Overview',
@@ -94,7 +94,7 @@ export const SESSIONS = [
   {
     id: 's3',
     dayId: 1,
-    title: 'Session - 2',
+    title: 'Mastering Counselling: Objection Handling & Communication Skills',
     duration: '10 mins',
     durationMinutes: 10,
     type: 'Compliance',
@@ -145,7 +145,7 @@ export const SESSIONS = [
   {
     id: 's4',
     dayId: 1,
-    title: 'Session - 3',
+    title: 'Lead Generation Methods & Strategies for Career Counsellors',
     duration: '15 mins',
     durationMinutes: 15,
     type: 'Compliance',
@@ -201,7 +201,7 @@ export const SESSIONS = [
   {
     id: 's5',
     dayId: 2,
-    title: 'Session - 4',
+    title: 'How to Position Yourself as a Trusted Career Counsellor',
     duration: '14 mins',
     durationMinutes: 14,
     type: 'Compliance',
@@ -252,7 +252,7 @@ export const SESSIONS = [
   {
     id: 's6',
     dayId: 2,
-    title: 'Session - 5',
+    title: 'GuideXpert Portal, Tools & Referral Process',
     duration: '20 mins',
     durationMinutes: 20,
     type: 'Training',

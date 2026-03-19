@@ -8,7 +8,7 @@ const TIMELINE_IDS = [...MODULE_ORDER, 'certificate'];
 const SESSION_IDS = ['intro', 's2', 's3', 's4', 's5', 's6'];
 const ASSESSMENT_IDS = ['a1', 'a2', 'a3', 'a4', 'a5'];
 const MODULE_LABELS = {
-  intro: 'Intro',
+  intro: 'Introduction to GuideXpert Counsellor training program',
   s2: 'Session 1', a1: 'Assessment 1',
   s3: 'Session 2', a2: 'Assessment 2',
   s4: 'Session 3', a3: 'Assessment 3',

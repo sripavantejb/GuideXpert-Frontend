@@ -216,13 +216,13 @@ export default function WebinarDashboard() {
               activeSession &&
               playbackPosition[activeSessionId] > 0 &&
               !completedSessions.includes(activeSessionId) && (
-                <div className="rounded-xl bg-primary-blue-50/80 border border-primary-blue-200/50 px-4 py-3 flex flex-wrap items-center justify-between gap-2">
-                  <span className="text-sm text-primary-navy font-medium">
+                <div className="rounded-xl bg-primary-blue-50/80 border border-primary-blue-200/50 px-4 py-3 flex flex-wrap items-center justify-between gap-2 min-w-0">
+                  <span className="text-sm text-primary-navy font-medium min-w-0 truncate">
                     Continue from {formatResumeTime(playbackPosition[activeSessionId])}
                   </span>
                   <a
                     href="#video"
-                    className="text-sm font-medium text-primary-navy hover:underline focus:outline-none focus-visible:ring-2 focus-visible:ring-primary-navy rounded min-h-[40px] inline-flex items-center"
+                    className="text-sm font-medium text-primary-navy hover:underline focus:outline-none focus-visible:ring-2 focus-visible:ring-primary-navy rounded min-h-[40px] inline-flex items-center shrink-0"
                   >
                     Jump to video
                   </a>
@@ -327,7 +327,7 @@ export default function WebinarDashboard() {
                   />
                   {activeSession && (
                     <>
-                      <div data-tour="stats-bar">
+                      <div data-tour="stats-bar" className="min-w-0 overflow-hidden">
                         <StatsBar
                           type={videoSessionType ?? activeSession.type}
                           duration={videoDurationFormatted ?? activeSession.duration}
