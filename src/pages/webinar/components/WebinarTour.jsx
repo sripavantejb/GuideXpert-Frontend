@@ -97,20 +97,16 @@ export default function WebinarTour({ onDone, storageKey = TOUR_SEEN_KEY }) {
     return () => cancelAnimationFrame(timer);
   }, [stepIndex, updateSpotlight]);
 
-  useEffect(() => {
-    const handleKeyDown = (e) => {
-      if (e.key === 'Escape') handleSkip();
-    };
-    window.addEventListener('keydown', handleKeyDown);
-    return () => window.removeEventListener('keydown', handleKeyDown);
-  }, [handleSkip]);
-
   const finishTour = useCallback(() => {
     try {
       localStorage.setItem(storageKey, 'true');
     } catch (_) {}
     onDone?.();
   }, [onDone, storageKey]);
+
+  const handleSkip = useCallback(() => {
+    finishTour();
+  }, [finishTour]);
 
   const handleNext = useCallback(() => {
     if (stepIndex === STEPS.length - 1) {
@@ -120,9 +116,13 @@ export default function WebinarTour({ onDone, storageKey = TOUR_SEEN_KEY }) {
     }
   }, [stepIndex, finishTour]);
 
-  const handleSkip = useCallback(() => {
-    finishTour();
-  }, [finishTour]);
+  useEffect(() => {
+    const handleKeyDown = (e) => {
+      if (e.key === 'Escape') handleSkip();
+    };
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [handleSkip]);
 
   const tooltipPlacement = spotlightRect
     ? spotlightRect.bottom + 16 + 220 <= window.innerHeight
