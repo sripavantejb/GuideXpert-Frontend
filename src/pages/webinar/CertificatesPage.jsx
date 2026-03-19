@@ -7,7 +7,7 @@ import {
   downloadCertificatePdf,
   getCertificatePngDataUrl,
 } from './utils/certificateWebinar';
-import { getOrCreateCertificateForUser, createCertificateRecord, migrateCertificateToShortId } from '../../utils/api';
+import { getOrCreateCertificateForUser, createCertificateRecord, migrateCertificateToShortId, recordCertificateDownload } from '../../utils/api';
 import { FiDownload, FiLock, FiAward, FiExternalLink, FiCheckCircle, FiUser, FiCalendar, FiHash } from 'react-icons/fi';
 
 function isLegacyCertificateId(id) {
@@ -22,7 +22,7 @@ function generateShortCertificateId() {
 }
 
 export default function CertificatesPage() {
-  const { user: authUser } = useWebinarAuth();
+  const { user: authUser, token: webinarToken } = useWebinarAuth();
   const displayName = authUser?.name || 'Trainee';
 
   // Unlock all for now (no completion gate)
@@ -210,6 +210,7 @@ export default function CertificatesPage() {
     setDownloading('png');
     try {
       await downloadCertificatePng(displayName, dateStr, previewCertificateId);
+      if (webinarToken) recordCertificateDownload(webinarToken).catch(() => {});
     } catch (e) {
       console.error(e);
       setActionError(e?.message || 'Unable to download certificate PNG. Please try again.');
@@ -223,6 +224,7 @@ export default function CertificatesPage() {
     setDownloading('pdf');
     try {
       await downloadCertificatePdf(displayName, dateStr, previewCertificateId);
+      if (webinarToken) recordCertificateDownload(webinarToken).catch(() => {});
     } catch (e) {
       console.error(e);
       setActionError(e?.message || 'Unable to download certificate PDF. Please try again.');

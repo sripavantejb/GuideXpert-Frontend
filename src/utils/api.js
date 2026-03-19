@@ -599,6 +599,13 @@ export const getWebinarProgress = async (token) => {
   });
 };
 
+export const recordCertificateDownload = async (token) => {
+  return apiRequest('/webinar-progress/certificate-downloaded', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
+  });
+};
+
 export const syncWebinarProgressBeacon = (token, payload) => {
   const url = `${API_BASE_URL}/webinar-progress/sync`;
   try {

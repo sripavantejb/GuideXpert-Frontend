@@ -9,7 +9,7 @@ import {
   downloadCertificatePng,
   downloadCertificatePdf,
 } from '../utils/certificateWebinar';
-import { getOrCreateCertificateForUser, createCertificateRecord, migrateCertificateToShortId } from '../../../utils/api';
+import { getOrCreateCertificateForUser, createCertificateRecord, migrateCertificateToShortId, recordCertificateDownload } from '../../../utils/api';
 
 function isLegacyCertificateId(id) {
   return !id || typeof id !== 'string' || !String(id).trim().toUpperCase().startsWith('GX');
@@ -32,7 +32,7 @@ export default function CertificateUnlockCard({
   completedSessions = 0,
   completedSessionIds = [],
 }) {
-  const { user: authUser } = useWebinarAuth();
+  const { user: authUser, token: webinarToken } = useWebinarAuth();
   const navigate = useNavigate();
   const displayName = authUser?.name || 'Trainee';
   const [downloading, setDownloading] = useState(null);
@@ -214,6 +214,7 @@ export default function CertificateUnlockCard({
     try {
       const certificateId = await getOrEnsureCertificateId();
       await downloadCertificatePng(displayName, dateStr, certificateId);
+      if (webinarToken) recordCertificateDownload(webinarToken).catch(() => {});
     } catch (e) {
       console.error(e);
       setActionError(e?.message || 'Unable to download certificate PNG. Please try again.');
@@ -228,6 +229,7 @@ export default function CertificateUnlockCard({
     try {
       const certificateId = await getOrEnsureCertificateId();
       await downloadCertificatePdf(displayName, dateStr, certificateId);
+      if (webinarToken) recordCertificateDownload(webinarToken).catch(() => {});
     } catch (e) {
       console.error(e);
       setActionError(e?.message || 'Unable to download certificate PDF. Please try again.');

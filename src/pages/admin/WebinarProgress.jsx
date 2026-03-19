@@ -4,6 +4,7 @@ import KpiCard from '../../components/Admin/KpiCard';
 import { getWebinarProgressList, getWebinarProgressStats, getWebinarProgressExport, getWebinarUserAssessments, adminUpdateWebinarProgress } from '../../utils/adminApi';
 
 const MODULE_ORDER = ['intro', 's2', 'a1', 's3', 'a2', 's4', 'a3', 's5', 'a4', 's6', 'a5'];
+const TIMELINE_IDS = [...MODULE_ORDER, 'certificate'];
 const SESSION_IDS = ['intro', 's2', 's3', 's4', 's5', 's6'];
 const ASSESSMENT_IDS = ['a1', 'a2', 'a3', 'a4', 'a5'];
 const MODULE_LABELS = {
@@ -13,6 +14,7 @@ const MODULE_LABELS = {
   s4: 'Session 3', a3: 'Assessment 3',
   s5: 'Session 4', a4: 'Assessment 4',
   s6: 'Session 5', a5: 'Assessment 5',
+  certificate: 'Certificate',
 };
 
 function timeAgo(dateStr) {
@@ -47,6 +49,10 @@ function StatusBadge({ status }) {
 }
 
 function ModuleIcon({ moduleId, status }) {
+  if (moduleId === 'certificate') {
+    const color = status === 'completed' ? 'text-green-500' : 'text-gray-300';
+    return <FiAward className={`w-3.5 h-3.5 ${color}`} />;
+  }
   const isAssessment = moduleId.startsWith('a');
   const color = status === 'completed' ? 'text-green-500' : status === 'in_progress' ? 'text-amber-500' : status === 'unlocked' ? 'text-amber-500' : 'text-gray-300';
   if (status === 'locked') return <FiLock className={`w-3.5 h-3.5 ${color}`} />;
@@ -462,23 +468,47 @@ function UserDetailPanel({ user, onUserUpdated }) {
         )}
       </div>
 
-      {/* Section C: Timeline */}
+      {/* Section C: Certificate (separate card below assessments) */}
+      <div>
+        <h4 className="text-sm font-semibold text-gray-700 mb-2">Certificate</h4>
+        <div className="rounded-xl border border-gray-200 bg-white p-4 flex items-center gap-4">
+          <div className={`w-12 h-12 rounded-full flex items-center justify-center shrink-0 ${localUser.certificateDownloadedAt ? 'bg-green-100' : 'bg-gray-100'}`}>
+            <FiAward className={`w-6 h-6 ${localUser.certificateDownloadedAt ? 'text-green-600' : 'text-gray-400'}`} />
+          </div>
+          <div className="min-w-0 flex-1">
+            <p className="text-sm font-medium text-gray-800">Certificate download</p>
+            <p className="text-xs text-gray-500 mt-0.5">
+              {localUser.certificateDownloadedAt
+                ? `Downloaded on ${new Date(localUser.certificateDownloadedAt).toLocaleDateString()}`
+                : 'Not downloaded yet'}
+            </p>
+          </div>
+          <span className={`shrink-0 inline-flex items-center px-2.5 py-1 rounded-full text-xs font-medium ${localUser.certificateDownloadedAt ? 'bg-green-100 text-green-700' : 'bg-gray-100 text-gray-600'}`}>
+            {localUser.certificateDownloadedAt ? 'Completed' : 'Pending'}
+          </span>
+        </div>
+      </div>
+
+      {/* Section D: Timeline */}
       <div>
         <h4 className="text-sm font-semibold text-gray-700 mb-2">Timeline</h4>
         <div className="flex items-center gap-0.5 overflow-x-auto pb-1">
-          {MODULE_ORDER.map((id, i) => {
-            const mod = modules[id] || modules.get?.(id) || {};
-            const bg = mod.status === 'completed' ? 'bg-green-500' : mod.status === 'in_progress' ? 'bg-amber-500' : mod.status === 'unlocked' ? 'bg-amber-400' : 'bg-gray-200';
+          {TIMELINE_IDS.map((id, i) => {
+            const isCert = id === 'certificate';
+            const completed = isCert ? !!localUser.certificateDownloadedAt : (modules[id] || modules.get?.(id) || {}).status === 'completed';
+            const mod = isCert ? {} : (modules[id] || modules.get?.(id) || {});
+            const status = isCert ? (completed ? 'completed' : 'locked') : (mod.status || 'locked');
+            const bg = completed ? 'bg-green-500' : status === 'in_progress' ? 'bg-amber-500' : status === 'unlocked' ? 'bg-amber-400' : 'bg-gray-200';
             return (
               <div key={id} className="flex items-center">
                 <div className="flex flex-col items-center">
-                  <div className={`w-7 h-7 rounded-full ${bg} flex items-center justify-center`} title={`${MODULE_LABELS[id]}: ${mod.status || 'locked'}`}>
-                    <ModuleIcon moduleId={id} status={mod.status || 'locked'} />
+                  <div className={`w-7 h-7 rounded-full ${bg} flex items-center justify-center`} title={isCert ? (completed ? 'Certificate downloaded' : 'Certificate not downloaded') : `${MODULE_LABELS[id]}: ${status}`}>
+                    <ModuleIcon moduleId={id} status={status} />
                   </div>
                   <span className="text-[9px] text-gray-500 mt-0.5 whitespace-nowrap max-w-[48px] truncate text-center">{MODULE_LABELS[id]}</span>
                 </div>
-                {i < MODULE_ORDER.length - 1 && (
-                  <div className={`w-4 h-0.5 ${mod.status === 'completed' ? 'bg-green-300' : 'bg-gray-200'} mx-0.5 mt-[-12px]`} />
+                {i < TIMELINE_IDS.length - 1 && (
+                  <div className={`w-4 h-0.5 ${completed ? 'bg-green-300' : 'bg-gray-200'} mx-0.5 mt-[-12px]`} />
                 )}
               </div>
             );
