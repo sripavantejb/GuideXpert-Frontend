@@ -1,4 +1,5 @@
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useRef } from 'react';
+import { FiLock } from 'react-icons/fi';
 import VideoPlayer from './components/VideoPlayer';
 import StatsBar from './components/StatsBar';
 import DescriptionCard from './components/DescriptionCard';
@@ -17,11 +18,14 @@ import {
   getSessionsByDay,
   getModulesByDay,
 } from './data/mockWebinarData';
+import { isModuleUnlocked, getSessionForAssessment } from './utils/unlockLogic';
 import WebinarAssessment1 from './components/WebinarAssessment1';
 import WebinarAssessment2 from './components/WebinarAssessment2';
 import WebinarAssessment3 from './components/WebinarAssessment3';
 import WebinarAssessment4 from './components/WebinarAssessment4';
 import WebinarAssessment5 from './components/WebinarAssessment5';
+
+const COMPLETION_THRESHOLD = 90;
 
 function formatResumeTime(seconds) {
   if (!Number.isFinite(seconds) || seconds < 0) return '0:00';
@@ -39,6 +43,8 @@ export default function WebinarDashboard() {
     setPlaybackPosition,
     bookmarkedSessions,
     setBookmarkedSessions,
+    maxWatched,
+    setMaxWatched,
     settings,
     activeSessionId,
     setActiveSessionId,
@@ -46,24 +52,34 @@ export default function WebinarDashboard() {
     setActiveDay,
     doubts,
     setDoubts,
+    sessionProgress,
+    setSessionProgress,
   } = useWebinar();
-
-  const [sessionProgress, setSessionProgress] = useState({});
   const [autoplayNextSession, setAutoplayNextSession] = useState(false);
   const [videoDurationFormatted, setVideoDurationFormatted] = useState(null);
   const [videoSessionType, setVideoSessionType] = useState(null);
+  const [unlockToast, setUnlockToast] = useState(null);
+  const justCompletedRef = useRef(new Set());
+
   const modulesForDay = getModulesByDay(activeDay);
   const sessionsForDay = getSessionsByDay(activeDay);
   const activeModule = activeSessionId ? getModuleById(activeSessionId) : null;
   const activeSession = activeSessionId ? getSessionById(activeSessionId) : null;
   const nextModule = activeSessionId ? getNextModule(activeSessionId) : null;
   const isVideoSession = activeModule && activeModule.type !== 'Assessment';
+  const isActiveModuleLocked = activeModule ? !isModuleUnlocked(activeModule.id, completedSessions) : false;
+
+  // Assessment content lock: sidebar-unlocked but paired session video not yet watched
+  const pairedSession = activeModule?.type === 'Assessment' ? getSessionForAssessment(activeModule.id) : null;
+  const isAssessmentContentLocked = pairedSession ? !completedSessions.includes(pairedSession.id) : false;
+
+  const isIntro = activeSessionId === 'intro';
   const currentModuleComplete = activeSessionId
     ? isVideoSession
-      ? completedSessions.includes(activeSessionId) || (sessionProgress[activeSessionId] ?? 0) >= 100
+      ? completedSessions.includes(activeSessionId) || (sessionProgress[activeSessionId] ?? 0) >= COMPLETION_THRESHOLD
       : completedSessions.includes(activeSessionId)
     : false;
-  const showNextButton = nextModule && currentModuleComplete;
+  const showNextButton = nextModule && currentModuleComplete && !isActiveModuleLocked;
 
   useEffect(() => {
     setVideoDurationFormatted(null);
@@ -80,7 +96,13 @@ export default function WebinarDashboard() {
 
   const handleTimeUpdate = useCallback((sessionId, currentTime) => {
     setPlaybackPosition((prev) => ({ ...prev, [sessionId]: currentTime }));
-  }, [setPlaybackPosition]);
+    if (Number.isFinite(currentTime) && currentTime > 0) {
+      setMaxWatched((prev) => {
+        const prevMax = prev[sessionId] || 0;
+        return currentTime > prevMax ? { ...prev, [sessionId]: currentTime } : prev;
+      });
+    }
+  }, [setPlaybackPosition, setMaxWatched]);
 
   const handleVideoEnded = useCallback(
     (sessionId) => {
@@ -101,8 +123,22 @@ export default function WebinarDashboard() {
   const handleProgressUpdate = useCallback(
     (sessionId, percent) => {
       setSessionProgress((prev) => ({ ...prev, [sessionId]: percent }));
-      if (percent >= 100) {
-        setCompletedSessions((prev) => (prev.includes(sessionId) ? prev : [...prev, sessionId]));
+      if (percent >= COMPLETION_THRESHOLD) {
+        setCompletedSessions((prev) => {
+          if (prev.includes(sessionId)) return prev;
+          if (!justCompletedRef.current.has(sessionId)) {
+            justCompletedRef.current.add(sessionId);
+            const next = getNextModule(sessionId);
+            const label = next ? next.title : 'Course';
+            setUnlockToast(`${label} Unlocked!`);
+            setTimeout(() => setUnlockToast(null), 3500);
+            import('canvas-confetti').then((mod) => {
+              const confetti = mod.default || mod;
+              confetti({ particleCount: 120, spread: 70, origin: { y: 0.65 } });
+            }).catch(() => {});
+          }
+          return [...prev, sessionId];
+        });
       }
     },
     [setCompletedSessions]
@@ -170,7 +206,27 @@ export default function WebinarDashboard() {
               data-tour="video-player"
               className="rounded-2xl bg-white p-0 sm:p-5 shadow-sm overflow-hidden border border-gray-200 transition-all duration-200 hover:shadow-md min-w-0 flex-shrink-0"
             >
-              {activeModule?.type === 'Assessment' ? (
+              {activeModule?.type === 'Assessment' && (isActiveModuleLocked || isAssessmentContentLocked) ? (
+                <div className="aspect-video bg-gradient-to-b from-slate-100 to-slate-50 flex flex-col items-center justify-center px-6 py-8 text-center rounded-xl">
+                  <div className="w-16 h-16 rounded-full bg-slate-200/80 flex items-center justify-center mb-5">
+                    <FiLock className="w-7 h-7 text-slate-400" />
+                  </div>
+                  <h2 className="text-lg font-bold text-slate-800 mb-1.5">Complete the session video to unlock this assessment</h2>
+                  <p className="text-sm text-slate-500 max-w-sm">Watch the full session video before attempting the assessment.</p>
+                  {pairedSession && (
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setActiveSessionId(pairedSession.id);
+                        setActiveDay(pairedSession.dayId);
+                      }}
+                      className="mt-5 px-5 py-2.5 rounded-xl bg-primary-navy text-white text-sm font-semibold hover:opacity-90 transition-opacity focus:outline-none focus-visible:ring-2 focus-visible:ring-primary-navy focus-visible:ring-offset-2"
+                    >
+                      Go to {pairedSession.title}
+                    </button>
+                  )}
+                </div>
+              ) : activeModule?.type === 'Assessment' ? (
                 activeModule.id === 'a1' ? (
                   <div className="flex flex-col min-h-[360px] p-5 sm:p-6">
                     <WebinarAssessment1
@@ -234,6 +290,8 @@ export default function WebinarDashboard() {
                     onMetadataReady={handleMetadataReady}
                     onNextSession={handleNextSession}
                     hasNextSession={hasNextSession}
+                    isLocked={isActiveModuleLocked}
+                    maxWatchedTime={activeSessionId ? (maxWatched[activeSessionId] || 0) : 0}
                     isBookmarked={activeSessionId ? bookmarkedSessions.includes(activeSessionId) : false}
                     onToggleBookmark={() => activeSessionId && toggleBookmark(activeSessionId)}
                     autoplayOnLoad={autoplayNextSession}
@@ -257,7 +315,40 @@ export default function WebinarDashboard() {
                       </div>
                     </>
                   )}
-              {showNextButton && (
+              {showNextButton && isIntro && (
+                <div className="border-t border-gray-100 px-4 sm:px-5 py-4 flex items-center justify-end gap-3">
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setPlaybackPosition((prev) => ({ ...prev, intro: 0 }));
+                      setMaxWatched((prev) => ({ ...prev, intro: 0 }));
+                      setCompletedSessions((prev) => prev.filter((id) => id !== 'intro'));
+                      setSessionProgress((prev) => ({ ...prev, intro: 0 }));
+                      justCompletedRef.current.delete('intro');
+                    }}
+                    className="inline-flex items-center gap-2 px-5 py-2.5 rounded-lg font-medium text-primary-navy bg-white border border-primary-navy/30 hover:bg-primary-blue-50 focus:outline-none focus-visible:ring-2 focus-visible:ring-primary-navy focus-visible:ring-offset-2 transition-colors"
+                  >
+                    <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden>
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
+                    </svg>
+                    Watch Again
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setActiveSessionId(nextModule.id);
+                      setActiveDay(nextModule.dayId);
+                    }}
+                    className="inline-flex items-center gap-2 px-5 py-2.5 rounded-lg font-medium text-white bg-primary-navy hover:bg-primary-navy/90 focus:outline-none focus-visible:ring-2 focus-visible:ring-primary-navy focus-visible:ring-offset-2 transition-colors"
+                  >
+                    Start Session
+                    <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden>
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+                    </svg>
+                  </button>
+                </div>
+              )}
+              {showNextButton && !isIntro && (
                 <div className="border-t border-gray-100 px-4 sm:px-5 py-4 flex justify-end">
                   <button
                     type="button"
@@ -318,6 +409,16 @@ export default function WebinarDashboard() {
       {overallPercent < 100 && (
         <div className="mx-4 sm:mx-5 mb-5 px-4 py-2.5 rounded-xl text-sm font-medium text-center bg-primary-blue-50/80 border border-primary-blue-200/50 text-primary-navy">
           Complete the intro video to unlock your certificate.
+        </div>
+      )}
+
+      {unlockToast && (
+        <div
+          className="fixed bottom-6 left-1/2 -translate-x-1/2 z-50 px-5 py-3 rounded-xl bg-primary-navy text-white text-sm font-semibold shadow-lg flex items-center gap-2 animate-[slideUp_0.35s_ease-out]"
+          style={{ animation: 'slideUp 0.35s ease-out' }}
+        >
+          <span className="text-lg" aria-hidden>&#127881;</span>
+          {unlockToast}
         </div>
       )}
     </>

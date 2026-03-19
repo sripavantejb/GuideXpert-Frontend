@@ -1,16 +1,44 @@
 import { ALL_MODULES } from '../data/mockWebinarData';
 
 /**
- * Returns true if every module preceding `moduleId` in ALL_MODULES
- * is present in `completedSessions`. The first module is always unlocked.
+ * A session and its paired assessment unlock at the same time.
+ * For an assessment, the unlock condition equals its paired session's condition
+ * (all modules before the paired session must be completed).
+ * The first module is always unlocked.
  */
 export function isModuleUnlocked(moduleId, completedSessions) {
   const idx = ALL_MODULES.findIndex((m) => m.id === moduleId);
   if (idx <= 0) return true;
+
+  const module = ALL_MODULES[idx];
+
+  // Assessment unlocks together with its paired session (the session right before it)
+  if (module.type === 'Assessment' && idx >= 2) {
+    const pairedSessionIdx = idx - 1;
+    for (let i = 0; i < pairedSessionIdx; i++) {
+      if (!completedSessions.includes(ALL_MODULES[i].id)) return false;
+    }
+    return true;
+  }
+
+  // Session: all previous modules must be completed
   for (let i = 0; i < idx; i++) {
     if (!completedSessions.includes(ALL_MODULES[i].id)) return false;
   }
   return true;
+}
+
+/**
+ * For an assessment, returns the paired session (the session immediately before
+ * it in ALL_MODULES). Returns null for non-assessments or the first module.
+ */
+export function getSessionForAssessment(moduleId) {
+  const idx = ALL_MODULES.findIndex((m) => m.id === moduleId);
+  if (idx < 1) return null;
+  const module = ALL_MODULES[idx];
+  if (module.type !== 'Assessment') return null;
+  const prev = ALL_MODULES[idx - 1];
+  return prev && prev.type !== 'Assessment' ? prev : null;
 }
 
 /**

@@ -16,6 +16,7 @@ const navItems = [
   { to: '/admin/training-feedback', label: 'Activation Form', icon: FiMessageSquare, sectionKey: 'training-feedback' },
   { to: '/admin/influencer-tracking', label: 'Influencer / UTM Tracking', icon: FiLink, sectionKey: 'influencer-tracking' },
   { to: '/admin/assessment-results', label: 'Custom Reports', icon: FiFileText, sectionKey: 'assessment-results' },
+  { to: '/admin/webinar-progress', label: 'Webinar Progress', icon: FiVideo, sectionKey: 'webinar-progress' },
   { to: '/admin/settings', label: 'Settings', icon: FiSettings, sectionKey: 'settings' },
 ];
 

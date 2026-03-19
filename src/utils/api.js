@@ -583,3 +583,34 @@ export const getPredictedCollegesPublic = async (params = {}) => {
     body: JSON.stringify(body),
   });
 };
+
+// ——— Webinar Progress ———
+
+export const syncWebinarProgress = async (token, payload) => {
+  return apiRequest('/webinar-progress/sync', {
+    method: 'POST',
+    headers: { Authorization: `Bearer ${token}` },
+    body: JSON.stringify(payload),
+  });
+};
+
+export const getWebinarProgress = async (token) => {
+  return apiRequest('/webinar-progress', {
+    method: 'GET',
+    headers: { Authorization: `Bearer ${token}` },
+  });
+};
+
+export const syncWebinarProgressBeacon = (token, payload) => {
+  const url = `${API_BASE_URL}/webinar-progress/sync`;
+  try {
+    fetch(url, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
+      body: JSON.stringify(payload),
+      keepalive: true,
+    }).catch(() => {});
+  } catch {
+    // best-effort on page unload
+  }
+};
