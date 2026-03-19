@@ -41,16 +41,14 @@ export default function Sidebar({
   );
 
   const completedVideoCountResolved = completedVideoCount ?? completedSessions.filter((id) => SESSIONS.some((s) => s.id === id)).length;
-  // Unlock certificate for now (no completion gate)
-  const certificateUnlocked = true;
+  const { completed: progressCompleted, total: progressTotal, percent: progressPercent } = getUnlockProgress(completedSessions);
+  const certificateUnlocked = progressTotal > 0 && progressCompleted >= progressTotal;
 
   const handleCertificateClick = useCallback(() => {
     if (!certificateUnlocked) return;
     setSidebarOpen(false);
     navigate('/webinar/certificates');
   }, [certificateUnlocked, setSidebarOpen, navigate]);
-
-  const { completed: progressCompleted, total: progressTotal, percent: progressPercent } = getUnlockProgress(completedSessions);
 
   return (
     <>
