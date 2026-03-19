@@ -1,4 +1,5 @@
 import { useState, useEffect, useCallback, useRef } from 'react';
+import confetti from 'canvas-confetti';
 import { FiLock } from 'react-icons/fi';
 import VideoPlayer from './components/VideoPlayer';
 import StatsBar from './components/StatsBar';
@@ -161,10 +162,11 @@ export default function WebinarDashboard() {
             const label = next ? next.title : 'Course';
             setUnlockToast(`${label} Unlocked!`);
             setTimeout(() => setUnlockToast(null), 3500);
-            import('canvas-confetti').then((mod) => {
-              const confetti = mod.default || mod;
+            try {
               confetti({ particleCount: 120, spread: 70, origin: { y: 0.65 } });
-            }).catch(() => {});
+            } catch {
+              // confetti unavailable
+            }
           }
           return [...prev, sessionId];
         });
