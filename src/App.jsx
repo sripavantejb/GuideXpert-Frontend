@@ -65,6 +65,12 @@ const SettingsPage = lazy(() => import('./pages/webinar/SettingsPage'));
 const CertificatesPage = lazy(() => import('./pages/webinar/CertificatesPage'));
 const CertificateViewPage = lazy(() => import('./pages/CertificateViewPage'));
 import CollegePredictorPage from './pages/CollegePredictorPage';
+import RankPredictorHome from './pages/RankPredictorHome';
+import ExamPredictor from './pages/ExamPredictor';
+import BlogDetails from './pages/BlogDetails';
+import BlogsPage from './pages/BlogsPage';
+import LegacyBlogRedirect from './pages/LegacyBlogRedirect';
+import AdminBlog from './pages/AdminBlog';
 
 function ProtectedAdmin({ children }) {
   const { isAuthenticated } = useAuth();
@@ -106,6 +112,12 @@ function App() {
           <Route path="/interposter" element={<InterPosterPage />} />
           <Route path="/certificate/:id" element={<Suspense fallback={<div className="min-h-screen flex items-center justify-center bg-gray-50"><div className="animate-pulse text-gray-500">Loading...</div></div>}><CertificateViewPage /></Suspense>} />
           <Route path="/collegepredictor" element={<CollegePredictorPage />} />
+          <Route path="/rank-predictor" element={<RankPredictorHome />} />
+          <Route path="/rank-predictor/:examId" element={<ExamPredictor />} />
+          <Route path="/blogs" element={<BlogsPage />} />
+          <Route path="/blogs/:id" element={<BlogDetails />} />
+          <Route path="/blog" element={<Navigate to="/blogs" replace />} />
+          <Route path="/blog/:id" element={<LegacyBlogRedirect />} />
           <Route path="/webinar/login" element={<WebinarLogin />} />
           <Route path="/webinar" element={<ProtectedWebinar><Suspense fallback={<div className="min-h-screen flex items-center justify-center bg-gray-50"><div className="animate-pulse text-gray-500">Loading...</div></div>}><WebinarLayout /></Suspense></ProtectedWebinar>}>
             <Route index element={<Suspense fallback={<div className="p-4 animate-pulse text-gray-500">Loading...</div>}><WebinarDashboard /></Suspense>} />
@@ -150,6 +162,7 @@ function App() {
             <Route path="assessment-3-results" element={<Navigate to="/admin/assessment-results?type=3" replace />} />
             <Route path="announcements" element={<Announcements />} />
             <Route path="webinar-progress" element={<WebinarProgressAdmin />} />
+            <Route path="blogs" element={<AdminBlog />} />
           </Route>
 
           {/* Counsellor Portal */}

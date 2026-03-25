@@ -528,3 +528,32 @@ export async function getAdminLeadsExport(params = {}, token = getStoredToken())
   URL.revokeObjectURL(a.href);
   return { success: true };
 }
+
+/** POST /admin/blogs — create blog (admin). */
+export const adminCreateBlog = async (payload, token = getStoredToken()) => {
+  return adminRequest(
+    '/blogs',
+    {
+      method: 'POST',
+      body: JSON.stringify(payload),
+    },
+    token
+  );
+};
+
+/** PUT /admin/blogs/:id — update blog (admin). */
+export const adminUpdateBlog = async (id, payload, token = getStoredToken()) => {
+  return adminRequest(
+    `/blogs/${encodeURIComponent(id)}`,
+    {
+      method: 'PUT',
+      body: JSON.stringify(payload),
+    },
+    token
+  );
+};
+
+/** DELETE /admin/blogs/:id — delete blog (admin). */
+export const adminDeleteBlog = async (id, token = getStoredToken()) => {
+  return adminRequest(`/blogs/${encodeURIComponent(id)}`, { method: 'DELETE' }, token);
+};

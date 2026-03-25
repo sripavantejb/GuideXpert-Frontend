@@ -1,4 +1,5 @@
 import { useState, useCallback } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { FiTarget, FiBarChart2, FiZap, FiClock, FiArrowRight, FiChevronDown, FiChevronUp, FiActivity, FiCrosshair, FiStar } from 'react-icons/fi';
 import { getPredictedColleges } from '../../utils/counsellorApi';
 import StudentAssessmentsPanel from '../../components/Counsellor/StudentAssessmentsPanel';
@@ -438,6 +439,7 @@ const COMING_SOON_IDS = ['rank', 'exam', 'deadline', 'future-fit'];
 
 function Tools() {
   const [activeTool, setActiveTool] = useState(null);
+  const navigate = useNavigate();
 
   return (
     <div className="w-full">
@@ -457,7 +459,7 @@ function Tools() {
             title={t.title}
             desc={t.desc}
             icon={t.icon}
-            onLaunch={() => setActiveTool(t.id)}
+            onLaunch={() => (t.id === 'rank' ? navigate('/rank-predictor') : setActiveTool(t.id))}
           />
         ))}
       </div>
