@@ -7,7 +7,11 @@ const productionOrigin = 'https://guide-xpert-backend.vercel.app';
 
 function stripApiSuffix(url) {
   if (!url) return '';
-  return url.replace(/\/api\/?$/, '');
+  // Normalize env values like:
+  // - https://host/api
+  // - https://host/api/
+  // - https://host/api/api
+  return url.replace(/(?:\/api)+\/?$/, '');
 }
 
 // In dev/prod, call /api/blogs to avoid colliding with frontend /blogs route.
