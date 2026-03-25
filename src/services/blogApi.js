@@ -17,6 +17,19 @@ function stripApiSuffix(url) {
 // In dev/prod, call /api/blogs to avoid colliding with frontend /blogs route.
 const API_BASE_URL = isDev ? '' : (stripApiSuffix(envUrl) || productionOrigin);
 
+function buildBlogUrl(pathname = '') {
+  const cleanedPath = String(pathname || '').replace(/^\/+/, '');
+  if (isDev) {
+    return cleanedPath ? `/api/blogs/${cleanedPath}` : '/api/blogs';
+  }
+  const normalizedBase = API_BASE_URL.replace(/\/+$/, '');
+  const joined = cleanedPath
+    ? `${normalizedBase}/api/blogs/${cleanedPath}`
+    : `${normalizedBase}/api/blogs`;
+  // Last-mile safety for misconfigured envs producing /api/api/blogs.
+  return joined.replace(/\/api\/api\/blogs/g, '/api/blogs');
+}
+
 /** Normalize API document for UI (id + image alias). */
 export function normalizeBlog(doc) {
   if (!doc) return null;
@@ -42,7 +55,7 @@ export async function fetchBlogs(opts = {}) {
   const { limit } = opts;
   const q = limit != null && limit > 0 ? `?limit=${encodeURIComponent(String(limit))}` : '';
   try {
-    const res = await fetch(`${API_BASE_URL}/api/blogs${q}`);
+    const res = await fetch(`${buildBlogUrl()}${q}`);
     const data = await res.json().catch(() => ({}));
     if (!res.ok) {
       return {
@@ -66,7 +79,7 @@ export async function fetchBlogs(opts = {}) {
 export async function fetchBlogById(id) {
   if (!id) return { success: false, message: 'Missing id' };
   try {
-    const res = await fetch(`${API_BASE_URL}/api/blogs/${encodeURIComponent(id)}`);
+    const res = await fetch(buildBlogUrl(encodeURIComponent(id)));
     const data = await res.json().catch(() => ({}));
     if (!res.ok) {
       return {
@@ -99,7 +112,7 @@ function authHeaders(token) {
 
 export async function createBlog(payload, token) {
   try {
-    const res = await fetch(`${API_BASE_URL}/api/blogs`, {
+    const res = await fetch(buildBlogUrl(), {
       method: 'POST',
       headers: authHeaders(token),
       body: JSON.stringify(payload || {}),
@@ -117,7 +130,7 @@ export async function createBlog(payload, token) {
 export async function updateBlog(id, payload, token) {
   if (!id) return { success: false, message: 'Missing id', status: 0 };
   try {
-    const res = await fetch(`${API_BASE_URL}/api/blogs/${encodeURIComponent(id)}`, {
+    const res = await fetch(buildBlogUrl(encodeURIComponent(id)), {
       method: 'PUT',
       headers: authHeaders(token),
       body: JSON.stringify(payload || {}),
@@ -135,7 +148,7 @@ export async function updateBlog(id, payload, token) {
 export async function deleteBlog(id, token) {
   if (!id) return { success: false, message: 'Missing id', status: 0 };
   try {
-    const res = await fetch(`${API_BASE_URL}/api/blogs/${encodeURIComponent(id)}`, {
+    const res = await fetch(buildBlogUrl(encodeURIComponent(id)), {
       method: 'DELETE',
       headers: authHeaders(token),
     });
