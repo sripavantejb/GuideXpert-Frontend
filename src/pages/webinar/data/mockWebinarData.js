@@ -51,9 +51,9 @@ export const SESSIONS = [
     duration: '12 mins',
     durationMinutes: 12,
     type: 'Overview',
-    videoUrl: 'https://www.youtube.com/embed/WQ2YttHj2EE',
+    videoUrl: 'https://www.youtube.com/watch?v=LZSzEcRnl3Y',
     isYoutube: true,
-    thumbnail: 'https://img.youtube.com/vi/WQ2YttHj2EE/hqdefault.jpg',
+    thumbnail: 'https://img.youtube.com/vi/LZSzEcRnl3Y/hqdefault.jpg',
     description: {
       startPoint: 'This session builds the foundation of ethical, student-centric counselling at GuideXpert.',
       keyTopics: ['GuideXpert mission', 'Counselling principles', 'Counselling flow', 'Information vs guidance vs counselling', "Do's and don'ts", 'Handling common questions'],
