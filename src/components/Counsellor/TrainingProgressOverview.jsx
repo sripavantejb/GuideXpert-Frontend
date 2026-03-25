@@ -1,20 +1,72 @@
 import { useNavigate } from 'react-router-dom';
 import { FiCheck, FiLock, FiPlay } from 'react-icons/fi';
 import { getModuleState } from '../../contexts/CounsellorTrainingContext';
+import { isModuleUnlocked, getUnlockProgress } from '../../pages/webinar/utils/unlockLogic';
 
 const WEBINAR_PLATFORM_URL = 'https://gxrewards.guidexpert.co.in/guide-xpert';
 
-export default function TrainingProgressOverview({ modules, completedModules, totalModules }) {
+/**
+ * @typedef {'backend' | 'fallback'} ProgressSource
+ */
+
+/**
+ * @param {object} props
+ * @param {ProgressSource} props.source
+ * @param {boolean} [props.loading]
+ * @param {Array<{ id: string|number, label: string, type?: string }>} props.modules
+ * @param {(string|number)[]} props.completedModules
+ * @param {number} props.totalModules
+ * @param {number | null} [props.completionPercentOverride] — from backend overallPercent when present
+ */
+export default function TrainingProgressOverview({
+  source,
+  loading = false,
+  modules,
+  completedModules,
+  totalModules,
+  completionPercentOverride = null,
+}) {
   const navigate = useNavigate();
-  const completedCount = completedModules.length;
-  const completionPercent = totalModules ? Math.round((completedCount / totalModules) * 100) : 0;
+
+  const completedIdsForWebinar =
+    source === 'backend'
+      ? completedModules.map((id) => String(id))
+      : completedModules.map((id) => String(id));
+
+  const getWebinarChipState = (modId) => {
+    const id = String(modId);
+    if (completedIdsForWebinar.includes(id)) return 'completed';
+    if (isModuleUnlocked(id, completedIdsForWebinar)) return 'unlocked';
+    return 'locked';
+  };
+
+  let completedCount;
+  let completionPercent;
+
+  if (source === 'backend') {
+    const { completed, percent } = getUnlockProgress(completedIdsForWebinar);
+    completedCount = completed;
+    if (completionPercentOverride != null && !Number.isNaN(completionPercentOverride)) {
+      completionPercent = Math.min(100, Math.max(0, Math.round(completionPercentOverride)));
+    } else {
+      completionPercent = percent;
+    }
+  } else {
+    completedCount = completedModules.length;
+    completionPercent = totalModules ? Math.round((completedCount / totalModules) * 100) : 0;
+  }
+
   const circumference = 2 * Math.PI * 45;
   const strokeDashoffset = circumference - (completionPercent / 100) * circumference;
 
-  const goToModule = (moduleId) => {
+  const goToFallbackModule = (moduleId) => {
     navigate(`/counsellor/training?module=${moduleId}`, { replace: true });
     const main = document.getElementById('main-content');
     if (main) main.scrollIntoView({ behavior: 'smooth' });
+  };
+
+  const goToWebinarPortal = () => {
+    navigate('/webinar');
   };
 
   return (
@@ -35,10 +87,28 @@ export default function TrainingProgressOverview({ modules, completedModules, to
         </a>
       </div>
 
-      <h2 className="text-sm font-bold text-gray-800 uppercase tracking-wider mb-4">
-        Your training progress
-      </h2>
-      <div className="flex flex-col sm:flex-row items-center gap-6 min-w-0 mb-6">
+      <div className="flex items-center justify-between gap-2 mb-4 flex-wrap">
+        <h2 className="text-sm font-bold text-gray-800 uppercase tracking-wider">
+          Your training progress
+        </h2>
+        {source === 'backend' && !loading && (
+          <span className="text-xs font-medium text-primary-navy bg-primary-navy/10 px-2 py-0.5 rounded-full">
+            Synced from webinar
+          </span>
+        )}
+        {source === 'fallback' && (
+          <span className="text-xs font-medium text-gray-500 bg-gray-100 px-2 py-0.5 rounded-full">
+            Local progress
+          </span>
+        )}
+      </div>
+
+      <div className="flex flex-col sm:flex-row items-center gap-6 min-w-0 mb-6 relative">
+        {loading && (
+          <div className="absolute inset-0 z-10 flex items-center justify-center rounded-lg bg-white/70">
+            <p className="text-sm text-gray-600 font-medium">Loading webinar progress…</p>
+          </div>
+        )}
         <div className="relative w-32 h-32 shrink-0">
           <svg className="w-full h-full -rotate-90" viewBox="0 0 100 100" aria-hidden>
             <circle cx="50" cy="50" r="45" fill="none" stroke="#e5e7eb" strokeWidth="8" />
@@ -73,18 +143,43 @@ export default function TrainingProgressOverview({ modules, completedModules, to
       <h3 className="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-3">Modules</h3>
       <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-2">
         {modules.map((mod) => {
-          const state = getModuleState(mod.id, completedModules);
-          const certificateLockedNavigable = state === 'locked' && mod.type === 'certificate';
-          const lockedBlocked = state === 'locked' && !certificateLockedNavigable;
+          let state;
+          let lockedBlocked;
+          let certificateLockedNavigable = false;
+
+          if (source === 'backend') {
+            state = getWebinarChipState(mod.id);
+            lockedBlocked = state === 'locked';
+          } else {
+            state = getModuleState(mod.id, completedModules);
+            certificateLockedNavigable = state === 'locked' && mod.type === 'certificate';
+            lockedBlocked = state === 'locked' && !certificateLockedNavigable;
+          }
+
+          const handleClick = () => {
+            if (lockedBlocked || loading) return;
+            if (source === 'backend') {
+              goToWebinarPortal();
+            } else {
+              goToFallbackModule(mod.id);
+            }
+          };
+
           return (
             <button
-              key={mod.id}
+              key={String(mod.id)}
               type="button"
-              onClick={() => !lockedBlocked && goToModule(mod.id)}
-              disabled={lockedBlocked}
-              title={lockedBlocked ? 'Complete the previous module first' : `Open ${mod.label}`}
-              className={`flex items-center gap-2 min-w-0 rounded-lg border px-2.5 py-2 text-left transition-colors w-full ${
+              onClick={handleClick}
+              disabled={lockedBlocked || loading}
+              title={
                 lockedBlocked
+                  ? 'Complete the previous module first'
+                  : source === 'backend'
+                    ? `Continue in ${mod.label} — opens webinar portal`
+                    : `Open ${mod.label}`
+              }
+              className={`flex items-center gap-2 min-w-0 rounded-lg border px-2.5 py-2 text-left transition-colors w-full ${
+                lockedBlocked || loading
                   ? 'border-gray-100 bg-gray-50/80 opacity-75 cursor-not-allowed'
                   : 'border-gray-100 bg-gray-50/80 hover:bg-primary-navy/5 hover:border-primary-navy/20 cursor-pointer'
               }`}

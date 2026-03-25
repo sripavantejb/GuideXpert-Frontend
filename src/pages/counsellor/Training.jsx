@@ -1,4 +1,4 @@
-import { useEffect } from 'react';
+import { useEffect, useState } from 'react';
 import { Link, useSearchParams } from 'react-router-dom';
 import { FiAward, FiExternalLink, FiLock } from 'react-icons/fi';
 import {
@@ -7,17 +7,99 @@ import {
   getModuleState,
 } from '../../contexts/CounsellorTrainingContext';
 import { useCounsellorProfile } from '../../contexts/CounsellorProfileContext';
+import { useWebinarAuth } from '../../contexts/WebinarAuthContext';
+import { ALL_MODULES } from '../../pages/webinar/data/mockWebinarData';
+import { getWebinarProgress } from '../../utils/api';
 import TrainingProgressOverview from '../../components/Counsellor/TrainingProgressOverview';
 import CertificatePreview from '../../components/Counsellor/CertificatePreview';
 
 const CERTIFICATE_MODULE_ID = 14;
 const PREREQ_MODULE_ID = 13;
 
+const WEBINAR_DISPLAY_MODULES = ALL_MODULES.map((m) => ({
+  id: m.id,
+  label: m.title,
+  type: m.type === 'Assessment' ? 'assessment' : 'video',
+}));
+
 export default function CounsellorTraining() {
   const [searchParams] = useSearchParams();
+  const { token: webinarToken } = useWebinarAuth();
   const { currentModule, setCurrentModule, markCompleted, completedModules, totalModules } =
     useCounsellorTraining();
   const { displayName } = useCounsellorProfile();
+
+  const [webinarProgressState, setWebinarProgressState] = useState(() => ({
+    status: webinarToken ? 'loading' : 'ready',
+    source: 'fallback',
+    completedModules: [],
+    overallPercent: /** @type {number | null} */ (null),
+  }));
+
+  useEffect(() => {
+    if (!webinarToken) {
+      setWebinarProgressState({
+        status: 'ready',
+        source: 'fallback',
+        completedModules: [],
+        overallPercent: null,
+      });
+      return;
+    }
+
+    let cancelled = false;
+    setWebinarProgressState((prev) => ({ ...prev, status: 'loading' }));
+
+    (async () => {
+      try {
+        const res = await getWebinarProgress(webinarToken);
+        if (cancelled) return;
+        if (!res.success) {
+          setWebinarProgressState({
+            status: 'ready',
+            source: 'fallback',
+            completedModules: [],
+            overallPercent: null,
+          });
+          return;
+        }
+        const body = res.data;
+        const doc = body?.data !== undefined ? body.data : body;
+        const done = Array.isArray(doc?.completedModules)
+          ? doc.completedModules.map((x) => String(x))
+          : [];
+        const overallPercent =
+          typeof doc?.overallPercent === 'number' && !Number.isNaN(doc.overallPercent)
+            ? doc.overallPercent
+            : null;
+        setWebinarProgressState({
+          status: 'ready',
+          source: 'backend',
+          completedModules: done,
+          overallPercent,
+        });
+      } catch (e) {
+        console.warn('[CounsellorTraining] getWebinarProgress failed', e);
+        if (!cancelled) {
+          setWebinarProgressState({
+            status: 'ready',
+            source: 'fallback',
+            completedModules: [],
+            overallPercent: null,
+          });
+        }
+      }
+    })();
+
+    return () => {
+      cancelled = true;
+    };
+  }, [webinarToken]);
+
+  const useBackendUi =
+    !!webinarToken &&
+    (webinarProgressState.status === 'loading' || webinarProgressState.source === 'backend');
+  const overviewLoading = !!webinarToken && webinarProgressState.status === 'loading';
 
   const moduleIdParam = searchParams.get('module');
   useEffect(() => {
@@ -40,9 +122,14 @@ export default function CounsellorTraining() {
   return (
     <div id="main-content" className="flex flex-col min-h-0 max-w-5xl mx-auto w-full">
       <TrainingProgressOverview
-        modules={TRAINING_MODULES}
-        completedModules={completedModules}
-        totalModules={totalModules}
+        source={useBackendUi ? 'backend' : 'fallback'}
+        loading={overviewLoading}
+        modules={useBackendUi ? WEBINAR_DISPLAY_MODULES : TRAINING_MODULES}
+        completedModules={
+          useBackendUi ? webinarProgressState.completedModules : completedModules
+        }
+        totalModules={useBackendUi ? ALL_MODULES.length : totalModules}
+        completionPercentOverride={useBackendUi ? webinarProgressState.overallPercent : null}
       />
 
       {module.type === 'certificate' ? (
