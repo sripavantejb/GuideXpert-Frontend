@@ -53,9 +53,21 @@ async function apiRequest(endpoint, options = {}) {
     }
 
     if (!response.ok) {
+      const fromBody =
+        data && typeof data === 'object'
+          ? data.message || data.error || (typeof data.detail === 'string' ? data.detail : null)
+          : null;
+      const byStatus =
+        response.status === 502 || response.status === 503 || response.status === 504
+          ? import.meta.env.DEV
+            ? 'Service unavailable. Start the backend on port 5000, or set VITE_PROXY_TARGET=https://guide-xpert-backend.vercel.app (and use /api via the Vite proxy).'
+            : 'Service temporarily unavailable. Please try again in a moment.'
+          : response.status === 404
+            ? 'API endpoint not found. Check VITE_API_URL or the /api proxy.'
+            : null;
       return {
         success: false,
-        message: data.message || 'An error occurred',
+        message: fromBody || byStatus || `Request failed (${response.status})`,
         status: response.status,
         data: data,
       };

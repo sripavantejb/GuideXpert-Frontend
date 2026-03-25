@@ -14,8 +14,11 @@ export default function CollegeReferralDetail() {
 
   const college = COLLEGES.find((c) => c.slug === collegeSlug);
   const effectiveSlug = (counsellorSlug && String(counsellorSlug).trim()) || 'me';
-  const referralLink = college ? `${REF_BASE}/${college.slug}/${effectiveSlug}` : '';
+  const referralLink = college
+    ? college.externalUrl || `${REF_BASE}/${college.slug}/${effectiveSlug}`
+    : '';
   const hasSlug = !!(counsellorSlug && String(counsellorSlug).trim());
+  const usesExternalUrl = !!(college && college.externalUrl);
 
   const handleCopy = () => {
     if (referralLink) {
@@ -63,7 +66,7 @@ export default function CollegeReferralDetail() {
         <p className="text-sm text-gray-500 mt-0.5">{college.location}</p>
       </div>
 
-      {!hasSlug && (
+      {!usesExternalUrl && !hasSlug && (
         <div className="mb-4 p-3 rounded-lg bg-amber-50 border border-amber-200 text-amber-800 text-sm">
           Set your referral slug in Settings to get your personal link. Until then, a default link is shown.
         </div>

@@ -16,7 +16,6 @@ import {
   FiUser,
   FiSearch,
   FiLink,
-  FiAward,
   FiRadio,
 } from 'react-icons/fi';
 import { HiMenu as HiMenuIcon, HiX as HiXIcon } from 'react-icons/hi';
@@ -38,7 +37,6 @@ const secondaryNav = [
   { to: '/counsellor/announcements-feed', label: 'Announcements Feed', icon: FiRadio },
   { to: '/counsellor/tools', label: 'Tools', icon: FiTool },
   { to: '/counsellor/marketing', label: 'Marketing', icon: FiTrendingUp },
-  { to: '/counsellor/certificate', label: 'Poster', icon: FiAward },
   { to: '/counsellor/college-referrals', label: 'College Referrals', icon: FiLink },
 ];
 const pageMeta = {
