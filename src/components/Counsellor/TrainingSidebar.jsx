@@ -1,63 +1,30 @@
-import { useNavigate, useLocation } from 'react-router-dom';
-import { useCounsellorTraining, getModuleState } from '../../contexts/CounsellorTrainingContext';
-import TrainingProgressBar from './TrainingProgressBar';
-import TrainingModuleItem from './TrainingModuleItem';
+import { NavLink } from 'react-router-dom';
+import { FiBookOpen } from 'react-icons/fi';
 
+/**
+ * Single sidebar entry for training. Full module list, progress, certificate, and
+ * webinar link live on /counsellor/training.
+ */
 export default function TrainingSidebar({ onCloseSidebar }) {
-  const navigate = useNavigate();
-  const location = useLocation();
-  const { modules, totalModules, completedModules, currentModule, setCurrentModule } = useCounsellorTraining();
-
-  const handleModuleClick = (moduleId) => {
-    setCurrentModule(moduleId);
-    const isTrainingPage = location.pathname === '/counsellor/training';
-    if (isTrainingPage) {
-      navigate(`/counsellor/training?module=${moduleId}`, { replace: true });
-    } else {
-      navigate(`/counsellor/training?module=${moduleId}`);
-    }
-    const main = document.getElementById('main-content');
-    if (main) main.scrollIntoView({ behavior: 'smooth' });
-  };
-
   return (
-    <div className="flex flex-col min-h-0 flex-1 max-h-[280px]">
-      <p className="px-3 mb-2 text-[0.6875rem] font-semibold text-slate-500 uppercase tracking-wider shrink-0">
+    <div>
+      <p className="px-3 mb-2 text-[0.6875rem] font-semibold text-slate-500 uppercase tracking-wider">
         Counsellor Training
       </p>
-      <div className="flex gap-2 min-h-0 flex-1 overflow-hidden">
-        <div className="flex flex-col self-stretch shrink-0 w-6">
-          <TrainingProgressBar
-            modules={modules}
-            completedModules={completedModules}
-            currentModule={currentModule}
-          />
-        </div>
-        <div className="flex-1 min-w-0 overflow-y-auto space-y-0.5 py-0.5">
-          {modules.map((mod) => {
-            const state = getModuleState(mod.id, completedModules);
-            const isCurrent = currentModule === mod.id;
-            return (
-              <TrainingModuleItem
-                key={mod.id}
-                module={mod}
-                state={state}
-                isCurrent={isCurrent}
-                onClick={handleModuleClick}
-                onCloseSidebar={onCloseSidebar}
-              />
-            );
-          })}
-        </div>
-      </div>
-      <div className="mt-3 pt-3 border-t border-white/5 px-3">
-        <p className="text-[0.6875rem] font-semibold text-slate-500 uppercase tracking-wider">
-          Training Progress
-        </p>
-        <p className="text-xs text-slate-400 mt-0.5 tabular-nums">
-          {completedModules.length} / {totalModules} Modules Completed
-        </p>
-      </div>
+      <NavLink
+        to="/counsellor/training"
+        onClick={() => onCloseSidebar?.()}
+        className={({ isActive }) =>
+          `flex items-center gap-3 px-3 py-2.5 rounded-lg text-[0.8125rem] font-medium transition-all duration-200 w-full ${
+            isActive
+              ? 'bg-primary-navy/90 text-white shadow-[inset_3px_0_0_0_#4d8ec7]'
+              : 'text-slate-400 hover:bg-white/5 hover:text-slate-200'
+          }`
+        }
+      >
+        <FiBookOpen className="w-4.5 h-4.5 shrink-0 opacity-90" aria-hidden />
+        <span>Training</span>
+      </NavLink>
     </div>
   );
 }

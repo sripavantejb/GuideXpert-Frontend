@@ -34,8 +34,10 @@ export default function CollegeReferrals() {
                 className={cardClassName}
               >
                 <div>
-                  <h4 className="text-sm font-semibold text-gray-900 mb-0.5">{college.name}</h4>
-                  <p className="text-xs text-gray-500">{college.location}</p>
+                  <h4 className="text-sm font-semibold text-gray-900">{college.name}</h4>
+                  {college.location ? (
+                    <p className="text-xs text-gray-500 mt-0.5">{college.location}</p>
+                  ) : null}
                 </div>
                 <FiChevronRight className="w-5 h-5 text-gray-400 group-hover:text-[#003366] group-hover:translate-x-0.5 transition-all" />
               </a>
@@ -46,8 +48,10 @@ export default function CollegeReferrals() {
                 className={cardClassName}
               >
                 <div>
-                  <h4 className="text-sm font-semibold text-gray-900 mb-0.5">{college.name}</h4>
-                  <p className="text-xs text-gray-500">{college.location}</p>
+                  <h4 className="text-sm font-semibold text-gray-900">{college.name}</h4>
+                  {college.location ? (
+                    <p className="text-xs text-gray-500 mt-0.5">{college.location}</p>
+                  ) : null}
                 </div>
                 <FiChevronRight className="w-5 h-5 text-gray-400 group-hover:text-[#003366] group-hover:translate-x-0.5 transition-all" />
               </Link>

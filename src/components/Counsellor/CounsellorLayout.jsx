@@ -230,8 +230,8 @@ export default function CounsellorLayout() {
             </div>
           </div>
 
-          {/* Counsellor Training */}
-          <div className="min-h-0 flex flex-col">
+          {/* Counsellor Training — single link; full progress on /counsellor/training */}
+          <div className="shrink-0">
             <TrainingSidebar onCloseSidebar={() => setSidebarOpen(false)} />
           </div>
 

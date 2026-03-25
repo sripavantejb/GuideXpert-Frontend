@@ -63,7 +63,9 @@ export default function CollegeReferralDetail() {
         <h2 className="text-xl font-bold text-gray-900" style={{ color: '#003366' }}>
           {college.name}
         </h2>
-        <p className="text-sm text-gray-500 mt-0.5">{college.location}</p>
+        {college.location ? (
+          <p className="text-sm text-gray-500 mt-0.5">{college.location}</p>
+        ) : null}
       </div>
 
       {!usesExternalUrl && !hasSlug && (

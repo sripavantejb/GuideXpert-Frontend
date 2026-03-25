@@ -7,7 +7,6 @@ export const COLLEGES = [
   {
     slug: 'niat',
     name: 'NIAT',
-    location: 'GuideXpert Rewards',
     externalUrl: 'https://gxrewards.guidexpert.co.in/guide-xpert',
   },
 ];
