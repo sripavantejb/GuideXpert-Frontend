@@ -46,7 +46,7 @@ const pageMeta = {
   '/counsellor/sessions': { title: 'Sessions', subtitle: 'Schedule and manage counseling sessions' },
   '/counsellor/announcements-feed': { title: 'Announcements', subtitle: 'Stay updated with the latest updates and important notices.' },
   '/counsellor/tools': { title: 'Tools', subtitle: 'Assessment and prediction tools' },
-  '/counsellor/marketing': { title: 'Marketing', subtitle: 'Reach more students and grow your practice' },
+  '/counsellor/marketing': { title: 'Marketing', subtitle: 'Download seasonal, official, and customisable marketing posters' },
   '/counsellor/college-referrals': { title: 'College Referrals', subtitle: 'Get referral links for partner colleges' },
   '/counsellor/certificate': { title: 'Poster', subtitle: 'Download your certified counsellor poster' },
   '/counsellor/training': { title: 'Counsellor Training', subtitle: 'Complete modules to earn your certificate' },
