@@ -47,7 +47,7 @@ export default function CounsellorTraining() {
 
       {module.type === 'certificate' ? (
         certificateLocked ? (
-          <div className="rounded-2xl border border-amber-200 bg-gradient-to-br from-amber-50 to-white shadow-card p-6 sm:p-8">
+          <div className="rounded-2xl border border-amber-200 bg-linear-to-br from-amber-50 to-white shadow-card p-6 sm:p-8">
             <div className="flex flex-col sm:flex-row sm:items-start gap-4">
               <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-full bg-amber-100 text-amber-800">
                 <FiLock className="w-6 h-6" aria-hidden />
@@ -70,7 +70,7 @@ export default function CounsellorTraining() {
         ) : (
           <div className="space-y-6">
             <div className="rounded-2xl border border-gray-200 bg-white shadow-card overflow-hidden">
-              <div className="border-b border-gray-100 bg-gradient-to-r from-primary-navy/5 to-transparent px-6 py-4">
+              <div className="border-b border-gray-100 bg-linear-to-r from-primary-navy/5 to-transparent px-6 py-4">
                 <div className="flex items-center gap-2">
                   <FiAward className="w-5 h-5 text-primary-navy shrink-0" aria-hidden />
                   <div>
@@ -83,13 +83,10 @@ export default function CounsellorTraining() {
               </div>
               <div className="p-4 sm:p-6 flex flex-col items-center">
                 <div
-                  className="w-full flex justify-center overflow-hidden"
-                  style={{ maxHeight: 340 }}
+                  className="w-full flex justify-center overflow-hidden rounded-lg bg-slate-50/80 py-2"
+                  style={{ height: 300 }}
                 >
-                  <div
-                    className="origin-top scale-[0.42] sm:scale-[0.5] md:scale-[0.55]"
-                    style={{ marginBottom: -280 }}
-                  >
+                  <div className="origin-top scale-[0.35] sm:scale-[0.42] md:scale-[0.48]">
                     <CertificatePreview
                       recipientName={displayName || 'Counsellor'}
                       date={issuedDate}
