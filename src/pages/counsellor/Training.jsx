@@ -171,7 +171,6 @@ export default function CounsellorTraining() {
     return true;
   }, [progressForModuleState]);
   const certificateLocked = !isCertificateUnlocked;
-  const prereqModule = TRAINING_MODULES.find((m) => m.id === PREREQ_MODULE_ID);
   const issuedDate = new Date().toLocaleDateString(undefined, {
     year: 'numeric',
     month: 'long',
@@ -192,28 +191,7 @@ export default function CounsellorTraining() {
         syncBadgeLabel={syncBadgeLabel}
       />
 
-      {certificateLocked ? (
-        <div className="rounded-2xl border border-amber-200 bg-linear-to-br from-amber-50 to-white shadow-card p-6 sm:p-8">
-          <div className="flex flex-col sm:flex-row sm:items-start gap-4">
-            <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-full bg-amber-100 text-amber-800">
-              <FiLock className="w-6 h-6" aria-hidden />
-            </div>
-            <div className="min-w-0">
-              <h2 className="text-lg font-bold text-gray-900">Certificate locked</h2>
-              <p className="mt-2 text-sm text-gray-600 leading-relaxed">
-                Your progress is saved above. Complete{' '}
-                <span className="font-semibold text-gray-800">
-                  {prereqModule ? prereqModule.label : 'the previous module'}
-                </span>{' '}
-                to unlock your official certificate and the poster download.
-              </p>
-              <p className="mt-3 text-sm text-gray-500">
-                {progressForModuleState.length} of {TOTAL_MODULES} modules completed so far.
-              </p>
-            </div>
-          </div>
-        </div>
-      ) : (
+      {!certificateLocked && (
         <div className="space-y-6">
           <div className="rounded-2xl border border-gray-200 bg-white shadow-card overflow-hidden">
             <div className="border-b border-gray-100 bg-linear-to-r from-primary-navy/5 to-transparent px-6 py-4">
