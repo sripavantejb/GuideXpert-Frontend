@@ -14,7 +14,7 @@ export default function CollegeReferrals() {
             College Referrals
           </h2>
           <p className="text-sm text-gray-500 mt-0.5">
-            Select NIAT to open the rewards portal
+            Start referring students to your preferred colleges and earn rewards.
           </p>
         </div>
       </div>
