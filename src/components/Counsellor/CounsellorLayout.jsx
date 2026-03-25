@@ -242,10 +242,10 @@ export default function CounsellorLayout() {
 
       {/* ── Main Content Area ── */}
       <div className="flex-1 flex flex-col min-w-0 min-h-0 lg:ml-[280px]">
-        {/* Top Navbar: logo, search, profile/settings */}
+        {/* Top Navbar: search, profile/settings */}
         <header className="bg-white border-b border-gray-200 shrink-0 shadow-sm" role="banner">
           <div className="flex items-center justify-between gap-3 px-4 lg:px-6 py-3 min-h-[3.25rem]">
-            {/* Left: Mobile menu + Logo + Page title */}
+            {/* Left: Mobile menu + Page title */}
             <div className="flex items-center gap-3 min-w-0 flex-1">
               <button
                 type="button"
@@ -255,17 +255,6 @@ export default function CounsellorLayout() {
               >
                 {sidebarOpen ? <HiXIcon className="w-6 h-6" /> : <HiMenuIcon className="w-6 h-6" />}
               </button>
-              <Link
-                to="/counsellor/dashboard"
-                className="shrink-0 flex items-center focus:outline-none focus-visible:ring-2 focus-visible:ring-primary-navy/40 focus-visible:ring-offset-2 rounded"
-                aria-label="GuideXpert Home"
-              >
-                <img
-                  src="https://res.cloudinary.com/dfqdb1xws/image/upload/v1773394005/GuideXpert_Logo_inbaz5.png"
-                  alt="GuideXpert"
-                  className="h-8 w-auto object-contain"
-                />
-              </Link>
               <div className="hidden sm:block min-w-0 ml-1">
                 <h1 className="text-lg font-bold text-gray-900 leading-tight truncate">
                   {currentPage.title}
