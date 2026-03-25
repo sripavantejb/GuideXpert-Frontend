@@ -21,9 +21,9 @@ export default function TrainingProgressOverview({ modules, completedModules, to
     <div className="rounded-2xl bg-white border border-gray-200 shadow-card p-6 min-w-0 mb-6">
       <div className="rounded-xl border border-primary-navy/15 bg-linear-to-r from-primary-navy/6 to-white p-4 sm:p-5 mb-6 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
         <div className="min-w-0">
-          <h3 className="text-sm font-bold text-gray-900">Webinar & rewards platform</h3>
+          <h3 className="text-sm font-bold text-gray-900">Webinar platform</h3>
           <p className="text-sm text-gray-600 mt-1">
-            Open GuideXpert live sessions and NIAT rewards in one place.
+            Open GuideXpert live sessions in one place.
           </p>
         </div>
         <a
