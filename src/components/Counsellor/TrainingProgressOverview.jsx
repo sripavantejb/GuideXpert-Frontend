@@ -17,6 +17,7 @@ const WEBINAR_PLATFORM_URL = 'https://gxrewards.guidexpert.co.in/guide-xpert';
  * @param {(string|number)[]} props.completedModules
  * @param {number} props.totalModules
  * @param {number | null} [props.completionPercentOverride] — from backend overallPercent when present
+ * @param {string} [props.syncBadgeLabel] — e.g. admin records vs webinar token vs local
  */
 export default function TrainingProgressOverview({
   source,
@@ -25,6 +26,7 @@ export default function TrainingProgressOverview({
   completedModules,
   totalModules,
   completionPercentOverride = null,
+  syncBadgeLabel,
 }) {
   const navigate = useNavigate();
 
@@ -91,14 +93,14 @@ export default function TrainingProgressOverview({
         <h2 className="text-sm font-bold text-gray-800 uppercase tracking-wider">
           Your training progress
         </h2>
-        {source === 'backend' && !loading && (
+        {source === 'backend' && !loading && syncBadgeLabel && (
           <span className="text-xs font-medium text-primary-navy bg-primary-navy/10 px-2 py-0.5 rounded-full">
-            Synced from webinar
+            {syncBadgeLabel}
           </span>
         )}
-        {source === 'fallback' && (
+        {source === 'fallback' && !loading && (
           <span className="text-xs font-medium text-gray-500 bg-gray-100 px-2 py-0.5 rounded-full">
-            Local progress
+            {syncBadgeLabel || 'Local progress'}
           </span>
         )}
       </div>

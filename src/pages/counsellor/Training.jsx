@@ -1,15 +1,17 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { Link, useSearchParams } from 'react-router-dom';
 import { FiAward, FiExternalLink, FiLock } from 'react-icons/fi';
 import {
   useCounsellorTraining,
   TRAINING_MODULES,
   getModuleState,
+  TOTAL_MODULES,
 } from '../../contexts/CounsellorTrainingContext';
 import { useCounsellorProfile } from '../../contexts/CounsellorProfileContext';
 import { useWebinarAuth } from '../../contexts/WebinarAuthContext';
 import { ALL_MODULES } from '../../pages/webinar/data/mockWebinarData';
 import { getWebinarProgress } from '../../utils/api';
+import { getCounsellorToken, getCounsellorWebinarProgress } from '../../utils/counsellorApi';
 import TrainingProgressOverview from '../../components/Counsellor/TrainingProgressOverview';
 import CertificatePreview from '../../components/Counsellor/CertificatePreview';
 
@@ -22,49 +24,60 @@ const WEBINAR_DISPLAY_MODULES = ALL_MODULES.map((m) => ({
   type: m.type === 'Assessment' ? 'assessment' : 'video',
 }));
 
+/** Normalize apiRequest / counsellorRequest body: { success, data: doc } */
+function extractWebinarDoc(res) {
+  if (!res?.success || res.data == null) return undefined;
+  const payload = res.data;
+  if (typeof payload !== 'object' || payload === null) return undefined;
+  if (Object.prototype.hasOwnProperty.call(payload, 'data')) return payload.data;
+  return payload;
+}
+
 export default function CounsellorTraining() {
   const [searchParams] = useSearchParams();
   const { token: webinarToken } = useWebinarAuth();
   const { currentModule, setCurrentModule, markCompleted, completedModules, totalModules } =
     useCounsellorTraining();
-  const { displayName } = useCounsellorProfile();
+  const { displayName, phone: profilePhone } = useCounsellorProfile();
+
+  const phoneKey = useMemo(() => {
+    const d = String(profilePhone || '').replace(/\D/g, '').slice(-10);
+    return d.length === 10 ? d : '';
+  }, [profilePhone]);
 
   const [webinarProgressState, setWebinarProgressState] = useState(() => ({
-    status: webinarToken ? 'loading' : 'ready',
-    source: 'fallback',
-    completedModules: [],
+    status: /** @type {'loading' | 'ready'} */ ('loading'),
+    source: /** @type {'backend' | 'fallback'} */ ('fallback'),
+    backendKind: /** @type {null | 'counsellor-db' | 'webinar-token'} */ (null),
+    completedModules: /** @type {string[]} */ ([]),
     overallPercent: /** @type {number | null} */ (null),
   }));
 
   useEffect(() => {
-    if (!webinarToken) {
-      setWebinarProgressState({
-        status: 'ready',
-        source: 'fallback',
-        completedModules: [],
-        overallPercent: null,
-      });
-      return;
-    }
-
     let cancelled = false;
-    setWebinarProgressState((prev) => ({ ...prev, status: 'loading' }));
 
     (async () => {
-      try {
-        const res = await getWebinarProgress(webinarToken);
-        if (cancelled) return;
-        if (!res.success) {
+      setWebinarProgressState((prev) => ({ ...prev, status: 'loading' }));
+
+      const cToken = getCounsellorToken();
+      if (!cToken) {
+        if (!cancelled) {
           setWebinarProgressState({
             status: 'ready',
             source: 'fallback',
+            backendKind: null,
             completedModules: [],
             overallPercent: null,
           });
-          return;
         }
-        const body = res.data;
-        const doc = body?.data !== undefined ? body.data : body;
+        return;
+      }
+
+      const cRes = await getCounsellorWebinarProgress(cToken);
+      if (cancelled) return;
+
+      if (cRes.success) {
+        const doc = extractWebinarDoc(cRes);
         const done = Array.isArray(doc?.completedModules)
           ? doc.completedModules.map((x) => String(x))
           : [];
@@ -75,31 +88,83 @@ export default function CounsellorTraining() {
         setWebinarProgressState({
           status: 'ready',
           source: 'backend',
+          backendKind: 'counsellor-db',
           completedModules: done,
           overallPercent,
         });
-      } catch (e) {
-        console.warn('[CounsellorTraining] getWebinarProgress failed', e);
-        if (!cancelled) {
+        return;
+      }
+
+      if (webinarToken) {
+        const wRes = await getWebinarProgress(webinarToken);
+        if (cancelled) return;
+        if (wRes.success) {
+          const doc = extractWebinarDoc(wRes);
+          const done = Array.isArray(doc?.completedModules)
+            ? doc.completedModules.map((x) => String(x))
+            : [];
+          const overallPercent =
+            typeof doc?.overallPercent === 'number' && !Number.isNaN(doc.overallPercent)
+              ? doc.overallPercent
+              : null;
           setWebinarProgressState({
             status: 'ready',
-            source: 'fallback',
-            completedModules: [],
-            overallPercent: null,
+            source: 'backend',
+            backendKind: 'webinar-token',
+            completedModules: done,
+            overallPercent,
           });
+          return;
         }
+      }
+
+      if (!cancelled) {
+        setWebinarProgressState({
+          status: 'ready',
+          source: 'fallback',
+          backendKind: null,
+          completedModules: [],
+          overallPercent: null,
+        });
       }
     })();
 
     return () => {
       cancelled = true;
     };
-  }, [webinarToken]);
+  }, [webinarToken, phoneKey]);
 
   const useBackendUi =
-    !!webinarToken &&
-    (webinarProgressState.status === 'loading' || webinarProgressState.source === 'backend');
-  const overviewLoading = !!webinarToken && webinarProgressState.status === 'loading';
+    webinarProgressState.status === 'loading' || webinarProgressState.source === 'backend';
+  const overviewLoading = webinarProgressState.status === 'loading';
+
+  /** Backend stores string ids; getModuleState expects numeric ids like localStorage progress */
+  const progressForModuleState = useMemo(() => {
+    if (webinarProgressState.source === 'backend' && webinarProgressState.status === 'ready') {
+      const ids = new Set();
+      for (const x of webinarProgressState.completedModules) {
+        const n = Number(x);
+        if (Number.isInteger(n) && n >= 1 && n <= TOTAL_MODULES) ids.add(n);
+      }
+      return [...ids].sort((a, b) => a - b);
+    }
+    return completedModules;
+  }, [
+    webinarProgressState.source,
+    webinarProgressState.status,
+    webinarProgressState.completedModules,
+    completedModules,
+  ]);
+
+  const syncBadgeLabel = useMemo(() => {
+    if (webinarProgressState.status === 'loading') return undefined;
+    if (webinarProgressState.source === 'backend') {
+      if (webinarProgressState.backendKind === 'counsellor-db') return 'Admin training records';
+      if (webinarProgressState.backendKind === 'webinar-token') return 'Synced from webinar';
+      return undefined;
+    }
+    return 'Local progress';
+  }, [webinarProgressState]);
 
   const moduleIdParam = searchParams.get('module');
   useEffect(() => {
@@ -110,7 +175,7 @@ export default function CounsellorTraining() {
   }, [moduleIdParam, setCurrentModule]);
 
   const module = TRAINING_MODULES.find((m) => m.id === currentModule) || TRAINING_MODULES[0];
-  const certState = getModuleState(CERTIFICATE_MODULE_ID, completedModules);
+  const certState = getModuleState(CERTIFICATE_MODULE_ID, progressForModuleState);
   const certificateLocked = certState === 'locked';
   const prereqModule = TRAINING_MODULES.find((m) => m.id === PREREQ_MODULE_ID);
   const issuedDate = new Date().toLocaleDateString(undefined, {
@@ -130,6 +195,7 @@ export default function CounsellorTraining() {
         }
         totalModules={useBackendUi ? ALL_MODULES.length : totalModules}
         completionPercentOverride={useBackendUi ? webinarProgressState.overallPercent : null}
+        syncBadgeLabel={syncBadgeLabel}
       />
 
       {module.type === 'certificate' ? (
@@ -149,7 +215,7 @@ export default function CounsellorTraining() {
                   to unlock your official certificate and the poster download.
                 </p>
                 <p className="mt-3 text-sm text-gray-500">
-                  {completedModules.length} of {totalModules} modules completed so far.
+                  {progressForModuleState.length} of {TOTAL_MODULES} modules completed so far.
                 </p>
               </div>
             </div>

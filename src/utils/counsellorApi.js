@@ -257,3 +257,11 @@ export const acknowledgeAnnouncement = async (id, token = getCounsellorToken()) 
 export const getAnnouncementEngagement = async (id, token = getCounsellorToken()) => {
   return counsellorRequest(`/announcements/${encodeURIComponent(id)}/engagement`, { method: 'GET' }, token);
 };
+
+/**
+ * GET /api/counsellor/webinar-progress — same WebinarProgress document as admin detail for this counsellor's phone.
+ * @param {string} [token]
+ */
+export const getCounsellorWebinarProgress = async (token = getCounsellorToken()) => {
+  return counsellorRequest('/webinar-progress', { method: 'GET' }, token);
+};
