@@ -9,7 +9,6 @@ import ProgressIndicator from './components/ProgressIndicator';
 import CertificateUnlockCard from './components/CertificateUnlockCard';
 import NotesPanel from './components/NotesPanel';
 import CompletionModal from './components/CompletionModal';
-import ExternalFormModal from './components/ExternalFormModal';
 import { useWebinar } from './context/WebinarContext';
 import { useWebinarAuth } from '../../contexts/WebinarAuthContext';
 import {
@@ -64,7 +63,6 @@ export default function WebinarDashboard() {
   const [videoSessionType, setVideoSessionType] = useState(null);
   const [showCompletionModal, setShowCompletionModal] = useState(false);
   const [showInPageCongratulations, setShowInPageCongratulations] = useState(false);
-  const [showFormModal, setShowFormModal] = useState(false);
   const hasShownModal = useRef(false);
   const [unlockToast, setUnlockToast] = useState(null);
   const justCompletedRef = useRef(new Set());
@@ -115,15 +113,10 @@ export default function WebinarDashboard() {
   const handleCompletionContinue = useCallback(() => {
     setShowCompletionModal(false);
     setShowInPageCongratulations(true);
-    setShowFormModal(true);
   }, []);
 
   const handleCompletionClose = useCallback(() => {
     setShowCompletionModal(false);
-  }, []);
-
-  const handleFormClose = useCallback(() => {
-    setShowFormModal(false);
   }, []);
 
   const handleTimeUpdate = useCallback((sessionId, currentTime) => {
@@ -465,10 +458,6 @@ export default function WebinarDashboard() {
 
       {showCompletionModal && (
         <CompletionModal onContinue={handleCompletionContinue} onClose={handleCompletionClose} />
-      )}
-
-      {showFormModal && (
-        <ExternalFormModal onClose={handleFormClose} />
       )}
 
       {unlockToast && (

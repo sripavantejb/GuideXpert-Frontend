@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { FiCheck, FiLock, FiDownload, FiEye } from 'react-icons/fi';
 import { useWebinarAuth } from '../../../contexts/WebinarAuthContext';
@@ -9,7 +9,13 @@ import {
   downloadCertificatePng,
   downloadCertificatePdf,
 } from '../utils/certificateWebinar';
-import { getOrCreateCertificateForUser, createCertificateRecord, migrateCertificateToShortId, recordCertificateDownload } from '../../../utils/api';
+import {
+  getOrCreateCertificateForUser,
+  createCertificateRecord,
+  migrateCertificateToShortId,
+  recordCertificateDownload,
+  checkActivationEligibility,
+} from '../../../utils/api';
 
 function isLegacyCertificateId(id) {
   return !id || typeof id !== 'string' || !String(id).trim().toUpperCase().startsWith('GX');
@@ -25,7 +31,6 @@ function generateShortCertificateId() {
 const CARD_BASE = 'rounded-2xl bg-white shadow-sm overflow-hidden p-5 transition-all duration-200';
 
 const FINAL_ASSESSMENT_ID = 'a5';
-
 export default function CertificateUnlockCard({
   completedPercent = 0,
   totalSessions = 0,
@@ -41,10 +46,15 @@ export default function CertificateUnlockCard({
   const [actionError, setActionError] = useState('');
   const [certDataUrl, setCertDataUrl] = useState(null);
   const [certLoading, setCertLoading] = useState(true);
+  const [activationChecking, setActivationChecking] = useState(false);
+  const [activationEligible, setActivationEligible] = useState(false);
+  const [activationError, setActivationError] = useState('');
 
   const unlocked = Array.isArray(completedSessionIds) && completedSessionIds.includes(FINAL_ASSESSMENT_ID);
   const remaining = Math.max(0, totalSessions - completedSessions);
   const blurPx = Math.max(0, 20 * (1 - completedPercent / 100));
+  const certReady = completedPercent >= 100 && unlocked;
+  const canDownloadCertificate = certReady && activationEligible;
 
   const dateStr = formatCertificateDate();
 
@@ -69,6 +79,35 @@ export default function CertificateUnlockCard({
     document.cookie = `${name}=; Max-Age=0; path=/`;
   };
 
+  const verifyActivationEligibility = useCallback(async () => {
+    const phone = String(authUser?.phone || '').replace(/\D/g, '').slice(-10);
+    if (phone.length !== 10) {
+      setActivationEligible(false);
+      setActivationError('Unable to verify training form submission for this account.');
+      return;
+    }
+    setActivationChecking(true);
+    setActivationError('');
+    try {
+      const result = await checkActivationEligibility(phone);
+      const payload = result.data?.data ?? result.data;
+      const eligible = Boolean(result.success && (result.eligible || payload?.exists));
+      setActivationEligible(eligible);
+      if (!eligible) {
+        setActivationError(result.message || 'Submit the training activation form to unlock certificate download.');
+      }
+    } catch (e) {
+      setActivationEligible(false);
+      setActivationError(e?.message || 'Could not verify training form submission. Please retry.');
+    } finally {
+      setActivationChecking(false);
+    }
+  }, [authUser?.phone]);
+
+  useEffect(() => {
+    verifyActivationEligibility();
+  }, [authUser?.phone]);
+
   // Generate certificate preview image once (name + date; cert ID optional)
   useEffect(() => {
     let cancelled = false;
@@ -90,7 +129,7 @@ export default function CertificateUnlockCard({
   }, [displayName, dateStr, userCertificateId]);
 
   useEffect(() => {
-    if (!unlocked) return;
+    if (!canDownloadCertificate) return;
     let cancelled = false;
     (async () => {
       try {
@@ -151,9 +190,12 @@ export default function CertificateUnlockCard({
       }
     })();
     return () => { cancelled = true; };
-  }, [unlocked, authUser?.phone, displayName, dateStr, certCookieName]);
+  }, [canDownloadCertificate, authUser?.phone, displayName, dateStr, certCookieName]);
 
   const getOrEnsureCertificateId = async () => {
+    if (!activationEligible) {
+      throw new Error('Submit the training activation form to unlock certificate download.');
+    }
     if (userCertificateId) return userCertificateId;
     if (certCookieName) {
       const stored = getCertCookie(certCookieName);
@@ -299,9 +341,9 @@ export default function CertificateUnlockCard({
         {/* Lock overlay: always in DOM, visibility toggled to avoid removeChild during reconciliation */}
         <div
           className={`absolute inset-0 flex flex-col items-center justify-center bg-black/30 transition-opacity duration-200 ${
-            completedPercent < 100 || !unlocked ? 'opacity-100 pointer-events-auto' : 'opacity-0 pointer-events-none'
+            !canDownloadCertificate ? 'opacity-100 pointer-events-auto' : 'opacity-0 pointer-events-none'
           }`}
-          aria-hidden={completedPercent >= 100 && unlocked}
+          aria-hidden={canDownloadCertificate}
         >
           <span className="flex h-10 w-10 items-center justify-center rounded-full bg-white/90 shadow-sm">
             <FiLock className="h-5 w-5 text-gray-600" aria-hidden />
@@ -309,6 +351,10 @@ export default function CertificateUnlockCard({
           <p className="mt-2 text-center text-sm font-medium text-white drop-shadow-sm">
             {!unlocked
               ? 'Complete Assessment 5 to unlock'
+              : activationChecking
+                ? 'Checking activation form status...'
+                : !activationEligible
+                  ? 'Submit activation form to unlock'
               : `${remaining} session${remaining !== 1 ? 's' : ''} remaining`}
           </p>
         </div>
@@ -326,7 +372,7 @@ export default function CertificateUnlockCard({
         />
       </div>
 
-      {completedPercent >= 100 && unlocked ? (
+      {canDownloadCertificate ? (
         <div key="cert-unlocked-actions" className="mt-4 space-y-4">
           <div className="flex items-center gap-3 rounded-xl border border-green-200/80 bg-green-50 p-4 min-w-0">
             <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-green-100">
@@ -374,17 +420,48 @@ export default function CertificateUnlockCard({
         </div>
       ) : (
         <div key="cert-locked-actions" className="mt-4 space-y-3">
-          <p className="text-sm text-gray-600">
-            {unlocked
-              ? `Complete ${remaining} more session${remaining !== 1 ? 's' : ''} to unlock.`
-              : 'Complete Assessment 5 (final assessment) to unlock your certificate.'}
-          </p>
-          <Link
-            to="/webinar/progress"
-            className="inline-flex w-full min-h-[44px] items-center justify-center gap-2 rounded-xl bg-primary-navy px-4 py-2.5 text-sm font-medium text-white shadow-sm transition-colors hover:bg-primary-navy/90"
-          >
-            {unlocked ? 'View progress to unlock' : 'Go to training'}
-          </Link>
+          {certReady && !activationEligible ? (
+            <>
+              <p className="text-sm text-gray-600">
+                {activationChecking
+                  ? 'Checking your activation form submission...'
+                  : 'Complete activation in My Certificates to unlock certificate download.'}
+              </p>
+              <Link
+                to="/webinar/certificates"
+                className="inline-flex w-full min-h-[44px] items-center justify-center gap-2 rounded-xl bg-primary-navy px-4 py-2.5 text-sm font-medium text-white shadow-sm transition-colors hover:bg-primary-navy/90"
+              >
+                Go to My Certificates
+              </Link>
+              <button
+                type="button"
+                onClick={verifyActivationEligibility}
+                disabled={activationChecking}
+                className="inline-flex w-full min-h-[44px] items-center justify-center gap-2 rounded-xl border border-gray-300 px-4 py-2.5 text-sm font-medium text-gray-700 transition-colors hover:bg-gray-50 disabled:opacity-60"
+              >
+                {activationChecking ? 'Checking...' : 'I submitted, recheck status'}
+              </button>
+              {activationError && (
+                <div className="rounded-lg border border-amber-200 bg-amber-50 px-3 py-2 text-sm text-amber-700">
+                  {activationError}
+                </div>
+              )}
+            </>
+          ) : (
+            <>
+              <p className="text-sm text-gray-600">
+                {unlocked
+                  ? `Complete ${remaining} more session${remaining !== 1 ? 's' : ''} to unlock.`
+                  : 'Complete Assessment 5 (final assessment) to unlock your certificate.'}
+              </p>
+              <Link
+                to="/webinar/progress"
+                className="inline-flex w-full min-h-[44px] items-center justify-center gap-2 rounded-xl bg-primary-navy px-4 py-2.5 text-sm font-medium text-white shadow-sm transition-colors hover:bg-primary-navy/90"
+              >
+                {unlocked ? 'View progress to unlock' : 'Go to training'}
+              </Link>
+            </>
+          )}
         </div>
       )}
     </div>
