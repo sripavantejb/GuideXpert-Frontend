@@ -3,6 +3,7 @@ import { useSearchParams } from 'react-router-dom';
 import { FiEye, FiCopy } from 'react-icons/fi';
 import { getAdminLeads, getLead, updateLeadNotes, getStoredToken } from '../../utils/adminApi';
 import { useAuth } from '../../contexts/AuthContext';
+import { useAdminDateRange } from '../../contexts/AdminDashboardContext';
 import TableSkeleton from '../../components/UI/TableSkeleton';
 import { ContentSkeleton } from '../../components/UI/Skeleton';
 import { dedupeByPhone } from '../../components/Admin/CopyToSheetsModal';
@@ -131,6 +132,7 @@ function buildTsv(leads, selectedKeys) {
 
 export default function Leads() {
   const { logout } = useAuth();
+  const { dateRange } = useAdminDateRange();
   const [searchParams] = useSearchParams();
   const [leads, setLeads] = useState([]);
   const [pagination, setPagination] = useState({ page: 1, limit: 50, total: 0, totalPages: 1 });
@@ -254,6 +256,8 @@ export default function Leads() {
     const params = {
       page,
       limit,
+      ...(dateRange.from && { from: dateRange.from }),
+      ...(dateRange.to && { to: dateRange.to }),
       ...(filters.applicationStatus && { applicationStatus: filters.applicationStatus }),
       ...(filters.otpVerified !== '' && filters.otpVerified !== undefined && { otpVerified: filters.otpVerified }),
       ...(filters.slotBooked !== '' && filters.slotBooked !== undefined && { slotBooked: filters.slotBooked }),
@@ -288,7 +292,7 @@ export default function Leads() {
     return () => {
       cancelledRef.current = true;
     };
-  }, [viewAll, pagination.page, filters.applicationStatus, filters.otpVerified, filters.slotBooked, filters.selectedSlot, filters.slotDate, filters.utm_content, filters.q, logout]);
+  }, [viewAll, pagination.page, dateRange.from, dateRange.to, filters.applicationStatus, filters.otpVerified, filters.slotBooked, filters.selectedSlot, filters.slotDate, filters.utm_content, filters.q, logout]);
 
   useEffect(() => {
     if (!selectedCalendarDate) {
