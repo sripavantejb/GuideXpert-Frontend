@@ -16,6 +16,7 @@ const Header = ({ standalone = false }) => {
         { name: 'Your Journey', to: '/#journey', isRouter: true },
         { name: 'Why GuideXpert?', to: '/#why', isRouter: true },
         { name: 'Tools', to: '/#predictor', isRouter: true },
+        { name: 'Blogs', to: '/blogs', isRouter: true },
       ]
     : [
         { name: 'Home', href: '#home' },
@@ -23,6 +24,7 @@ const Header = ({ standalone = false }) => {
         { name: 'Your Journey', href: '#journey' },
         { name: 'Why GuideXpert?', href: '#why' },
         { name: 'Tools', href: '#predictor' },
+        { name: 'Blogs', to: '/blogs', isRouter: true },
       ];
 
   const scrollToSection = (href) => {

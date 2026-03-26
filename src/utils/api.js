@@ -631,3 +631,30 @@ export const syncWebinarProgressBeacon = (token, payload) => {
     // best-effort on page unload
   }
 };
+
+/**
+ * Predict rank/percentile from public rank predictor API.
+ * @param {{ examId: string, score: number, options?: Record<string, unknown> }} payload
+ * @returns {Promise<{ success: boolean, data?: object, message?: string, status?: number }>}
+ */
+export const predictRankPublic = async (payload) => {
+  const result = await apiRequest('/rank-predictor/predict', {
+    method: 'POST',
+    body: JSON.stringify(payload),
+  });
+
+  if (!result.success) {
+    const errorMessage = result?.data?.error?.message || result.message || 'Could not generate prediction.';
+    return {
+      ...result,
+      message: errorMessage,
+    };
+  }
+
+  return {
+    ...result,
+    // Backend returns: { success: true, data: {...prediction} }
+    // apiRequest wraps that as result.data, so unwrap once here.
+    data: result?.data?.data || result.data,
+  };
+};
