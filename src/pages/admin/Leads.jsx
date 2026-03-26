@@ -25,6 +25,7 @@ const DAY_BY_DOW = ['SUNDAY', 'MONDAY', 'TUESDAY', 'WEDNESDAY', 'THURSDAY', 'FRI
 const TIME_ROWS = ['11AM', '3PM', '6PM', '7PM'];
 const WEEKDAY_HEADER = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
 const MONTH_NAMES = ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December'];
+const ALLOWED_APPLICATION_STATUSES = ['in_progress', 'registered', 'completed'];
 
 function slotIdFor(day, timeKey) {
   return `${day}_${timeKey}`;
@@ -147,7 +148,7 @@ export default function Leads() {
     const slotB = searchParams.get('slotBooked') || '';
     const q = searchParams.get('q') || '';
     return {
-      applicationStatus: ['in_progress'].includes(status) ? status : '',
+      applicationStatus: ALLOWED_APPLICATION_STATUSES.includes(status) ? status : '',
       otpVerified: ['true', 'false'].includes(otp) ? otp : '',
       slotBooked: ['true', 'false'].includes(slotB) ? slotB : '',
       selectedSlot: slot,
@@ -184,17 +185,16 @@ export default function Leads() {
     const otp = searchParams.get('otpVerified') || '';
     const slotB = searchParams.get('slotBooked') || '';
     const q = searchParams.get('q') || '';
-    setFilters((prev) => ({
-      ...prev,
-      applicationStatus: ['in_progress'].includes(status) ? status : prev.applicationStatus,
-      otpVerified: ['true', 'false'].includes(otp) ? otp : prev.otpVerified,
-      slotBooked: ['true', 'false'].includes(slotB) ? slotB : prev.slotBooked,
-      selectedSlot: slot || prev.selectedSlot,
-      slotDate: slotDate || prev.slotDate,
-      utm_content: utm || prev.utm_content,
-      q: q || prev.q,
-    }));
-    if (q) setSearchInput(q);
+    setFilters({
+      applicationStatus: ALLOWED_APPLICATION_STATUSES.includes(status) ? status : '',
+      otpVerified: ['true', 'false'].includes(otp) ? otp : '',
+      slotBooked: ['true', 'false'].includes(slotB) ? slotB : '',
+      selectedSlot: slot,
+      slotDate,
+      utm_content: utm,
+      q,
+    });
+    setSearchInput(q);
     setPagination((prev) => ({ ...prev, page: 1 }));
   }, [searchParams]);
 
@@ -356,6 +356,8 @@ export default function Leads() {
             >
               <option value="">All statuses</option>
               <option value="in_progress">In progress</option>
+              <option value="registered">Registered</option>
+              <option value="completed">Completed</option>
             </select>
             <select
               value={filters.otpVerified}
