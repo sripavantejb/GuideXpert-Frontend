@@ -609,6 +609,7 @@ export default function Overview() {
   const utmAvgCostPerLead = utmTotalLeads > 0 && utmTotalBudget > 0 ? utmTotalBudget / utmTotalLeads : null;
   const utmBudgetEmpty = utmBudgetData.length === 0;
   const utmCostPerLeadEmpty = utmCostPerLeadData.length === 0;
+  const showLeadConversionFunnel = false;
 
   return (
     <div className="w-full min-h-0 flex flex-col gap-5">
@@ -968,6 +969,7 @@ export default function Overview() {
       </div>
 
       {/* Lead conversion funnel — tree diagram */}
+      {showLeadConversionFunnel && (
       <section aria-labelledby="section-funnel">
         <h2 id="section-funnel" className="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-4">Lead conversion funnel</h2>
       <div
@@ -1225,6 +1227,7 @@ export default function Overview() {
         </div>
       </div>
       </section>
+      )}
       {popoverCardId && createPortal(
         <div className="fixed inset-0 z-[10000] flex items-center justify-center p-4 sm:p-6 md:p-8">
           <div
