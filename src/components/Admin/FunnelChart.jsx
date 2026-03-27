@@ -83,17 +83,24 @@ export default function FunnelChart({ data, maxDomain }) {
   const domainMax = typeof maxDomain === 'number' && maxDomain > 0 ? maxDomain : 1;
 
   return (
-    <section className="rounded-xl border border-gray-200 bg-white p-4 lg:p-6 portal-card">
-      <div className="mb-4 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-        <div>
-          <h2 className="text-sm font-semibold uppercase tracking-wider text-gray-700">
+    <div
+      className="rounded-xl border border-gray-200 bg-white p-5 lg:p-6 portal-card"
+      role="region"
+      aria-labelledby="funnel-viz-heading"
+    >
+      <div className="mb-5 flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between sm:gap-6">
+        <div className="min-w-0">
+          <h2
+            id="funnel-viz-heading"
+            className="text-sm font-semibold uppercase tracking-wider text-gray-700"
+          >
             Funnel Visualization
           </h2>
-          <p className="mt-0.5 text-xs text-gray-500">
+          <p className="mt-1.5 text-xs text-gray-500 leading-relaxed">
             Advanced vs dropped at each step (bar width = cohort size)
           </p>
         </div>
-        <div className="flex flex-wrap items-center gap-4 text-xs">
+        <div className="flex shrink-0 flex-wrap items-center gap-x-5 gap-y-2 pt-0.5 text-xs sm:pt-1">
           <span className="inline-flex items-center gap-2">
             <span className="h-2.5 w-2.5 rounded-sm bg-primary-navy" aria-hidden />
             <span className="text-gray-600">Advanced</span>
@@ -107,18 +114,20 @@ export default function FunnelChart({ data, maxDomain }) {
           </span>
         </div>
       </div>
-      <div className="h-[420px] w-full min-h-[320px]">
+      <div className="h-[400px] w-full min-h-[300px] sm:h-[420px] sm:min-h-[320px]">
         <ResponsiveContainer width="100%" height="100%">
           <BarChart
             data={data}
             layout="vertical"
-            margin={{ top: 8, right: 12, left: 8, bottom: 8 }}
-            barCategoryGap={20}
+            margin={{ top: 10, right: 34, left: 12, bottom: 10 }}
+            barCategoryGap="18%"
+            barSize={28}
           >
             <CartesianGrid strokeDasharray="3 3" stroke="#e2e8f0" horizontal={false} />
             <XAxis
               type="number"
               domain={[0, domainMax]}
+              padding={{ right: 12 }}
               tick={{ fontSize: 11 }}
               stroke="#94a3b8"
               allowDecimals={false}
@@ -126,10 +135,11 @@ export default function FunnelChart({ data, maxDomain }) {
             <YAxis
               type="category"
               dataKey="stageTitle"
-              width={148}
+              width={152}
               tick={{ fontSize: 11, fill: '#334155' }}
               axisLine={false}
               tickLine={false}
+              interval={0}
             />
             <Tooltip content={<FunnelTooltip />} cursor={{ fill: 'rgba(148, 163, 184, 0.06)' }} />
             <Bar
@@ -162,6 +172,6 @@ export default function FunnelChart({ data, maxDomain }) {
           </BarChart>
         </ResponsiveContainer>
       </div>
-    </section>
+    </div>
   );
 }

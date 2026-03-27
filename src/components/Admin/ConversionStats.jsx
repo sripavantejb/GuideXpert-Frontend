@@ -16,14 +16,21 @@ function ConversionItem({ label, value, helper }) {
 
 export default function ConversionStats({ metrics }) {
   return (
-    <section className="rounded-xl border border-gray-200 bg-white p-4 lg:p-6 portal-card">
-      <h2 className="text-sm font-semibold uppercase tracking-wider text-gray-700">
+    <div
+      className="rounded-xl border border-gray-200 bg-white p-5 lg:p-6 portal-card"
+      role="region"
+      aria-labelledby="conversion-analytics-heading"
+    >
+      <h2
+        id="conversion-analytics-heading"
+        className="text-sm font-semibold uppercase tracking-wider text-gray-700"
+      >
         Conversion Analytics
       </h2>
-      <p className="mt-1 text-sm text-gray-500">
+      <p className="mt-1.5 text-sm leading-relaxed text-gray-500">
         Stage-to-stage conversion rates across the lead journey.
       </p>
-      <div className="mt-4 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+      <div className="mt-5 grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
         <ConversionItem
           label="OTP Verification Rate"
           value={metrics.otpVerificationRate}
@@ -45,6 +52,6 @@ export default function ConversionStats({ metrics }) {
           helper="Training Form Filled / Demo Attended"
         />
       </div>
-    </section>
+    </div>
   );
 }

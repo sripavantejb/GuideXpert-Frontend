@@ -132,6 +132,15 @@ export default function FunnelAnalytics() {
 
     const transitionRows = [
       {
+        stageTitle: 'Total leads added',
+        cohortTotal: funnelData.totalLeads,
+        success: funnelData.totalLeads,
+        drop: 0,
+        successLabel: 'Total Leads',
+        dropLabel: 'Dropped',
+        successColor: '#002a57',
+      },
+      {
         stageTitle: 'OTP verification',
         cohortTotal: funnelData.totalLeads,
         success: funnelData.otpVerified,
@@ -220,8 +229,7 @@ export default function FunnelAnalytics() {
       title="Lead Funnel Analytics Dashboard"
       subtitle="Monitor stage conversion, identify drop-offs, and track webinar/training lead performance."
     >
-      <section>
-        <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-5 gap-4">
+      <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-5">
           <StatsCard
             title="Total Leads"
             count={funnelData.totalLeads}
@@ -253,8 +261,7 @@ export default function FunnelAnalytics() {
             indicator={`${derived.metrics.trainingFormConversionRate.toFixed(1)}% from Demo Attended`}
             icon={FiFileText}
           />
-        </div>
-      </section>
+      </div>
 
       <FunnelChart
         data={derived.transitionRows}
