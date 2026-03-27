@@ -1,7 +1,7 @@
 import { useState, useEffect, useLayoutEffect, useRef } from 'react';
 import { createPortal } from 'react-dom';
 import { Link } from 'react-router-dom';
-import { FiUsers, FiCheckCircle, FiCalendar, FiVideo, FiEdit3, FiAward, FiLoader, FiUserCheck, FiCheck } from 'react-icons/fi';
+import { FiUsers, FiCheckCircle, FiCalendar, FiVideo, FiEdit3, FiAward, FiLoader, FiUserCheck, FiCheck, FiX } from 'react-icons/fi';
 import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, Legend, CartesianGrid, AreaChart, Area, ReferenceLine } from 'recharts';
 import { getAdminStats, getAdminLeads, getInfluencerLinks, getStoredToken } from '../../utils/adminApi';
 import { useAuth } from '../../contexts/AuthContext';
@@ -110,7 +110,6 @@ export default function Overview() {
   const [error, setError] = useState('');
   const [isDragging, setIsDragging] = useState(false);
   const [popoverCardId, setPopoverCardId] = useState(null);
-  const [popoverAnchor, setPopoverAnchor] = useState(null);
   const [cardLeads, setCardLeads] = useState({ list: [], total: 0, loading: false, error: '' });
   const [scale, setScale] = useState(1);
   const [contentSize, setContentSize] = useState(null);
@@ -118,6 +117,7 @@ export default function Overview() {
   const [refreshTrigger, setRefreshTrigger] = useState(0);
   const funnelScrollRef = useRef(null);
   const funnelContentRef = useRef(null);
+  const leadModalCloseRef = useRef(null);
   const dragRef = useRef({ lastX: 0, lastY: 0, pointerDown: false, pastThreshold: false });
   const justDraggedRef = useRef(false);
 
@@ -245,6 +245,24 @@ export default function Overview() {
     return () => {
       clearTimeout(t);
       document.removeEventListener('click', onDocClick, true);
+    };
+  }, [popoverCardId]);
+
+  useEffect(() => {
+    if (!popoverCardId) return undefined;
+    const onKey = (e) => {
+      if (e.key === 'Escape') setPopoverCardId(null);
+    };
+    document.addEventListener('keydown', onKey);
+    const prevOverflow = document.body.style.overflow;
+    document.body.style.overflow = 'hidden';
+    const focusId = requestAnimationFrame(() => {
+      leadModalCloseRef.current?.focus();
+    });
+    return () => {
+      document.removeEventListener('keydown', onKey);
+      document.body.style.overflow = prevOverflow;
+      cancelAnimationFrame(focusId);
     };
   }, [popoverCardId]);
 
@@ -462,8 +480,6 @@ export default function Overview() {
   function handleCardClick(cardId, e) {
     e.stopPropagation();
     if (justDraggedRef.current) return;
-    const rect = e.currentTarget.getBoundingClientRect();
-    setPopoverAnchor({ left: rect.left, top: rect.top, width: rect.width, height: rect.height });
     setPopoverCardId((prev) => (prev === cardId ? null : cardId));
   }
 
@@ -1204,19 +1220,20 @@ export default function Overview() {
         </div>
       </div>
       </section>
-      {popoverCardId && popoverAnchor && createPortal(
-        <div
-          data-funnel-popover
-          role="dialog"
-          aria-label="Lead breakdown"
-          className="fixed z-[10000] w-[min(360px,calc(100vw-24px))] max-h-[min(80vh,480px)] rounded-lg border border-gray-200 bg-white shadow-xl flex flex-col overflow-hidden"
-          style={{
-            right: 24,
-            top: '50%',
-            transform: 'translateY(-50%)',
-          }}
-          onClick={(e) => e.stopPropagation()}
-        >
+      {popoverCardId && createPortal(
+        <div className="fixed inset-0 z-[10000] flex items-center justify-center p-4 sm:p-6 md:p-8">
+          <div
+            className="absolute inset-0 bg-slate-900/40 backdrop-blur-sm animate-fadeIn"
+            aria-hidden
+          />
+          <div
+            data-funnel-popover
+            role="dialog"
+            aria-modal="true"
+            aria-label="Lead breakdown"
+            className="relative z-10 flex max-h-[min(90dvh,56rem)] w-full max-w-5xl min-h-0 flex-col overflow-hidden rounded-3xl border border-gray-200/80 bg-white shadow-2xl animate-scaleIn"
+            onClick={(e) => e.stopPropagation()}
+          >
           {(() => {
             const c = getPopoverContent(popoverCardId);
             const config = FUNNEL_CARD_LEADS_PARAMS[popoverCardId];
@@ -1226,80 +1243,123 @@ export default function Overview() {
             const viewRelatedLabel = config?.viewRelatedLabel;
             return (
               <>
-                <div className="p-3 border-b border-gray-100 shrink-0">
-                  <p className="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-1">{c.label}</p>
-                  <p className="font-bold text-primary-navy tabular-nums text-lg">{formatCount(c.value)}</p>
-                  {c.conversionPct != null && c.conversionLabel && (
-                    <p className="text-sm text-gray-600 mt-1">{c.conversionPct}% {c.conversionLabel}</p>
-                  )}
-                  {c.description && <p className="text-sm text-gray-500 mt-2">{c.description}</p>}
-                  {c.loginUrl && (
-                    <p className="text-sm mt-2 border-t border-gray-100 pt-2">
-                      <span className="text-gray-500">{c.loginLabel}: </span>
-                      <Link to={c.loginUrl} target="_blank" rel="noopener noreferrer" className="text-primary-navy font-medium hover:underline">{c.loginUrl}</Link>
-                    </p>
-                  )}
-                  <p className="mt-2">
-                    {viewRelatedLabel ? (
-                      <Link to={viewAllUrl} className="text-sm text-primary-navy font-medium hover:underline">
-                        View related leads ({viewRelatedLabel})
-                      </Link>
-                    ) : (
-                      <Link to={viewAllUrl} className="text-sm text-primary-navy font-medium hover:underline">
-                        View all {formatCount(c.value)} leads
-                      </Link>
-                    )}
-                  </p>
+                <div className="shrink-0 border-b border-gray-100 p-6 sm:p-8">
+                  <div className="flex items-start justify-between gap-4">
+                    <div className="min-w-0 flex-1">
+                      <p className="text-xs font-semibold uppercase tracking-wider text-gray-500 sm:text-sm">{c.label}</p>
+                      <p className="mt-2 text-3xl font-bold tabular-nums text-primary-navy sm:text-4xl">{formatCount(c.value)}</p>
+                      {c.conversionPct != null && c.conversionLabel && (
+                        <p className="mt-2 text-sm text-gray-600 sm:text-base">
+                          {c.conversionPct}% {c.conversionLabel}
+                        </p>
+                      )}
+                      {c.description && (
+                        <p className="mt-3 max-w-2xl text-sm leading-relaxed text-gray-500 sm:text-base">{c.description}</p>
+                      )}
+                      {c.loginUrl && (
+                        <p className="mt-4 border-t border-gray-100 pt-4 text-sm">
+                          <span className="text-gray-500">{c.loginLabel}: </span>
+                          <Link to={c.loginUrl} target="_blank" rel="noopener noreferrer" className="font-medium text-primary-navy hover:underline">
+                            {c.loginUrl}
+                          </Link>
+                        </p>
+                      )}
+                      <p className="mt-4">
+                        {viewRelatedLabel ? (
+                          <Link to={viewAllUrl} className="text-sm font-medium text-primary-navy hover:underline sm:text-base">
+                            View related leads ({viewRelatedLabel})
+                          </Link>
+                        ) : (
+                          <Link to={viewAllUrl} className="text-sm font-medium text-primary-navy hover:underline sm:text-base">
+                            View all {formatCount(c.value)} leads
+                          </Link>
+                        )}
+                      </p>
+                    </div>
+                    <button
+                      ref={leadModalCloseRef}
+                      type="button"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        setPopoverCardId(null);
+                      }}
+                      className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full text-gray-500 transition-colors hover:bg-gray-100 hover:text-gray-800 focus:outline-none focus-visible:ring-2 focus-visible:ring-primary-navy focus-visible:ring-offset-2"
+                      aria-label="Close"
+                    >
+                      <FiX className="h-5 w-5" strokeWidth={2} aria-hidden />
+                    </button>
+                  </div>
                 </div>
                 {hasExactList && (
-                  <div className="flex-1 min-h-0 overflow-y-auto p-3">
+                  <div className="min-h-0 flex-1 overflow-y-auto px-6 pb-6 sm:px-8 sm:pb-8">
                     {cardLeads.loading && (
-                      <p className="text-sm text-gray-500">Loading leads…</p>
+                      <p className="text-sm text-gray-500 sm:text-base">Loading leads…</p>
                     )}
                     {cardLeads.error && (
-                      <p className="text-sm text-red-600" role="alert">{cardLeads.error}</p>
+                      <p className="text-sm text-red-600 sm:text-base" role="alert">{cardLeads.error}</p>
                     )}
                     {!cardLeads.loading && !cardLeads.error && cardLeads.list.length === 0 && c.value > 0 && (
-                      <p className="text-sm text-gray-500">No leads to show.</p>
+                      <p className="text-sm text-gray-500 sm:text-base">No leads to show.</p>
                     )}
                     {!cardLeads.loading && !cardLeads.error && cardLeads.list.length > 0 && (
-                      <ul className="space-y-0">
+                      <ul className="space-y-3 pb-2">
                         {cardLeads.list.map((lead) => (
-                          <li key={lead.id} className="border-b border-gray-100 py-2.5 last:border-0">
-                            <div className="flex items-start justify-between gap-2">
-                              <span className="font-medium text-gray-900 truncate flex-1" title={lead.fullName || ''}>{lead.fullName || '—'}</span>
+                          <li
+                            key={lead.id}
+                            className="rounded-xl border border-gray-100 bg-gray-50/40 p-4 transition-colors duration-200 hover:bg-gray-50/90 sm:p-5"
+                          >
+                            <div className="flex items-start justify-between gap-3">
+                              <span
+                                className="min-w-0 flex-1 break-words text-sm font-semibold text-gray-900 sm:text-base"
+                                title={lead.fullName || ''}
+                              >
+                                {lead.fullName || '—'}
+                              </span>
                               {lead.applicationStatus ? (
-                                <span className={`shrink-0 inline-flex px-2 py-0.5 rounded text-xs font-medium ${
-                                  lead.applicationStatus === 'completed' ? 'bg-green-100 text-green-800' :
-                                  lead.applicationStatus === 'registered' ? 'bg-blue-100 text-blue-800' :
-                                  'bg-amber-100 text-amber-800'
-                                }`}>
+                                <span
+                                  className={`shrink-0 inline-flex rounded-full px-2.5 py-1 text-xs font-medium ${
+                                    lead.applicationStatus === 'completed'
+                                      ? 'bg-green-100 text-green-800'
+                                      : lead.applicationStatus === 'registered'
+                                        ? 'bg-blue-100 text-blue-800'
+                                        : 'bg-amber-100 text-amber-800'
+                                  }`}
+                                >
                                   {lead.applicationStatus}
                                 </span>
                               ) : null}
                             </div>
-                            <div className="mt-0.5 text-xs text-gray-500 flex flex-wrap items-center gap-x-1.5 gap-y-0.5">
+                            <div className="mt-2 flex flex-wrap items-center gap-x-2 gap-y-1 text-xs text-gray-500 sm:text-sm">
                               <span className="tabular-nums">{lead.phone || '—'}</span>
-                              {lead.phone && lead.email && <span aria-hidden>·</span>}
-                              <span className="truncate max-w-[180px]" title={lead.email || ''}>{lead.email || '—'}</span>
+                              {lead.phone && lead.email ? <span aria-hidden>·</span> : null}
+                              <span
+                                className="max-w-none break-all text-gray-600 sm:max-w-md sm:break-words"
+                                title={lead.email || ''}
+                              >
+                                {lead.email || '—'}
+                              </span>
                             </div>
-                            <div className="mt-0.5 text-xs text-gray-500">
+                            <div className="mt-2 text-xs text-gray-500 sm:text-sm">
                               Added: {formatDate(lead.createdAt)}
-                              {lead.occupation ? <span className="ml-2">· Occupation: <span className="text-gray-700">{lead.occupation}</span></span> : null}
+                              {lead.occupation ? (
+                                <span className="mt-1 block sm:mt-0 sm:inline sm:before:mx-1 sm:before:content-['·']">
+                                  Occupation: <span className="text-gray-700">{lead.occupation}</span>
+                                </span>
+                              ) : null}
                             </div>
-                            <p className="mt-1">
+                            <p className="mt-3">
                               <Link
                                 to={`/admin/leads?q=${encodeURIComponent(lead.phone || '')}`}
-                                className="text-xs text-primary-navy font-medium hover:underline"
+                                className="text-sm font-medium text-primary-navy hover:underline"
                               >
-                                View
+                                View in Leads
                               </Link>
                             </p>
                           </li>
                         ))}
                         {cardLeads.total > cardLeads.list.length && (
-                          <li className="pt-2 border-t border-gray-100">
-                            <Link to={viewAllUrl} className="text-xs text-primary-navy font-medium hover:underline">
+                          <li className="pt-2">
+                            <Link to={viewAllUrl} className="text-sm font-medium text-primary-navy hover:underline sm:text-base">
                               View all {formatCount(cardLeads.total)} →
                             </Link>
                           </li>
@@ -1311,6 +1371,7 @@ export default function Overview() {
               </>
             );
           })()}
+          </div>
         </div>,
         document.body
       )}
