@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback, useRef } from 'react';
+import { useState, useEffect, useCallback, useRef, useMemo } from 'react';
 import Sidebar from './components/Sidebar';
 import DayTabs from './components/DayTabs';
 import VideoPlayer from './components/VideoPlayer';
@@ -11,6 +11,7 @@ import NotesPanel from './components/NotesPanel';
 import {
   DAYS,
   SESSIONS,
+  ASSESSMENTS,
   getSessionById,
   getModuleById,
   getSessionsByDay,
@@ -18,6 +19,7 @@ import {
   getNextModule,
 } from './data/mockWebinarData';
 import { isModuleUnlocked, getPreviousModule, getUnlockProgress } from './utils/unlockLogic';
+import { deriveLocalLastActivityEvent } from './utils/lastActivityHelpers';
 import WebinarAssessment1 from './components/WebinarAssessment1';
 import WebinarAssessment2 from './components/WebinarAssessment2';
 import WebinarAssessment3 from './components/WebinarAssessment3';
@@ -72,7 +74,9 @@ export default function WebinarPage() {
   const [videoSessionType, setVideoSessionType] = useState(null);
   const [maxWatched, setMaxWatched] = useState(() => loadJson(STORAGE_KEYS.maxWatched, {}));
   const [unlockToast, setUnlockToast] = useState(null);
+  const [lastActivityAt, setLastActivityAt] = useState(null);
   const justCompletedRef = useRef(new Set());
+  const lastActivityTouchRef = useRef(0);
 
   const activeModule = activeSessionId ? getModuleById(activeSessionId) : null;
   const activeSession = activeModule?.type === 'Assessment' ? null : (activeSessionId ? getSessionById(activeSessionId) : null);
@@ -124,12 +128,18 @@ export default function WebinarPage() {
         const prevMax = prev[sessionId] || 0;
         return currentTime > prevMax ? { ...prev, [sessionId]: currentTime } : prev;
       });
+      const now = Date.now();
+      if (currentTime > 5 && now - lastActivityTouchRef.current > 15_000) {
+        lastActivityTouchRef.current = now;
+        setLastActivityAt(new Date().toISOString());
+      }
     },
     []
   );
 
   const handleVideoEnded = useCallback(
     (sessionId) => {
+      setLastActivityAt(new Date().toISOString());
       setCompletedSessions((prev) => (prev.includes(sessionId) ? prev : [...prev, sessionId]));
       setSessionProgress((prev) => ({ ...prev, [sessionId]: 100 }));
     },
@@ -137,6 +147,7 @@ export default function WebinarPage() {
   );
 
   const handleProgressUpdate = useCallback((sessionId, percent) => {
+    if (Number.isFinite(percent) && percent > 0) setLastActivityAt(new Date().toISOString());
     setSessionProgress((prev) => ({ ...prev, [sessionId]: percent }));
     if (percent >= COMPLETION_THRESHOLD) {
       setCompletedSessions((prev) => {
@@ -178,12 +189,32 @@ export default function WebinarPage() {
     );
   }, []);
 
-  const completedCountForDay = (dayId) => {
-    const modules = getModulesByDay(dayId);
-    return modules.filter((m) => completedSessions.includes(m.id)).length;
-  };
-
   const { completed: overallCompleted, total: totalSessionsCount, percent: overallPercent } = getUnlockProgress(completedSessions);
+  const courseComplete = totalSessionsCount > 0 && overallCompleted >= totalSessionsCount;
+
+  const completedVideoCount = completedSessions.filter((id) => SESSIONS.some((s) => s.id === id)).length;
+  const totalVideoSessions = SESSIONS.length;
+  const completedAssessmentCount = completedSessions.filter((id) => ASSESSMENTS.some((a) => a.id === id)).length;
+  const totalAssessmentCount = ASSESSMENTS.length;
+
+  const lastActivityEvent = useMemo(() => {
+    const hasPlayback = Object.values(playbackPosition).some((v) => v > 0);
+    const hasProgress = Object.values(sessionProgress).some((v) => (v ?? 0) > 0);
+    if (!lastActivityAt && completedSessions.length === 0 && !hasPlayback && !hasProgress) return null;
+    return deriveLocalLastActivityEvent({
+      completedSessions,
+      playbackPosition,
+      sessionProgress,
+      activeSessionId,
+      atIso: lastActivityAt || new Date().toISOString(),
+    });
+  }, [completedSessions, playbackPosition, sessionProgress, activeSessionId, lastActivityAt]);
+
+  const resumeSeconds = Math.round(playbackPosition?.[activeSessionId] || 0);
+
+  const bumpLastActivity = useCallback(() => {
+    setLastActivityAt(new Date().toISOString());
+  }, []);
 
   return (
     <div className="min-h-screen bg-gray-50 flex">
@@ -252,7 +283,7 @@ export default function WebinarPage() {
                 activeModule.id === 'a1' ? (
                   <div className="flex flex-col min-h-[360px] p-5 sm:p-6">
                     <WebinarAssessment1
-                      onComplete={() => setCompletedSessions((prev) => (prev.includes('a1') ? prev : [...prev, 'a1']))}
+                      onComplete={() => { bumpLastActivity(); setCompletedSessions((prev) => (prev.includes('a1') ? prev : [...prev, 'a1'])); }}
                       nextLabel={nextModule?.title}
                       onGoNext={nextModule ? () => { setActiveSessionId(nextModule.id); setActiveDay(nextModule.dayId); } : undefined}
                       webinarToken={webinarToken}
@@ -261,7 +292,7 @@ export default function WebinarPage() {
                 ) : activeModule.id === 'a2' ? (
                   <div className="flex flex-col min-h-[360px] p-5 sm:p-6">
                     <WebinarAssessment2
-                      onComplete={() => setCompletedSessions((prev) => (prev.includes('a2') ? prev : [...prev, 'a2']))}
+                      onComplete={() => { bumpLastActivity(); setCompletedSessions((prev) => (prev.includes('a2') ? prev : [...prev, 'a2'])); }}
                       nextLabel={nextModule?.title}
                       onGoNext={nextModule ? () => { setActiveSessionId(nextModule.id); setActiveDay(nextModule.dayId); } : undefined}
                       webinarToken={webinarToken}
@@ -270,7 +301,7 @@ export default function WebinarPage() {
                 ) : activeModule.id === 'a3' ? (
                   <div className="flex flex-col min-h-[360px] p-5 sm:p-6">
                     <WebinarAssessment3
-                      onComplete={() => setCompletedSessions((prev) => (prev.includes('a3') ? prev : [...prev, 'a3']))}
+                      onComplete={() => { bumpLastActivity(); setCompletedSessions((prev) => (prev.includes('a3') ? prev : [...prev, 'a3'])); }}
                       nextLabel={nextModule?.title}
                       onGoNext={nextModule ? () => { setActiveSessionId(nextModule.id); setActiveDay(nextModule.dayId); } : undefined}
                       webinarToken={webinarToken}
@@ -279,7 +310,7 @@ export default function WebinarPage() {
                 ) : activeModule.id === 'a4' ? (
                   <div className="flex flex-col min-h-[360px] p-5 sm:p-6">
                     <WebinarAssessment4
-                      onComplete={() => setCompletedSessions((prev) => (prev.includes('a4') ? prev : [...prev, 'a4']))}
+                      onComplete={() => { bumpLastActivity(); setCompletedSessions((prev) => (prev.includes('a4') ? prev : [...prev, 'a4'])); }}
                       nextLabel={nextModule?.title}
                       onGoNext={nextModule ? () => { setActiveSessionId(nextModule.id); setActiveDay(nextModule.dayId); } : undefined}
                       webinarToken={webinarToken}
@@ -288,7 +319,7 @@ export default function WebinarPage() {
                 ) : activeModule.id === 'a5' ? (
                   <div className="flex flex-col min-h-[360px] p-5 sm:p-6">
                     <WebinarAssessment5
-                      onComplete={() => setCompletedSessions((prev) => (prev.includes('a5') ? prev : [...prev, 'a5']))}
+                      onComplete={() => { bumpLastActivity(); setCompletedSessions((prev) => (prev.includes('a5') ? prev : [...prev, 'a5'])); }}
                       nextLabel={nextModule?.title}
                       onGoNext={nextModule ? () => { setActiveSessionId(nextModule.id); setActiveDay(nextModule.dayId); } : undefined}
                       webinarToken={webinarToken}
@@ -370,11 +401,20 @@ export default function WebinarPage() {
               <div className="border-t border-gray-100">
                 <ProgressIndicator
                   completedPercent={overallPercent}
-                  days={DAYS}
-                  completedCountForDay={completedCountForDay}
-                  totalSessionsForDay={(dayId) => getModulesByDay(dayId).length}
-                  totalCompleted={overallCompleted}
-                  totalSessions={totalSessionsCount}
+                  totalCompleted={completedVideoCount}
+                  totalSessions={totalVideoSessions}
+                  completedSessionCount={completedVideoCount}
+                  totalSessionCount={totalVideoSessions}
+                  completedAssessmentCount={completedAssessmentCount}
+                  totalAssessmentCount={totalAssessmentCount}
+                  lastActivityAt={lastActivityAt}
+                  lastActivityEvent={lastActivityEvent}
+                  activeSessionId={activeSessionId}
+                  activeModuleTitle={activeModule?.title || ''}
+                  nextModuleTitle={nextModule?.title || ''}
+                  nextModuleIsAssessment={nextModule?.type === 'Assessment'}
+                  resumeSeconds={resumeSeconds}
+                  courseComplete={courseComplete}
                   embedded
                 />
               </div>

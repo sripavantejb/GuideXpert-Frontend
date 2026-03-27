@@ -5,6 +5,7 @@ import { useWebinarAuth } from '../../../contexts/WebinarAuthContext';
 import { syncWebinarProgress, getWebinarProgress, syncWebinarProgressBeacon } from '../../../utils/api';
 import { isModuleUnlocked } from '../utils/unlockLogic';
 import { normalizeWebinarPhone10 } from '../utils/phone';
+import { deriveLocalLastActivityEvent, normalizeLastActivityEvent } from '../utils/lastActivityHelpers';
 
 /** Per-account localStorage keys (phone = last 10 digits or anon). */
 export function getWebinarStorageKeys(phone10) {
@@ -131,6 +132,8 @@ export function WebinarProvider({ children, initialDisplayName, phoneKey: phoneK
   const [sidebarExpanded, setSidebarExpanded] = useState(() => getStoredSidebarExpanded(storageKeys));
   const [doubts, setDoubts] = useState(() => normalizeDoubts(loadJson(storageKeys.doubts, [])));
   const [sessionProgress, setSessionProgress] = useState({});
+  const [lastActivityAt, setLastActivityAt] = useState(null);
+  const [lastActivityEvent, setLastActivityEvent] = useState(null);
 
   const [completedSessions, setCompletedSessions] = useState(() => readInitialProgress(storageKeys));
   const [playbackPosition, setPlaybackPosition] = useState(() => {
@@ -229,6 +232,8 @@ export function WebinarProvider({ children, initialDisplayName, phoneKey: phoneK
       setSessionProgress({});
       setMaxWatched({});
       setPlaybackPosition({});
+      setLastActivityAt(null);
+      setLastActivityEvent(null);
       const first = SESSIONS[0]?.id ?? null;
       if (first) setActiveSessionId(first);
       return;
@@ -253,6 +258,12 @@ export function WebinarProvider({ children, initialDisplayName, phoneKey: phoneK
 
     if (typeof doc.lastActiveModule === 'string' && ALL_MODULES.some((m) => m.id === doc.lastActiveModule)) {
       setActiveSessionId(doc.lastActiveModule);
+    }
+    if (doc.lastActivityAt) {
+      setLastActivityAt(doc.lastActivityAt);
+    }
+    if (doc.lastActivityEvent && typeof doc.lastActivityEvent === 'object') {
+      setLastActivityEvent(normalizeLastActivityEvent(doc.lastActivityEvent));
     }
   }, [setActiveSessionId]);
 
@@ -283,6 +294,12 @@ export function WebinarProvider({ children, initialDisplayName, phoneKey: phoneK
           }
           return changed ? next : prev;
         });
+      }
+      if (serverDoc.lastActivityAt) {
+        setLastActivityAt(serverDoc.lastActivityAt);
+      }
+      if (serverDoc.lastActivityEvent && typeof serverDoc.lastActivityEvent === 'object') {
+        setLastActivityEvent(normalizeLastActivityEvent(serverDoc.lastActivityEvent));
       }
     }).catch((err) => {
       if (import.meta.env.DEV) console.warn('[webinar sync] error', err?.message || err);
@@ -367,9 +384,94 @@ export function WebinarProvider({ children, initialDisplayName, phoneKey: phoneK
     return () => window.removeEventListener('beforeunload', handleUnload);
   }, [webinarToken, maxWatched, playbackPosition, activeSessionId]);
 
-  const updateSessionProgress = useCallback((sessionId, percent) => {
-    setSessionProgress((prev) => ({ ...prev, [sessionId]: percent }));
-  }, []);
+  const updateSessionProgress = useCallback(
+    (sessionId, percent) => {
+      const at = new Date().toISOString();
+      if (Number.isFinite(percent) && percent > 0) {
+        setLastActivityAt(at);
+      }
+      setSessionProgress((prev) => {
+        const next = { ...prev, [sessionId]: percent };
+        if (Number.isFinite(percent) && percent > 0) {
+          setLastActivityEvent(
+            deriveLocalLastActivityEvent({
+              completedSessions,
+              playbackPosition,
+              sessionProgress: next,
+              activeSessionId,
+              forModuleId: sessionId,
+              atIso: at,
+            })
+          );
+        }
+        return next;
+      });
+    },
+    [completedSessions, playbackPosition, activeSessionId]
+  );
+
+  const setCompletedSessionsTracked = useCallback(
+    (value) => {
+      const at = new Date().toISOString();
+      setLastActivityAt(at);
+      setCompletedSessions((prev) => {
+        const next = typeof value === 'function' ? value(prev) : value;
+        setLastActivityEvent(
+          deriveLocalLastActivityEvent({
+            completedSessions: next,
+            playbackPosition,
+            sessionProgress,
+            activeSessionId,
+            atIso: at,
+          })
+        );
+        return next;
+      });
+    },
+    [playbackPosition, sessionProgress, activeSessionId]
+  );
+
+  const setPlaybackPositionTracked = useCallback(
+    (value) => {
+      const at = new Date().toISOString();
+      setLastActivityAt(at);
+      setPlaybackPosition((prev) => {
+        const next = typeof value === 'function' ? value(prev) : value;
+        setLastActivityEvent(
+          deriveLocalLastActivityEvent({
+            completedSessions,
+            playbackPosition: next,
+            sessionProgress,
+            activeSessionId,
+            atIso: at,
+          })
+        );
+        return next;
+      });
+    },
+    [completedSessions, sessionProgress, activeSessionId]
+  );
+
+  const setSessionProgressTracked = useCallback(
+    (value) => {
+      const at = new Date().toISOString();
+      setLastActivityAt(at);
+      setSessionProgress((prev) => {
+        const next = typeof value === 'function' ? value(prev) : value;
+        setLastActivityEvent(
+          deriveLocalLastActivityEvent({
+            completedSessions,
+            playbackPosition,
+            sessionProgress: next,
+            activeSessionId,
+            atIso: at,
+          })
+        );
+        return next;
+      });
+    },
+    [completedSessions, playbackPosition, activeSessionId]
+  );
 
   const updateSetting = (key, value) => {
     setSettings((prev) => {
@@ -395,10 +497,10 @@ export function WebinarProvider({ children, initialDisplayName, phoneKey: phoneK
     doubts,
     setDoubts,
     completedSessions,
-    setCompletedSessions,
+    setCompletedSessions: setCompletedSessionsTracked,
     completedVideoCount,
     playbackPosition,
-    setPlaybackPosition,
+    setPlaybackPosition: setPlaybackPositionTracked,
     bookmarkedSessions,
     setBookmarkedSessions,
     maxWatched,
@@ -411,8 +513,10 @@ export function WebinarProvider({ children, initialDisplayName, phoneKey: phoneK
     activeDay,
     setActiveDay,
     sessionProgress,
-    setSessionProgress,
+    setSessionProgress: setSessionProgressTracked,
     updateSessionProgress,
+    lastActivityAt,
+    lastActivityEvent,
   }),
   [
     sidebarOpen,
@@ -430,6 +534,11 @@ export function WebinarProvider({ children, initialDisplayName, phoneKey: phoneK
     activeDay,
     sessionProgress,
     updateSessionProgress,
+    setCompletedSessionsTracked,
+    setPlaybackPositionTracked,
+    setSessionProgressTracked,
+    lastActivityAt,
+    lastActivityEvent,
   ]
   );
 

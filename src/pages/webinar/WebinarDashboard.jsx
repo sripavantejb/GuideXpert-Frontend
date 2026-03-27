@@ -12,8 +12,8 @@ import CompletionModal from './components/CompletionModal';
 import { useWebinar } from './context/WebinarContext';
 import { useWebinarAuth } from '../../contexts/WebinarAuthContext';
 import {
-  DAYS,
   SESSIONS,
+  ASSESSMENTS,
   ALL_MODULES,
   getSessionById,
   getModuleById,
@@ -57,6 +57,8 @@ export default function WebinarDashboard() {
     setDoubts,
     sessionProgress,
     setSessionProgress,
+    lastActivityAt,
+    lastActivityEvent,
   } = useWebinar();
   const [autoplayNextSession, setAutoplayNextSession] = useState(false);
   const [videoDurationFormatted, setVideoDurationFormatted] = useState(null);
@@ -199,13 +201,14 @@ export default function WebinarDashboard() {
   const overallCompleted = completedVideoIds.length;
   const overallPercent = totalSessionsCount ? Math.min(100, Math.round((overallCompleted / totalSessionsCount) * 100)) : 0;
 
-  const completedCountForDay = useCallback(
-    (dayId) => {
-      const ids = getSessionsByDay(dayId).map((s) => s.id);
-      return ids.filter((id) => completedVideoIds.includes(id)).length;
-    },
-    [completedVideoIds]
-  );
+  const totalAssessmentCount = ASSESSMENTS.length;
+  const completedAssessmentCount = completedSessions.filter((id) =>
+    ASSESSMENTS.some((a) => a.id === id)
+  ).length;
+
+  const { completed: unlockCompleted, total: unlockTotal } = getUnlockProgress(completedSessions);
+  const courseComplete = unlockTotal > 0 && unlockCompleted >= unlockTotal;
+  const resumeSeconds = Math.round(playbackPosition?.[activeSessionId] || 0);
 
   return (
     <>
@@ -432,11 +435,20 @@ export default function WebinarDashboard() {
           <div key="progress-indicator" className="xl:col-span-2">
           <ProgressIndicator
             completedPercent={overallPercent}
-            days={DAYS}
-            completedCountForDay={completedCountForDay}
-            totalSessionsForDay={(dayId) => getSessionsByDay(dayId).length}
             totalCompleted={overallCompleted}
             totalSessions={totalSessionsCount}
+            completedSessionCount={overallCompleted}
+            totalSessionCount={totalSessionsCount}
+            completedAssessmentCount={completedAssessmentCount}
+            totalAssessmentCount={totalAssessmentCount}
+            lastActivityAt={lastActivityAt}
+            lastActivityEvent={lastActivityEvent}
+            activeSessionId={activeSessionId}
+            activeModuleTitle={activeModule?.title || ''}
+            nextModuleTitle={nextModule?.title || ''}
+            nextModuleIsAssessment={nextModule?.type === 'Assessment'}
+            resumeSeconds={resumeSeconds}
+            courseComplete={courseComplete}
           />
           </div>
           <div key="certificate-unlock-card" className="xl:col-span-2">
