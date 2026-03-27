@@ -14,6 +14,9 @@ export function defaultLeadListFilters() {
     applicationStatus: '',
     otpVerified: '',
     slotBooked: '',
+    demoAttended: '',
+    assessmentWritten: '',
+    activationCompleted: '',
     selectedSlot: '',
     slotDate: '',
     utm_content: '',
@@ -29,10 +32,16 @@ export function leadListFiltersFromSearchParams(searchParams) {
   const otp = searchParams.get('otpVerified') || '';
   const slotB = searchParams.get('slotBooked') || '';
   const q = searchParams.get('q') || '';
+  const demoAttended = searchParams.get('demoAttended') === 'true' ? 'true' : '';
+  const assessmentWritten = searchParams.get('assessmentWritten') === 'true' ? 'true' : '';
+  const activationCompleted = searchParams.get('activationCompleted') === 'true' ? 'true' : '';
   return {
     applicationStatus: ALLOWED_APPLICATION_STATUSES.includes(status) ? status : '',
     otpVerified: ['true', 'false'].includes(otp) ? otp : '',
     slotBooked: ['true', 'false'].includes(slotB) ? slotB : '',
+    demoAttended,
+    assessmentWritten,
+    activationCompleted,
     selectedSlot: slot,
     slotDate,
     utm_content: utm,
@@ -46,6 +55,9 @@ export function leadListFiltersToSearchParams(filters) {
   if (filters.applicationStatus) search.set('applicationStatus', filters.applicationStatus);
   if (filters.otpVerified !== '' && filters.otpVerified != null) search.set('otpVerified', String(filters.otpVerified));
   if (filters.slotBooked !== '' && filters.slotBooked != null) search.set('slotBooked', String(filters.slotBooked));
+  if (filters.demoAttended === 'true') search.set('demoAttended', 'true');
+  if (filters.assessmentWritten === 'true') search.set('assessmentWritten', 'true');
+  if (filters.activationCompleted === 'true') search.set('activationCompleted', 'true');
   if (filters.selectedSlot) search.set('selectedSlot', filters.selectedSlot);
   if (filters.slotDate) search.set('slotDate', filters.slotDate);
   if (filters.utm_content) search.set('utm_content', filters.utm_content);
@@ -59,6 +71,9 @@ export function countActiveLeadFilters(filters) {
   if (f.applicationStatus) n += 1;
   if (f.otpVerified !== '' && f.otpVerified != null) n += 1;
   if (f.slotBooked !== '' && f.slotBooked != null) n += 1;
+  if (f.demoAttended === 'true') n += 1;
+  if (f.assessmentWritten === 'true') n += 1;
+  if (f.activationCompleted === 'true') n += 1;
   if (f.selectedSlot) n += 1;
   if (f.slotDate) n += 1;
   if (f.utm_content) n += 1;

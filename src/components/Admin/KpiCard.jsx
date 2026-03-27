@@ -1,6 +1,7 @@
 /**
  * Reusable KPI metric card for admin dashboard.
  * Optional: icon, top accent bar, subtitle/context, trend. Theme-aligned hover and focus.
+ * When interactive, acts as a button (click + Enter/Space) and can expose data-funnel-card for popovers.
  */
 export default function KpiCard({
   label,
@@ -12,21 +13,45 @@ export default function KpiCard({
   icon: Icon = null,
   accent = false,
   subtitle = '',
+  interactive = false,
+  onActivate = null,
+  ariaExpanded = false,
+  funnelCard = false,
 }) {
   const hasTrend = trend != null && trend !== 0;
   const trendUp = trend > 0;
   const showAccent = accent === true || accent === 'hero';
   const accentAlways = accent === 'hero';
 
+  const interactiveProps =
+    interactive && typeof onActivate === 'function'
+      ? {
+          role: 'button',
+          tabIndex: 0,
+          onClick: onActivate,
+          onKeyDown: (e) => {
+            if (e.key === 'Enter' || e.key === ' ') {
+              e.preventDefault();
+              onActivate(e);
+            }
+          },
+          'aria-haspopup': 'dialog',
+          'aria-expanded': ariaExpanded,
+          ...(funnelCard ? { 'data-funnel-card': '' } : {}),
+        }
+      : {};
+
   return (
     <div
+      {...interactiveProps}
       className={`
         relative rounded-xl border border-gray-200 bg-white p-4 portal-card
         transition-all duration-200
         hover:portal-card-hover hover:border-primary-blue-200
         hover:-translate-y-0.5
-        focus-within:ring-2 focus-within:ring-primary-navy focus-within:ring-offset-2 focus-within:outline-none
+        focus-visible:ring-2 focus-visible:ring-primary-navy focus-visible:ring-offset-2 focus-visible:outline-none
         ${showAccent ? 'group' : ''}
+        ${interactive ? 'cursor-pointer' : ''}
         ${className}
       `}
       title={title || label}

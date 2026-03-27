@@ -242,6 +242,9 @@ export default function Leads() {
       ...(leadListFilters.applicationStatus && { applicationStatus: leadListFilters.applicationStatus }),
       ...(leadListFilters.otpVerified !== '' && leadListFilters.otpVerified !== undefined && { otpVerified: leadListFilters.otpVerified }),
       ...(leadListFilters.slotBooked !== '' && leadListFilters.slotBooked !== undefined && { slotBooked: leadListFilters.slotBooked }),
+      ...(leadListFilters.demoAttended === 'true' && { demoAttended: 'true' }),
+      ...(leadListFilters.assessmentWritten === 'true' && { assessmentWritten: 'true' }),
+      ...(leadListFilters.activationCompleted === 'true' && { activationCompleted: 'true' }),
       ...(leadListFilters.selectedSlot && { selectedSlot: leadListFilters.selectedSlot }),
       ...(leadListFilters.slotDate && { slotDate: leadListFilters.slotDate }),
       ...(leadListFilters.utm_content && { utm_content: leadListFilters.utm_content }),
@@ -273,7 +276,7 @@ export default function Leads() {
     return () => {
       cancelledRef.current = true;
     };
-  }, [viewAll, pagination.page, dateRange.from, dateRange.to, leadListFilters.applicationStatus, leadListFilters.otpVerified, leadListFilters.slotBooked, leadListFilters.selectedSlot, leadListFilters.slotDate, leadListFilters.utm_content, leadListFilters.q, logout]);
+  }, [viewAll, pagination.page, dateRange.from, dateRange.to, leadListFilters.applicationStatus, leadListFilters.otpVerified, leadListFilters.slotBooked, leadListFilters.demoAttended, leadListFilters.assessmentWritten, leadListFilters.activationCompleted, leadListFilters.selectedSlot, leadListFilters.slotDate, leadListFilters.utm_content, leadListFilters.q, logout]);
 
   /* eslint-disable react-hooks/set-state-in-effect -- calendar drill-down fetch */
   useEffect(() => {

@@ -25,6 +25,13 @@ const FUNNEL_CARD_LEADS_PARAMS = {
   'activation-form-not-done': { params: { otpVerified: 'true', slotBooked: 'true' }, hasExactList: false, viewRelatedLabel: 'Slot booked' },
   'counsellor-dashboard-logged-in': { params: { otpVerified: 'true', slotBooked: 'true' }, hasExactList: false, viewRelatedLabel: 'Slot booked' },
   'counsellor-dashboard-not-logged-in': { params: { otpVerified: 'true', slotBooked: 'true' }, hasExactList: false, viewRelatedLabel: 'Slot booked' },
+  'kpi-slot-booked': { params: { slotBooked: 'true' }, hasExactList: true },
+  'kpi-demo-attended': { params: { demoAttended: 'true' }, hasExactList: true },
+  'kpi-assessment-written': { params: { assessmentWritten: 'true' }, hasExactList: true },
+  'kpi-activation-done': { params: { activationCompleted: 'true' }, hasExactList: true },
+  'kpi-in-progress': { params: { applicationStatus: 'in_progress' }, hasExactList: true },
+  'kpi-registered': { params: { applicationStatus: 'registered' }, hasExactList: true },
+  'kpi-completed': { params: { applicationStatus: 'completed' }, hasExactList: true },
 };
 
 const DRAG_THRESHOLD_PX = 5;
@@ -257,7 +264,7 @@ export default function Overview() {
       {
         ...config.params,
         page: 1,
-        limit: 10,
+        limit: 25,
         ...(dateRange.from && { from: dateRange.from }),
         ...(dateRange.to && { to: dateRange.to }),
       },
@@ -394,6 +401,13 @@ export default function Overview() {
     'activation-form-not-done': 'Leads who have not completed the activation form.',
     'counsellor-dashboard-logged-in': 'Activation-complete leads who have logged in to the Counsellor dashboard.',
     'counsellor-dashboard-not-logged-in': 'Activation-complete leads who have not yet logged in to the Counsellor dashboard.',
+    'kpi-slot-booked': 'Leads who booked a demo slot (any verification stage).',
+    'kpi-demo-attended': 'Leads with a booked slot who attended the demo.',
+    'kpi-assessment-written': 'Demo attendees who completed an assessment (forms 1–3).',
+    'kpi-activation-done': 'Assessment-complete leads who submitted the activation form.',
+    'kpi-in-progress': 'Leads whose application status is in progress.',
+    'kpi-registered': 'Leads whose application status is registered.',
+    'kpi-completed': 'Leads whose application status is completed.',
   };
 
   function getPopoverContent(cardId) {
@@ -426,6 +440,20 @@ export default function Overview() {
         return { ...base, label: 'Counsellor dashboard: Logged in', value: counsellorDashboardLoggedIn, conversionPct: activationFormCompleted > 0 ? Math.round((counsellorDashboardLoggedIn / activationFormCompleted) * 100) : null, conversionLabel: 'of activation form done' };
       case 'counsellor-dashboard-not-logged-in':
         return { ...base, label: 'Counsellor dashboard: Not logged in', value: counsellorDashboardNotLoggedIn, conversionPct: activationFormCompleted > 0 ? Math.round((counsellorDashboardNotLoggedIn / activationFormCompleted) * 100) : null, conversionLabel: 'of activation form done' };
+      case 'kpi-slot-booked':
+        return { ...base, label: 'Slot booked', value: slotBooked, conversionPct: otpVerified > 0 ? Math.round((slotBooked / otpVerified) * 100) : null, conversionLabel: 'of OTP verified' };
+      case 'kpi-demo-attended':
+        return { ...base, label: 'Demo attended', value: demoAttended, conversionPct: slotBooked > 0 ? Math.round((demoAttended / slotBooked) * 100) : null, conversionLabel: 'of slot booked' };
+      case 'kpi-assessment-written':
+        return { ...base, label: 'Assessment written', value: assessmentWritten, conversionPct: demoAttended > 0 ? Math.round((assessmentWritten / demoAttended) * 100) : null, conversionLabel: 'of demo attended' };
+      case 'kpi-activation-done':
+        return { ...base, label: 'Activation done', value: activationFormCompleted, conversionPct: assessmentWritten > 0 ? Math.round((activationFormCompleted / assessmentWritten) * 100) : null, conversionLabel: 'of assessment written', loginUrl: '/counsellor/login', loginLabel: 'Counsellor dashboard login' };
+      case 'kpi-in-progress':
+        return { ...base, label: 'In progress', value: stats?.inProgress ?? 0, conversionPct: total > 0 ? Math.round(((stats?.inProgress ?? 0) / total) * 100) : null, conversionLabel: 'of total' };
+      case 'kpi-registered':
+        return { ...base, label: 'Registered', value: stats?.registered ?? 0, conversionPct: total > 0 ? Math.round(((stats?.registered ?? 0) / total) * 100) : null, conversionLabel: 'of total' };
+      case 'kpi-completed':
+        return { ...base, label: 'Completed', value: stats?.completed ?? 0, conversionPct: total > 0 ? Math.round(((stats?.completed ?? 0) / total) * 100) : null, conversionLabel: 'of total' };
       default:
         return { ...base, label: '', value: 0, conversionPct: null, conversionLabel: null };
     }
@@ -652,50 +680,110 @@ export default function Overview() {
         <h2 id="section-key-metrics" className="text-sm font-bold text-gray-700 uppercase tracking-wider mb-1">Key metrics</h2>
         <p className="text-sm text-gray-500 mb-5">Lead funnel and application status at a glance.</p>
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 lg:gap-5">
-          <KpiCard label="Total Leads" value={total} title="Total leads added" icon={FiUsers} accent="hero" />
+          <KpiCard
+            label="Total Leads"
+            value={total}
+            title="Total leads added — click to list leads"
+            icon={FiUsers}
+            accent="hero"
+            interactive
+            funnelCard
+            ariaExpanded={!!popoverCardId && popoverCardId === 'leads-added'}
+            onActivate={(e) => handleCardClick('leads-added', e)}
+          />
           <KpiCard
             label="OTP Verified"
             value={otpVerified}
-            title="Leads who verified OTP"
+            title="Leads who verified OTP — click to list"
             icon={FiCheckCircle}
             accent
             subtitle={total > 0 ? `${Math.round((otpVerified / total) * 100)}% of total` : ''}
+            interactive
+            funnelCard
+            ariaExpanded={!!popoverCardId && popoverCardId === 'otp-verified'}
+            onActivate={(e) => handleCardClick('otp-verified', e)}
           />
           <KpiCard
             label="Slot Booked"
             value={slotBooked}
-            title="Leads who booked a slot"
+            title="Leads who booked a slot — click to list"
             icon={FiCalendar}
             accent
             subtitle={otpVerified > 0 ? `${Math.round((slotBooked / otpVerified) * 100)}% of OTP verified` : ''}
+            interactive
+            funnelCard
+            ariaExpanded={!!popoverCardId && popoverCardId === 'kpi-slot-booked'}
+            onActivate={(e) => handleCardClick('kpi-slot-booked', e)}
           />
           <KpiCard
             label="Demo Attended"
             value={demoAttended}
-            title="Leads who attended demo"
+            title="Leads who attended demo — click to list"
             icon={FiVideo}
             accent
             subtitle={slotBooked > 0 ? `${Math.round((demoAttended / slotBooked) * 100)}% of slot booked` : ''}
+            interactive
+            funnelCard
+            ariaExpanded={!!popoverCardId && popoverCardId === 'kpi-demo-attended'}
+            onActivate={(e) => handleCardClick('kpi-demo-attended', e)}
           />
           <KpiCard
             label="Assessment Written"
             value={assessmentWritten}
-            title="Leads who completed assessment"
+            title="Leads who completed assessment — click to list"
             icon={FiEdit3}
             accent
             subtitle={demoAttended > 0 ? `${Math.round((assessmentWritten / demoAttended) * 100)}% of demo attended` : ''}
+            interactive
+            funnelCard
+            ariaExpanded={!!popoverCardId && popoverCardId === 'kpi-assessment-written'}
+            onActivate={(e) => handleCardClick('kpi-assessment-written', e)}
           />
           <KpiCard
             label="Activation Done"
             value={activationFormCompleted}
-            title="Leads who completed activation form"
+            title="Leads who completed activation form — click to list"
             icon={FiAward}
             accent
             subtitle={assessmentWritten > 0 ? `${Math.round((activationFormCompleted / assessmentWritten) * 100)}% of assessment written` : ''}
+            interactive
+            funnelCard
+            ariaExpanded={!!popoverCardId && popoverCardId === 'kpi-activation-done'}
+            onActivate={(e) => handleCardClick('kpi-activation-done', e)}
           />
-          <KpiCard label="In Progress" value={stats?.inProgress ?? 0} title="Leads in progress" icon={FiLoader} accent />
-          <KpiCard label="Registered" value={stats?.registered ?? 0} title="Registered leads" icon={FiUserCheck} accent />
-          <KpiCard label="Completed" value={stats?.completed ?? 0} title="Completed applications" icon={FiCheck} accent />
+          <KpiCard
+            label="In Progress"
+            value={stats?.inProgress ?? 0}
+            title="Leads in progress — click to list"
+            icon={FiLoader}
+            accent
+            interactive
+            funnelCard
+            ariaExpanded={!!popoverCardId && popoverCardId === 'kpi-in-progress'}
+            onActivate={(e) => handleCardClick('kpi-in-progress', e)}
+          />
+          <KpiCard
+            label="Registered"
+            value={stats?.registered ?? 0}
+            title="Registered leads — click to list"
+            icon={FiUserCheck}
+            accent
+            interactive
+            funnelCard
+            ariaExpanded={!!popoverCardId && popoverCardId === 'kpi-registered'}
+            onActivate={(e) => handleCardClick('kpi-registered', e)}
+          />
+          <KpiCard
+            label="Completed"
+            value={stats?.completed ?? 0}
+            title="Completed applications — click to list"
+            icon={FiCheck}
+            accent
+            interactive
+            funnelCard
+            ariaExpanded={!!popoverCardId && popoverCardId === 'kpi-completed'}
+            onActivate={(e) => handleCardClick('kpi-completed', e)}
+          />
         </div>
       </section>
 
@@ -1120,7 +1208,7 @@ export default function Overview() {
         <div
           data-funnel-popover
           role="dialog"
-          aria-label="Funnel stage details"
+          aria-label="Lead breakdown"
           className="fixed z-[10000] w-[min(360px,calc(100vw-24px))] max-h-[min(80vh,480px)] rounded-lg border border-gray-200 bg-white shadow-xl flex flex-col overflow-hidden"
           style={{
             right: 24,

@@ -242,7 +242,18 @@ export default function AdminFiltersPanel({ open, onClose }) {
             <button
               type="button"
               onClick={() => {
-                const cleared = { applicationStatus: '', otpVerified: '', slotBooked: '', selectedSlot: '', slotDate: '', utm_content: '', q: '' };
+                const cleared = {
+                  applicationStatus: '',
+                  otpVerified: '',
+                  slotBooked: '',
+                  demoAttended: '',
+                  assessmentWritten: '',
+                  activationCompleted: '',
+                  selectedSlot: '',
+                  slotDate: '',
+                  utm_content: '',
+                  q: '',
+                };
                 setSearchDraft('');
                 commitLeadFilters({ ...leadListFilters, ...cleared, q: '' });
               }}
