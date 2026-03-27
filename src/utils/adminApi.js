@@ -448,12 +448,20 @@ export const getWebinarProgressList = async (params = {}, token = getStoredToken
   if (params.search) search.set('search', params.search);
   if (params.status) search.set('status', params.status);
   if (params.sort) search.set('sort', params.sort);
+  if (params.from) search.set('from', params.from);
+  if (params.to) search.set('to', params.to);
   const query = search.toString();
   return adminRequest(`/webinar-progress${query ? `?${query}` : ''}`, { method: 'GET', cache: 'no-store' }, token);
 };
 
-export const getWebinarProgressStats = async (token = getStoredToken()) => {
-  return adminRequest('/webinar-progress/stats', { method: 'GET', cache: 'no-store' }, token);
+export const getWebinarProgressStats = async (paramsOrToken = {}, token = getStoredToken()) => {
+  const params = typeof paramsOrToken === 'string' ? {} : (paramsOrToken || {});
+  const actualToken = typeof paramsOrToken === 'string' ? paramsOrToken : token;
+  const search = new URLSearchParams();
+  if (params.from) search.set('from', params.from);
+  if (params.to) search.set('to', params.to);
+  const query = search.toString();
+  return adminRequest(`/webinar-progress/stats${query ? `?${query}` : ''}`, { method: 'GET', cache: 'no-store' }, actualToken);
 };
 
 export const getWebinarProgressDetail = async (phone, token = getStoredToken()) => {

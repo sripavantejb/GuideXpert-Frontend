@@ -12,6 +12,8 @@ import {
   getAdminStats,
   getStoredToken,
   getTrainingFormResponses,
+  getWebinarProgressList,
+  getWebinarProgressStats,
 } from '../../utils/adminApi';
 import DashboardLayout from '../../components/Admin/DashboardLayout';
 import StatsCard from '../../components/Admin/StatsCard';
@@ -24,11 +26,22 @@ const emptyFunnelData = {
   slotBooked: 0,
   demoAttended: 0,
   trainingFormFilled: 0,
+  webinarPanelLogged: 0,
+  webinarCompleted100: 0,
 };
 
 function safeRate(numerator, denominator) {
   if (!denominator) return 0;
   return (numerator / denominator) * 100;
+}
+
+function pickNumber(payload, keys) {
+  for (const key of keys) {
+    const value = payload?.[key];
+    const numeric = Number(value);
+    if (Number.isFinite(numeric)) return numeric;
+  }
+  return null;
 }
 
 export default function FunnelAnalytics() {
@@ -53,11 +66,19 @@ export default function FunnelAnalytics() {
     Promise.all([
       getAdminStats(params, token),
       getTrainingFormResponses({ ...params, page: 1, limit: 1 }, token),
-    ]).then(([statsRes, trainingRes]) => {
+      getWebinarProgressStats(params, token),
+      getWebinarProgressList({ ...params, page: 1, limit: 1, status: 'not_started' }, token),
+    ]).then(([statsRes, trainingRes, webinarStatsRes, webinarNotStartedRes]) => {
       if (cancelled) return;
 
-      if (!statsRes.success || !trainingRes.success) {
-        const failure = !statsRes.success ? statsRes : trainingRes;
+      if (!statsRes.success || !trainingRes.success || !webinarStatsRes.success || !webinarNotStartedRes.success) {
+        const failure = !statsRes.success
+          ? statsRes
+          : !trainingRes.success
+            ? trainingRes
+            : !webinarStatsRes.success
+              ? webinarStatsRes
+              : webinarNotStartedRes;
         if (failure.status === 401) {
           logout();
           window.location.href = '/admin/login';
@@ -79,6 +100,51 @@ export default function FunnelAnalytics() {
       const trainingTotal = Number.isFinite(Number(trainingTotalRaw))
         ? Number(trainingTotalRaw)
         : trainingList.length;
+      const webinarStats = webinarStatsRes.data?.data || {};
+      const webinarNotStartedTotalRaw = webinarNotStartedRes.data?.data?.total;
+      const webinarNotStartedTotal = Number.isFinite(Number(webinarNotStartedTotalRaw))
+        ? Number(webinarNotStartedTotalRaw)
+        : null;
+
+      const webinarTotalEnrolled = pickNumber(webinarStats, [
+        'totalEnrolled',
+        'totalUsers',
+        'usersTotal',
+        'total',
+      ]);
+      const webinarFullyCompletedRaw = pickNumber(webinarStats, [
+        'fullyCompleted',
+        'completed100',
+        'completedCount',
+        'fullyCompletedCount',
+      ]);
+      const webinarNotStartedRaw = pickNumber(webinarStats, [
+        'notStarted',
+        'notStartedCount',
+        'not_started',
+      ]);
+      const webinarLoggedRaw = pickNumber(webinarStats, [
+        'panelLogged',
+        'panelLoggedCount',
+        'loggedInUsers',
+        'loggedUsers',
+        'usersLoggedIn',
+      ]);
+
+      const notStartedFallback = webinarNotStartedRaw != null
+        ? webinarNotStartedRaw
+        : webinarNotStartedTotal;
+      const loggedFromProgress = (webinarTotalEnrolled != null && notStartedFallback != null)
+        ? Math.max(0, webinarTotalEnrolled - notStartedFallback)
+        : 0;
+      const webinarPanelLogged = Math.max(
+        0,
+        Math.min(trainingTotal, webinarLoggedRaw != null ? webinarLoggedRaw : loggedFromProgress)
+      );
+      const webinarCompleted100 = Math.max(
+        0,
+        Math.min(webinarPanelLogged, webinarFullyCompletedRaw != null ? webinarFullyCompletedRaw : 0)
+      );
 
       setFunnelData({
         totalLeads: Number(stats.total) || 0,
@@ -86,6 +152,8 @@ export default function FunnelAnalytics() {
         slotBooked: Number(stats.slotBooked) || 0,
         demoAttended: Number(stats.demoAttended) || 0,
         trainingFormFilled: Number(trainingTotal) || 0,
+        webinarPanelLogged,
+        webinarCompleted100,
       });
       setLoading(false);
     });
@@ -112,6 +180,14 @@ export default function FunnelAnalytics() {
       funnelData.trainingFormFilled,
       funnelData.demoAttended
     );
+    const webinarPanelLoginRate = safeRate(
+      funnelData.webinarPanelLogged,
+      funnelData.trainingFormFilled
+    );
+    const webinarCompletedRate = safeRate(
+      funnelData.webinarCompleted100,
+      funnelData.webinarPanelLogged
+    );
 
     const notOtpVerified = Math.max(
       0,
@@ -128,6 +204,14 @@ export default function FunnelAnalytics() {
     const notFormFilled = Math.max(
       0,
       funnelData.demoAttended - funnelData.trainingFormFilled
+    );
+    const notWebinarPanelLogged = Math.max(
+      0,
+      funnelData.trainingFormFilled - funnelData.webinarPanelLogged
+    );
+    const notWebinarCompleted100 = Math.max(
+      0,
+      funnelData.webinarPanelLogged - funnelData.webinarCompleted100
     );
 
     const transitionRows = [
@@ -176,6 +260,24 @@ export default function FunnelAnalytics() {
         dropLabel: 'Not Form Filled',
         successColor: '#3b82a8',
       },
+      {
+        stageTitle: 'Webinar panel login',
+        cohortTotal: funnelData.trainingFormFilled,
+        success: funnelData.webinarPanelLogged,
+        drop: notWebinarPanelLogged,
+        successLabel: 'Panel Logged',
+        dropLabel: 'Not Logged',
+        successColor: '#2f8ca8',
+      },
+      {
+        stageTitle: 'Webinar completion (100%)',
+        cohortTotal: funnelData.webinarPanelLogged,
+        success: funnelData.webinarCompleted100,
+        drop: notWebinarCompleted100,
+        successLabel: 'Completed 100%',
+        dropLabel: 'Not Completed 100%',
+        successColor: '#1f9ea1',
+      },
     ];
 
     return {
@@ -186,6 +288,8 @@ export default function FunnelAnalytics() {
         slotBookingRate,
         demoAttendanceRate,
         trainingFormConversionRate,
+        webinarPanelLoginRate,
+        webinarCompletedRate,
       },
     };
   }, [funnelData]);
@@ -194,8 +298,8 @@ export default function FunnelAnalytics() {
     return (
       <div className="rounded-xl border border-gray-200 bg-white p-6 portal-card">
         <div className="h-6 w-56 bg-gray-100 rounded animate-pulse mb-6" />
-        <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-5 gap-4">
-          {Array.from({ length: 5 }).map((_, idx) => (
+        <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-7">
+          {Array.from({ length: 7 }).map((_, idx) => (
             <div key={idx} className="h-24 rounded-xl border border-gray-200 bg-gray-50 animate-pulse" />
           ))}
         </div>
@@ -229,7 +333,7 @@ export default function FunnelAnalytics() {
       title="Lead Funnel Analytics Dashboard"
       subtitle="Monitor stage conversion, identify drop-offs, and track webinar/training lead performance."
     >
-      <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-5">
+      <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-7">
           <StatsCard
             title="Total Leads"
             count={funnelData.totalLeads}
@@ -260,6 +364,18 @@ export default function FunnelAnalytics() {
             count={funnelData.trainingFormFilled}
             indicator={`${derived.metrics.trainingFormConversionRate.toFixed(1)}% from Demo Attended`}
             icon={FiFileText}
+          />
+          <StatsCard
+            title="Webinar Panel Logged"
+            count={funnelData.webinarPanelLogged}
+            indicator={`${derived.metrics.webinarPanelLoginRate.toFixed(1)}% from Training Form`}
+            icon={FiUsers}
+          />
+          <StatsCard
+            title="Webinar Completed (100%)"
+            count={funnelData.webinarCompleted100}
+            indicator={`${derived.metrics.webinarCompletedRate.toFixed(1)}% from Panel Logged`}
+            icon={FiCheckCircle}
           />
       </div>
 

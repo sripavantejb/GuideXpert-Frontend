@@ -144,7 +144,7 @@ export default function AdminFiltersPanel({ open, onClose }) {
               <button type="button" onClick={() => applyPreset('7d')} className="h-8 px-2.5 rounded-lg border border-gray-300 text-xs font-medium hover:bg-gray-50">7d</button>
               <button type="button" onClick={() => applyPreset('30d')} className="h-8 px-2.5 rounded-lg border border-gray-300 text-xs font-medium hover:bg-gray-50">30d</button>
               <button type="button" onClick={() => applyPreset('month')} className="h-8 px-2.5 rounded-lg border border-gray-300 text-xs font-medium hover:bg-gray-50">Month</button>
-              <button type="button" onClick={() => resetRange()} className="h-8 px-2.5 rounded-lg border border-gray-200 text-xs text-gray-600 hover:bg-gray-50">Reset range</button>
+              <button type="button" onClick={() => resetRange()} className="h-8 px-2.5 rounded-lg border border-gray-200 text-xs text-gray-600 hover:bg-gray-50">Clear range</button>
             </div>
           </section>
 

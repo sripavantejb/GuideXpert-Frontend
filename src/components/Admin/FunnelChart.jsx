@@ -81,6 +81,7 @@ function DropSegmentLabel({ x, y, width, height, value }) {
 
 export default function FunnelChart({ data, maxDomain }) {
   const domainMax = typeof maxDomain === 'number' && maxDomain > 0 ? maxDomain : 1;
+  const dynamicHeight = Math.max(320, Math.min(560, data.length * 56));
 
   return (
     <div
@@ -114,7 +115,7 @@ export default function FunnelChart({ data, maxDomain }) {
           </span>
         </div>
       </div>
-      <div className="h-[400px] w-full min-h-[300px] sm:h-[420px] sm:min-h-[320px]">
+      <div className="w-full" style={{ height: dynamicHeight }}>
         <ResponsiveContainer width="100%" height="100%">
           <BarChart
             data={data}
@@ -135,7 +136,7 @@ export default function FunnelChart({ data, maxDomain }) {
             <YAxis
               type="category"
               dataKey="stageTitle"
-              width={152}
+              width={184}
               tick={{ fontSize: 11, fill: '#334155' }}
               axisLine={false}
               tickLine={false}
