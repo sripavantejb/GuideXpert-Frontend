@@ -21,6 +21,7 @@ export default function Export() {
   const [from, setFrom] = useState('');
   const [to, setTo] = useState('');
   const [selectedSlot, setSelectedSlot] = useState('');
+  const [slotDate, setSlotDate] = useState('');
   const [utm_content, setUtm_content] = useState('');
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
@@ -32,14 +33,16 @@ export default function Export() {
       setFrom(searchParams.get('from') || '');
       setTo(searchParams.get('to') || '');
       setSelectedSlot(searchParams.get('slot') || searchParams.get('selectedSlot') || '');
+      setSlotDate(searchParams.get('slotDate') || '');
       setUtm_content(searchParams.get('utm') || searchParams.get('utm_content') || '');
       return;
     }
     setFrom(dateRange.from || '');
     setTo(dateRange.to || '');
     setSelectedSlot(leadListFilters.selectedSlot || '');
+    setSlotDate(leadListFilters.slotDate || '');
     setUtm_content(leadListFilters.utm_content || '');
-  }, [searchParams, dateRange.from, dateRange.to, leadListFilters.selectedSlot, leadListFilters.utm_content]);
+  }, [searchParams, dateRange.from, dateRange.to, leadListFilters.selectedSlot, leadListFilters.slotDate, leadListFilters.utm_content]);
   /* eslint-enable react-hooks/set-state-in-effect */
 
   const handleExport = async (e) => {
@@ -51,6 +54,7 @@ export default function Export() {
     if (from) params.from = from;
     if (to) params.to = to;
     if (selectedSlot) params.selectedSlot = selectedSlot;
+    if (slotDate) params.slotDate = slotDate;
     if (utm_content) params.utm_content = utm_content;
     const result = await getAdminLeadsExport(params, getStoredToken());
     setLoading(false);
@@ -114,6 +118,18 @@ export default function Export() {
                 </option>
               ))}
             </select>
+          </div>
+          <div>
+            <label htmlFor="export-slot-date" className="block text-sm font-medium text-gray-700 mb-1">
+              Slot date (optional)
+            </label>
+            <input
+              id="export-slot-date"
+              type="date"
+              value={slotDate}
+              onChange={(e) => setSlotDate(e.target.value)}
+              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-blue-500 focus:border-primary-blue-500 outline-none"
+            />
           </div>
           <div>
             <label htmlFor="export-utm-content" className="block text-sm font-medium text-gray-700 mb-1">

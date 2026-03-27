@@ -6,6 +6,7 @@ import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, Legend, Cart
 import { getAdminStats, getAdminLeads, getInfluencerLinks, getStoredToken } from '../../utils/adminApi';
 import { useAuth } from '../../contexts/AuthContext';
 import { useAdminDateRange } from '../../contexts/AdminDashboardContext';
+import { leadListFiltersToSearchParams, leadListFiltersToApiParams } from '../../utils/adminLeadFiltersShared';
 import DashboardSkeleton from '../../components/Admin/DashboardSkeleton';
 import KpiCard from '../../components/Admin/KpiCard';
 import ChartContainer from '../../components/Admin/ChartContainer';
@@ -104,7 +105,7 @@ function aggregateUtmLinksByInfluencer(links) {
 
 export default function Overview() {
   const { logout } = useAuth();
-  const { dateRange } = useAdminDateRange();
+  const { dateRange, leadListFilters } = useAdminDateRange();
   const [stats, setStats] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
@@ -280,6 +281,7 @@ export default function Overview() {
     setCardLeads((prev) => ({ ...prev, loading: true, error: '' }));
     getAdminLeads(
       {
+        ...leadListFiltersToApiParams(leadListFilters),
         ...config.params,
         page: 1,
         limit: 25,
@@ -301,7 +303,7 @@ export default function Overview() {
         error: '',
       });
     });
-  }, [popoverCardId, dateRange.from, dateRange.to]);
+  }, [popoverCardId, dateRange.from, dateRange.to, leadListFilters]);
 
   // Panel is fixed on the right, so we no longer close it on funnel scroll
 
@@ -485,9 +487,12 @@ export default function Overview() {
 
   function buildLeadsQuery(cardId) {
     const config = FUNNEL_CARD_LEADS_PARAMS[cardId];
-    if (!config?.params) return '';
-    const search = new URLSearchParams();
-    Object.entries(config.params).forEach(([k, v]) => { if (v != null && v !== '') search.set(k, String(v)); });
+    const search = new URLSearchParams(leadListFiltersToSearchParams(leadListFilters).toString());
+    if (config?.params) {
+      Object.entries(config.params).forEach(([k, v]) => {
+        if (v != null && v !== '') search.set(k, String(v));
+      });
+    }
     return search.toString();
   }
 

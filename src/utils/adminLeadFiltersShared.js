@@ -49,6 +49,23 @@ export function leadListFiltersFromSearchParams(searchParams) {
   };
 }
 
+/** Same fields as GET /admin/leads query (omit empty values). Use with card-specific params overlaid second. */
+export function leadListFiltersToApiParams(filters) {
+  const f = filters || defaultLeadListFilters();
+  return {
+    ...(f.applicationStatus && { applicationStatus: f.applicationStatus }),
+    ...(f.otpVerified !== '' && f.otpVerified != null && { otpVerified: f.otpVerified }),
+    ...(f.slotBooked !== '' && f.slotBooked != null && { slotBooked: f.slotBooked }),
+    ...(f.demoAttended === 'true' && { demoAttended: 'true' }),
+    ...(f.assessmentWritten === 'true' && { assessmentWritten: 'true' }),
+    ...(f.activationCompleted === 'true' && { activationCompleted: 'true' }),
+    ...(f.selectedSlot && { selectedSlot: f.selectedSlot }),
+    ...(f.slotDate && { slotDate: f.slotDate }),
+    ...(f.utm_content && { utm_content: f.utm_content }),
+    ...(f.q && { q: f.q }),
+  };
+}
+
 /** Build URLSearchParams for /admin/leads (omit empty values). */
 export function leadListFiltersToSearchParams(filters) {
   const search = new URLSearchParams();

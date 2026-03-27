@@ -503,6 +503,7 @@ export async function getAdminLeadsExport(params = {}, token = getStoredToken())
   if (params.from) search.set('from', params.from);
   if (params.to) search.set('to', params.to);
   if (params.selectedSlot) search.set('selectedSlot', params.selectedSlot);
+  if (params.slotDate && String(params.slotDate).trim()) search.set('slotDate', String(params.slotDate).trim());
   if (params.utm_content) search.set('utm_content', params.utm_content);
   const query = search.toString();
   const url = `${API_BASE_URL}/admin/leads/export${query ? `?${query}` : ''}`;

@@ -83,6 +83,7 @@ export default function AdminFiltersPanel({ open, onClose }) {
     if (dateRange.from) sp.set('from', dateRange.from);
     if (dateRange.to) sp.set('to', dateRange.to);
     if (leadListFilters.selectedSlot) sp.set('slot', leadListFilters.selectedSlot);
+    if (leadListFilters.slotDate) sp.set('slotDate', leadListFilters.slotDate);
     if (leadListFilters.utm_content) sp.set('utm', leadListFilters.utm_content);
     const q = sp.toString();
     return q ? `?${q}` : '';
