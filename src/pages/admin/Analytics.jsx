@@ -1,33 +1,34 @@
 import { useState, useEffect } from 'react';
 import { getAdminStats, getStoredToken } from '../../utils/adminApi';
 import { useAuth } from '../../contexts/AuthContext';
+import { useAdminDateRange } from '../../contexts/AdminDashboardContext';
 import AnalyticsSkeleton from '../../components/UI/AnalyticsSkeleton';
 
-function defaultDateRange() {
-  const to = new Date();
-  const from = new Date();
-  from.setDate(from.getDate() - 30);
-  return {
-    from: from.toISOString().slice(0, 10),
-    to: to.toISOString().slice(0, 10),
+function formatRangeLabel(from, to) {
+  if (!from && !to) return 'selected range';
+  const f = (d) => {
+    if (!d) return '…';
+    const x = new Date(d + 'T12:00:00');
+    return Number.isNaN(x.getTime()) ? d : x.toLocaleDateString('en-IN', { day: 'numeric', month: 'short', year: 'numeric' });
   };
+  return `${f(from)} – ${f(to)}`;
 }
 
 export default function Analytics() {
   const { logout } = useAuth();
+  const { dateRange } = useAdminDateRange();
   const [stats, setStats] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
-  const [dateFrom, setDateFrom] = useState('');
-  const [dateTo, setDateTo] = useState('');
 
+  /* eslint-disable react-hooks/set-state-in-effect -- standard fetch lifecycle (matches Overview) */
   useEffect(() => {
     let cancelled = false;
     setLoading(true);
     setError('');
     const params = {};
-    if (dateFrom) params.from = dateFrom;
-    if (dateTo) params.to = dateTo;
+    if (dateRange.from) params.from = dateRange.from;
+    if (dateRange.to) params.to = dateRange.to;
     getAdminStats(params, getStoredToken()).then((result) => {
       if (cancelled) return;
       if (!result.success) {
@@ -44,7 +45,8 @@ export default function Analytics() {
       setLoading(false);
     });
     return () => { cancelled = true; };
-  }, [logout, dateFrom, dateTo]);
+  }, [logout, dateRange.from, dateRange.to]);
+  /* eslint-enable react-hooks/set-state-in-effect */
 
   if (loading) {
     return <AnalyticsSkeleton />;
@@ -79,65 +81,17 @@ export default function Analytics() {
   }));
   const maxSlot = Math.max(...slotData.map((d) => d.value), 1);
   const signupsOverTime = stats?.signupsOverTime ?? [];
-
-  const hasDateFilter = dateFrom || dateTo;
-  const applyDefaultRange = () => {
-    const { from, to } = defaultDateRange();
-    setDateFrom(from);
-    setDateTo(to);
-  };
-  const clearDateRange = () => {
-    setDateFrom('');
-    setDateTo('');
-  };
+  const rangeSummary = formatRangeLabel(dateRange.from, dateRange.to);
 
   return (
     <div className="max-w-6xl mx-auto">
       <h2 className="text-xl font-semibold text-gray-800 mb-6">Analytics</h2>
 
-      {/* Date range for signups chart */}
       <div className="bg-white rounded-lg border border-gray-200 shadow-sm p-4 mb-6">
-        <p className="text-xs font-medium text-gray-500 mb-2">Signups chart date range (status and slot metrics are all-time)</p>
-        <div className="flex flex-wrap items-center gap-3">
-          <div>
-            <label htmlFor="analytics-from" className="block text-xs font-medium text-gray-500 mb-0.5">From</label>
-            <input
-              id="analytics-from"
-              type="date"
-              value={dateFrom}
-              onChange={(e) => setDateFrom(e.target.value)}
-              className="h-9 px-3 rounded-lg border border-gray-300 focus:ring-2 focus:ring-primary-blue-500 focus:border-primary-blue-500 outline-none text-sm"
-            />
-          </div>
-          <div>
-            <label htmlFor="analytics-to" className="block text-xs font-medium text-gray-500 mb-0.5">To</label>
-            <input
-              id="analytics-to"
-              type="date"
-              value={dateTo}
-              onChange={(e) => setDateTo(e.target.value)}
-              className="h-9 px-3 rounded-lg border border-gray-300 focus:ring-2 focus:ring-primary-blue-500 focus:border-primary-blue-500 outline-none text-sm"
-            />
-          </div>
-          <div className="flex items-end gap-2">
-            <button
-              type="button"
-              onClick={applyDefaultRange}
-              className="h-9 px-3 rounded-lg border border-gray-300 text-sm font-medium text-gray-700 hover:bg-gray-50"
-            >
-              Last 30 days
-            </button>
-            {hasDateFilter && (
-              <button
-                type="button"
-                onClick={clearDateRange}
-                className="h-9 px-3 rounded-lg border border-gray-300 text-sm font-medium text-gray-600 hover:bg-gray-50"
-              >
-                Clear
-              </button>
-            )}
-          </div>
-        </div>
+        <p className="text-sm text-gray-600">
+          All figures below use the dashboard <strong className="font-medium text-gray-800">date range</strong> from{' '}
+          <strong className="font-medium text-gray-800">Filters</strong> in the header ({rangeSummary}).
+        </p>
       </div>
 
       <div className="space-y-8">
@@ -179,7 +133,7 @@ export default function Analytics() {
 
         <section className="bg-white rounded-lg border border-gray-200 shadow-sm p-6">
           <h3 className="font-semibold text-gray-800 mb-4">
-            Signups over time{hasDateFilter ? ` (${dateFrom || '…'} to ${dateTo || '…'})` : ' (last 30 days)'}
+            Signups over time ({rangeSummary})
           </h3>
           {signupsOverTime.length === 0 ? (
             <p className="text-gray-500 text-sm">No signup data for the selected range.</p>

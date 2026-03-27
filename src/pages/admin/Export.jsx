@@ -1,12 +1,8 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
+import { useSearchParams } from 'react-router-dom';
 import { getAdminLeadsExport, getStoredToken } from '../../utils/adminApi';
-
-const ALL_SLOT_IDS = [
-  'MONDAY_7PM', 'TUESDAY_7PM', 'WEDNESDAY_7PM', 'THURSDAY_7PM',
-  'FRIDAY_7PM', 'SATURDAY_7PM', 'SUNDAY_3PM', 'SUNDAY_11AM',
-  'MONDAY_6PM', 'TUESDAY_6PM', 'WEDNESDAY_6PM', 'THURSDAY_6PM',
-  'FRIDAY_6PM', 'SATURDAY_6PM', 'SUNDAY_6PM'
-];
+import { useAdminDateRange } from '../../contexts/AdminDashboardContext';
+import { ALL_SLOT_IDS } from '../../utils/adminLeadFiltersShared';
 
 function formatSlotIdForDropdown(slotId) {
   if (!slotId || typeof slotId !== 'string') return slotId || '';
@@ -20,6 +16,8 @@ function formatSlotIdForDropdown(slotId) {
 }
 
 export default function Export() {
+  const [searchParams] = useSearchParams();
+  const { dateRange, leadListFilters } = useAdminDateRange();
   const [from, setFrom] = useState('');
   const [to, setTo] = useState('');
   const [selectedSlot, setSelectedSlot] = useState('');
@@ -27,6 +25,22 @@ export default function Export() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
   const [success, setSuccess] = useState(false);
+
+  /* eslint-disable react-hooks/set-state-in-effect -- prefill from ?from/?to/?slot/?utm or dashboard context */
+  useEffect(() => {
+    if (searchParams.toString()) {
+      setFrom(searchParams.get('from') || '');
+      setTo(searchParams.get('to') || '');
+      setSelectedSlot(searchParams.get('slot') || searchParams.get('selectedSlot') || '');
+      setUtm_content(searchParams.get('utm') || searchParams.get('utm_content') || '');
+      return;
+    }
+    setFrom(dateRange.from || '');
+    setTo(dateRange.to || '');
+    setSelectedSlot(leadListFilters.selectedSlot || '');
+    setUtm_content(leadListFilters.utm_content || '');
+  }, [searchParams, dateRange.from, dateRange.to, leadListFilters.selectedSlot, leadListFilters.utm_content]);
+  /* eslint-enable react-hooks/set-state-in-effect */
 
   const handleExport = async (e) => {
     e.preventDefault();
@@ -53,7 +67,7 @@ export default function Export() {
 
       <div className="bg-white rounded-lg border border-gray-200 shadow-sm p-6">
         <p className="text-sm text-gray-600 mb-4">
-          Download all leads as a CSV file (includes UTM/Influencer columns). Optionally filter by date range, slot, or influencer.
+          Download all leads as a CSV file (includes UTM/Influencer columns). Optionally filter by date range, slot, or influencer. Defaults match the header <strong className="font-medium text-gray-800">Filters</strong> when you open this page without query parameters.
         </p>
 
         <form onSubmit={handleExport} className="space-y-4">

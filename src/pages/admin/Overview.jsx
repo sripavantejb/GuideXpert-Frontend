@@ -253,7 +253,16 @@ export default function Overview() {
       return;
     }
     setCardLeads((prev) => ({ ...prev, loading: true, error: '' }));
-    getAdminLeads({ ...config.params, page: 1, limit: 10 }, getStoredToken()).then((res) => {
+    getAdminLeads(
+      {
+        ...config.params,
+        page: 1,
+        limit: 10,
+        ...(dateRange.from && { from: dateRange.from }),
+        ...(dateRange.to && { to: dateRange.to }),
+      },
+      getStoredToken()
+    ).then((res) => {
       if (!res.success) {
         setCardLeads({ list: [], total: 0, loading: false, error: res.message || 'Failed to load leads' });
         return;
@@ -267,7 +276,7 @@ export default function Overview() {
         error: '',
       });
     });
-  }, [popoverCardId]);
+  }, [popoverCardId, dateRange.from, dateRange.to]);
 
   // Panel is fixed on the right, so we no longer close it on funnel scroll
 

@@ -1,4 +1,5 @@
 import { createContext, useContext, useState, useCallback } from 'react';
+import { defaultLeadListFilters } from '../utils/adminLeadFiltersShared';
 
 function defaultRange() {
   const to = new Date();
@@ -12,8 +13,13 @@ function defaultRange() {
 
 const AdminDashboardContext = createContext(null);
 
+function emptyLeadFilters() {
+  return defaultLeadListFilters();
+}
+
 export function AdminDashboardProvider({ children }) {
   const [dateRange, setDateRange] = useState(defaultRange);
+  const [leadListFilters, setLeadListFiltersState] = useState(emptyLeadFilters);
 
   const setFrom = useCallback((from) => {
     setDateRange((prev) => ({ ...prev, from: from || '' }));
@@ -38,6 +44,24 @@ export function AdminDashboardProvider({ children }) {
     });
   }, []);
 
+  const setLeadListFilters = useCallback((next) => {
+    if (typeof next === 'function') {
+      setLeadListFiltersState((p) => next(p));
+    } else if (next && typeof next === 'object') {
+      setLeadListFiltersState(next);
+    } else {
+      setLeadListFiltersState(emptyLeadFilters());
+    }
+  }, []);
+
+  const patchLeadListFilters = useCallback((partial) => {
+    setLeadListFiltersState((prev) => ({ ...prev, ...partial }));
+  }, []);
+
+  const resetLeadListFilters = useCallback(() => {
+    setLeadListFiltersState(emptyLeadFilters());
+  }, []);
+
   return (
     <AdminDashboardContext.Provider
       value={{
@@ -47,6 +71,10 @@ export function AdminDashboardProvider({ children }) {
         setTo,
         resetRange,
         applyPreset,
+        leadListFilters,
+        setLeadListFilters,
+        patchLeadListFilters,
+        resetLeadListFilters,
       }}
     >
       {children}
@@ -54,8 +82,25 @@ export function AdminDashboardProvider({ children }) {
   );
 }
 
+const dateFallback = {
+  dateRange: defaultRange(),
+  setDateRange: () => {},
+  setFrom: () => {},
+  setTo: () => {},
+  resetRange: () => {},
+  applyPreset: () => {},
+  leadListFilters: emptyLeadFilters(),
+  setLeadListFilters: () => {},
+  patchLeadListFilters: () => {},
+  resetLeadListFilters: () => {},
+};
+
 export function useAdminDateRange() {
   const ctx = useContext(AdminDashboardContext);
-  if (!ctx) return { dateRange: defaultRange(), setDateRange: () => {}, setFrom: () => {}, setTo: () => {}, resetRange: () => {}, applyPreset: () => {} };
+  if (!ctx) return dateFallback;
   return ctx;
+}
+
+export function useAdminDashboard() {
+  return useAdminDateRange();
 }

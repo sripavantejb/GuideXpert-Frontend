@@ -7,6 +7,11 @@ import { useAdminDateRange } from '../../contexts/AdminDashboardContext';
 import TableSkeleton from '../../components/UI/TableSkeleton';
 import { ContentSkeleton } from '../../components/UI/Skeleton';
 import { dedupeByPhone } from '../../components/Admin/CopyToSheetsModal';
+import {
+  ALL_SLOT_IDS,
+  leadListFiltersFromSearchParams,
+  leadListFiltersToSearchParams,
+} from '../../utils/adminLeadFiltersShared';
 
 function formatDate(d) {
   if (!d) return '—';
@@ -14,19 +19,10 @@ function formatDate(d) {
   return date.toLocaleDateString('en-IN', { dateStyle: 'short' }) + ' ' + date.toLocaleTimeString('en-IN', { timeStyle: 'short' });
 }
 
-const ALL_SLOT_IDS = [
-  'MONDAY_7PM', 'TUESDAY_7PM', 'WEDNESDAY_7PM', 'THURSDAY_7PM',
-  'FRIDAY_7PM', 'SATURDAY_7PM', 'SUNDAY_3PM', 'SUNDAY_11AM',
-  'MONDAY_6PM', 'TUESDAY_6PM', 'WEDNESDAY_6PM', 'THURSDAY_6PM',
-  'FRIDAY_6PM', 'SATURDAY_6PM', 'SUNDAY_6PM'
-];
-
 const DAY_BY_DOW = ['SUNDAY', 'MONDAY', 'TUESDAY', 'WEDNESDAY', 'THURSDAY', 'FRIDAY', 'SATURDAY'];
 const TIME_ROWS = ['11AM', '3PM', '6PM', '7PM'];
 const WEEKDAY_HEADER = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
 const MONTH_NAMES = ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December'];
-const ALLOWED_APPLICATION_STATUSES = ['in_progress', 'registered', 'completed'];
-
 function slotIdFor(day, timeKey) {
   return `${day}_${timeKey}`;
 }
@@ -133,31 +129,14 @@ function buildTsv(leads, selectedKeys) {
 
 export default function Leads() {
   const { logout } = useAuth();
-  const { dateRange } = useAdminDateRange();
-  const [searchParams] = useSearchParams();
+  const { dateRange, leadListFilters, setLeadListFilters } = useAdminDateRange();
+  const [searchParams, setSearchParams] = useSearchParams();
+  const searchInputRef = useRef(null);
   const [leads, setLeads] = useState([]);
   const [pagination, setPagination] = useState({ page: 1, limit: 50, total: 0, totalPages: 1 });
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
-  const [filters, setFilters] = useState(() => {
-    const status = searchParams.get('applicationStatus') || '';
-    const slot = searchParams.get('selectedSlot') || '';
-    const utm = searchParams.get('utm_content') || '';
-    const slotDate = searchParams.get('slotDate') || '';
-    const otp = searchParams.get('otpVerified') || '';
-    const slotB = searchParams.get('slotBooked') || '';
-    const q = searchParams.get('q') || '';
-    return {
-      applicationStatus: ALLOWED_APPLICATION_STATUSES.includes(status) ? status : '',
-      otpVerified: ['true', 'false'].includes(otp) ? otp : '',
-      slotBooked: ['true', 'false'].includes(slotB) ? slotB : '',
-      selectedSlot: slot,
-      slotDate,
-      utm_content: utm,
-      q,
-    };
-  });
-  const [searchInput, setSearchInput] = useState('');
+  const [searchDraft, setSearchDraft] = useState(() => leadListFilters.q || '');
   const [detailLead, setDetailLead] = useState(null);
   const [detailLoading, setDetailLoading] = useState(false);
   const [detailNotes, setDetailNotes] = useState('');
@@ -176,27 +155,16 @@ export default function Leads() {
   const [leadsForDateError, setLeadsForDateError] = useState('');
   const [viewAll, setViewAll] = useState(false);
 
-  // Sync filters from URL when landing from quick links (e.g. /admin/leads?applicationStatus=in_progress or from Overview funnel)
+  /* eslint-disable react-hooks/set-state-in-effect -- apply /admin/leads query string to context + UI */
   useEffect(() => {
-    const status = searchParams.get('applicationStatus') || '';
-    const slot = searchParams.get('selectedSlot') || '';
-    const utm = searchParams.get('utm_content') || '';
-    const slotDate = searchParams.get('slotDate') || '';
-    const otp = searchParams.get('otpVerified') || '';
-    const slotB = searchParams.get('slotBooked') || '';
-    const q = searchParams.get('q') || '';
-    setFilters({
-      applicationStatus: ALLOWED_APPLICATION_STATUSES.includes(status) ? status : '',
-      otpVerified: ['true', 'false'].includes(otp) ? otp : '',
-      slotBooked: ['true', 'false'].includes(slotB) ? slotB : '',
-      selectedSlot: slot,
-      slotDate,
-      utm_content: utm,
-      q,
-    });
-    setSearchInput(q);
+    const raw = searchParams.toString();
+    if (!raw) return;
+    const parsed = leadListFiltersFromSearchParams(searchParams);
+    setLeadListFilters(parsed);
+    setSearchDraft(parsed.q || '');
     setPagination((prev) => ({ ...prev, page: 1 }));
-  }, [searchParams]);
+  }, [searchParams, setLeadListFilters]);
+  /* eslint-enable react-hooks/set-state-in-effect */
 
   const openLeadDetail = (leadId) => {
     setDetailLead(null);
@@ -239,13 +207,26 @@ export default function Leads() {
     });
   };
 
+  /* eslint-disable react-hooks/set-state-in-effect -- mirror panel search q into local draft when field not focused */
+  useEffect(() => {
+    const el = searchInputRef.current;
+    if (el && document.activeElement === el) return;
+    setSearchDraft(leadListFilters.q || '');
+  }, [leadListFilters.q]);
+  /* eslint-enable react-hooks/set-state-in-effect */
+
   useEffect(() => {
     const t = setTimeout(() => {
-      setFilters((f) => ({ ...f, q: searchInput }));
-      setPagination((prev) => ({ ...prev, page: 1 }));
+      setLeadListFilters((prev) => {
+        if ((prev.q || '') === searchDraft) return prev;
+        const next = { ...prev, q: searchDraft };
+        setSearchParams(leadListFiltersToSearchParams(next), { replace: true });
+        setPagination((p) => ({ ...p, page: 1 }));
+        return next;
+      });
     }, 300);
     return () => clearTimeout(t);
-  }, [searchInput]);
+  }, [searchDraft, setLeadListFilters, setSearchParams]);
 
   useEffect(() => {
     cancelledRef.current = false;
@@ -258,13 +239,13 @@ export default function Leads() {
       limit,
       ...(dateRange.from && { from: dateRange.from }),
       ...(dateRange.to && { to: dateRange.to }),
-      ...(filters.applicationStatus && { applicationStatus: filters.applicationStatus }),
-      ...(filters.otpVerified !== '' && filters.otpVerified !== undefined && { otpVerified: filters.otpVerified }),
-      ...(filters.slotBooked !== '' && filters.slotBooked !== undefined && { slotBooked: filters.slotBooked }),
-      ...(filters.selectedSlot && { selectedSlot: filters.selectedSlot }),
-      ...(filters.slotDate && { slotDate: filters.slotDate }),
-      ...(filters.utm_content && { utm_content: filters.utm_content }),
-      ...(filters.q && { q: filters.q }),
+      ...(leadListFilters.applicationStatus && { applicationStatus: leadListFilters.applicationStatus }),
+      ...(leadListFilters.otpVerified !== '' && leadListFilters.otpVerified !== undefined && { otpVerified: leadListFilters.otpVerified }),
+      ...(leadListFilters.slotBooked !== '' && leadListFilters.slotBooked !== undefined && { slotBooked: leadListFilters.slotBooked }),
+      ...(leadListFilters.selectedSlot && { selectedSlot: leadListFilters.selectedSlot }),
+      ...(leadListFilters.slotDate && { slotDate: leadListFilters.slotDate }),
+      ...(leadListFilters.utm_content && { utm_content: leadListFilters.utm_content }),
+      ...(leadListFilters.q && { q: leadListFilters.q }),
     };
     const tick = queueMicrotask || ((fn) => setTimeout(fn, 0));
     tick(() => {
@@ -292,8 +273,9 @@ export default function Leads() {
     return () => {
       cancelledRef.current = true;
     };
-  }, [viewAll, pagination.page, dateRange.from, dateRange.to, filters.applicationStatus, filters.otpVerified, filters.slotBooked, filters.selectedSlot, filters.slotDate, filters.utm_content, filters.q, logout]);
+  }, [viewAll, pagination.page, dateRange.from, dateRange.to, leadListFilters.applicationStatus, leadListFilters.otpVerified, leadListFilters.slotBooked, leadListFilters.selectedSlot, leadListFilters.slotDate, leadListFilters.utm_content, leadListFilters.q, logout]);
 
+  /* eslint-disable react-hooks/set-state-in-effect -- calendar drill-down fetch */
   useEffect(() => {
     if (!selectedCalendarDate) {
       setLeadsForSelectedDate([]);
@@ -304,7 +286,14 @@ export default function Leads() {
     setLeadsForDateLoading(true);
     setLeadsForDateError('');
     getAdminLeads(
-      { slotDate: dateStr, slotBooked: 'true', page: 1, limit: 200 },
+      {
+        slotDate: dateStr,
+        slotBooked: 'true',
+        page: 1,
+        limit: 200,
+        ...(dateRange.from && { from: dateRange.from }),
+        ...(dateRange.to && { to: dateRange.to }),
+      },
       getStoredToken()
     ).then((result) => {
       setLeadsForDateLoading(false);
@@ -320,7 +309,8 @@ export default function Leads() {
       }
       setLeadsForSelectedDate(result.data?.data ?? []);
     });
-  }, [selectedCalendarDate, logout]);
+  }, [selectedCalendarDate, logout, dateRange.from, dateRange.to]);
+  /* eslint-enable react-hooks/set-state-in-effect */
 
   const monthGrid = useMemo(() => buildMonthGrid(viewYear, viewMonth), [viewYear, viewMonth]);
 
@@ -329,103 +319,48 @@ export default function Leads() {
     setPagination((prev) => ({ ...prev, page: next }));
   };
 
-  const handleFilterChange = (key, value) => {
-    setFilters((prev) => ({ ...prev, [key]: value }));
-    setPagination((prev) => ({ ...prev, page: 1 }));
-  };
-
   return (
     <div className="max-w-[1400px] mx-auto px-1">
       <h2 className="text-xl font-semibold text-gray-800 mb-4 tracking-tight">Leads</h2>
 
-      {/* Search & filters – stacked */}
       <div className="bg-white border border-gray-200 rounded-lg shadow-sm p-4 mb-4">
-        <div className="space-y-3">
+        <p className="text-sm text-gray-600 mb-3">
+          Date range and lead filters (status, OTP, slot, influencer, etc.) are in <strong className="font-medium text-gray-800">Filters</strong> in the header. Search below updates the same query as the panel.
+        </p>
+        <div className="flex flex-wrap items-center gap-3">
           <input
+            ref={searchInputRef}
             type="search"
             placeholder="Search name, phone, email…"
-            value={searchInput}
-            onChange={(e) => setSearchInput(e.target.value)}
-            className="w-full h-9 px-3 rounded-lg border border-gray-300 focus:ring-2 focus:ring-primary-blue-500 focus:border-primary-blue-500 outline-none text-sm"
+            value={searchDraft}
+            onChange={(e) => setSearchDraft(e.target.value)}
+            className="flex-1 min-w-[200px] h-9 px-3 rounded-lg border border-gray-300 focus:ring-2 focus:ring-primary-blue-500 focus:border-primary-blue-500 outline-none text-sm"
           />
-          <div className="flex flex-wrap items-center gap-3">
-            <select
-              value={filters.applicationStatus}
-              onChange={(e) => handleFilterChange('applicationStatus', e.target.value)}
-              className="h-9 px-3 rounded-lg border border-gray-300 focus:ring-2 focus:ring-primary-blue-500 outline-none text-sm min-w-[120px]"
-            >
-              <option value="">All statuses</option>
-              <option value="in_progress">In progress</option>
-              <option value="registered">Registered</option>
-              <option value="completed">Completed</option>
-            </select>
-            <select
-              value={filters.otpVerified}
-              onChange={(e) => handleFilterChange('otpVerified', e.target.value)}
-              className="h-9 px-3 rounded-lg border border-gray-300 focus:ring-2 focus:ring-primary-blue-500 outline-none text-sm min-w-[100px]"
-            >
-              <option value="">OTP: Any</option>
-              <option value="true">OTP verified</option>
-              <option value="false">OTP not verified</option>
-            </select>
-            <fieldset className="border border-gray-200 rounded-lg p-2 inline-flex items-center gap-4">
-              <legend className="sr-only">Slot filter</legend>
-              <span className="text-sm font-medium text-gray-700 mr-1" aria-hidden="true">Slot</span>
-              {['', 'true', 'false'].map((val) => (
-                <label key={val || 'any'} className="inline-flex items-center gap-1.5 cursor-pointer text-sm text-gray-700">
-                  <input
-                    type="radio"
-                    name="slotFilter"
-                    value={val}
-                    checked={filters.slotBooked === val}
-                    onChange={() => handleFilterChange('slotBooked', val)}
-                    className="text-primary-blue-500 border-gray-300 focus:ring-primary-blue-500"
-                  />
-                  {val === '' ? 'Any' : val === 'true' ? 'Booked' : 'Not booked'}
-                </label>
-              ))}
-            </fieldset>
+          <label className="inline-flex items-center gap-2 cursor-pointer text-sm text-gray-700">
             <input
-              type="date"
-              value={filters.slotDate}
-              onChange={(e) => handleFilterChange('slotDate', e.target.value)}
-              className="h-9 px-3 rounded-lg border border-gray-300 focus:ring-2 focus:ring-primary-blue-500 outline-none text-sm min-w-[140px]"
-              aria-label="Filter by slot date"
-            />
-            <input
-              type="text"
-              placeholder="Influencer (utm_content)"
-              value={filters.utm_content}
-              onChange={(e) => handleFilterChange('utm_content', e.target.value)}
-              className="h-9 px-3 rounded-lg border border-gray-300 focus:ring-2 focus:ring-primary-blue-500 outline-none text-sm min-w-[140px]"
-              aria-label="Filter by influencer (utm_content)"
-            />
-            <label className="inline-flex items-center gap-2 cursor-pointer text-sm text-gray-700 ml-2 pl-2 border-l border-gray-200">
-              <input
-                type="checkbox"
-                checked={viewAll}
-                onChange={(e) => {
-                  setViewAll(e.target.checked);
-                  if (!e.target.checked) setPagination((prev) => ({ ...prev, page: 1 }));
-                }}
-                className="rounded border-gray-300 text-primary-blue-500 focus:ring-primary-blue-500"
-                aria-label="View all leads in one list"
-              />
-              View all
-            </label>
-            <button
-              type="button"
-              onClick={() => {
-                setCopyModalOpen(true);
-                setCopySelectedFields(COPY_FIELDS.map((f) => f.key));
-                setCopyFeedback(false);
+              type="checkbox"
+              checked={viewAll}
+              onChange={(e) => {
+                setViewAll(e.target.checked);
+                if (!e.target.checked) setPagination((prev) => ({ ...prev, page: 1 }));
               }}
-              className="inline-flex items-center gap-1.5 ml-2 px-3 py-1.5 rounded-lg border border-gray-300 text-sm font-medium text-gray-700 hover:bg-gray-50 transition-colors"
-              aria-label="Copy to sheets"
-            >
-              <FiCopy className="w-4 h-4" /> Copy
-            </button>
-          </div>
+              className="rounded border-gray-300 text-primary-blue-500 focus:ring-primary-blue-500"
+              aria-label="View all leads in one list"
+            />
+            View all
+          </label>
+          <button
+            type="button"
+            onClick={() => {
+              setCopyModalOpen(true);
+              setCopySelectedFields(COPY_FIELDS.map((f) => f.key));
+              setCopyFeedback(false);
+            }}
+            className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg border border-gray-300 text-sm font-medium text-gray-700 hover:bg-gray-50 transition-colors"
+            aria-label="Copy to sheets"
+          >
+            <FiCopy className="w-4 h-4" /> Copy
+          </button>
         </div>
       </div>
 
