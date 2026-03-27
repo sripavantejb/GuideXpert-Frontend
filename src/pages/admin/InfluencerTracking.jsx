@@ -22,7 +22,7 @@ import {
   getAdminLeads,
   getStoredToken,
 } from '../../utils/adminApi';
-import { useAuth } from '../../contexts/AuthContext';
+import { useAuth } from '../../hooks/useAuth';
 import TableSkeleton from '../../components/UI/TableSkeleton';
 import CopyToSheetsModal from '../../components/Admin/CopyToSheetsModal';
 

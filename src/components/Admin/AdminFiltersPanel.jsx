@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import { Link, useLocation, useSearchParams } from 'react-router-dom';
 import { FiX, FiSliders, FiExternalLink } from 'react-icons/fi';
-import { useAdminDateRange } from '../../contexts/AdminDashboardContext';
+import { useAdminDateRange } from '../../hooks/useAdminDateRange';
 import {
   ALL_SLOT_IDS,
   ALLOWED_APPLICATION_STATUSES,

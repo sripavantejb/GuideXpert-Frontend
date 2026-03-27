@@ -1,7 +1,7 @@
-import { createContext, useContext, useState, useCallback, useEffect } from 'react';
+import { createContext, useState, useCallback, useEffect } from 'react';
 import { adminLogin, getStoredToken, setStoredToken } from '../utils/adminApi';
 
-const AuthContext = createContext(null);
+export const AuthContext = createContext(null);
 
 const USER_STORAGE_KEY = 'guidexpert_admin_user';
 
@@ -55,8 +55,3 @@ export function AuthProvider({ children }) {
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
 }
 
-export function useAuth() {
-  const ctx = useContext(AuthContext);
-  if (!ctx) throw new Error('useAuth must be used within AuthProvider');
-  return ctx;
-}

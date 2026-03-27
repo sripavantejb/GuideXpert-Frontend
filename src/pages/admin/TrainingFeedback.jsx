@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef, Fragment } from 'react';
 import { getTrainingFeedback, getStoredToken } from '../../utils/adminApi';
-import { useAuth } from '../../contexts/AuthContext';
+import { useAuth } from '../../hooks/useAuth';
 import {
   FiMessageSquare,
   FiUsers,

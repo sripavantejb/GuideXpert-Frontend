@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import { getAdminStats, getStoredToken } from '../../utils/adminApi';
-import { useAuth } from '../../contexts/AuthContext';
-import { useAdminDateRange } from '../../contexts/AdminDashboardContext';
+import { useAuth } from '../../hooks/useAuth';
+import { useAdminDateRange } from '../../hooks/useAdminDateRange';
 import AnalyticsSkeleton from '../../components/UI/AnalyticsSkeleton';
 
 function formatRangeLabel(from, to) {

@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef } from 'react';
 import { getAdminLeads, updateLead, getStoredToken } from '../../utils/adminApi';
-import { useAuth } from '../../contexts/AuthContext';
+import { useAuth } from '../../hooks/useAuth';
 
 function formatDate(d) {
   if (!d) return '—';

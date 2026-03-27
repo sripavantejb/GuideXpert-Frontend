@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { useAuth } from '../../contexts/AuthContext';
+import { useAuth } from '../../hooks/useAuth';
 import { createAdmin, listAdmins, deleteAdmin, resetAdminPassword, changeMyPassword } from '../../utils/adminApi';
 
 const SECTION_OPTIONS = [

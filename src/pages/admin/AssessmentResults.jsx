@@ -14,7 +14,7 @@ import {
   getMissingLeads,
   getStoredToken,
 } from '../../utils/adminApi';
-import { useAuth } from '../../contexts/AuthContext';
+import { useAuth } from '../../hooks/useAuth';
 import { ASSESSMENT_SECTIONS } from '../../data/assessmentQuestions';
 import { ASSESSMENT_SECTIONS_2 } from '../../data/assessmentQuestions2';
 import { ASSESSMENT_SECTIONS_3 } from '../../data/assessmentQuestions3';

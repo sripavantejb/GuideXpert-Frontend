@@ -7,7 +7,7 @@ import {
   getSlotBookingCounts,
   getStoredToken
 } from '../../utils/adminApi';
-import { useAuth } from '../../contexts/AuthContext';
+import { useAuth } from '../../hooks/useAuth';
 import ToggleSwitch from '../../components/UI/ToggleSwitch';
 
 const DAY_ORDER = ['MONDAY', 'TUESDAY', 'WEDNESDAY', 'THURSDAY', 'FRIDAY', 'SATURDAY', 'SUNDAY'];

@@ -1,6 +1,7 @@
 import { Suspense, lazy } from 'react';
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
-import { AuthProvider, useAuth } from './contexts/AuthContext';
+import { AuthProvider } from './contexts/AuthContext';
+import { useAuth } from './hooks/useAuth';
 import { CounsellorAuthProvider, useCounsellorAuth } from './contexts/CounsellorAuthContext';
 import { WebinarAuthProvider, useWebinarAuth } from './contexts/WebinarAuthContext';
 import { CounsellorProfileProvider } from './contexts/CounsellorProfileContext';
@@ -20,6 +21,7 @@ import AssessmentFormCounsellorTest from './pages/AssessmentFormCounsellorTest';
 import AssessmentLayout from './components/Layout/AssessmentLayout';
 import AdminLayout from './components/Admin/AdminLayout';
 import Overview from './pages/admin/Overview';
+import FunnelAnalytics from './pages/admin/FunnelAnalytics';
 import Leads from './pages/admin/Leads';
 import Analytics from './pages/admin/Analytics';
 import Slots from './pages/admin/Slots';
@@ -147,6 +149,7 @@ function App() {
           >
             <Route index element={<Navigate to="/admin/dashboard" replace />} />
             <Route path="dashboard" element={<Overview />} />
+            <Route path="funnel-analytics" element={<FunnelAnalytics />} />
             <Route path="leads" element={<Leads />} />
             <Route path="lead-status" element={<LeadStatus />} />
             <Route path="analytics" element={<Analytics />} />

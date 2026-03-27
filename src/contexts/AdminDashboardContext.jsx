@@ -1,4 +1,4 @@
-import { createContext, useContext, useState, useCallback } from 'react';
+import { createContext, useState, useCallback } from 'react';
 import { defaultLeadListFilters } from '../utils/adminLeadFiltersShared';
 
 function defaultRange() {
@@ -11,7 +11,7 @@ function defaultRange() {
   };
 }
 
-const AdminDashboardContext = createContext(null);
+export const AdminDashboardContext = createContext(null);
 
 function emptyLeadFilters() {
   return defaultLeadListFilters();
@@ -82,25 +82,3 @@ export function AdminDashboardProvider({ children }) {
   );
 }
 
-const dateFallback = {
-  dateRange: defaultRange(),
-  setDateRange: () => {},
-  setFrom: () => {},
-  setTo: () => {},
-  resetRange: () => {},
-  applyPreset: () => {},
-  leadListFilters: emptyLeadFilters(),
-  setLeadListFilters: () => {},
-  patchLeadListFilters: () => {},
-  resetLeadListFilters: () => {},
-};
-
-export function useAdminDateRange() {
-  const ctx = useContext(AdminDashboardContext);
-  if (!ctx) return dateFallback;
-  return ctx;
-}
-
-export function useAdminDashboard() {
-  return useAdminDateRange();
-}

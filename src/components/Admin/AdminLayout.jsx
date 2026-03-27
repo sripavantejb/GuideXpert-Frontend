@@ -2,13 +2,15 @@ import { useState, useMemo, useEffect } from 'react';
 import { Link, NavLink, Outlet, useLocation, useNavigate } from 'react-router-dom';
 import { HiMenu, HiX } from 'react-icons/hi';
 import { FiLayout, FiUsers, FiBarChart2, FiDownload, FiSettings, FiCalendar, FiVideo, FiFileText, FiBell, FiLink, FiClipboard, FiMessageSquare, FiBookOpen } from 'react-icons/fi';
-import { useAuth } from '../../contexts/AuthContext';
-import { AdminDashboardProvider, useAdminDateRange } from '../../contexts/AdminDashboardContext';
+import { useAuth } from '../../hooks/useAuth';
+import { AdminDashboardProvider } from '../../contexts/AdminDashboardContext';
+import { useAdminDateRange } from '../../hooks/useAdminDateRange';
 import AdminFiltersPanel, { AdminFiltersTriggerButton } from './AdminFiltersPanel';
 import { countActiveLeadFilters } from '../../utils/adminLeadFiltersShared';
 
 const navItems = [
   { to: '/admin/dashboard', label: 'Dashboard', icon: FiLayout, sectionKey: 'dashboard' },
+  { to: '/admin/funnel-analytics', label: 'Funnel Analytics', icon: FiBarChart2, sectionKey: 'funnel-analytics' },
   { to: '/admin/leads', label: 'Lead Funnel', icon: FiUsers, sectionKey: 'leads' },
   { to: '/admin/analytics', label: 'Analytics', icon: FiBarChart2, sectionKey: 'analytics' },
   { to: '/admin/meeting-attendance', label: 'User Productivity', icon: FiVideo, sectionKey: 'meeting-attendance' },

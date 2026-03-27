@@ -1,7 +1,7 @@
 import { useState, useEffect, useRef } from 'react';
 import { FiCopy } from 'react-icons/fi';
 import { getMeetingAttendance, getTrainingAttendance, getStoredToken } from '../../utils/adminApi';
-import { useAuth } from '../../contexts/AuthContext';
+import { useAuth } from '../../hooks/useAuth';
 import TableSkeleton from '../../components/UI/TableSkeleton';
 import CopyToSheetsModal from '../../components/Admin/CopyToSheetsModal';
 
