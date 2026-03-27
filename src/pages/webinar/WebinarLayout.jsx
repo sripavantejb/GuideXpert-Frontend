@@ -1,7 +1,8 @@
-import { useState } from 'react';
+import { useState, useMemo } from 'react';
 import { Outlet } from 'react-router-dom';
 import { useWebinarAuth } from '../../contexts/WebinarAuthContext';
 import { WebinarProvider, useWebinar } from './context/WebinarContext';
+import { normalizeWebinarPhone10 } from './utils/phone';
 import Sidebar from './components/Sidebar';
 import WebinarTopNav from './components/WebinarTopNav';
 import WebinarTour from './components/WebinarTour';
@@ -44,10 +45,11 @@ function WebinarLayoutInner({ tourSeenKey }) {
 
 export default function WebinarLayout() {
   const { user } = useWebinarAuth();
+  const phoneKey = useMemo(() => normalizeWebinarPhone10(user?.phone), [user?.phone]);
   const tourSeenKey =
     'webinar_tour_seen_' + (user?.id ?? user?.phone ?? user?.email ?? 'anon');
   return (
-    <WebinarProvider initialDisplayName={user?.name}>
+    <WebinarProvider key={phoneKey ?? 'anon'} initialDisplayName={user?.name} phoneKey={phoneKey}>
       <WebinarLayoutInner tourSeenKey={tourSeenKey} />
     </WebinarProvider>
   );

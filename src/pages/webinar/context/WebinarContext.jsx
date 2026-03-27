@@ -4,23 +4,26 @@ import { normalizeDoubts } from '../utils/doubtHelpers';
 import { useWebinarAuth } from '../../../contexts/WebinarAuthContext';
 import { syncWebinarProgress, getWebinarProgress, syncWebinarProgressBeacon } from '../../../utils/api';
 import { isModuleUnlocked } from '../utils/unlockLogic';
+import { normalizeWebinarPhone10 } from '../utils/phone';
 
-const STORAGE_KEYS = {
-  progress: 'webinar_progress',
-  doubts: 'webinar_doubts',
-  resume: 'webinar_resume',
-  bookmarks: 'webinar_bookmarks',
-  settings: 'webinar_settings',
-  profile: 'webinar_profile',
-  activeSession: 'webinar_active_session',
-  maxWatched: 'webinar_max_watched',
-};
+/** Per-account localStorage keys (phone = last 10 digits or anon). */
+export function getWebinarStorageKeys(phone10) {
+  const suffix = phone10 ? `_${phone10}` : '_anon';
+  return {
+    progress: `webinar_progress${suffix}`,
+    doubts: `webinar_doubts${suffix}`,
+    resume: `webinar_resume${suffix}`,
+    bookmarks: `webinar_bookmarks${suffix}`,
+    settings: `webinar_settings${suffix}`,
+    profile: `webinar_profile${suffix}`,
+    activeSession: `webinar_active_session${suffix}`,
+    maxWatched: `webinar_max_watched${suffix}`,
+    progressVersion: `webinar_progress_version${suffix}`,
+  };
+}
 
-// Increment this whenever the unlock/progress system changes fundamentally.
-// On mismatch the user's progress, playback positions and maxWatched are reset
-// so stale data from before the locking system doesn't break the UI.
+// Increment when unlock/progress system changes; each user bucket resets independently.
 const PROGRESS_VERSION = 3;
-const PROGRESS_VERSION_KEY = 'webinar_progress_version';
 
 const DEFAULT_SETTINGS = {
   defaultPlaybackSpeed: 1,
@@ -46,11 +49,22 @@ function saveJson(key, value) {
   }
 }
 
-const WebinarContext = createContext(null);
+/**
+ * apiRequest returns { success, data: body } where body is backend JSON e.g. { success, data: doc|null }.
+ */
+function extractWebinarDocFromApiResponse(res) {
+  if (!res?.success || res.data == null) return null;
+  const body = res.data;
+  if (typeof body === 'object' && body !== null && Object.prototype.hasOwnProperty.call(body, 'data')) {
+    const doc = body.data;
+    return doc === undefined ? null : doc;
+  }
+  return null;
+}
 
-function getStoredSidebarExpanded() {
+function getStoredSidebarExpanded(keys) {
   try {
-    const fromSettings = loadJson(STORAGE_KEYS.settings, null);
+    const fromSettings = loadJson(keys.settings, null);
     if (fromSettings && typeof fromSettings.sidebarExpandedByDefault === 'boolean')
       return fromSettings.sidebarExpandedByDefault;
     return localStorage.getItem('webinar_sidebar_expanded') !== 'false';
@@ -58,6 +72,8 @@ function getStoredSidebarExpanded() {
     return true;
   }
 }
+
+const WebinarContext = createContext(null);
 
 const SYNC_DEBOUNCE_MS = 10_000;
 
@@ -93,46 +109,50 @@ function buildSyncPayload(completedSessions, maxWatched, playbackPosition, activ
   };
 }
 
-export function WebinarProvider({ children, initialDisplayName }) {
+function readInitialProgress(keys) {
+  const storedVersion = Number(localStorage.getItem(keys.progressVersion)) || 0;
+  if (storedVersion < PROGRESS_VERSION) {
+    localStorage.setItem(keys.progressVersion, String(PROGRESS_VERSION));
+    saveJson(keys.progress, []);
+    saveJson(keys.maxWatched, {});
+    saveJson(keys.resume, {});
+    return [];
+  }
+  return loadJson(keys.progress, []);
+}
+
+export function WebinarProvider({ children, initialDisplayName, phoneKey: phoneKeyProp }) {
   const { token: webinarToken } = useWebinarAuth();
+  const phoneKey = normalizeWebinarPhone10(phoneKeyProp ?? null);
+
+  const storageKeys = useMemo(() => getWebinarStorageKeys(phoneKey), [phoneKey]);
+
   const [sidebarOpen, setSidebarOpen] = useState(false);
-  const [sidebarExpanded, setSidebarExpanded] = useState(getStoredSidebarExpanded);
-  const [doubts, setDoubts] = useState(() => normalizeDoubts(loadJson(STORAGE_KEYS.doubts, [])));
+  const [sidebarExpanded, setSidebarExpanded] = useState(() => getStoredSidebarExpanded(storageKeys));
+  const [doubts, setDoubts] = useState(() => normalizeDoubts(loadJson(storageKeys.doubts, [])));
   const [sessionProgress, setSessionProgress] = useState({});
 
-  // Check progress version -- reset stale data from before the locking system
-  const [completedSessions, setCompletedSessions] = useState(() => {
-    const storedVersion = Number(localStorage.getItem(PROGRESS_VERSION_KEY)) || 0;
-    if (storedVersion < PROGRESS_VERSION) {
-      localStorage.setItem(PROGRESS_VERSION_KEY, String(PROGRESS_VERSION));
-      saveJson(STORAGE_KEYS.progress, []);
-      saveJson(STORAGE_KEYS.maxWatched, {});
-      saveJson(STORAGE_KEYS.resume, {});
-      return [];
-    }
-    return loadJson(STORAGE_KEYS.progress, []);
-  });
+  const [completedSessions, setCompletedSessions] = useState(() => readInitialProgress(storageKeys));
   const [playbackPosition, setPlaybackPosition] = useState(() => {
-    const storedVersion = Number(localStorage.getItem(PROGRESS_VERSION_KEY)) || 0;
-    return storedVersion >= PROGRESS_VERSION ? loadJson(STORAGE_KEYS.resume, {}) : {};
+    const storedVersion = Number(localStorage.getItem(storageKeys.progressVersion)) || 0;
+    return storedVersion >= PROGRESS_VERSION ? loadJson(storageKeys.resume, {}) : {};
   });
   const [bookmarkedSessions, setBookmarkedSessions] = useState(() =>
-    loadJson(STORAGE_KEYS.bookmarks, [])
+    loadJson(storageKeys.bookmarks, [])
   );
   const [maxWatched, setMaxWatched] = useState(() => {
-    const storedVersion = Number(localStorage.getItem(PROGRESS_VERSION_KEY)) || 0;
-    return storedVersion >= PROGRESS_VERSION ? loadJson(STORAGE_KEYS.maxWatched, {}) : {};
+    const storedVersion = Number(localStorage.getItem(storageKeys.progressVersion)) || 0;
+    return storedVersion >= PROGRESS_VERSION ? loadJson(storageKeys.maxWatched, {}) : {};
   });
   const [settings, setSettings] = useState(() => ({
     ...DEFAULT_SETTINGS,
-    ...loadJson(STORAGE_KEYS.settings, {}),
+    ...loadJson(storageKeys.settings, {}),
   }));
   const [profileDisplayName, setProfileDisplayName] = useState(() => {
-    const p = loadJson(STORAGE_KEYS.profile, {});
+    const p = loadJson(storageKeys.profile, {});
     return (p && typeof p.displayName === 'string') ? p.displayName : '';
   });
 
-  // Seed profile display name from auth (e.g. name entered at login) when stored profile is empty
   useEffect(() => {
     const name = typeof initialDisplayName === 'string' ? initialDisplayName.trim() : '';
     if (name) {
@@ -141,13 +161,13 @@ export function WebinarProvider({ children, initialDisplayName }) {
   }, [initialDisplayName]);
 
   const [activeSessionId, setActiveSessionIdState] = useState(() => {
-    const stored = loadJson(STORAGE_KEYS.activeSession, null);
+    const stored = loadJson(storageKeys.activeSession, null);
     if (stored && typeof stored.sessionId === 'string' && ALL_MODULES.some((m) => m.id === stored.sessionId))
       return stored.sessionId;
     return SESSIONS[0]?.id ?? null;
   });
   const [activeDay, setActiveDayState] = useState(() => {
-    const stored = loadJson(STORAGE_KEYS.activeSession, null);
+    const stored = loadJson(storageKeys.activeSession, null);
     if (stored && typeof stored.sessionId === 'string') {
       const module = ALL_MODULES.find((m) => m.id === stored.sessionId);
       if (module) return module.dayId;
@@ -167,18 +187,18 @@ export function WebinarProvider({ children, initialDisplayName }) {
   }, []);
 
   useEffect(() => {
-    saveJson(STORAGE_KEYS.activeSession, { sessionId: activeSessionId, dayId: activeDay });
-  }, [activeSessionId, activeDay]);
+    saveJson(storageKeys.activeSession, { sessionId: activeSessionId, dayId: activeDay });
+  }, [activeSessionId, activeDay, storageKeys.activeSession]);
 
-  useEffect(() => saveJson(STORAGE_KEYS.progress, completedSessions), [completedSessions]);
-  useEffect(() => saveJson(STORAGE_KEYS.doubts, doubts), [doubts]);
-  useEffect(() => saveJson(STORAGE_KEYS.resume, playbackPosition), [playbackPosition]);
-  useEffect(() => saveJson(STORAGE_KEYS.bookmarks, bookmarkedSessions), [bookmarkedSessions]);
-  useEffect(() => saveJson(STORAGE_KEYS.maxWatched, maxWatched), [maxWatched]);
-  useEffect(() => saveJson(STORAGE_KEYS.settings, settings), [settings]);
+  useEffect(() => saveJson(storageKeys.progress, completedSessions), [completedSessions, storageKeys.progress]);
+  useEffect(() => saveJson(storageKeys.doubts, doubts), [doubts, storageKeys.doubts]);
+  useEffect(() => saveJson(storageKeys.resume, playbackPosition), [playbackPosition, storageKeys.resume]);
+  useEffect(() => saveJson(storageKeys.bookmarks, bookmarkedSessions), [bookmarkedSessions, storageKeys.bookmarks]);
+  useEffect(() => saveJson(storageKeys.maxWatched, maxWatched), [maxWatched, storageKeys.maxWatched]);
+  useEffect(() => saveJson(storageKeys.settings, settings), [settings, storageKeys.settings]);
   useEffect(() => {
-    saveJson(STORAGE_KEYS.profile, { displayName: profileDisplayName });
-  }, [profileDisplayName]);
+    saveJson(storageKeys.profile, { displayName: profileDisplayName });
+  }, [profileDisplayName, storageKeys.profile]);
 
   const totalSessions = SESSIONS.length;
   const completedVideoCount = completedSessions.filter((id) =>
@@ -194,7 +214,6 @@ export function WebinarProvider({ children, initialDisplayName }) {
     } catch (_) {}
   }, [sidebarExpanded]);
 
-  // --- Backend sync ---
   const syncTimerRef = useRef(null);
   const hasFetchedRef = useRef(false);
   const restoredRef = useRef(false);
@@ -202,6 +221,40 @@ export function WebinarProvider({ children, initialDisplayName }) {
   sessionProgressRef.current = sessionProgress;
 
   const skipNextImmediateSyncRef = useRef(false);
+
+  const applyServerDocToState = useCallback((doc) => {
+    if (doc === null || doc === undefined) {
+      skipNextImmediateSyncRef.current = true;
+      setCompletedSessions([]);
+      setSessionProgress({});
+      setMaxWatched({});
+      setPlaybackPosition({});
+      const first = SESSIONS[0]?.id ?? null;
+      if (first) setActiveSessionId(first);
+      return;
+    }
+    if (typeof doc !== 'object') return;
+
+    skipNextImmediateSyncRef.current = true;
+    setCompletedSessions(Array.isArray(doc.completedModules) ? doc.completedModules : []);
+
+    const restoredMaxWatched = {};
+    const restoredPlayback = {};
+    if (doc.modules && typeof doc.modules === 'object') {
+      for (const [moduleId, mod] of Object.entries(doc.modules)) {
+        if (mod && typeof mod === 'object') {
+          if (typeof mod.maxWatchedSeconds === 'number') restoredMaxWatched[moduleId] = mod.maxWatchedSeconds;
+          if (typeof mod.watchedSeconds === 'number') restoredPlayback[moduleId] = mod.watchedSeconds;
+        }
+      }
+    }
+    setMaxWatched(restoredMaxWatched);
+    setPlaybackPosition(restoredPlayback);
+
+    if (typeof doc.lastActiveModule === 'string' && ALL_MODULES.some((m) => m.id === doc.lastActiveModule)) {
+      setActiveSessionId(doc.lastActiveModule);
+    }
+  }, [setActiveSessionId]);
 
   const doSync = useCallback(() => {
     if (!webinarToken || !restoredRef.current) return;
@@ -211,19 +264,19 @@ export function WebinarProvider({ children, initialDisplayName }) {
         if (import.meta.env.DEV) console.warn('[webinar sync] failed', res?.message);
         return;
       }
-      const remote = res.data?.data || res.data;
-      if (!remote) return;
+      const serverDoc = extractWebinarDocFromApiResponse(res);
+      if (!serverDoc || typeof serverDoc !== 'object') return;
 
-      if (Array.isArray(remote.completedModules)) {
+      if (Array.isArray(serverDoc.completedModules)) {
         skipNextImmediateSyncRef.current = true;
-        setCompletedSessions(remote.completedModules);
+        setCompletedSessions(serverDoc.completedModules);
       }
-      if (remote.modules && typeof remote.modules === 'object') {
+      if (serverDoc.modules && typeof serverDoc.modules === 'object') {
         setMaxWatched((prev) => {
           const next = { ...prev };
           let changed = false;
-          for (const [id, mod] of Object.entries(remote.modules)) {
-            if (typeof mod.maxWatchedSeconds === 'number' && mod.maxWatchedSeconds > (prev[id] || 0)) {
+          for (const [id, mod] of Object.entries(serverDoc.modules)) {
+            if (mod && typeof mod === 'object' && typeof mod.maxWatchedSeconds === 'number' && mod.maxWatchedSeconds > (prev[id] || 0)) {
               next[id] = mod.maxWatchedSeconds;
               changed = true;
             }
@@ -236,7 +289,6 @@ export function WebinarProvider({ children, initialDisplayName }) {
     });
   }, [webinarToken, completedSessions, maxWatched, playbackPosition, activeSessionId]);
 
-  // Initial sync shortly after mount
   const initialSyncDoneRef = useRef(false);
   useEffect(() => {
     if (!webinarToken || initialSyncDoneRef.current) return;
@@ -245,7 +297,6 @@ export function WebinarProvider({ children, initialDisplayName }) {
     return () => clearTimeout(t);
   }, [webinarToken, doSync]);
 
-  // Debounced sync on state changes
   useEffect(() => {
     if (!webinarToken) return;
     if (syncTimerRef.current) clearTimeout(syncTimerRef.current);
@@ -253,7 +304,6 @@ export function WebinarProvider({ children, initialDisplayName }) {
     return () => { if (syncTimerRef.current) clearTimeout(syncTimerRef.current); };
   }, [doSync, webinarToken]);
 
-  // Immediate sync on completedSessions change (module completion is important)
   const prevCompletedRef = useRef(completedSessions);
   useEffect(() => {
     if (!webinarToken) return;
@@ -268,75 +318,37 @@ export function WebinarProvider({ children, initialDisplayName }) {
     prevCompletedRef.current = completedSessions;
   }, [completedSessions, doSync, webinarToken]);
 
-  // Restore from backend on mount
   useEffect(() => {
     if (!webinarToken || hasFetchedRef.current) return;
     hasFetchedRef.current = true;
     getWebinarProgress(webinarToken).then((res) => {
-      if (!res.success || !res.data) { restoredRef.current = true; return; }
-      const remote = res.data?.data || res.data;
-      if (Array.isArray(remote.completedModules)) {
-        skipNextImmediateSyncRef.current = true;
-        setCompletedSessions(remote.completedModules);
+      if (!res.success) {
+        restoredRef.current = true;
+        return;
       }
-      if (remote.modules && typeof remote.modules === 'object') {
-        const restoredMaxWatched = {};
-        const restoredPlayback = {};
-        for (const [moduleId, mod] of Object.entries(remote.modules)) {
-          if (mod.maxWatchedSeconds > (maxWatched[moduleId] || 0)) {
-            restoredMaxWatched[moduleId] = mod.maxWatchedSeconds;
-          }
-          if (mod.watchedSeconds > (playbackPosition[moduleId] || 0)) {
-            restoredPlayback[moduleId] = mod.watchedSeconds;
-          }
-        }
-        if (Object.keys(restoredMaxWatched).length > 0) {
-          setMaxWatched((prev) => ({ ...prev, ...restoredMaxWatched }));
-        }
-        if (Object.keys(restoredPlayback).length > 0) {
-          setPlaybackPosition((prev) => ({ ...prev, ...restoredPlayback }));
-        }
-      }
+      const doc = extractWebinarDocFromApiResponse(res);
+      applyServerDocToState(doc);
       restoredRef.current = true;
-    }).catch(() => { restoredRef.current = true; });
-  }, [webinarToken]);
+    }).catch(() => {
+      restoredRef.current = true;
+    });
+  }, [webinarToken, applyServerDocToState]);
 
-  // Fetch latest from backend when user returns to tab, then sync local state
   useEffect(() => {
     if (!webinarToken) return;
     const handleVisibility = async () => {
       if (document.visibilityState !== 'visible') return;
       try {
         const res = await getWebinarProgress(webinarToken);
-        if (res.success && res.data) {
-          const remote = res.data?.data || res.data;
-          if (Array.isArray(remote.completedModules)) {
-            skipNextImmediateSyncRef.current = true;
-            setCompletedSessions(remote.completedModules);
-          }
-          if (remote.modules && typeof remote.modules === 'object') {
-            const restoredMW = {};
-            const restoredPB = {};
-            for (const [moduleId, mod] of Object.entries(remote.modules)) {
-              if (mod.maxWatchedSeconds > 0) restoredMW[moduleId] = mod.maxWatchedSeconds;
-              if (mod.watchedSeconds > 0) restoredPB[moduleId] = mod.watchedSeconds;
-            }
-            if (Object.keys(restoredMW).length > 0) {
-              setMaxWatched((prev) => ({ ...prev, ...restoredMW }));
-            }
-            if (Object.keys(restoredPB).length > 0) {
-              setPlaybackPosition((prev) => ({ ...prev, ...restoredPB }));
-            }
-          }
-        }
+        if (!res.success) return;
+        const doc = extractWebinarDocFromApiResponse(res);
+        applyServerDocToState(doc);
       } catch { /* best-effort */ }
     };
     document.addEventListener('visibilitychange', handleVisibility);
     return () => document.removeEventListener('visibilitychange', handleVisibility);
-  }, [webinarToken]);
+  }, [webinarToken, applyServerDocToState]);
 
-  // beforeunload: flush ONLY playback data (not completedModules/statuses)
-  // to avoid overwriting admin edits during page refresh
   useEffect(() => {
     if (!webinarToken) return;
     const handleUnload = () => {

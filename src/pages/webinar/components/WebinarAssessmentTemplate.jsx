@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { getWebinarAssessmentHistory, submitWebinarAssessment } from '../../../utils/api';
-
-const LAST_ATTEMPT_KEY = (id) => `webinar_last_attempt_${id}`;
+import { useWebinarAuth } from '../../../contexts/WebinarAuthContext';
+import { normalizeWebinarPhone10 } from '../utils/phone';
 
 function formatAttemptDate(value) {
   if (!value) return 'Unknown time';
@@ -16,28 +16,6 @@ function formatAttemptDate(value) {
   });
 }
 
-function getStoredLastAttempt(assessmentId) {
-  try {
-    const raw = localStorage.getItem(LAST_ATTEMPT_KEY(assessmentId));
-    if (!raw) return null;
-    const stored = JSON.parse(raw);
-    if (stored && typeof stored.score === 'number' && typeof stored.total === 'number') {
-      return { ...stored, _id: 'local' };
-    }
-  } catch (e) {
-    /* ignore */
-  }
-  return null;
-}
-
-function setStoredLastAttempt(assessmentId, payload) {
-  try {
-    localStorage.setItem(LAST_ATTEMPT_KEY(assessmentId), JSON.stringify(payload));
-  } catch (e) {
-    /* ignore */
-  }
-}
-
 export default function WebinarAssessmentTemplate({
   assessmentId,
   title,
@@ -49,6 +27,41 @@ export default function WebinarAssessmentTemplate({
   onGoNext,
   webinarToken,
 }) {
+  const { user } = useWebinarAuth();
+  const phoneSuffix = useMemo(() => normalizeWebinarPhone10(user?.phone) ?? 'anon', [user?.phone]);
+  const lastAttemptStorageKey = useCallback(
+    (id) => `webinar_last_attempt_${phoneSuffix}_${id}`,
+    [phoneSuffix]
+  );
+
+  const getStoredLastAttempt = useCallback(
+    (assessmentId) => {
+      try {
+        const raw = localStorage.getItem(lastAttemptStorageKey(assessmentId));
+        if (!raw) return null;
+        const stored = JSON.parse(raw);
+        if (stored && typeof stored.score === 'number' && typeof stored.total === 'number') {
+          return { ...stored, _id: 'local' };
+        }
+      } catch (e) {
+        /* ignore */
+      }
+      return null;
+    },
+    [lastAttemptStorageKey]
+  );
+
+  const setStoredLastAttempt = useCallback(
+    (assessmentId, payload) => {
+      try {
+        localStorage.setItem(lastAttemptStorageKey(assessmentId), JSON.stringify(payload));
+      } catch (e) {
+        /* ignore */
+      }
+    },
+    [lastAttemptStorageKey]
+  );
+
   const createInitialAnswers = useCallback(() => {
     const initial = {};
     questions.forEach((q) => {
@@ -97,7 +110,7 @@ export default function WebinarAssessmentTemplate({
     } finally {
       setLoadingAttempts(false);
     }
-  }, [assessmentId, webinarToken]);
+  }, [assessmentId, webinarToken, getStoredLastAttempt]);
 
   useEffect(() => {
     loadAttempts();
@@ -156,7 +169,7 @@ export default function WebinarAssessmentTemplate({
     setMode('report');
     setStoredLastAttempt(assessmentId, { score, total, submittedAt });
     loadAttempts();
-  }, [allAnswered, answers, assessmentId, loadAttempts, onComplete, questions, webinarToken]);
+  }, [allAnswered, answers, assessmentId, loadAttempts, onComplete, questions, webinarToken, setStoredLastAttempt]);
 
   const handleContinue = useCallback(() => {
     onComplete?.();

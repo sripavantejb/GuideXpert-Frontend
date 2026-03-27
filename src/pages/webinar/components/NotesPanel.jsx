@@ -1,22 +1,23 @@
-import { useState, useEffect, useCallback, useRef } from 'react';
+import { useState, useEffect, useCallback, useRef, useMemo } from 'react';
 import { FiPlus, FiChevronLeft, FiTrash2 } from 'react-icons/fi';
+import { useWebinarAuth } from '../../../contexts/WebinarAuthContext';
+import { normalizeWebinarPhone10 } from '../utils/phone';
 
-const NOTES_STORAGE_KEY = 'webinar_notes';
 const TITLE_LENGTH = 40;
 const PREVIEW_LINES = 2;
 
-function loadNotes() {
+function loadNotesForKey(storageKey) {
   try {
-    const raw = localStorage.getItem(NOTES_STORAGE_KEY);
+    const raw = localStorage.getItem(storageKey);
     return raw ? JSON.parse(raw) : [];
   } catch {
     return [];
   }
 }
 
-function saveNotes(notes) {
+function saveNotesForKey(storageKey, notes) {
   try {
-    localStorage.setItem(NOTES_STORAGE_KEY, JSON.stringify(notes));
+    localStorage.setItem(storageKey, JSON.stringify(notes));
   } catch (e) {
     console.warn('webinar notes persist', e);
   }
@@ -44,11 +45,21 @@ function formatTimestamp(iso) {
 }
 
 export default function NotesPanel({ sessionId }) {
-  const [notes, setNotes] = useState(loadNotes);
+  const { user } = useWebinarAuth();
+  const notesStorageKey = useMemo(
+    () => `webinar_notes_${normalizeWebinarPhone10(user?.phone) ?? 'anon'}`,
+    [user?.phone]
+  );
+
+  const [notes, setNotes] = useState([]);
   const [selectedId, setSelectedId] = useState(null);
   const [editingText, setEditingText] = useState('');
   const [isNewNote, setIsNewNote] = useState(false);
   const saveTimeoutRef = useRef(null);
+
+  useEffect(() => {
+    setNotes(loadNotesForKey(notesStorageKey));
+  }, [notesStorageKey]);
 
   const sessionNotes = notes.filter((n) => n.sessionId === sessionId);
   const sortedNotes = [...sessionNotes].sort((a, b) => new Date(b.timestamp) - new Date(a.timestamp));
@@ -56,8 +67,8 @@ export default function NotesPanel({ sessionId }) {
 
   const persist = useCallback((next) => {
     setNotes(next);
-    saveNotes(next);
-  }, []);
+    saveNotesForKey(notesStorageKey, next);
+  }, [notesStorageKey]);
 
   const debouncedSave = useCallback((id, text) => {
     if (saveTimeoutRef.current) clearTimeout(saveTimeoutRef.current);
@@ -68,11 +79,11 @@ export default function NotesPanel({ sessionId }) {
         if (idx < 0) return prev;
         const next = [...prev];
         next[idx] = { ...next[idx], text: trimmed || next[idx].text, timestamp: new Date().toISOString() };
-        saveNotes(next);
+        saveNotesForKey(notesStorageKey, next);
         return next;
       });
     }, 500);
-  }, []);
+  }, [notesStorageKey]);
 
   useEffect(() => {
     return () => {
@@ -95,13 +106,13 @@ export default function NotesPanel({ sessionId }) {
       };
       setNotes((prev) => {
         const next = [...prev, newNote];
-        saveNotes(next);
+        saveNotesForKey(notesStorageKey, next);
         return next;
       });
     }
     setSelectedId(null);
     setIsNewNote(false);
-  }, [isNewNote, editingText, sessionId]);
+  }, [isNewNote, editingText, sessionId, notesStorageKey]);
 
   const handleTextChange = (value) => {
     setEditingText(value);
@@ -127,7 +138,7 @@ export default function NotesPanel({ sessionId }) {
         )
       );
     }
-  }, [selectedNote, isNewNote, editingText, notes, persist, sessionId]);
+  }, [selectedNote, isNewNote, editingText, notes, persist]);
 
   const handleNewNote = () => {
     setSelectedId(null);
