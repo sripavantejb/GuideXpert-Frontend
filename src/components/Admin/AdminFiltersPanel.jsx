@@ -228,6 +228,11 @@ export default function AdminFiltersPanel({ open, onClose }) {
                 onChange={(e) => patchLead({ slotDate: e.target.value })}
                 className="w-full h-9 px-3 rounded-lg border border-gray-300 text-sm"
               />
+              {leadListFilters.slotDate ? (
+                <p className="text-xs text-gray-500 mt-1">
+                  List counts by this demo day (IST), same as Slots — signup date range above is ignored.
+                </p>
+              ) : null}
             </div>
             <div>
               <label htmlFor="panel-utm" className="block text-xs font-medium text-gray-500 mb-1">Influencer (utm_content)</label>
