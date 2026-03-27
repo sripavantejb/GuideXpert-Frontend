@@ -1,7 +1,4 @@
-const defaultApiUrl =
-  import.meta.env.DEV && !import.meta.env.VITE_API_URL
-    ? 'http://localhost:5000/api'
-    : (import.meta.env.VITE_API_URL || 'https://guide-xpert-backend.vercel.app/api');
+const defaultApiUrl = import.meta.env.VITE_API_URL || 'https://guide-xpert-backend.vercel.app/api';
 const API_BASE_URL = defaultApiUrl;
 const ADMIN_TOKEN_KEY = 'guidexpert_admin_token';
 
@@ -49,7 +46,7 @@ async function adminRequest(endpoint, options = {}, token = getStoredToken()) {
   } catch (error) {
     const isNetworkError = error.message === 'Failed to fetch' || error.name === 'TypeError';
     const message = isNetworkError
-      ? 'Cannot reach server. Make sure the backend is running on port 5000.'
+      ? `Cannot reach server. Check API URL (${API_BASE_URL}) and network connectivity.`
       : (error.message || 'Network error');
     return {
       success: false,
