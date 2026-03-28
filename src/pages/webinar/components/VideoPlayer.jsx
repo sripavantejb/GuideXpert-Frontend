@@ -123,6 +123,28 @@ function exitFullscreenCompat() {
   return Promise.resolve();
 }
 
+async function lockLandscapeIfSupported() {
+  if (typeof screen === 'undefined') return;
+  const orientation = screen.orientation;
+  if (!orientation?.lock) return;
+  try {
+    await orientation.lock('landscape');
+  } catch {
+    // Some mobile browsers (especially iOS Safari) block programmatic lock.
+  }
+}
+
+function unlockOrientationIfSupported() {
+  if (typeof screen === 'undefined') return;
+  const orientation = screen.orientation;
+  if (!orientation?.unlock) return;
+  try {
+    orientation.unlock();
+  } catch {
+    // Ignore unsupported unlock path.
+  }
+}
+
 const YT_PLAYER_STATE_ENDED = 0;
 
 function CompletionOverlay({ visible, onNextSession, onWatchAgain, hasNextSession, isIntro }) {
@@ -228,6 +250,7 @@ function YouTubePlayerWithControls({
   const [ytPlaybackRate, setYtPlaybackRate] = useState(1);
   const [ytSpeedOpen, setYtSpeedOpen] = useState(false);
   const [ytEmbedError, setYtEmbedError] = useState(null);
+  const [ytCoverScale, setYtCoverScale] = useState(1);
 
   const isMobilePlayer = useIsMobilePlayer();
 
@@ -288,6 +311,8 @@ function YouTubePlayerWithControls({
               if (iframeEl) {
                 iframeEl.setAttribute('tabindex', '-1');
                 iframeEl.setAttribute('aria-hidden', 'true');
+                iframeEl.setAttribute('allow', 'autoplay; fullscreen; picture-in-picture');
+                iframeEl.setAttribute('allowfullscreen', 'true');
               }
               setPlayerReady(true);
               const d = event.target.getDuration?.();
@@ -460,24 +485,23 @@ function YouTubePlayerWithControls({
     if (!container) return;
     const fsNow = getFullscreenElement();
     if (!fsNow) {
-      const tryEnter = () => {
-        if (isMobilePlayer) {
+      requestFullscreenElement(container)
+        .catch(() => {
+          // Secondary fallback only if container API fails.
           const iframe = playerRef.current?.getIframe?.();
-          if (iframe) {
-            return requestFullscreenElement(iframe).catch(() => requestFullscreenElement(container));
-          }
-        }
-        return requestFullscreenElement(container);
-      };
-      tryEnter()
+          if (!iframe) throw new Error('No fullscreen target');
+          return requestFullscreenElement(iframe);
+        })
         .then(() => setYtFullscreen(true))
-        .catch(() => {});
+        .catch(() => {
+          setYtFullscreen(false);
+        });
       return;
     }
     exitFullscreenCompat()
       .then(() => setYtFullscreen(false))
       .catch(() => {});
-  }, [isMobilePlayer]);
+  }, []);
 
   useEffect(() => {
     const onFs = () => syncYtFullscreenState();
@@ -492,6 +516,33 @@ function YouTubePlayerWithControls({
       document.removeEventListener('MSFullscreenChange', onFs);
     };
   }, [syncYtFullscreenState]);
+
+  useEffect(() => {
+    if (!isMobilePlayer) return;
+    if (ytFullscreen) {
+      lockLandscapeIfSupported();
+      return;
+    }
+    setYtCoverScale(1);
+    unlockOrientationIfSupported();
+  }, [isMobilePlayer, ytFullscreen]);
+
+  useEffect(() => {
+    if (!isMobilePlayer || !ytFullscreen) return;
+    const updateCoverScale = () => {
+      const container = containerRef.current;
+      if (!container) return;
+      const rect = container.getBoundingClientRect();
+      if (!rect.width || !rect.height) return;
+      const viewportAspect = rect.width / rect.height;
+      const videoAspect = 16 / 9;
+      const scale = Math.max(viewportAspect / videoAspect, videoAspect / viewportAspect);
+      setYtCoverScale(Number.isFinite(scale) && scale > 1 ? scale : 1);
+    };
+    updateCoverScale();
+    window.addEventListener('resize', updateCoverScale);
+    return () => window.removeEventListener('resize', updateCoverScale);
+  }, [isMobilePlayer, ytFullscreen]);
 
   const handleYtSeek = useCallback(
     (e) => {
@@ -668,7 +719,13 @@ function YouTubePlayerWithControls({
     <div
       ref={containerRef}
       className="relative w-full flex-shrink-0 rounded-none sm:rounded-xl overflow-hidden bg-black focus:outline-none focus-visible:ring-2 focus-visible:ring-primary-navy focus-visible:ring-offset-2 [&:fullscreen]:!fixed [&:fullscreen]:!inset-0 [&:fullscreen]:!w-screen [&:fullscreen]:!h-[100dvh] [&:fullscreen]:!max-h-[100dvh] [&:fullscreen]:!min-h-0 [&:fullscreen]:flex [&:fullscreen]:flex-col [&:fullscreen]:rounded-none [&:-webkit-full-screen]:!fixed [&:-webkit-full-screen]:!inset-0 [&:-webkit-full-screen]:!w-screen [&:-webkit-full-screen]:!h-[100dvh] [&:-webkit-full-screen]:!max-h-[100dvh] [&:-webkit-full-screen]:flex [&:-webkit-full-screen]:flex-col [&:-webkit-full-screen]:rounded-none"
-      style={{ boxShadow: '0 2px 8px rgba(0,0,0,0.08)' }}
+      style={{
+        boxShadow: '0 2px 8px rgba(0,0,0,0.08)',
+        paddingTop: ytFullscreen && isMobilePlayer ? 'env(safe-area-inset-top)' : undefined,
+        paddingBottom: ytFullscreen && isMobilePlayer ? 'env(safe-area-inset-bottom)' : undefined,
+        paddingLeft: ytFullscreen && isMobilePlayer ? 'env(safe-area-inset-left)' : undefined,
+        paddingRight: ytFullscreen && isMobilePlayer ? 'env(safe-area-inset-right)' : undefined,
+      }}
     >
       {/* Clean 16:9 video area with no top gradients/overlays */}
       <div
@@ -714,6 +771,11 @@ function YouTubePlayerWithControls({
           <div
             id={playerContainerId}
             className="absolute inset-0 w-full h-full z-[1] yt-player-mount"
+            style={
+              isMobilePlayer && ytFullscreen
+                ? { transform: `scale(${ytCoverScale})`, transformOrigin: 'center center' }
+                : undefined
+            }
           />
           {/* Block iframe hover/click so YouTube hover chrome never appears */}
           <div
@@ -1228,6 +1290,15 @@ export default function VideoPlayer({
   }, []);
 
   useEffect(() => {
+    if (!isMobilePlayer) return;
+    if (isFullscreen) {
+      lockLandscapeIfSupported();
+      return;
+    }
+    unlockOrientationIfSupported();
+  }, [isMobilePlayer, isFullscreen]);
+
+  useEffect(() => {
     const v = videoRef.current;
     if (!v || !isMobilePlayer) return;
     const onBegin = () => setIsFullscreen(true);
@@ -1321,7 +1392,13 @@ export default function VideoPlayer({
     <div
       ref={containerRef}
       className="relative w-full rounded-none sm:rounded-xl overflow-hidden bg-gray-900 focus:outline-none focus-visible:ring-2 focus-visible:ring-primary-navy focus-visible:ring-offset-2 [&:fullscreen]:!fixed [&:fullscreen]:!inset-0 [&:fullscreen]:!w-screen [&:fullscreen]:!h-[100dvh] [&:fullscreen]:!max-h-[100dvh] [&:fullscreen]:!min-h-0 [&:fullscreen]:flex [&:fullscreen]:flex-col [&:fullscreen]:rounded-none [&:-webkit-full-screen]:!fixed [&:-webkit-full-screen]:!inset-0 [&:-webkit-full-screen]:!w-screen [&:-webkit-full-screen]:!h-[100dvh] [&:-webkit-full-screen]:flex [&:-webkit-full-screen]:flex-col [&:-webkit-full-screen]:rounded-none"
-      style={{ boxShadow: '0 2px 8px rgba(0,0,0,0.08)' }}
+      style={{
+        boxShadow: '0 2px 8px rgba(0,0,0,0.08)',
+        paddingTop: isFullscreen && isMobilePlayer ? 'env(safe-area-inset-top)' : undefined,
+        paddingBottom: isFullscreen && isMobilePlayer ? 'env(safe-area-inset-bottom)' : undefined,
+        paddingLeft: isFullscreen && isMobilePlayer ? 'env(safe-area-inset-left)' : undefined,
+        paddingRight: isFullscreen && isMobilePlayer ? 'env(safe-area-inset-right)' : undefined,
+      }}
     >
       <div
         className={`relative w-full bg-black min-h-0 min-w-0 overflow-hidden rounded-none sm:rounded-xl ${isFullscreen ? 'flex-1 min-h-0 flex items-center justify-center' : 'aspect-video'}`}
@@ -1358,7 +1435,7 @@ export default function VideoPlayer({
         )}
         <video
           ref={videoRef}
-          className={`absolute inset-0 w-full h-full object-contain ${isFullscreen ? 'max-h-[100dvh] max-w-[100vw]' : ''}`}
+          className={`absolute inset-0 w-full h-full ${isMobilePlayer && isFullscreen ? 'object-cover' : 'object-contain'} ${isFullscreen ? 'max-h-[100dvh] max-w-[100vw]' : ''}`}
           poster={session.thumbnail ?? undefined}
           playsInline
           onClick={handleVideoClick}
