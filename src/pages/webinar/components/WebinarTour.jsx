@@ -80,12 +80,11 @@ export default function WebinarTour({ onDone, storageKey = TOUR_SEEN_KEY, isOpen
   const step = STEPS[stepIndex];
   const isLast = stepIndex === STEPS.length - 1;
 
-  if (!isOpen) return null;
-
   useEffect(() => {
+    if (!isOpen) return undefined;
     const id = requestAnimationFrame(() => setHasEntered(true));
     return () => cancelAnimationFrame(id);
-  }, []);
+  }, [isOpen]);
 
   useEffect(() => {
     return () => {
@@ -94,25 +93,28 @@ export default function WebinarTour({ onDone, storageKey = TOUR_SEEN_KEY, isOpen
   }, []);
 
   const updateSpotlight = useCallback(() => {
+    if (!isOpen) return;
     if (step.target) {
       const rect = getTargetRect(step.target);
       setSpotlightRect(rect);
     } else {
       setSpotlightRect(null);
     }
-  }, [step?.target]);
+  }, [isOpen, step?.target]);
 
   useEffect(() => {
+    if (!isOpen) return undefined;
     updateSpotlight();
     const onResize = () => updateSpotlight();
     window.addEventListener('resize', onResize);
     return () => window.removeEventListener('resize', onResize);
-  }, [updateSpotlight]);
+  }, [isOpen, updateSpotlight]);
 
   useEffect(() => {
+    if (!isOpen) return undefined;
     const timer = requestAnimationFrame(() => updateSpotlight());
     return () => cancelAnimationFrame(timer);
-  }, [stepIndex, updateSpotlight]);
+  }, [isOpen, stepIndex, updateSpotlight]);
 
   const finishTour = useCallback(() => {
     try {
@@ -139,12 +141,15 @@ export default function WebinarTour({ onDone, storageKey = TOUR_SEEN_KEY, isOpen
   }, [stepIndex, finishTour]);
 
   useEffect(() => {
+    if (!isOpen) return undefined;
     const handleKeyDown = (e) => {
       if (e.key === 'Escape') handleSkip();
     };
     window.addEventListener('keydown', handleKeyDown);
     return () => window.removeEventListener('keydown', handleKeyDown);
-  }, [handleSkip]);
+  }, [isOpen, handleSkip]);
+
+  if (!isOpen) return null;
 
   return (
     <div
