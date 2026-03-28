@@ -476,7 +476,9 @@ function YouTubePlayerWithControls({
   const toggleYtPlay = useCallback(() => {
     const player = playerRef.current;
     if (!player?.playVideo || !player?.pauseVideo) return;
-    if (ytPlaying) {
+    const state = typeof player.getPlayerState === 'function' ? player.getPlayerState() : null;
+    const isPlayingState = state === 1;
+    if (isPlayingState || ytPlaying) {
       player.pauseVideo();
       setYtPlaying(false);
     } else {
@@ -496,14 +498,22 @@ function YouTubePlayerWithControls({
     const container = containerRef.current;
     if (!container) return;
     const fsNow = getFullscreenElement();
+    const isIOSMobile = isMobilePlayer && isIOSMobileDevice();
     if (ytPseudoFullscreen && !fsNow) {
       setYtPseudoFullscreen(false);
+      setYtFullscreen(false);
+      return;
+    }
+    // iOS YouTube iframe fullscreen is inconsistent; use deterministic pseudo-fullscreen.
+    if (isIOSMobile && !fsNow) {
+      setYtPseudoFullscreen(true);
       setYtFullscreen(false);
       return;
     }
     if (!fsNow) {
       requestFullscreenElement(container)
         .catch(() => {
+          if (isIOSMobile) throw new Error('iOS uses pseudo fullscreen');
           // Secondary fallback only if container API fails.
           const iframe = playerRef.current?.getIframe?.();
           if (!iframe) throw new Error('No fullscreen target');
@@ -515,7 +525,7 @@ function YouTubePlayerWithControls({
         })
         .catch(() => {
           setYtFullscreen(false);
-          if (isMobilePlayer && isIOSMobileDevice()) {
+          if (isIOSMobile) {
             setYtPseudoFullscreen(true);
           }
         });
@@ -720,7 +730,7 @@ function YouTubePlayerWithControls({
   return (
     <div
       ref={containerRef}
-      className={`relative w-full flex-shrink-0 rounded-none sm:rounded-xl overflow-hidden bg-black focus:outline-none focus-visible:ring-2 focus-visible:ring-primary-navy focus-visible:ring-offset-2 [&:fullscreen]:!fixed [&:fullscreen]:!inset-0 [&:fullscreen]:!w-screen [&:fullscreen]:!h-[100dvh] [&:fullscreen]:!max-h-[100dvh] [&:fullscreen]:!min-h-0 [&:fullscreen]:flex [&:fullscreen]:flex-col [&:fullscreen]:rounded-none [&:-webkit-full-screen]:!fixed [&:-webkit-full-screen]:!inset-0 [&:-webkit-full-screen]:!w-screen [&:-webkit-full-screen]:!h-[100dvh] [&:-webkit-full-screen]:!max-h-[100dvh] [&:-webkit-full-screen]:flex [&:-webkit-full-screen]:flex-col [&:-webkit-full-screen]:rounded-none ${ytPseudoFullscreen ? '!fixed !inset-0 !w-screen !h-[100dvh] !z-[9999] !rounded-none !flex !flex-col' : ''}`}
+      className={`relative w-full flex-shrink-0 rounded-none sm:rounded-xl overflow-hidden bg-black focus:outline-none focus-visible:ring-2 focus-visible:ring-primary-navy focus-visible:ring-offset-2 [&:fullscreen]:!fixed [&:fullscreen]:!inset-0 [&:fullscreen]:!w-screen [&:fullscreen]:!h-[100dvh] [&:fullscreen]:!max-h-[100dvh] [&:fullscreen]:!min-h-0 [&:fullscreen]:flex [&:fullscreen]:flex-col [&:fullscreen]:rounded-none [&:-webkit-full-screen]:!fixed [&:-webkit-full-screen]:!inset-0 [&:-webkit-full-screen]:!w-screen [&:-webkit-full-screen]:!h-[100dvh] [&:-webkit-full-screen]:!max-h-[100dvh] [&:-webkit-full-screen]:flex [&:-webkit-full-screen]:flex-col [&:-webkit-full-screen]:rounded-none ${ytPseudoFullscreen ? '!fixed !inset-0 !w-screen !h-[100dvh] !z-[2147483647] !rounded-none !flex !flex-col' : ''}`}
       style={{
         boxShadow: '0 2px 8px rgba(0,0,0,0.08)',
         paddingTop: ytFullscreenActive && isMobilePlayer ? 'env(safe-area-inset-top)' : undefined,
