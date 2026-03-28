@@ -76,8 +76,6 @@ function getStoredSidebarExpanded(keys) {
 
 const WebinarContext = createContext(null);
 
-const SYNC_DEBOUNCE_MS = 10_000;
-
 function buildSyncPayload(completedSessions, maxWatched, playbackPosition, activeSessionId, sessionProgress) {
   const modules = {};
   for (const m of ALL_MODULES) {
@@ -123,8 +121,17 @@ function readInitialProgress(keys) {
 }
 
 export function WebinarProvider({ children, initialDisplayName, phoneKey: phoneKeyProp }) {
-  const { token: webinarToken } = useWebinarAuth();
+  const { token: webinarToken, logout: webinarLogout } = useWebinarAuth();
   const phoneKey = normalizeWebinarPhone10(phoneKeyProp ?? null);
+
+  /** Clears stale webinar JWT when API returns 401 (expired / invalid). */
+  const handleWebinarAuthFailure = useCallback((res) => {
+    if (res?.status === 401) {
+      webinarLogout();
+      return true;
+    }
+    return false;
+  }, [webinarLogout]);
 
   const storageKeys = useMemo(() => getWebinarStorageKeys(phoneKey), [phoneKey]);
 
@@ -217,11 +224,28 @@ export function WebinarProvider({ children, initialDisplayName, phoneKey: phoneK
     } catch (_) {}
   }, [sidebarExpanded]);
 
-  const syncTimerRef = useRef(null);
   const hasFetchedRef = useRef(false);
   const restoredRef = useRef(false);
   const sessionProgressRef = useRef(sessionProgress);
   sessionProgressRef.current = sessionProgress;
+
+  const completedSessionsRef = useRef(completedSessions);
+  const playbackPositionRef = useRef(playbackPosition);
+  const maxWatchedRef = useRef(maxWatched);
+  const activeSessionIdRef = useRef(activeSessionId);
+
+  useEffect(() => {
+    completedSessionsRef.current = completedSessions;
+  }, [completedSessions]);
+  useEffect(() => {
+    playbackPositionRef.current = playbackPosition;
+  }, [playbackPosition]);
+  useEffect(() => {
+    maxWatchedRef.current = maxWatched;
+  }, [maxWatched]);
+  useEffect(() => {
+    activeSessionIdRef.current = activeSessionId;
+  }, [activeSessionId]);
 
   const skipNextImmediateSyncRef = useRef(false);
 
@@ -243,18 +267,43 @@ export function WebinarProvider({ children, initialDisplayName, phoneKey: phoneK
     skipNextImmediateSyncRef.current = true;
     setCompletedSessions(Array.isArray(doc.completedModules) ? doc.completedModules : []);
 
-    const restoredMaxWatched = {};
-    const restoredPlayback = {};
-    if (doc.modules && typeof doc.modules === 'object') {
-      for (const [moduleId, mod] of Object.entries(doc.modules)) {
-        if (mod && typeof mod === 'object') {
-          if (typeof mod.maxWatchedSeconds === 'number') restoredMaxWatched[moduleId] = mod.maxWatchedSeconds;
-          if (typeof mod.watchedSeconds === 'number') restoredPlayback[moduleId] = mod.watchedSeconds;
+    setMaxWatched((prev) => {
+      const activeId = activeSessionIdRef.current;
+      const next = { ...prev };
+      if (doc.modules && typeof doc.modules === 'object') {
+        for (const [moduleId, mod] of Object.entries(doc.modules)) {
+          if (mod && typeof mod === 'object' && typeof mod.maxWatchedSeconds === 'number') {
+            const serverM = mod.maxWatchedSeconds;
+            const localM = prev[moduleId] ?? 0;
+            if (moduleId === activeId && localM > serverM) {
+              next[moduleId] = localM;
+            } else {
+              next[moduleId] = Math.max(localM, serverM);
+            }
+          }
         }
       }
-    }
-    setMaxWatched(restoredMaxWatched);
-    setPlaybackPosition(restoredPlayback);
+      return next;
+    });
+
+    setPlaybackPosition((prev) => {
+      const activeId = activeSessionIdRef.current;
+      const next = { ...prev };
+      if (doc.modules && typeof doc.modules === 'object') {
+        for (const [moduleId, mod] of Object.entries(doc.modules)) {
+          if (mod && typeof mod === 'object' && typeof mod.watchedSeconds === 'number') {
+            const serverW = mod.watchedSeconds;
+            const localW = prev[moduleId] ?? 0;
+            if (moduleId === activeId && localW > serverW) {
+              next[moduleId] = localW;
+            } else {
+              next[moduleId] = Math.max(localW, serverW);
+            }
+          }
+        }
+      }
+      return next;
+    });
 
     if (typeof doc.lastActiveModule === 'string' && ALL_MODULES.some((m) => m.id === doc.lastActiveModule)) {
       setActiveSessionId(doc.lastActiveModule);
@@ -267,11 +316,19 @@ export function WebinarProvider({ children, initialDisplayName, phoneKey: phoneK
     }
   }, [setActiveSessionId]);
 
+  /** Stable: reads latest progress from refs so playback ticks do not recreate this callback. */
   const doSync = useCallback(() => {
     if (!webinarToken || !restoredRef.current) return;
-    const payload = buildSyncPayload(completedSessions, maxWatched, playbackPosition, activeSessionId, sessionProgressRef.current);
+    const payload = buildSyncPayload(
+      completedSessionsRef.current,
+      maxWatchedRef.current,
+      playbackPositionRef.current,
+      activeSessionIdRef.current,
+      sessionProgressRef.current
+    );
     syncWebinarProgress(webinarToken, payload).then((res) => {
       if (!res?.success) {
+        if (handleWebinarAuthFailure(res)) return;
         if (import.meta.env.DEV) console.warn('[webinar sync] failed', res?.message);
         return;
       }
@@ -283,13 +340,35 @@ export function WebinarProvider({ children, initialDisplayName, phoneKey: phoneK
         setCompletedSessions(serverDoc.completedModules);
       }
       if (serverDoc.modules && typeof serverDoc.modules === 'object') {
+        const activeId = activeSessionIdRef.current;
         setMaxWatched((prev) => {
           const next = { ...prev };
           let changed = false;
           for (const [id, mod] of Object.entries(serverDoc.modules)) {
-            if (mod && typeof mod === 'object' && typeof mod.maxWatchedSeconds === 'number' && mod.maxWatchedSeconds > (prev[id] || 0)) {
-              next[id] = mod.maxWatchedSeconds;
-              changed = true;
+            if (mod && typeof mod === 'object' && typeof mod.maxWatchedSeconds === 'number') {
+              const serverM = mod.maxWatchedSeconds;
+              const localM = prev[id] ?? 0;
+              if (id === activeId && localM > serverM) continue;
+              if (serverM > localM) {
+                next[id] = serverM;
+                changed = true;
+              }
+            }
+          }
+          return changed ? next : prev;
+        });
+        setPlaybackPosition((prev) => {
+          const next = { ...prev };
+          let changed = false;
+          for (const [id, mod] of Object.entries(serverDoc.modules)) {
+            if (mod && typeof mod === 'object' && typeof mod.watchedSeconds === 'number') {
+              const serverW = mod.watchedSeconds;
+              const localW = prev[id] ?? 0;
+              if (id === activeId && localW > serverW) continue;
+              if (serverW > localW) {
+                next[id] = serverW;
+                changed = true;
+              }
             }
           }
           return changed ? next : prev;
@@ -304,22 +383,12 @@ export function WebinarProvider({ children, initialDisplayName, phoneKey: phoneK
     }).catch((err) => {
       if (import.meta.env.DEV) console.warn('[webinar sync] error', err?.message || err);
     });
-  }, [webinarToken, completedSessions, maxWatched, playbackPosition, activeSessionId]);
+  }, [webinarToken, handleWebinarAuthFailure]);
 
-  const initialSyncDoneRef = useRef(false);
-  useEffect(() => {
-    if (!webinarToken || initialSyncDoneRef.current) return;
-    initialSyncDoneRef.current = true;
-    const t = setTimeout(doSync, 2000);
-    return () => clearTimeout(t);
-  }, [webinarToken, doSync]);
+  const doSyncRef = useRef(doSync);
+  doSyncRef.current = doSync;
 
-  useEffect(() => {
-    if (!webinarToken) return;
-    if (syncTimerRef.current) clearTimeout(syncTimerRef.current);
-    syncTimerRef.current = setTimeout(doSync, SYNC_DEBOUNCE_MS);
-    return () => { if (syncTimerRef.current) clearTimeout(syncTimerRef.current); };
-  }, [doSync, webinarToken]);
+  const postHydrateSyncScheduledRef = useRef(false);
 
   const prevCompletedRef = useRef(completedSessions);
   useEffect(() => {
@@ -336,45 +405,82 @@ export function WebinarProvider({ children, initialDisplayName, phoneKey: phoneK
   }, [completedSessions, doSync, webinarToken]);
 
   useEffect(() => {
+    postHydrateSyncScheduledRef.current = false;
+  }, [webinarToken]);
+
+  useEffect(() => {
     if (!webinarToken || hasFetchedRef.current) return;
     hasFetchedRef.current = true;
     getWebinarProgress(webinarToken).then((res) => {
       if (!res.success) {
+        const authCleared = handleWebinarAuthFailure(res);
         restoredRef.current = true;
+        if (!authCleared && !postHydrateSyncScheduledRef.current) {
+          postHydrateSyncScheduledRef.current = true;
+          setTimeout(() => doSyncRef.current(), 2500);
+        }
         return;
       }
       const doc = extractWebinarDocFromApiResponse(res);
       applyServerDocToState(doc);
       restoredRef.current = true;
+      if (!postHydrateSyncScheduledRef.current) {
+        postHydrateSyncScheduledRef.current = true;
+        setTimeout(() => doSyncRef.current(), 2500);
+      }
     }).catch(() => {
       restoredRef.current = true;
+      if (!postHydrateSyncScheduledRef.current) {
+        postHydrateSyncScheduledRef.current = true;
+        setTimeout(() => doSyncRef.current(), 2500);
+      }
     });
-  }, [webinarToken, applyServerDocToState]);
+  }, [webinarToken, applyServerDocToState, handleWebinarAuthFailure]);
 
   useEffect(() => {
     if (!webinarToken) return;
     const handleVisibility = async () => {
+      if (document.visibilityState === 'hidden') {
+        doSyncRef.current();
+        return;
+      }
       if (document.visibilityState !== 'visible') return;
       try {
         const res = await getWebinarProgress(webinarToken);
-        if (!res.success) return;
+        if (!res.success) {
+          handleWebinarAuthFailure(res);
+          return;
+        }
         const doc = extractWebinarDocFromApiResponse(res);
         applyServerDocToState(doc);
       } catch { /* best-effort */ }
     };
     document.addEventListener('visibilitychange', handleVisibility);
     return () => document.removeEventListener('visibilitychange', handleVisibility);
-  }, [webinarToken, applyServerDocToState]);
+  }, [webinarToken, applyServerDocToState, handleWebinarAuthFailure]);
+
+  /** Long-interval backup while logged in (not tied to playback ticks). */
+  const BACKUP_SYNC_MS = 12 * 60 * 1000;
+  useEffect(() => {
+    if (!webinarToken) return;
+    const id = window.setInterval(() => {
+      if (!restoredRef.current) return;
+      doSyncRef.current();
+    }, BACKUP_SYNC_MS);
+    return () => window.clearInterval(id);
+  }, [webinarToken]);
 
   useEffect(() => {
     if (!webinarToken) return;
     const handleUnload = () => {
-      const playbackOnly = { modules: {}, lastActiveModule: activeSessionId || null };
+      const playbackOnly = { modules: {}, lastActiveModule: activeSessionIdRef.current || null };
+      const pos = playbackPositionRef.current;
+      const max = maxWatchedRef.current;
       for (const m of ALL_MODULES) {
         if (m.type !== 'Assessment') {
           playbackOnly.modules[m.id] = {
-            watchedSeconds: Math.round(playbackPosition?.[m.id] || 0),
-            maxWatchedSeconds: Math.round(maxWatched?.[m.id] || 0),
+            watchedSeconds: Math.round(pos?.[m.id] || 0),
+            maxWatchedSeconds: Math.round(max?.[m.id] || 0),
           };
         }
       }
@@ -382,7 +488,7 @@ export function WebinarProvider({ children, initialDisplayName, phoneKey: phoneK
     };
     window.addEventListener('beforeunload', handleUnload);
     return () => window.removeEventListener('beforeunload', handleUnload);
-  }, [webinarToken, maxWatched, playbackPosition, activeSessionId]);
+  }, [webinarToken]);
 
   const updateSessionProgress = useCallback(
     (sessionId, percent) => {

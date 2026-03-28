@@ -33,7 +33,7 @@ function extractWebinarDoc(res) {
 }
 
 export default function CounsellorTraining() {
-  const { token: webinarToken } = useWebinarAuth();
+  const { token: webinarToken, logout: webinarLogout } = useWebinarAuth();
   const { markCompleted, completedModules, totalModules } = useCounsellorTraining();
   const { displayName, phone: profilePhone } = useCounsellorProfile();
 
@@ -95,6 +95,9 @@ export default function CounsellorTraining() {
       if (webinarToken) {
         const wRes = await getWebinarProgress(webinarToken);
         if (cancelled) return;
+        if (wRes.status === 401) {
+          webinarLogout();
+        }
         if (wRes.success) {
           const doc = extractWebinarDoc(wRes);
           const done = Array.isArray(doc?.completedModules)

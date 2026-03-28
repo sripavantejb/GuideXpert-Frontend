@@ -120,14 +120,16 @@ function CompletionOverlay({ visible, onNextSession, onWatchAgain, hasNextSessio
               <span aria-hidden>→</span>
             </button>
           )}
-          <button
-            type="button"
-            onClick={onWatchAgain}
-            className="flex-1 py-2.5 px-4 rounded-xl bg-white/20 text-white font-medium hover:bg-white/30 border border-white/30 focus:outline-none focus-visible:ring-2 focus-visible:ring-white focus-visible:ring-offset-2 transition-colors"
-            aria-label={replayLabel}
-          >
-            {replayLabel}
-          </button>
+          {typeof onWatchAgain === 'function' && (
+            <button
+              type="button"
+              onClick={onWatchAgain}
+              className="flex-1 py-2.5 px-4 rounded-xl bg-white/20 text-white font-medium hover:bg-white/30 border border-white/30 focus:outline-none focus-visible:ring-2 focus-visible:ring-white focus-visible:ring-offset-2 transition-colors"
+              aria-label={replayLabel}
+            >
+              {replayLabel}
+            </button>
+          )}
         </div>
       </div>
     </div>
@@ -169,6 +171,16 @@ function YouTubePlayerWithControls({
   const [ytFullscreen, setYtFullscreen] = useState(false);
   const [ytPlaybackRate, setYtPlaybackRate] = useState(1);
   const [ytSpeedOpen, setYtSpeedOpen] = useState(false);
+  const [ytEmbedError, setYtEmbedError] = useState(null);
+
+  const onTimeUpdateRef = useRef(onTimeUpdate);
+  const onProgressRef = useRef(onProgress);
+  const onEndedRef = useRef(onEnded);
+  const onMetadataReadyRef = useRef(onMetadataReady);
+  onTimeUpdateRef.current = onTimeUpdate;
+  onProgressRef.current = onProgress;
+  onEndedRef.current = onEnded;
+  onMetadataReadyRef.current = onMetadataReady;
 
   const playerContainerId = `yt-player-${session?.id ?? 'default'}`;
 
@@ -190,6 +202,7 @@ function YouTubePlayerWithControls({
     if (!apiReady || !videoId || !containerHasSize || typeof window === 'undefined' || !window.YT?.Player) return;
     endedRef.current = false;
     metadataSentRef.current = false;
+    setYtEmbedError(null);
     const id = playerContainerId;
     const timeoutId = setTimeout(() => {
       if (!document.getElementById(id)) return;
@@ -222,11 +235,20 @@ function YouTubePlayerWithControls({
               const d = event.target.getDuration?.();
               if (Number.isFinite(d) && d > 0) {
                 setYtDuration(d);
-                if (!metadataSentRef.current && onMetadataReady) {
+                if (!metadataSentRef.current && onMetadataReadyRef.current) {
                   metadataSentRef.current = true;
-                  onMetadataReady({ durationSeconds: d, formattedDuration: formatTime(d) });
+                  onMetadataReadyRef.current({ durationSeconds: d, formattedDuration: formatTime(d) });
                 }
               }
+            },
+            onError(event) {
+              const code = event?.data;
+              let msg = 'Playback error';
+              if (code === 2) msg = 'Invalid video';
+              else if (code === 5) msg = 'HTML5 playback error';
+              else if (code === 100) msg = 'Video unavailable';
+              else if (code === 101 || code === 150) msg = 'Embedding blocked for this video';
+              setYtEmbedError(msg);
             },
             onStateChange(event) {
               if (event.data === YT_PLAYER_STATE_ENDED) {
@@ -240,7 +262,7 @@ function YouTubePlayerWithControls({
                 }
                 setYtProgress(100);
                 setShowCompletionOverlay(true);
-                onEnded?.(session?.id);
+                onEndedRef.current?.(session?.id);
               }
             },
           },
@@ -248,6 +270,7 @@ function YouTubePlayerWithControls({
         playerRef.current = player;
       } catch (err) {
         console.error('YouTube player init error:', err);
+        setYtEmbedError('Could not start the player');
       }
     }, 350);
 
@@ -265,10 +288,10 @@ function YouTubePlayerWithControls({
       }
       setPlayerReady(false);
     };
-  }, [apiReady, videoId, containerHasSize, session?.id, playerContainerId, onEnded, onMetadataReady]);
+  }, [apiReady, videoId, containerHasSize, session?.id, playerContainerId]);
 
   useEffect(() => {
-    if (!playerRef.current?.getCurrentTime || endedRef.current) return;
+    if (!playerRef.current?.getCurrentTime) return;
     const interval = setInterval(() => {
       const player = playerRef.current;
       if (!player?.getCurrentTime) return;
@@ -281,9 +304,9 @@ function YouTubePlayerWithControls({
       const duration = typeof player.getDuration === 'function' ? player.getDuration() : ytDuration;
       if (Number.isFinite(duration) && duration > 0) {
         setYtDuration(duration);
-        if (!metadataSentRef.current && onMetadataReady) {
+        if (!metadataSentRef.current && onMetadataReadyRef.current) {
           metadataSentRef.current = true;
-          onMetadataReady({ durationSeconds: duration, formattedDuration: formatTime(duration) });
+          onMetadataReadyRef.current({ durationSeconds: duration, formattedDuration: formatTime(duration) });
         }
       }
       if (state === 1) setYtPlaying(true);
@@ -294,8 +317,8 @@ function YouTubePlayerWithControls({
         if (Number.isFinite(duration) && duration > 0) {
           const pct = Math.min(100, (currentTime / duration) * 100);
           setYtProgress(pct);
-          onTimeUpdate?.(session?.id, currentTime);
-          onProgress?.(session?.id, pct);
+          onTimeUpdateRef.current?.(session?.id, currentTime);
+          onProgressRef.current?.(session?.id, pct);
         }
       }
     }, 500);
@@ -306,7 +329,7 @@ function YouTubePlayerWithControls({
         progressIntervalRef.current = null;
       }
     };
-  }, [session?.id, ytDuration, onTimeUpdate, onProgress, onMetadataReady]);
+  }, [session?.id, ytDuration]);
 
   useEffect(() => {
     setShowCompletionOverlay(false);
@@ -325,20 +348,37 @@ function YouTubePlayerWithControls({
       resumedRef.current = true;
       playerRef.current.seekTo(pos, true);
       setYtCurrentTime(pos);
-      if (ytDuration > 0) setYtProgress((pos / ytDuration) * 100);
+      const d = typeof playerRef.current.getDuration === 'function' ? playerRef.current.getDuration() : ytDuration;
+      if (Number.isFinite(d) && d > 0) setYtProgress((pos / d) * 100);
     }
   }, [playerReady, initialPosition, ytDuration]);
 
   const handleWatchAgain = useCallback(() => {
     const player = playerRef.current;
-    if (player?.seekTo && player?.playVideo) {
-      player.seekTo(0);
-      player.playVideo();
-      setHasStarted(true);
-      setShowCompletionOverlay(false);
-      setYtPlaying(true);
+    if (!player?.seekTo || !player?.playVideo) return;
+    endedRef.current = false;
+    player.seekTo(0, true);
+    player.playVideo();
+    const d = typeof player.getDuration === 'function' ? player.getDuration() : ytDuration;
+    setYtCurrentTime(0);
+    setYtProgress(0);
+    setHasStarted(true);
+    setShowCompletionOverlay(false);
+    setYtPlaying(true);
+    if (Number.isFinite(d) && d > 0) {
+      setYtDuration(d);
     }
-  }, []);
+    window.setTimeout(() => {
+      const p = playerRef.current;
+      if (!p?.getCurrentTime) return;
+      const t = p.getCurrentTime();
+      const dur = typeof p.getDuration === 'function' ? p.getDuration() : d;
+      if (Number.isFinite(t)) setYtCurrentTime(t);
+      if (Number.isFinite(dur) && dur > 0) {
+        setYtProgress(Math.min(100, (t / dur) * 100));
+      }
+    }, 150);
+  }, [ytDuration]);
 
   const toggleYtPlay = useCallback(() => {
     const player = playerRef.current;
@@ -510,9 +550,23 @@ function YouTubePlayerWithControls({
               aria-hidden
             />
           )}
-          {!playerReady && (
+          {!playerReady && !ytEmbedError && (
             <div className="absolute inset-0 flex items-center justify-center bg-gray-900 z-0" aria-hidden>
               <div className="h-10 w-10 rounded-full border-2 border-white/30 border-t-white animate-spin" />
+            </div>
+          )}
+          {ytEmbedError && videoId && (
+            <div className="absolute inset-0 z-[6] flex flex-col items-center justify-center gap-3 bg-gray-900/95 px-4 text-center text-white">
+              <p className="text-sm font-medium">{ytEmbedError}</p>
+              <p className="text-xs text-white/75 max-w-sm">If the embed is blocked, open the video on YouTube.</p>
+              <a
+                href={`https://www.youtube.com/watch?v=${encodeURIComponent(videoId)}`}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="inline-flex items-center justify-center rounded-xl bg-white px-4 py-2 text-sm font-medium text-gray-900 hover:bg-white/90 focus:outline-none focus-visible:ring-2 focus-visible:ring-white"
+              >
+                Open in YouTube
+              </a>
             </div>
           )}
           {/* Player mount: always visible so no white screen when video ends */}
@@ -528,7 +582,7 @@ function YouTubePlayerWithControls({
             onDoubleClick={handleYtVideoDoubleClick}
           />
           {/* Opaque paused/start cover fully hides native YouTube title/watch-later/share overlays */}
-          {!ytPlaying && !showCompletionOverlay && (
+          {!ytPlaying && !showCompletionOverlay && !ytEmbedError && (
             <button
               type="button"
               onClick={toggleYtPlay}
@@ -703,9 +757,18 @@ export default function VideoPlayer({
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
 
+  const nativeOnTimeUpdateRef = useRef(onTimeUpdate);
+  const nativeOnEndedRef = useRef(onEnded);
+  const nativeOnProgressRef = useRef(onProgress);
+  nativeOnTimeUpdateRef.current = onTimeUpdate;
+  nativeOnEndedRef.current = onEnded;
+  nativeOnProgressRef.current = onProgress;
+
+  const resumeSeekAppliedRef = useRef(false);
+
   useEffect(() => {
     nativeMaxWatchedRef.current = maxWatchedTime;
-  }, [session?.id]);
+  }, [maxWatchedTime, session?.id]);
 
   useEffect(() => {
     const v = videoRef.current;
@@ -718,6 +781,7 @@ export default function VideoPlayer({
     setCurrentTime(0);
     setPlaying(false);
     setDuration(0);
+    resumeSeekAppliedRef.current = false;
   }, [session?.id]);
 
   useEffect(() => {
@@ -730,11 +794,6 @@ export default function VideoPlayer({
       setDuration(d);
       const tracks = v.textTracks;
       setHasCaptions(tracks && tracks.length > 0);
-      if (initialPosition > 0 && d) {
-        v.currentTime = Math.min(initialPosition, d - 0.5);
-        setCurrentTime(v.currentTime);
-        setProgress(d ? (v.currentTime / d) * 100 : 0);
-      }
     };
     const onError = () => {
       setLoading(false);
@@ -746,12 +805,12 @@ export default function VideoPlayer({
       if (t > nativeMaxWatchedRef.current) nativeMaxWatchedRef.current = t;
       setCurrentTime(t);
       setProgress(v.duration ? (t / v.duration) * 100 : 0);
-      onTimeUpdate?.(session?.id, t);
-      onProgress?.(session?.id, v.duration ? (t / v.duration) * 100 : 0);
+      nativeOnTimeUpdateRef.current?.(session?.id, t);
+      nativeOnProgressRef.current?.(session?.id, v.duration ? (t / v.duration) * 100 : 0);
     };
     const onEndedHandler = () => {
       setPlaying(false);
-      onEnded?.(session?.id);
+      nativeOnEndedRef.current?.(session?.id);
     };
     v.addEventListener('loadedmetadata', onLoadedMetadata);
     v.addEventListener('timeupdate', onTimeUpdateHandler);
@@ -765,7 +824,34 @@ export default function VideoPlayer({
       v.removeEventListener('error', onError);
       v.removeEventListener('canplay', onCanPlay);
     };
-  }, [session?.id, initialPosition, onTimeUpdate, onEnded, onProgress]);
+  }, [session?.id]);
+
+  useEffect(() => {
+    if (resumeSeekAppliedRef.current) return;
+    const v = videoRef.current;
+    if (!v || !session) return;
+    const pos = initialPosition;
+    if (pos <= 0) return;
+
+    const applySeek = () => {
+      if (resumeSeekAppliedRef.current) return;
+      const d = v.duration;
+      if (!d || !Number.isFinite(d)) return;
+      resumeSeekAppliedRef.current = true;
+      v.currentTime = Math.min(pos, d - 0.5);
+      setCurrentTime(v.currentTime);
+      setProgress(d ? (v.currentTime / d) * 100 : 0);
+    };
+
+    if (v.readyState >= 1) {
+      applySeek();
+    } else {
+      v.addEventListener('loadedmetadata', applySeek, { once: true });
+    }
+    return () => {
+      v.removeEventListener('loadedmetadata', applySeek);
+    };
+  }, [session?.id, initialPosition]);
 
   useEffect(() => {
     const v = videoRef.current;
