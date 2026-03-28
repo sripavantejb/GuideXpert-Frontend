@@ -69,6 +69,60 @@ function useYouTubeIFrameAPI() {
   return ready;
 }
 
+/** Mobile-only UX: narrow viewport + touch (avoids desktop narrow windows). */
+function useIsMobilePlayer() {
+  const [isMobile, setIsMobile] = useState(false);
+  useEffect(() => {
+    if (typeof window === 'undefined') return;
+    const narrow = window.matchMedia('(max-width: 768px)');
+    const coarse = window.matchMedia('(pointer: coarse)');
+    const compute = () => {
+      const touch = (navigator.maxTouchPoints ?? 0) > 0;
+      setIsMobile(narrow.matches && (coarse.matches || touch));
+    };
+    compute();
+    narrow.addEventListener('change', compute);
+    coarse.addEventListener('change', compute);
+    return () => {
+      narrow.removeEventListener('change', compute);
+      coarse.removeEventListener('change', compute);
+    };
+  }, []);
+  return isMobile;
+}
+
+function getFullscreenElement() {
+  return (
+    document.fullscreenElement
+    || document.webkitFullscreenElement
+    || document.mozFullScreenElement
+    || document.msFullscreenElement
+    || null
+  );
+}
+
+function requestFullscreenElement(el) {
+  if (!el) return Promise.reject(new Error('no element'));
+  const req =
+    el.requestFullscreen
+    || el.webkitRequestFullscreen
+    || el.webkitEnterFullScreen
+    || el.mozRequestFullScreen
+    || el.msRequestFullscreen;
+  if (!req) return Promise.reject(new Error('no fullscreen API'));
+  return Promise.resolve(req.call(el));
+}
+
+function exitFullscreenCompat() {
+  const doc = document;
+  if (doc.exitFullscreen) return doc.exitFullscreen();
+  if (doc.webkitExitFullscreen) return doc.webkitExitFullscreen();
+  if (doc.webkitCancelFullScreen) return doc.webkitCancelFullScreen();
+  if (doc.mozCancelFullScreen) return doc.mozCancelFullScreen();
+  if (doc.msExitFullscreen) return doc.msExitFullscreen();
+  return Promise.resolve();
+}
+
 const YT_PLAYER_STATE_ENDED = 0;
 
 function CompletionOverlay({ visible, onNextSession, onWatchAgain, hasNextSession, isIntro }) {
@@ -153,6 +207,8 @@ function YouTubePlayerWithControls({
   const playerRef = useRef(null);
   const progressIntervalRef = useRef(null);
   const lastLeftTapRef = useRef(0);
+  const ytTapTimerRef = useRef(null);
+  const ytTouchToggleAtRef = useRef(0);
   const metadataSentRef = useRef(false);
   const endedRef = useRef(false);
   const ytMaxWatchedRef = useRef(maxWatchedTime);
@@ -172,6 +228,8 @@ function YouTubePlayerWithControls({
   const [ytPlaybackRate, setYtPlaybackRate] = useState(1);
   const [ytSpeedOpen, setYtSpeedOpen] = useState(false);
   const [ytEmbedError, setYtEmbedError] = useState(null);
+
+  const isMobilePlayer = useIsMobilePlayer();
 
   const onTimeUpdateRef = useRef(onTimeUpdate);
   const onProgressRef = useRef(onProgress);
@@ -393,21 +451,47 @@ function YouTubePlayerWithControls({
     }
   }, [ytPlaying]);
 
-  const toggleYtFullscreen = useCallback(() => {
-    const el = containerRef.current;
-    if (!el) return;
-    if (!document.fullscreenElement) {
-      el.requestFullscreen?.().then(() => setYtFullscreen(true)).catch(() => {});
-    } else {
-      document.exitFullscreen?.().then(() => setYtFullscreen(false)).catch(() => {});
-    }
+  const syncYtFullscreenState = useCallback(() => {
+    setYtFullscreen(!!getFullscreenElement());
   }, []);
 
+  const toggleYtFullscreen = useCallback(() => {
+    const container = containerRef.current;
+    if (!container) return;
+    const fsNow = getFullscreenElement();
+    if (!fsNow) {
+      const tryEnter = () => {
+        if (isMobilePlayer) {
+          const iframe = playerRef.current?.getIframe?.();
+          if (iframe) {
+            return requestFullscreenElement(iframe).catch(() => requestFullscreenElement(container));
+          }
+        }
+        return requestFullscreenElement(container);
+      };
+      tryEnter()
+        .then(() => setYtFullscreen(true))
+        .catch(() => {});
+      return;
+    }
+    exitFullscreenCompat()
+      .then(() => setYtFullscreen(false))
+      .catch(() => {});
+  }, [isMobilePlayer]);
+
   useEffect(() => {
-    const onFullscreenChange = () => setYtFullscreen(!!document.fullscreenElement);
-    document.addEventListener('fullscreenchange', onFullscreenChange);
-    return () => document.removeEventListener('fullscreenchange', onFullscreenChange);
-  }, []);
+    const onFs = () => syncYtFullscreenState();
+    document.addEventListener('fullscreenchange', onFs);
+    document.addEventListener('webkitfullscreenchange', onFs);
+    document.addEventListener('mozfullscreenchange', onFs);
+    document.addEventListener('MSFullscreenChange', onFs);
+    return () => {
+      document.removeEventListener('fullscreenchange', onFs);
+      document.removeEventListener('webkitfullscreenchange', onFs);
+      document.removeEventListener('mozfullscreenchange', onFs);
+      document.removeEventListener('MSFullscreenChange', onFs);
+    };
+  }, [syncYtFullscreenState]);
 
   const handleYtSeek = useCallback(
     (e) => {
@@ -507,6 +591,41 @@ function YouTubePlayerWithControls({
     if (!touch) return;
     const rect = container.getBoundingClientRect();
     const isLeftHalf = touch.clientX <= rect.left + (rect.width / 2);
+
+    if (isMobilePlayer) {
+      const now = Date.now();
+      const prev = lastLeftTapRef.current;
+      const delta = now - prev;
+      lastLeftTapRef.current = now;
+
+      if (isLeftHalf) {
+        if (delta <= 320 && prev !== 0) {
+          if (ytTapTimerRef.current) {
+            clearTimeout(ytTapTimerRef.current);
+            ytTapTimerRef.current = null;
+          }
+          e.preventDefault();
+          handleYtBack10();
+          return;
+        }
+        if (ytTapTimerRef.current) clearTimeout(ytTapTimerRef.current);
+        ytTapTimerRef.current = window.setTimeout(() => {
+          ytTapTimerRef.current = null;
+          ytTouchToggleAtRef.current = Date.now();
+          toggleYtPlay();
+        }, 320);
+        return;
+      }
+      if (ytTapTimerRef.current) {
+        clearTimeout(ytTapTimerRef.current);
+        ytTapTimerRef.current = null;
+      }
+      lastLeftTapRef.current = 0;
+      ytTouchToggleAtRef.current = Date.now();
+      toggleYtPlay();
+      return;
+    }
+
     if (!isLeftHalf) return;
     const now = Date.now();
     const delta = now - lastLeftTapRef.current;
@@ -515,7 +634,23 @@ function YouTubePlayerWithControls({
       e.preventDefault();
       handleYtBack10();
     }
-  }, [showCompletionOverlay, handleYtBack10]);
+  }, [showCompletionOverlay, handleYtBack10, isMobilePlayer, toggleYtPlay]);
+
+  const handleYtOverlayClickCapture = useCallback(
+    (e) => {
+      if (!isMobilePlayer) return;
+      if (showCompletionOverlay) return;
+      if (Date.now() - ytTouchToggleAtRef.current < 450) {
+        e.preventDefault();
+        e.stopPropagation();
+      }
+    },
+    [isMobilePlayer, showCompletionOverlay]
+  );
+
+  useEffect(() => () => {
+    if (ytTapTimerRef.current) clearTimeout(ytTapTimerRef.current);
+  }, []);
 
   const handleYtVideoDoubleClick = useCallback((e) => {
     const container = containerRef.current;
@@ -532,16 +667,22 @@ function YouTubePlayerWithControls({
   return (
     <div
       ref={containerRef}
-      className="relative w-full flex-shrink-0 rounded-none sm:rounded-xl overflow-hidden bg-black focus:outline-none focus-visible:ring-2 focus-visible:ring-primary-navy focus-visible:ring-offset-2"
+      className="relative w-full flex-shrink-0 rounded-none sm:rounded-xl overflow-hidden bg-black focus:outline-none focus-visible:ring-2 focus-visible:ring-primary-navy focus-visible:ring-offset-2 [&:fullscreen]:!fixed [&:fullscreen]:!inset-0 [&:fullscreen]:!w-screen [&:fullscreen]:!h-[100dvh] [&:fullscreen]:!max-h-[100dvh] [&:fullscreen]:!min-h-0 [&:fullscreen]:flex [&:fullscreen]:flex-col [&:fullscreen]:rounded-none [&:-webkit-full-screen]:!fixed [&:-webkit-full-screen]:!inset-0 [&:-webkit-full-screen]:!w-screen [&:-webkit-full-screen]:!h-[100dvh] [&:-webkit-full-screen]:!max-h-[100dvh] [&:-webkit-full-screen]:flex [&:-webkit-full-screen]:flex-col [&:-webkit-full-screen]:rounded-none"
       style={{ boxShadow: '0 2px 8px rgba(0,0,0,0.08)' }}
     >
       {/* Clean 16:9 video area with no top gradients/overlays */}
       <div
         key={`yt-wrap-${session?.id}`}
-        className="relative w-full bg-black overflow-hidden"
-        style={{ aspectRatio: '16 / 9' }}
+        className={`relative w-full bg-black overflow-hidden ${ytFullscreen ? 'flex-1 min-h-0 flex items-center justify-center' : ''}`}
+        style={
+          ytFullscreen
+            ? { width: '100%', flex: '1 1 auto', minHeight: 0, maxHeight: '100dvh' }
+            : { aspectRatio: '16 / 9' }
+        }
       >
-        <div className="absolute inset-0 w-full h-full">
+        <div
+          className={`absolute inset-0 w-full h-full ${ytFullscreen ? 'max-h-[100dvh] max-w-[100vw]' : ''}`}
+        >
           {/* Thumbnail / loading until player is ready - player stays visible after completion */}
           {!playerReady && session?.thumbnail && (
             <div
@@ -580,6 +721,7 @@ function YouTubePlayerWithControls({
             aria-hidden
             onTouchEnd={handleYtVideoTouchEnd}
             onDoubleClick={handleYtVideoDoubleClick}
+            onClickCapture={handleYtOverlayClickCapture}
           />
           {/* Opaque paused/start cover fully hides native YouTube title/watch-later/share overlays */}
           {!ytPlaying && !showCompletionOverlay && !ytEmbedError && (
@@ -740,6 +882,8 @@ export default function VideoPlayer({
   const containerRef = useRef(null);
   const videoRef = useRef(null);
   const lastLeftTapRef = useRef(0);
+  const nativeTapTimerRef = useRef(null);
+  const mobileVideoTapHandledRef = useRef(false);
   const lastRewindGestureAtRef = useRef(0);
   const nativeMaxWatchedRef = useRef(maxWatchedTime);
   const [playing, setPlaying] = useState(false);
@@ -765,6 +909,8 @@ export default function VideoPlayer({
   nativeOnProgressRef.current = onProgress;
 
   const resumeSeekAppliedRef = useRef(false);
+
+  const isMobilePlayer = useIsMobilePlayer();
 
   useEffect(() => {
     nativeMaxWatchedRef.current = maxWatchedTime;
@@ -944,6 +1090,47 @@ export default function VideoPlayer({
     if (!touch) return;
     const rect = v.getBoundingClientRect();
     const isLeftHalf = touch.clientX <= rect.left + (rect.width / 2);
+
+    if (isMobilePlayer) {
+      const now = Date.now();
+      const prev = lastLeftTapRef.current;
+      const delta = now - prev;
+      lastLeftTapRef.current = now;
+
+      if (isLeftHalf) {
+        if (delta <= 320 && prev !== 0) {
+          if (nativeTapTimerRef.current) {
+            clearTimeout(nativeTapTimerRef.current);
+            nativeTapTimerRef.current = null;
+          }
+          e.preventDefault();
+          e.stopPropagation();
+          lastRewindGestureAtRef.current = Date.now();
+          handleBack10();
+          return;
+        }
+        if (nativeTapTimerRef.current) clearTimeout(nativeTapTimerRef.current);
+        nativeTapTimerRef.current = window.setTimeout(() => {
+          nativeTapTimerRef.current = null;
+          if (Date.now() - lastRewindGestureAtRef.current < 380) return;
+          mobileVideoTapHandledRef.current = true;
+          window.setTimeout(() => { mobileVideoTapHandledRef.current = false; }, 450);
+          togglePlay();
+        }, 320);
+        return;
+      }
+      if (nativeTapTimerRef.current) {
+        clearTimeout(nativeTapTimerRef.current);
+        nativeTapTimerRef.current = null;
+      }
+      lastLeftTapRef.current = 0;
+      if (Date.now() - lastRewindGestureAtRef.current < 380) return;
+      mobileVideoTapHandledRef.current = true;
+      window.setTimeout(() => { mobileVideoTapHandledRef.current = false; }, 450);
+      togglePlay();
+      return;
+    }
+
     if (!isLeftHalf) return;
     const now = Date.now();
     const delta = now - lastLeftTapRef.current;
@@ -954,7 +1141,7 @@ export default function VideoPlayer({
       lastRewindGestureAtRef.current = Date.now();
       handleBack10();
     }
-  }, [handleBack10]);
+  }, [handleBack10, isMobilePlayer, togglePlay]);
 
   const handleVideoDoubleClick = useCallback((e) => {
     const v = videoRef.current;
@@ -968,6 +1155,7 @@ export default function VideoPlayer({
   }, [handleBack10]);
 
   const handleVideoClick = useCallback((e) => {
+    if (mobileVideoTapHandledRef.current) return;
     if (Date.now() - lastRewindGestureAtRef.current < 380) return;
     togglePlay(e);
   }, [togglePlay]);
@@ -991,20 +1179,69 @@ export default function VideoPlayer({
     }
   };
 
-  const toggleFullscreen = () => {
+  const toggleFullscreen = useCallback(() => {
     const el = containerRef.current;
+    const v = videoRef.current;
     if (!el) return;
-    if (!document.fullscreenElement) {
-      el.requestFullscreen?.().then(() => setIsFullscreen(true)).catch(() => {});
-    } else {
-      document.exitFullscreen?.().then(() => setIsFullscreen(false)).catch(() => {});
+
+    if (getFullscreenElement()) {
+      exitFullscreenCompat().then(() => setIsFullscreen(false)).catch(() => {});
+      return;
     }
-  };
+
+    if (v?.webkitDisplayingFullscreen && typeof v.webkitExitFullscreen === 'function') {
+      try {
+        v.webkitExitFullscreen();
+        setIsFullscreen(false);
+      } catch {
+        /* noop */
+      }
+      return;
+    }
+
+    if (isMobilePlayer && v?.webkitEnterFullscreen) {
+      try {
+        v.webkitEnterFullscreen();
+        return;
+      } catch {
+        /* noop */
+      }
+    }
+
+    requestFullscreenElement(el)
+      .then(() => setIsFullscreen(true))
+      .catch(() => {});
+  }, [isMobilePlayer]);
 
   useEffect(() => {
-    const onFullscreenChange = () => setIsFullscreen(!!document.fullscreenElement);
-    document.addEventListener('fullscreenchange', onFullscreenChange);
-    return () => document.removeEventListener('fullscreenchange', onFullscreenChange);
+    const onFs = () => setIsFullscreen(!!getFullscreenElement());
+    document.addEventListener('fullscreenchange', onFs);
+    document.addEventListener('webkitfullscreenchange', onFs);
+    document.addEventListener('mozfullscreenchange', onFs);
+    document.addEventListener('MSFullscreenChange', onFs);
+    return () => {
+      document.removeEventListener('fullscreenchange', onFs);
+      document.removeEventListener('webkitfullscreenchange', onFs);
+      document.removeEventListener('mozfullscreenchange', onFs);
+      document.removeEventListener('MSFullscreenChange', onFs);
+    };
+  }, []);
+
+  useEffect(() => {
+    const v = videoRef.current;
+    if (!v || !isMobilePlayer) return;
+    const onBegin = () => setIsFullscreen(true);
+    const onEnd = () => setIsFullscreen(false);
+    v.addEventListener('webkitbeginfullscreen', onBegin);
+    v.addEventListener('webkitendfullscreen', onEnd);
+    return () => {
+      v.removeEventListener('webkitbeginfullscreen', onBegin);
+      v.removeEventListener('webkitendfullscreen', onEnd);
+    };
+  }, [isMobilePlayer, session?.id]);
+
+  useEffect(() => () => {
+    if (nativeTapTimerRef.current) clearTimeout(nativeTapTimerRef.current);
   }, []);
 
   useEffect(() => {
@@ -1083,10 +1320,17 @@ export default function VideoPlayer({
   return (
     <div
       ref={containerRef}
-      className="relative w-full rounded-none sm:rounded-xl overflow-hidden bg-gray-900 focus:outline-none focus-visible:ring-2 focus-visible:ring-primary-navy focus-visible:ring-offset-2"
+      className="relative w-full rounded-none sm:rounded-xl overflow-hidden bg-gray-900 focus:outline-none focus-visible:ring-2 focus-visible:ring-primary-navy focus-visible:ring-offset-2 [&:fullscreen]:!fixed [&:fullscreen]:!inset-0 [&:fullscreen]:!w-screen [&:fullscreen]:!h-[100dvh] [&:fullscreen]:!max-h-[100dvh] [&:fullscreen]:!min-h-0 [&:fullscreen]:flex [&:fullscreen]:flex-col [&:fullscreen]:rounded-none [&:-webkit-full-screen]:!fixed [&:-webkit-full-screen]:!inset-0 [&:-webkit-full-screen]:!w-screen [&:-webkit-full-screen]:!h-[100dvh] [&:-webkit-full-screen]:flex [&:-webkit-full-screen]:flex-col [&:-webkit-full-screen]:rounded-none"
       style={{ boxShadow: '0 2px 8px rgba(0,0,0,0.08)' }}
     >
-      <div className="relative w-full aspect-video bg-black min-h-0 min-w-0 overflow-hidden rounded-none sm:rounded-xl">
+      <div
+        className={`relative w-full bg-black min-h-0 min-w-0 overflow-hidden rounded-none sm:rounded-xl ${isFullscreen ? 'flex-1 min-h-0 flex items-center justify-center' : 'aspect-video'}`}
+        style={
+          isFullscreen
+            ? { width: '100%', flex: '1 1 auto', minHeight: 0, maxHeight: '100dvh' }
+            : undefined
+        }
+      >
         {loading && (
           <div className="absolute inset-0 flex flex-col justify-between bg-gray-800/95 p-4" aria-hidden aria-busy="true">
             <div className="flex-1 flex items-center justify-center">
@@ -1114,7 +1358,7 @@ export default function VideoPlayer({
         )}
         <video
           ref={videoRef}
-          className="absolute inset-0 w-full h-full object-contain"
+          className={`absolute inset-0 w-full h-full object-contain ${isFullscreen ? 'max-h-[100dvh] max-w-[100vw]' : ''}`}
           poster={session.thumbnail ?? undefined}
           playsInline
           onClick={handleVideoClick}
