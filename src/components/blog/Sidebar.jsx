@@ -1,85 +1,71 @@
 import { Link } from 'react-router-dom';
 
-function SidebarCard({ title, children }) {
-  return (
-    <section className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
-      <h3 className="text-sm font-bold uppercase tracking-wider text-slate-900">{title}</h3>
-      <div className="mt-4">{children}</div>
-    </section>
-  );
-}
-
-function RelatedItem({ blog }) {
-  if (!blog) return null;
-  return (
-    <Link
-      to={`/blogs/${blog.id}`}
-      className="group flex gap-3 rounded-xl p-2 transition-colors hover:bg-slate-50"
-    >
-      <div className="h-16 w-20 overflow-hidden rounded-lg bg-slate-100 ring-1 ring-slate-200">
-        <img
-          src={blog.coverImage || blog.image}
-          alt={blog.title}
-          loading="lazy"
-          className="h-full w-full object-cover transition-transform duration-500 group-hover:scale-105"
-        />
-      </div>
-      <div className="min-w-0 flex-1">
-        <p className="text-[10px] font-semibold uppercase tracking-wider text-slate-500">
-          {blog.category || 'General'}
-        </p>
-        <p className="mt-1 line-clamp-2 text-sm font-semibold text-slate-900">{blog.title}</p>
-      </div>
-    </Link>
-  );
-}
-
 export default function Sidebar({ related = [], categories = [], recent = [] }) {
   return (
-    <div className="space-y-6">
-      <SidebarCard title="Related Blogs">
-        <div className="space-y-1">
-          {related.length > 0 ? (
-            related.map((b) => <RelatedItem key={b.id} blog={b} />)
-          ) : (
-            <p className="text-sm text-slate-600">No related posts yet.</p>
-          )}
-        </div>
-      </SidebarCard>
-
-      <SidebarCard title="Categories">
-        <div className="flex flex-wrap gap-2">
-          {categories.length > 0 ? (
-            categories.map((cat) => (
+    <div className="space-y-10">
+      {/* Categories Widget */}
+      {categories.length > 0 && (
+        <div className="rounded-[18px] bg-slate-50 p-6 ring-1 ring-slate-200/60 shadow-sm">
+          <h3 className="mb-5 text-sm font-bold uppercase tracking-wider text-slate-900">Categories</h3>
+          <div className="flex flex-wrap gap-2">
+            {categories.map((cat) => (
               <span
                 key={cat}
-                className="inline-flex items-center rounded-full bg-slate-50 px-3 py-1 text-xs font-semibold text-slate-700 ring-1 ring-slate-200"
+                className="inline-flex cursor-pointer items-center rounded-full bg-white px-3.5 py-1.5 text-xs font-semibold text-slate-600 ring-1 ring-slate-200 transition-all hover:-translate-y-0.5 hover:bg-slate-100 hover:text-slate-900 hover:shadow-sm"
               >
                 {cat}
               </span>
-            ))
-          ) : (
-            <p className="text-sm text-slate-600">No categories yet.</p>
-          )}
+            ))}
+          </div>
         </div>
-      </SidebarCard>
+      )}
 
-      <SidebarCard title="Recent Posts">
-        <ul className="space-y-2">
-          {recent.length > 0 ? (
-            recent.map((b) => (
+      {/* Related Blogs Widget */}
+      {related.length > 0 && (
+        <div className="rounded-[18px] bg-slate-50 p-6 ring-1 ring-slate-200/60 shadow-sm">
+          <h3 className="mb-5 text-sm font-bold uppercase tracking-wider text-slate-900">Related Reading</h3>
+          <div className="space-y-5">
+            {related.slice(0, 2).map((b) => (
+              <Link key={b.id} to={`/blogs/${b.id}`} className="group flex gap-4">
+                <div className="relative h-20 w-24 shrink-0 overflow-hidden rounded-xl bg-slate-200 ring-1 ring-slate-200">
+                  <img
+                    src={b.coverImage || b.image}
+                    alt={b.title}
+                    className="h-full w-full object-cover transition-transform duration-500 group-hover:scale-110"
+                    loading="lazy"
+                  />
+                </div>
+                <div className="flex flex-col justify-center">
+                  <h4 className="line-clamp-2 text-sm font-semibold leading-tight text-slate-900 transition-colors group-hover:text-blue-700">
+                    {b.title}
+                  </h4>
+                  <span className="mt-1.5 text-xs font-medium text-slate-500">{b.category || 'Article'}</span>
+                </div>
+              </Link>
+            ))}
+          </div>
+        </div>
+      )}
+
+      {/* Recent Posts Widget */}
+      {recent.length > 0 && (
+        <div className="rounded-[18px] bg-slate-50 p-6 ring-1 ring-slate-200/60 shadow-sm">
+          <h3 className="mb-5 text-sm font-bold uppercase tracking-wider text-slate-900">Recent Posts</h3>
+          <ul className="space-y-4">
+            {recent.map((b) => (
               <li key={b.id}>
-                <Link to={`/blogs/${b.id}`} className="text-sm font-semibold text-slate-800 hover:underline">
-                  {b.title}
+                <Link
+                  to={`/blogs/${b.id}`}
+                  className="group relative inline-block text-sm font-medium leading-relaxed text-slate-700 transition-colors hover:text-blue-700"
+                >
+                  <span className="relative z-10">{b.title}</span>
+                  <span className="absolute bottom-0 left-0 h-[2px] w-0 bg-blue-700 transition-all duration-300 group-hover:w-full" />
                 </Link>
               </li>
-            ))
-          ) : (
-            <li className="text-sm text-slate-600">No recent posts yet.</li>
-          )}
-        </ul>
-      </SidebarCard>
+            ))}
+          </ul>
+        </div>
+      )}
     </div>
   );
 }
-

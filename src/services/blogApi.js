@@ -30,11 +30,30 @@ function buildBlogUrl(pathname = '') {
   return joined.replace(/\/api\/api\/blogs/g, '/api/blogs');
 }
 
+const FALLBACK_IMAGES = [
+  'https://images.unsplash.com/photo-1516321318423-f06f85e504b3?q=80&w=2000&auto=format&fit=crop',
+  'https://images.unsplash.com/photo-1522071820081-009f0129c71c?q=80&w=2000&auto=format&fit=crop',
+  'https://images.unsplash.com/photo-1543269865-cbf427effbad?q=80&w=2000&auto=format&fit=crop',
+  'https://images.unsplash.com/photo-1434030216411-0b793f4b4173?q=80&w=2000&auto=format&fit=crop',
+  'https://images.unsplash.com/photo-1524178232363-1fb2b075b655?q=80&w=2000&auto=format&fit=crop'
+];
+
+function getFallbackImage(id) {
+  const hash = String(id).split('').reduce((acc, char) => acc + char.charCodeAt(0), 0);
+  return FALLBACK_IMAGES[hash % FALLBACK_IMAGES.length];
+}
+
 /** Normalize API document for UI (id + image alias). */
 export function normalizeBlog(doc) {
   if (!doc) return null;
   const id = doc._id || doc.id;
-  const coverImage = doc.coverImage || doc.image || '';
+  const actualImage = doc.coverImage || doc.image;
+  
+  // We force the high-quality relevant educational images to override the generic folder graphics returning from the backend.
+  // If the backend has a real Unsplash/Cloudinary photo uploaded, we still use it.
+  const isRealUpload = actualImage && (actualImage.includes('cloudinary') || actualImage.includes('unsplash') || actualImage.length > 200);
+  const coverImage = isRealUpload ? actualImage : getFallbackImage(id);
+  
   const contentHtml = doc.contentHtml || doc.content || '';
   return {
     ...doc,
