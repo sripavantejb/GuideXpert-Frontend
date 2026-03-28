@@ -248,7 +248,7 @@ export default function WebinarDashboard() {
             <div
               id="video"
               data-tour="video-player"
-              className="rounded-2xl bg-white p-0 sm:p-5 shadow-sm overflow-hidden border border-gray-200 transition-all duration-200 hover:shadow-md min-w-0 flex-shrink-0"
+              className="rounded-2xl bg-white p-0 sm:p-5 shadow-sm border border-gray-200 transition-all duration-200 hover:shadow-md min-w-0 flex-shrink-0"
             >
               {activeModule?.type === 'Assessment' && (isActiveModuleLocked || isAssessmentContentLocked) ? (
                 <div className="aspect-video bg-gradient-to-b from-slate-100 to-slate-50 flex flex-col items-center justify-center px-6 py-8 text-center rounded-xl">
