@@ -1,6 +1,5 @@
 import { useState } from 'react';
-import { useNavigate } from 'react-router-dom';
-import { submitTrainingFormResponse } from '../utils/api';
+import { submitTrainingFormResponse, checkTrainingFormSubmitted } from '../utils/api';
 
 function validateName(value) {
   const t = typeof value === 'string' ? value.trim() : '';
@@ -42,9 +41,9 @@ const inputBase =
 const inputError = 'border-amber-500 bg-amber-50/30';
 
 const MODAL_SUCCESS = 'success';
+const MODAL_ALREADY = 'already';
 
 export default function TrainingForm() {
-  const navigate = useNavigate();
   const [fullName, setFullName] = useState('');
   const [mobileNumber, setMobileNumber] = useState('');
   const [email, setEmail] = useState('');
@@ -55,6 +54,8 @@ export default function TrainingForm() {
   const [submitError, setSubmitError] = useState('');
   const [loading, setLoading] = useState(false);
   const [modalType, setModalType] = useState(null);
+  const [formLocked, setFormLocked] = useState(false);
+  const [checkingMobile, setCheckingMobile] = useState(false);
 
   const setError = (field, message) => {
     setErrors((prev) => ({ ...prev, [field]: message }));
@@ -74,6 +75,7 @@ export default function TrainingForm() {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
+    if (formLocked) return;
     setSubmitError('');
     if (!runValidation()) {
       setSubmitError('Complete all required fields to submit.');
@@ -92,6 +94,13 @@ export default function TrainingForm() {
       const result = await submitTrainingFormResponse(payload);
       if (result.success) {
         setModalType(MODAL_SUCCESS);
+        setFormLocked(true);
+      } else if (
+        result.status === 409 ||
+        (result.data && typeof result.data === 'object' && result.data.code === 'ALREADY_SUBMITTED')
+      ) {
+        setModalType(MODAL_ALREADY);
+        setFormLocked(true);
       } else {
         setSubmitError(result.message || 'Unable to submit. Please try again.');
       }
@@ -113,7 +122,25 @@ export default function TrainingForm() {
     setSubmitError('');
   };
 
-  const goHome = () => navigate('/');
+  const handleMobileBlur = async () => {
+    setError('mobileNumber', validateMobile(mobileNumber));
+    const digits = mobileNumber.replace(/\D/g, '');
+    if (digits.length !== 10 || formLocked) return;
+    setCheckingMobile(true);
+    try {
+      const res = await checkTrainingFormSubmitted(digits);
+      if (res.success && res.submitted) {
+        setModalType(MODAL_ALREADY);
+        setFormLocked(true);
+      }
+    } catch {
+      /* ignore check failures; user can still submit */
+    } finally {
+      setCheckingMobile(false);
+    }
+  };
+
+  const formDisabled = loading || formLocked;
 
   const modalConfig = {
     [MODAL_SUCCESS]: {
@@ -125,8 +152,20 @@ export default function TrainingForm() {
         </div>
       ),
       title: 'Thank you',
-      message: 'Your response has been submitted successfully. Our team will review and get in touch with you shortly.'
-    }
+      message:
+        'Thank you for submitting. We will provide you access to the webinar panel soon.',
+    },
+    [MODAL_ALREADY]: {
+      icon: (
+        <div className="w-16 h-16 rounded-full bg-slate-100 flex items-center justify-center mx-auto mb-5">
+          <svg className="w-9 h-9 text-slate-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+          </svg>
+        </div>
+      ),
+      title: 'Already submitted',
+      message: 'You have already submitted this form. Thank you.',
+    },
   };
 
   return (
@@ -137,6 +176,9 @@ export default function TrainingForm() {
           role="dialog"
           aria-modal="true"
           aria-labelledby="modal-title"
+          onClick={(e) => {
+            if (e.target === e.currentTarget) setModalType(null);
+          }}
         >
           <div className="bg-white rounded-2xl shadow-2xl max-w-md w-full overflow-hidden border border-slate-200 max-h-[90vh] flex flex-col">
             <div className="h-1 w-full bg-gradient-to-r from-[#003366] to-[#004080] shrink-0" />
@@ -150,10 +192,10 @@ export default function TrainingForm() {
               </p>
               <button
                 type="button"
-                onClick={goHome}
+                onClick={() => setModalType(null)}
                 className="w-full px-5 py-3 rounded-xl font-medium text-white bg-[#003366] hover:bg-[#004080] transition-colors"
               >
-                Go Home
+                OK
               </button>
             </div>
           </div>
@@ -214,7 +256,7 @@ export default function TrainingForm() {
                 onBlur={() => setError('fullName', validateName(fullName))}
                 placeholder="Your answer"
                 className={`${inputBase} ${errors.fullName ? inputError : 'border-slate-300'}`}
-                disabled={loading}
+                disabled={formDisabled}
                 autoComplete="name"
               />
               {errors.fullName && <p className="mt-1.5 text-xs text-amber-700" role="alert">{errors.fullName}</p>}
@@ -229,10 +271,13 @@ export default function TrainingForm() {
                 id="tf-mobile"
                 value={mobileNumber}
                 onChange={(e) => { const v = e.target.value.replace(/\D/g, '').slice(0, 10); setMobileNumber(v); setError('mobileNumber', validateMobile(v)); }}
-                onBlur={() => setError('mobileNumber', validateMobile(mobileNumber))}
+                onBlur={() => {
+                  setError('mobileNumber', validateMobile(mobileNumber));
+                  void handleMobileBlur();
+                }}
                 placeholder="Your answer"
                 className={`${inputBase} ${errors.mobileNumber ? inputError : 'border-slate-300'}`}
-                disabled={loading}
+                disabled={formDisabled || checkingMobile}
                 autoComplete="tel"
                 inputMode="numeric"
                 maxLength={10}
@@ -252,7 +297,7 @@ export default function TrainingForm() {
                 onBlur={() => setError('email', validateEmail(email))}
                 placeholder="Your answer"
                 className={`${inputBase} ${errors.email ? inputError : 'border-slate-300'}`}
-                disabled={loading}
+                disabled={formDisabled}
                 autoComplete="email"
               />
               {errors.email && <p className="mt-1.5 text-xs text-amber-700" role="alert">{errors.email}</p>}
@@ -270,7 +315,7 @@ export default function TrainingForm() {
                 onBlur={() => setError('occupation', validateOccupation(occupation))}
                 placeholder="Your answer"
                 className={`${inputBase} ${errors.occupation ? inputError : 'border-slate-300'}`}
-                disabled={loading}
+                disabled={formDisabled}
                 autoComplete="organization-title"
               />
               {errors.occupation && <p className="mt-1.5 text-xs text-amber-700" role="alert">{errors.occupation}</p>}
@@ -291,7 +336,7 @@ export default function TrainingForm() {
                       checked={sessionRating === String(n)}
                       onChange={(e) => { setSessionRating(e.target.value); setError('sessionRating', ''); }}
                       onBlur={() => setError('sessionRating', validateSessionRating(sessionRating))}
-                      disabled={loading}
+                      disabled={formDisabled}
                       className="w-5 h-5 border-slate-300 text-[#003366] focus:ring-[#003366]"
                     />
                   </label>
@@ -311,7 +356,7 @@ export default function TrainingForm() {
                 placeholder="Your answer"
                 rows={4}
                 className={`${inputBase} resize-none border-slate-300`}
-                disabled={loading}
+                disabled={formDisabled}
               />
               {suggestions.length > 0 && (
                 <p className="mt-1.5 text-xs text-slate-500">{suggestions.length} / 2000</p>
@@ -321,7 +366,7 @@ export default function TrainingForm() {
             <div className="flex flex-col-reverse sm:flex-row sm:flex-wrap items-stretch sm:items-center gap-3 sm:gap-4">
               <button
                 type="submit"
-                disabled={loading}
+                disabled={formDisabled}
                 className="w-full sm:w-auto py-3.5 px-6 text-white font-semibold rounded-xl transition disabled:opacity-60 disabled:cursor-not-allowed shadow-md hover:shadow-lg"
                 style={{ backgroundColor: '#003366' }}
               >
@@ -330,7 +375,7 @@ export default function TrainingForm() {
               <button
                 type="button"
                 onClick={clearForm}
-                disabled={loading}
+                disabled={formDisabled}
                 className="text-sm font-medium text-[#003366]/80 hover:text-[#003366] hover:underline transition-colors sm:order-first"
               >
                 Clear form
