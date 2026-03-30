@@ -62,6 +62,13 @@ const ApplySection = () => {
     return `${start} – ${end}`;
   };
 
+  const normalizeSlots = (rawSlots) => {
+    if (!Array.isArray(rawSlots)) return [];
+    return rawSlots.filter((slot) => slot && typeof slot === 'object' && slot.id != null);
+  };
+
+  const hasEnabledSlots = (list) => list.some((s) => s && s.enabled !== false);
+
   // Fetch demo slots from API on mount
   useEffect(() => {
     let cancelled = false;
@@ -69,11 +76,11 @@ const ApplySection = () => {
     getDemoSlots()
       .then((res) => {
         if (cancelled) return;
-        if (res.success && res.data?.slots) {
-          setSlots(res.data.slots);
-        } else {
-          setSlots([]);
+        if (res.success) {
+          setSlots(normalizeSlots(res.data?.slots));
+          return;
         }
+        setSlots([]);
       })
       .catch(() => {
         if (!cancelled) setSlots([]);
@@ -408,7 +415,7 @@ const ApplySection = () => {
     }
 
     // Reject disabled slots (e.g. if form state was tampered)
-    const selectedSlotData = slots.find((s) => s.id === formData.timeSlot);
+    const selectedSlotData = slots.find((s) => s?.id === formData.timeSlot);
     if (selectedSlotData && selectedSlotData.enabled === false) {
       setError('This slot is no longer available. Please choose another.');
       return;
@@ -837,6 +844,7 @@ const ApplySection = () => {
                         const timeRange = formatSlotTimeRange(slotDateObj);
                         const isSelected = formData.timeSlot === slot.id;
                         const isDisabled = slot.enabled === false;
+                        const slotLabel = typeof slot.label === 'string' ? slot.label : '';
                         return (
                           <div key={slot.id} className="apply-slot-date-group">
                             <p className="apply-slot-date-heading">{dayHeading}</p>
@@ -852,7 +860,7 @@ const ApplySection = () => {
                                   value={slot.id}
                                   checked={isSelected}
                                   onChange={handleChange}
-                                  required={!slots.some((s) => s.enabled !== false)}
+                                  required={!hasEnabledSlots(slots)}
                                   disabled={isDisabled}
                                   className="apply-slot-card-input"
                                 />
@@ -860,7 +868,7 @@ const ApplySection = () => {
                                   {isDisabled ? <FiX /> : (isSelected ? <FiCheck /> : <FiCalendar />)}
                                 </span>
                                 <div className="apply-slot-card-content">
-                                  <span className="apply-slot-card-day">{slot.label.split(' — ')[0]}</span>
+                                  <span className="apply-slot-card-day">{slotLabel.split(' — ')[0] || 'Available slot'}</span>
                                   <span className="apply-slot-card-datetime">
                                     {isDisabled ? 'Slots filled' : timeRange}
                                   </span>
@@ -883,7 +891,7 @@ const ApplySection = () => {
                     <FiArrowLeft aria-hidden />
                     Back
                   </button>
-                  <button type="submit" className="apply-otp-btn" disabled={isLoading || slotsLoading || slots.length === 0 || !slots.some((s) => s.enabled !== false)}>
+                  <button type="submit" className="apply-otp-btn" disabled={isLoading || slotsLoading || slots.length === 0 || !hasEnabledSlots(slots)}>
                     {isLoading ? <Loader size="small" aria-hidden /> : null}
                     {isLoading ? 'Booking...' : 'Book Slot'}
                   </button>
