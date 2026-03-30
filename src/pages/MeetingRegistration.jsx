@@ -44,6 +44,8 @@ export default function MeetingRegistration() {
 
   const otpInputRefs = useRef([]);
   const joiningRef = useRef(false);
+  const meetSheetWasOpenRef = useRef(false);
+  const [meetSheetEntered, setMeetSheetEntered] = useState(false);
 
   const normalizedPhone = () => {
     const cleanPhone = mobileNumber.replace(/\D/g, '');
@@ -120,6 +122,27 @@ export default function MeetingRegistration() {
     }, POLL_MS);
     return () => clearInterval(id);
   }, [meetGateModal, mobileNumber, recheckEligibilityAndJoin]);
+
+  useEffect(() => {
+    if (!meetGateModal) {
+      meetSheetWasOpenRef.current = false;
+      setMeetSheetEntered(false);
+      return;
+    }
+
+    const openingFresh = !meetSheetWasOpenRef.current;
+    if (!openingFresh) return;
+
+    meetSheetWasOpenRef.current = true;
+    setMeetSheetEntered(false);
+    const outerId = requestAnimationFrame(() => {
+      requestAnimationFrame(() => setMeetSheetEntered(true));
+    });
+    return () => {
+      cancelAnimationFrame(outerId);
+      meetSheetWasOpenRef.current = false;
+    };
+  }, [meetGateModal]);
 
   const handleNameChange = (e) => {
     const v = e.target.value;
@@ -300,8 +323,12 @@ export default function MeetingRegistration() {
   };
 
   const closeMeetGateModal = () => {
-    setMeetGateModal(null);
-    joiningRef.current = false;
+    setMeetSheetEntered(false);
+    window.setTimeout(() => {
+      setMeetGateModal(null);
+      joiningRef.current = false;
+      meetSheetWasOpenRef.current = false;
+    }, 340);
   };
 
   const modalTitle =
@@ -311,44 +338,98 @@ export default function MeetingRegistration() {
         ? 'Session window ended'
         : 'Demo booking required';
 
+  const sheetStatusStyles =
+    meetGateModal?.status === 'too_early'
+      ? { ring: 'ring-[#007aff]/20', iconBg: 'bg-[#007aff]/12', iconColor: 'text-[#007aff]' }
+      : meetGateModal?.status === 'too_late'
+        ? { ring: 'ring-orange-400/25', iconBg: 'bg-orange-500/10', iconColor: 'text-orange-600' }
+        : { ring: 'ring-slate-400/20', iconBg: 'bg-slate-500/10', iconColor: 'text-slate-600' };
+
   return (
     <div className="min-h-screen bg-gray-50 flex flex-col items-center justify-center p-4">
       {meetGateModal && (
-        <div
-          className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50"
-          role="dialog"
-          aria-modal="true"
-          aria-labelledby="meet-gate-title"
-        >
-          <div className="bg-white rounded-xl shadow-xl max-w-md w-full p-6 sm:p-8">
-            <h2 id="meet-gate-title" className="text-lg font-semibold text-gray-900 mb-2">
-              {modalTitle}
-            </h2>
-            <p className="text-sm text-gray-600 whitespace-pre-wrap">{meetGateModal.message}</p>
-            {meetGateModal.status === 'too_early' && (
-              <p className="text-xs text-gray-500 mt-3">
-                We check automatically about every 30 seconds. You can also tap &quot;Check again&quot; after your join time
-                opens (5 minutes before your session).
-              </p>
-            )}
-            <div className="mt-6 flex flex-col sm:flex-row gap-3 sm:justify-end">
-              {meetGateModal.status === 'too_early' && (
+        <div className="fixed inset-0 z-50 flex flex-col justify-end md:items-center md:justify-center md:p-6" role="presentation">
+          <button
+            type="button"
+            aria-label="Close dialog"
+            className={`absolute inset-0 bg-black/48 backdrop-blur-md transition-opacity duration-[320ms] ease-[cubic-bezier(0.32,0.72,0,1)] ${
+              meetSheetEntered ? 'opacity-100' : 'opacity-0'
+            }`}
+            onClick={closeMeetGateModal}
+          />
+          <div
+            role="dialog"
+            aria-modal="true"
+            aria-labelledby="meet-gate-title"
+            className={`relative z-10 w-full max-w-lg md:max-w-[420px] mx-auto outline-none transition-all duration-[380ms] ease-[cubic-bezier(0.32,0.72,0,1)] ${
+              meetSheetEntered
+                ? 'translate-y-0 opacity-100 md:scale-100'
+                : 'translate-y-[108%] opacity-100 md:translate-y-8 md:scale-[0.94] md:opacity-0'
+            }`}
+          >
+            <div
+              className={`rounded-t-[1.35rem] md:rounded-[1.35rem] bg-white/[0.97] shadow-[0_-12px_48px_rgba(0,0,0,0.14),0_0_0_1px_rgba(0,0,0,0.04)] ring-1 ring-inset ${sheetStatusStyles.ring} backdrop-blur-2xl px-5 pt-3 pb-[max(1.25rem,env(safe-area-inset-bottom))] md:pb-6 md:px-6 md:pt-4`}
+            >
+              <div className="flex justify-center pb-2 md:hidden" aria-hidden>
+                <span className="h-1 w-10 shrink-0 rounded-full bg-gray-300/90" />
+              </div>
+              <div className="flex gap-4 items-start">
+                <div
+                  className={`flex h-12 w-12 shrink-0 items-center justify-center rounded-[1rem] ${sheetStatusStyles.iconBg} ${sheetStatusStyles.iconColor}`}
+                  aria-hidden
+                >
+                  {meetGateModal.status === 'too_early' && (
+                    <svg className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.75}>
+                      <path strokeLinecap="round" strokeLinejoin="round" d="M12 6v6h4.5m4.5 0a9 9 0 11-18 0 9 9 0 0118 0z" />
+                    </svg>
+                  )}
+                  {meetGateModal.status === 'too_late' && (
+                    <svg className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.75}>
+                      <path strokeLinecap="round" strokeLinejoin="round" d="M12 9v3.75m-9.303 3.376c-.866 1.5.217 3.374 1.948 3.374h14.71c1.73 0 2.813-1.874 1.948-3.374L13.949 3.378c-.866-1.5-3.032-1.5-3.898 0L2.697 16.126zM12 15.75h.007v.008H12v-.008z" />
+                    </svg>
+                  )}
+                  {meetGateModal.status !== 'too_early' && meetGateModal.status !== 'too_late' && (
+                    <svg className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.75}>
+                      <path
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                        d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"
+                      />
+                    </svg>
+                  )}
+                </div>
+                <div className="min-w-0 flex-1 pt-0.5">
+                  <h2 id="meet-gate-title" className="text-[1.0625rem] font-semibold tracking-tight text-gray-900 leading-snug">
+                    {modalTitle}
+                  </h2>
+                  <p className="mt-2 text-[0.9375rem] leading-relaxed text-gray-600 whitespace-pre-wrap">{meetGateModal.message}</p>
+                  {meetGateModal.status === 'too_early' && (
+                    <p className="mt-3 text-[0.8125rem] leading-snug text-gray-500">
+                      We&apos;ll check automatically every 30 seconds, or tap <span className="font-medium text-gray-700">Check again</span>{' '}
+                      once your join window opens (5 minutes before your session).
+                    </p>
+                  )}
+                </div>
+              </div>
+              <div className="mt-6 flex flex-col gap-2.5 sm:flex-row sm:justify-end sm:gap-3 sm:flex-wrap">
                 <button
                   type="button"
-                  disabled={eligibilityRechecking || verifying}
-                  onClick={recheckEligibilityAndJoin}
-                  className="w-full sm:w-auto py-2.5 px-4 bg-blue-700 hover:bg-blue-800 text-white text-sm font-medium rounded-lg disabled:opacity-60"
+                  onClick={closeMeetGateModal}
+                  className="w-full sm:w-auto min-h-[48px] rounded-[0.8125rem] px-5 text-[0.9375rem] font-semibold text-[#007aff] bg-[#007aff]/[0.08] hover:bg-[#007aff]/[0.14] active:scale-[0.98] transition-transform duration-150 sm:bg-transparent sm:hover:bg-gray-100 sm:text-gray-800"
                 >
-                  {eligibilityRechecking ? 'Checking...' : 'Check again'}
+                  Close
                 </button>
-              )}
-              <button
-                type="button"
-                onClick={closeMeetGateModal}
-                className="w-full sm:w-auto py-2.5 px-4 bg-gray-100 hover:bg-gray-200 text-gray-800 text-sm font-medium rounded-lg"
-              >
-                Close
-              </button>
+                {meetGateModal.status === 'too_early' && (
+                  <button
+                    type="button"
+                    disabled={eligibilityRechecking || verifying}
+                    onClick={recheckEligibilityAndJoin}
+                    className="w-full sm:w-auto min-h-[48px] rounded-[0.8125rem] bg-[#007aff] px-5 text-[0.9375rem] font-semibold text-white shadow-sm hover:bg-[#0066dd] active:scale-[0.98] disabled:opacity-55 disabled:active:scale-100 transition-[transform,opacity] duration-150"
+                  >
+                    {eligibilityRechecking ? 'Checking…' : 'Check again'}
+                  </button>
+                )}
+              </div>
             </div>
           </div>
         </div>
