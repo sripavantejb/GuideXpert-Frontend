@@ -1,36 +1,17 @@
-import { useState } from 'react';
-import { Link, useParams } from 'react-router-dom';
-import { FiCopy, FiArrowLeft } from 'react-icons/fi';
+import { Link, useLocation, useParams } from 'react-router-dom';
+import { FiArrowLeft } from 'react-icons/fi';
 import { COLLEGES } from '../../data/collegeReferrals';
-import { useCounsellorProfile } from '../../contexts/CounsellorProfileContext';
-import { openWhatsAppShare } from '../../utils/shareUtils';
-
-const REF_BASE = 'https://guidexpert.in/ref';
+ 
 
 export default function CollegeReferralDetail() {
   const { collegeSlug } = useParams();
-  const { slug: counsellorSlug } = useCounsellorProfile();
-  const [copied, setCopied] = useState(false);
+  const location = useLocation();
 
   const college = COLLEGES.find((c) => c.slug === collegeSlug);
-  const effectiveSlug = (counsellorSlug && String(counsellorSlug).trim()) || 'me';
-  const referralLink = college
-    ? college.externalUrl || `${REF_BASE}/${college.slug}/${effectiveSlug}`
-    : '';
-  const hasSlug = !!(counsellorSlug && String(counsellorSlug).trim());
-  const usesExternalUrl = !!(college && college.externalUrl);
-
-  const handleCopy = () => {
-    if (referralLink) {
-      navigator.clipboard.writeText(referralLink);
-      setCopied(true);
-      setTimeout(() => setCopied(false), 2000);
-    }
-  };
-
-  const handleWhatsApp = () => {
-    if (referralLink) openWhatsAppShare(referralLink);
-  };
+  const isNiat = college?.slug === 'niat';
+  const fromKnowAboutColleges = location.pathname.startsWith('/counsellor/know-about-colleges/');
+  const backPath = fromKnowAboutColleges ? '/counsellor/know-about-colleges' : '/counsellor/college-referrals';
+  const backLabel = fromKnowAboutColleges ? 'Know About Colleges' : 'College Referrals';
 
   if (!college) {
     return (
@@ -38,11 +19,11 @@ export default function CollegeReferralDetail() {
         <div className="bg-white rounded-xl border border-gray-200 shadow-sm p-8 text-center">
           <p className="text-gray-600 mb-4">College not found.</p>
           <Link
-            to="/counsellor/college-referrals"
+            to={backPath}
             className="inline-flex items-center gap-2 text-sm font-medium text-[#003366] hover:underline"
           >
             <FiArrowLeft className="w-4 h-4" />
-            Back to College Referrals
+            Back to {backLabel}
           </Link>
         </div>
       </div>
@@ -50,58 +31,57 @@ export default function CollegeReferralDetail() {
   }
 
   return (
-    <div className="max-w-2xl mx-auto">
+    <div className="max-w-4xl mx-auto">
       <Link
-        to="/counsellor/college-referrals"
-        className="inline-flex items-center gap-2 text-sm text-gray-500 hover:text-[#003366] mb-4"
+        to={backPath}
+        className="inline-flex items-center gap-2 text-sm text-gray-500 hover:text-[#003366] mb-5"
       >
         <FiArrowLeft className="w-4 h-4" />
-        College Referrals
+        {backLabel}
       </Link>
 
-      <div className="mb-6">
-        <h2 className="text-xl font-bold text-gray-900" style={{ color: '#003366' }}>
-          {college.name}
-        </h2>
+      <div className="mb-6 rounded-2xl border border-slate-200 bg-white px-5 py-4 shadow-sm sm:px-6">
+        <div className="flex items-center gap-3">
+          <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-xl border border-slate-200 bg-slate-50 p-2">
+            <img
+              src="/college-info/niat-logo.svg"
+              alt={`${college.name} logo`}
+              className="max-h-full max-w-full object-contain"
+              loading="lazy"
+            />
+          </div>
+          <div>
+            <h2 className="text-xl font-bold text-gray-900" style={{ color: '#003366' }}>
+              {college.name}
+            </h2>
+            <p className="mt-0.5 text-sm text-gray-500">
+              Partner college overview and referral information
+            </p>
+          </div>
+        </div>
         {college.location ? (
-          <p className="text-sm text-gray-500 mt-0.5">{college.location}</p>
+          <p className="text-sm text-gray-500 mt-3">{college.location}</p>
         ) : null}
       </div>
 
-      {!usesExternalUrl && !hasSlug && (
-        <div className="mb-4 p-3 rounded-lg bg-amber-50 border border-amber-200 text-amber-800 text-sm">
-          Set your referral slug in Settings to get your personal link. Until then, a default link is shown.
+      {isNiat && (
+        <div className="mb-6 bg-white rounded-2xl border border-slate-200 shadow-sm p-4 sm:p-6">
+          <h3 className="text-base font-semibold text-gray-900 mb-1 tracking-tight" style={{ color: '#003366' }}>
+            NIAT Fee Range
+          </h3>
+          <p className="text-sm text-gray-500 mb-4">
+            Reference sheet for NIAT upskilling program fee ranges across universities.
+          </p>
+          <div className="rounded-xl border border-slate-200 bg-slate-50 p-2 sm:p-3">
+            <img
+              src="/college-info/niat-university-fee-range.svg"
+              alt="NIAT University fee range chart by state, city, and course fee"
+              loading="lazy"
+              className="w-full h-auto rounded-lg"
+            />
+          </div>
         </div>
       )}
-
-      <div className="bg-white rounded-xl border border-gray-200 shadow-sm p-6">
-        <p className="text-sm text-gray-600 mb-4">
-          Share this link with students applying to {college.name}.
-        </p>
-        <input
-          type="text"
-          value={referralLink}
-          readOnly
-          className="w-full px-3 py-2.5 text-sm bg-gray-50 border border-gray-200 rounded-lg text-gray-700 mb-4"
-        />
-        <div className="flex flex-wrap gap-2">
-          <button
-            type="button"
-            onClick={handleCopy}
-            className="inline-flex items-center gap-2 px-4 py-2.5 text-sm font-medium text-gray-700 bg-white border border-gray-200 rounded-lg hover:bg-gray-50 transition-colors"
-          >
-            <FiCopy className="w-4 h-4" />
-            {copied ? 'Copied!' : 'Copy'}
-          </button>
-          <button
-            type="button"
-            onClick={handleWhatsApp}
-            className="inline-flex items-center gap-2 px-4 py-2.5 text-sm font-medium text-gray-700 bg-white border border-gray-200 rounded-lg hover:bg-gray-50 transition-colors"
-          >
-            Share on WhatsApp
-          </button>
-        </div>
-      </div>
     </div>
   );
 }

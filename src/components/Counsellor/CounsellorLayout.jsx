@@ -1,4 +1,4 @@
-import { useState, useCallback, useEffect } from 'react';
+import { createElement, useState, useCallback, useEffect } from 'react';
 import { Link, NavLink, Outlet, useLocation, useNavigate } from 'react-router-dom';
 import { useCounsellorAuth } from '../../contexts/CounsellorAuthContext';
 import {
@@ -37,7 +37,10 @@ const secondaryNav = [
   { to: '/counsellor/announcements-feed', label: 'Announcements Feed', icon: FiRadio },
   { to: '/counsellor/tools', label: 'Tools', icon: FiTool },
   { to: '/counsellor/marketing', label: 'Marketing', icon: FiTrendingUp },
+];
+const collegeNav = [
   { to: '/counsellor/college-referrals', label: 'College Referrals', icon: FiLink },
+  { to: '/counsellor/know-about-colleges', label: 'Know About Colleges', icon: FiBookOpen },
 ];
 const pageMeta = {
   '/counsellor/dashboard': { title: 'Dashboard', subtitle: 'Overview of your counseling practice' },
@@ -47,7 +50,8 @@ const pageMeta = {
   '/counsellor/announcements-feed': { title: 'Announcements', subtitle: 'Stay updated with the latest updates and important notices.' },
   '/counsellor/tools': { title: 'Tools', subtitle: 'Assessment and prediction tools' },
   '/counsellor/marketing': { title: 'Marketing', subtitle: 'Download seasonal, official, and customisable marketing posters' },
-  '/counsellor/college-referrals': { title: 'College Referrals', subtitle: 'Get referral links for partner colleges' },
+  '/counsellor/college-referrals': { title: 'College Referrals', subtitle: 'Know about referrals and share partner college links' },
+  '/counsellor/know-about-colleges': { title: 'Know About Colleges', subtitle: 'Browse partner colleges and referral information' },
   '/counsellor/certificate': { title: 'Poster', subtitle: 'Download your certified counsellor poster' },
   '/counsellor/training': { title: 'Counsellor Training', subtitle: 'Complete modules to earn your certificate' },
   '/counsellor/settings': { title: 'Settings', subtitle: 'Manage your account and preferences' },
@@ -81,7 +85,9 @@ export default function CounsellorLayout() {
   const currentPage =
     pageMeta[location.pathname] ||
     (location.pathname.startsWith('/counsellor/college-referrals/')
-      ? { title: 'College Referrals', subtitle: 'View and share referral link' }
+      ? { title: 'College Referrals', subtitle: 'Know about referrals, fee details, and share referral links' }
+      : location.pathname.startsWith('/counsellor/know-about-colleges/')
+        ? { title: 'Know About Colleges', subtitle: 'Browse partner colleges, fee details, and referral information' }
       : { title: 'Counsellor Portal', subtitle: '' });
 
   const handleLogout = () => {
@@ -199,7 +205,7 @@ export default function CounsellorLayout() {
                     }`
                   }
                 >
-                  <Icon className="w-[1.125rem] h-[1.125rem] shrink-0 opacity-90" />
+                  {createElement(Icon, { className: 'w-[1.125rem] h-[1.125rem] shrink-0 opacity-90' })}
                   <span>{label}</span>
                 </NavLink>
               ))}
@@ -223,7 +229,31 @@ export default function CounsellorLayout() {
                     }`
                   }
                 >
-                  <Icon className="w-[1.125rem] h-[1.125rem] shrink-0 opacity-90" />
+                  {createElement(Icon, { className: 'w-[1.125rem] h-[1.125rem] shrink-0 opacity-90' })}
+                  <span>{label}</span>
+                </NavLink>
+              ))}
+            </div>
+          </div>
+
+          {/* Know about colleges */}
+          <div>
+            <p className="px-3 mb-2 text-[0.6875rem] font-semibold text-slate-500 uppercase tracking-wider">Know about colleges</p>
+            <div className="space-y-0.5">
+              {collegeNav.map(({ to, label, icon: Icon }) => (
+                <NavLink
+                  key={to}
+                  to={to}
+                  onClick={() => setSidebarOpen(false)}
+                  className={({ isActive }) =>
+                    `flex items-center gap-3 px-3 py-2.5 rounded-lg text-[0.8125rem] font-medium transition-all duration-200 ${
+                      isActive
+                        ? 'bg-primary-navy/90 text-white shadow-[inset_3px_0_0_0_#4d8ec7]'
+                        : 'text-slate-400 hover:bg-white/5 hover:text-slate-200'
+                    }`
+                  }
+                >
+                  {createElement(Icon, { className: 'w-[1.125rem] h-[1.125rem] shrink-0 opacity-90' })}
                   <span>{label}</span>
                 </NavLink>
               ))}
