@@ -1,5 +1,4 @@
 import { useRef, useState, useEffect, useCallback } from 'react';
-import { createPortal } from 'react-dom';
 import { FiPlay, FiPause, FiVolume2, FiVolumeX, FiMaximize, FiMinimize, FiRotateCcw, FiRotateCw, FiLock } from 'react-icons/fi';
 import { HiHeart } from 'react-icons/hi';
 import { useWebinar } from '../context/WebinarContext';
@@ -235,7 +234,6 @@ function YouTubePlayerWithControls({
   allowFullSeek = false,
 }) {
   const containerRef = useRef(null);
-  const ytVideoAreaRef = useRef(null);
   const playerRef = useRef(null);
   const progressIntervalRef = useRef(null);
   const lastLeftTapRef = useRef(0);
@@ -565,9 +563,9 @@ function YouTubePlayerWithControls({
   useEffect(() => {
     if (!isMobilePlayer || !ytFullscreenActive) return;
     const updateCoverScale = () => {
-      const viewport = ytVideoAreaRef.current;
-      if (!viewport) return;
-      const rect = viewport.getBoundingClientRect();
+      const container = containerRef.current;
+      if (!container) return;
+      const rect = container.getBoundingClientRect();
       if (!rect.width || !rect.height) return;
       const viewportAspect = rect.width / rect.height;
       const videoAspect = 16 / 9;
@@ -575,25 +573,15 @@ function YouTubePlayerWithControls({
       setYtCoverScale(Number.isFinite(scale) && scale > 1 ? scale : 1);
     };
     updateCoverScale();
-    const ro = new ResizeObserver(() => updateCoverScale());
-    if (ytVideoAreaRef.current) ro.observe(ytVideoAreaRef.current);
     window.addEventListener('resize', updateCoverScale);
-    return () => {
-      window.removeEventListener('resize', updateCoverScale);
-      ro.disconnect();
-    };
+    return () => window.removeEventListener('resize', updateCoverScale);
   }, [isMobilePlayer, ytFullscreenActive]);
 
   useEffect(() => {
     if (!ytPseudoFullscreen) return undefined;
     const prevOverflow = document.body.style.overflow;
     document.body.style.overflow = 'hidden';
-    const onKeyDown = (e) => {
-      if (e.key === 'Escape') setYtPseudoFullscreen(false);
-    };
-    window.addEventListener('keydown', onKeyDown);
     return () => {
-      window.removeEventListener('keydown', onKeyDown);
       document.body.style.overflow = prevOverflow;
     };
   }, [ytPseudoFullscreen]);
@@ -739,7 +727,7 @@ function YouTubePlayerWithControls({
 
   if (!session) return null;
 
-  const playerShell = (
+  return (
     <div
       ref={containerRef}
       className={`relative w-full flex-shrink-0 rounded-none sm:rounded-xl overflow-hidden bg-black focus:outline-none focus-visible:ring-2 focus-visible:ring-primary-navy focus-visible:ring-offset-2 [&:fullscreen]:!fixed [&:fullscreen]:!inset-0 [&:fullscreen]:!w-screen [&:fullscreen]:!h-[100dvh] [&:fullscreen]:!max-h-[100dvh] [&:fullscreen]:!min-h-0 [&:fullscreen]:flex [&:fullscreen]:flex-col [&:fullscreen]:rounded-none [&:-webkit-full-screen]:!fixed [&:-webkit-full-screen]:!inset-0 [&:-webkit-full-screen]:!w-screen [&:-webkit-full-screen]:!h-[100dvh] [&:-webkit-full-screen]:!max-h-[100dvh] [&:-webkit-full-screen]:flex [&:-webkit-full-screen]:flex-col [&:-webkit-full-screen]:rounded-none ${ytPseudoFullscreen ? '!fixed !inset-0 !w-screen !h-[100dvh] !z-[2147483647] !rounded-none !flex !flex-col' : ''}`}
@@ -762,7 +750,6 @@ function YouTubePlayerWithControls({
         }
       >
         <div
-          ref={ytVideoAreaRef}
           className={`absolute inset-0 w-full h-full ${ytFullscreenActive ? 'max-h-[100dvh] max-w-[100vw]' : ''}`}
         >
           {/* Thumbnail / loading until player is ready - player stays visible after completion */}
@@ -945,11 +932,6 @@ function YouTubePlayerWithControls({
       </div>
     </div>
   );
-
-  if (ytPseudoFullscreen && typeof document !== 'undefined') {
-    return createPortal(playerShell, document.body);
-  }
-  return playerShell;
 }
 
 export default function VideoPlayer({

@@ -22,15 +22,37 @@
 .review-card {
   flex-shrink: 0;
   width: 320px;
-  height: 160px;
+  min-height: 180px;
   background-color: #1f2937;
   border-radius: 0.75rem;
   padding: 1.5rem;
   display: flex;
   flex-direction: column;
-  justify-content: space-between;
+  justify-content: flex-start;
   transition: background-color 0.3s ease;
   box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.08), 0 2px 4px -1px rgba(0, 0, 0, 0.04);
+}
+
+.review-text {
+  margin-bottom: 0.9rem;
+  min-height: 4.6rem;
+  display: -webkit-box;
+  -webkit-line-clamp: 3;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+
+.review-meta {
+  margin-top: auto;
+  min-height: 3.2rem;
+}
+
+.review-author {
+  line-height: 1.2;
+}
+
+.review-role {
+  line-height: 1.25;
 }
 
 .review-card:hover {
@@ -77,9 +99,11 @@
   .review-card {
     width: 280px;
     min-width: 280px;
-    height: auto;
-    min-height: 150px;
+    min-height: 170px;
     padding: 1.25rem;
+  }
+  .review-text {
+    min-height: 4.4rem;
   }
   
   .reviews-scroll-row {
@@ -102,9 +126,12 @@
     width: 85vw;
     min-width: 85vw;
     max-width: 300px;
-    height: auto;
-    min-height: 140px;
+    min-height: 160px;
     padding: 1rem;
+  }
+  .review-text {
+    min-height: 4.2rem;
+    -webkit-line-clamp: 4;
   }
   
   .reviews-scroll-row {
@@ -119,8 +146,11 @@
     width: 90vw;
     min-width: 90vw;
     max-width: 280px;
-    min-height: 130px;
+    min-height: 152px;
     padding: 0.875rem;
+  }
+  .review-text {
+    min-height: 4rem;
   }
   
   .reviews-scroll-container {

@@ -275,6 +275,18 @@ export const submitApplication = async (formData) => {
 };
 
 /**
+ * Check demo meet join eligibility (booked slot window: 5 min before start until slot end).
+ * @param {string} mobileNumber - 10-digit (or normalizable) mobile
+ * @returns {Promise<{success: boolean, message?: string, data?: { status?: string, message?: string, joinOpensAtLabel?: string, slotStartLabel?: string }, status?: number}>}
+ */
+export const checkMeetingDemoEligibility = async (mobileNumber) => {
+  return apiRequest('/meeting/demo-eligibility', {
+    method: 'POST',
+    body: JSON.stringify({ mobileNumber }),
+  });
+};
+
+/**
  * Register for meeting (saves name and mobile, then redirect to Meet link on success)
  * @param {string} name - User's full name
  * @param {string} mobileNumber - 10-digit mobile number

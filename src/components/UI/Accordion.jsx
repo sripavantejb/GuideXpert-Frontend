@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { FiChevronDown } from 'react-icons/fi';
 
-const Accordion = ({ items, className = '' }) => {
+const Accordion = ({ items = [], className = '' }) => {
   const [openIndex, setOpenIndex] = useState(null);
 
   const toggleItem = (index) => {

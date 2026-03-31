@@ -32,9 +32,9 @@ const Footer = () => {
               aria-label="GuideXpert home"
             >
               <img
-                src="https://res.cloudinary.com/dqataciy5/image/upload/v1769173121/guidexpert-logo-3Ifn2ZP2_ljlxlc.png"
+                src="https://res.cloudinary.com/dfqdb1xws/image/upload/v1773394005/GuideXpert_Logo_inbaz5.png"
                 alt="GuideXpert"
-                className="h-12 md:h-14 object-contain"
+                className="h-9 sm:h-10 md:h-11 w-auto max-w-[190px] object-contain"
               />
             </a>
             <p className="text-gray-300 text-sm leading-relaxed">
