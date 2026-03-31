@@ -34,64 +34,64 @@ const ToolsSection = () => {
 
   const reviews = [
     {
-      text: "GuideXpert transformed my counseling practice. The tools are intuitive and comprehensive.",
-      author: "Sarah Johnson",
-      role: "Certified Counselor"
+      text: "GuideXpert helped me handle student counselling sessions with more structure and confidence.",
+      author: "Vinod Reddy",
+      role: "Senior Counsellor"
     },
     {
-      text: "The dashboard helps me track student progress effectively. Highly recommended!",
-      author: "Michael Chen",
-      role: "Education Consultant"
+      text: "The platform workflows are smooth, and the dashboard makes progress tracking very clear.",
+      author: "Pavan Tej",
+      role: "Software Developer"
     },
     {
-      text: "Best platform for managing multiple students. The resources are invaluable.",
-      author: "Emily Rodriguez",
-      role: "Career Counselor"
+      text: "I like how quickly we can manage multiple students and keep all records organized.",
+      author: "Venkatesh",
+      role: "Software Developer"
     },
     {
-      text: "The marketing support helped me reach 3x more students in just 2 months.",
-      author: "David Thompson",
-      role: "Independent Counselor"
+      text: "The interface feels modern and professional, and the resources are very easy to use.",
+      author: "Srikanth",
+      role: "Graphic Designer"
     },
     {
-      text: "Professional tools that make counseling efficient and impactful.",
-      author: "Lisa Anderson",
-      role: "Student Advisor"
+      text: "GuideXpert made the counselling process simple to understand and practical to follow.",
+      author: "Ritika",
+      role: "House Wife"
     },
     {
-      text: "The performance dashboard gives me insights I never had before.",
-      author: "James Wilson",
-      role: "Academic Counselor"
+      text: "From session planning to student follow-up, everything is available in one place.",
+      author: "Jayanth",
+      role: "BTech Graduate"
     },
     {
-      text: "Easy to use, powerful features. GuideXpert is a game-changer.",
-      author: "Maria Garcia",
-      role: "Certified GuideXpert"
+      text: "The tools are reliable and save a lot of time during daily counselling operations.",
+      author: "Vinod Reddy",
+      role: "Senior Counsellor"
     },
     {
-      text: "The comprehensive toolkit streamlined my entire counseling workflow.",
-      author: "Robert Brown",
-      role: "Education Specialist"
+      text: "Everything from student notes to analytics works smoothly and improves decision making.",
+      author: "Pavan Tej",
+      role: "Software Developer"
     },
     {
-      text: "Outstanding support and professional tools. Exceeded my expectations.",
-      author: "Jennifer Lee",
-      role: "Career Development Counselor"
+      text: "A clean and practical system that supports counsellors at every step of the process.",
+      author: "Venkatesh",
+      role: "Software Developer"
     },
     {
-      text: "The training modules are comprehensive and easy to follow.",
-      author: "Thomas Martinez",
-      role: "Career Advisor"
+      text: "The visual layout and overall experience are polished, clear, and easy for teams.",
+      author: "Srikanth",
+      role: "Graphic Designer"
     },
     {
-      text: "I've seen a significant improvement in my student engagement rates.",
-      author: "Patricia White",
-      role: "Academic Advisor"
+      text: "Even without a technical background, I could use the platform comfortably for counselling.",
+      author: "Ritika",
+      role: "House Wife"
     },
     {
-      text: "The support team is responsive and always ready to help.",
-      author: "Christopher Davis",
-      role: "Education Counselor"
+      text: "The complete setup feels efficient and helps deliver better guidance to students.",
+      author: "Jayanth",
+      role: "BTech Graduate"
     }
   ];
 
@@ -273,7 +273,7 @@ const ToolsSection = () => {
             <div className="reviews-scroll-row scroll-left">
               {duplicatedReviews.map((review, index) => (
                 <div key={`row1-${index}`} className="review-card">
-                  <p className="text-white text-sm leading-relaxed mb-4" style={{
+                  <p className="review-text text-white text-sm leading-relaxed mb-4" style={{
                     color: '#ffffff',
                     fontWeight: '400',
                     lineHeight: '1.6',
@@ -281,15 +281,15 @@ const ToolsSection = () => {
                   }}>
                     "{review.text}"
                   </p>
-                  <div className="border-t border-gray-700 pt-3">
-                    <p className="text-white text-sm font-semibold mb-1" style={{
+                  <div className="review-meta border-t border-gray-700 pt-3">
+                    <p className="review-author text-white text-sm font-semibold mb-1" style={{
                       color: '#ffffff',
                       fontWeight: '600',
                       fontSize: '14px'
                     }}>
                       {review.author}
                     </p>
-                    <p className="text-gray-400 text-xs" style={{
+                    <p className="review-role text-gray-400 text-xs" style={{
                       color: '#9ca3af',
                       fontWeight: '400',
                       fontSize: '12px'
@@ -305,7 +305,7 @@ const ToolsSection = () => {
             <div className="reviews-scroll-row scroll-right">
               {duplicatedReviews.map((review, index) => (
                 <div key={`row2-${index}`} className="review-card">
-                  <p className="text-white text-sm leading-relaxed mb-4" style={{
+                  <p className="review-text text-white text-sm leading-relaxed mb-4" style={{
                     color: '#ffffff',
                     fontWeight: '400',
                     lineHeight: '1.6',
@@ -313,15 +313,15 @@ const ToolsSection = () => {
                   }}>
                     "{review.text}"
                   </p>
-                  <div className="border-t border-gray-700 pt-3">
-                    <p className="text-white text-sm font-semibold mb-1" style={{
+                  <div className="review-meta border-t border-gray-700 pt-3">
+                    <p className="review-author text-white text-sm font-semibold mb-1" style={{
                       color: '#ffffff',
                       fontWeight: '600',
                       fontSize: '14px'
                     }}>
                       {review.author}
                     </p>
-                    <p className="text-gray-400 text-xs" style={{
+                    <p className="review-role text-gray-400 text-xs" style={{
                       color: '#9ca3af',
                       fontWeight: '400',
                       fontSize: '12px'
@@ -337,7 +337,7 @@ const ToolsSection = () => {
             <div className="reviews-scroll-row scroll-left">
               {duplicatedReviews.map((review, index) => (
                 <div key={`row3-${index}`} className="review-card">
-                  <p className="text-white text-sm leading-relaxed mb-4" style={{
+                  <p className="review-text text-white text-sm leading-relaxed mb-4" style={{
                     color: '#ffffff',
                     fontWeight: '400',
                     lineHeight: '1.6',
@@ -345,15 +345,15 @@ const ToolsSection = () => {
                   }}>
                     "{review.text}"
                   </p>
-                  <div className="border-t border-gray-700 pt-3">
-                    <p className="text-white text-sm font-semibold mb-1" style={{
+                  <div className="review-meta border-t border-gray-700 pt-3">
+                    <p className="review-author text-white text-sm font-semibold mb-1" style={{
                       color: '#ffffff',
                       fontWeight: '600',
                       fontSize: '14px'
                     }}>
                       {review.author}
                     </p>
-                    <p className="text-gray-400 text-xs" style={{
+                    <p className="review-role text-gray-400 text-xs" style={{
                       color: '#9ca3af',
                       fontWeight: '400',
                       fontSize: '12px'
