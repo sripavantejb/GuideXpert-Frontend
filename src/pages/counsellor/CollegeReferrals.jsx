@@ -3,7 +3,7 @@ import { FiChevronRight } from 'react-icons/fi';
 import { COLLEGES } from '../../data/collegeReferrals';
 
 const cardClassName =
-  'group relative flex min-h-[106px] items-center justify-between gap-3 overflow-hidden rounded-2xl border border-slate-200/90 bg-white px-4 py-4 sm:px-5 shadow-[0_6px_18px_rgba(15,23,42,0.05)] transition-all duration-300 hover:-translate-y-0.5 hover:border-[#003366]/35 hover:shadow-[0_18px_40px_rgba(15,23,42,0.12)] focus:outline-none focus-visible:ring-2 focus-visible:ring-[#003366]/25';
+  'group relative overflow-hidden rounded-[28px] border-[6px] border-[#1f2430] bg-[#1f2430] shadow-[0_14px_28px_rgba(15,23,42,0.18)] transition-all duration-300 hover:-translate-y-0.5 hover:shadow-[0_18px_34px_rgba(15,23,42,0.24)] focus:outline-none focus-visible:ring-2 focus-visible:ring-[#003366]/25';
 
 const COLLEGE_LOGOS = {
   niat: '/college-info/niat-logo.svg',
@@ -11,50 +11,33 @@ const COLLEGE_LOGOS = {
 
 function CollegeCardContent({ college }) {
   const logoSrc = COLLEGE_LOGOS[college.slug];
-  const partnerTag = college.slug === 'niat' ? 'Official partner' : 'Partner college';
 
   return (
-    <>
-      <span
-        aria-hidden
-        className="pointer-events-none absolute inset-x-0 top-0 h-[3px] bg-linear-to-r from-[#003366]/0 via-[#003366]/45 to-[#003366]/0 opacity-75 transition-opacity duration-300 group-hover:opacity-100"
-      />
-      <span
-        aria-hidden
-        className="pointer-events-none absolute -right-10 -top-12 h-24 w-24 rounded-full bg-[#003366]/5 blur-2xl transition-opacity duration-300 group-hover:opacity-90"
-      />
-      <div className="flex min-w-0 items-center gap-3.5">
-        <div className="flex h-13 w-13 shrink-0 items-center justify-center rounded-xl border border-slate-200 bg-white p-2.5 shadow-[inset_0_1px_0_rgba(255,255,255,0.95),0_2px_8px_rgba(15,23,42,0.06)]">
+    <div className="flex h-full flex-col">
+      <div className="rounded-[20px] bg-[#f8fafc] p-4 sm:p-5">
+        <div className="flex min-h-[170px] items-center justify-center rounded-[16px] border border-slate-200/80 bg-white p-5">
           {logoSrc ? (
             <img
               src={logoSrc}
               alt={`${college.name} logo`}
-              className="max-h-full max-w-full object-contain saturate-[1.02]"
+              className="h-16 w-auto object-contain sm:h-20"
               loading="lazy"
             />
           ) : (
-            <span className="text-xs font-semibold tracking-wide text-slate-600">
-              {String(college.name).slice(0, 2).toUpperCase()}
-            </span>
+            <span className="text-xl font-semibold tracking-wide text-slate-700">{college.name}</span>
           )}
         </div>
-        <div className="min-w-0">
-          <div className="flex flex-wrap items-center gap-2">
-            <h4 className="truncate text-[15px] font-semibold tracking-tight text-slate-900">{college.name}</h4>
-            <span className="inline-flex shrink-0 items-center rounded-full border border-[#003366]/15 bg-[#003366]/6 px-2 py-0.5 text-[10px] font-semibold uppercase tracking-[0.11em] text-[#003366]">
-              {partnerTag}
-            </span>
-          </div>
-          <p className="mt-1 truncate text-sm text-slate-600">
-            {college.location || 'Detailed profile and referral information'}
-          </p>
-          <p className="mt-1 text-[11px] font-medium uppercase tracking-[0.12em] text-slate-400 transition-colors duration-300 group-hover:text-[#003366]/75">
-            Explore college details
-          </p>
-        </div>
       </div>
-      <FiChevronRight className="h-5 w-5 shrink-0 text-slate-400 transition-all duration-300 group-hover:translate-x-1 group-hover:text-[#003366]" />
-    </>
+      <div className="flex items-end justify-between gap-3 px-4 pb-4 pt-3 sm:px-5 sm:pb-5">
+        <div className="min-w-0">
+          <h4 className="truncate text-2xl font-semibold tracking-tight text-white">{college.name}</h4>
+          <p className="mt-1 truncate text-sm text-slate-300">Official partner college</p>
+        </div>
+        <span className="flex h-14 w-14 shrink-0 items-center justify-center rounded-[18px] bg-white text-[#1f2430] shadow-[inset_0_1px_0_rgba(255,255,255,0.6)] transition-transform duration-300 group-hover:scale-105">
+          <FiChevronRight className="h-7 w-7" />
+        </span>
+      </div>
+    </div>
   );
 }
 
