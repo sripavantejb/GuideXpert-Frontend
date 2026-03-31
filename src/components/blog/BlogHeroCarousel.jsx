@@ -77,7 +77,7 @@ export default function BlogHeroCarousel({ blogs = [] }) {
                 <div
                   key={slide.id || slide.slug || idx}
                   aria-hidden={!isActive}
-                  className={`col-start-1 row-start-1 transition-all duration-700 ease-in-out ${
+                  className={`col-start-1 row-start-1 bg-white transition-all duration-500 ease-in-out ${
                     isActive ? 'opacity-100 translate-y-0 z-10' : 'opacity-0 translate-y-4 z-0 pointer-events-none'
                   }`}
                 >

@@ -31,11 +31,8 @@ function buildBlogUrl(pathname = '') {
 }
 
 const FALLBACK_IMAGES = [
-  'https://images.unsplash.com/photo-1516321318423-f06f85e504b3?q=80&w=2000&auto=format&fit=crop',
-  'https://images.unsplash.com/photo-1522071820081-009f0129c71c?q=80&w=2000&auto=format&fit=crop',
-  'https://images.unsplash.com/photo-1543269865-cbf427effbad?q=80&w=2000&auto=format&fit=crop',
-  'https://images.unsplash.com/photo-1434030216411-0b793f4b4173?q=80&w=2000&auto=format&fit=crop',
-  'https://images.unsplash.com/photo-1524178232363-1fb2b075b655?q=80&w=2000&auto=format&fit=crop'
+  'https://img.freepik.com/free-vector/collection-interracial-students-enjoying-life_1262-19751.jpg',
+  'https://img.freepik.com/free-vector/college-university-students-group-young-happy-people-standing-isolated-white-background_575670-66.jpg'
 ];
 
 function getFallbackImage(id) {
@@ -47,12 +44,10 @@ function getFallbackImage(id) {
 export function normalizeBlog(doc) {
   if (!doc) return null;
   const id = doc._id || doc.id;
-  const actualImage = doc.coverImage || doc.image;
   
-  // We force the high-quality relevant educational images to override the generic folder graphics returning from the backend.
-  // If the backend has a real Unsplash/Cloudinary photo uploaded, we still use it.
-  const isRealUpload = actualImage && (actualImage.includes('cloudinary') || actualImage.includes('unsplash') || actualImage.length > 200);
-  const coverImage = isRealUpload ? actualImage : getFallbackImage(id);
+  // We unconditionally force the newly requested Freepik vectors for all blogs, 
+  // explicitly overriding any generic Cloudinary placeholders returned by the API.
+  const coverImage = getFallbackImage(id);
   
   const contentHtml = doc.contentHtml || doc.content || '';
   return {
