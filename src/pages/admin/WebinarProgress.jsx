@@ -977,12 +977,19 @@ export default function WebinarProgress() {
   }, [filterKey, page, fetchUsers]);
 
   useEffect(() => {
+    let blurredAt = 0;
+    const onBlur = () => { blurredAt = Date.now(); };
     const onFocus = () => {
+      if (Date.now() - blurredAt < 10_000) return;
       fetchStats();
       fetchUsersRef.current();
     };
+    window.addEventListener('blur', onBlur);
     window.addEventListener('focus', onFocus);
-    return () => window.removeEventListener('focus', onFocus);
+    return () => {
+      window.removeEventListener('blur', onBlur);
+      window.removeEventListener('focus', onFocus);
+    };
   }, [fetchStats]);
 
   useEffect(() => {
@@ -990,7 +997,7 @@ export default function WebinarProgress() {
       if (document.hidden) return;
       fetchStats();
       fetchUsersRef.current();
-    }, 45000);
+    }, 120_000);
     return () => clearInterval(id);
   }, [fetchStats]);
 
