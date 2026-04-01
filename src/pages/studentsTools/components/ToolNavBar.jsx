@@ -1,52 +1,45 @@
 import { NavLink } from 'react-router-dom';
-
-const TOOL_GROUPS = [
-  {
-    label: 'Predictors',
-    links: [
-      { to: '/students/rank-predictor', label: 'Rank Predictor' },
-      { to: '/students/college-predictor', label: 'College Predictor' },
-      { to: '/students/branch-predictor', label: 'Branch Predictor' },
-    ],
-  },
-  {
-    label: 'Fit Tests',
-    links: [
-      { to: '/students/course-fit-test', label: 'Course Fit Test' },
-      { to: '/students/college-fit-test', label: 'College Fit Test' },
-    ],
-  },
-  {
-    label: 'Comparison',
-    links: [{ to: '/students/college-comparison', label: 'College Comparison' }],
-  },
-];
+import { FiLayers } from 'react-icons/fi';
+import { NAV_GROUPS, GROUP_ICONS } from '../workspaceMeta';
 
 function navLinkClassName({ isActive }) {
   return [
-    'rounded-[10px] border-2 px-3 py-2 text-xs font-bold transition-all duration-150 sm:text-sm',
+    'inline-flex min-h-[44px] items-center justify-center gap-2 rounded-[12px] border-[3px] px-3 py-2.5 text-xs font-black transition-all duration-150 sm:text-sm',
     isActive
-      ? 'border-black bg-[#C7F36B] text-[#0F172A] shadow-[3px_3px_0px_#000]'
-      : 'border-slate-300 bg-white text-slate-600 hover:-translate-y-0.5 hover:border-black hover:text-[#0F172A] hover:shadow-[3px_3px_0px_#000]',
+      ? 'border-black bg-[#C7F36B] text-[#0F172A] shadow-[3px_3px_0_#000] sm:shadow-[4px_4px_0_#000]'
+      : 'border-slate-800 bg-white text-slate-700 hover:-translate-y-0.5 hover:border-black hover:text-[#0F172A] hover:shadow-[3px_3px_0_#000]',
   ].join(' ');
 }
 
 export default function ToolNavBar() {
   return (
-    <nav className="rounded-[14px] border-2 border-black bg-white p-4 shadow-[4px_4px_0px_#000] sm:p-5">
-      <div className="grid gap-5 lg:grid-cols-3">
-        {TOOL_GROUPS.map((group) => (
-          <div key={group.label}>
-            <p className="mb-2 text-[11px] font-black uppercase tracking-[0.18em] text-slate-500">{group.label}</p>
-            <div className="flex flex-wrap gap-2">
-              {group.links.map((item) => (
-                <NavLink key={item.to} to={item.to} className={navLinkClassName}>
-                  {item.label}
-                </NavLink>
-              ))}
-            </div>
-          </div>
-        ))}
+    <nav className="overflow-hidden rounded-[14px] border-[3px] border-black bg-white shadow-[6px_6px_0_#000]">
+      <div className="h-1.5 w-full bg-[#C7F36B] border-b-[3px] border-black" aria-hidden />
+      <div className="p-4 sm:p-5">
+        <div className="grid gap-6 lg:grid-cols-3">
+          {NAV_GROUPS.map((group) => {
+            const GroupIcon = GROUP_ICONS[group.label] || FiLayers;
+            return (
+              <div key={group.label}>
+                <p className="mb-3 flex items-center gap-2 text-[10px] font-black uppercase tracking-[0.2em] text-slate-600">
+                  <GroupIcon className="h-4 w-4 shrink-0 text-[#0F172A]" aria-hidden />
+                  {group.label}
+                </p>
+                <div className="flex flex-wrap gap-2">
+                  {group.links.map((item) => {
+                    const LinkIcon = item.icon;
+                    return (
+                      <NavLink key={item.to} to={item.to} className={navLinkClassName}>
+                        <LinkIcon className="h-4 w-4 shrink-0" aria-hidden />
+                        <span>{item.label}</span>
+                      </NavLink>
+                    );
+                  })}
+                </div>
+              </div>
+            );
+          })}
+        </div>
       </div>
     </nav>
   );
