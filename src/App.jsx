@@ -68,6 +68,14 @@ const CertificatesPage = lazy(() => import('./pages/webinar/CertificatesPage'));
 const CertificateViewPage = lazy(() => import('./pages/CertificateViewPage'));
 const StudentIntelligenceDashboard = lazy(() => import('./pages/StudentIntelligenceDashboard'));
 const StudentsDashboard = lazy(() => import('./pages/StudentsDashboard'));
+const RankPredictorToolPage = lazy(() => import('./pages/studentsTools/RankPredictorPage'));
+const CollegePredictorToolPage = lazy(() => import('./pages/studentsTools/CollegePredictorPage'));
+const BranchPredictorToolPage = lazy(() => import('./pages/studentsTools/BranchPredictorPage'));
+const CourseFitTestToolPage = lazy(() => import('./pages/studentsTools/CourseFitTestPage'));
+const CollegeFitTestToolPage = lazy(() => import('./pages/studentsTools/CollegeFitTestPage'));
+const CollegeComparisonToolPage = lazy(() => import('./pages/studentsTools/CollegeComparisonPage'));
+const PredictorsHubPage = lazy(() => import('./pages/studentsTools/PredictorsHubPage'));
+const TestsHubPage = lazy(() => import('./pages/studentsTools/TestsHubPage'));
 import CollegePredictorPage from './pages/CollegePredictorPage';
 import RankPredictorHome from './pages/RankPredictorHome';
 import ExamPredictor from './pages/ExamPredictor';
@@ -143,6 +151,70 @@ function App() {
                 }
               >
                 <StudentsDashboard />
+              </Suspense>
+            }
+          />
+          <Route
+            path="/students/rank-predictor"
+            element={
+              <Suspense fallback={<div className="min-h-screen flex items-center justify-center bg-[#0F172A] text-white"><div className="animate-pulse text-sm font-medium">Loading rank predictor…</div></div>}>
+                <RankPredictorToolPage />
+              </Suspense>
+            }
+          />
+          <Route
+            path="/students/predictors"
+            element={
+              <Suspense fallback={<div className="min-h-screen flex items-center justify-center bg-[#0F172A] text-white"><div className="animate-pulse text-sm font-medium">Loading predictor hub…</div></div>}>
+                <PredictorsHubPage />
+              </Suspense>
+            }
+          />
+          <Route
+            path="/students/tests"
+            element={
+              <Suspense fallback={<div className="min-h-screen flex items-center justify-center bg-[#0F172A] text-white"><div className="animate-pulse text-sm font-medium">Loading tests hub…</div></div>}>
+                <TestsHubPage />
+              </Suspense>
+            }
+          />
+          <Route
+            path="/students/college-predictor"
+            element={
+              <Suspense fallback={<div className="min-h-screen flex items-center justify-center bg-[#0F172A] text-white"><div className="animate-pulse text-sm font-medium">Loading college predictor…</div></div>}>
+                <CollegePredictorToolPage />
+              </Suspense>
+            }
+          />
+          <Route
+            path="/students/branch-predictor"
+            element={
+              <Suspense fallback={<div className="min-h-screen flex items-center justify-center bg-[#0F172A] text-white"><div className="animate-pulse text-sm font-medium">Loading branch predictor…</div></div>}>
+                <BranchPredictorToolPage />
+              </Suspense>
+            }
+          />
+          <Route
+            path="/students/course-fit-test"
+            element={
+              <Suspense fallback={<div className="min-h-screen flex items-center justify-center bg-[#0F172A] text-white"><div className="animate-pulse text-sm font-medium">Loading course fit test…</div></div>}>
+                <CourseFitTestToolPage />
+              </Suspense>
+            }
+          />
+          <Route
+            path="/students/college-fit-test"
+            element={
+              <Suspense fallback={<div className="min-h-screen flex items-center justify-center bg-[#0F172A] text-white"><div className="animate-pulse text-sm font-medium">Loading college fit test…</div></div>}>
+                <CollegeFitTestToolPage />
+              </Suspense>
+            }
+          />
+          <Route
+            path="/students/college-comparison"
+            element={
+              <Suspense fallback={<div className="min-h-screen flex items-center justify-center bg-[#0F172A] text-white"><div className="animate-pulse text-sm font-medium">Loading comparison workspace…</div></div>}>
+                <CollegeComparisonToolPage />
               </Suspense>
             }
           />

@@ -1,7 +1,8 @@
-import React, { useState } from 'react';
+import React from 'react';
+import { Link } from 'react-router-dom';
 import { 
   LuRocket, LuTrophy, LuSearch, LuBookOpen, LuMapPin, LuScale, 
-  LuArrowRight, LuSparkles, LuCheck, LuGraduationCap, LuActivity, LuTerminal
+  LuArrowRight, LuSparkles, LuGraduationCap, LuActivity, LuTerminal
 } from 'react-icons/lu';
 
 // ----------------------------------------------------------------------------
@@ -35,24 +36,18 @@ const NeoButton = ({ children, primary = false, className = '', onClick }) => {
   );
 };
 
-const NeoInput = ({ placeholder, type = "text", className = '', value, onChange }) => {
-  return (
-    <input 
-      type={type}
-      placeholder={placeholder}
-      value={value}
-      onChange={onChange}
-      className={`w-full bg-[#F8FAFC] border-2 border-[#0F172A] rounded-[10px] px-4 py-3 placeholder-slate-400 text-[#0F172A] font-medium focus:outline-none focus:bg-white focus:shadow-[4px_4px_0px_#0F172A] focus:-translate-y-1 transition-all duration-200 ${className}`}
-    />
-  );
-};
+const previewInputClass =
+  'w-full cursor-not-allowed bg-[#EEF2F7] border-2 border-[#0F172A]/85 rounded-[10px] px-4 py-3 text-[#94A3B8] font-medium';
 
-const FadeInContent = ({ children, isVisible }) => {
-  if (!isVisible) return null;
+const PreviewActionLink = ({ to, children, primary = true, className = '' }) => {
+  const baseStyle = 'font-bold rounded-[14px] px-6 py-3 border-2 border-[#0F172A] transition-all duration-150 flex items-center justify-center gap-2';
+  const typeStyle = primary
+    ? 'bg-[#C7F36B] text-[#0F172A] shadow-[4px_4px_0px_#0F172A] hover:bg-[#b0d95d] hover:-translate-y-0.5'
+    : 'bg-white text-[#0F172A] shadow-[4px_4px_0px_#0F172A] hover:bg-slate-50 hover:-translate-y-0.5';
   return (
-    <div className="animate-fade-in mt-8 pt-6 border-t-2 border-dashed border-slate-300">
+    <Link to={to} className={`${baseStyle} ${typeStyle} ${className}`}>
       {children}
-    </div>
+    </Link>
   );
 };
 
@@ -61,14 +56,6 @@ const FadeInContent = ({ children, isVisible }) => {
 // ----------------------------------------------------------------------------
 
 const RankPredictor = () => {
-  const [exam, setExam] = useState('');
-  const [marks, setMarks] = useState('');
-  const [result, setResult] = useState(null);
-
-  const handlePredict = () => {
-    if (exam && marks) setResult({ rank: '14,250', percentile: '95.82' });
-  };
-
   return (
     <NeoCard accentColor="#B7E5FF">
       <div className="flex items-start justify-between mb-6">
@@ -82,45 +69,18 @@ const RankPredictor = () => {
       </div>
       
       <div className="space-y-4 mb-auto">
-        <NeoInput placeholder="Exam Name (e.g. JEE Main)" value={exam} onChange={(e)=>setExam(e.target.value)} />
-        <NeoInput placeholder="Marks Scored" type="number" value={marks} onChange={(e)=>setMarks(e.target.value)} />
+        <input className={previewInputClass} placeholder="Exam Name (e.g. JEE Main)" disabled />
+        <input className={previewInputClass} placeholder="Marks Scored" disabled />
       </div>
       
-      <NeoButton primary className="w-full mt-6" onClick={handlePredict}>
+      <PreviewActionLink to="/students/predictors" className="w-full mt-6">
         Run Analysis <LuArrowRight />
-      </NeoButton>
-
-      <FadeInContent isVisible={!!result}>
-        <div className="grid grid-cols-2 gap-4">
-          <div className="p-4 bg-slate-50 border-2 border-[#0F172A] rounded-[10px]">
-            <p className="text-[10px] font-bold uppercase tracking-widest text-slate-500 mb-1">Estimated Rank</p>
-            <p className="text-2xl font-black text-[#0F172A] font-mono tracking-tighter">{result?.rank}</p>
-          </div>
-          <div className="p-4 bg-[#B7E5FF] border-2 border-[#0F172A] rounded-[10px] shadow-[2px_2px_0px_#0F172A]">
-            <p className="text-[10px] font-bold uppercase tracking-widest text-[#0F172A] mb-1">Percentile (PR)</p>
-            <p className="text-2xl font-black text-[#0F172A] font-mono tracking-tighter">{result?.percentile}%</p>
-          </div>
-        </div>
-      </FadeInContent>
+      </PreviewActionLink>
     </NeoCard>
   );
 };
 
 const CollegePredictor = () => {
-  const [rank, setRank] = useState('');
-  const [category, setCategory] = useState('');
-  const [state, setState] = useState('');
-  const [result, setResult] = useState(null);
-
-  const handlePredict = () => {
-    if (rank) {
-      setResult([
-        { name: 'NIT Trichy', code: 'NITT', chance: 'Low', color: '#F7B5B5' },
-        { name: 'VIT Vellore', code: 'VITV', chance: 'High', color: '#C7F36B' }
-      ]);
-    }
-  };
-
   return (
     <NeoCard accentColor="#F7B5B5">
       <div className="flex items-start justify-between mb-6">
@@ -135,47 +95,20 @@ const CollegePredictor = () => {
       
       <div className="space-y-4 mb-auto">
         <div className="grid grid-cols-2 gap-4">
-          <NeoInput placeholder="Rank" type="number" value={rank} onChange={(e)=>setRank(e.target.value)} />
-          <NeoInput placeholder="Category" value={category} onChange={(e)=>setCategory(e.target.value)} />
+          <input className={previewInputClass} placeholder="Rank" disabled />
+          <input className={previewInputClass} placeholder="Category" disabled />
         </div>
-        <NeoInput placeholder="State Preference" value={state} onChange={(e)=>setState(e.target.value)} />
+        <input className={previewInputClass} placeholder="State Preference" disabled />
       </div>
 
-      <NeoButton primary className="w-full mt-6" onClick={handlePredict}>
+      <PreviewActionLink to="/students/predictors" className="w-full mt-6">
         Generate Matches <LuMapPin />
-      </NeoButton>
-
-      <FadeInContent isVisible={!!result}>
-        <div className="space-y-3">
-          {result?.map((college, idx) => (
-            <div key={idx} className="p-3 border-2 border-[#0F172A] rounded-[10px] flex items-center gap-4 bg-white transition-colors hover:bg-slate-50">
-              <div className="w-12 h-12 bg-slate-100 border-2 border-[#0F172A] rounded-md flex items-center justify-center flex-shrink-0">
-                <span className="font-bold text-xs text-slate-400">{college.code}</span>
-              </div>
-              <div className="flex-1">
-                <p className="font-bold text-[#0F172A] text-sm">{college.name}</p>
-                <p className="text-[10px] font-bold text-slate-500 uppercase tracking-wider">Admission Prob.</p>
-              </div>
-              <div className="px-3 py-1 border-2 border-[#0F172A] rounded-md text-xs font-bold" style={{ backgroundColor: college.color }}>
-                {college.chance}
-              </div>
-            </div>
-          ))}
-        </div>
-      </FadeInContent>
+      </PreviewActionLink>
     </NeoCard>
   );
 };
 
 const BranchPredictor = () => {
-  const [rank, setRank] = useState('');
-  const [college, setCollege] = useState('');
-  const [result, setResult] = useState(null);
-
-  const handlePredict = () => {
-    if (rank && college) setResult(['Comp Sci', 'AI & ML', 'Data Sci', 'Electronics']);
-  };
-
   return (
     <NeoCard accentColor="#FFE89A">
       <div className="flex items-start justify-between mb-6">
@@ -189,42 +122,18 @@ const BranchPredictor = () => {
       </div>
       
       <div className="space-y-4 mb-auto">
-        <NeoInput placeholder="Institution Name" value={college} onChange={(e)=>setCollege(e.target.value)} />
-        <NeoInput placeholder="Current Rank" type="number" value={rank} onChange={(e)=>setRank(e.target.value)} />
+        <input className={previewInputClass} placeholder="Institution Name" disabled />
+        <input className={previewInputClass} placeholder="Current Rank" disabled />
       </div>
 
-      <NeoButton primary className="w-full mt-6" onClick={handlePredict}>
+      <PreviewActionLink to="/students/predictors" className="w-full mt-6">
         Analyze Branches <LuBookOpen />
-      </NeoButton>
-
-      <FadeInContent isVisible={!!result}>
-        <div className="flex flex-wrap gap-2">
-          {result?.map(branch => (
-            <span key={branch} className="px-3 py-1.5 bg-white border-2 border-[#0F172A] rounded-md text-xs font-bold shadow-[2px_2px_0px_#0F172A]">
-              {branch}
-            </span>
-          ))}
-        </div>
-      </FadeInContent>
+      </PreviewActionLink>
     </NeoCard>
   );
 };
 
 const CourseFitTest = () => {
-  const [step, setStep] = useState(0);
-  const [result, setResult] = useState(null);
-
-  const questions = [
-    "I prefer solving mathematical equations over writing essays.",
-    "I enjoy building or configuring software/hardware.",
-    "I lean towards systematic logic rather than open-ended creativity."
-  ];
-
-  const handleAnswer = () => {
-    if (step < questions.length - 1) setStep(step + 1);
-    else setResult(['B.Tech Computer Science', 'B.Sc Data Science', 'B.E. IT']);
-  };
-
   return (
     <NeoCard accentColor="#C7F36B">
       <div className="flex items-start justify-between mb-6">
@@ -237,48 +146,24 @@ const CourseFitTest = () => {
         </div>
       </div>
       
-      {!result ? (
-        <div className="mb-auto">
-          <div className="flex gap-1 mb-4">
-            {questions.map((_, i) => (
-              <div key={i} className={`h-2 flex-1 border-2 border-[#0F172A] rounded-full ${i <= step ? 'bg-[#C7F36B]' : 'bg-slate-100'}`} />
-            ))}
-          </div>
-          <div className="p-5 border-2 border-[#0F172A] rounded-[10px] bg-white shadow-[2px_2px_0px_#0F172A] h-[120px] flex items-center justify-center text-center">
-            <p className="font-bold text-[#0F172A] text-sm">"{questions[step]}"</p>
-          </div>
-          <div className="flex gap-4 mt-6">
-            <NeoButton className="flex-1 py-3 text-sm" onClick={handleAnswer}>Disagree</NeoButton>
-            <NeoButton primary className="flex-1 py-3 text-sm" onClick={handleAnswer}>Agree</NeoButton>
-          </div>
+      <div className="mb-auto">
+        <div className="flex gap-1 mb-4">
+          {[0, 1, 2].map((i) => (
+            <div key={i} className={`h-2 flex-1 border-2 border-[#0F172A] rounded-full ${i === 0 ? 'bg-[#C7F36B]' : 'bg-slate-100'}`} />
+          ))}
         </div>
-      ) : (
-        <FadeInContent isVisible={true}>
-          <div className="space-y-2">
-             <p className="text-[10px] font-bold uppercase tracking-widest text-slate-500 mb-2">Top Recommended Profiles</p>
-             {result.map((course, idx) => (
-               <div key={idx} className="font-bold text-sm text-[#0F172A] flex items-center gap-3 bg-[#F8FAFC] px-4 py-3 rounded-md border-2 border-[#0F172A]">
-                 <LuCheck className="text-[#C7F36B] text-lg stroke-[3]" />
-                 {course}
-               </div>
-             ))}
-          </div>
-        </FadeInContent>
-      )}
+        <div className="p-5 border-2 border-[#0F172A] rounded-[10px] bg-white shadow-[2px_2px_0px_#0F172A] h-[120px] flex items-center justify-center text-center">
+          <p className="font-bold text-[#0F172A] text-sm">"I prefer solving mathematical equations over writing essays."</p>
+        </div>
+        <PreviewActionLink to="/students/tests" className="w-full mt-6">
+          Start Test <LuArrowRight />
+        </PreviewActionLink>
+      </div>
     </NeoCard>
   );
 };
 
 const CollegeFitTest = () => {
-  const [result, setResult] = useState(null);
-
-  const handleSearch = () => {
-    setResult([
-      { name: "SRM Institute", location: "Chennai", size: "Large", placement: "85%" },
-      { name: "Manipal University", location: "Manipal", size: "Medium", placement: "90%" }
-    ]);
-  };
-
   return (
     <NeoCard accentColor="#B7E5FF">
       <div className="flex items-start justify-between mb-6">
@@ -292,54 +177,24 @@ const CollegeFitTest = () => {
       </div>
       
       <div className="space-y-4 mb-auto">
-        <select className="w-full bg-[#F8FAFC] border-2 border-[#0F172A] rounded-[10px] px-4 py-3 text-sm font-bold text-[#0F172A] focus:outline-none focus:bg-white focus:shadow-[4px_4px_0px_#0F172A] transition-all appearance-none">
+        <select disabled className="w-full bg-[#F8FAFC] border-2 border-[#0F172A] rounded-[10px] px-4 py-3 text-sm font-bold text-[#94A3B8] appearance-none">
           <option value="">Select Fee Budget</option>
           <option value="low">&lt; 10 Lakhs Total</option>
           <option value="high">10 - 20 Lakhs Total</option>
         </select>
-        <select className="w-full bg-[#F8FAFC] border-2 border-[#0F172A] rounded-[10px] px-4 py-3 text-sm font-bold text-[#0F172A] focus:outline-none focus:bg-white focus:shadow-[4px_4px_0px_#0F172A] transition-all appearance-none">
+        <select disabled className="w-full bg-[#F8FAFC] border-2 border-[#0F172A] rounded-[10px] px-4 py-3 text-sm font-bold text-[#94A3B8] appearance-none">
           <option value="">Select Campus Size</option>
           <option value="large">Large (100+ Acres)</option>
           <option value="small">Boutique & Urban</option>
         </select>
       </div>
 
-      <NeoButton primary className="w-full mt-6" onClick={handleSearch}>Process Criteria</NeoButton>
-
-      <FadeInContent isVisible={!!result}>
-        <div className="space-y-3">
-          {result?.map((college, idx) => (
-            <div key={idx} className="flex gap-3 p-3 border-2 border-[#0F172A] rounded-[10px] bg-slate-50">
-              <div className="w-10 h-10 border-2 border-[#0F172A] rounded-md shrink-0 flex items-center justify-center bg-white text-[10px] font-black tracking-tighter">
-                {college.name.substring(0,2).toUpperCase()}
-              </div>
-              <div>
-                <p className="font-bold text-sm text-[#0F172A]">{college.name}</p>
-                <p className="text-[10px] font-bold text-slate-500 uppercase">{college.location} • Placements: {college.placement}</p>
-              </div>
-            </div>
-          ))}
-        </div>
-      </FadeInContent>
+      <PreviewActionLink to="/students/tests" className="w-full mt-6">Process Criteria</PreviewActionLink>
     </NeoCard>
   );
 };
 
 const CollegeComparison = () => {
-  const [colA, setColA] = useState('');
-  const [colB, setColB] = useState('');
-  const [result, setResult] = useState(null);
-
-  const handleCompare = () => {
-    if (colA && colB) {
-      setResult({
-        metrics: ['Avg Package', 'Total Fees', 'Placement %', 'Campus'],
-        colA: { name: colA, stats: ['8.5L', '12L', '92%', '250 Ac'] },
-        colB: { name: colB, stats: ['9.2L', '15L', '88%', '120 Ac'] }
-      });
-    }
-  };
-
   return (
     <NeoCard accentColor="#FFE89A" className="md:col-span-2 lg:col-span-1">
       <div className="flex items-start justify-between mb-6">
@@ -353,35 +208,12 @@ const CollegeComparison = () => {
       </div>
       
       <div className="space-y-3 mb-auto">
-        <NeoInput placeholder="Institution A" value={colA} onChange={(e)=>setColA(e.target.value)} className="py-2.5" />
+        <input className={previewInputClass} placeholder="Institution A" disabled />
         <div className="text-center font-black text-[10px] uppercase text-slate-400 tracking-widest bg-[#F8FAFC] border-2 border-slate-200 py-1 rounded w-12 mx-auto">VS</div>
-        <NeoInput placeholder="Institution B" value={colB} onChange={(e)=>setColB(e.target.value)} className="py-2.5" />
+        <input className={previewInputClass} placeholder="Institution B" disabled />
       </div>
 
-      <NeoButton primary className="w-full mt-6" onClick={handleCompare}>Run Comparison</NeoButton>
-
-      <FadeInContent isVisible={!!result}>
-        <div className="overflow-hidden border-2 border-[#0F172A] rounded-[10px] shadow-[4px_4px_0px_#0F172A]">
-          <table className="w-full text-xs text-left">
-            <thead className="bg-[#0F172A] text-white border-b-2 border-[#0F172A]">
-              <tr>
-                <th className="p-2 border-r-2 border-[#0F172A] font-medium text-slate-300">Metric</th>
-                <th className="p-2 border-r-2 border-[#0F172A] font-bold truncate max-w-[80px]">{result?.colA.name}</th>
-                <th className="p-2 font-bold truncate max-w-[80px]">{result?.colB.name}</th>
-              </tr>
-            </thead>
-            <tbody className="bg-white">
-              {result?.metrics.map((metric, idx) => (
-                <tr key={idx} className="border-b-2 border-[#0F172A] last:border-0">
-                  <td className="p-2 border-r-2 border-[#0F172A] font-bold text-slate-500">{metric}</td>
-                  <td className="p-2 border-r-2 border-[#0F172A] font-black font-mono">{result.colA.stats[idx]}</td>
-                  <td className="p-2 font-black font-mono">{result.colB.stats[idx]}</td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
-      </FadeInContent>
+      <PreviewActionLink to="/students/college-comparison" className="w-full mt-6">Run Comparison</PreviewActionLink>
     </NeoCard>
   );
 };
@@ -412,40 +244,40 @@ export default function StudentsDashboard() {
       `}</style>
 
       {/* Hero Section */}
-      <section className="bg-[#0F172A] relative pt-24 pb-28 px-6 lg:px-12 overflow-hidden border-b-[6px] border-[#0F172A]">
+      <section className="relative flex min-h-screen items-center overflow-hidden border-b-[6px] border-[#0F172A] bg-[#0F172A] px-6 py-12 lg:px-12">
         {/* Subtle Grid Background */}
         <div className="absolute inset-0 blueprint-grid z-0"></div>
 
-        <div className="max-w-7xl mx-auto relative z-10 flex flex-col lg:flex-row items-center gap-16">
-          <div className="flex-1">
+        <div className="relative z-10 mx-auto flex max-w-7xl flex-col gap-12 lg:flex-row lg:items-center lg:gap-14">
+          <div className="flex-1 lg:max-w-[560px]">
             <div className="inline-flex items-center gap-2 px-3 py-1.5 bg-[#1E293B] border border-slate-700 rounded-md mb-8">
               <span className="w-2 h-2 rounded-full bg-[#C7F36B] animate-pulse"></span>
               <span className="text-slate-300 font-mono text-[10px] uppercase tracking-widest">System Operational v2.4</span>
             </div>
             
-            <h1 className="text-5xl lg:text-7xl font-black text-white leading-[1.05] tracking-tighter mb-6">
+            <h1 className="mb-6 text-5xl font-black leading-[1.02] tracking-tighter text-white lg:text-7xl">
               Student<br/>
               <span className="text-[#C7F36B]">Intelligence</span><br/>
               Platform.
             </h1>
             
-            <p className="text-lg text-slate-400 font-medium max-w-lg mb-10 leading-relaxed">
+            <p className="mb-10 max-w-xl text-base font-medium leading-relaxed text-slate-400 sm:text-lg">
               Professional-grade admission analytics. Predict ranks, evaluate institutions, and optimize your academic trajectory with precision data.
             </p>
             
-            <div className="flex flex-col sm:flex-row gap-4">
-              <NeoButton primary className="text-sm px-8 hover:-translate-y-1">
+            <div className="flex flex-col gap-4 sm:flex-row sm:items-center">
+              <NeoButton primary className="text-sm px-8 hover:-translate-y-1 sm:min-w-[250px]">
                 Initialize Prediction Session
               </NeoButton>
-              <NeoButton className="text-sm px-8 bg-transparent text-white border-slate-700 hover:bg-[#1E293B] shadow-none active:translate-y-0 active:translate-x-0">
+              <NeoButton className="text-sm px-8 bg-white text-[#0F172A] border-slate-300 hover:bg-slate-100 shadow-[4px_4px_0px_#0F172A] active:shadow-[0px_0px_0px_#0F172A] sm:min-w-[230px]">
                 View Documentation <LuArrowRight />
               </NeoButton>
             </div>
           </div>
 
-          <div className="flex-1 w-full max-w-md lg:max-w-none lg:pl-10">
+          <div className="w-full flex-1 lg:pl-4">
             {/* Tech-SaaS Hero Card */}
-            <div className="bg-white rounded-[14px] border-2 border-[#0F172A] shadow-[8px_8px_0px_#C7F36B] overflow-hidden">
+            <div className="mx-auto w-full max-w-[620px] overflow-hidden rounded-[14px] border-2 border-[#0F172A] bg-white shadow-[8px_8px_0px_#C7F36B]">
               {/* Card Header (Mac OS Style terminal header) */}
               <div className="bg-[#0F172A] px-4 py-3 flex gap-2 items-center border-b-2 border-[#0F172A]">
                 <div className="w-3 h-3 rounded-full bg-[#F7B5B5] border border-[#0F172A]"></div>
@@ -456,10 +288,10 @@ export default function StudentsDashboard() {
                 </div>
               </div>
               
-              <div className="p-8">
-                <div className="mb-8">
+              <div className="p-6 sm:p-7 lg:p-8">
+                <div className="mb-7">
                    <p className="text-xs font-bold text-slate-500 uppercase tracking-widest mb-1">Global Standing Estimate</p>
-                   <h3 className="text-4xl font-black text-[#0F172A] font-mono tracking-tighter">12,430 <span className="text-lg text-[#C7F36B]">▲</span></h3>
+                   <h3 className="text-3xl font-black text-[#0F172A] font-mono tracking-tighter sm:text-4xl">12,430 <span className="text-lg text-[#C7F36B]">▲</span></h3>
                 </div>
                 
                 <div className="space-y-5">
@@ -490,23 +322,63 @@ export default function StudentsDashboard() {
 
       {/* Tools Dashboard Grid */}
       <section className="max-w-7xl mx-auto px-6 lg:px-12 py-24">
-        <div className="flex flex-col md:flex-row justify-between items-end mb-12 gap-6">
-          <div>
-            <h2 className="text-3xl font-black text-[#0F172A] tracking-tighter mb-2">Workspace Applications</h2>
-            <p className="text-slate-500 font-medium">Select a tool to begin your analysis.</p>
-          </div>
-          <div className="flex gap-2">
-            <span className="px-3 py-1 bg-white border-2 border-[#0F172A] rounded-md text-xs font-bold shadow-[2px_2px_0px_#0F172A]">6 Tools Loaded</span>
+        <div className="mb-10 rounded-[14px] border-2 border-[#0F172A] bg-white/95 px-5 py-4 shadow-[4px_4px_0px_#0F172A] sm:px-6 sm:py-5 md:mb-12">
+          <div className="flex flex-col gap-6 md:flex-row md:items-end md:justify-between">
+            <div>
+              <h2 className="mb-2 text-3xl font-black tracking-tighter text-[#0F172A]">Workspace Applications</h2>
+              <p className="text-slate-500 font-medium">Select a tool to begin your analysis.</p>
+            </div>
+            <div className="flex gap-2">
+              <span className="px-3 py-1 bg-white border-2 border-[#0F172A] rounded-md text-xs font-bold shadow-[2px_2px_0px_#0F172A]">6 Tools Loaded</span>
+            </div>
           </div>
         </div>
 
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
-          <RankPredictor />
-          <CollegePredictor />
-          <BranchPredictor />
-          <CourseFitTest />
-          <CollegeFitTest />
-          <CollegeComparison />
+        <div id="tool-grid" className="space-y-16">
+          <section aria-labelledby="predictor-tools-heading">
+            <div className="mb-6 flex flex-col gap-2 sm:mb-8">
+              <h3 id="predictor-tools-heading" className="text-2xl font-black tracking-tight text-[#0F172A]">
+                Predictors
+              </h3>
+              <p className="max-w-2xl text-sm font-medium text-slate-500 sm:text-base">
+                Estimate rank outcomes and shortlist colleges or branches with data-backed prediction tools.
+              </p>
+            </div>
+            <div className="grid grid-cols-1 gap-8 md:grid-cols-2 lg:grid-cols-3">
+              <RankPredictor />
+              <CollegePredictor />
+              <BranchPredictor />
+            </div>
+          </section>
+
+          <section aria-labelledby="fit-tools-heading">
+            <div className="mb-6 flex flex-col gap-2 sm:mb-8">
+              <h3 id="fit-tools-heading" className="text-2xl font-black tracking-tight text-[#0F172A]">
+                Fit Tests
+              </h3>
+              <p className="max-w-2xl text-sm font-medium text-slate-500 sm:text-base">
+                Discover courses and campuses that match your preferences, behavior, and long-term goals.
+              </p>
+            </div>
+            <div className="grid grid-cols-1 gap-8 md:grid-cols-2">
+              <CourseFitTest />
+              <CollegeFitTest />
+            </div>
+          </section>
+
+          <section aria-labelledby="comparison-tools-heading">
+            <div className="mb-6 flex flex-col gap-2 sm:mb-8">
+              <h3 id="comparison-tools-heading" className="text-2xl font-black tracking-tight text-[#0F172A]">
+                Comparison
+              </h3>
+              <p className="max-w-2xl text-sm font-medium text-slate-500 sm:text-base">
+                Compare institutions side-by-side to make confident admission decisions.
+              </p>
+            </div>
+            <div className="mx-auto grid max-w-2xl grid-cols-1 gap-8">
+              <CollegeComparison />
+            </div>
+          </section>
         </div>
       </section>
 
