@@ -57,6 +57,24 @@ function StatusBadge({ status }) {
   );
 }
 
+function JoinTypeBadge({ isLegacyUser }) {
+  if (isLegacyUser) {
+    return (
+      <span
+        className="inline-flex items-center px-2 py-0.5 rounded-full text-[11px] font-semibold bg-gray-100 text-gray-700"
+        title="Legacy users joined before first-join tracking was implemented."
+      >
+        Legacy
+      </span>
+    );
+  }
+  return (
+    <span className="inline-flex items-center px-2 py-0.5 rounded-full text-[11px] font-semibold bg-green-100 text-green-700">
+      New
+    </span>
+  );
+}
+
 function ModuleIcon({ moduleId, status }) {
   if (moduleId === 'certificate') {
     const color = status === 'completed' ? 'text-green-500' : 'text-gray-300';
@@ -798,6 +816,7 @@ function ModuleAnalytics({ stats }) {
 
 const INITIAL_FILTERS = {
   sort: '-lastActivityAt',
+  filterMode: 'first_join',
   statuses: [],
   activeOn: '',
   fromDate: '',
@@ -827,7 +846,7 @@ function parseYMDLocal(s) {
 }
 
 function buildListParams(f, debouncedSearch, page, limit) {
-  const params = { page, limit, sort: f.sort };
+  const params = { page, limit, sort: f.sort, filterMode: f.filterMode || 'first_join' };
   const q = debouncedSearch.trim();
   if (q) params.search = q;
   if (f.statuses.length) params.status = f.statuses;
@@ -1011,6 +1030,7 @@ export default function WebinarProgress() {
     const today = toYMDLocal(new Date());
     setF((prev) => ({
       ...prev,
+      filterMode: 'first_join',
       activeOn: '',
       fromDate: today,
       toDate: today,
@@ -1186,7 +1206,7 @@ export default function WebinarProgress() {
           <div className="flex items-center gap-2 min-w-0">
             <FiFilter className="w-4 h-4 text-gray-500 shrink-0" aria-hidden />
             <span className="text-sm font-semibold text-gray-900">Filters</span>
-            {(f.activeOn || f.fromDate || f.toDate) && (
+            {f.filterMode === 'first_join' && (f.activeOn || f.fromDate || f.toDate) && (
               <span className="ml-2 inline-flex items-center rounded-full bg-blue-100 px-2 py-0.5 text-[11px] font-medium text-blue-700">
                 Total New Users: {total}
               </span>
@@ -1223,9 +1243,35 @@ export default function WebinarProgress() {
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
           <div className="space-y-2 rounded-lg border border-gray-100 bg-gray-50/80 p-3">
             <p className="text-[11px] font-bold text-gray-500 uppercase tracking-wider">Date</p>
+            <div className="flex flex-wrap gap-2">
+              <button
+                type="button"
+                onClick={() => setF((p) => ({ ...p, filterMode: 'first_join' }))}
+                className={`px-3 py-1.5 rounded-full text-xs font-medium border transition-colors ${
+                  f.filterMode === 'first_join'
+                    ? 'bg-primary-navy text-white border-primary-navy'
+                    : 'bg-white text-gray-600 border-gray-200'
+                }`}
+              >
+                First Join Date
+              </button>
+              <button
+                type="button"
+                onClick={() => setF((p) => ({ ...p, filterMode: 'last_activity' }))}
+                className={`px-3 py-1.5 rounded-full text-xs font-medium border transition-colors ${
+                  f.filterMode === 'last_activity'
+                    ? 'bg-primary-navy text-white border-primary-navy'
+                    : 'bg-white text-gray-600 border-gray-200'
+                }`}
+              >
+                Last Activity Date
+              </button>
+            </div>
             <div className="flex flex-wrap items-end gap-3">
               <div className="relative" data-webinar-picker>
-                <span className="block text-xs text-gray-500 mb-1">Filter by date (first joined)</span>
+                <span className="block text-xs text-gray-500 mb-1">
+                  {f.filterMode === 'last_activity' ? 'Filter by date (last activity)' : 'Filter by date (first joined)'}
+                </span>
                 <button
                   type="button"
                   onClick={() => setPickerOpen((o) => (o === 'single' ? null : 'single'))}
@@ -1294,7 +1340,11 @@ export default function WebinarProgress() {
                 )}
               </div>
             </div>
-            <p className="text-[11px] text-gray-400">Date filters match first login date boundaries (UTC on server).</p>
+            <p className="text-[11px] text-gray-400">
+              {f.filterMode === 'last_activity'
+                ? 'Date filters match last activity boundaries (UTC on server). Includes legacy and new users.'
+                : 'Date filters match first join boundaries (UTC on server). Legacy users are excluded in this mode.'}
+            </p>
           </div>
 
           <div className="space-y-2 rounded-lg border border-gray-100 bg-gray-50/80 p-3">
@@ -1527,6 +1577,7 @@ export default function WebinarProgress() {
               <col className="w-10" />
               <col className="min-w-[140px]" />
               <col className="min-w-[108px]" />
+              <col className="min-w-[96px]" />
               <col className="min-w-[170px]" />
               <col className="min-w-[160px]" />
               <col className="min-w-[100px]" />
@@ -1554,6 +1605,13 @@ export default function WebinarProgress() {
                 </th>
                 <th scope="col" className="px-3 py-3.5 text-left text-xs font-semibold text-gray-600 uppercase tracking-wide">
                   Phone
+                </th>
+                <th
+                  scope="col"
+                  className="px-3 py-3.5 text-left text-xs font-semibold text-gray-600 uppercase tracking-wide"
+                  title="Legacy users joined before first-join tracking was implemented."
+                >
+                  Join Type
                 </th>
                 <th scope="col" className="px-3 py-3.5 text-left text-xs font-semibold text-gray-600 uppercase tracking-wide">
                   Joined On
@@ -1615,7 +1673,7 @@ export default function WebinarProgress() {
               {loading ? (
                 Array.from({ length: 5 }).map((_, i) => (
                   <tr key={i} className="bg-white">
-                    {Array.from({ length: 10 }).map((__, j) => (
+                    {Array.from({ length: 11 }).map((__, j) => (
                       <td key={j} className="px-3 py-3.5">
                         <div className="h-4 bg-gray-100 rounded animate-pulse" />
                       </td>
@@ -1624,7 +1682,7 @@ export default function WebinarProgress() {
                 ))
               ) : users.length === 0 ? (
                 <tr>
-                  <td colSpan={10} className="p-0">
+                  <td colSpan={11} className="p-0">
                     <div className="flex flex-col items-center justify-center py-16 px-4">
                       <FiUsers className="w-12 h-12 text-gray-300 mb-3" aria-hidden />
                       <p className="text-sm font-medium text-gray-600">No users found</p>
@@ -1661,6 +1719,9 @@ export default function WebinarProgress() {
                           <span className="line-clamp-2 break-words" title={u.fullName || undefined}>{u.fullName || '—'}</span>
                         </td>
                         <td className="px-3 py-3 text-sm text-gray-600 tabular-nums align-middle whitespace-nowrap">{u.phone}</td>
+                        <td className="px-3 py-3 align-middle">
+                          <JoinTypeBadge isLegacyUser={!!u.isLegacyUser} />
+                        </td>
                         <td className="px-3 py-3 text-xs text-gray-600 align-middle whitespace-nowrap" title={u.firstJoinedAt || ''}>
                           {formatDateTime(u.firstJoinedAt)}
                         </td>
@@ -1695,7 +1756,7 @@ export default function WebinarProgress() {
                       </tr>
                       {isExpanded && (
                         <tr className="bg-gray-50/50">
-                          <td colSpan={10} className="p-0 border-t border-gray-100">
+                          <td colSpan={11} className="p-0 border-t border-gray-100">
                             <UserDetailPanel
                               user={u}
                               onUserUpdated={(updated) => {

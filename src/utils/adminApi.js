@@ -455,6 +455,7 @@ function appendWebinarProgressFilterParams(search, params) {
   if (params.limit != null) search.set('limit', params.limit);
   if (params.search) search.set('search', params.search);
   if (params.sort) search.set('sort', params.sort);
+  if (params.filterMode) search.set('filterMode', params.filterMode);
   if (params.firstJoinedFrom) search.set('firstJoinedFrom', params.firstJoinedFrom);
   else if (params.from) search.set('from', params.from);
   if (params.firstJoinedTo) search.set('firstJoinedTo', params.firstJoinedTo);
