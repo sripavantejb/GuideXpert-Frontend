@@ -1,5 +1,5 @@
 import React from 'react';
-import { Link } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 import { 
   LuRocket, LuTrophy, LuSearch, LuBookOpen, LuMapPin, LuScale, 
   LuArrowRight, LuSparkles, LuGraduationCap, LuActivity, LuTerminal
@@ -224,6 +224,12 @@ const CollegeComparison = () => {
 // ----------------------------------------------------------------------------
 
 export default function StudentsDashboard() {
+  const navigate = useNavigate();
+
+  const scrollToSection = (id) => {
+    document.getElementById(id)?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+  };
+
   return (
     <div className="min-h-screen bg-[#F8FAFC] font-sans selection:bg-[#C7F36B] selection:text-[#0F172A]">
       <style>{`
@@ -266,11 +272,18 @@ export default function StudentsDashboard() {
             </p>
             
             <div className="flex flex-col gap-4 sm:flex-row sm:items-center">
-              <NeoButton primary className="text-sm px-8 hover:-translate-y-1 sm:min-w-[250px]">
-                Initialize Prediction Session
+              <NeoButton
+                primary
+                className="text-sm px-8 hover:-translate-y-1 sm:min-w-[250px]"
+                onClick={() => navigate('/students/rank-predictor')}
+              >
+                Initialize rank prediction
               </NeoButton>
-              <NeoButton className="text-sm px-8 bg-white text-[#0F172A] border-slate-300 hover:bg-slate-100 shadow-[4px_4px_0px_#0F172A] active:shadow-[0px_0px_0px_#0F172A] sm:min-w-[230px]">
-                View Documentation <LuArrowRight />
+              <NeoButton
+                className="text-sm px-8 bg-white text-[#0F172A] border-slate-300 hover:bg-slate-100 shadow-[4px_4px_0px_#0F172A] active:shadow-[0px_0px_0px_#0F172A] sm:min-w-[230px]"
+                onClick={() => scrollToSection('tool-grid')}
+              >
+                Browse predictors & fit tests <LuArrowRight />
               </NeoButton>
             </div>
           </div>
