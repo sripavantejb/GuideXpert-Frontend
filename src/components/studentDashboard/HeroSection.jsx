@@ -31,6 +31,9 @@ export default function HeroSection() {
     document.getElementById(id)?.scrollIntoView({ behavior: 'smooth', block: 'start' });
   };
 
+  const pct = HERO_MOCK_STATS.percentile;
+  const pref = HERO_MOCK_STATS.preferencesComplete;
+
   return (
     <section
       className="relative border-b-2 border-black bg-[#0F172A] px-4 pb-16 pt-10 sm:px-6 lg:px-8 lg:pb-20 lg:pt-14"
@@ -41,50 +44,79 @@ export default function HeroSection() {
         <div className="relative grid gap-10 lg:grid-cols-2 lg:gap-12 lg:items-center">
           <div>
             <p className="mb-3 inline-block rounded-full border-2 border-black bg-[#C7F36B] px-3 py-1 text-xs font-bold uppercase tracking-wider text-[#0F172A] shadow-[4px_4px_0_#000]">
-              Student Intelligence
+              GuideXpert · Student Intelligence
             </p>
             <h1
               id="student-dashboard-hero-title"
               className="sd-font-display text-4xl font-extrabold leading-tight tracking-tight text-white sm:text-5xl lg:text-[3.25rem]"
               style={{ fontWeight: 800 }}
             >
-              Student Intelligence Dashboard
+              Student <span className="text-[#C7F36B]">Intelligence</span> Dashboard
             </h1>
             <p className="mt-4 max-w-xl text-lg text-slate-300 sm:text-xl">
-              Predict ranks, discover colleges, and find the right course for your future.
+              Estimate rank and percentile, match colleges and branches to your profile, run course and college fit
+              tests, and compare institutions side by side—all in one workspace.
             </p>
             <div className="mt-8 flex flex-wrap gap-4">
               <button type="button" onClick={() => scrollTo('rank-predictor')} className="sd-btn-primary">
-                Start Prediction
+                Initialize rank prediction
               </button>
               <button type="button" onClick={() => scrollTo('tool-grid')} className="sd-btn-secondary bg-white">
-                Explore Tools
+                Browse predictors & fit tests →
               </button>
             </div>
           </div>
           <div className="relative">
-            <div className="sd-card-brutal relative mx-auto max-w-md bg-white p-6 lg:ml-auto">
-              <p className="text-xs font-bold uppercase tracking-wide text-slate-500">Live preview</p>
-              <p className="sd-font-display mt-2 text-2xl font-extrabold text-[#0F172A]">Analytics snapshot</p>
-              <div className="mt-6 grid gap-4 sm:grid-cols-2">
-                <div className="rounded-xl border-2 border-black bg-[#B7E5FF]/50 p-4">
-                  <p className="text-xs font-semibold text-slate-600">Predicted Rank</p>
-                  <p className="sd-font-display mt-1 text-2xl font-extrabold tabular-nums">
+            <div className="relative mx-auto max-w-md overflow-hidden rounded-[14px] border-2 border-black bg-[#0F172A] shadow-[6px_6px_0_#C7F36B] lg:ml-auto">
+              <div className="flex items-center gap-2 border-b-2 border-black bg-[#0B0E14] px-3 py-2.5">
+                <span className="h-2.5 w-2.5 rounded-full bg-[#FF5F57]" aria-hidden />
+                <span className="h-2.5 w-2.5 rounded-full bg-[#FEBC2E]" aria-hidden />
+                <span className="h-2.5 w-2.5 rounded-full bg-[#28C840]" aria-hidden />
+                <span className="ml-2 font-mono text-[11px] font-medium tracking-wide text-slate-400">
+                  &gt;_ SESSION ACTIVE
+                </span>
+              </div>
+              <div className="bg-white p-5 sm:p-6">
+                <p className="text-[10px] font-bold uppercase tracking-[0.12em] text-slate-500">
+                  Estimated rank
+                </p>
+                <div className="mt-1 flex items-baseline gap-2">
+                  <p className="sd-font-display text-3xl font-extrabold tabular-nums text-[#0F172A] sm:text-4xl">
                     {HERO_MOCK_STATS.predictedRank.toLocaleString()}
                   </p>
+                  <span className="inline-flex text-[#28C840]" aria-hidden>
+                    <svg className="h-4 w-4" viewBox="0 0 24 24" fill="currentColor">
+                      <path d="M12 4l8 8h-5v8h-6v-8H4l8-8z" />
+                    </svg>
+                  </span>
                 </div>
-                <div className="rounded-xl border-2 border-black bg-[#F7B5B5]/50 p-4">
-                  <p className="text-xs font-semibold text-slate-600">Percentile</p>
-                  <p className="sd-font-display mt-1 text-2xl font-extrabold tabular-nums">
-                    {HERO_MOCK_STATS.percentile}%
-                  </p>
+
+                <div className="mt-6">
+                  <div className="flex items-center justify-between gap-2 text-[10px] font-bold uppercase tracking-widest text-slate-500">
+                    <span>Exam percentile</span>
+                    <span className="tabular-nums text-[#0F172A]">{pct}%</span>
+                  </div>
+                  <div className="mt-2 h-2.5 w-full overflow-hidden rounded-full border border-black/15 bg-slate-100">
+                    <div
+                      className="h-full rounded-full bg-[#0F172A]"
+                      style={{ width: `${Math.min(100, pct)}%` }}
+                    />
+                  </div>
                 </div>
-              </div>
-              <div className="mt-4 h-2 w-full overflow-hidden rounded-full border border-black/20 bg-slate-100">
-                <div
-                  className="h-full rounded-full bg-[#C7F36B]"
-                  style={{ width: `${Math.min(100, HERO_MOCK_STATS.percentile)}%` }}
-                />
+
+                <div className="mt-5">
+                  <div className="flex items-center justify-between gap-2 text-[10px] font-bold uppercase tracking-widest text-slate-500">
+                    <span>Preference profile</span>
+                    <span className="tabular-nums text-[#0F172A]">{pref.toFixed(1)}%</span>
+                  </div>
+                  <p className="mt-0.5 text-xs text-slate-500">Course fit + college fit inputs</p>
+                  <div className="mt-2 h-2.5 w-full overflow-hidden rounded-full border border-black/15 bg-slate-100">
+                    <div
+                      className="h-full rounded-full bg-[#B7E5FF]"
+                      style={{ width: `${Math.min(100, pref)}%` }}
+                    />
+                  </div>
+                </div>
               </div>
             </div>
           </div>

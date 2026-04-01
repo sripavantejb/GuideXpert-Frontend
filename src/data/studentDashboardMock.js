@@ -217,10 +217,11 @@ export function mockRankFromMarks(marks, examId) {
   };
 }
 
-/** Hero mock stats (static demo) */
+/** Hero mock stats (static demo): rank/percentile from rank flow; preferencesComplete illustrates course + college fit readiness */
 export const HERO_MOCK_STATS = {
   predictedRank: 12430,
   percentile: 96.2,
+  preferencesComplete: 80,
 };
 
 function hashChance(rank, category, state) {
