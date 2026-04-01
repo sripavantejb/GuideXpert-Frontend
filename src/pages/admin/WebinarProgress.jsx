@@ -28,6 +28,13 @@ function timeAgo(dateStr) {
   return `${Math.floor(diff / 86_400_000)}d ago`;
 }
 
+function formatDateTime(dateStr) {
+  if (!dateStr) return '—';
+  const d = new Date(dateStr);
+  if (Number.isNaN(d.getTime())) return '—';
+  return d.toLocaleString();
+}
+
 function StatusBadge({ status }) {
   const styles = {
     completed: 'bg-green-100 text-green-700',
@@ -825,8 +832,8 @@ function buildListParams(f, debouncedSearch, page, limit) {
   if (q) params.search = q;
   if (f.statuses.length) params.status = f.statuses;
   if (f.activeOn) params.activeOn = f.activeOn;
-  if (f.fromDate) params.from = f.fromDate;
-  if (f.toDate) params.to = f.toDate;
+  if (f.fromDate) params.firstJoinedFrom = f.fromDate;
+  if (f.toDate) params.firstJoinedTo = f.toDate;
   if (f.modulesMode === 'bucket' && f.modulesBucket) params.modulesBucket = f.modulesBucket;
   if (f.modulesMode === 'custom') {
     if (f.modulesMin !== '') params.modulesMin = f.modulesMin;
@@ -1000,6 +1007,16 @@ export default function WebinarProgress() {
     else setExportToast({ type: 'error', message: res.message || 'Export failed.' });
   };
 
+  const applyNewUsersToday = () => {
+    const today = toYMDLocal(new Date());
+    setF((prev) => ({
+      ...prev,
+      activeOn: '',
+      fromDate: today,
+      toDate: today,
+    }));
+  };
+
   const clearFilters = () => {
     setF({ ...INITIAL_FILTERS });
     setSearchInput('');
@@ -1169,6 +1186,11 @@ export default function WebinarProgress() {
           <div className="flex items-center gap-2 min-w-0">
             <FiFilter className="w-4 h-4 text-gray-500 shrink-0" aria-hidden />
             <span className="text-sm font-semibold text-gray-900">Filters</span>
+            {(f.activeOn || f.fromDate || f.toDate) && (
+              <span className="ml-2 inline-flex items-center rounded-full bg-blue-100 px-2 py-0.5 text-[11px] font-medium text-blue-700">
+                Total New Users: {total}
+              </span>
+            )}
           </div>
           <div className="flex flex-col sm:flex-row gap-2 sm:items-center flex-1 sm:justify-end min-w-0">
             <div className="relative w-full sm:max-w-xs sm:min-w-[220px]">
@@ -1181,6 +1203,13 @@ export default function WebinarProgress() {
                 className="w-full pl-9 pr-3 h-10 rounded-lg border border-gray-200 bg-white text-sm text-gray-800 placeholder:text-gray-400 shadow-sm focus:ring-2 focus:ring-primary-navy/30 focus:border-primary-navy outline-none"
               />
             </div>
+            <button
+              type="button"
+              onClick={applyNewUsersToday}
+              className="shrink-0 h-10 px-4 rounded-lg border border-blue-200 bg-blue-50 text-sm font-medium text-blue-700 hover:bg-blue-100 shadow-sm transition-colors"
+            >
+              New users today
+            </button>
             <button
               type="button"
               onClick={clearFilters}
@@ -1196,7 +1225,7 @@ export default function WebinarProgress() {
             <p className="text-[11px] font-bold text-gray-500 uppercase tracking-wider">Date</p>
             <div className="flex flex-wrap items-end gap-3">
               <div className="relative" data-webinar-picker>
-                <span className="block text-xs text-gray-500 mb-1">Filter by date (last active)</span>
+                <span className="block text-xs text-gray-500 mb-1">Filter by date (first joined)</span>
                 <button
                   type="button"
                   onClick={() => setPickerOpen((o) => (o === 'single' ? null : 'single'))}
@@ -1265,7 +1294,7 @@ export default function WebinarProgress() {
                 )}
               </div>
             </div>
-            <p className="text-[11px] text-gray-400">Date filters use calendar day boundaries (UTC on server).</p>
+            <p className="text-[11px] text-gray-400">Date filters match first login date boundaries (UTC on server).</p>
           </div>
 
           <div className="space-y-2 rounded-lg border border-gray-100 bg-gray-50/80 p-3">
@@ -1493,11 +1522,12 @@ export default function WebinarProgress() {
       )}
 
         <div className="overflow-x-auto">
-          <table className="w-full min-w-[1040px] text-left border-collapse">
+          <table className="w-full min-w-[1160px] text-left border-collapse">
             <colgroup>
               <col className="w-10" />
               <col className="min-w-[140px]" />
               <col className="min-w-[108px]" />
+              <col className="min-w-[170px]" />
               <col className="min-w-[160px]" />
               <col className="min-w-[100px]" />
               <col className="min-w-[180px]" />
@@ -1524,6 +1554,9 @@ export default function WebinarProgress() {
                 </th>
                 <th scope="col" className="px-3 py-3.5 text-left text-xs font-semibold text-gray-600 uppercase tracking-wide">
                   Phone
+                </th>
+                <th scope="col" className="px-3 py-3.5 text-left text-xs font-semibold text-gray-600 uppercase tracking-wide">
+                  Joined On
                 </th>
                 <th scope="col" className="px-3 py-3.5 text-left text-xs font-semibold text-gray-600 uppercase tracking-wide">
                   <button
@@ -1582,7 +1615,7 @@ export default function WebinarProgress() {
               {loading ? (
                 Array.from({ length: 5 }).map((_, i) => (
                   <tr key={i} className="bg-white">
-                    {Array.from({ length: 9 }).map((__, j) => (
+                    {Array.from({ length: 10 }).map((__, j) => (
                       <td key={j} className="px-3 py-3.5">
                         <div className="h-4 bg-gray-100 rounded animate-pulse" />
                       </td>
@@ -1591,7 +1624,7 @@ export default function WebinarProgress() {
                 ))
               ) : users.length === 0 ? (
                 <tr>
-                  <td colSpan={9} className="p-0">
+                  <td colSpan={10} className="p-0">
                     <div className="flex flex-col items-center justify-center py-16 px-4">
                       <FiUsers className="w-12 h-12 text-gray-300 mb-3" aria-hidden />
                       <p className="text-sm font-medium text-gray-600">No users found</p>
@@ -1628,6 +1661,9 @@ export default function WebinarProgress() {
                           <span className="line-clamp-2 break-words" title={u.fullName || undefined}>{u.fullName || '—'}</span>
                         </td>
                         <td className="px-3 py-3 text-sm text-gray-600 tabular-nums align-middle whitespace-nowrap">{u.phone}</td>
+                        <td className="px-3 py-3 text-xs text-gray-600 align-middle whitespace-nowrap" title={u.firstJoinedAt || ''}>
+                          {formatDateTime(u.firstJoinedAt)}
+                        </td>
                         <td className="px-3 py-3 align-middle">
                           <div className="flex items-center gap-2 min-w-[120px]">
                             <ProgressBar percent={u.overallPercent || 0} className="flex-1 h-2" />
@@ -1659,7 +1695,7 @@ export default function WebinarProgress() {
                       </tr>
                       {isExpanded && (
                         <tr className="bg-gray-50/50">
-                          <td colSpan={9} className="p-0 border-t border-gray-100">
+                          <td colSpan={10} className="p-0 border-t border-gray-100">
                             <UserDetailPanel
                               user={u}
                               onUserUpdated={(updated) => {

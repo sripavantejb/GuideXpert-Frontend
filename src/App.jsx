@@ -66,7 +66,6 @@ const ProfilePage = lazy(() => import('./pages/webinar/ProfilePage'));
 const SettingsPage = lazy(() => import('./pages/webinar/SettingsPage'));
 const CertificatesPage = lazy(() => import('./pages/webinar/CertificatesPage'));
 const CertificateViewPage = lazy(() => import('./pages/CertificateViewPage'));
-const StudentIntelligenceDashboard = lazy(() => import('./pages/StudentIntelligenceDashboard'));
 const StudentsDashboard = lazy(() => import('./pages/StudentsDashboard'));
 const RankPredictorToolPage = lazy(() => import('./pages/studentsTools/RankPredictorPage'));
 const CollegePredictorToolPage = lazy(() => import('./pages/studentsTools/CollegePredictorPage'));
@@ -126,20 +125,6 @@ function App() {
           <Route path="/collegepredictor" element={<CollegePredictorPage />} />
           <Route path="/rank-predictor" element={<RankPredictorHome />} />
           <Route path="/rank-predictor/:examId" element={<ExamPredictor />} />
-          <Route
-            path="/student"
-            element={
-              <Suspense
-                fallback={
-                  <div className="min-h-screen flex items-center justify-center bg-[#0F172A] text-white">
-                    <div className="animate-pulse text-sm font-medium">Loading dashboard…</div>
-                  </div>
-                }
-              >
-                <StudentIntelligenceDashboard />
-              </Suspense>
-            }
-          />
           <Route
             path="/students"
             element={
