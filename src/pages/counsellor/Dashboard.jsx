@@ -64,6 +64,14 @@ const featureCards = [
     iconColor: 'text-purple-600',
     link: '/counsellor/tools',
   },
+  {
+    title: 'Marketing Posters',
+    desc: 'Open all poster templates, including GX Poster, and download personalised creatives.',
+    icon: FiBriefcase,
+    bg: 'bg-rose-50',
+    iconColor: 'text-rose-600',
+    link: '/counsellor/marketing',
+  },
 ];
 
 const toolCards = [

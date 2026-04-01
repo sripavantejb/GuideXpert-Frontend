@@ -17,6 +17,13 @@ const AUTOMATED_POSTERS = [
     previewSrc: '/interposter.svg',
   },
   {
+    id: 'gx',
+    title: 'GX Poster',
+    description: 'New GX campaign poster with your name and mobile at the bottom-right.',
+    to: '/gx-poster',
+    previewSrc: '/gx-poster.svg',
+  },
+  {
     id: 'certified',
     title: 'Official certified poster',
     description: 'Your certified counsellor poster from the standard template.',

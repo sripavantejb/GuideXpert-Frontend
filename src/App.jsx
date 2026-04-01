@@ -52,6 +52,7 @@ import CounsellorTools from './pages/counsellor/Tools';
 import CounsellorCertificate from './pages/counsellor/Certificate';
 import HoliPosterPage from './pages/HoliPosterPage';
 import InterPosterPage from './pages/InterPosterPage';
+import GxPosterPage from './pages/GxPosterPage';
 const CollegeReferrals = lazy(() => import('./pages/counsellor/CollegeReferrals'));
 const CollegeReferralDetail = lazy(() => import('./pages/counsellor/CollegeReferralDetail'));
 const AnnouncementsFeed = lazy(() => import('./pages/counsellor/AnnouncementsFeed'));
@@ -151,6 +152,7 @@ function App() {
           <Route path="/counsellor-poster" element={<Suspense fallback={<div className="min-h-screen"><PageSkeleton /></div>}><CounsellorCertificate /></Suspense>} />
           <Route path="/holiposter" element={<HoliPosterPage />} />
           <Route path="/interposter" element={<InterPosterPage />} />
+          <Route path="/gx-poster" element={<GxPosterPage />} />
           <Route path="/certificate/:id" element={<Suspense fallback={<div className="min-h-screen flex items-center justify-center bg-gray-50"><div className="animate-pulse text-gray-500">Loading...</div></div>}><CertificateViewPage /></Suspense>} />
           <Route path="/collegepredictor" element={<CollegePredictorPage />} />
           <Route path="/rank-predictor" element={<RankPredictorHome />} />
