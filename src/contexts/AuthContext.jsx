@@ -1,5 +1,6 @@
 import { createContext, useState, useCallback, useEffect } from 'react';
 import { adminLogin, getStoredToken, setStoredToken } from '../utils/adminApi';
+import { isJwtExpired } from '../utils/authSession';
 
 export const AuthContext = createContext(null);
 
@@ -22,7 +23,7 @@ function setStoredUser(user) {
 export function AuthProvider({ children }) {
   const [user, setUser] = useState(() => getStoredUser());
   const [token, setToken] = useState(() => getStoredToken());
-  const isAuthenticated = !!token;
+  const isAuthenticated = !!token && !isJwtExpired(token);
 
   const login = useCallback(async (username, password) => {
     const result = await adminLogin(username, password);
@@ -45,9 +46,13 @@ export function AuthProvider({ children }) {
   useEffect(() => {
     const t = getStoredToken();
     const u = getStoredUser();
-    if (!t || !u) {
-      setToken(null);
-      setUser(null);
+    if (!t || !u || isJwtExpired(t)) {
+      setStoredToken(null);
+      setStoredUser(null);
+      queueMicrotask(() => {
+        setToken(null);
+        setUser(null);
+      });
     }
   }, []);
 

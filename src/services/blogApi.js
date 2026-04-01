@@ -1,6 +1,8 @@
 /**
  * Public blog API (no auth). Base URL matches src/utils/api.js for dev proxy + production.
  */
+import { notifyAdminUnauthorized } from '../utils/authSession';
+
 const isDev = import.meta.env.DEV;
 const envUrl = import.meta.env.VITE_API_URL;
 const productionOrigin = 'https://guide-xpert-backend.vercel.app';
@@ -124,6 +126,12 @@ function authHeaders(token) {
   return headers;
 }
 
+function handleAdminUnauthorized(status) {
+  if (status === 401) {
+    notifyAdminUnauthorized({ endpoint: '/api/blogs', status: 401 });
+  }
+}
+
 export async function createBlog(payload, token) {
   try {
     const res = await fetch(buildBlogUrl(), {
@@ -133,6 +141,7 @@ export async function createBlog(payload, token) {
     });
     const data = await parseJsonSafe(res);
     if (!res.ok) {
+      handleAdminUnauthorized(res.status);
       return { success: false, message: data.message || `Create failed (${res.status})`, status: res.status, data };
     }
     return { success: true, blog: normalizeBlog(data.data), status: res.status };
@@ -151,6 +160,7 @@ export async function updateBlog(id, payload, token) {
     });
     const data = await parseJsonSafe(res);
     if (!res.ok) {
+      handleAdminUnauthorized(res.status);
       return { success: false, message: data.message || `Update failed (${res.status})`, status: res.status, data };
     }
     return { success: true, blog: normalizeBlog(data.data), status: res.status };
@@ -168,6 +178,7 @@ export async function deleteBlog(id, token) {
     });
     const data = await parseJsonSafe(res);
     if (!res.ok) {
+      handleAdminUnauthorized(res.status);
       return { success: false, message: data.message || `Delete failed (${res.status})`, status: res.status, data };
     }
     return { success: true, status: res.status };

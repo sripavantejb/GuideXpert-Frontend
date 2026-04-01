@@ -1,4 +1,5 @@
 import { createContext, useContext, useState, useCallback, useEffect } from 'react';
+import { isJwtExpired } from '../utils/authSession';
 
 const WEBINAR_TOKEN_KEY = 'guidexpert_webinar_token';
 const WEBINAR_USER_KEY = 'guidexpert_webinar_user';
@@ -31,7 +32,7 @@ const WebinarAuthContext = createContext(null);
 export function WebinarAuthProvider({ children }) {
   const [user, setUser] = useState(() => getWebinarUser());
   const [token, setToken] = useState(() => getWebinarToken());
-  const isAuthenticated = !!token;
+  const isAuthenticated = !!token && !isJwtExpired(token);
 
   const setAuthFromVerifyOtp = useCallback((data) => {
     const newToken = data?.token;
@@ -53,9 +54,13 @@ export function WebinarAuthProvider({ children }) {
   useEffect(() => {
     const t = getWebinarToken();
     const u = getWebinarUser();
-    if (!t || !u) {
-      setToken(null);
-      setUser(null);
+    if (!t || !u || isJwtExpired(t)) {
+      setWebinarToken(null);
+      setWebinarUser(null);
+      queueMicrotask(() => {
+        setToken(null);
+        setUser(null);
+      });
     }
   }, []);
 

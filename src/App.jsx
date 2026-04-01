@@ -1,5 +1,5 @@
-import { Suspense, lazy } from 'react';
-import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
+import { Suspense, lazy, useEffect } from 'react';
+import { BrowserRouter, Routes, Route, Navigate, useLocation, useNavigate } from 'react-router-dom';
 import { AuthProvider } from './contexts/AuthContext';
 import { useAuth } from './hooks/useAuth';
 import { CounsellorAuthProvider, useCounsellorAuth } from './contexts/CounsellorAuthContext';
@@ -82,6 +82,7 @@ import BlogDetails from './pages/BlogDetails';
 import BlogsPage from './pages/BlogsPage';
 import LegacyBlogRedirect from './pages/LegacyBlogRedirect';
 import AdminBlog from './pages/AdminBlog';
+import { onAdminUnauthorized, onWebinarUnauthorized } from './utils/authSession';
 
 function ProtectedAdmin({ children }) {
   const { isAuthenticated } = useAuth();
@@ -107,12 +108,41 @@ function ProtectedWebinar({ children }) {
   return children;
 }
 
+function SessionExpiryRedirects() {
+  const navigate = useNavigate();
+  const location = useLocation();
+  const { logout: adminLogout } = useAuth();
+  const { logout: webinarLogout } = useWebinarAuth();
+
+  useEffect(() => {
+    const offAdmin = onAdminUnauthorized(() => {
+      adminLogout();
+      if (!location.pathname.startsWith('/admin/login')) {
+        navigate('/admin/login', { replace: true });
+      }
+    });
+    const offWebinar = onWebinarUnauthorized(() => {
+      webinarLogout();
+      if (!location.pathname.startsWith('/webinar/login')) {
+        navigate('/webinar/login', { replace: true });
+      }
+    });
+    return () => {
+      offAdmin();
+      offWebinar();
+    };
+  }, [adminLogout, webinarLogout, location.pathname, navigate]);
+
+  return null;
+}
+
 function App() {
   return (
     <AuthProvider>
       <BrowserRouter>
         <CounsellorAuthProvider>
         <WebinarAuthProvider>
+        <SessionExpiryRedirects />
         <Routes>
           <Route path="/" element={<LandingPage />} />
           <Route path="/register" element={<LandingPage />} />

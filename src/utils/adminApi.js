@@ -1,3 +1,4 @@
+import { notifyAdminUnauthorized } from './authSession';
 const defaultApiUrl = import.meta.env.VITE_API_URL || 'https://guide-xpert-backend.vercel.app/api';
 const API_BASE_URL = defaultApiUrl;
 const ADMIN_TOKEN_KEY = 'guidexpert_admin_token';
@@ -35,6 +36,9 @@ async function adminRequest(endpoint, options = {}, token = getStoredToken()) {
       data = { message: 'Invalid response' };
     }
     if (!response.ok) {
+      if (response.status === 401) {
+        notifyAdminUnauthorized({ endpoint, status: 401 });
+      }
       return {
         success: false,
         message: data.message || 'Request failed',
@@ -393,6 +397,9 @@ async function influencerRequest(path, options = {}, token = getStoredToken()) {
       data = { message: 'Invalid response' };
     }
     if (!response.ok) {
+      if (response.status === 401) {
+        notifyAdminUnauthorized({ endpoint: path, status: 401 });
+      }
       return { success: false, message: data.message || 'Request failed', status: response.status, data };
     }
     return { success: true, data, status: response.status };
@@ -448,8 +455,10 @@ function appendWebinarProgressFilterParams(search, params) {
   if (params.limit != null) search.set('limit', params.limit);
   if (params.search) search.set('search', params.search);
   if (params.sort) search.set('sort', params.sort);
-  if (params.from) search.set('from', params.from);
-  if (params.to) search.set('to', params.to);
+  if (params.firstJoinedFrom) search.set('firstJoinedFrom', params.firstJoinedFrom);
+  else if (params.from) search.set('from', params.from);
+  if (params.firstJoinedTo) search.set('firstJoinedTo', params.firstJoinedTo);
+  else if (params.to) search.set('to', params.to);
   if (params.activeOn) search.set('activeOn', params.activeOn);
   if (params.modulesMin != null && params.modulesMin !== '') search.set('modulesMin', String(params.modulesMin));
   if (params.modulesMax != null && params.modulesMax !== '') search.set('modulesMax', String(params.modulesMax));
@@ -516,6 +525,9 @@ export const getWebinarProgressExport = async (paramsOrToken = {}, token = getSt
   if (actualToken) headers.Authorization = `Bearer ${actualToken}`;
   const response = await fetch(url, { method: 'GET', headers });
   if (!response.ok) {
+    if (response.status === 401) {
+      notifyAdminUnauthorized({ endpoint: '/admin/webinar-progress/export', status: 401 });
+    }
     let message = 'Export failed';
     try {
       const data = await response.json();
@@ -553,6 +565,9 @@ export async function getAdminLeadsExport(params = {}, token = getStoredToken())
   if (token) headers.Authorization = `Bearer ${token}`;
   const response = await fetch(url, { method: 'GET', headers });
   if (!response.ok) {
+    if (response.status === 401) {
+      notifyAdminUnauthorized({ endpoint: '/admin/leads/export', status: 401 });
+    }
     let message = 'Export failed';
     try {
       const data = await response.json();

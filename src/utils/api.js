@@ -1,4 +1,5 @@
 import { getStoredUtm } from './utm';
+import { notifyWebinarUnauthorized } from './authSession';
 
 // In dev, use relative /api so Vite proxy forwards to backend (avoids CORS). When .env points at production URL, still use proxy.
 const isDev = import.meta.env.DEV;
@@ -33,7 +34,7 @@ async function apiRequest(endpoint, options = {}) {
     let data;
     try {
       data = text ? JSON.parse(text) : {};
-    } catch (jsonError) {
+    } catch {
       console.error('[API] Non-JSON response:', text);
       return {
         success: false,
@@ -53,6 +54,17 @@ async function apiRequest(endpoint, options = {}) {
     }
 
     if (!response.ok) {
+      const authHeader = options?.headers?.Authorization || options?.headers?.authorization;
+      const hasBearer = typeof authHeader === 'string' && authHeader.startsWith('Bearer ');
+      const isWebinarEndpoint =
+        endpoint.startsWith('/webinar-progress') || endpoint.startsWith('/webinar-assessment');
+      if (response.status === 401 && hasBearer && isWebinarEndpoint) {
+        notifyWebinarUnauthorized({
+          endpoint,
+          status: 401,
+          code: data && typeof data === 'object' ? data.code : undefined,
+        });
+      }
       const fromBody =
         data && typeof data === 'object'
           ? data.message || data.error || (typeof data.detail === 'string' ? data.detail : null)
