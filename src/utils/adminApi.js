@@ -441,15 +441,30 @@ export const getInfluencerAnalyticsTrend = async (params = {}, token = getStored
 
 // ——— Webinar Progress (Admin) ———
 
-export const getWebinarProgressList = async (params = {}, token = getStoredToken()) => {
-  const search = new URLSearchParams();
+function appendWebinarProgressFilterParams(search, params) {
   if (params.page != null) search.set('page', params.page);
   if (params.limit != null) search.set('limit', params.limit);
   if (params.search) search.set('search', params.search);
-  if (params.status) search.set('status', params.status);
   if (params.sort) search.set('sort', params.sort);
   if (params.from) search.set('from', params.from);
   if (params.to) search.set('to', params.to);
+  if (params.activeOn) search.set('activeOn', params.activeOn);
+  if (params.modulesMin != null && params.modulesMin !== '') search.set('modulesMin', String(params.modulesMin));
+  if (params.modulesMax != null && params.modulesMax !== '') search.set('modulesMax', String(params.modulesMax));
+  if (params.modulesBucket) search.set('modulesBucket', params.modulesBucket);
+  if (params.progressMin != null && params.progressMin !== '') search.set('progressMin', String(params.progressMin));
+  if (params.progressMax != null && params.progressMax !== '') search.set('progressMax', String(params.progressMax));
+  if (params.lastActiveModule) search.set('lastActiveModule', params.lastActiveModule);
+  if (params.activity) search.set('activity', params.activity);
+  if (params.status) {
+    const s = Array.isArray(params.status) ? params.status.join(',') : params.status;
+    if (s) search.set('status', s);
+  }
+}
+
+export const getWebinarProgressList = async (params = {}, token = getStoredToken()) => {
+  const search = new URLSearchParams();
+  appendWebinarProgressFilterParams(search, params);
   const query = search.toString();
   return adminRequest(`/webinar-progress${query ? `?${query}` : ''}`, { method: 'GET', cache: 'no-store' }, token);
 };
@@ -480,13 +495,33 @@ export const adminUpdateWebinarProgress = async (phone, payload, token = getStor
   }, token);
 };
 
-export const getWebinarProgressExport = async (token = getStoredToken()) => {
-  const url = `${API_BASE_URL}/admin/webinar-progress/export`;
+export const bulkWebinarProgress = async (payload, token = getStoredToken()) => {
+  return adminRequest('/webinar-progress/bulk', {
+    method: 'POST',
+    body: JSON.stringify(payload),
+    cache: 'no-store',
+  }, token);
+};
+
+export const getWebinarProgressExport = async (paramsOrToken = {}, token = getStoredToken()) => {
+  const params = typeof paramsOrToken === 'string' || paramsOrToken == null ? {} : paramsOrToken;
+  const actualToken = typeof paramsOrToken === 'string' ? paramsOrToken : token;
+  const search = new URLSearchParams();
+  appendWebinarProgressFilterParams(search, params);
+  const query = search.toString();
+  const url = `${API_BASE_URL}/admin/webinar-progress/export${query ? `?${query}` : ''}`;
   const headers = {};
-  if (token) headers.Authorization = `Bearer ${token}`;
+  if (actualToken) headers.Authorization = `Bearer ${actualToken}`;
   const response = await fetch(url, { method: 'GET', headers });
   if (!response.ok) {
-    return { success: false, message: 'Export failed', status: response.status };
+    let message = 'Export failed';
+    try {
+      const data = await response.json();
+      message = data.message || message;
+    } catch {
+      message = response.statusText || message;
+    }
+    return { success: false, message, status: response.status };
   }
   const blob = await response.blob();
   const disposition = response.headers.get('Content-Disposition');
