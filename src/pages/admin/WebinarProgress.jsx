@@ -1,7 +1,9 @@
-import { useState, useEffect, useCallback } from 'react';
-import { FiUsers, FiCheckCircle, FiTrendingUp, FiActivity, FiSearch, FiDownload, FiChevronLeft, FiChevronRight, FiChevronDown, FiChevronUp, FiLock, FiPlay, FiClipboard, FiRefreshCw, FiAward, FiX, FiCheck, FiAlertTriangle, FiStar, FiEdit3, FiRotateCcw } from 'react-icons/fi';
+import { useState, useEffect, useCallback, useMemo, useRef, Fragment } from 'react';
+import { DayPicker } from 'react-day-picker';
+import 'react-day-picker/style.css';
+import { FiUsers, FiCheckCircle, FiTrendingUp, FiActivity, FiSearch, FiDownload, FiChevronLeft, FiChevronRight, FiChevronDown, FiChevronUp, FiLock, FiPlay, FiClipboard, FiRefreshCw, FiAward, FiX, FiCheck, FiAlertTriangle, FiStar, FiEdit3, FiRotateCcw, FiCalendar, FiFilter } from 'react-icons/fi';
 import KpiCard from '../../components/Admin/KpiCard';
-import { getWebinarProgressList, getWebinarProgressStats, getWebinarProgressExport, getWebinarUserAssessments, adminUpdateWebinarProgress } from '../../utils/adminApi';
+import { getWebinarProgressList, getWebinarProgressStats, getWebinarProgressExport, getWebinarUserAssessments, adminUpdateWebinarProgress, bulkWebinarProgress } from '../../utils/adminApi';
 
 const MODULE_ORDER = ['intro', 's2', 'a1', 's3', 'a2', 's4', 'a3', 's5', 'a4', 's6', 'a5'];
 const TIMELINE_IDS = [...MODULE_ORDER, 'certificate'];
@@ -120,7 +122,7 @@ function QuestionReport({ results }) {
   );
 }
 
-function AssessmentCard({ assessmentId, moduleData, assessmentDetail, isLoading }) {
+function AssessmentCard({ assessmentId, moduleData, assessmentDetail }) {
   const [expanded, setExpanded] = useState(false);
   const [selectedAttemptIdx, setSelectedAttemptIdx] = useState(0);
 
@@ -263,21 +265,70 @@ function ModuleToggle({ moduleId, isCompleted, busy, onToggle }) {
   );
 }
 
+function formatTotalWatchSeconds(seconds) {
+  if (!seconds || seconds < 0) return '0m';
+  const m = Math.floor(seconds / 60);
+  const h = Math.floor(m / 60);
+  if (h > 0) return `${h}h ${m % 60}m`;
+  return `${m}m`;
+}
+
+function ProgressSummary({ user }) {
+  const completed = new Set(user.completedModules || []);
+  const doneLabels = MODULE_ORDER.filter((id) => completed.has(id)).map((id) => MODULE_LABELS[id]);
+  const pendingLabels = MODULE_ORDER.filter((id) => !completed.has(id)).map((id) => MODULE_LABELS[id]);
+  const mods = user.modules || {};
+  let totalSec = 0;
+  for (const id of SESSION_IDS) {
+    const m = mods[id] || {};
+    totalSec += Number(m.maxWatchedSeconds || m.watchedSeconds || 0);
+  }
+  return (
+    <div className="rounded-xl border border-gray-200 bg-white p-4 shadow-sm">
+      <h4 className="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-3">Overview</h4>
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-4 text-sm">
+        <div>
+          <p className="text-[11px] font-medium text-gray-400 mb-1">Completed modules</p>
+          <p className="text-gray-800 leading-snug">{doneLabels.length ? doneLabels.join(' · ') : '—'}</p>
+        </div>
+        <div>
+          <p className="text-[11px] font-medium text-gray-400 mb-1">Pending</p>
+          <p className="text-gray-800 leading-snug">{pendingLabels.length ? pendingLabels.join(' · ') : '—'}</p>
+        </div>
+        <div>
+          <p className="text-[11px] font-medium text-gray-400 mb-1">Time spent (sessions)</p>
+          <p className="text-gray-800 font-semibold tabular-nums">{formatTotalWatchSeconds(totalSec)}</p>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function useDebounced(value, ms) {
+  const [d, setD] = useState(value);
+  useEffect(() => {
+    const t = setTimeout(() => setD(value), ms);
+    return () => clearTimeout(t);
+  }, [value, ms]);
+  return d;
+}
+
 function UserDetailPanel({ user, onUserUpdated }) {
-  if (!user) return null;
   const [localUser, setLocalUser] = useState(user);
-  const modules = localUser.modules || {};
   const [assessmentData, setAssessmentData] = useState(null);
   const [assessmentLoading, setAssessmentLoading] = useState(true);
   const [busy, setBusy] = useState(false);
   const [toast, setToast] = useState(null);
   const [confirm, setConfirm] = useState(null);
 
-  useEffect(() => { setLocalUser(user); }, [user]);
+  useEffect(() => {
+    setLocalUser(user);
+  }, [user]);
 
   useEffect(() => {
     let cancelled = false;
     async function load() {
+      if (!localUser?.phone) return;
       setAssessmentLoading(true);
       try {
         const res = await getWebinarUserAssessments(localUser.phone);
@@ -289,7 +340,7 @@ function UserDetailPanel({ user, onUserUpdated }) {
     }
     load();
     return () => { cancelled = true; };
-  }, [localUser.phone]);
+  }, [localUser?.phone]);
 
   useEffect(() => {
     if (!toast) return;
@@ -297,6 +348,9 @@ function UserDetailPanel({ user, onUserUpdated }) {
     return () => clearTimeout(t);
   }, [toast]);
 
+  if (!user || !localUser) return null;
+
+  const modules = localUser.modules || {};
   const assessmentMap = {};
   if (assessmentData?.assessments) {
     for (const a of assessmentData.assessments) {
@@ -343,6 +397,7 @@ function UserDetailPanel({ user, onUserUpdated }) {
 
   return (
     <div className="bg-gray-50 border-t border-gray-200 px-4 sm:px-6 py-5 space-y-5">
+      <ProgressSummary user={localUser} />
       {/* Bulk actions toolbar */}
       <div className="flex items-center justify-between gap-3 flex-wrap">
         <div className="flex items-center gap-2">
@@ -461,7 +516,6 @@ function UserDetailPanel({ user, onUserUpdated }) {
                 assessmentId={id}
                 moduleData={modules[id] || modules.get?.(id) || {}}
                 assessmentDetail={assessmentMap[id]}
-                isLoading={assessmentLoading}
               />
             ))}
           </div>
@@ -735,20 +789,104 @@ function ModuleAnalytics({ stats }) {
   );
 }
 
+const INITIAL_FILTERS = {
+  sort: '-lastActivityAt',
+  statuses: [],
+  activeOn: '',
+  fromDate: '',
+  toDate: '',
+  modulesMode: 'none',
+  modulesBucket: '',
+  modulesMin: '',
+  modulesMax: '',
+  progressMin: 0,
+  progressMax: 100,
+  lastActiveModule: '',
+  activity: '',
+};
+
+function toYMDLocal(d) {
+  if (!d) return '';
+  const y = d.getFullYear();
+  const m = String(d.getMonth() + 1).padStart(2, '0');
+  const day = String(d.getDate()).padStart(2, '0');
+  return `${y}-${m}-${day}`;
+}
+
+function parseYMDLocal(s) {
+  if (!s || !/^\d{4}-\d{2}-\d{2}$/.test(s)) return undefined;
+  const [y, mo, d] = s.split('-').map(Number);
+  return new Date(y, mo - 1, d);
+}
+
+function buildListParams(f, debouncedSearch, page, limit) {
+  const params = { page, limit, sort: f.sort };
+  const q = debouncedSearch.trim();
+  if (q) params.search = q;
+  if (f.statuses.length) params.status = f.statuses;
+  if (f.activeOn) params.activeOn = f.activeOn;
+  if (f.fromDate) params.from = f.fromDate;
+  if (f.toDate) params.to = f.toDate;
+  if (f.modulesMode === 'bucket' && f.modulesBucket) params.modulesBucket = f.modulesBucket;
+  if (f.modulesMode === 'custom') {
+    if (f.modulesMin !== '') params.modulesMin = f.modulesMin;
+    if (f.modulesMax !== '') params.modulesMax = f.modulesMax;
+  }
+  if (f.progressMin > 0 || f.progressMax < 100) {
+    params.progressMin = f.progressMin;
+    params.progressMax = f.progressMax;
+  }
+  if (f.lastActiveModule) params.lastActiveModule = f.lastActiveModule;
+  if (f.activity) params.activity = f.activity;
+  return params;
+}
+
+function buildExportParams(f, debouncedSearch) {
+  const p = buildListParams(f, debouncedSearch, 1, 25);
+  delete p.page;
+  delete p.limit;
+  return p;
+}
+
+function sortCaret(field, currentSort) {
+  const neg = currentSort.startsWith('-');
+  const curField = neg ? currentSort.slice(1) : currentSort;
+  if (curField !== field) return 'text-gray-300';
+  return neg ? 'text-primary-navy' : 'text-primary-navy';
+}
+
 export default function WebinarProgress() {
   const [stats, setStats] = useState(null);
   const [users, setUsers] = useState([]);
   const [total, setTotal] = useState(0);
   const [page, setPage] = useState(1);
   const [limit] = useState(25);
-  const [search, setSearch] = useState('');
-  const [statusFilter, setStatusFilter] = useState('');
+  const [f, setF] = useState(() => ({ ...INITIAL_FILTERS }));
+  const [searchInput, setSearchInput] = useState('');
+  const debouncedSearch = useDebounced(searchInput, 300);
   const [loading, setLoading] = useState(true);
   const [statsLoading, setStatsLoading] = useState(true);
   const [expandedPhone, setExpandedPhone] = useState(null);
   const [exporting, setExporting] = useState(false);
+  const [exportToast, setExportToast] = useState(null);
   const [listError, setListError] = useState(null);
   const [statsError, setStatsError] = useState(null);
+  const [selectedPhones, setSelectedPhones] = useState(() => new Set());
+  const [bulkBusy, setBulkBusy] = useState(false);
+  const [pickerOpen, setPickerOpen] = useState(null);
+  const [moduleComboOpen, setModuleComboOpen] = useState(false);
+  const [moduleSearch, setModuleSearch] = useState('');
+  const fetchUsersRef = useRef(async () => {});
+
+  const filterKey = useMemo(
+    () =>
+      JSON.stringify({
+        f,
+        search: debouncedSearch,
+      }),
+    [f, debouncedSearch]
+  );
+  const prevFilterKeyRef = useRef(filterKey);
 
   const fetchStats = useCallback(async () => {
     setStatsLoading(true);
@@ -763,57 +901,185 @@ export default function WebinarProgress() {
     setStatsLoading(false);
   }, []);
 
-  const fetchUsers = useCallback(async (pageOverride) => {
-    const p = pageOverride !== undefined ? pageOverride : page;
-    setLoading(true);
-    setListError(null);
-    try {
-      const res = await getWebinarProgressList({ page: p, limit, search, status: statusFilter, sort: '-lastActivityAt' });
-      if (res.success && res.data?.data) {
-        setUsers(res.data.data.users || []);
-        setTotal(res.data.data.total || 0);
-        if (pageOverride !== undefined) setPage(pageOverride);
-      } else setListError(res.message || 'Failed to load users.');
-    } catch {
-      setListError('Failed to load users.');
+  const fetchUsers = useCallback(
+    async (targetPage) => {
+      setLoading(true);
+      setListError(null);
+      try {
+        const params = buildListParams(f, debouncedSearch, targetPage, limit);
+        const res = await getWebinarProgressList(params);
+        if (res.success && res.data?.data) {
+          setUsers(res.data.data.users || []);
+          setTotal(res.data.data.total || 0);
+          setSelectedPhones(new Set());
+        } else setListError(res.message || 'Failed to load users.');
+      } catch {
+        setListError('Failed to load users.');
+      }
+      setLoading(false);
+    },
+    [limit, f, debouncedSearch]
+  );
+
+  const lastLoadKeyRef = useRef('');
+
+  useEffect(() => {
+    fetchUsersRef.current = fetchUsers;
+  }, [fetchUsers]);
+
+  useEffect(() => {
+    queueMicrotask(() => {
+      fetchStats();
+    });
+  }, [fetchStats]);
+
+  useEffect(() => {
+    const filtersChanged = prevFilterKeyRef.current !== filterKey;
+    if (filtersChanged) {
+      prevFilterKeyRef.current = filterKey;
+      queueMicrotask(() => {
+        setPage((p) => (p !== 1 ? 1 : p));
+      });
     }
-    setLoading(false);
-  }, [page, limit, search, statusFilter]);
+    const targetPage = filtersChanged ? 1 : page;
+    const loadKey = `${filterKey}|p${targetPage}`;
+    if (lastLoadKeyRef.current === loadKey) return;
+    lastLoadKeyRef.current = loadKey;
+    queueMicrotask(() => {
+      fetchUsers(targetPage);
+    });
+  }, [filterKey, page, fetchUsers]);
 
-  useEffect(() => { fetchStats(); }, [fetchStats]);
-  useEffect(() => { fetchUsers(); }, [fetchUsers]);
-
-  useEffect(() => { setPage(1); }, [search, statusFilter]);
-
-  // Refetch when admin returns to tab
   useEffect(() => {
     const onFocus = () => {
       fetchStats();
-      fetchUsers();
+      fetchUsersRef.current();
     };
     window.addEventListener('focus', onFocus);
     return () => window.removeEventListener('focus', onFocus);
-  }, [fetchStats, fetchUsers]);
+  }, [fetchStats]);
+
+  useEffect(() => {
+    const id = setInterval(() => {
+      if (document.hidden) return;
+      fetchStats();
+      fetchUsersRef.current();
+    }, 45000);
+    return () => clearInterval(id);
+  }, [fetchStats]);
+
+  useEffect(() => {
+    if (!exportToast) return;
+    const t = setTimeout(() => setExportToast(null), 4000);
+    return () => clearTimeout(t);
+  }, [exportToast]);
+
+  useEffect(() => {
+    const onDoc = (e) => {
+      if (!e.target.closest?.('[data-webinar-picker]')) setPickerOpen(null);
+      if (!e.target.closest?.('[data-module-combo]')) setModuleComboOpen(false);
+    };
+    document.addEventListener('click', onDoc);
+    return () => document.removeEventListener('click', onDoc);
+  }, []);
 
   const handleRefresh = useCallback(() => {
     setListError(null);
     setStatsError(null);
+    lastLoadKeyRef.current = '';
     fetchStats();
-    fetchUsers(1);
-  }, [fetchStats, fetchUsers]);
+    fetchUsers(page);
+  }, [fetchStats, fetchUsers, page]);
 
   const handleExport = async () => {
     setExporting(true);
-    await getWebinarProgressExport();
+    setExportToast(null);
+    const res = await getWebinarProgressExport(buildExportParams(f, debouncedSearch));
     setExporting(false);
+    if (res.success) setExportToast({ type: 'success', message: 'CSV downloaded.' });
+    else setExportToast({ type: 'error', message: res.message || 'Export failed.' });
   };
+
+  const clearFilters = () => {
+    setF({ ...INITIAL_FILTERS });
+    setSearchInput('');
+    setPickerOpen(null);
+    setModuleSearch('');
+  };
+
+  const toggleStatus = (key) => {
+    setF((prev) => {
+      const s = new Set(prev.statuses);
+      if (s.has(key)) s.delete(key);
+      else s.add(key);
+      return { ...prev, statuses: [...s] };
+    });
+  };
+
+  const toggleSort = (field) => {
+    setF((prev) => {
+      const cur = prev.sort;
+      const neg = cur.startsWith('-');
+      const curField = neg ? cur.slice(1) : cur;
+      if (curField !== field) return { ...prev, sort: `-${field}` };
+      return { ...prev, sort: neg ? field : `-${field}` };
+    });
+  };
+
+  const allPageSelected =
+    users.length > 0 && users.every((u) => selectedPhones.has(u.phone));
+  const somePageSelected = users.some((u) => selectedPhones.has(u.phone));
+
+  const toggleSelectAllPage = () => {
+    if (allPageSelected) {
+      setSelectedPhones(new Set());
+      return;
+    }
+    setSelectedPhones(new Set(users.map((u) => u.phone)));
+  };
+
+  const toggleSelectOne = (phone) => {
+    setSelectedPhones((prev) => {
+      const next = new Set(prev);
+      if (next.has(phone)) next.delete(phone);
+      else next.add(phone);
+      return next;
+    });
+  };
+
+  const runBulkTable = async (action) => {
+    const phones = [...selectedPhones];
+    if (phones.length === 0) return;
+    setBulkBusy(true);
+    try {
+      const res = await bulkWebinarProgress({ phones, action });
+      if (res.success) {
+        setSelectedPhones(new Set());
+        lastLoadKeyRef.current = '';
+        await fetchStats();
+        await fetchUsers(page);
+      } else {
+        setListError(res.message || 'Bulk action failed.');
+      }
+    } catch {
+      setListError('Bulk action failed.');
+    }
+    setBulkBusy(false);
+  };
+
+  const moduleOptions = useMemo(() => {
+    const q = moduleSearch.trim().toLowerCase();
+    return MODULE_ORDER.filter((id) => {
+      const label = (MODULE_LABELS[id] || id).toLowerCase();
+      return !q || label.includes(q) || id.includes(q);
+    });
+  }, [moduleSearch]);
 
   const totalPages = Math.max(1, Math.ceil(total / limit));
   const hasError = listError || statsError;
 
   return (
     <div className="space-y-6">
-      {/* Header with actions */}
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
         <div>
           <h2 className="text-xl font-bold text-gray-900">Webinar Progress</h2>
@@ -824,7 +1090,7 @@ export default function WebinarProgress() {
             type="button"
             onClick={handleRefresh}
             disabled={loading || statsLoading}
-            className="inline-flex items-center gap-2 h-10 px-4 rounded-lg border border-gray-300 bg-white text-sm font-medium text-gray-700 hover:bg-gray-50 disabled:opacity-50 transition-colors"
+            className="inline-flex items-center gap-2 h-10 px-4 rounded-lg border border-gray-300 bg-white text-sm font-medium text-gray-700 hover:bg-gray-50 disabled:opacity-50 transition-colors shadow-sm"
           >
             <FiRefreshCw className={`w-4 h-4 ${loading || statsLoading ? 'animate-spin' : ''}`} />
             Refresh
@@ -833,7 +1099,7 @@ export default function WebinarProgress() {
             type="button"
             onClick={handleExport}
             disabled={exporting}
-            className="inline-flex items-center gap-2 h-10 px-4 rounded-lg border border-gray-300 bg-white text-sm font-medium text-gray-700 hover:bg-gray-50 disabled:opacity-50 transition-colors"
+            className="inline-flex items-center gap-2 h-10 px-4 rounded-lg border border-gray-300 bg-white text-sm font-medium text-gray-700 hover:bg-gray-50 disabled:opacity-50 transition-colors shadow-sm"
           >
             <FiDownload className="w-4 h-4" />
             {exporting ? 'Exporting...' : 'Export CSV'}
@@ -841,7 +1107,18 @@ export default function WebinarProgress() {
         </div>
       </div>
 
-      {/* Error banner with retry */}
+      {exportToast && (
+        <div
+          className={`rounded-lg border px-4 py-2 text-sm ${
+            exportToast.type === 'error'
+              ? 'bg-red-50 border-red-200 text-red-800'
+              : 'bg-green-50 border-green-200 text-green-800'
+          }`}
+        >
+          {exportToast.message}
+        </div>
+      )}
+
       {hasError && (
         <div className="rounded-xl border border-red-200 bg-red-50 px-4 py-3 flex items-center justify-between gap-4">
           <p className="text-sm text-red-700">{listError || statsError}</p>
@@ -855,7 +1132,6 @@ export default function WebinarProgress() {
         </div>
       )}
 
-      {/* KPI Cards */}
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
         <KpiCard
           label="Total Enrolled"
@@ -867,7 +1143,11 @@ export default function WebinarProgress() {
           label="Fully Completed"
           value={statsLoading ? '—' : stats?.fullyCompleted ?? 0}
           icon={FiCheckCircle}
-          subtitle={stats && stats.totalEnrolled > 0 ? `${Math.round((stats.fullyCompleted / stats.totalEnrolled) * 100)}% completion rate` : undefined}
+          subtitle={
+            stats && stats.totalEnrolled > 0
+              ? `${Math.round((stats.fullyCompleted / stats.totalEnrolled) * 100)}% completion rate`
+              : undefined
+          }
         />
         <KpiCard
           label="Avg. Progress"
@@ -881,113 +1161,515 @@ export default function WebinarProgress() {
         />
       </div>
 
-      {/* Module Progress & Performance analytics */}
       <ModuleAnalytics stats={stats} />
 
-      {/* Filters */}
-      <div className="rounded-xl border border-gray-200 bg-white p-4 shadow-sm">
-      <div className="flex flex-wrap items-center gap-3">
-        <div className="relative flex-1 min-w-[200px] max-w-sm">
-          <FiSearch className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
-          <input
-            type="text"
-            value={search}
-            onChange={(e) => setSearch(e.target.value)}
-            placeholder="Search by name or phone..."
-            className="w-full pl-9 pr-4 h-10 rounded-lg border border-gray-300 text-sm text-gray-700 placeholder:text-gray-400 focus:ring-2 focus:ring-primary-navy focus:border-primary-navy outline-none"
-          />
+      <section className="rounded-2xl border border-gray-200 bg-white shadow-sm overflow-hidden">
+        <div className="border-b border-gray-200 bg-slate-50/90 px-4 sm:px-5 py-4 space-y-4">
+        <div className="flex flex-col gap-3 sm:flex-row sm:flex-wrap sm:items-center sm:justify-between">
+          <div className="flex items-center gap-2 min-w-0">
+            <FiFilter className="w-4 h-4 text-gray-500 shrink-0" aria-hidden />
+            <span className="text-sm font-semibold text-gray-900">Filters</span>
+          </div>
+          <div className="flex flex-col sm:flex-row gap-2 sm:items-center flex-1 sm:justify-end min-w-0">
+            <div className="relative w-full sm:max-w-xs sm:min-w-[220px]">
+              <FiSearch className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400 pointer-events-none" />
+              <input
+                type="text"
+                value={searchInput}
+                onChange={(e) => setSearchInput(e.target.value)}
+                placeholder="Search name or phone"
+                className="w-full pl-9 pr-3 h-10 rounded-lg border border-gray-200 bg-white text-sm text-gray-800 placeholder:text-gray-400 shadow-sm focus:ring-2 focus:ring-primary-navy/30 focus:border-primary-navy outline-none"
+              />
+            </div>
+            <button
+              type="button"
+              onClick={clearFilters}
+              className="shrink-0 h-10 px-4 rounded-lg border border-gray-200 bg-white text-sm font-medium text-gray-700 hover:bg-gray-50 shadow-sm transition-colors"
+            >
+              Clear filters
+            </button>
+          </div>
         </div>
-        <select
-          value={statusFilter}
-          onChange={(e) => setStatusFilter(e.target.value)}
-          className="h-10 px-3 rounded-lg border border-gray-300 text-sm text-gray-700 bg-white focus:ring-2 focus:ring-primary-navy focus:border-primary-navy outline-none"
-        >
-          <option value="">All Status</option>
-          <option value="completed">Completed</option>
-          <option value="in_progress">In Progress</option>
-          <option value="not_started">Not Started</option>
-        </select>
-      </div>
-      </div>
 
-      {/* Table */}
-      <div className="rounded-xl border border-gray-200 bg-white overflow-hidden shadow-sm">
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+          <div className="space-y-2 rounded-lg border border-gray-100 bg-gray-50/80 p-3">
+            <p className="text-[11px] font-bold text-gray-500 uppercase tracking-wider">Date</p>
+            <div className="flex flex-wrap items-end gap-3">
+              <div className="relative" data-webinar-picker>
+                <span className="block text-xs text-gray-500 mb-1">Filter by date (last active)</span>
+                <button
+                  type="button"
+                  onClick={() => setPickerOpen((o) => (o === 'single' ? null : 'single'))}
+                  className="inline-flex items-center gap-2 h-10 px-3 rounded-lg border border-gray-300 bg-white text-sm text-gray-800 shadow-sm"
+                >
+                  <FiCalendar className="w-4 h-4 text-gray-400" />
+                  {f.activeOn || 'Pick date'}
+                </button>
+                {pickerOpen === 'single' && (
+                  <div className="absolute left-0 top-full z-30 mt-1 rounded-xl border border-gray-200 bg-white p-2 shadow-lg">
+                    <DayPicker
+                      mode="single"
+                      selected={parseYMDLocal(f.activeOn)}
+                      onSelect={(d) => {
+                        setF((p) => ({ ...p, activeOn: d ? toYMDLocal(d) : '' }));
+                        setPickerOpen(null);
+                      }}
+                    />
+                  </div>
+                )}
+              </div>
+              <div className="relative" data-webinar-picker>
+                <span className="block text-xs text-gray-500 mb-1">From</span>
+                <button
+                  type="button"
+                  onClick={() => setPickerOpen((o) => (o === 'from' ? null : 'from'))}
+                  className="inline-flex items-center gap-2 h-10 px-3 rounded-lg border border-gray-300 bg-white text-sm text-gray-800 shadow-sm"
+                >
+                  <FiCalendar className="w-4 h-4 text-gray-400" />
+                  {f.fromDate || '—'}
+                </button>
+                {pickerOpen === 'from' && (
+                  <div className="absolute left-0 top-full z-30 mt-1 rounded-xl border border-gray-200 bg-white p-2 shadow-lg">
+                    <DayPicker
+                      mode="single"
+                      selected={parseYMDLocal(f.fromDate)}
+                      onSelect={(d) => {
+                        setF((p) => ({ ...p, fromDate: d ? toYMDLocal(d) : '' }));
+                        setPickerOpen(null);
+                      }}
+                    />
+                  </div>
+                )}
+              </div>
+              <div className="relative" data-webinar-picker>
+                <span className="block text-xs text-gray-500 mb-1">To</span>
+                <button
+                  type="button"
+                  onClick={() => setPickerOpen((o) => (o === 'to' ? null : 'to'))}
+                  className="inline-flex items-center gap-2 h-10 px-3 rounded-lg border border-gray-300 bg-white text-sm text-gray-800 shadow-sm"
+                >
+                  <FiCalendar className="w-4 h-4 text-gray-400" />
+                  {f.toDate || '—'}
+                </button>
+                {pickerOpen === 'to' && (
+                  <div className="absolute left-0 top-full z-30 mt-1 rounded-xl border border-gray-200 bg-white p-2 shadow-lg">
+                    <DayPicker
+                      mode="single"
+                      selected={parseYMDLocal(f.toDate)}
+                      onSelect={(d) => {
+                        setF((p) => ({ ...p, toDate: d ? toYMDLocal(d) : '' }));
+                        setPickerOpen(null);
+                      }}
+                    />
+                  </div>
+                )}
+              </div>
+            </div>
+            <p className="text-[11px] text-gray-400">Date filters use calendar day boundaries (UTC on server).</p>
+          </div>
+
+          <div className="space-y-2 rounded-lg border border-gray-100 bg-gray-50/80 p-3">
+            <p className="text-[11px] font-bold text-gray-500 uppercase tracking-wider">Progress & modules</p>
+            <div className="space-y-2">
+              <div className="flex flex-wrap items-center gap-2">
+                <span className="text-xs text-gray-600 w-28">Progress %</span>
+                <input
+                  type="range"
+                  min={0}
+                  max={100}
+                  value={f.progressMin}
+                  onChange={(e) => setF((p) => ({ ...p, progressMin: Number(e.target.value) }))}
+                  className="flex-1 min-w-[100px] accent-primary-navy"
+                />
+                <span className="text-xs tabular-nums w-8">{f.progressMin}</span>
+                <input
+                  type="range"
+                  min={0}
+                  max={100}
+                  value={f.progressMax}
+                  onChange={(e) => setF((p) => ({ ...p, progressMax: Number(e.target.value) }))}
+                  className="flex-1 min-w-[100px] accent-primary-navy"
+                />
+                <span className="text-xs tabular-nums w-8">{f.progressMax}</span>
+              </div>
+              <div className="flex flex-wrap gap-2 items-center">
+                <span className="text-xs text-gray-600">Modules done</span>
+                {['0-3', '4-7', '8-10', '11'].map((b) => (
+                  <button
+                    key={b}
+                    type="button"
+                    onClick={() =>
+                      setF((p) => {
+                        const off = p.modulesBucket === b;
+                        return {
+                          ...p,
+                          modulesMode: off ? 'none' : 'bucket',
+                          modulesBucket: off ? '' : b,
+                        };
+                      })
+                    }
+                    className={`px-2.5 py-1 rounded-full text-xs font-medium border transition-colors ${
+                      f.modulesMode === 'bucket' && f.modulesBucket === b
+                        ? 'bg-primary-navy text-white border-primary-navy'
+                        : 'bg-white text-gray-600 border-gray-200 hover:border-gray-300'
+                    }`}
+                  >
+                    {b === '11' ? '11/11' : b}
+                  </button>
+                ))}
+                <button
+                  type="button"
+                  onClick={() => setF((p) => ({ ...p, modulesMode: p.modulesMode === 'custom' ? 'none' : 'custom', modulesBucket: '' }))}
+                  className={`text-xs font-medium px-2 py-1 rounded-lg ${
+                    f.modulesMode === 'custom' ? 'bg-amber-100 text-amber-900' : 'text-gray-500'
+                  }`}
+                >
+                  Custom min/max
+                </button>
+              </div>
+              {f.modulesMode === 'custom' && (
+                <div className="flex items-center gap-2">
+                  <input
+                    type="number"
+                    min={0}
+                    max={11}
+                    placeholder="Min"
+                    value={f.modulesMin}
+                    onChange={(e) => setF((p) => ({ ...p, modulesMin: e.target.value }))}
+                    className="w-20 h-9 rounded-lg border border-gray-300 px-2 text-sm"
+                  />
+                  <span className="text-gray-400">–</span>
+                  <input
+                    type="number"
+                    min={0}
+                    max={11}
+                    placeholder="Max"
+                    value={f.modulesMax}
+                    onChange={(e) => setF((p) => ({ ...p, modulesMax: e.target.value }))}
+                    className="w-20 h-9 rounded-lg border border-gray-300 px-2 text-sm"
+                  />
+                </div>
+              )}
+            </div>
+          </div>
+        </div>
+
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+          <div className="space-y-2 rounded-lg border border-gray-100 bg-gray-50/80 p-3">
+            <p className="text-[11px] font-bold text-gray-500 uppercase tracking-wider">Status</p>
+            <div className="flex flex-wrap gap-3">
+              {[
+                ['completed', 'Completed'],
+                ['in_progress', 'In Progress'],
+                ['not_started', 'Not Started'],
+              ].map(([key, label]) => (
+                <label key={key} className="inline-flex items-center gap-2 text-sm text-gray-700 cursor-pointer">
+                  <input
+                    type="checkbox"
+                    checked={f.statuses.includes(key)}
+                    onChange={() => toggleStatus(key)}
+                    className="rounded border-gray-300 text-primary-navy focus:ring-primary-navy"
+                  />
+                  {label}
+                </label>
+              ))}
+            </div>
+            <p className="text-[11px] text-gray-400">Leave all unchecked for any status.</p>
+          </div>
+
+          <div className="space-y-2 rounded-lg border border-gray-100 bg-gray-50/80 p-3">
+            <p className="text-[11px] font-bold text-gray-500 uppercase tracking-wider">Activity</p>
+            <div className="flex flex-wrap gap-2">
+              {[
+                ['', 'Any'],
+                ['active_5m', 'Active (5 min)'],
+                ['active_today', 'Active today'],
+                ['inactive_24h', 'Inactive over 24h'],
+              ].map(([val, label]) => (
+                <button
+                  key={val || 'any'}
+                  type="button"
+                  onClick={() => setF((p) => ({ ...p, activity: val }))}
+                  className={`px-3 py-1.5 rounded-full text-xs font-medium border transition-colors ${
+                    f.activity === val
+                      ? 'bg-slate-800 text-white border-slate-800'
+                      : 'bg-white text-gray-600 border-gray-200'
+                  }`}
+                >
+                  {label}
+                </button>
+              ))}
+            </div>
+          </div>
+        </div>
+
+        <div className="rounded-lg border border-gray-100 bg-gray-50/80 p-3">
+          <p className="text-[11px] font-bold text-gray-500 uppercase tracking-wider mb-2">Current module</p>
+          <div className="relative max-w-md" data-module-combo>
+            <input
+              type="text"
+              value={moduleSearch}
+              onChange={(e) => {
+                setModuleSearch(e.target.value);
+                setModuleComboOpen(true);
+              }}
+              onFocus={() => setModuleComboOpen(true)}
+              placeholder="Search module…"
+              className="w-full h-10 pl-3 pr-3 rounded-lg border border-gray-300 text-sm shadow-sm"
+            />
+            {f.lastActiveModule && (
+              <p className="text-xs text-gray-500 mt-1">
+                Selected: {MODULE_LABELS[f.lastActiveModule]}{' '}
+                <button type="button" className="text-primary-navy font-medium" onClick={() => setF((p) => ({ ...p, lastActiveModule: '' }))}>
+                  Clear
+                </button>
+              </p>
+            )}
+            {moduleComboOpen && (
+              <ul className="absolute z-30 mt-1 max-h-48 w-full overflow-auto rounded-lg border border-gray-200 bg-white py-1 shadow-lg">
+                <li>
+                  <button
+                    type="button"
+                    className="w-full px-3 py-2 text-left text-sm hover:bg-gray-50"
+                    onClick={() => {
+                      setF((p) => ({ ...p, lastActiveModule: '' }));
+                      setModuleComboOpen(false);
+                    }}
+                  >
+                    Any module
+                  </button>
+                </li>
+                {moduleOptions.map((id) => (
+                  <li key={id}>
+                    <button
+                      type="button"
+                      className="w-full px-3 py-2 text-left text-sm hover:bg-gray-50"
+                      onClick={() => {
+                        setF((p) => ({ ...p, lastActiveModule: id }));
+                        setModuleComboOpen(false);
+                        setModuleSearch('');
+                      }}
+                    >
+                      {MODULE_LABELS[id] || id}
+                    </button>
+                  </li>
+                ))}
+              </ul>
+            )}
+          </div>
+        </div>
+        </div>
+
+      {selectedPhones.size > 0 && (
+        <div className="flex flex-wrap items-center gap-3 border-b border-amber-200/80 bg-amber-50/95 px-4 sm:px-5 py-3">
+          <span className="text-sm font-medium text-amber-900">{selectedPhones.size} selected</span>
+          <button
+            type="button"
+            disabled={bulkBusy}
+            onClick={() => runBulkTable('complete_all')}
+            className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-green-600 text-white text-xs font-semibold hover:bg-green-700 disabled:opacity-50"
+          >
+            <FiCheckCircle className="w-3.5 h-3.5" />
+            Mark completed
+          </button>
+          <button
+            type="button"
+            disabled={bulkBusy}
+            onClick={() => runBulkTable('reset')}
+            className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-red-600 text-white text-xs font-semibold hover:bg-red-700 disabled:opacity-50"
+          >
+            <FiRotateCcw className="w-3.5 h-3.5" />
+            Reset progress
+          </button>
+          <button
+            type="button"
+            disabled
+            title="Coming soon"
+            className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg border border-gray-300 text-xs font-medium text-gray-400 cursor-not-allowed"
+          >
+            Send reminder
+          </button>
+        </div>
+      )}
+
         <div className="overflow-x-auto">
-          <table className="w-full text-left">
+          <table className="w-full min-w-[1040px] text-left border-collapse">
+            <colgroup>
+              <col className="w-10" />
+              <col className="min-w-[140px]" />
+              <col className="min-w-[108px]" />
+              <col className="min-w-[160px]" />
+              <col className="min-w-[100px]" />
+              <col className="min-w-[180px]" />
+              <col className="min-w-[88px]" />
+              <col className="min-w-[120px]" />
+              <col className="w-14" />
+            </colgroup>
             <thead>
-              <tr className="border-b border-gray-200 bg-gray-50/80">
-                <th className="px-4 py-3 text-xs font-semibold text-gray-500 uppercase tracking-wider">Name</th>
-                <th className="px-4 py-3 text-xs font-semibold text-gray-500 uppercase tracking-wider">Phone</th>
-                <th className="px-4 py-3 text-xs font-semibold text-gray-500 uppercase tracking-wider min-w-[160px]">Overall Progress</th>
-                <th className="px-4 py-3 text-xs font-semibold text-gray-500 uppercase tracking-wider">Status</th>
-                <th className="px-4 py-3 text-xs font-semibold text-gray-500 uppercase tracking-wider">Current Module</th>
-                <th className="px-4 py-3 text-xs font-semibold text-gray-500 uppercase tracking-wider">Modules Done</th>
-                <th className="px-4 py-3 text-xs font-semibold text-gray-500 uppercase tracking-wider">Last Active</th>
-                <th className="px-4 py-3 text-xs font-semibold text-gray-500 uppercase tracking-wider w-20">Details</th>
+              <tr className="border-b border-gray-200 bg-gray-50">
+                <th scope="col" className="px-3 py-3.5 text-left align-middle">
+                  <input
+                    type="checkbox"
+                    aria-label="Select all on page"
+                    checked={allPageSelected}
+                    ref={(el) => {
+                      if (el) el.indeterminate = somePageSelected && !allPageSelected;
+                    }}
+                    onChange={toggleSelectAllPage}
+                    className="rounded border-gray-300"
+                  />
+                </th>
+                <th scope="col" className="px-3 py-3.5 text-left text-xs font-semibold text-gray-600 uppercase tracking-wide">
+                  Name
+                </th>
+                <th scope="col" className="px-3 py-3.5 text-left text-xs font-semibold text-gray-600 uppercase tracking-wide">
+                  Phone
+                </th>
+                <th scope="col" className="px-3 py-3.5 text-left text-xs font-semibold text-gray-600 uppercase tracking-wide">
+                  <button
+                    type="button"
+                    onClick={() => toggleSort('overallPercent')}
+                    className={`inline-flex items-center gap-1.5 -mx-1 px-1 py-0.5 rounded hover:bg-gray-200/60 transition-colors ${sortCaret('overallPercent', f.sort)}`}
+                  >
+                    Progress
+                    <FiChevronDown
+                      className={`w-3.5 h-3.5 shrink-0 ${
+                        f.sort === 'overallPercent' || f.sort === '-overallPercent' ? 'opacity-100' : 'opacity-30'
+                      }`}
+                    />
+                  </button>
+                </th>
+                <th scope="col" className="px-3 py-3.5 text-left text-xs font-semibold text-gray-600 uppercase tracking-wide">
+                  Status
+                </th>
+                <th scope="col" className="px-3 py-3.5 text-left text-xs font-semibold text-gray-600 uppercase tracking-wide">
+                  Current module
+                </th>
+                <th scope="col" className="px-3 py-3.5 text-xs font-semibold text-gray-600 uppercase tracking-wide text-end">
+                  <button
+                    type="button"
+                    onClick={() => toggleSort('modulesDone')}
+                    className={`inline-flex items-center gap-1.5 justify-end w-full -mx-1 px-1 py-0.5 rounded hover:bg-gray-200/60 transition-colors ${sortCaret('modulesDone', f.sort)}`}
+                  >
+                    Modules
+                    <FiChevronDown
+                      className={`w-3.5 h-3.5 shrink-0 ${
+                        f.sort === 'modulesDone' || f.sort === '-modulesDone' ? 'opacity-100' : 'opacity-30'
+                      }`}
+                    />
+                  </button>
+                </th>
+                <th scope="col" className="px-3 py-3.5 text-xs font-semibold text-gray-600 uppercase tracking-wide text-end">
+                  <button
+                    type="button"
+                    onClick={() => toggleSort('lastActivityAt')}
+                    className={`inline-flex items-center gap-1.5 justify-end w-full -mx-1 px-1 py-0.5 rounded hover:bg-gray-200/60 transition-colors ${sortCaret('lastActivityAt', f.sort)}`}
+                  >
+                    Last active
+                    <FiChevronDown
+                      className={`w-3.5 h-3.5 shrink-0 ${
+                        f.sort === 'lastActivityAt' || f.sort === '-lastActivityAt' ? 'opacity-100' : 'opacity-30'
+                      }`}
+                    />
+                  </button>
+                </th>
+                <th scope="col" className="px-3 py-3.5 text-center text-xs font-semibold text-gray-600 uppercase tracking-wide w-14">
+                  Details
+                </th>
               </tr>
             </thead>
             <tbody className="divide-y divide-gray-100">
               {loading ? (
                 Array.from({ length: 5 }).map((_, i) => (
-                  <tr key={i}>
-                    {Array.from({ length: 8 }).map((__, j) => (
-                      <td key={j} className="px-4 py-3.5"><div className="h-4 bg-gray-100 rounded animate-pulse" /></td>
+                  <tr key={i} className="bg-white">
+                    {Array.from({ length: 9 }).map((__, j) => (
+                      <td key={j} className="px-3 py-3.5">
+                        <div className="h-4 bg-gray-100 rounded animate-pulse" />
+                      </td>
                     ))}
                   </tr>
                 ))
               ) : users.length === 0 ? (
                 <tr>
-                  <td colSpan={8} className="p-0">
+                  <td colSpan={9} className="p-0">
                     <div className="flex flex-col items-center justify-center py-16 px-4">
                       <FiUsers className="w-12 h-12 text-gray-300 mb-3" aria-hidden />
                       <p className="text-sm font-medium text-gray-600">No users found</p>
-                      <p className="text-xs text-gray-400 mt-1">Check back after users complete webinar sessions.</p>
+                      <p className="text-xs text-gray-400 mt-1">Adjust filters or check back later.</p>
                     </div>
                   </td>
                 </tr>
               ) : (
                 users.map((u) => {
                   const isExpanded = expandedPhone === u.phone;
-                  const completedCount = (u.completedModules || []).length;
-                  const overallStatus = u.overallPercent >= 100 ? 'completed' : u.overallPercent > 0 ? 'in_progress' : 'not_started';
-                  const statusColor = overallStatus === 'completed' ? 'text-green-600' : overallStatus === 'in_progress' ? 'text-amber-600' : 'text-gray-400';
+                  const completedCount = u.modulesDone != null ? u.modulesDone : (u.completedModules || []).length;
+                  const overallStatus =
+                    u.overallPercent >= 100 ? 'completed' : u.overallPercent > 0 ? 'in_progress' : 'not_started';
+                  const statusColor =
+                    overallStatus === 'completed'
+                      ? 'text-green-600'
+                      : overallStatus === 'in_progress'
+                        ? 'text-amber-600'
+                        : 'text-gray-400';
 
                   return (
-                    <tr key={u.phone} className="group">
-                      <td colSpan={8} className="p-0">
-                        <div className="grid grid-cols-1">
+                    <Fragment key={u.phone}>
+                      <tr className="group bg-white border-b border-gray-100 hover:bg-slate-50 transition-colors">
+                        <td className="px-3 py-3 align-middle" onClick={(e) => e.stopPropagation()}>
+                          <input
+                            type="checkbox"
+                            checked={selectedPhones.has(u.phone)}
+                            onChange={() => toggleSelectOne(u.phone)}
+                            className="rounded border-gray-300"
+                            aria-label={`Select ${u.fullName || u.phone}`}
+                          />
+                        </td>
+                        <td className="px-3 py-3 text-sm font-medium text-gray-900 align-middle">
+                          <span className="line-clamp-2 break-words" title={u.fullName || undefined}>{u.fullName || '—'}</span>
+                        </td>
+                        <td className="px-3 py-3 text-sm text-gray-600 tabular-nums align-middle whitespace-nowrap">{u.phone}</td>
+                        <td className="px-3 py-3 align-middle">
+                          <div className="flex items-center gap-2 min-w-[120px]">
+                            <ProgressBar percent={u.overallPercent || 0} className="flex-1 h-2" />
+                            <span className={`text-xs font-semibold tabular-nums w-9 text-right shrink-0 ${statusColor}`}>{u.overallPercent || 0}%</span>
+                          </div>
+                        </td>
+                        <td className="px-3 py-3 align-middle">
+                          <StatusBadge status={overallStatus} />
+                        </td>
+                        <td className="px-3 py-3 text-sm text-gray-700 align-top">
+                          <span className="line-clamp-2 break-words leading-snug" title={MODULE_LABELS[u.lastActiveModule] || u.lastActiveModule || undefined}>
+                            {MODULE_LABELS[u.lastActiveModule] || u.lastActiveModule || '—'}
+                          </span>
+                        </td>
+                        <td className="px-3 py-3 text-sm text-gray-800 tabular-nums align-middle text-end font-medium">
+                          {completedCount}/{MODULE_ORDER.length}
+                        </td>
+                        <td className="px-3 py-3 text-xs text-gray-600 align-middle text-end tabular-nums whitespace-nowrap">{timeAgo(u.lastActivityAt)}</td>
+                        <td className="px-3 py-3 align-middle text-center w-14">
                           <button
                             type="button"
                             onClick={() => setExpandedPhone(isExpanded ? null : u.phone)}
-                            className="w-full text-left grid grid-cols-[repeat(8,auto)] hover:bg-gray-50 transition-colors duration-200"
-                            style={{ gridTemplateColumns: 'minmax(0,1fr) minmax(0,1fr) minmax(160px,1fr) minmax(0,100px) minmax(0,1fr) minmax(0,1fr) minmax(0,1fr) 80px' }}
+                            className="p-1.5 rounded-lg text-gray-500 hover:bg-gray-100"
+                            aria-expanded={isExpanded}
                           >
-                            <span className="px-4 py-3.5 text-sm font-medium text-gray-800 truncate">{u.fullName || '—'}</span>
-                            <span className="px-4 py-3.5 text-sm text-gray-600 tabular-nums">{u.phone}</span>
-                            <span className="px-4 py-3.5">
-                              <div className="flex items-center gap-2">
-                                <ProgressBar percent={u.overallPercent || 0} className="flex-1" />
-                                <span className={`text-xs font-semibold tabular-nums ${statusColor}`}>{u.overallPercent || 0}%</span>
-                              </div>
-                            </span>
-                            <span className="px-4 py-3.5 flex items-center">
-                              <StatusBadge status={overallStatus} />
-                            </span>
-                            <span className="px-4 py-3.5 text-sm text-gray-600 truncate">
-                              {MODULE_LABELS[u.lastActiveModule] || u.lastActiveModule || '—'}
-                            </span>
-                            <span className="px-4 py-3.5 text-sm text-gray-600 tabular-nums">{completedCount}/{MODULE_ORDER.length}</span>
-                            <span className="px-4 py-3.5 text-xs text-gray-500">{timeAgo(u.lastActivityAt)}</span>
-                            <span className="px-4 py-3.5 flex items-center justify-center">
-                              {isExpanded ? <FiChevronUp className="w-4 h-4 text-gray-400" /> : <FiChevronDown className="w-4 h-4 text-gray-400" />}
-                            </span>
+                            {isExpanded ? <FiChevronUp className="w-4 h-4" /> : <FiChevronDown className="w-4 h-4" />}
                           </button>
-                          {isExpanded && <UserDetailPanel user={u} onUserUpdated={(updated) => {
-                            setUsers((prev) => prev.map((p) => p.phone === updated.phone ? { ...p, ...updated } : p));
-                          }} />}
-                        </div>
-                      </td>
-                    </tr>
+                        </td>
+                      </tr>
+                      {isExpanded && (
+                        <tr className="bg-gray-50/50">
+                          <td colSpan={9} className="p-0 border-t border-gray-100">
+                            <UserDetailPanel
+                              user={u}
+                              onUserUpdated={(updated) => {
+                                setUsers((prev) => prev.map((p) => (p.phone === updated.phone ? { ...p, ...updated } : p)));
+                              }}
+                            />
+                          </td>
+                        </tr>
+                      )}
+                    </Fragment>
                   );
                 })
               )}
@@ -995,7 +1677,6 @@ export default function WebinarProgress() {
           </table>
         </div>
 
-        {/* Pagination */}
         {total > limit && (
           <div className="flex items-center justify-between px-4 py-3 border-t border-gray-200 bg-gray-50/50">
             <p className="text-sm text-gray-500">
@@ -1010,7 +1691,9 @@ export default function WebinarProgress() {
               >
                 <FiChevronLeft className="w-4 h-4" />
               </button>
-              <span className="text-sm font-medium text-gray-700 px-2 tabular-nums">{page} / {totalPages}</span>
+              <span className="text-sm font-medium text-gray-700 px-2 tabular-nums">
+                {page} / {totalPages}
+              </span>
               <button
                 type="button"
                 onClick={() => setPage((p) => Math.min(totalPages, p + 1))}
@@ -1022,7 +1705,7 @@ export default function WebinarProgress() {
             </div>
           </div>
         )}
-      </div>
+      </section>
     </div>
   );
 }
