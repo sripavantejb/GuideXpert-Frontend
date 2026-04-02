@@ -56,6 +56,8 @@ export default function TrainingFormResponses() {
   const [expandedId, setExpandedId] = useState(null);
   const [viewAll, setViewAll] = useState(false);
   const [copyModalOpen, setCopyModalOpen] = useState(false);
+  const [copyLoading, setCopyLoading] = useState(false);
+  const [copyRecords, setCopyRecords] = useState([]);
   const cancelledRef = useRef(false);
   const requestIdRef = useRef(0);
 
@@ -125,6 +127,32 @@ export default function TrainingFormResponses() {
   };
 
   const hasActiveFilters = filters.q || filters.from || filters.to || filters.sessionRating;
+
+  const prepareCopyRecords = async () => {
+    setCopyLoading(true);
+    setError('');
+    const params = {
+      page: 1,
+      limit: 5000,
+      q: filters.q.trim() || undefined,
+      from: filters.from || undefined,
+      to: filters.to || undefined,
+      sessionRating: filters.sessionRating ? parseInt(filters.sessionRating, 10) : undefined
+    };
+    const result = await getTrainingFormResponses(params, getStoredToken());
+    setCopyLoading(false);
+    if (!result.success) {
+      if (result.status === 401) {
+        logout();
+        window.location.href = '/admin/login';
+        return;
+      }
+      setError(result.message || 'Failed to load responses for copy');
+      return;
+    }
+    setCopyRecords(result.data?.data || []);
+    setCopyModalOpen(true);
+  };
 
   return (
     <div className="max-w-[1400px] mx-auto px-1">
@@ -226,11 +254,12 @@ export default function TrainingFormResponses() {
             </label>
             <button
               type="button"
-              onClick={() => { setCopyModalOpen(true); }}
+              onClick={prepareCopyRecords}
+              disabled={copyLoading}
               className="inline-flex items-center gap-1.5 ml-2 px-3 py-1.5 rounded-lg border border-gray-300 text-sm font-medium text-gray-700 hover:bg-gray-50 transition-colors"
               aria-label="Copy to sheets"
             >
-              <FiCopy className="w-4 h-4" /> Copy
+              <FiCopy className="w-4 h-4" /> {copyLoading ? 'Preparing...' : 'Copy'}
             </button>
             {hasActiveFilters && (
               <button
@@ -388,12 +417,13 @@ export default function TrainingFormResponses() {
 
           <CopyToSheetsModal
             fields={COPY_FIELDS}
-            records={records}
+            records={copyRecords}
             getCellValue={getResponseCellValue}
             open={copyModalOpen}
             onClose={() => setCopyModalOpen(false)}
             recordLabel="responses"
             dedupeByPhoneKey="mobileNumber"
+            loading={copyLoading}
           />
         </>
       )}

@@ -86,6 +86,8 @@ export default function MeetingAttendance() {
   const [attendanceType, setAttendanceType] = useState('demo');
   const [viewAll, setViewAll] = useState(false);
   const [copyModalOpen, setCopyModalOpen] = useState(false);
+  const [copyLoading, setCopyLoading] = useState(false);
+  const [copyRecords, setCopyRecords] = useState([]);
   const cancelledRef = useRef(false);
   const requestIdRef = useRef(0);
   const filtersRef = useRef('');
@@ -229,6 +231,42 @@ export default function MeetingAttendance() {
       return;
     }
     setRangeTo(dateStr);
+  };
+
+  const prepareCopyRecords = async () => {
+    setCopyLoading(true);
+    setError('');
+    const params = {
+      page: 1,
+      limit: 5000,
+      q: query.trim() || undefined,
+      uniqueByMobile: true,
+      dedupeMode: 'latest'
+    };
+    if (mode === 'single' && selectedDate) {
+      params.from = selectedDate;
+      params.to = selectedDate;
+    }
+    if (mode === 'range') {
+      if (rangeFrom) params.from = rangeFrom;
+      if (rangeTo) params.to = rangeTo;
+    }
+    const apiCall = attendanceType === 'training'
+      ? getTrainingAttendance(params, getStoredToken())
+      : getMeetingAttendance(params, getStoredToken());
+    const result = await apiCall;
+    setCopyLoading(false);
+    if (!result.success) {
+      if (result.status === 401) {
+        logout();
+        window.location.href = '/admin/login';
+        return;
+      }
+      setError(result.message || (attendanceType === 'training' ? 'Failed to load training attendance for copy' : 'Failed to load meeting attendance for copy'));
+      return;
+    }
+    setCopyRecords(result.data?.data || []);
+    setCopyModalOpen(true);
   };
 
   return (
@@ -482,11 +520,12 @@ export default function MeetingAttendance() {
               </label>
               <button
                 type="button"
-                onClick={() => setCopyModalOpen(true)}
+                onClick={prepareCopyRecords}
+                disabled={copyLoading}
                 className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg border border-gray-300 text-sm font-medium text-gray-700 hover:bg-gray-50 transition-colors"
                 aria-label="Copy to sheets"
               >
-                <FiCopy className="w-4 h-4" /> Copy
+                <FiCopy className="w-4 h-4" /> {copyLoading ? 'Preparing...' : 'Copy'}
               </button>
             </div>
           </div>
@@ -640,12 +679,13 @@ export default function MeetingAttendance() {
 
           <CopyToSheetsModal
             fields={COPY_FIELDS}
-            records={records}
+            records={copyRecords}
             getCellValue={getAttendanceCellValue}
             open={copyModalOpen}
             onClose={() => setCopyModalOpen(false)}
             recordLabel="attendees"
             dedupeByPhoneKey="mobileNumber"
+            loading={copyLoading}
           />
         </>
       )}

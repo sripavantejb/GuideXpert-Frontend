@@ -50,6 +50,8 @@ const CounsellorMarketing = lazy(() => import('./pages/counsellor/Marketing'));
 /* Tools and Certificate loaded eagerly to avoid dynamic import chunk failures */
 import CounsellorTools from './pages/counsellor/Tools';
 import CounsellorCertificate from './pages/counsellor/Certificate';
+const CollegePredictorExams = lazy(() => import('./pages/counsellor/CollegePredictorExams'));
+const CollegePredictorPredict = lazy(() => import('./pages/counsellor/CollegePredictorPredict'));
 import HoliPosterPage from './pages/HoliPosterPage';
 import InterPosterPage from './pages/InterPosterPage';
 import GxPosterPage from './pages/GxPosterPage';
@@ -296,6 +298,8 @@ function App() {
             <Route path="admissions" element={<ErrorBoundary><Suspense fallback={<div className="h-64 flex items-center justify-center p-4"><PageSkeleton /></div>}><CounsellorAdmissions /></Suspense></ErrorBoundary>} />
             <Route path="sessions" element={<ErrorBoundary><Suspense fallback={<div className="h-64 flex items-center justify-center p-4"><PageSkeleton /></div>}><CounsellorSessions /></Suspense></ErrorBoundary>} />
             <Route path="tools" element={<ErrorBoundary><CounsellorTools /></ErrorBoundary>} />
+            <Route path="tools/college-predictor" element={<ErrorBoundary><Suspense fallback={<div className="h-64 flex items-center justify-center p-4"><PageSkeleton /></div>}><CollegePredictorExams /></Suspense></ErrorBoundary>} />
+            <Route path="tools/college-predictor/:exam" element={<ErrorBoundary><Suspense fallback={<div className="h-64 flex items-center justify-center p-4"><PageSkeleton /></div>}><CollegePredictorPredict /></Suspense></ErrorBoundary>} />
             <Route path="marketing" element={<ErrorBoundary><Suspense fallback={<div className="h-64 flex items-center justify-center p-4"><PageSkeleton /></div>}><CounsellorMarketing /></Suspense></ErrorBoundary>} />
             <Route path="certificate" element={<ErrorBoundary><CounsellorCertificate /></ErrorBoundary>} />
             <Route path="college-referrals" element={<ErrorBoundary><Suspense fallback={<div className="h-64 flex items-center justify-center p-4"><PageSkeleton /></div>}><CollegeReferrals /></Suspense></ErrorBoundary>} />

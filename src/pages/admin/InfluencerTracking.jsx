@@ -349,7 +349,7 @@ export default function InfluencerTracking() {
     return filteredSavedLinks.slice(start, start + linksPerPage);
   }, [viewAllLinks, filteredSavedLinks, linksPage, linksPerPage]);
 
-  const linksToCopy = viewAllLinks ? filteredSavedLinks : paginatedLinks;
+  const linksToCopy = filteredSavedLinks;
 
   const linksTotalPages = Math.max(1, Math.ceil(filteredSavedLinks.length / linksPerPage));
 

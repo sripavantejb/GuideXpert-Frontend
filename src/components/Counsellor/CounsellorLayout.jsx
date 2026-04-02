@@ -49,6 +49,7 @@ const pageMeta = {
   '/counsellor/sessions': { title: 'Sessions', subtitle: 'Schedule and manage counseling sessions' },
   '/counsellor/announcements-feed': { title: 'Announcements', subtitle: 'Stay updated with the latest updates and important notices.' },
   '/counsellor/tools': { title: 'Tools', subtitle: 'Assessment and prediction tools' },
+  '/counsellor/tools/college-predictor': { title: 'College Predictor', subtitle: 'Select an exam to get started' },
   '/counsellor/marketing': { title: 'Marketing', subtitle: 'Download seasonal, official, and customisable marketing posters' },
   '/counsellor/college-referrals': { title: 'College Referrals', subtitle: 'Know about referrals and share partner college links' },
   '/counsellor/know-about-colleges': { title: 'Know About Colleges', subtitle: 'Browse partner colleges and referral information' },
@@ -84,8 +85,10 @@ export default function CounsellorLayout() {
 
   const currentPage =
     pageMeta[location.pathname] ||
-    (location.pathname.startsWith('/counsellor/college-referrals/')
-      ? { title: 'College Referrals', subtitle: 'Know about referrals, fee details, and share referral links' }
+    (location.pathname.startsWith('/counsellor/tools/college-predictor/')
+      ? { title: 'College Predictor', subtitle: 'Configure filters and view results' }
+      : location.pathname.startsWith('/counsellor/college-referrals/')
+        ? { title: 'College Referrals', subtitle: 'Know about referrals, fee details, and share referral links' }
       : location.pathname.startsWith('/counsellor/know-about-colleges/')
         ? { title: 'Know About Colleges', subtitle: 'Browse partner colleges, fee details, and referral information' }
       : { title: 'Counsellor Portal', subtitle: '' });

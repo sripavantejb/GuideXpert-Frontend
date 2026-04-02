@@ -4,12 +4,18 @@ import { FiChevronDown, FiChevronUp } from 'react-icons/fi';
 import { getPredictedCollegesPublic } from '../utils/api';
 import {
   ENTRANCE_EXAMS,
-  ADMISSION_CATEGORIES,
   RESERVATION_CATEGORIES,
   BRANCH_CODES,
   SORT_ORDER_OPTIONS,
   DISTRICTS,
 } from '../constants/collegePredictorOptions';
+
+const ADMISSION_CATEGORIES = [
+  { value: 'GENERAL', label: 'General' },
+  { value: 'HK', label: 'Hyderabad-Karnataka (HK)' },
+  { value: 'AU', label: 'Andhra University (AU)' },
+  { value: 'SVU', label: 'Sri Venkateswara University (SVU)' },
+];
 
 const PAGE_SIZE = 10;
 
