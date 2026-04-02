@@ -1,4 +1,3 @@
-export { default as CollegePredictorPanel } from './CollegePredictorPanel';
 export { default as ExamCard } from './ExamCard';
 export { default as ExamGrid } from './ExamGrid';
 export { default as FilterPanel } from './FilterPanel';

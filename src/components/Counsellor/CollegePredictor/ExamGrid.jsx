@@ -11,6 +11,7 @@ export default function ExamGrid({ selectedExam, onSelect }) {
           label={exam.label}
           description={exam.description}
           accent={exam.accent}
+          supported={exam.supported}
           selected={selectedExam === exam.value}
           onSelect={onSelect}
         />

@@ -41,6 +41,15 @@ export default {
         'card-hover': '0 12px 28px rgba(0,0,0,0.08), 0 4px 12px rgba(0,0,0,0.04)',
         header: '0 1px 3px rgba(0,0,0,0.08)',
       },
+      animation: {
+        shimmer: 'shimmer 1.8s ease-in-out infinite',
+      },
+      keyframes: {
+        shimmer: {
+          '0%': { backgroundPosition: '-700px 0' },
+          '100%': { backgroundPosition: '700px 0' },
+        },
+      },
     },
   },
   plugins: [],

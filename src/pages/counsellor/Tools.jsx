@@ -2,7 +2,6 @@ import { useState, useRef, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { FiTarget, FiBarChart2, FiZap, FiClock, FiArrowRight, FiArrowLeft, FiActivity, FiCrosshair, FiStar } from 'react-icons/fi';
 import StudentAssessmentsPanel from '../../components/Counsellor/StudentAssessmentsPanel';
-import { CollegePredictorPanel } from '../../components/Counsellor/CollegePredictor';
 
 const toolCards = [
   { id: 'college', title: 'College Predictor', desc: 'Suggest colleges based on rank, region, budget and preferences.', icon: FiTarget },
@@ -114,7 +113,6 @@ function ActiveToolPanel({ activeTool, onBack }) {
         Back to Tools
       </button>
 
-      {activeTool === 'college' && <CollegePredictorPanel />}
       {activeTool === 'career-dna' && <StudentAssessmentsPanel type="career-dna" />}
       {activeTool === 'course-fit' && <StudentAssessmentsPanel type="course-fit" />}
       {COMING_SOON_IDS.includes(activeTool) && <ComingSoonPanel />}
@@ -159,7 +157,11 @@ function Tools() {
             title={t.title}
             desc={t.desc}
             icon={t.icon}
-            onLaunch={() => (t.id === 'rank' ? navigate('/rank-predictor') : setActiveTool(t.id))}
+            onLaunch={() => {
+              if (t.id === 'rank') navigate('/rank-predictor');
+              else if (t.id === 'college') navigate('college-predictor');
+              else setActiveTool(t.id);
+            }}
           />
         ))}
       </div>

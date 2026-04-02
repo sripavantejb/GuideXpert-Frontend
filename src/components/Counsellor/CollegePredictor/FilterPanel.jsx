@@ -1,7 +1,6 @@
 import { useCallback } from 'react';
 import { FiX } from 'react-icons/fi';
 import {
-  ADMISSION_CATEGORIES,
   RESERVATION_CATEGORIES,
   BRANCH_CODES,
   SORT_ORDER_OPTIONS,
@@ -58,6 +57,7 @@ export default function FilterPanel({
   loading,
   selectedExamLabel,
   accent,
+  admissionCategories = [],
 }) {
   const update = useCallback(
     (field, value) => onChange({ ...filters, [field]: value }),
@@ -74,7 +74,7 @@ export default function FilterPanel({
         e.preventDefault();
         onSubmit();
       }}
-      className="rounded-xl bg-white border border-gray-200 shadow-md p-5 sm:p-6 transition-shadow duration-300"
+      className="rounded-2xl bg-white border border-gray-200 shadow-md p-5 sm:p-6 transition-shadow duration-300"
     >
       <div className="flex flex-wrap items-start justify-between gap-3 mb-4">
         <div>
@@ -94,53 +94,39 @@ export default function FilterPanel({
       </div>
 
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 mb-4">
-        {/* Cutoff from */}
+        {/* Student rank */}
         <div>
           <label className="block text-sm font-medium text-gray-700 mb-1">
-            Rank / Cutoff from <span className="text-red-500">*</span>
+            Your Rank <span className="text-red-500">*</span>
           </label>
           <input
             type="number"
-            min={0}
-            step="any"
-            value={filters.cutoff_from}
-            onChange={(e) => update('cutoff_from', e.target.value)}
-            placeholder="e.g. 100"
-            className="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm focus:ring-2 focus:ring-primary-navy/20 focus:border-primary-navy"
-          />
-        </div>
-
-        {/* Cutoff to */}
-        <div>
-          <label className="block text-sm font-medium text-gray-700 mb-1">
-            Rank / Cutoff to <span className="text-red-500">*</span>
-          </label>
-          <input
-            type="number"
-            min={0}
-            step="any"
-            value={filters.cutoff_to}
-            onChange={(e) => update('cutoff_to', e.target.value)}
+            min={1}
+            step="1"
+            value={filters.rank}
+            onChange={(e) => update('rank', e.target.value)}
             placeholder="e.g. 5000"
             className="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm focus:ring-2 focus:ring-primary-navy/20 focus:border-primary-navy"
           />
         </div>
 
-        {/* Admission category */}
-        <div>
-          <label className="block text-sm font-medium text-gray-700 mb-1">
-            Admission category
-          </label>
-          <select
-            value={filters.admission_category_name_enum}
-            onChange={(e) => update('admission_category_name_enum', e.target.value)}
-            className="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm focus:ring-2 focus:ring-primary-navy/20 focus:border-primary-navy"
-          >
-            {ADMISSION_CATEGORIES.map((o) => (
-              <option key={o.value} value={o.value}>{o.label}</option>
-            ))}
-          </select>
-        </div>
+        {/* Admission category (dynamic per exam) */}
+        {admissionCategories.length > 0 && (
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-1">
+              Admission category
+            </label>
+            <select
+              value={filters.admission_category_name_enum}
+              onChange={(e) => update('admission_category_name_enum', e.target.value)}
+              className="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm focus:ring-2 focus:ring-primary-navy/20 focus:border-primary-navy"
+            >
+              {admissionCategories.map((o) => (
+                <option key={o.value} value={o.value}>{o.label}</option>
+              ))}
+            </select>
+          </div>
+        )}
 
         {/* Sort order */}
         <div>
@@ -182,9 +168,9 @@ export default function FilterPanel({
       <button
         type="submit"
         disabled={loading}
-        className={`rounded-lg px-5 py-2.5 text-sm font-semibold disabled:opacity-50 transition-colors duration-300 ${submitClasses}`}
+        className={`rounded-xl px-6 py-2.5 text-sm font-semibold shadow-sm disabled:opacity-50 transition-all duration-300 hover:shadow-md ${submitClasses}`}
       >
-        {loading ? 'Searching…' : 'Predict Colleges'}
+        {loading ? 'Searching\u2026' : 'Predict Colleges'}
       </button>
     </form>
   );
