@@ -158,6 +158,17 @@ export const updateLead = async (id, payload, token = getStoredToken()) => {
   }, token);
 };
 
+/** PATCH /admin/leads/:id/slot — body: { slotDate: "YYYY-MM-DD", selectedSlot: "MONDAY_7PM" } */
+export const updateLeadSlotBooking = async (id, payload, token = getStoredToken()) => {
+  return adminRequest(`/leads/${encodeURIComponent(id)}/slot`, {
+    method: 'PATCH',
+    body: JSON.stringify({
+      slotDate: payload?.slotDate,
+      selectedSlot: payload?.selectedSlot,
+    }),
+  }, token);
+};
+
 export const getSlotConfigs = async (token = getStoredToken()) => {
   return adminRequest('/slots', { method: 'GET' }, token);
 };
@@ -168,8 +179,9 @@ export const getSlotsForDate = async (date, token = getStoredToken()) => {
     return [];
   }
   const res = await adminRequest(`/slots/for-date?date=${encodeURIComponent(date.trim())}`, { method: 'GET' }, token);
-  if (!res.success || !res.data || !Array.isArray(res.data.slots)) return [];
-  return res.data.slots;
+  const slots = res?.data?.data?.slots || res?.data?.slots;
+  if (!res.success || !Array.isArray(slots)) return [];
+  return slots;
 };
 
 export const updateSlotConfig = async (slotId, enabled, token = getStoredToken()) => {

@@ -1,7 +1,7 @@
 import { useState, useEffect, useRef } from 'react';
 import { useSearchParams } from 'react-router-dom';
 import { FiEye, FiCopy } from 'react-icons/fi';
-import { getAdminLeads, getLead, updateLeadNotes, getStoredToken } from '../../utils/adminApi';
+import { getAdminLeads, getLead, updateLeadNotes, updateLeadSlotBooking, getSlotsForDate, getStoredToken } from '../../utils/adminApi';
 import { useAuth } from '../../hooks/useAuth';
 import { useAdminDateRange } from '../../hooks/useAdminDateRange';
 import TableSkeleton from '../../components/UI/TableSkeleton';
@@ -18,6 +18,13 @@ function formatDate(d) {
   if (!d) return '—';
   const date = new Date(d);
   return date.toLocaleDateString('en-IN', { dateStyle: 'short' }) + ' ' + date.toLocaleTimeString('en-IN', { timeStyle: 'short' });
+}
+
+function toDateInputValue(value) {
+  if (!value) return '';
+  const date = new Date(value);
+  if (Number.isNaN(date.getTime())) return '';
+  return date.toLocaleDateString('en-CA', { timeZone: 'Asia/Kolkata' });
 }
 
 function formatSlotIdForDisplay(slotId) {
@@ -111,6 +118,12 @@ export default function Leads() {
   const [detailLoading, setDetailLoading] = useState(false);
   const [detailNotes, setDetailNotes] = useState('');
   const [detailSaving, setDetailSaving] = useState(false);
+  const [detailSlotDate, setDetailSlotDate] = useState('');
+  const [detailSlotId, setDetailSlotId] = useState('');
+  const [detailSlotOptions, setDetailSlotOptions] = useState([]);
+  const [detailSlotLoading, setDetailSlotLoading] = useState(false);
+  const [detailSlotSaving, setDetailSlotSaving] = useState(false);
+  const [detailSlotError, setDetailSlotError] = useState('');
   const [copyFeedback, setCopyFeedback] = useState(false);
   const [copyModalOpen, setCopyModalOpen] = useState(false);
   const [copySelectedFields, setCopySelectedFields] = useState(() => COPY_FIELDS.map((f) => f.key));
@@ -139,6 +152,11 @@ export default function Leads() {
       if (res.success && res.data?.data) {
         setDetailLead(res.data.data);
         setDetailNotes(res.data.data.adminNotes || '');
+        const initialSlotDate = toDateInputValue(res.data.data.slotDate);
+        setDetailSlotDate(initialSlotDate);
+        setDetailSlotId(res.data.data.selectedSlot || '');
+        setDetailSlotLoading(!!initialSlotDate);
+        setDetailSlotError('');
       }
     });
   };
@@ -146,6 +164,10 @@ export default function Leads() {
   const closeLeadDetail = () => {
     setDetailLead(null);
     setDetailNotes('');
+    setDetailSlotDate('');
+    setDetailSlotId('');
+    setDetailSlotOptions([]);
+    setDetailSlotError('');
   };
 
   const saveLeadNotes = () => {
@@ -162,6 +184,45 @@ export default function Leads() {
       }
     });
   };
+
+  const saveLeadSlot = () => {
+    if (!detailLead?.id || detailSlotSaving) return;
+    if (!detailSlotDate || !detailSlotId) {
+      setDetailSlotError('Please select both date and slot.');
+      return;
+    }
+    setDetailSlotSaving(true);
+    setDetailSlotError('');
+    updateLeadSlotBooking(
+      detailLead.id,
+      { slotDate: detailSlotDate, selectedSlot: detailSlotId },
+      getStoredToken()
+    ).then((res) => {
+      setDetailSlotSaving(false);
+      if (!res.success) {
+        setDetailSlotError(res.message || 'Failed to update slot booking');
+        return;
+      }
+      if (res.data?.data) {
+        setDetailLead(res.data.data);
+        setLeads((prev) => prev.map((l) => (l.id === detailLead.id ? { ...l, ...res.data.data } : l)));
+      }
+    });
+  };
+
+  useEffect(() => {
+    if (!detailLead || !detailSlotDate) return;
+    Promise.resolve(getSlotsForDate(detailSlotDate, getStoredToken()))
+      .then((slots) => {
+        const options = Array.isArray(slots) ? slots : [];
+        setDetailSlotOptions(options);
+        setDetailSlotId((current) => (current && !options.some((s) => s.slotId === current) ? '' : current));
+      })
+      .catch(() => {
+        setDetailSlotOptions([]);
+      })
+      .finally(() => setDetailSlotLoading(false));
+  }, [detailLead, detailSlotDate]);
 
   const copyPhone = (phone) => {
     if (!phone) return;
@@ -413,6 +474,56 @@ export default function Leads() {
                         <div><dt className="text-gray-500">Created</dt><dd className="text-gray-900">{formatDate(detailLead.createdAt)}</dd></div>
                         <div><dt className="text-gray-500">Updated</dt><dd className="text-gray-900">{formatDate(detailLead.updatedAt)}</dd></div>
                       </dl>
+                      <div>
+                        <label htmlFor="lead-slot-date" className="block text-sm font-medium text-gray-700 mb-1">Reassign slot date</label>
+                        <input
+                          id="lead-slot-date"
+                          type="date"
+                          value={detailSlotDate}
+                          onChange={(e) => {
+                            const nextDate = e.target.value;
+                            setDetailSlotDate(nextDate);
+                            if (!nextDate) {
+                              setDetailSlotOptions([]);
+                              setDetailSlotId('');
+                              setDetailSlotLoading(false);
+                              setDetailSlotError('');
+                            } else {
+                              setDetailSlotLoading(true);
+                              setDetailSlotError('');
+                            }
+                          }}
+                          className="w-full px-3 py-2 rounded-lg border border-gray-300 focus:ring-2 focus:ring-primary-blue-500 focus:border-primary-blue-500 outline-none text-sm"
+                        />
+                      </div>
+                      <div>
+                        <label htmlFor="lead-slot-id" className="block text-sm font-medium text-gray-700 mb-1">Reassign slot</label>
+                        <select
+                          id="lead-slot-id"
+                          value={detailSlotId}
+                          onChange={(e) => setDetailSlotId(e.target.value)}
+                          disabled={!detailSlotDate || detailSlotLoading}
+                          className="w-full px-3 py-2 rounded-lg border border-gray-300 focus:ring-2 focus:ring-primary-blue-500 focus:border-primary-blue-500 outline-none text-sm disabled:bg-gray-100"
+                        >
+                          <option value="">{detailSlotLoading ? 'Loading slots...' : 'Select available slot'}</option>
+                          {detailSlotOptions.map((slot) => (
+                            <option key={slot.slotId} value={slot.slotId}>
+                              {slot.label || formatSlotIdForDropdown(slot.slotId)}
+                            </option>
+                          ))}
+                        </select>
+                        {detailSlotError && (
+                          <p className="mt-1 text-xs text-red-600">{detailSlotError}</p>
+                        )}
+                        <button
+                          type="button"
+                          onClick={saveLeadSlot}
+                          disabled={detailSlotSaving || detailSlotLoading}
+                          className="mt-2 px-4 py-2 rounded-lg bg-primary-blue-600 text-white text-sm font-medium hover:opacity-90 disabled:opacity-50 transition-colors"
+                        >
+                          {detailSlotSaving ? 'Updating slot…' : 'Update slot'}
+                        </button>
+                      </div>
                       <div>
                         <label htmlFor="lead-admin-notes" className="block text-sm font-medium text-gray-700 mb-1">Admin notes</label>
                         <textarea
