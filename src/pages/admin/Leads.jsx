@@ -6,13 +6,14 @@ import { useAuth } from '../../hooks/useAuth';
 import { useAdminDateRange } from '../../hooks/useAdminDateRange';
 import TableSkeleton from '../../components/UI/TableSkeleton';
 import { ContentSkeleton } from '../../components/UI/Skeleton';
-import { dedupeByPhone } from '../../components/Admin/CopyToSheetsModal';
+import CopyToSheetsModal from '../../components/Admin/CopyToSheetsModal';
 import {
   ALL_SLOT_IDS,
   leadListFiltersFromSearchParams,
   leadListFiltersToSearchParams,
   leadListFiltersToApiParams,
 } from '../../utils/adminLeadFiltersShared';
+import { copyTextToClipboard } from '../../utils/clipboard';
 
 function formatDate(d) {
   if (!d) return '—';
@@ -71,13 +72,6 @@ const COPY_FIELDS = [
   { key: 'leadDescription', label: 'Lead Description' },
 ];
 
-function escapeTsvCell(val) {
-  if (val == null) return '';
-  const s = String(val);
-  if (/[\t\n"]/.test(s)) return `"${s.replace(/"/g, '""')}"`;
-  return s;
-}
-
 function getLeadCellValue(lead, key) {
   const v = lead[key];
   if (key === 'otpVerified') return v ? 'Yes' : 'No';
@@ -87,14 +81,6 @@ function getLeadCellValue(lead, key) {
   if (key === 'createdAt' || key === 'updatedAt') return v ? formatDate(v) : '';
   if (v == null || v === '') return '';
   return String(v);
-}
-
-function buildTsv(leads, selectedKeys) {
-  const keys = selectedKeys.filter((k) => COPY_FIELDS.some((f) => f.key === k));
-  const labels = keys.map((k) => COPY_FIELDS.find((f) => f.key === k).label);
-  const header = labels.join('\t');
-  const rows = leads.map((lead) => keys.map((k) => escapeTsvCell(getLeadCellValue(lead, k))).join('\t'));
-  return [header, ...rows].join('\n');
 }
 
 export default function Leads() {
@@ -113,7 +99,8 @@ export default function Leads() {
   const [detailSaving, setDetailSaving] = useState(false);
   const [copyFeedback, setCopyFeedback] = useState(false);
   const [copyModalOpen, setCopyModalOpen] = useState(false);
-  const [copySelectedFields, setCopySelectedFields] = useState(() => COPY_FIELDS.map((f) => f.key));
+  const [copyLoading, setCopyLoading] = useState(false);
+  const [copyRecords, setCopyRecords] = useState([]);
   const cancelledRef = useRef(false);
   const requestIdRef = useRef(0);
 
@@ -165,7 +152,7 @@ export default function Leads() {
 
   const copyPhone = (phone) => {
     if (!phone) return;
-    navigator.clipboard.writeText(phone).then(() => {
+    copyTextToClipboard(phone).then(() => {
       setCopyFeedback(true);
       setTimeout(() => setCopyFeedback(false), 1500);
     });
@@ -238,6 +225,31 @@ export default function Leads() {
     setPagination((prev) => ({ ...prev, page: next }));
   };
 
+  const prepareCopyLeads = async () => {
+    setCopyLoading(true);
+    setError('');
+    const params = {
+      page: 1,
+      limit: 5000,
+      ...(dateRange.from && { from: dateRange.from }),
+      ...(dateRange.to && { to: dateRange.to }),
+      ...leadListFiltersToApiParams(leadListFilters),
+    };
+    const result = await getAdminLeads(params, getStoredToken());
+    setCopyLoading(false);
+    if (!result.success) {
+      if (result.status === 401) {
+        logout();
+        window.location.href = '/admin/login';
+        return;
+      }
+      setError(result.message || 'Failed to load leads for copy');
+      return;
+    }
+    setCopyRecords(result.data?.data || []);
+    setCopyModalOpen(true);
+  };
+
   return (
     <div className="max-w-[1400px] mx-auto px-1">
       <h2 className="text-xl font-semibold text-gray-800 mb-4 tracking-tight">Leads</h2>
@@ -270,15 +282,12 @@ export default function Leads() {
           </label>
           <button
             type="button"
-            onClick={() => {
-              setCopyModalOpen(true);
-              setCopySelectedFields(COPY_FIELDS.map((f) => f.key));
-              setCopyFeedback(false);
-            }}
+            onClick={prepareCopyLeads}
+            disabled={copyLoading}
             className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg border border-gray-300 text-sm font-medium text-gray-700 hover:bg-gray-50 transition-colors"
             aria-label="Copy to sheets"
           >
-            <FiCopy className="w-4 h-4" /> Copy
+            <FiCopy className="w-4 h-4" /> {copyLoading ? 'Preparing...' : 'Copy'}
           </button>
         </div>
       </div>
@@ -439,106 +448,16 @@ export default function Leads() {
             </div>
           )}
 
-          {/* Copy to sheets modal */}
-          {copyModalOpen && (
-            <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50" aria-modal="true" role="dialog" aria-labelledby="copy-modal-title">
-              <div className="bg-white rounded-xl shadow-xl max-w-md w-full max-h-[90vh] overflow-hidden flex flex-col">
-                <div className="px-4 py-3 border-b border-gray-200 flex items-center justify-between">
-                  <h3 id="copy-modal-title" className="font-semibold text-gray-800">Copy to sheets</h3>
-                  <button
-                    type="button"
-                    onClick={() => setCopyModalOpen(false)}
-                    className="p-2 rounded-lg text-gray-500 hover:bg-gray-100"
-                    aria-label="Close"
-                  >
-                    ×
-                  </button>
-                </div>
-                <div className="p-4 overflow-y-auto flex-1">
-                  {(() => {
-                    const leadsToCopy = dedupeByPhone(leads, 'phone');
-                    const duplicateRemoved = leads.length !== leadsToCopy.length;
-                    return (
-                  <p className="text-sm text-gray-600 mb-4">
-                    {leadsToCopy.length === 0
-                      ? 'No data to copy. Load leads with the current filters first.'
-                      : duplicateRemoved
-                        ? `Choose columns to include. Data will be copied for ${leadsToCopy.length} unique lead${leadsToCopy.length === 1 ? '' : 's'} (duplicates by phone removed).`
-                        : `Choose columns to include. Data will be copied for the ${leadsToCopy.length} lead${leadsToCopy.length === 1 ? '' : 's'} currently shown.`}
-                  </p>
-                    );
-                  })()}
-                  <div className="space-y-3">
-                    <label className="flex items-center gap-2 cursor-pointer text-sm font-medium text-gray-700">
-                      <input
-                        type="checkbox"
-                        checked={copySelectedFields.length === COPY_FIELDS.length}
-                        ref={(el) => {
-                          if (el) el.indeterminate = copySelectedFields.length > 0 && copySelectedFields.length < COPY_FIELDS.length;
-                        }}
-                        onChange={(e) => {
-                          setCopySelectedFields(e.target.checked ? COPY_FIELDS.map((f) => f.key) : []);
-                        }}
-                        className="rounded border-gray-300 text-primary-blue-500 focus:ring-primary-blue-500"
-                        aria-label="Select all columns"
-                      />
-                      Select all
-                    </label>
-                    <div className="grid grid-cols-1 gap-2 max-h-[240px] overflow-y-auto pr-1">
-                      {COPY_FIELDS.map(({ key, label }) => (
-                        <label key={key} className="flex items-center gap-2 cursor-pointer text-sm text-gray-700">
-                          <input
-                            type="checkbox"
-                            checked={copySelectedFields.includes(key)}
-                            onChange={(e) => {
-                              if (e.target.checked) {
-                                setCopySelectedFields((prev) => [...prev, key]);
-                              } else {
-                                setCopySelectedFields((prev) => prev.filter((k) => k !== key));
-                              }
-                            }}
-                            className="rounded border-gray-300 text-primary-blue-500 focus:ring-primary-blue-500"
-                            aria-label={`Include ${label}`}
-                          />
-                          {label}
-                        </label>
-                      ))}
-                    </div>
-                  </div>
-                  {copySelectedFields.length === 0 && dedupeByPhone(leads, 'phone').length > 0 && (
-                    <p className="text-sm text-amber-600 mt-2">Select at least one column to copy.</p>
-                  )}
-                </div>
-                <div className="px-4 py-3 border-t border-gray-200 flex items-center justify-end gap-2">
-                  <button
-                    type="button"
-                    onClick={() => setCopyModalOpen(false)}
-                    className="px-4 py-2 rounded-lg border border-gray-300 text-sm font-medium text-gray-700 hover:bg-gray-100 transition-colors"
-                  >
-                    Cancel
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => {
-                      const leadsToCopy = dedupeByPhone(leads, 'phone');
-                      const tsv = buildTsv(leadsToCopy, copySelectedFields);
-                      navigator.clipboard.writeText(tsv).then(() => {
-                        setCopyFeedback(true);
-                        setTimeout(() => {
-                          setCopyModalOpen(false);
-                          setCopyFeedback(false);
-                        }, 1500);
-                      });
-                    }}
-                    disabled={dedupeByPhone(leads, 'phone').length === 0 || copySelectedFields.length === 0}
-                    className="px-4 py-2 rounded-lg bg-primary-navy text-white text-sm font-medium hover:opacity-90 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
-                  >
-                    {copyFeedback ? 'Copied!' : 'Copy to clipboard'}
-                  </button>
-                </div>
-              </div>
-            </div>
-          )}
+          <CopyToSheetsModal
+            fields={COPY_FIELDS}
+            records={copyRecords}
+            getCellValue={getLeadCellValue}
+            open={copyModalOpen}
+            onClose={() => setCopyModalOpen(false)}
+            recordLabel="leads"
+            dedupeByPhoneKey="phone"
+            loading={copyLoading}
+          />
 
           <div className="flex flex-wrap items-center justify-between gap-3 py-3 px-1">
             {viewAll ? (

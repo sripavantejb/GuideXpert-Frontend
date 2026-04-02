@@ -145,10 +145,12 @@ export const bulkDeleteStudents = async (ids, token = getCounsellorToken()) => {
 };
 
 /**
- * Get predicted colleges from NW College Predictor API (proxied by backend).
- * @param {{ offset: number, limit: number, entrance_exam_name_enum: string, admission_category_name_enum: string, cutoff_from: number, cutoff_to: number, reservation_category_code: string, branch_codes?: string[], districts?: string[], sort_order?: string }} params
+ * Get predicted colleges via the backend proxy.
+ * When `params.exam` is set (e.g. "KCET", "JEE"), the backend routes to CollegeDost per-exam endpoints.
+ * Without `exam`, falls back to the legacy earlywave/NW predictor.
+ *
+ * @param {{ exam?: string, offset?: number, limit?: number, entrance_exam_name_enum?: string, admission_category_name_enum?: string, cutoff_from: number, cutoff_to: number, reservation_category_codes?: string[], reservation_category_code?: string, branch_codes?: string[], districts?: string[], sort_order?: string }} params
  * @param {string} [token]
- * @returns {Promise<{ success: boolean, data?: { total_no_of_colleges: number, admission_category_name: string, colleges: object[] }, status?: number, message?: string, data?: object }>}
  */
 export const getPredictedColleges = async (params = {}, token = getCounsellorToken()) => {
   const { offset = 0, limit = 10, ...body } = params;

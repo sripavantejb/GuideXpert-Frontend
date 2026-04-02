@@ -22,6 +22,7 @@ import { ASSESSMENT_SECTIONS_4 } from '../../data/assessmentQuestions4';
 import { ASSESSMENT_SECTIONS_5 } from '../../data/assessmentQuestions5';
 import TableSkeleton from '../../components/UI/TableSkeleton';
 import { ContentSkeleton } from '../../components/UI/Skeleton';
+import { copyTextToClipboard } from '../../utils/clipboard';
 
 const ASSESSMENT_TYPES = [
   {
@@ -161,6 +162,7 @@ export default function AssessmentResults() {
   const [detailLoading, setDetailLoading] = useState(false);
   const [detailError, setDetailError] = useState('');
   const [copyFeedback, setCopyFeedback] = useState(false);
+  const [copyLoading, setCopyLoading] = useState(false);
 
   const filters = filtersByType[typeId] ?? DEFAULT_FILTERS();
   const { mode, selectedDate, rangeFrom, rangeTo, query, viewYear, viewMonth } = filters;
@@ -306,8 +308,42 @@ export default function AssessmentResults() {
     setDetailError('');
   };
 
-  const copyMissingLeadsToClipboard = useCallback(() => {
-    if (typeId !== 6 || submissions.length === 0) return;
+  const copyMissingLeadsToClipboard = useCallback(async () => {
+    if (typeId !== 6 || copyLoading) return;
+    setCopyLoading(true);
+    const options = { from, to, q: query.trim() || undefined };
+    const MAX_COPY_ROWS = 5000;
+    const fetchLimit = 5000;
+    let pageNo = 1;
+    let allRows = [];
+    let expectedTotal = 0;
+    while (allRows.length < MAX_COPY_ROWS) {
+      // Load all matching submissions, not just the visible page.
+      // Keep bounded at 5000 rows to avoid browser clipboard memory spikes.
+      // eslint-disable-next-line no-await-in-loop
+      const result = await activeConfig.getSubmissions(pageNo, fetchLimit, options, getStoredToken());
+      if (!result.success) {
+        setCopyLoading(false);
+        if (result.status === 401) {
+          logout();
+          window.location.href = '/admin/login';
+          return;
+        }
+        setError(result.message || 'Failed to load missing leads for copy');
+        return;
+      }
+      const rows = result.data?.submissions ?? [];
+      expectedTotal = result.data?.total ?? rows.length;
+      allRows = allRows.concat(rows);
+      if (rows.length < fetchLimit) break;
+      if (allRows.length >= expectedTotal) break;
+      pageNo += 1;
+    }
+    allRows = allRows.slice(0, MAX_COPY_ROWS);
+    if (allRows.length === 0) {
+      setCopyLoading(false);
+      return;
+    }
     const escape = (v) => {
       const s = String(v ?? '').trim();
       if (s.includes(',') || s.includes('"') || s.includes('\n') || s.includes('\r')) {
@@ -316,7 +352,7 @@ export default function AssessmentResults() {
       return s;
     };
     const header = 'Name,Phone,Score,Submitted at';
-    const rows = submissions.map((row) =>
+    const rows = allRows.map((row) =>
       [
         escape(row.fullName),
         escape(row.phone),
@@ -325,14 +361,15 @@ export default function AssessmentResults() {
       ].join(',')
     );
     const csv = [header, ...rows].join('\n');
-    navigator.clipboard.writeText(csv).then(
-      () => {
-        setCopyFeedback(true);
-        setTimeout(() => setCopyFeedback(false), 2000);
-      },
-      () => {}
-    );
-  }, [typeId, submissions]);
+    copyTextToClipboard(csv).then(() => {
+      setCopyLoading(false);
+      setCopyFeedback(true);
+      setTimeout(() => setCopyFeedback(false), 2000);
+    }).catch(() => {
+      setCopyLoading(false);
+      setError('Failed to copy missing leads');
+    });
+  }, [typeId, copyLoading, from, to, query, activeConfig, logout]);
 
   return (
     <div className="max-w-[1400px] mx-auto px-4 py-6">
@@ -634,9 +671,12 @@ export default function AssessmentResults() {
             <button
               type="button"
               onClick={copyMissingLeadsToClipboard}
+              disabled={copyLoading}
               className="inline-flex items-center gap-2 px-5 py-2.5 rounded-xl border-2 border-[#003366] bg-[#003366] text-white text-sm font-semibold hover:bg-[#004080] hover:border-[#004080] transition-colors shadow-sm"
             >
-              {copyFeedback ? (
+              {copyLoading ? (
+                <>Preparing...</>
+              ) : copyFeedback ? (
                 <>
                   <svg className="w-5 h-5 text-green-300" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
@@ -648,7 +688,7 @@ export default function AssessmentResults() {
                   <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z" />
                   </svg>
-                  Copy list (this page)
+                  Copy all matching rows
                 </>
               )}
             </button>

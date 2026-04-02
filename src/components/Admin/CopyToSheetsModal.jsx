@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react';
+import { copyTextToClipboard } from '../../utils/clipboard';
 
 function escapeTsvCell(val) {
   if (val == null) return '';
@@ -51,6 +52,8 @@ export default function CopyToSheetsModal({
   onClose,
   recordLabel = 'records',
   dedupeByPhoneKey,
+  loading = false,
+  loadingMessage = 'Preparing all matching data for copy...',
 }) {
   const [copySelectedFields, setCopySelectedFields] = useState(() => fields.map((f) => f.key));
   const [copyFeedback, setCopyFeedback] = useState(false);
@@ -69,15 +72,17 @@ export default function CopyToSheetsModal({
   const duplicateRemoved = dedupeByPhoneKey && records.length !== toCopy.length;
   const singular = recordLabel.replace(/s$/, '') || recordLabel;
   const message =
-    count === 0
+    loading
+      ? loadingMessage
+      : count === 0
       ? `No data to copy. Load ${recordLabel} with the current filters first.`
       : duplicateRemoved
         ? `Choose columns to include. Data will be copied for ${count} unique ${count === 1 ? singular : recordLabel} (duplicates by phone removed).`
-        : `Choose columns to include. Data will be copied for the ${count} ${count === 1 ? singular : recordLabel} currently shown.`;
+        : `Choose columns to include. Data will be copied for all ${count === 1 ? singular : recordLabel} matching current filters.`;
 
   const handleCopy = () => {
     const tsv = buildTsv(toCopy, fields, getCellValue, copySelectedFields);
-    navigator.clipboard.writeText(tsv).then(() => {
+    copyTextToClipboard(tsv).then(() => {
       setCopyFeedback(true);
       setTimeout(() => {
         onClose();
@@ -163,7 +168,7 @@ export default function CopyToSheetsModal({
           <button
             type="button"
             onClick={handleCopy}
-            disabled={toCopy.length === 0 || copySelectedFields.length === 0}
+            disabled={loading || toCopy.length === 0 || copySelectedFields.length === 0}
             className="px-4 py-2 rounded-lg bg-primary-navy text-white text-sm font-medium hover:opacity-90 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
           >
             {copyFeedback ? 'Copied!' : 'Copy to clipboard'}
