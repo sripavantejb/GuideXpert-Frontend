@@ -83,6 +83,28 @@ export function getApEamcetDistrictOptions(admission) {
   return AP_EAMCET_DISTRICT_OPTIONS_BY_ADMISSION[key] ?? AP_EAMCET_DISTRICT_OPTIONS_BY_ADMISSION.AU;
 }
 
+/** Upstream promoted slot (Hyderabad); not shown in AP EAMCET predictor results. */
+const AP_EAMCET_HIDDEN_PROMOTED_COLLEGE_ID = '6f3cf78b-c152-4dad-b52a-0642baad860c';
+
+export function shouldHideCollegeFromApEamcetPredictor(college) {
+  if (!college) return false;
+  if (String(college.college_id || '') === AP_EAMCET_HIDDEN_PROMOTED_COLLEGE_ID) return true;
+  const name = (college.college_name || '').toLowerCase();
+  return name.includes('malla reddy') && name.includes('deemed');
+}
+
+export function filterCollegesForApEamcetPredictor(colleges) {
+  if (!Array.isArray(colleges)) return [];
+  return colleges.filter((c) => !shouldHideCollegeFromApEamcetPredictor(c));
+}
+
+/** API total includes the hidden promoted row once; use for summary counts. */
+export function apEamcetPredictorDisplayTotal(apiTotal) {
+  const n = Number(apiTotal);
+  if (!Number.isFinite(n) || n <= 0) return 0;
+  return Math.max(0, n - 1);
+}
+
 /**
  * @typedef {{
  *   value: string,
