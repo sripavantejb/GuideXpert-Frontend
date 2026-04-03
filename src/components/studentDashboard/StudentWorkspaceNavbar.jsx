@@ -1,4 +1,6 @@
-import { Link } from 'react-router-dom';
+import { useCallback, useEffect, useId, useState } from 'react';
+import { Link, useLocation } from 'react-router-dom';
+import { FiMenu, FiX } from 'react-icons/fi';
 
 const LOGO_URL =
   'https://res.cloudinary.com/dfqdb1xws/image/upload/v1773394627/GuideXpert_Logo_2_icepsv.png';
@@ -11,28 +13,50 @@ const navLinks = [
 ];
 
 export default function StudentWorkspaceNavbar() {
+  const [mobileOpen, setMobileOpen] = useState(false);
+  const { pathname } = useLocation();
+  const menuId = useId();
+
+  const closeMenu = useCallback(() => setMobileOpen(false), []);
+
+  useEffect(() => {
+    closeMenu();
+  }, [pathname, closeMenu]);
+
+  useEffect(() => {
+    if (!mobileOpen) return;
+    const onKeyDown = (e) => {
+      if (e.key === 'Escape') closeMenu();
+    };
+    document.addEventListener('keydown', onKeyDown);
+    const prev = document.body.style.overflow;
+    document.body.style.overflow = 'hidden';
+    return () => {
+      document.removeEventListener('keydown', onKeyDown);
+      document.body.style.overflow = prev;
+    };
+  }, [mobileOpen, closeMenu]);
+
   return (
     <header
       className="sticky top-0 z-100 border-b-[3px] border-black bg-white shadow-[4px_4px_0_0_#000]"
       role="banner"
     >
-      <div className="mx-auto max-w-[1600px] px-4 py-3 sm:px-6 lg:px-8 max-sm:grid max-sm:grid-cols-[minmax(0,1fr)_auto] max-sm:items-center max-sm:gap-x-3 max-sm:gap-y-2 sm:flex sm:flex-wrap sm:items-center sm:gap-3 md:flex-nowrap">
-        <div className="order-1 flex min-w-0 shrink-0 max-sm:col-start-1 max-sm:row-start-1 md:order-0 md:flex-1 md:justify-start">
-          <Link to="/students" className="flex items-center gap-2" aria-label="GuideXpert home">
-            <img src={LOGO_URL} alt="" className="h-7 object-contain md:h-8" />
+      <div className="mx-auto flex max-w-[1600px] items-center justify-between gap-3 px-4 py-3 sm:px-6 lg:px-8">
+        <div className="flex min-w-0 shrink-0 items-center">
+          <Link to="/students" className="flex min-w-0 items-center gap-2" aria-label="GuideXpert home">
+            <img src={LOGO_URL} alt="" className="h-7 max-h-8 w-auto max-w-[min(100%,200px)] object-contain md:h-8" />
           </Link>
         </div>
 
-        <div className="order-2 flex min-w-0 flex-1 flex-wrap items-center justify-end gap-2 max-sm:contents sm:gap-3 md:order-0 md:flex-1 md:flex-nowrap">
-          <nav
-            className="flex flex-wrap items-center justify-end gap-1 max-sm:col-span-2 max-sm:row-start-2 max-sm:justify-center sm:gap-2"
-            aria-label="Student workspace"
-          >
+        {/* Desktop / tablet: inline nav */}
+        <div className="hidden min-w-0 flex-1 items-center justify-end gap-3 sm:flex md:flex-nowrap">
+          <nav className="flex flex-wrap items-center justify-end gap-1 md:gap-2" aria-label="Student workspace">
             {navLinks.map(({ label, to }) => (
               <Link
                 key={to}
                 to={to}
-                className="sw-nav-link rounded-md px-2.5 py-2 text-sm font-bold text-[#0F172A] sm:px-3"
+                className="sw-nav-link rounded-md px-2.5 py-2.5 text-sm font-bold text-[#0F172A] md:px-3"
               >
                 {label}
               </Link>
@@ -40,16 +64,74 @@ export default function StudentWorkspaceNavbar() {
           </nav>
           <button
             type="button"
-            className="flex shrink-0 items-center gap-2 self-center rounded-lg border-2 border-black bg-[#c7f36b] px-2 py-1.5 text-xs font-bold text-[#0F172A] shadow-[2px_2px_0_0_#000] transition hover:bg-[#ffe066] max-sm:col-start-2 max-sm:row-start-1 sm:px-3"
+            className="flex shrink-0 items-center gap-2 rounded-lg border-2 border-black bg-[#c7f36b] px-2 py-2 text-xs font-bold text-[#0F172A] shadow-[2px_2px_0_0_#000] transition hover:bg-[#ffe066] sm:px-3"
             aria-label="Student profile (demo)"
           >
-            <span className="flex h-8 w-8 items-center justify-center rounded-full border-2 border-black bg-white text-sm font-black">
+            <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full border-2 border-black bg-white text-sm font-black">
               S
             </span>
             <span className="hidden md:inline">Profile</span>
           </button>
         </div>
+
+        {/* Mobile: menu toggle + profile */}
+        <div className="flex shrink-0 items-center gap-2 sm:hidden">
+          <button
+            type="button"
+            className="flex h-11 w-11 items-center justify-center rounded-lg border-2 border-black bg-white text-[#0F172A] shadow-[2px_2px_0_0_#000] transition hover:bg-slate-50"
+            aria-expanded={mobileOpen}
+            aria-controls={menuId}
+            aria-label={mobileOpen ? 'Close menu' : 'Open menu'}
+            onClick={() => setMobileOpen((o) => !o)}
+          >
+            {mobileOpen ? <FiX className="h-6 w-6" aria-hidden /> : <FiMenu className="h-6 w-6" aria-hidden />}
+          </button>
+          <button
+            type="button"
+            className="flex h-11 min-w-[44px] items-center justify-center gap-2 rounded-lg border-2 border-black bg-[#c7f36b] px-2 text-xs font-bold text-[#0F172A] shadow-[2px_2px_0_0_#000] transition hover:bg-[#ffe066]"
+            aria-label="Student profile (demo)"
+          >
+            <span className="flex h-8 w-8 items-center justify-center rounded-full border-2 border-black bg-white text-sm font-black">
+              S
+            </span>
+          </button>
+        </div>
       </div>
+
+      {/* Mobile menu panel */}
+      {mobileOpen ? (
+        <>
+          <button
+            type="button"
+            className="fixed inset-x-0 bottom-0 top-16 z-90 bg-black/40 sm:hidden"
+            aria-label="Close menu"
+            onClick={closeMenu}
+          />
+          <div
+            id={menuId}
+            className="absolute left-0 right-0 top-full z-95 max-h-[min(70vh,calc(100dvh-5rem))] overflow-y-auto border-b-[3px] border-black bg-white shadow-[0_8px_0_0_#000] sm:hidden"
+            role="navigation"
+            aria-label="Student workspace"
+          >
+            <nav className="mx-auto max-w-[1600px] px-4 py-3">
+              <ul className="flex flex-col gap-1">
+                {navLinks.map(({ label, to }) => (
+                  <li key={to}>
+                    <Link
+                      to={to}
+                      className="sw-nav-link block min-h-[48px] rounded-lg border-2 border-transparent px-3 py-3 text-base font-bold text-[#0F172A] hover:border-black hover:bg-[#c7f36b]/30"
+                      onClick={closeMenu}
+                    >
+                      {label}
+                    </Link>
+                  </li>
+                ))}
+              </ul>
+            </nav>
+          </div>
+        </>
+      ) : null}
+
       <style>{`
         @keyframes sw-nav-bounce {
           0%, 100% { transform: translateY(0); }

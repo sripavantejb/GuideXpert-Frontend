@@ -86,7 +86,9 @@
 }
 
 /**
- * Student tool / hub pages: mint top + pale blue bottom with same dot grid (viewport-fixed split).
+ * Student tool / hub pages: mint top + pale blue bottom with same dot grid.
+ * Mobile: scroll attachment avoids janky fixed backgrounds on iOS/Android.
+ * md+: fixed keeps the split aligned to the viewport.
  */
 .student-tool-page-shell {
   background-color: var(--gx-student-tool-blue);
@@ -101,7 +103,13 @@
     );
   background-size: 20px 20px, 100% 100%;
   background-repeat: repeat, no-repeat;
-  background-attachment: fixed, fixed;
+  background-attachment: scroll, scroll;
+}
+
+@media (min-width: 768px) {
+  .student-tool-page-shell {
+    background-attachment: fixed, fixed;
+  }
 }
 
 /* Webinar login step 3 (not allowed) – left panel subtle background animation */

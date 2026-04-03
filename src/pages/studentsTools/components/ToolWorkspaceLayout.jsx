@@ -7,7 +7,7 @@ import { getHeroMeta, HERO_ACCENT_STYLES } from '../workspaceMeta';
 function HelpList({ title, items, icon }) {
   const SvgIcon = icon;
   return (
-    <div className="rounded-[14px] border-[3px] border-black bg-white p-5 shadow-[5px_5px_0_#000]">
+    <div className="min-w-0 rounded-[14px] border-[3px] border-black bg-white p-4 shadow-[5px_5px_0_#000] sm:p-5">
       <h3 className="mb-4 flex items-center gap-3 text-base font-black text-[#0F172A]">
         <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-[10px] border-[3px] border-black bg-[#F8FAFC] shadow-[3px_3px_0_#000]">
           <SvgIcon className="h-5 w-5 text-[#0F172A]" aria-hidden />
@@ -49,8 +49,8 @@ export default function ToolWorkspaceLayout({
       <StudentWorkspaceNavbar />
       <main className="student-tool-page-shell relative flex min-h-0 flex-1 flex-col">
         {compactHero ? (
-          <div className="mx-auto w-full max-w-7xl shrink-0 px-4 pt-8 pb-4 sm:px-6 sm:pb-6 lg:px-8">
-            <section className="rounded-[14px] border-[3px] border-black bg-[#0F172A] p-6 shadow-[4px_4px_0_#000] sm:p-8 lg:p-10">
+          <div className="mx-auto w-full min-w-0 max-w-7xl shrink-0 px-4 pt-5 pb-3 sm:px-6 sm:pt-8 sm:pb-6 lg:px-8">
+            <section className="rounded-[14px] border-[3px] border-black bg-[#0F172A] p-5 shadow-[4px_4px_0_#000] sm:p-8 lg:p-10">
               <p className="mb-3 text-[10px] font-bold uppercase tracking-widest text-slate-400">Student tool workspace</p>
               <div className="flex flex-col gap-4 sm:flex-row sm:items-start">
                 <div
@@ -59,16 +59,16 @@ export default function ToolWorkspaceLayout({
                   <HeroIcon className="h-6 w-6 sm:h-7 sm:w-7" strokeWidth={2.25} aria-hidden />
                 </div>
                 <div className="min-w-0 flex-1">
-                  <h1 className="text-3xl font-black tracking-tight text-white sm:text-4xl">{title}</h1>
+                  <h1 className="text-2xl font-black tracking-tight text-white sm:text-3xl md:text-4xl">{title}</h1>
                   <p className="mt-2 max-w-2xl text-sm font-normal leading-relaxed text-slate-300 sm:text-base">{subtitle}</p>
                 </div>
               </div>
             </section>
           </div>
         ) : (
-          <div className="mx-auto w-full max-w-7xl shrink-0 px-4 pt-8 pb-4 sm:px-6 sm:pb-6 lg:px-8">
+          <div className="mx-auto w-full min-w-0 max-w-7xl shrink-0 px-4 pt-5 pb-3 sm:px-6 sm:pt-8 sm:pb-6 lg:px-8">
             <section className="overflow-hidden rounded-[14px] border-[3px] border-black bg-[#0F172A] shadow-[4px_4px_0_#000]">
-              <div className="p-6 sm:p-8 lg:p-10">
+              <div className="p-5 sm:p-8 lg:p-10">
                 <p className="mb-3 text-[10px] font-bold uppercase tracking-widest text-slate-400">Student tool workspace</p>
                 <div className="grid gap-8 lg:grid-cols-[minmax(0,1fr)_auto] lg:items-start">
                   <div className="flex flex-col gap-5 sm:flex-row sm:items-start">
@@ -78,14 +78,14 @@ export default function ToolWorkspaceLayout({
                       <HeroIcon className="h-9 w-9 sm:h-11 sm:w-11" strokeWidth={2} aria-hidden />
                     </div>
                     <div className="min-w-0 flex-1">
-                      <h1 className="text-3xl font-black leading-[1.1] tracking-tight text-white sm:text-4xl lg:text-[2.5rem]">
+                      <h1 className="text-2xl font-black leading-[1.1] tracking-tight text-white sm:text-3xl md:text-4xl lg:text-[2.5rem]">
                         {title}
                       </h1>
                       <p className="mt-3 max-w-2xl text-sm font-normal leading-relaxed text-slate-300 sm:text-base">{subtitle}</p>
                     </div>
                   </div>
 
-                  <div className="w-full max-w-[min(100%,20rem)] lg:justify-self-end">
+                  <div className="w-full min-w-0 max-w-[min(100%,20rem)] lg:justify-self-end">
                     <div className="rounded-[14px] border-[3px] border-black bg-white shadow-[6px_6px_0_#c7f36b]">
                       <div className="flex items-center gap-2 border-b-[3px] border-black bg-[#F8FAFC] px-3 py-2">
                         <FiZap className="h-3.5 w-3.5 shrink-0 text-[#0F172A]" aria-hidden />
@@ -102,9 +102,9 @@ export default function ToolWorkspaceLayout({
           </div>
         )}
 
-        <div className="mx-auto flex min-h-0 w-full max-w-7xl flex-1 flex-col px-4 pb-10 pt-2 sm:px-6 sm:pb-12 sm:pt-4 lg:px-8">
-          <div className="flex-1 space-y-7">
-            <section className="rounded-[14px] border-[3px] border-black bg-white p-6 shadow-[6px_6px_0_#000] sm:p-8">
+        <div className="mx-auto flex min-h-0 w-full min-w-0 max-w-7xl flex-1 flex-col px-4 pb-8 pt-2 sm:px-6 sm:pb-10 sm:pt-4 lg:px-8 lg:pb-12">
+          <div className="flex-1 space-y-5 sm:space-y-7">
+            <section className="rounded-[14px] border-[3px] border-black bg-white p-4 shadow-[6px_6px_0_#000] sm:p-6 md:p-8">
               <div className="mb-6 flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
                 <div className="flex items-start gap-4">
                   <span className="flex h-12 w-12 shrink-0 items-center justify-center rounded-[12px] border-[3px] border-black bg-[#c7f36b] shadow-[4px_4px_0_#000]">
@@ -120,14 +120,14 @@ export default function ToolWorkspaceLayout({
               </div>
               <ol className="space-y-3">
                 {howItWorks?.map((item, index) => (
-                  <li key={item} className="flex gap-4">
+                  <li key={item} className="flex min-w-0 gap-3 sm:gap-4">
                     <span
                       className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full border-[3px] border-black bg-white text-sm font-black text-[#0F172A] shadow-[3px_3px_0_#000]"
                       aria-hidden
                     >
                       {index + 1}
                     </span>
-                    <span className="pt-1 text-sm font-medium leading-relaxed text-slate-700 sm:text-base">{item}</span>
+                    <span className="min-w-0 pt-1 text-sm font-medium leading-relaxed text-slate-700 sm:text-base">{item}</span>
                   </li>
                 ))}
               </ol>
@@ -137,7 +137,7 @@ export default function ToolWorkspaceLayout({
               </div>
             </section>
 
-            <section className="rounded-[14px] border-[3px] border-black bg-white p-6 shadow-[6px_6px_0_#000] sm:p-8">
+            <section className="rounded-[14px] border-[3px] border-black bg-white p-4 shadow-[6px_6px_0_#000] sm:p-6 md:p-8">
               {children}
             </section>
 
