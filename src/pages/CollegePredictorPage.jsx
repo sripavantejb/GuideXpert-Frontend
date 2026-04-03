@@ -5,6 +5,8 @@ import { getPredictedCollegesPublic } from '../utils/api';
 import {
   ENTRANCE_EXAMS,
   getEntranceExamMeta,
+  filterCollegesForApEamcetPredictor,
+  apEamcetPredictorDisplayTotal,
   RESERVATION_CATEGORIES,
   BRANCH_CODES,
   SORT_ORDER_OPTIONS,
@@ -190,16 +192,24 @@ export default function CollegePredictorPage() {
         return;
       }
       const data = res.data;
+      const isApEamcet = apiExam === 'AP_EAMCET';
+      const rawColleges = data.colleges || [];
+      const collegesForUi = isApEamcet ? filterCollegesForApEamcetPredictor(rawColleges) : rawColleges;
+      const totalForUi = isApEamcet
+        ? apEamcetPredictorDisplayTotal(data.total_no_of_colleges ?? 0)
+        : data.total_no_of_colleges ?? 0;
+      const dataForUi = { ...data, colleges: collegesForUi, total_no_of_colleges: totalForUi };
       if (!append) {
         lastSuccessfulPublicSnapshotRef.current = getPublicFilterSnapshot(form);
       }
       if (append && result) {
         setResult((prev) => ({
-          ...data,
-          colleges: [...(prev.colleges || []), ...(data.colleges || [])],
+          ...dataForUi,
+          colleges: [...(prev.colleges || []), ...collegesForUi],
+          total_no_of_colleges: totalForUi,
         }));
       } else {
-        setResult(data);
+        setResult(dataForUi);
       }
       setOffset(pageOffset);
     },

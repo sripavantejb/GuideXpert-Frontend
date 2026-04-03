@@ -8,6 +8,8 @@ import {
   ENTRANCE_EXAMS,
   rankToCutoff,
   getApEamcetDistrictOptions,
+  filterCollegesForApEamcetPredictor,
+  apEamcetPredictorDisplayTotal,
 } from '../../constants/collegePredictorOptions';
 import { getAccentClasses } from '../../constants/examCardConfig';
 import { FilterPanel, CollegeCard } from '../../components/Counsellor/CollegePredictor';
@@ -223,12 +225,18 @@ export default function CollegePredictorPredict() {
         hasSuccessfulPredictionRef.current = true;
         lastSuccessfulFilterSnapshotRef.current = getPredictorFilterSnapshot(filters);
       }
+      const rawList = data.colleges || [];
+      const listForUi =
+        exam === 'AP_EAMCET' ? filterCollegesForApEamcetPredictor(rawList) : rawList;
       if (append) {
-        setColleges((prev) => [...prev, ...(data.colleges || [])]);
+        setColleges((prev) => [...prev, ...listForUi]);
       } else {
-        setColleges(data.colleges || []);
+        setColleges(listForUi);
       }
-      setTotalCount(data.total_no_of_colleges ?? 0);
+      const rawTotal = data.total_no_of_colleges ?? 0;
+      setTotalCount(
+        exam === 'AP_EAMCET' ? apEamcetPredictorDisplayTotal(rawTotal) : rawTotal
+      );
       setAdmissionCategoryName(data.admission_category_name || '');
       setOffset(pageOffset);
     },
