@@ -188,8 +188,8 @@ export default function CounsellorLayout() {
           </div>
         </Link>
 
-        {/* Navigation */}
-        <nav className="flex-1 overflow-y-auto py-5 flex flex-col gap-6 px-3">
+        {/* Navigation — iOS-style overlay scrollbar (see .sidebar-nav-scroll in index.css) */}
+        <nav className="sidebar-nav-scroll flex-1 min-h-0 overflow-y-auto overscroll-y-contain py-5 flex flex-col gap-6 px-3">
           {/* Main */}
           <div>
             <p className="px-3 mb-2 text-[0.6875rem] font-semibold text-slate-500 uppercase tracking-wider">Main</p>
