@@ -103,7 +103,7 @@ export default function RankPredictorPage() {
             className="animate-[fadeIn_0.35s_ease] rounded-[14px] border-[3px] border-black bg-[#B7E5FF]/50 p-6 shadow-[6px_6px_0_#000]"
             tabIndex={-1}
           >
-            <h2 className="text-2xl font-black text-[#0F172A]">Results Panel</h2>
+            <h2 className="break-words text-2xl font-black text-[#0F172A] sm:text-3xl">Results Panel</h2>
             <p className="mt-1 text-sm font-medium text-slate-600">
               How to read this result: lower rank and higher percentile indicate stronger admission potential.
             </p>
@@ -152,7 +152,7 @@ export default function RankPredictorPage() {
         ) : null
       }
     >
-      <h2 className="text-2xl font-black text-[#0F172A]">Input Workspace</h2>
+      <h2 className="text-xl font-black text-[#0F172A] sm:text-2xl">Input Workspace</h2>
       <p className="mt-1 text-sm font-medium text-slate-600">
         Enter your details and click Predict Rank to access results.
       </p>

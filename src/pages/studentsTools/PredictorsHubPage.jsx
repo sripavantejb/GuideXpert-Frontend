@@ -40,7 +40,7 @@ export default function PredictorsHubPage() {
               {PREDICTOR_CARDS.map((card) => (
                 <article
                   key={card.title}
-                  className="flex flex-col rounded-[12px] border-[3px] border-black bg-white p-6 shadow-[4px_4px_0_#000]"
+                  className="flex min-w-0 flex-col rounded-[12px] border-[3px] border-black bg-white p-4 shadow-[4px_4px_0_#000] sm:p-6"
                 >
                   <h2 className="text-lg font-black tracking-tight text-[#0F172A]">{card.title}</h2>
                   <p className="mt-2 flex-1 text-sm leading-relaxed text-slate-600">{card.description}</p>

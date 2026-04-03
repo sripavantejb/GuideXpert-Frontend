@@ -62,11 +62,14 @@ function ExamPredictor() {
 
   return (
     <div className="min-h-screen bg-gray-50">
-      <div className="mx-auto max-w-4xl px-4 py-10 sm:px-6 lg:px-8">
-        <Link to="/rank-predictor" className="text-sm font-medium text-primary-navy hover:underline">
+      <div className="mx-auto min-w-0 max-w-4xl px-4 py-6 sm:px-6 sm:py-10 lg:px-8">
+        <Link
+          to="/rank-predictor"
+          className="inline-flex min-h-11 items-center text-sm font-medium text-primary-navy hover:underline"
+        >
           ← Back to all exams
         </Link>
-        <div className="mt-4">
+        <div className="mt-3 sm:mt-4">
           <RankForm
             exam={exam}
             score={score}

@@ -257,21 +257,21 @@ export default function CollegePredictorPage() {
 
   return (
     <div className="min-h-screen bg-gray-50">
-      <header className="bg-white border-b border-gray-200 sticky top-0 z-10">
-        <div className="max-w-4xl mx-auto px-4 py-4 flex items-center justify-between">
-          <h1 className="text-xl font-bold text-gray-900">College Predictor</h1>
+      <header className="sticky top-0 z-10 border-b border-gray-200 bg-white">
+        <div className="mx-auto flex max-w-4xl min-w-0 flex-col gap-3 px-4 py-3 sm:flex-row sm:items-center sm:justify-between sm:py-4">
+          <h1 className="text-lg font-bold text-gray-900 sm:text-xl">College Predictor</h1>
           <Link
             to="/"
-            className="text-sm font-medium text-primary-navy hover:underline"
+            className="inline-flex min-h-10 shrink-0 items-center text-sm font-medium text-primary-navy hover:underline sm:self-auto"
           >
             Back to home
           </Link>
         </div>
       </header>
 
-      <main className="max-w-4xl mx-auto px-4 py-8">
-        <div className="rounded-xl bg-white border border-gray-200 shadow-sm overflow-hidden">
-          <div className="p-6 border-b border-gray-100">
+      <main className="mx-auto min-w-0 max-w-4xl px-4 py-6 sm:py-8">
+        <div className="overflow-hidden rounded-xl border border-gray-200 bg-white shadow-sm">
+          <div className="border-b border-gray-100 p-4 sm:p-6">
             <p className="text-sm text-gray-600 mb-4">
               Find colleges by entrance exam, cutoff range, reservation category, and optional branch or district filters.
             </p>
@@ -370,7 +370,7 @@ export default function CollegePredictorPage() {
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-1">Branch codes (optional)</label>
-                  <div className="flex flex-wrap gap-2">
+                  <div className="flex max-h-[min(40vh,16rem)] flex-wrap gap-2 overflow-y-auto rounded-lg border border-gray-100 p-2 sm:max-h-none sm:overflow-visible sm:border-0 sm:p-0">
                     {BRANCH_CODES.map((o) => (
                       <label key={o.value} className="inline-flex items-center gap-1.5 text-sm">
                         <input
@@ -391,7 +391,7 @@ export default function CollegePredictorPage() {
                       {examMetaPublic.districtSelectionHint}
                     </p>
                   )}
-                  <div className="flex flex-wrap gap-2">
+                  <div className="flex max-h-[min(40vh,16rem)] flex-wrap gap-2 overflow-y-auto rounded-lg border border-gray-100 p-2 sm:max-h-none sm:overflow-visible sm:border-0 sm:p-0">
                     {districtOptsPublic.map((o) => (
                       <label key={o.value} className="inline-flex items-center gap-1.5 text-sm">
                         <input
@@ -424,7 +424,7 @@ export default function CollegePredictorPage() {
           </div>
 
           {result && (
-            <div className="p-6 bg-gray-50">
+            <div className="bg-gray-50 p-4 sm:p-6">
               {result._demo && (
                 <div className="mb-4 p-3 rounded-lg bg-amber-50 border border-amber-200 text-amber-800 text-sm">
                   Showing demo data. Configure <code className="bg-amber-100/80 px-1 rounded">NW_PREDICTORS_ACCESS_TOKEN</code> in the backend to load real colleges.
@@ -446,16 +446,18 @@ export default function CollegePredictorPage() {
                     <button
                       type="button"
                       onClick={() => setExpandedCollegeId((id) => (id === college.college_id ? null : college.college_id))}
-                      className="w-full flex items-center justify-between p-4 text-left hover:bg-gray-50"
+                      className="flex w-full min-w-0 items-start justify-between gap-3 p-4 text-left hover:bg-gray-50 sm:items-center"
                     >
-                      <div>
-                        <span className="font-semibold text-gray-900">{college.college_name}</span>
+                      <div className="min-w-0 flex-1">
+                        <span className="break-words font-semibold text-gray-900">{college.college_name}</span>
                         {college.is_promoted && (
-                          <span className="ml-2 text-xs bg-amber-100 text-amber-800 px-2 py-0.5 rounded">Promoted</span>
+                          <span className="ml-2 inline-block align-middle text-xs bg-amber-100 text-amber-800 px-2 py-0.5 rounded">
+                            Promoted
+                          </span>
                         )}
-                        <p className="text-sm text-gray-500 mt-0.5">{college.college_address}</p>
+                        <p className="mt-0.5 break-words text-sm text-gray-500">{college.college_address}</p>
                         {college.district_enum && (
-                          <p className="text-xs text-gray-400">{college.district_enum}</p>
+                          <p className="break-words text-xs text-gray-400">{college.district_enum}</p>
                         )}
                       </div>
                       {expandedCollegeId === college.college_id ? (
@@ -471,14 +473,17 @@ export default function CollegePredictorPage() {
                           {(college.branches || []).map((branch, idx) => (
                             <div
                               key={branch.branch_code + String(idx)}
-                              className="flex flex-wrap items-center gap-4 text-sm py-2 px-3 rounded bg-gray-50"
+                              className="flex min-w-0 flex-wrap items-start gap-x-4 gap-y-2 rounded bg-gray-50 px-3 py-2 text-sm sm:items-center"
                             >
-                              <span className="font-medium text-gray-900">{branch.branch_name || branch.branch_code}</span>
-                              <span className="text-gray-600">Cutoff: {Number(branch.cutoff)}</span>
-                              <span className="text-gray-600">Fee: ₹{Number(branch.fee).toLocaleString()}</span>
+                              <span className="min-w-0 break-words font-medium text-gray-900">
+                                {branch.branch_name || branch.branch_code}
+                              </span>
+                              <span className="shrink-0 text-gray-600">Cutoff: {Number(branch.cutoff)}</span>
+                              <span className="shrink-0 text-gray-600">Fee: ₹{Number(branch.fee).toLocaleString()}</span>
                               {Array.isArray(branch.reservation_categories) && branch.reservation_categories.length > 0 && (
-                                <span className="text-gray-500">
-                                  Categories: {branch.reservation_categories.map((rc) => rc.category_code || rc.name).filter(Boolean).join(', ')}
+                                <span className="min-w-0 max-w-full break-words text-gray-500">
+                                  Categories:{' '}
+                                  {branch.reservation_categories.map((rc) => rc.category_code || rc.name).filter(Boolean).join(', ')}
                                 </span>
                               )}
                             </div>

@@ -22,10 +22,12 @@ function RankPredictorHome() {
 
   return (
     <div className="min-h-screen bg-gray-50">
-      <div className="mx-auto max-w-7xl px-4 py-10 sm:px-6 lg:px-8">
-        <div className="mb-8">
-          <h1 className="text-3xl font-extrabold text-gray-900">Rank Predictor</h1>
-          <p className="mt-2 text-gray-600">Choose your exam to estimate rank from your marks.</p>
+      <div className="mx-auto min-w-0 max-w-7xl px-4 py-8 sm:px-6 sm:py-10 lg:px-8">
+        <div className="mb-6 sm:mb-8">
+          <h1 className="text-2xl font-extrabold tracking-tight text-gray-900 sm:text-3xl md:text-4xl">Rank Predictor</h1>
+          <p className="mt-2 max-w-2xl text-sm text-gray-600 sm:text-base">
+            Choose your exam to estimate rank from your marks.
+          </p>
         </div>
         <ExamList exams={exams} />
       </div>

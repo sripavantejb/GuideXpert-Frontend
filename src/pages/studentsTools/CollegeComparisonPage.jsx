@@ -206,7 +206,7 @@ export default function CollegeComparisonPage() {
                         }`}
                       >
                         <span className="block truncate text-[10px] font-black uppercase text-slate-500">A</span>
-                        <span className="tabular-nums">{row.aValue}</span>
+                        <span className="min-w-0 break-words tabular-nums">{row.aValue}</span>
                       </div>
                       <VsBadge className="scale-90" />
                       <div
@@ -215,7 +215,7 @@ export default function CollegeComparisonPage() {
                         }`}
                       >
                         <span className="block truncate text-[10px] font-black uppercase text-slate-500">B</span>
-                        <span className="tabular-nums">{row.bValue}</span>
+                        <span className="min-w-0 break-words tabular-nums">{row.bValue}</span>
                       </div>
                     </div>
                   </li>
