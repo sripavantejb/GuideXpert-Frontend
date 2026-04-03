@@ -1,8 +1,11 @@
 import { useState, useEffect, useCallback, useMemo, useRef, Fragment } from 'react';
 import { DayPicker } from 'react-day-picker';
 import 'react-day-picker/style.css';
-import { FiUsers, FiCheckCircle, FiTrendingUp, FiActivity, FiSearch, FiDownload, FiChevronLeft, FiChevronRight, FiChevronDown, FiChevronUp, FiLock, FiPlay, FiClipboard, FiRefreshCw, FiAward, FiX, FiCheck, FiAlertTriangle, FiStar, FiEdit3, FiRotateCcw, FiCalendar, FiFilter } from 'react-icons/fi';
+import { FiUsers, FiCheckCircle, FiTrendingUp, FiActivity, FiSearch, FiDownload, FiChevronLeft, FiChevronRight, FiChevronDown, FiChevronUp, FiLock, FiPlay, FiClipboard, FiRefreshCw, FiAward, FiX, FiCheck, FiAlertTriangle, FiStar, FiEdit3, FiRotateCcw, FiCalendar, FiFilter, FiCopy } from 'react-icons/fi';
 import KpiCard from '../../components/Admin/KpiCard';
+import CopyToSheetsModal from '../../components/Admin/CopyToSheetsModal';
+import { ADMIN_VIEW_ALL_LIMIT } from '../../constants/adminListLimits';
+import { fetchAllPaginatedRows } from '../../utils/adminPagedFetch';
 import { getWebinarProgressList, getWebinarProgressStats, getWebinarProgressExport, getWebinarUserAssessments, adminUpdateWebinarProgress, bulkWebinarProgress } from '../../utils/adminApi';
 
 const MODULE_ORDER = ['intro', 's2', 'a1', 's3', 'a2', 's4', 'a3', 's5', 'a4', 's6', 'a5'];
@@ -881,12 +884,44 @@ function sortCaret(field, currentSort) {
   return neg ? 'text-primary-navy' : 'text-primary-navy';
 }
 
+const WEBINAR_COPY_FIELDS = [
+  { key: 'phone', label: 'Phone' },
+  { key: 'fullName', label: 'Name' },
+  { key: 'overallPercent', label: 'Progress %' },
+  { key: 'modulesDone', label: 'Modules done' },
+  { key: 'lastActiveModule', label: 'Last active module' },
+  { key: 'firstJoinedAt', label: 'First joined' },
+  { key: 'lastActivityAt', label: 'Last activity' },
+  { key: 'isLegacyUser', label: 'Join type' },
+];
+
+function getWebinarCellValue(row, key) {
+  if (key === 'modulesDone') {
+    const n = row.modulesDone != null ? row.modulesDone : (row.completedModules || []).length;
+    return String(n);
+  }
+  if (key === 'lastActiveModule') {
+    const id = row.lastActiveModule;
+    return id ? MODULE_LABELS[id] || id : '';
+  }
+  if (key === 'firstJoinedAt' || key === 'lastActivityAt') return formatDateTime(row[key]);
+  if (key === 'isLegacyUser') return row.isLegacyUser ? 'Legacy' : 'New';
+  const v = row[key];
+  if (v == null || v === '') return '';
+  return String(v);
+}
+
 export default function WebinarProgress() {
   const [stats, setStats] = useState(null);
   const [users, setUsers] = useState([]);
   const [total, setTotal] = useState(0);
   const [page, setPage] = useState(1);
-  const [limit] = useState(25);
+  const [viewAll, setViewAll] = useState(false);
+  const [copyModalOpen, setCopyModalOpen] = useState(false);
+  const [copyLoading, setCopyLoading] = useState(false);
+  const [copyError, setCopyError] = useState('');
+  const [copyRecords, setCopyRecords] = useState([]);
+  const pageLimit = 25;
   const [f, setF] = useState(() => ({ ...INITIAL_FILTERS }));
   const [searchInput, setSearchInput] = useState('');
   const debouncedSearch = useDebounced(searchInput, 300);
@@ -909,8 +944,9 @@ export default function WebinarProgress() {
       JSON.stringify({
         f,
         search: debouncedSearch,
+        viewAll,
       }),
-    [f, debouncedSearch]
+    [f, debouncedSearch, viewAll]
   );
   const prevFilterKeyRef = useRef(filterKey);
 
@@ -932,7 +968,9 @@ export default function WebinarProgress() {
       setLoading(true);
       setListError(null);
       try {
-        const params = buildListParams(f, debouncedSearch, targetPage, limit);
+        const listLimit = viewAll ? ADMIN_VIEW_ALL_LIMIT : pageLimit;
+        const pageArg = viewAll ? 1 : targetPage;
+        const params = buildListParams(f, debouncedSearch, pageArg, listLimit);
         const res = await getWebinarProgressList(params);
         if (res.success && res.data?.data) {
           setUsers(res.data.data.users || []);
@@ -944,7 +982,7 @@ export default function WebinarProgress() {
       }
       setLoading(false);
     },
-    [limit, f, debouncedSearch]
+    [viewAll, pageLimit, f, debouncedSearch]
   );
 
   const lastLoadKeyRef = useRef('');
@@ -1021,8 +1059,28 @@ export default function WebinarProgress() {
     setStatsError(null);
     lastLoadKeyRef.current = '';
     fetchStats();
-    fetchUsers(page);
-  }, [fetchStats, fetchUsers, page]);
+    fetchUsers(viewAll ? 1 : page);
+  }, [fetchStats, fetchUsers, viewAll, page]);
+
+  const prepareCopyWebinarRows = async () => {
+    setCopyLoading(true);
+    setCopyError('');
+    try {
+      const result = await fetchAllPaginatedRows((p, chunk) =>
+        getWebinarProgressList(buildListParams(f, debouncedSearch, p, chunk))
+      );
+      if (!result.success) {
+        setCopyError(result.result?.message || 'Failed to load users for copy.');
+        return;
+      }
+      setCopyRecords(result.rows || []);
+      setCopyModalOpen(true);
+    } catch (err) {
+      setCopyError(err?.message || 'Failed to load users for copy.');
+    } finally {
+      setCopyLoading(false);
+    }
+  };
 
   const handleExport = async () => {
     setExporting(true);
@@ -1101,7 +1159,7 @@ export default function WebinarProgress() {
         setSelectedPhones(new Set());
         lastLoadKeyRef.current = '';
         await fetchStats();
-        await fetchUsers(page);
+        await fetchUsers(viewAll ? 1 : page);
       } else {
         setListError(res.message || 'Bulk action failed.');
       }
@@ -1119,7 +1177,8 @@ export default function WebinarProgress() {
     });
   }, [moduleSearch]);
 
-  const totalPages = Math.max(1, Math.ceil(total / limit));
+  const listLimit = viewAll ? ADMIN_VIEW_ALL_LIMIT : pageLimit;
+  const totalPages = Math.max(1, Math.ceil(total / listLimit));
   const hasError = listError || statsError;
 
   return (
@@ -1244,8 +1303,34 @@ export default function WebinarProgress() {
             >
               Clear filters
             </button>
+            <label className="inline-flex items-center gap-2 cursor-pointer shrink-0 h-10 px-3 rounded-lg border border-gray-200 bg-white text-sm text-gray-700 shadow-sm">
+              <input
+                type="checkbox"
+                checked={viewAll}
+                onChange={(e) => {
+                  setViewAll(e.target.checked);
+                  setPage(1);
+                }}
+                className="rounded border-gray-300 text-primary-navy focus:ring-primary-navy"
+                aria-label="View all users in one list"
+              />
+              View all
+            </label>
+            <button
+              type="button"
+              onClick={prepareCopyWebinarRows}
+              disabled={copyLoading}
+              className="inline-flex items-center gap-1.5 shrink-0 h-10 px-4 rounded-lg border border-gray-200 bg-white text-sm font-medium text-gray-700 hover:bg-gray-50 shadow-sm transition-colors disabled:opacity-50"
+            >
+              <FiCopy className="w-4 h-4" /> {copyLoading ? 'Preparing...' : 'Copy'}
+            </button>
           </div>
         </div>
+        {copyError && (
+          <p className="text-sm text-red-600 px-1" role="alert">
+            {copyError}
+          </p>
+        )}
 
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
           <div className="space-y-2 rounded-lg border border-gray-100 bg-gray-50/80 p-3">
@@ -1781,35 +1866,69 @@ export default function WebinarProgress() {
           </table>
         </div>
 
-        {total > limit && (
-          <div className="flex items-center justify-between px-4 py-3 border-t border-gray-200 bg-gray-50/50">
+        {viewAll ? (
+          <div className="flex flex-wrap items-center justify-between gap-3 px-4 py-3 border-t border-gray-200 bg-gray-50/50">
             <p className="text-sm text-gray-500">
-              Showing {(page - 1) * limit + 1}–{Math.min(page * limit, total)} of {total}
+              {total > ADMIN_VIEW_ALL_LIMIT
+                ? `Showing first ${ADMIN_VIEW_ALL_LIMIT.toLocaleString()} of ${total} users`
+                : `Showing all ${total} users`}
             </p>
-            <div className="flex items-center gap-1">
-              <button
-                type="button"
-                onClick={() => setPage((p) => Math.max(1, p - 1))}
-                disabled={page <= 1}
-                className="p-2 rounded-lg text-gray-600 hover:bg-gray-100 disabled:opacity-30 disabled:cursor-not-allowed transition-colors"
-              >
-                <FiChevronLeft className="w-4 h-4" />
-              </button>
-              <span className="text-sm font-medium text-gray-700 px-2 tabular-nums">
-                {page} / {totalPages}
-              </span>
-              <button
-                type="button"
-                onClick={() => setPage((p) => Math.min(totalPages, p + 1))}
-                disabled={page >= totalPages}
-                className="p-2 rounded-lg text-gray-600 hover:bg-gray-100 disabled:opacity-30 disabled:cursor-not-allowed transition-colors"
-              >
-                <FiChevronRight className="w-4 h-4" />
-              </button>
-            </div>
+            <button
+              type="button"
+              onClick={() => {
+                setViewAll(false);
+                setPage(1);
+              }}
+              className="shrink-0 h-9 px-3 rounded-lg border border-gray-300 bg-white text-sm font-medium text-gray-700 hover:bg-gray-100 transition-colors"
+            >
+              Show paginated
+            </button>
           </div>
+        ) : (
+          total > pageLimit && (
+            <div className="flex items-center justify-between px-4 py-3 border-t border-gray-200 bg-gray-50/50">
+              <p className="text-sm text-gray-500">
+                Showing {(page - 1) * pageLimit + 1}–{Math.min(page * pageLimit, total)} of {total}
+              </p>
+              <div className="flex items-center gap-1">
+                <button
+                  type="button"
+                  onClick={() => setPage((p) => Math.max(1, p - 1))}
+                  disabled={page <= 1}
+                  className="p-2 rounded-lg text-gray-600 hover:bg-gray-100 disabled:opacity-30 disabled:cursor-not-allowed transition-colors"
+                >
+                  <FiChevronLeft className="w-4 h-4" />
+                </button>
+                <span className="text-sm font-medium text-gray-700 px-2 tabular-nums">
+                  {page} / {totalPages}
+                </span>
+                <button
+                  type="button"
+                  onClick={() => setPage((p) => Math.min(totalPages, p + 1))}
+                  disabled={page >= totalPages}
+                  className="p-2 rounded-lg text-gray-600 hover:bg-gray-100 disabled:opacity-30 disabled:cursor-not-allowed transition-colors"
+                >
+                  <FiChevronRight className="w-4 h-4" />
+                </button>
+              </div>
+            </div>
+          )
         )}
       </section>
+
+      <CopyToSheetsModal
+        fields={WEBINAR_COPY_FIELDS}
+        records={copyRecords}
+        getCellValue={getWebinarCellValue}
+        open={copyModalOpen}
+        onClose={() => {
+          setCopyModalOpen(false);
+          setCopyRecords([]);
+        }}
+        recordLabel="users"
+        dedupeByPhoneKey="phone"
+        loading={copyLoading}
+      />
     </div>
   );
 }

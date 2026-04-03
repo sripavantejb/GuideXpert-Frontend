@@ -17,22 +17,28 @@ export async function fetchAllPaginatedRows(fetchPage) {
       return { success: false, result };
     }
     const data = result.data;
-    const batch = Array.isArray(data?.data)
-      ? data.data
-      : Array.isArray(data?.submissions)
-        ? data.submissions
-        : Array.isArray(data)
-          ? data
-          : [];
+    const inner = data?.data;
+    const batch =
+      inner && Array.isArray(inner.users)
+        ? inner.users
+        : Array.isArray(data?.data)
+          ? data.data
+          : Array.isArray(data?.submissions)
+            ? data.submissions
+            : Array.isArray(data)
+              ? data
+              : [];
     const p = data?.pagination;
     total =
       typeof p?.total === 'number'
         ? p.total
-        : typeof data?.total === 'number'
-          ? data.total
-          : batch.length > 0
-            ? rows.length + batch.length
-            : rows.length;
+        : inner && typeof inner.total === 'number' && Array.isArray(inner.users)
+          ? inner.total
+          : typeof data?.total === 'number'
+            ? data.total
+            : batch.length > 0
+              ? rows.length + batch.length
+              : rows.length;
     rows.push(...batch);
     if (batch.length < DEFAULT_CHUNK || rows.length >= total) break;
     page += 1;

@@ -11,6 +11,7 @@ import {
   LuTerminal,
 } from 'react-icons/lu';
 import StudentWorkspaceNavbar from '../components/studentDashboard/StudentWorkspaceNavbar';
+import StudentWorkspaceFooter from '../components/studentDashboard/StudentWorkspaceFooter';
 import StickyToolsSidebar from '../components/studentDashboard/StickyToolsSidebar';
 
 // ----------------------------------------------------------------------------
@@ -479,6 +480,8 @@ export default function StudentsDashboard() {
         </div>
       </div>
       </div>
+
+      <StudentWorkspaceFooter />
     </div>
   );
 }

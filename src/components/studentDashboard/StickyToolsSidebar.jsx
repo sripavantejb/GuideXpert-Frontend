@@ -20,8 +20,8 @@ const UNPIN_TOP_PX = PIN_TOP_PX + 6;
 /** Legacy pad: workspace must still extend below the pin band. */
 const WORKSPACE_BOTTOM_PAD = 140;
 /**
- * Hysteresis (px) for fixed sidebar bottom vs workspace bottom edge.
- * Reduces pin/unpin oscillation near the bottom CTA when layout shifts nudge rects across one threshold.
+ * Hysteresis (px) for fixed sidebar vs workspace bottom edge.
+ * Unpinned uses LOOSE (need comfortable clearance before pinning); pinned uses STRICT (stay pinned until fit is tight).
  */
 const WORKSPACE_FIT_LOOSE_PX = 28;
 const WORKSPACE_FIT_STRICT_PX = 8;
@@ -70,7 +70,7 @@ export default function StickyToolsSidebar() {
       const el = asideRef.current;
       const h = el?.offsetHeight ?? 0;
       const sidebarBottom = PIN_TOP_PX + h;
-      const margin = pinnedRef.current ? WORKSPACE_FIT_LOOSE_PX : WORKSPACE_FIT_STRICT_PX;
+      const margin = pinnedRef.current ? WORKSPACE_FIT_STRICT_PX : WORKSPACE_FIT_LOOSE_PX;
       const sidebarFitsWorkspace = sidebarBottom <= wr.bottom - margin;
       const workspaceTallEnough = wr.bottom > PIN_TOP_PX + WORKSPACE_BOTTOM_PAD;
 
