@@ -1,0 +1,8 @@
+# Netlify / Cloudflare Pages: copied to dist root by Vite.
+# More specific paths win over /* for Cache-Control.
+
+/assets/*
+  Cache-Control: public, max-age=31536000, immutable
+
+/*
+  Cache-Control: no-cache, no-store, must-revalidate

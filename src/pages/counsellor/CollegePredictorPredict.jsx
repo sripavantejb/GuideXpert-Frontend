@@ -71,6 +71,9 @@ const resultsMotion = {
 
 const VALID_EXAM_VALUES = new Set(ENTRANCE_EXAMS.map((e) => e.value));
 
+/** Exam grid (all exams); use absolute path — `navigate('..')` resolves to `/counsellor` and redirects to Dashboard. */
+const COLLEGE_PREDICTOR_EXAMS_PATH = '/counsellor/tools/college-predictor';
+
 /** Stable JSON for comparing filter inputs that affect the predictor API. */
 function getPredictorFilterSnapshot(f) {
   return JSON.stringify({
@@ -265,11 +268,11 @@ export default function CollegePredictorPredict() {
   }, [filters, validate, fetchColleges]);
 
   if (!VALID_EXAM_VALUES.has(exam)) {
-    return <Navigate to=".." replace />;
+    return <Navigate to={COLLEGE_PREDICTOR_EXAMS_PATH} replace />;
   }
 
   if (examMeta && examMeta.supported === false) {
-    return <Navigate to=".." replace />;
+    return <Navigate to={COLLEGE_PREDICTOR_EXAMS_PATH} replace />;
   }
 
   const districtOptionsResolved = useMemo(() => {
@@ -308,7 +311,7 @@ export default function CollegePredictorPredict() {
         <div className="flex items-center gap-4">
           <button
             type="button"
-            onClick={() => navigate('..')}
+            onClick={() => navigate(COLLEGE_PREDICTOR_EXAMS_PATH)}
             className="shrink-0 inline-flex items-center justify-center w-9 h-9 rounded-xl bg-white/80 border border-gray-200 text-gray-600 hover:text-gray-900 hover:bg-white shadow-sm transition-all"
           >
             <FiArrowLeft className="w-4 h-4" />
@@ -334,6 +337,7 @@ export default function CollegePredictorPredict() {
         accent={examMeta?.accent}
         admissionCategories={examMeta?.admissionCategories ?? []}
         admissionFieldLabel={examMeta?.admissionFieldLabel ?? 'Admission category'}
+        hideAdmissionField={examMeta?.hideAdmissionField ?? false}
         reservationFieldLabel={examMeta?.reservationFieldLabel ?? 'Reservation categories'}
         rankFieldLabel={examMeta?.rankFieldLabel ?? 'Your Rank'}
         reservationOptions={examMeta?.reservationOptions}

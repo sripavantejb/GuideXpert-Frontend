@@ -296,20 +296,22 @@ export default function CollegePredictorPage() {
                     ))}
                   </select>
                 </div>
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">
-                    {examMetaPublic?.admissionFieldLabel ?? 'Admission category'} <span className="text-red-500">*</span>
-                  </label>
-                  <select
-                    value={form.admission_category_name_enum}
-                    onChange={(e) => updateForm('admission_category_name_enum', e.target.value)}
-                    className="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm focus:ring-primary-navy focus:border-primary-navy"
-                  >
-                    {admissionOptsPublic.map((o) => (
-                      <option key={o.value} value={o.value}>{o.label}</option>
-                    ))}
-                  </select>
-                </div>
+                {!examMetaPublic?.hideAdmissionField && (
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">
+                      {examMetaPublic?.admissionFieldLabel ?? 'Admission category'} <span className="text-red-500">*</span>
+                    </label>
+                    <select
+                      value={form.admission_category_name_enum}
+                      onChange={(e) => updateForm('admission_category_name_enum', e.target.value)}
+                      className="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm focus:ring-primary-navy focus:border-primary-navy"
+                    >
+                      {admissionOptsPublic.map((o) => (
+                        <option key={o.value} value={o.value}>{o.label}</option>
+                      ))}
+                    </select>
+                  </div>
+                )}
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-1">
                     {examMetaPublic?.reservationFieldLabel ?? 'Reservation category'} <span className="text-red-500">*</span>

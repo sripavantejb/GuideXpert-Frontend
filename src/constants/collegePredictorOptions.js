@@ -83,6 +83,60 @@ export function getApEamcetDistrictOptions(admission) {
   return AP_EAMCET_DISTRICT_OPTIONS_BY_ADMISSION[key] ?? AP_EAMCET_DISTRICT_OPTIONS_BY_ADMISSION.AU;
 }
 
+/**
+ * TS EAMCET category strings (value === label) — verified HTTP 200 on beta for TS_EAMCET + admission **DEFAULT**.
+ * Order matches reference UI. Admission must be `DEFAULT` (not GENERAL) for this exam on earlywave.
+ */
+export const TS_EAMCET_RESERVATION_OPTIONS = [
+  { value: 'OC BOYS', label: 'OC BOYS' },
+  { value: 'OC GIRLS', label: 'OC GIRLS' },
+  { value: 'BCC GIRLS', label: 'BCC GIRLS' },
+  { value: 'BCB BOYS', label: 'BCB BOYS' },
+  { value: 'OC EWS BOYS', label: 'OC EWS BOYS' },
+  { value: 'ST GIRLS', label: 'ST GIRLS' },
+  { value: 'ST BOYS', label: 'ST BOYS' },
+  { value: 'OC EWS GIRLS', label: 'OC EWS GIRLS' },
+  { value: 'BCA GIRLS', label: 'BCA GIRLS' },
+  { value: 'BCE BOYS', label: 'BCE BOYS' },
+  { value: 'BCD GIRLS', label: 'BCD GIRLS' },
+  { value: 'BCE GIRLS', label: 'BCE GIRLS' },
+  { value: 'BCD BOYS', label: 'BCD BOYS' },
+  { value: 'SC BOYS', label: 'SC BOYS' },
+  { value: 'BCC BOYS', label: 'BCC BOYS' },
+  { value: 'SC GIRLS', label: 'SC GIRLS' },
+  { value: 'BCB GIRLS', label: 'BCB GIRLS' },
+  { value: 'BCA BOYS', label: 'BCA BOYS' },
+  { value: 'EWS GEN OU', label: 'EWS GEN OU' },
+];
+
+/**
+ * Telangana districts for TS EAMCET: earlywave expects **district_enum** short codes (like AP).
+ * Labels aligned to TS geography; verified from TS_EAMCET + DEFAULT + OC BOYS responses on beta.
+ */
+export const TS_EAMCET_DISTRICT_OPTIONS = [
+  { value: 'HNK', label: 'Hanamkonda / Warangal' },
+  { value: 'HYD', label: 'Hyderabad' },
+  { value: 'JTL', label: 'Jagtial' },
+  { value: 'KGM', label: 'Kothagudem' },
+  { value: 'KHM', label: 'Khammam' },
+  { value: 'KMR', label: 'Kamareddy' },
+  { value: 'KRM', label: 'Karimnagar' },
+  { value: 'MBN', label: 'Mahabubnagar' },
+  { value: 'MDL', label: 'Medchal Malkajgiri' },
+  { value: 'MED', label: 'Medak' },
+  { value: 'NLG', label: 'Nalgonda' },
+  { value: 'NZB', label: 'Nizamabad' },
+  { value: 'PDL', label: 'Peddapalli' },
+  { value: 'RR', label: 'Rangareddy' },
+  { value: 'SDP', label: 'Siddipet' },
+  { value: 'SRC', label: 'Rajanna Sircilla' },
+  { value: 'SRD', label: 'Suryapet (Sultanpur)' },
+  { value: 'SRP', label: 'Suryapet' },
+  { value: 'WGL', label: 'Warangal' },
+  { value: 'WNP', label: 'Wanaparthy' },
+  { value: 'YBG', label: 'Yadadri Bhuvanagiri' },
+];
+
 /** Upstream promoted slot (Hyderabad); not shown in AP EAMCET predictor results. */
 const AP_EAMCET_HIDDEN_PROMOTED_COLLEGE_ID = '6f3cf78b-c152-4dad-b52a-0642baad860c';
 
@@ -123,6 +177,7 @@ export function apEamcetPredictorDisplayTotal(apiTotal) {
  *   districtOptions?: { value: string, label: string }[],
  *   districtOptionsByAdmission?: Record<string, { value: string, label: string }[]>,
  *   districtSelectionHint?: string,
+ *   hideAdmissionField?: boolean,
  *   admissionCategories: { value: string, label: string }[],
  * }} EntranceExamOption
  * @type {EntranceExamOption[]}
@@ -186,8 +241,19 @@ export const ENTRANCE_EXAMS = [
     description: 'Discover Telangana colleges from your state EAMCET outcome.',
     accent: 'green',
     apiValue: 'TS_EAMCET',
-    supported: false,
-    admissionCategories: [],
+    supported: true,
+    defaultReservationCode: 'OC BOYS',
+    hideAdmissionField: true,
+    reservationFieldLabel: 'Category',
+    rankFieldLabel: 'Expected TS EAMCET rank',
+    reservationOptions: TS_EAMCET_RESERVATION_OPTIONS,
+    reservationSelectSingle: true,
+    districtOptions: TS_EAMCET_DISTRICT_OPTIONS,
+    districtSelectionHint:
+      'Select more districts for increased college options. Leave empty to include all districts.',
+    admissionCategories: [
+      { value: 'DEFAULT', label: 'All Telangana engineering colleges' },
+    ],
   },
   {
     value: 'TNEA',

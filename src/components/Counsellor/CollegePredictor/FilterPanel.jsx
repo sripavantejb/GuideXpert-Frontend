@@ -65,6 +65,7 @@ export default function FilterPanel({
   reservationSelectSingle = false,
   districtOptions,
   districtSelectionHint,
+  hideAdmissionField = false,
 }) {
   const update = useCallback(
     (field, value) => onChange({ ...filters, [field]: value }),
@@ -128,7 +129,7 @@ export default function FilterPanel({
           />
         </div>
 
-        {admissionCategories.length > 0 && (
+        {admissionCategories.length > 0 && !hideAdmissionField && (
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-1">
               {admissionFieldLabel}
