@@ -28,8 +28,6 @@ const WORKSPACE_FIT_STRICT_PX = 8;
 
 /** Tailwind `lg` — desktop sidebar is `lg:block` only */
 const LG_MIN_PX = 1024;
-/** Hide sticky tools slightly before the lime footer would overlap the sidebar */
-const FOOTER_INTERSECT_BUFFER_PX = 12;
 
 function clearAsidePinStyles(el) {
   if (!el) return;
@@ -37,17 +35,6 @@ function clearAsidePinStyles(el) {
   el.style.left = '';
   el.style.top = '';
   el.style.right = '';
-}
-
-function setDesktopToolsHiddenForFooter(asideEl, placeholderEl, hidden) {
-  const els = [asideEl, placeholderEl].filter(Boolean);
-  for (const node of els) {
-    node.classList.toggle('opacity-0', hidden);
-    node.classList.toggle('invisible', hidden);
-    node.classList.toggle('pointer-events-none', hidden);
-    if (hidden) node.setAttribute('aria-hidden', 'true');
-    else node.removeAttribute('aria-hidden');
-  }
 }
 
 export default function StickyToolsSidebar() {
@@ -63,10 +50,6 @@ export default function StickyToolsSidebar() {
     const update = () => {
       const workspace = document.getElementById('student-workspace');
       const anchor = document.getElementById('workspace-applications');
-      const footer = document.getElementById('student-dashboard-footer');
-      const footerIntersects =
-        footer != null &&
-        footer.getBoundingClientRect().top < window.innerHeight - FOOTER_INTERSECT_BUFFER_PX;
 
       const isDesktop = window.innerWidth >= LG_MIN_PX;
       if (!isDesktop) {
@@ -75,12 +58,10 @@ export default function StickyToolsSidebar() {
         }
         clearAsidePinStyles(asideEl);
         setReservedHeight((prev) => (prev !== 0 ? 0 : prev));
-        setDesktopToolsHiddenForFooter(asideEl, placeholderRef.current, false);
         return;
       }
 
       if (!workspace || !anchor) {
-        setDesktopToolsHiddenForFooter(asideEl, placeholderRef.current, false);
         return;
       }
 
@@ -120,8 +101,6 @@ export default function StickyToolsSidebar() {
         el.style.right = '';
         setReservedHeight((prev) => (prev !== 0 ? 0 : prev));
       }
-
-      setDesktopToolsHiddenForFooter(asideEl, placeholderRef.current, footerIntersects);
     };
 
     const onScrollOrResize = () => {
@@ -138,7 +117,6 @@ export default function StickyToolsSidebar() {
       window.removeEventListener('scroll', onScrollOrResize);
       window.removeEventListener('resize', onScrollOrResize);
       clearAsidePinStyles(asideEl);
-      setDesktopToolsHiddenForFooter(asideEl, placeholderRef.current, false);
     };
   }, []);
 

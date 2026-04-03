@@ -28,6 +28,7 @@ import SlideOverPanel from '../../components/Counsellor/SlideOverPanel';
 import ConfirmDialog from '../../components/Counsellor/ConfirmDialog';
 import FilterPanel from '../../components/Counsellor/FilterPanel';
 import CopyToSheetsModal from '../../components/Admin/CopyToSheetsModal';
+import { fetchAllPaginatedRows } from '../../utils/adminPagedFetch';
 import TableSkeleton from '../../components/UI/TableSkeleton';
 import Skeleton from '../../components/UI/Skeleton';
 
@@ -414,6 +415,9 @@ export default function Students() {
   const [rowMenuAnchor, setRowMenuAnchor] = useState(null); // { id, top, right } or null
   const [viewAll, setViewAll] = useState(false);
   const [copyModalOpen, setCopyModalOpen] = useState(false);
+  const [copyLoading, setCopyLoading] = useState(false);
+  const [copyError, setCopyError] = useState('');
+  const [copyRecords, setCopyRecords] = useState([]);
 
   // Debounce search
   useEffect(() => {
@@ -456,6 +460,30 @@ export default function Students() {
     setViewAll(e.target.checked);
     if (!e.target.checked) setPage(1);
   };
+
+  const prepareCopyStudents = useCallback(async () => {
+    setCopyLoading(true);
+    setCopyError('');
+    const baseParams = {
+      q: searchDebounced || undefined,
+      course: filters.course || undefined,
+      status: filters.status || undefined,
+      joinedFrom: filters.joinedFrom || undefined,
+      joinedTo: filters.joinedTo || undefined,
+      deleted: filters.showDeleted ? true : undefined,
+    };
+    const result = await fetchAllPaginatedRows((page, limit) =>
+      getStudents({ ...baseParams, page, limit })
+    );
+    setCopyLoading(false);
+    if (!result.success) {
+      const r = result.result;
+      setCopyError(r?.message || 'Failed to load students for copy');
+      return;
+    }
+    setCopyRecords(result.rows || []);
+    setCopyModalOpen(true);
+  }, [searchDebounced, filters]);
 
   const handleAddSubmit = async (payload) => {
     setAddError('');
@@ -620,11 +648,12 @@ export default function Students() {
           </label>
           <button
             type="button"
-            onClick={() => setCopyModalOpen(true)}
-            className="inline-flex items-center gap-1.5 ml-2 px-3 py-1.5 rounded-lg border border-slate-300 text-sm font-medium text-slate-700 hover:bg-slate-50 transition-colors"
+            onClick={prepareCopyStudents}
+            disabled={copyLoading}
+            className="inline-flex items-center gap-1.5 ml-2 px-3 py-1.5 rounded-lg border border-slate-300 text-sm font-medium text-slate-700 hover:bg-slate-50 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
             aria-label="Copy to sheets"
           >
-            <FiCopy className="w-4 h-4" /> Copy
+            <FiCopy className="w-4 h-4" /> {copyLoading ? 'Preparing...' : 'Copy'}
           </button>
           <FilterPanel
             isOpen={filterPanelOpen}
@@ -641,6 +670,12 @@ export default function Students() {
           />
         </div>
       </div>
+
+      {copyError && (
+        <p className="text-sm text-red-600 mb-4 px-0.5" role="alert">
+          {copyError}
+        </p>
+      )}
 
       {selectedIds.size > 0 && (
         <div className="mb-4 flex flex-wrap items-center gap-2 sm:gap-3 px-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl">
@@ -957,12 +992,16 @@ export default function Students() {
 
       <CopyToSheetsModal
         fields={STUDENT_COPY_FIELDS}
-        records={data}
+        records={copyRecords}
         getCellValue={getStudentCellValue}
         open={copyModalOpen}
-        onClose={() => setCopyModalOpen(false)}
+        onClose={() => {
+          setCopyModalOpen(false);
+          setCopyRecords([]);
+        }}
         recordLabel="students"
         dedupeByPhoneKey="phone"
+        loading={copyLoading}
       />
 
       {rowMenuAnchor && (() => {

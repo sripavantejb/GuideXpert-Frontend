@@ -6,7 +6,6 @@ import {
   LuMapPin,
   LuScale,
   LuArrowRight,
-  LuSparkles,
   LuGraduationCap,
   LuActivity,
   LuTerminal,
@@ -479,25 +478,6 @@ export default function StudentsDashboard() {
           </div>
         </div>
       </div>
-
-      {/* CTA Section — id used by StickyToolsSidebar to hide when this band enters the viewport */}
-      <section
-        id="student-dashboard-footer"
-        className="border-y-4 border-[#0F172A] bg-[#C7F36B] px-6 py-24 text-center"
-      >
-        <div className="mx-auto max-w-3xl">
-          <LuSparkles className="mx-auto mb-6 text-4xl text-[#0F172A]" />
-          <h2 className="mb-6 text-4xl font-black tracking-tighter text-[#0F172A] md:text-5xl">
-            Ready to optimize your admission strategy?
-          </h2>
-          <p className="mx-auto mb-10 max-w-xl text-lg font-medium text-[#0F172A]/80">
-            Join thousands of students making data-backed decisions for their future.
-          </p>
-          <NeoButton className="hover:-translate-y-1 mx-auto bg-white px-10 py-4 text-lg shadow-[6px_6px_0px_#0F172A]">
-            Create Account — It&apos;s Free
-          </NeoButton>
-        </div>
-      </section>
       </div>
     </div>
   );
