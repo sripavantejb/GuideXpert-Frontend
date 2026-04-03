@@ -582,13 +582,14 @@ export default function Students() {
   return (
     <div className="max-w-7xl mx-auto min-w-0">
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-6">
-        <div>
-          <h2 className="text-xl font-bold text-slate-900" style={{ color: '#003366' }}>
-            Student Management
-          </h2>
-          <p className="text-sm text-slate-500 mt-0.5">Manage student profiles, documents, and status</p>
+        <div className="mb-6 sm:mb-0">
+          <div className="flex items-center gap-3 mb-1">
+            <div className="w-1 h-6 rounded-full bg-primary-navy shrink-0" />
+            <h2 className="text-xl font-bold text-gray-900">Student Management</h2>
+          </div>
+          <p className="text-sm text-gray-500 ml-4">Manage student profiles, documents, and status</p>
         </div>
-        <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2 w-full sm:w-auto">
+        <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2 w-full sm:w-auto shrink-0">
           <button
             type="button"
             onClick={handleExport}
@@ -601,73 +602,77 @@ export default function Students() {
           <button
             type="button"
             onClick={() => setAddPanelOpen(true)}
-            className="flex items-center justify-center gap-2 px-4 py-2.5 bg-[#003366] text-white text-sm font-medium rounded-xl hover:bg-[#002244] transition-colors shadow-sm w-full sm:w-auto"
+            className="flex items-center justify-center gap-2 px-4 py-2.5 bg-primary-navy text-white text-sm font-medium rounded-xl hover:bg-primary-navy/90 transition-colors shadow-sm w-full sm:w-auto"
           >
             <FiPlus className="w-4 h-4" /> Add Student
           </button>
         </div>
       </div>
 
-      <div className="flex flex-col sm:flex-row sm:items-center gap-3 mb-5">
-        <div className="relative flex-1 min-w-0">
-          <FiSearch className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
+      <div className="grid grid-cols-1 gap-3 mb-5 lg:grid-cols-[1fr_auto] lg:items-start lg:gap-4">
+        <div className="relative min-w-0">
+          <FiSearch className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400 pointer-events-none" />
           <input
             type="text"
             placeholder="Search students..."
             value={search}
             onChange={(e) => setSearch(e.target.value)}
-            className="w-full pl-10 pr-4 py-2.5 text-sm bg-white border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-[#003366]/20 focus:border-[#003366] placeholder:text-slate-400"
+            className="w-full min-w-0 pl-10 pr-4 py-2.5 text-sm bg-white border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-primary-navy/20 focus:border-primary-navy placeholder:text-slate-400"
           />
         </div>
-        <div className="relative flex items-center gap-2 w-full sm:w-auto">
-          <button
-            type="button"
-            onClick={() => setFilterPanelOpen((o) => !o)}
-            className={`flex items-center justify-center gap-2 px-4 py-2.5 text-sm font-medium rounded-xl border transition-colors shadow-sm w-full sm:w-auto ${
-              activeFilterCount > 0
-                ? 'bg-[#003366]/5 border-[#003366]/30 text-[#003366]'
-                : 'text-slate-600 bg-white border-slate-200 hover:bg-slate-50'
-            }`}
-          >
-            <FiFilter className="w-4 h-4" /> Filter
-            {activeFilterCount > 0 && (
-              <span className="ml-1 w-5 h-5 rounded-full bg-[#003366] text-white text-xs flex items-center justify-center font-medium">
-                {activeFilterCount}
-              </span>
-            )}
-          </button>
-          <label className="inline-flex items-center gap-2 cursor-pointer text-sm text-slate-700 ml-2 pl-2 border-l border-slate-200">
-            <input
-              type="checkbox"
-              checked={viewAll}
-              onChange={handleViewAllChange}
-              className="rounded border-slate-300 text-[#003366] focus:ring-[#003366]"
-              aria-label="View all students in one list"
+        <div className="grid grid-cols-1 gap-3 sm:grid-cols-[auto_1fr] min-w-0">
+          <div className="relative min-w-0">
+            <button
+              type="button"
+              onClick={() => setFilterPanelOpen((o) => !o)}
+              className={`flex items-center justify-center gap-2 px-4 py-2.5 text-sm font-medium rounded-xl border transition-colors shadow-sm w-full sm:w-auto sm:min-w-30 ${
+                activeFilterCount > 0
+                  ? 'bg-primary-navy/5 border-primary-navy/30 text-primary-navy'
+                  : 'text-slate-600 bg-white border-slate-200 hover:bg-slate-50'
+              }`}
+            >
+              <FiFilter className="w-4 h-4 shrink-0" /> Filter
+              {activeFilterCount > 0 && (
+                <span className="ml-1 w-5 h-5 rounded-full bg-primary-navy text-white text-xs flex items-center justify-center font-medium shrink-0">
+                  {activeFilterCount}
+                </span>
+              )}
+            </button>
+            <FilterPanel
+              isOpen={filterPanelOpen}
+              onClose={() => setFilterPanelOpen(false)}
+              filters={filters}
+              onFiltersChange={setFilters}
+              onClearAll={() => setFilters({
+                course: undefined,
+                status: undefined,
+                joinedFrom: undefined,
+                joinedTo: undefined,
+                showDeleted: false,
+              })}
             />
-            View all
-          </label>
-          <button
-            type="button"
-            onClick={prepareCopyStudents}
-            disabled={copyLoading}
-            className="inline-flex items-center gap-1.5 ml-2 px-3 py-1.5 rounded-lg border border-slate-300 text-sm font-medium text-slate-700 hover:bg-slate-50 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
-            aria-label="Copy to sheets"
-          >
-            <FiCopy className="w-4 h-4" /> {copyLoading ? 'Preparing...' : 'Copy'}
-          </button>
-          <FilterPanel
-            isOpen={filterPanelOpen}
-            onClose={() => setFilterPanelOpen(false)}
-            filters={filters}
-            onFiltersChange={setFilters}
-            onClearAll={() => setFilters({
-              course: undefined,
-              status: undefined,
-              joinedFrom: undefined,
-              joinedTo: undefined,
-              showDeleted: false,
-            })}
-          />
+          </div>
+          <div className="flex flex-wrap items-center gap-2 min-w-0">
+            <label className="inline-flex items-center gap-2 cursor-pointer text-sm text-slate-700 shrink-0">
+              <input
+                type="checkbox"
+                checked={viewAll}
+                onChange={handleViewAllChange}
+                className="rounded border-slate-300 text-primary-navy focus:ring-primary-navy shrink-0"
+                aria-label="View all students in one list"
+              />
+              View all
+            </label>
+            <button
+              type="button"
+              onClick={prepareCopyStudents}
+              disabled={copyLoading}
+              className="inline-flex items-center justify-center gap-1.5 px-3 py-2 rounded-lg border border-slate-300 text-sm font-medium text-slate-700 hover:bg-slate-50 transition-colors disabled:opacity-50 disabled:cursor-not-allowed min-w-0"
+              aria-label="Copy to sheets"
+            >
+              <FiCopy className="w-4 h-4 shrink-0" /> {copyLoading ? 'Preparing...' : 'Copy'}
+            </button>
+          </div>
         </div>
       </div>
 
@@ -678,38 +683,40 @@ export default function Students() {
       )}
 
       {selectedIds.size > 0 && (
-        <div className="mb-4 flex flex-wrap items-center gap-2 sm:gap-3 px-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl">
-          <span className="text-sm text-gray-600">
+        <div className="mb-4 flex flex-col gap-2 sm:flex-row sm:flex-wrap sm:items-center sm:gap-3 px-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl min-w-0">
+          <span className="text-sm text-gray-600 shrink-0">
             {selectedIds.size} selected
           </span>
-          <select
-            className="text-sm border border-gray-200 rounded-lg px-2 py-1.5"
-            defaultValue=""
-            onChange={(e) => {
-              const v = e.target.value;
-              if (v) handleBulkStatus(v);
-              e.target.value = '';
-            }}
-          >
-            <option value="">Bulk status</option>
-            {STATUS_OPTIONS.map((opt) => (
-              <option key={opt.value} value={opt.value}>{opt.label}</option>
-            ))}
-          </select>
-          <button
-            type="button"
-            onClick={() => setBulkDeleteConfirm(true)}
-            className="text-sm text-red-600 hover:underline"
-          >
-            Bulk delete
-          </button>
-          <button
-            type="button"
-            onClick={() => setSelectedIds(new Set())}
-            className="text-sm text-gray-500 hover:underline sm:ml-auto"
-          >
-            Clear selection
-          </button>
+          <div className="flex flex-wrap items-center gap-2 min-w-0 flex-1">
+            <select
+              className="text-sm border border-gray-200 rounded-lg px-2 py-1.5 min-w-0 max-w-full sm:max-w-48"
+              defaultValue=""
+              onChange={(e) => {
+                const v = e.target.value;
+                if (v) handleBulkStatus(v);
+                e.target.value = '';
+              }}
+            >
+              <option value="">Bulk status</option>
+              {STATUS_OPTIONS.map((opt) => (
+                <option key={opt.value} value={opt.value}>{opt.label}</option>
+              ))}
+            </select>
+            <button
+              type="button"
+              onClick={() => setBulkDeleteConfirm(true)}
+              className="text-sm text-red-600 hover:underline shrink-0"
+            >
+              Bulk delete
+            </button>
+            <button
+              type="button"
+              onClick={() => setSelectedIds(new Set())}
+              className="text-sm text-gray-500 hover:underline sm:ml-auto shrink-0"
+            >
+              Clear selection
+            </button>
+          </div>
         </div>
       )}
 
@@ -832,36 +839,40 @@ export default function Students() {
         {/* Mobile: card list (below md) */}
         <div className="block md:hidden">
           {loading ? (
-            <div className="p-4 space-y-3">
-              {[1, 2, 3, 4, 5].map((i) => (
-                <div key={i} className="rounded-xl border border-slate-200/80 p-4 flex items-center gap-3">
-                  <Skeleton className="h-10 w-10 shrink-0 rounded-full" />
-                  <div className="flex-1 min-w-0 space-y-2">
-                    <Skeleton className="h-4 w-32" />
-                    <Skeleton className="h-3 w-48" />
+            <div className="p-4 grid grid-cols-1 sm:grid-cols-2 gap-3">
+              <div className="col-span-full sm:col-span-2 space-y-3">
+                {[1, 2, 3, 4, 5].map((i) => (
+                  <div key={i} className="rounded-xl border border-slate-200/80 p-4 flex items-center gap-3">
+                    <Skeleton className="h-10 w-10 shrink-0 rounded-full" />
+                    <div className="flex-1 min-w-0 space-y-2">
+                      <Skeleton className="h-4 w-32" />
+                      <Skeleton className="h-3 w-48 max-w-full" />
+                    </div>
                   </div>
-                </div>
-              ))}
+                ))}
+              </div>
             </div>
           ) : data.length === 0 ? (
-            <div className="px-5 py-16 text-center">
-              <div className="flex flex-col items-center gap-4">
-                <div className="w-14 h-14 rounded-full bg-slate-100 flex items-center justify-center">
-                  <FiUsers className="w-7 h-7 text-slate-400" />
+            <div className="p-4 grid grid-cols-1 sm:grid-cols-2 gap-3">
+              <div className="col-span-full sm:col-span-2 px-5 py-16 text-center">
+                <div className="flex flex-col items-center gap-4">
+                  <div className="w-14 h-14 rounded-full bg-slate-100 flex items-center justify-center">
+                    <FiUsers className="w-7 h-7 text-slate-400" />
+                  </div>
+                  <p className="text-slate-600 font-medium">No students yet</p>
+                  <p className="text-sm text-slate-500">Add your first student to get started</p>
+                  <button
+                    type="button"
+                    onClick={() => setAddPanelOpen(true)}
+                    className="inline-flex items-center gap-2 px-4 py-2.5 bg-primary-navy text-white text-sm font-medium rounded-xl hover:bg-primary-navy/90 shadow-sm"
+                  >
+                    <FiPlus className="w-4 h-4" /> Add Student
+                  </button>
                 </div>
-                <p className="text-slate-600 font-medium">No students yet</p>
-                <p className="text-sm text-slate-500">Add your first student to get started</p>
-                <button
-                  type="button"
-                  onClick={() => setAddPanelOpen(true)}
-                  className="inline-flex items-center gap-2 px-4 py-2.5 bg-[#003366] text-white text-sm font-medium rounded-xl hover:bg-[#002244] shadow-sm"
-                >
-                  <FiPlus className="w-4 h-4" /> Add Student
-                </button>
               </div>
             </div>
           ) : (
-            <div className="p-4 space-y-3">
+            <div className="p-4 grid grid-cols-1 sm:grid-cols-2 gap-3">
               {data.map((s) => (
                 <div
                   key={s._id}
@@ -937,16 +948,16 @@ export default function Students() {
         </div>
 
         {!loading && total > 0 && (
-          <div className="flex flex-wrap items-center justify-between gap-3 px-4 py-3 border-t border-slate-200 bg-slate-50/70">
+          <div className="flex flex-col gap-3 sm:flex-row sm:flex-wrap sm:items-center sm:justify-between px-4 py-3 border-t border-slate-200 bg-slate-50/70 min-w-0">
             {viewAll ? (
-              <p className="text-xs text-slate-500">
+              <p className="text-xs text-slate-500 text-center sm:text-left">
                 {total > ADMIN_VIEW_ALL_LIMIT
                   ? `Showing first ${ADMIN_VIEW_ALL_LIMIT.toLocaleString()} of ${total} students`
                   : `Showing all ${total} students`}
               </p>
             ) : (
               <>
-                <p className="text-xs text-slate-600">
+                <p className="text-xs text-slate-600 text-center sm:text-left">
                   <span className="sm:hidden">
                     <span className="font-medium text-slate-800">{(page - 1) * limit + 1}–{Math.min(page * limit, total)}</span>
                     {' / '}
@@ -956,11 +967,11 @@ export default function Students() {
                     Showing <span className="font-medium text-slate-800">{(page - 1) * limit + 1}–{Math.min(page * limit, total)}</span> of <span className="font-medium text-slate-800">{total}</span>
                   </span>
                 </p>
-                <div className="flex flex-wrap items-center gap-2">
+                <div className="flex flex-wrap items-center justify-center gap-2 w-full sm:w-auto sm:justify-end min-w-0">
                   <select
                     value={limit}
                     onChange={(e) => { setLimit(Number(e.target.value)); setPage(1); }}
-                    className="text-xs border border-slate-200 rounded-lg px-2.5 py-1.5 bg-white text-slate-700 focus:ring-2 focus:ring-[#003366]/20 focus:border-[#003366]"
+                    className="text-xs border border-slate-200 rounded-lg px-2.5 py-1.5 bg-white text-slate-700 focus:ring-2 focus:ring-primary-navy/20 focus:border-primary-navy min-w-0 max-w-full"
                   >
                     {LIMIT_OPTIONS.map((n) => (
                       <option key={n} value={n}>{n} per page</option>
@@ -970,16 +981,16 @@ export default function Students() {
                     type="button"
                     onClick={() => setPage((p) => Math.max(1, p - 1))}
                     disabled={page <= 1}
-                    className="px-2.5 py-1.5 text-xs font-medium border border-slate-200 rounded-lg bg-white text-slate-600 hover:bg-slate-50 disabled:opacity-50 disabled:cursor-not-allowed"
+                    className="px-2.5 py-1.5 text-xs font-medium border border-slate-200 rounded-lg bg-white text-slate-600 hover:bg-slate-50 disabled:opacity-50 disabled:cursor-not-allowed shrink-0"
                   >
                     Previous
                   </button>
-                  <span className="text-xs text-slate-500 min-w-[4rem] text-center">Page {page}</span>
+                  <span className="text-xs text-slate-500 min-w-16 text-center shrink-0">Page {page}</span>
                   <button
                     type="button"
                     onClick={() => setPage((p) => p + 1)}
                     disabled={page * limit >= total}
-                    className="px-2.5 py-1.5 text-xs font-medium border border-slate-200 rounded-lg bg-white text-slate-600 hover:bg-slate-50 disabled:opacity-50 disabled:cursor-not-allowed"
+                    className="px-2.5 py-1.5 text-xs font-medium border border-slate-200 rounded-lg bg-white text-slate-600 hover:bg-slate-50 disabled:opacity-50 disabled:cursor-not-allowed shrink-0"
                   >
                     Next
                   </button>

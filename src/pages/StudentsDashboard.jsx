@@ -218,7 +218,7 @@ const CollegeFitTest = () => {
 
 const CollegeComparison = () => {
   return (
-    <NeoCard accentColor="#FFE89A" className="md:col-span-2 lg:col-span-1">
+    <NeoCard accentColor="#FFE89A">
       <div className="mb-6 flex items-start justify-between">
         <div>
           <h3 className="mb-1 text-xl font-black tracking-tight text-[#0F172A]">Comparative Analysis</h3>
@@ -231,7 +231,7 @@ const CollegeComparison = () => {
 
       <div className="mb-auto space-y-3">
         <input className={previewInputClass} placeholder="Institution A" disabled />
-        <div className="mx-auto w-12 rounded border-2 border-slate-200 bg-[#F8FAFC] py-1 text-center text-[10px] font-black uppercase tracking-widest text-slate-400">
+        <div className="w-12 rounded border-2 border-slate-200 bg-[#F8FAFC] py-1 text-center text-[10px] font-black uppercase tracking-widest text-slate-400">
           VS
         </div>
         <input className={previewInputClass} placeholder="Institution B" disabled />
@@ -458,7 +458,7 @@ export default function StudentsDashboard() {
                       Compare institutions side-by-side to make confident admission decisions.
                     </p>
                   </div>
-                  <div className="mx-auto grid max-w-2xl grid-cols-1 gap-8">
+                  <div className="grid grid-cols-1 gap-8">
                     <CollegeComparison />
                   </div>
                 </section>
