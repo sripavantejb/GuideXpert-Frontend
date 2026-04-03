@@ -48,12 +48,12 @@ export default function BranchSection({ branches }) {
                   <div className="flex flex-wrap gap-2">
                     {branch.reservation_categories.map((rc, rcIdx) => (
                       <div
-                        key={`${rc.reservation_category_code || rc.category_name}-${rcIdx}`}
+                        key={`${rc.reservation_category_code || rc.category_code || rc.category_name || rc.name}-${rcIdx}`}
                         className="inline-flex items-center gap-2 px-3 py-1.5 rounded-lg bg-gray-50 border border-gray-200 text-xs hover:bg-gray-100 transition-colors"
                       >
                         <span className="w-1.5 h-1.5 rounded-full bg-violet-400 shrink-0" />
                         <span className="font-semibold text-gray-700">
-                          {rc.category_name || rc.reservation_category_code}
+                          {rc.category_name || rc.name || rc.reservation_category_code || rc.category_code}
                         </span>
                         {rc.cutoff != null && (
                           <span className="text-gray-500">

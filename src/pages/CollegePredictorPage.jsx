@@ -1,9 +1,10 @@
-import { useState, useCallback } from 'react';
+import { useState, useCallback, useMemo, useEffect, useRef } from 'react';
 import { Link } from 'react-router-dom';
 import { FiChevronDown, FiChevronUp } from 'react-icons/fi';
 import { getPredictedCollegesPublic } from '../utils/api';
 import {
   ENTRANCE_EXAMS,
+  getEntranceExamMeta,
   RESERVATION_CATEGORIES,
   BRANCH_CODES,
   SORT_ORDER_OPTIONS,
@@ -36,12 +37,25 @@ function getErrorMessage(resStatus, response) {
   return ERROR_MESSAGES[resStatus] || 'Something went wrong. Please try again.';
 }
 
+function getPublicFilterSnapshot(f) {
+  return JSON.stringify({
+    entrance_exam_name_enum: f.entrance_exam_name_enum,
+    admission_category_name_enum: f.admission_category_name_enum,
+    reservation_category_code: f.reservation_category_code,
+    cutoff_from: f.cutoff_from,
+    cutoff_to: f.cutoff_to,
+    branch_codes: [...(f.branch_codes || [])].sort(),
+    districts: [...(f.districts || [])].sort(),
+    sort_order: f.sort_order,
+  });
+}
+
 const initialCollegeForm = {
   entrance_exam_name_enum: '',
   admission_category_name_enum: 'GENERAL',
   cutoff_from: '',
   cutoff_to: '',
-  reservation_category_code: 'GNT2S',
+  reservation_category_code: '1G',
   branch_codes: [],
   districts: [],
   sort_order: 'ASC',
@@ -49,11 +63,56 @@ const initialCollegeForm = {
 
 export default function CollegePredictorPage() {
   const [form, setForm] = useState(initialCollegeForm);
+  const examMetaPublic = useMemo(() => getEntranceExamMeta(form.entrance_exam_name_enum), [form.entrance_exam_name_enum]);
+  const reservationOptsPublic = useMemo(
+    () => (examMetaPublic?.reservationOptions?.length ? examMetaPublic.reservationOptions : RESERVATION_CATEGORIES),
+    [examMetaPublic]
+  );
+  const districtOptsPublic = useMemo(() => {
+    const meta = examMetaPublic;
+    const byAdm = meta?.districtOptionsByAdmission;
+    if (byAdm && form.admission_category_name_enum) {
+      const list = byAdm[form.admission_category_name_enum];
+      if (Array.isArray(list) && list.length > 0) return list;
+    }
+    return meta?.districtOptions?.length ? meta.districtOptions : DISTRICTS;
+  }, [examMetaPublic, form.admission_category_name_enum]);
+  const admissionOptsPublic = useMemo(
+    () => (examMetaPublic?.admissionCategories?.length ? examMetaPublic.admissionCategories : ADMISSION_CATEGORIES),
+    [examMetaPublic]
+  );
+
+  useEffect(() => {
+    const meta = getEntranceExamMeta(form.entrance_exam_name_enum);
+    if (!form.entrance_exam_name_enum || !meta) return;
+    setForm((prev) => ({
+      ...prev,
+      admission_category_name_enum: meta.admissionCategories?.[0]?.value ?? prev.admission_category_name_enum,
+      reservation_category_code: meta.defaultReservationCode ?? prev.reservation_category_code,
+      districts: [],
+    }));
+  }, [form.entrance_exam_name_enum]);
+
+  /** AP EAMCET: AU vs SVU use different district codes — clear invalid chip selections when region changes. */
+  useEffect(() => {
+    if (form.entrance_exam_name_enum !== 'AP_EAMCET') return;
+    const meta = getEntranceExamMeta('AP_EAMCET');
+    const byAdm = meta?.districtOptionsByAdmission;
+    if (!byAdm) return;
+    const valid = new Set((byAdm[form.admission_category_name_enum] || []).map((o) => o.value));
+    setForm((prev) => {
+      const next = prev.districts.filter((d) => valid.has(d));
+      if (next.length === prev.districts.length) return prev;
+      return { ...prev, districts: next };
+    });
+  }, [form.entrance_exam_name_enum, form.admission_category_name_enum]);
+
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
   const [result, setResult] = useState(null);
   const [offset, setOffset] = useState(0);
   const [expandedCollegeId, setExpandedCollegeId] = useState(null);
+  const lastSuccessfulPublicSnapshotRef = useRef(null);
 
   const updateForm = useCallback((field, value) => {
     setForm((prev) => ({ ...prev, [field]: value }));
@@ -94,14 +153,19 @@ export default function CollegePredictorPage() {
       }
       setLoading(true);
       setError(null);
+      const examMeta = getEntranceExamMeta(examValue);
+      const apiExam = examMeta?.apiValue ?? examValue;
+      const resDefault = examMeta?.defaultReservationCode ?? '1G';
+      const resCode = String(form.reservation_category_code ?? resDefault).trim();
       const payload = {
         offset: pageOffset,
         limit: PAGE_SIZE,
-        entrance_exam_name_enum: examValue,
+        exam: apiExam,
+        entrance_exam_name_enum: apiExam,
         admission_category_name_enum: String(form.admission_category_name_enum ?? 'GENERAL'),
         cutoff_from: cutoffFrom,
         cutoff_to: cutoffTo,
-        reservation_category_code: String(form.reservation_category_code ?? 'GNT2S'),
+        reservation_category_codes: [resCode],
         sort_order: String(form.sort_order ?? 'ASC'),
       };
       if (form.branch_codes?.length > 0) payload.branch_codes = form.branch_codes;
@@ -119,10 +183,16 @@ export default function CollegePredictorPage() {
           console.warn('[College Predictor] API error:', res.status, errData);
         }
         setError(getErrorMessage(errData.res_status, errData.response || res.message));
-        if (!append) setResult(null);
+        if (!append) {
+          setResult(null);
+          lastSuccessfulPublicSnapshotRef.current = null;
+        }
         return;
       }
       const data = res.data;
+      if (!append) {
+        lastSuccessfulPublicSnapshotRef.current = getPublicFilterSnapshot(form);
+      }
       if (append && result) {
         setResult((prev) => ({
           ...data,
@@ -149,6 +219,27 @@ export default function CollegePredictorPage() {
     const nextOffset = offset + PAGE_SIZE;
     fetchColleges(nextOffset, true);
   };
+
+  /** After results are shown, refetch when districts/branches/etc. change without submitting the form again. */
+  useEffect(() => {
+    if (!result) {
+      lastSuccessfulPublicSnapshotRef.current = null;
+      return;
+    }
+    const examValue =
+      form.entrance_exam_name_enum != null && String(form.entrance_exam_name_enum).trim() !== ''
+        ? String(form.entrance_exam_name_enum).trim()
+        : '';
+    if (!examValue) return;
+    if (form.cutoff_from === '' || form.cutoff_to === '') return;
+    const cutoffFrom = parseInt(Number(form.cutoff_from), 10);
+    const cutoffTo = parseInt(Number(form.cutoff_to), 10);
+    if (!Number.isInteger(cutoffFrom) || cutoffFrom < 0 || !Number.isInteger(cutoffTo) || cutoffTo < 0) return;
+    if (cutoffFrom >= cutoffTo) return;
+    const current = getPublicFilterSnapshot(form);
+    if (lastSuccessfulPublicSnapshotRef.current === current) return;
+    fetchColleges(0, false);
+  }, [form, result, fetchColleges]);
 
   const total = result?.total_no_of_colleges ?? 0;
   const loaded = result?.colleges?.length ?? 0;
@@ -197,28 +288,28 @@ export default function CollegePredictorPage() {
                 </div>
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-1">
-                    Admission category <span className="text-red-500">*</span>
+                    {examMetaPublic?.admissionFieldLabel ?? 'Admission category'} <span className="text-red-500">*</span>
                   </label>
                   <select
                     value={form.admission_category_name_enum}
                     onChange={(e) => updateForm('admission_category_name_enum', e.target.value)}
                     className="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm focus:ring-primary-navy focus:border-primary-navy"
                   >
-                    {ADMISSION_CATEGORIES.map((o) => (
+                    {admissionOptsPublic.map((o) => (
                       <option key={o.value} value={o.value}>{o.label}</option>
                     ))}
                   </select>
                 </div>
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-1">
-                    Reservation category <span className="text-red-500">*</span>
+                    {examMetaPublic?.reservationFieldLabel ?? 'Reservation category'} <span className="text-red-500">*</span>
                   </label>
                   <select
                     value={form.reservation_category_code}
                     onChange={(e) => updateForm('reservation_category_code', e.target.value)}
                     className="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm focus:ring-primary-navy focus:border-primary-navy"
                   >
-                    {RESERVATION_CATEGORIES.map((o) => (
+                    {reservationOptsPublic.map((o) => (
                       <option key={o.value} value={o.value}>{o.label}</option>
                     ))}
                   </select>
@@ -283,8 +374,13 @@ export default function CollegePredictorPage() {
                 </div>
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-1">Districts (optional)</label>
+                  {examMetaPublic?.districtSelectionHint && (
+                    <p className="text-xs text-amber-800 bg-amber-50 border border-amber-100 rounded-lg px-2 py-1.5 mb-2">
+                      {examMetaPublic.districtSelectionHint}
+                    </p>
+                  )}
                   <div className="flex flex-wrap gap-2">
-                    {DISTRICTS.map((o) => (
+                    {districtOptsPublic.map((o) => (
                       <label key={o.value} className="inline-flex items-center gap-1.5 text-sm">
                         <input
                           type="checkbox"

@@ -1,4 +1,4 @@
-import { useState, useCallback, useMemo } from 'react';
+import { useState, useCallback, useMemo, useEffect, useRef } from 'react';
 import { useParams, useNavigate, Navigate } from 'react-router-dom';
 import { AnimatePresence, motion } from 'framer-motion';
 import { FiArrowLeft, FiSearch, FiAlertCircle } from 'react-icons/fi';
@@ -7,6 +7,7 @@ import {
   getEntranceExamMeta,
   ENTRANCE_EXAMS,
   rankToCutoff,
+  getApEamcetDistrictOptions,
 } from '../../constants/collegePredictorOptions';
 import { getAccentClasses } from '../../constants/examCardConfig';
 import { FilterPanel, CollegeCard } from '../../components/Counsellor/CollegePredictor';
@@ -68,24 +69,75 @@ const resultsMotion = {
 
 const VALID_EXAM_VALUES = new Set(ENTRANCE_EXAMS.map((e) => e.value));
 
+/** Stable JSON for comparing filter inputs that affect the predictor API. */
+function getPredictorFilterSnapshot(f) {
+  return JSON.stringify({
+    rank: f.rank,
+    admission_category_name_enum: f.admission_category_name_enum,
+    reservation_category_codes: [...(f.reservation_category_codes || [])].sort(),
+    branch_codes: [...(f.branch_codes || [])].sort(),
+    districts: [...(f.districts || [])].sort(),
+    sort_order: f.sort_order,
+  });
+}
+
 export default function CollegePredictorPredict() {
   const { exam } = useParams();
   const navigate = useNavigate();
 
   const examMeta = getEntranceExamMeta(exam);
   const accent = getAccentClasses(examMeta?.accent);
-  const defaultAdmission = examMeta?.admissionCategories?.[0]?.value ?? 'GENERAL';
+  const defaultAdmission = examMeta?.admissionCategories?.[0]?.value ?? '';
+  const defaultReservationList = examMeta?.defaultReservationCode
+    ? [examMeta.defaultReservationCode]
+    : [];
 
-  const initialFilters = useMemo(() => ({
-    rank: '',
-    admission_category_name_enum: defaultAdmission,
-    reservation_category_codes: [],
-    branch_codes: [],
-    districts: [],
-    sort_order: 'ASC',
-  }), [defaultAdmission]);
+  const initialFilters = useMemo(
+    () => ({
+      rank: '',
+      admission_category_name_enum: defaultAdmission,
+      reservation_category_codes: defaultReservationList,
+      branch_codes: [],
+      districts: [],
+      sort_order: 'ASC',
+    }),
+    [defaultAdmission, examMeta?.defaultReservationCode]
+  );
 
   const [filters, setFilters] = useState(initialFilters);
+
+  useEffect(() => {
+    const meta = getEntranceExamMeta(exam);
+    if (!meta) return;
+    setFilters({
+      rank: '',
+      admission_category_name_enum: meta.admissionCategories?.[0]?.value ?? '',
+      reservation_category_codes: meta.defaultReservationCode ? [meta.defaultReservationCode] : [],
+      branch_codes: [],
+      districts: [],
+      sort_order: 'ASC',
+    });
+    setCollegeSearch('');
+    setHasSearched(false);
+    setError(null);
+    setColleges([]);
+    setTotalCount(0);
+    setOffset(0);
+    setAdmissionCategoryName('');
+    lastSuccessfulFilterSnapshotRef.current = null;
+    hasSuccessfulPredictionRef.current = false;
+  }, [exam]);
+
+  /** AP EAMCET: region-specific district codes — drop selections invalid after switching AU ↔ SVU. */
+  useEffect(() => {
+    if (exam !== 'AP_EAMCET') return;
+    const valid = new Set(getApEamcetDistrictOptions(filters.admission_category_name_enum).map((o) => o.value));
+    setFilters((prev) => {
+      const next = prev.districts.filter((d) => valid.has(d));
+      if (next.length === prev.districts.length) return prev;
+      return { ...prev, districts: next };
+    });
+  }, [exam, filters.admission_category_name_enum]);
   const [colleges, setColleges] = useState([]);
   const [totalCount, setTotalCount] = useState(0);
   const [admissionCategoryName, setAdmissionCategoryName] = useState('');
@@ -95,6 +147,10 @@ export default function CollegePredictorPredict() {
   const [error, setError] = useState(null);
   const [hasSearched, setHasSearched] = useState(false);
   const [collegeSearch, setCollegeSearch] = useState('');
+
+  /** Set after a successful API response; used to auto-refetch when filters change without duplicate runs after the first search. */
+  const lastSuccessfulFilterSnapshotRef = useRef(null);
+  const hasSuccessfulPredictionRef = useRef(false);
 
   const validate = useCallback(() => {
     const rank = Number(filters.rank);
@@ -126,8 +182,14 @@ export default function CollegePredictorPredict() {
         cutoff_to: cutoffTo,
         sort_order: filters.sort_order,
       };
-      if (filters.reservation_category_codes.length > 0) {
-        body.reservation_category_codes = filters.reservation_category_codes;
+      const resCodes =
+        filters.reservation_category_codes?.length > 0
+          ? filters.reservation_category_codes
+          : examMeta?.defaultReservationCode
+            ? [examMeta.defaultReservationCode]
+            : [];
+      if (resCodes.length > 0) {
+        body.reservation_category_codes = resCodes;
       }
       if (filters.branch_codes.length > 0) {
         body.branch_codes = filters.branch_codes;
@@ -152,10 +214,15 @@ export default function CollegePredictorPredict() {
           setColleges([]);
           setTotalCount(0);
         }
+        hasSuccessfulPredictionRef.current = false;
         return;
       }
 
       const data = res.data;
+      if (!append) {
+        hasSuccessfulPredictionRef.current = true;
+        lastSuccessfulFilterSnapshotRef.current = getPredictorFilterSnapshot(filters);
+      }
       if (append) {
         setColleges((prev) => [...prev, ...(data.colleges || [])]);
       } else {
@@ -178,9 +245,33 @@ export default function CollegePredictorPredict() {
     fetchColleges(offset + PAGE_SIZE, true);
   }, [offset, fetchColleges]);
 
+  /** After at least one successful search, refetch when districts/branches/category/region/sort/rank change (no need to click Predict again). */
+  useEffect(() => {
+    if (!hasSuccessfulPredictionRef.current) return;
+    if (validate()) return;
+    const current = getPredictorFilterSnapshot(filters);
+    if (lastSuccessfulFilterSnapshotRef.current === current) return;
+    setColleges([]);
+    setOffset(0);
+    fetchColleges(0, false);
+  }, [filters, validate, fetchColleges]);
+
   if (!VALID_EXAM_VALUES.has(exam)) {
     return <Navigate to=".." replace />;
   }
+
+  if (examMeta && examMeta.supported === false) {
+    return <Navigate to=".." replace />;
+  }
+
+  const districtOptionsResolved = useMemo(() => {
+    const byAdm = examMeta?.districtOptionsByAdmission;
+    if (byAdm && filters.admission_category_name_enum) {
+      const list = byAdm[filters.admission_category_name_enum];
+      if (Array.isArray(list) && list.length > 0) return list;
+    }
+    return examMeta?.districtOptions;
+  }, [examMeta, filters.admission_category_name_enum]);
 
   const normalizedSearch = collegeSearch.trim().toLowerCase();
   const filteredColleges = normalizedSearch
@@ -234,6 +325,13 @@ export default function CollegePredictorPredict() {
         selectedExamLabel={examLabel}
         accent={examMeta?.accent}
         admissionCategories={examMeta?.admissionCategories ?? []}
+        admissionFieldLabel={examMeta?.admissionFieldLabel ?? 'Admission category'}
+        reservationFieldLabel={examMeta?.reservationFieldLabel ?? 'Reservation categories'}
+        rankFieldLabel={examMeta?.rankFieldLabel ?? 'Your Rank'}
+        reservationOptions={examMeta?.reservationOptions}
+        reservationSelectSingle={examMeta?.reservationSelectSingle ?? false}
+        districtOptions={districtOptionsResolved}
+        districtSelectionHint={examMeta?.districtSelectionHint}
       />
 
       {/* Error */}

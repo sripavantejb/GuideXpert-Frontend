@@ -1,4 +1,4 @@
-import { useCallback } from 'react';
+import { useCallback, useMemo } from 'react';
 import { FiX } from 'react-icons/fi';
 import {
   RESERVATION_CATEGORIES,
@@ -58,15 +58,34 @@ export default function FilterPanel({
   selectedExamLabel,
   accent,
   admissionCategories = [],
+  admissionFieldLabel = 'Admission category',
+  reservationFieldLabel = 'Reservation categories',
+  rankFieldLabel = 'Your Rank',
+  reservationOptions,
+  reservationSelectSingle = false,
+  districtOptions,
+  districtSelectionHint,
 }) {
   const update = useCallback(
     (field, value) => onChange({ ...filters, [field]: value }),
     [filters, onChange]
   );
 
+  const resOpts = useMemo(
+    () => (Array.isArray(reservationOptions) && reservationOptions.length > 0 ? reservationOptions : RESERVATION_CATEGORIES),
+    [reservationOptions]
+  );
+
+  const distOpts = useMemo(
+    () => (Array.isArray(districtOptions) && districtOptions.length > 0 ? districtOptions : DISTRICTS),
+    [districtOptions]
+  );
+
   const submitClasses = accent
     ? getAccentClasses(accent).button
     : 'bg-primary-navy hover:bg-primary-navy/90 text-white';
+
+  const selectedReservationSingle = filters.reservation_category_codes?.[0] ?? '';
 
   return (
     <form
@@ -94,10 +113,9 @@ export default function FilterPanel({
       </div>
 
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 mb-4">
-        {/* Student rank */}
         <div>
           <label className="block text-sm font-medium text-gray-700 mb-1">
-            Your Rank <span className="text-red-500">*</span>
+            {rankFieldLabel} <span className="text-red-500">*</span>
           </label>
           <input
             type="number"
@@ -105,16 +123,15 @@ export default function FilterPanel({
             step="1"
             value={filters.rank}
             onChange={(e) => update('rank', e.target.value)}
-            placeholder="e.g. 5000"
+            placeholder="e.g. 3200"
             className="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm focus:ring-2 focus:ring-primary-navy/20 focus:border-primary-navy"
           />
         </div>
 
-        {/* Admission category (dynamic per exam) */}
         {admissionCategories.length > 0 && (
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-1">
-              Admission category
+              {admissionFieldLabel}
             </label>
             <select
               value={filters.admission_category_name_enum}
@@ -128,7 +145,6 @@ export default function FilterPanel({
           </div>
         )}
 
-        {/* Sort order */}
         <div>
           <label className="block text-sm font-medium text-gray-700 mb-1">Sort order</label>
           <select
@@ -143,26 +159,54 @@ export default function FilterPanel({
         </div>
       </div>
 
-      {/* Multi-selects */}
+      {reservationSelectSingle ? (
+        <div className="mb-4 max-w-xl">
+          <label className="block text-sm font-medium text-gray-700 mb-1">
+            {reservationFieldLabel} <span className="text-red-500">*</span>
+          </label>
+          <select
+            value={selectedReservationSingle}
+            onChange={(e) => {
+              const v = e.target.value;
+              update('reservation_category_codes', v ? [v] : []);
+            }}
+            className="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm focus:ring-2 focus:ring-primary-navy/20 focus:border-primary-navy"
+          >
+            {resOpts.map((o) => (
+              <option key={o.value} value={o.value}>{o.label}</option>
+            ))}
+          </select>
+        </div>
+      ) : null}
+
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 mb-5">
-        <MultiSelectChips
-          label="Reservation categories"
-          options={RESERVATION_CATEGORIES}
-          selected={filters.reservation_category_codes}
-          onChange={(val) => update('reservation_category_codes', val)}
-        />
+        {!reservationSelectSingle && (
+          <MultiSelectChips
+            label={reservationFieldLabel}
+            options={resOpts}
+            selected={filters.reservation_category_codes}
+            onChange={(val) => update('reservation_category_codes', val)}
+          />
+        )}
         <MultiSelectChips
           label="Branches"
           options={BRANCH_CODES}
           selected={filters.branch_codes}
           onChange={(val) => update('branch_codes', val)}
         />
-        <MultiSelectChips
-          label="Districts"
-          options={DISTRICTS}
-          selected={filters.districts}
-          onChange={(val) => update('districts', val)}
-        />
+        <div>
+          <MultiSelectChips
+            label="Districts"
+            options={distOpts}
+            selected={filters.districts}
+            onChange={(val) => update('districts', val)}
+          />
+          {districtSelectionHint && (
+            <p className="mt-2 text-xs text-amber-800/90 bg-amber-50 border border-amber-100 rounded-lg px-3 py-2">
+              {districtSelectionHint}
+            </p>
+          )}
+        </div>
       </div>
 
       <button

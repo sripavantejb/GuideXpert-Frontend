@@ -1,6 +1,9 @@
 /**
- * Option lists for the College Predictor (earlywave v1 API).
- * Each exam key must match the backend SUPPORTED_EXAMS list.
+ * Option lists for the College Predictor (earlywave v1/v2 API).
+ * Each exam `value` must match route params and backend EXAM_API_MAP keys where applicable.
+ *
+ * AP EAMCET reservation codes verified against beta API: use **spaced** labels (e.g. `OC GIRLS`), not
+ * Karnataka-style `1G` — `1G` returns a minimal list; AP category strings match the official EAPCET form.
  */
 
 const CUTOFF_UPPER_BOUND = 500000;
@@ -28,8 +31,78 @@ export function rankToCutoff(rank) {
   return [Math.max(1, r - buffer), CUTOFF_UPPER_BOUND];
 }
 
+/** Official EAPCET-style category strings (value === label) — verified HTTP 200 on beta for AP_EAMCET + AU. */
+export const AP_EAMCET_RESERVATION_OPTIONS = [
+  { value: 'OC GIRLS', label: 'OC GIRLS' },
+  { value: 'BCC GIRLS', label: 'BCC GIRLS' },
+  { value: 'BCB BOYS', label: 'BCB BOYS' },
+  { value: 'OC EWS BOYS', label: 'OC EWS BOYS' },
+  { value: 'ST GIRLS', label: 'ST GIRLS' },
+  { value: 'ST BOYS', label: 'ST BOYS' },
+  { value: 'OC EWS GIRLS', label: 'OC EWS GIRLS' },
+  { value: 'BCA GIRLS', label: 'BCA GIRLS' },
+  { value: 'BCE BOYS', label: 'BCE BOYS' },
+  { value: 'BCD GIRLS', label: 'BCD GIRLS' },
+  { value: 'BCE GIRLS', label: 'BCE GIRLS' },
+  { value: 'BCD BOYS', label: 'BCD BOYS' },
+  { value: 'SC BOYS', label: 'SC BOYS' },
+  { value: 'BCC BOYS', label: 'BCC BOYS' },
+  { value: 'SC GIRLS', label: 'SC GIRLS' },
+  { value: 'BCB GIRLS', label: 'BCB GIRLS' },
+  { value: 'BCA BOYS', label: 'BCA BOYS' },
+];
+
 /**
- * @typedef {{ value: string, label: string, description: string, accent: string, apiValue: string, supported: boolean, admissionCategories: {value:string,label:string}[] }} EntranceExamOption
+ * AP EAMCET district filter: earlywave expects **short district_enum codes**, not full names.
+ * Sending display names (e.g. "Visakhapatnam") yields a single promoted college; codes like VSP/GTR work.
+ * Codes differ by counselling **region** (AU vs SVU). Derived from live API responses (district_enum).
+ */
+export const AP_EAMCET_DISTRICT_OPTIONS_BY_ADMISSION = {
+  AU: [
+    { value: 'EG', label: 'East Godavari' },
+    { value: 'GTR', label: 'Guntur' },
+    { value: 'KRI', label: 'Krishna' },
+    { value: 'PKS', label: 'Prakasam' },
+    { value: 'SKL', label: 'Srikakulam' },
+    { value: 'VSP', label: 'Visakhapatnam' },
+    { value: 'VZM', label: 'Vizianagaram' },
+    { value: 'WG', label: 'West Godavari' },
+  ],
+  SVU: [
+    { value: 'ATP', label: 'Anantapur' },
+    { value: 'CTR', label: 'Chittoor / Tirupati' },
+    { value: 'KDP', label: 'Kadapa (YSR)' },
+    { value: 'KNL', label: 'Kurnool' },
+    { value: 'NLR', label: 'Sri Potti Sriramulu Nellore' },
+  ],
+};
+
+/** @param {string} admission AU | SVU */
+export function getApEamcetDistrictOptions(admission) {
+  const key = String(admission || '').trim();
+  return AP_EAMCET_DISTRICT_OPTIONS_BY_ADMISSION[key] ?? AP_EAMCET_DISTRICT_OPTIONS_BY_ADMISSION.AU;
+}
+
+/**
+ * @typedef {{
+ *   value: string,
+ *   label: string,
+ *   description: string,
+ *   accent: string,
+ *   apiValue: string,
+ *   supported: boolean,
+ *   defaultReservationCode?: string,
+ *   upstreamDataNote?: string,
+ *   admissionFieldLabel?: string,
+ *   reservationFieldLabel?: string,
+ *   rankFieldLabel?: string,
+ *   reservationOptions?: { value: string, label: string }[],
+ *   reservationSelectSingle?: boolean,
+ *   districtOptions?: { value: string, label: string }[],
+ *   districtOptionsByAdmission?: Record<string, { value: string, label: string }[]>,
+ *   districtSelectionHint?: string,
+ *   admissionCategories: { value: string, label: string }[],
+ * }} EntranceExamOption
  * @type {EntranceExamOption[]}
  */
 export const ENTRANCE_EXAMS = [
@@ -40,6 +113,7 @@ export const ENTRANCE_EXAMS = [
     accent: 'blue',
     apiValue: 'KCET',
     supported: true,
+    defaultReservationCode: '1G',
     admissionCategories: [
       { value: 'GENERAL', label: 'General' },
       { value: 'HK', label: 'Hyderabad-Karnataka (HK)' },
@@ -70,6 +144,15 @@ export const ENTRANCE_EXAMS = [
     accent: 'green',
     apiValue: 'AP_EAMCET',
     supported: true,
+    defaultReservationCode: 'OC GIRLS',
+    admissionFieldLabel: 'Region',
+    reservationFieldLabel: 'Category',
+    rankFieldLabel: 'Expected AP EAPCET rank',
+    reservationOptions: AP_EAMCET_RESERVATION_OPTIONS,
+    reservationSelectSingle: true,
+    districtOptionsByAdmission: AP_EAMCET_DISTRICT_OPTIONS_BY_ADMISSION,
+    districtSelectionHint:
+      'Pick one or more districts for your selected region (AU vs SVU lists differ). Leave empty to include all districts in the results.',
     admissionCategories: [
       { value: 'AU', label: 'Andhra University (AU)' },
       { value: 'SVU', label: 'Sri Venkateswara University (SVU)' },
