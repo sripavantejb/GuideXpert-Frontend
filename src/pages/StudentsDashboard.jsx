@@ -257,7 +257,7 @@ export default function StudentsDashboard() {
   };
 
   return (
-    <div className="min-h-screen bg-[#F8FAFC] font-sans selection:bg-[#C7F36B] selection:text-[#0F172A]">
+    <div className="min-h-screen overflow-x-hidden bg-[#F8FAFC] font-sans selection:bg-[#C7F36B] selection:text-[#0F172A]">
       <StudentWorkspaceNavbar />
 
       <style>{`
@@ -376,36 +376,44 @@ export default function StudentsDashboard() {
       </section>
 
       {/* Workspace: sidebar is sticky only within this block (after hero), aligned with Workspace Applications */}
-      <div
-        id="student-workspace"
-        className="mx-auto max-w-[1600px] lg:px-6 xl:px-8"
-      >
-        <div className="flex flex-col lg:flex-row lg:items-start lg:gap-8">
-          <section
-            className="order-2 min-w-0 flex-1 px-6 py-24 lg:order-1 lg:max-w-none lg:px-6 lg:pl-12 lg:pr-0"
-            aria-labelledby="workspace-applications-heading"
-          >
-            <div
-              id="workspace-applications"
-              className="mb-10 rounded-[14px] border-2 border-[#0F172A] bg-white/95 px-5 py-4 shadow-[4px_4px_0px_#0F172A] sm:px-6 sm:py-5 md:mb-12"
+      <div id="student-workspace" className="w-full">
+        <div className="mx-auto max-w-[1600px] lg:px-6 xl:px-8">
+          <div className="flex flex-col lg:flex-row lg:items-start lg:gap-8">
+            <section
+              className="order-2 min-w-0 flex-1 px-6 py-24 lg:order-1 lg:max-w-none lg:px-6 lg:pl-12 lg:pr-0"
+              aria-labelledby="workspace-applications-heading"
             >
-              <div className="flex flex-col gap-6 md:flex-row md:items-end md:justify-between">
-                <div>
-                  <h2 id="workspace-applications-heading" className="mb-2 text-3xl font-black tracking-tighter text-[#0F172A]">
-                    Workspace Applications
-                  </h2>
-                  <p className="font-medium text-slate-500">Select a tool to begin your analysis.</p>
-                </div>
-                <div className="flex gap-2">
-                  <span className="rounded-md border-2 border-[#0F172A] bg-white px-3 py-1 text-xs font-bold shadow-[2px_2px_0px_#0F172A]">
-                    6 Tools Loaded
-                  </span>
+              <div
+                id="workspace-applications"
+                className="mb-10 rounded-[14px] border-2 border-[#0F172A] bg-white/95 px-5 py-4 shadow-[4px_4px_0px_#0F172A] sm:px-6 sm:py-5 md:mb-12"
+              >
+                <div className="flex flex-col gap-6 md:flex-row md:items-end md:justify-between">
+                  <div>
+                    <h2 id="workspace-applications-heading" className="mb-2 text-3xl font-black tracking-tighter text-[#0F172A]">
+                      Workspace Applications
+                    </h2>
+                    <p className="font-medium text-slate-500">Select a tool to begin your analysis.</p>
+                  </div>
+                  <div className="flex gap-2">
+                    <span className="rounded-md border-2 border-[#0F172A] bg-white px-3 py-1 text-xs font-bold shadow-[2px_2px_0px_#0F172A]">
+                      6 Tools Loaded
+                    </span>
+                  </div>
                 </div>
               </div>
-            </div>
+            </section>
 
-            <div id="tool-grid" className="space-y-0">
-              <div className="-mx-6 border-t-2 border-[#0F172A] bg-[#F4FCE8] px-6 py-12 md:py-16 lg:-ml-12 lg:mr-0 lg:px-12 lg:pr-6">
+            <div className="order-1 w-full shrink-0 lg:order-2 lg:w-[236px] lg:pt-24 lg:pr-2">
+              <StickyToolsSidebar />
+            </div>
+          </div>
+        </div>
+
+        {/* Full viewport-width bands; inner row mirrors max-w + sidebar column so grids keep the same width as before */}
+        <div id="tool-grid" className="w-full space-y-0">
+          <div className="w-full border-t-2 border-[#0F172A] bg-[#F4FCE8] py-12 md:py-16">
+            <div className="mx-auto flex max-w-[1600px] lg:gap-8 lg:px-6 xl:px-8">
+              <div className="min-w-0 flex-1 px-6 lg:pl-12 lg:pr-6">
                 <section aria-labelledby="predictor-tools-heading">
                   <div className="mb-6 flex flex-col gap-2 sm:mb-8">
                     <h3 id="predictor-tools-heading" className="text-2xl font-black tracking-tight text-[#0F172A]">
@@ -422,8 +430,13 @@ export default function StudentsDashboard() {
                   </div>
                 </section>
               </div>
+              <div className="hidden w-[236px] shrink-0 lg:block" aria-hidden />
+            </div>
+          </div>
 
-              <div className="sd-section-dots -mx-6 bg-[#EEF6FF] px-6 py-12 md:py-16 lg:-ml-12 lg:mr-0 lg:px-12 lg:pr-6">
+          <div className="sd-section-dots w-full bg-[#EEF6FF] py-12 md:py-16">
+            <div className="mx-auto flex max-w-[1600px] lg:gap-8 lg:px-6 xl:px-8">
+              <div className="min-w-0 flex-1 px-6 lg:pl-12 lg:pr-6">
                 <section aria-labelledby="fit-tools-heading">
                   <div className="mb-6 flex flex-col gap-2 sm:mb-8">
                     <h3 id="fit-tools-heading" className="text-2xl font-black tracking-tight text-[#0F172A]">
@@ -439,8 +452,13 @@ export default function StudentsDashboard() {
                   </div>
                 </section>
               </div>
+              <div className="hidden w-[236px] shrink-0 lg:block" aria-hidden />
+            </div>
+          </div>
 
-              <div className="sd-section-diagonal -mx-6 border-y-2 border-[#0F172A]/10 bg-[#FFF8E8] px-6 py-12 md:py-16 lg:-ml-12 lg:mr-0 lg:px-12 lg:pr-6">
+          <div className="sd-section-diagonal w-full border-y-2 border-[#0F172A]/10 bg-[#FFF8E8] py-12 md:py-16">
+            <div className="mx-auto flex max-w-[1600px] lg:gap-8 lg:px-6 xl:px-8">
+              <div className="min-w-0 flex-1 px-6 lg:pl-12 lg:pr-6">
                 <section aria-labelledby="comparison-tools-heading">
                   <div className="mb-6 flex flex-col gap-2 sm:mb-8">
                     <h3 id="comparison-tools-heading" className="text-2xl font-black tracking-tight text-[#0F172A]">
@@ -455,11 +473,8 @@ export default function StudentsDashboard() {
                   </div>
                 </section>
               </div>
+              <div className="hidden w-[236px] shrink-0 lg:block" aria-hidden />
             </div>
-          </section>
-
-          <div className="order-1 w-full shrink-0 lg:order-2 lg:w-[236px] lg:pt-24 lg:pr-2">
-            <StickyToolsSidebar />
           </div>
         </div>
       </div>
