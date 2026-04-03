@@ -312,15 +312,12 @@ export default function AssessmentResults() {
     if (typeId !== 6 || copyLoading) return;
     setCopyLoading(true);
     const options = { from, to, q: query.trim() || undefined };
-    const MAX_COPY_ROWS = 5000;
     const fetchLimit = 5000;
     let pageNo = 1;
     let allRows = [];
     let expectedTotal = 0;
-    while (allRows.length < MAX_COPY_ROWS) {
-      // Load all matching submissions, not just the visible page.
-      // Keep bounded at 5000 rows to avoid browser clipboard memory spikes.
-      // eslint-disable-next-line no-await-in-loop
+    while (true) {
+      // Load all matching submissions, not just the visible page (paginate until complete).
       const result = await activeConfig.getSubmissions(pageNo, fetchLimit, options, getStoredToken());
       if (!result.success) {
         setCopyLoading(false);
@@ -339,7 +336,6 @@ export default function AssessmentResults() {
       if (allRows.length >= expectedTotal) break;
       pageNo += 1;
     }
-    allRows = allRows.slice(0, MAX_COPY_ROWS);
     if (allRows.length === 0) {
       setCopyLoading(false);
       return;

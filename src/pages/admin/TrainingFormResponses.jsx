@@ -16,6 +16,8 @@ import {
   FiCopy
 } from 'react-icons/fi';
 import CopyToSheetsModal from '../../components/Admin/CopyToSheetsModal';
+import { ADMIN_VIEW_ALL_LIMIT } from '../../constants/adminListLimits';
+import { fetchAllPaginatedRows } from '../../utils/adminPagedFetch';
 
 function formatDate(d) {
   if (!d) return '—';
@@ -66,7 +68,7 @@ export default function TrainingFormResponses() {
     requestIdRef.current += 1;
     const thisRequestId = requestIdRef.current;
     const page = viewAll ? 1 : pagination.page;
-    const limit = viewAll ? 5000 : pagination.limit;
+    const limit = viewAll ? ADMIN_VIEW_ALL_LIMIT : pagination.limit;
     const params = {
       page,
       limit,
@@ -131,26 +133,27 @@ export default function TrainingFormResponses() {
   const prepareCopyRecords = async () => {
     setCopyLoading(true);
     setError('');
-    const params = {
-      page: 1,
-      limit: 5000,
+    const baseParams = {
       q: filters.q.trim() || undefined,
       from: filters.from || undefined,
       to: filters.to || undefined,
       sessionRating: filters.sessionRating ? parseInt(filters.sessionRating, 10) : undefined
     };
-    const result = await getTrainingFormResponses(params, getStoredToken());
+    const result = await fetchAllPaginatedRows((page, limit) =>
+      getTrainingFormResponses({ ...baseParams, page, limit }, getStoredToken())
+    );
     setCopyLoading(false);
     if (!result.success) {
-      if (result.status === 401) {
+      const r = result.result;
+      if (r?.status === 401) {
         logout();
         window.location.href = '/admin/login';
         return;
       }
-      setError(result.message || 'Failed to load responses for copy');
+      setError(r?.message || 'Failed to load responses for copy');
       return;
     }
-    setCopyRecords(result.data?.data || []);
+    setCopyRecords(result.rows || []);
     setCopyModalOpen(true);
   };
 
@@ -380,8 +383,8 @@ export default function TrainingFormResponses() {
             <div className="flex flex-wrap items-center justify-between gap-4 px-4 py-4 bg-gray-50/80 border-t border-gray-200">
               {viewAll ? (
                 <p className="text-sm text-gray-500">
-                  {pagination.total > 5000
-                    ? `Showing first 5000 of ${pagination.total} responses`
+                  {pagination.total > ADMIN_VIEW_ALL_LIMIT
+                    ? `Showing first ${ADMIN_VIEW_ALL_LIMIT.toLocaleString()} of ${pagination.total} responses`
                     : `Showing all ${pagination.total} responses`}
                 </p>
               ) : (

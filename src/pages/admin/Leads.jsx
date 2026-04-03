@@ -14,6 +14,8 @@ import {
   leadListFiltersToApiParams,
 } from '../../utils/adminLeadFiltersShared';
 import { copyTextToClipboard } from '../../utils/clipboard';
+import { ADMIN_VIEW_ALL_LIMIT } from '../../constants/adminListLimits';
+import { fetchAllPaginatedRows } from '../../utils/adminPagedFetch';
 
 function formatDate(d) {
   if (!d) return '—';
@@ -245,7 +247,7 @@ export default function Leads() {
     requestIdRef.current += 1;
     const thisRequestId = requestIdRef.current;
     const page = viewAll ? 1 : pagination.page;
-    const limit = viewAll ? 5000 : 50;
+    const limit = viewAll ? ADMIN_VIEW_ALL_LIMIT : 50;
     const params = {
       page,
       limit,
@@ -289,31 +291,40 @@ export default function Leads() {
   const prepareCopyLeads = async () => {
     setCopyLoading(true);
     setError('');
-    const params = {
-      page: 1,
-      limit: 5000,
+    const baseParams = {
       ...(dateRange.from && { from: dateRange.from }),
       ...(dateRange.to && { to: dateRange.to }),
       ...leadListFiltersToApiParams(leadListFilters),
     };
-    const result = await getAdminLeads(params, getStoredToken());
+    const result = await fetchAllPaginatedRows((page, limit) =>
+      getAdminLeads({ ...baseParams, page, limit }, getStoredToken())
+    );
     setCopyLoading(false);
     if (!result.success) {
-      if (result.status === 401) {
+      const r = result.result;
+      if (r?.status === 401) {
         logout();
         window.location.href = '/admin/login';
         return;
       }
-      setError(result.message || 'Failed to load leads for copy');
+      setError(r?.message || 'Failed to load leads for copy');
       return;
     }
-    setCopyRecords(result.data?.data || []);
+    setCopyRecords(result.rows || []);
     setCopyModalOpen(true);
   };
 
   return (
     <div className="max-w-[1400px] mx-auto px-1">
-      <h2 className="text-xl font-semibold text-gray-800 mb-4 tracking-tight">Leads</h2>
+      <h2
+        className="text-xl font-semibold text-gray-800 mb-4 tracking-tight"
+        aria-label={`Leads, ${pagination.total.toLocaleString()} total`}
+      >
+        Leads{' '}
+        <span className={`font-semibold text-gray-600 tabular-nums ${loading ? 'opacity-60' : ''}`}>
+          ({pagination.total.toLocaleString()})
+        </span>
+      </h2>
 
       <div className="bg-white border border-gray-200 rounded-lg shadow-sm p-4 mb-4">
         <p className="text-sm text-gray-600 mb-3">
@@ -574,8 +585,8 @@ export default function Leads() {
             {viewAll ? (
               <>
                 <p className="text-sm text-gray-500">
-                  {pagination.total > 5000
-                    ? `Showing first 5000 of ${pagination.total} leads`
+                  {pagination.total > ADMIN_VIEW_ALL_LIMIT
+                    ? `Showing first ${ADMIN_VIEW_ALL_LIMIT.toLocaleString()} of ${pagination.total} leads`
                     : `Showing all ${pagination.total} leads`}
                 </p>
                 <button

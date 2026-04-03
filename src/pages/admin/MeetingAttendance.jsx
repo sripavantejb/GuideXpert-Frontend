@@ -4,6 +4,8 @@ import { getMeetingAttendance, getTrainingAttendance, getStoredToken } from '../
 import { useAuth } from '../../hooks/useAuth';
 import TableSkeleton from '../../components/UI/TableSkeleton';
 import CopyToSheetsModal from '../../components/Admin/CopyToSheetsModal';
+import { ADMIN_VIEW_ALL_LIMIT } from '../../constants/adminListLimits';
+import { fetchAllPaginatedRows } from '../../utils/adminPagedFetch';
 
 function formatDate(d) {
   if (!d) return '—';
@@ -97,7 +99,7 @@ export default function MeetingAttendance() {
     requestIdRef.current += 1;
     const thisRequestId = requestIdRef.current;
     const page = viewAll ? 1 : pagination.page;
-    const limit = viewAll ? 5000 : pagination.limit;
+    const limit = viewAll ? ADMIN_VIEW_ALL_LIMIT : pagination.limit;
     const params = {
       page,
       limit,
@@ -236,36 +238,37 @@ export default function MeetingAttendance() {
   const prepareCopyRecords = async () => {
     setCopyLoading(true);
     setError('');
-    const params = {
-      page: 1,
-      limit: 5000,
+    const baseParams = {
       q: query.trim() || undefined,
       uniqueByMobile: true,
       dedupeMode: 'latest'
     };
     if (mode === 'single' && selectedDate) {
-      params.from = selectedDate;
-      params.to = selectedDate;
+      baseParams.from = selectedDate;
+      baseParams.to = selectedDate;
     }
     if (mode === 'range') {
-      if (rangeFrom) params.from = rangeFrom;
-      if (rangeTo) params.to = rangeTo;
+      if (rangeFrom) baseParams.from = rangeFrom;
+      if (rangeTo) baseParams.to = rangeTo;
     }
-    const apiCall = attendanceType === 'training'
-      ? getTrainingAttendance(params, getStoredToken())
-      : getMeetingAttendance(params, getStoredToken());
-    const result = await apiCall;
+    const result = await fetchAllPaginatedRows((page, limit) => {
+      const params = { ...baseParams, page, limit };
+      return attendanceType === 'training'
+        ? getTrainingAttendance(params, getStoredToken())
+        : getMeetingAttendance(params, getStoredToken());
+    });
     setCopyLoading(false);
     if (!result.success) {
-      if (result.status === 401) {
+      const r = result.result;
+      if (r?.status === 401) {
         logout();
         window.location.href = '/admin/login';
         return;
       }
-      setError(result.message || (attendanceType === 'training' ? 'Failed to load training attendance for copy' : 'Failed to load meeting attendance for copy'));
+      setError(r?.message || (attendanceType === 'training' ? 'Failed to load training attendance for copy' : 'Failed to load meeting attendance for copy'));
       return;
     }
-    setCopyRecords(result.data?.data || []);
+    setCopyRecords(result.rows || []);
     setCopyModalOpen(true);
   };
 
@@ -637,8 +640,8 @@ export default function MeetingAttendance() {
           <div className="flex flex-wrap items-center justify-between gap-4 px-2">
             {viewAll ? (
               <p className="text-sm text-gray-500">
-                {pagination.total > 5000
-                  ? `Showing first 5000 of ${pagination.total} attendees`
+                {pagination.total > ADMIN_VIEW_ALL_LIMIT
+                  ? `Showing first ${ADMIN_VIEW_ALL_LIMIT.toLocaleString()} of ${pagination.total} attendees`
                   : `Showing all ${pagination.total} attendees`}
               </p>
             ) : (

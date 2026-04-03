@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { Link } from 'react-router-dom';
 
 const TOOL_LINKS = [
@@ -15,26 +15,88 @@ const focusRing =
 
 /** Matches Tailwind `top-24` (6rem) — tools sit below sticky navbar */
 const PIN_TOP_PX = 96;
+/** Slightly above PIN_TOP_PX so pin/unpin does not flicker at the boundary when scrolling up */
+const UNPIN_TOP_PX = PIN_TOP_PX + 6;
+/** Legacy pad: workspace must still extend below the pin band. */
+const WORKSPACE_BOTTOM_PAD = 140;
+/**
+ * Hysteresis (px) for fixed sidebar bottom vs workspace bottom edge.
+ * Reduces pin/unpin oscillation near the bottom CTA when layout shifts nudge rects across one threshold.
+ */
+const WORKSPACE_FIT_LOOSE_PX = 28;
+const WORKSPACE_FIT_STRICT_PX = 8;
 
-const fixedRightStyle = {
-  right: 'max(1rem, calc((100vw - 1600px) / 2 + 1rem))',
-};
+/** Tailwind `lg` — desktop sidebar is `lg:block` only */
+const LG_MIN_PX = 1024;
+
+function clearAsidePinStyles(el) {
+  if (!el) return;
+  el.style.position = '';
+  el.style.left = '';
+  el.style.top = '';
+  el.style.right = '';
+}
 
 export default function StickyToolsSidebar() {
-  const [pinned, setPinned] = useState(false);
+  const asideRef = useRef(null);
+  const pinnedRef = useRef(false);
+  /** Reserves column height when aside is fixed (aside is out of flow). */
+  const [reservedHeight, setReservedHeight] = useState(0);
 
   useEffect(() => {
+    const asideEl = asideRef.current;
     let raf = 0;
     const update = () => {
       const workspace = document.getElementById('student-workspace');
       const anchor = document.getElementById('workspace-applications');
       if (!workspace || !anchor) return;
+
+      const isDesktop = window.innerWidth >= LG_MIN_PX;
+      if (!isDesktop) {
+        if (pinnedRef.current) {
+          pinnedRef.current = false;
+        }
+        clearAsidePinStyles(asideEl);
+        setReservedHeight((prev) => (prev !== 0 ? 0 : prev));
+        return;
+      }
+
       const wr = workspace.getBoundingClientRect();
       const ar = anchor.getBoundingClientRect();
-      // Fixed once "Workspace Applications" reaches the navbar band; release when workspace block leaves view
-      const shouldPin =
-        ar.top <= PIN_TOP_PX && wr.bottom > PIN_TOP_PX + 140;
-      setPinned(shouldPin);
+      const el = asideRef.current;
+      const h = el?.offsetHeight ?? 0;
+      const sidebarBottom = PIN_TOP_PX + h;
+      const margin = pinnedRef.current ? WORKSPACE_FIT_LOOSE_PX : WORKSPACE_FIT_STRICT_PX;
+      const sidebarFitsWorkspace = sidebarBottom <= wr.bottom - margin;
+      const workspaceTallEnough = wr.bottom > PIN_TOP_PX + WORKSPACE_BOTTOM_PAD;
+
+      let shouldPin;
+      if (pinnedRef.current) {
+        shouldPin = ar.top <= UNPIN_TOP_PX && sidebarFitsWorkspace && workspaceTallEnough;
+      } else {
+        shouldPin = ar.top <= PIN_TOP_PX && sidebarFitsWorkspace && workspaceTallEnough;
+      }
+
+      if (shouldPin !== pinnedRef.current) {
+        pinnedRef.current = shouldPin;
+      }
+
+      const column = el?.parentElement;
+
+      if (shouldPin && column && el) {
+        el.style.position = 'fixed';
+        el.style.left = `${column.getBoundingClientRect().left}px`;
+        el.style.top = `${PIN_TOP_PX}px`;
+        el.style.right = 'auto';
+
+        setReservedHeight((prev) => (Math.abs(prev - h) > 0.5 ? h : prev));
+      } else if (el) {
+        el.style.position = 'relative';
+        el.style.left = '';
+        el.style.top = '';
+        el.style.right = '';
+        setReservedHeight((prev) => (prev !== 0 ? 0 : prev));
+      }
     };
 
     const onScrollOrResize = () => {
@@ -50,6 +112,7 @@ export default function StickyToolsSidebar() {
       cancelAnimationFrame(raf);
       window.removeEventListener('scroll', onScrollOrResize);
       window.removeEventListener('resize', onScrollOrResize);
+      clearAsidePinStyles(asideEl);
     };
   }, []);
 
@@ -71,12 +134,17 @@ export default function StickyToolsSidebar() {
         </div>
       </div>
 
-      {/* Desktop — in flow until Workspace Applications hits the pin line, then viewport-fixed */}
+      {/* Desktop — placeholder keeps row height when aside is fixed; position/size applied in rAF (no per-frame setState). */}
+      {reservedHeight > 0 && (
+        <div
+          className="hidden w-full max-w-[228px] shrink-0 lg:block"
+          aria-hidden
+          style={{ height: reservedHeight }}
+        />
+      )}
       <aside
-        className={`hidden w-full max-w-[228px] lg:z-40 lg:block lg:self-start ${
-          pinned ? 'fixed top-24' : 'relative'
-        }`}
-        style={pinned ? fixedRightStyle : undefined}
+        ref={asideRef}
+        className="relative hidden w-full max-w-[228px] lg:z-40 lg:block lg:self-start"
         aria-label="Tools"
       >
         <div className="rounded-xl border-2 border-black bg-white p-4 shadow-[6px_6px_0_0_#000]">

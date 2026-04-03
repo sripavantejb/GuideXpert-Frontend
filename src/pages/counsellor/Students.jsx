@@ -1,4 +1,5 @@
 import { useState, useEffect, useCallback } from 'react';
+import { ADMIN_VIEW_ALL_LIMIT } from '../../constants/adminListLimits';
 import { createPortal } from 'react-dom';
 import {
   FiSearch,
@@ -423,7 +424,7 @@ export default function Students() {
   const fetchList = useCallback(async () => {
     setLoading(true);
     const effectivePage = viewAll ? 1 : page;
-    const effectiveLimit = viewAll ? 5000 : limit;
+    const effectiveLimit = viewAll ? ADMIN_VIEW_ALL_LIMIT : limit;
     const params = {
       page: effectivePage,
       limit: effectiveLimit,
@@ -904,8 +905,8 @@ export default function Students() {
           <div className="flex flex-wrap items-center justify-between gap-3 px-4 py-3 border-t border-slate-200 bg-slate-50/70">
             {viewAll ? (
               <p className="text-xs text-slate-500">
-                {total > 5000
-                  ? `Showing first 5000 of ${total} students`
+                {total > ADMIN_VIEW_ALL_LIMIT
+                  ? `Showing first ${ADMIN_VIEW_ALL_LIMIT.toLocaleString()} of ${total} students`
                   : `Showing all ${total} students`}
               </p>
             ) : (
