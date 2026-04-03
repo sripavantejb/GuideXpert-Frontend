@@ -23,6 +23,7 @@ export default function BranchPredictorPage() {
     <ToolWorkspaceLayout
       title="Branch Predictor"
       subtitle="Analyze possible branches for your preferred institution using your current rank."
+      compactHero
       howItWorks={[
         'The tool compares your rank with branch-wise historical cutoffs.',
         'Institution-specific trends are used to estimate accessible branches.',
@@ -44,7 +45,7 @@ export default function BranchPredictorPage() {
       }
       results={
         branches.length ? (
-          <section ref={resultsRef} className="rounded-[14px] border-2 border-black bg-[#FFE89A]/45 p-6 shadow-[4px_4px_0px_#000]">
+          <section ref={resultsRef} className="rounded-[14px] border-2 border-black bg-[#c7f36b]/45 p-6 shadow-[4px_4px_0px_#000]">
             <h2 className="text-2xl font-black text-[#0F172A]">Results Panel</h2>
             <p className="mt-1 text-sm text-slate-600">How to read this result: tags indicate branches with realistic selection probability for your input.</p>
             <div className="mt-4 flex flex-wrap gap-3">
@@ -96,7 +97,7 @@ export default function BranchPredictorPage() {
         <div className="sm:col-span-2">
           <button
             type="submit"
-            className="rounded-[12px] border-2 border-black bg-[#C7F36B] px-5 py-2.5 text-sm font-black shadow-[4px_4px_0px_#000] transition-all hover:-translate-y-0.5"
+            className="rounded-[12px] border-2 border-black bg-[#c7f36b] px-5 py-2.5 text-sm font-black shadow-[4px_4px_0px_#000] transition-all hover:-translate-y-0.5"
           >
             Analyze Branches
           </button>

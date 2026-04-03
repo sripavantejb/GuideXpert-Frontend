@@ -60,6 +60,48 @@
 /* Homepage hero gradient – single source of truth for landing and assessment pages */
 :root {
   --gradient-home-hero: linear-gradient(to bottom right, #e8f0fa 0%, #eef4fa 25%, #f2f4f8 50%, #f5f4f2 75%, #f7f4eb 100%);
+  /* Student tool detail pages – pale lime band + dotted pale blue (match dashboard tool grid family) */
+  --gx-student-tool-lime: #f9fff2;
+  --gx-student-tool-blue: #f0f5ff;
+  --gx-student-tool-dot: #d0d9f0;
+  --gx-student-tool-dot-lime: #c8dcc0;
+  /* One neutral dot for split-page shell (reads on mint + blue) */
+  --gx-student-tool-page-dot: rgba(15, 23, 42, 0.055);
+}
+
+.student-tool-surface-lime {
+  background-color: var(--gx-student-tool-lime);
+}
+
+.student-tool-surface-lime-dots {
+  background-color: var(--gx-student-tool-lime);
+  background-image: radial-gradient(var(--gx-student-tool-dot-lime) 1px, transparent 1px);
+  background-size: 20px 20px;
+}
+
+.student-tool-surface-blue-dots {
+  background-color: var(--gx-student-tool-blue);
+  background-image: radial-gradient(var(--gx-student-tool-dot) 1px, transparent 1px);
+  background-size: 20px 20px;
+}
+
+/**
+ * Student tool / hub pages: mint top + pale blue bottom with same dot grid (viewport-fixed split).
+ */
+.student-tool-page-shell {
+  background-color: var(--gx-student-tool-blue);
+  background-image:
+    radial-gradient(var(--gx-student-tool-page-dot) 1px, transparent 1px),
+    linear-gradient(
+      to bottom,
+      var(--gx-student-tool-lime) 0%,
+      var(--gx-student-tool-lime) 50%,
+      var(--gx-student-tool-blue) 50%,
+      var(--gx-student-tool-blue) 100%
+    );
+  background-size: 20px 20px, 100% 100%;
+  background-repeat: repeat, no-repeat;
+  background-attachment: fixed, fixed;
 }
 
 /* Webinar login step 3 (not allowed) – left panel subtle background animation */

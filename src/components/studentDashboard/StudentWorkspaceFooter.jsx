@@ -17,7 +17,7 @@ const siteLinks = [
 ];
 
 const linkClass =
-  'text-sm font-bold text-slate-300 transition hover:text-[#C7F36B] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#C7F36B] focus-visible:ring-offset-2 focus-visible:ring-offset-[#0F172A] rounded';
+  'text-sm font-bold text-slate-300 transition hover:text-[#c7f36b] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#c7f36b] focus-visible:ring-offset-2 focus-visible:ring-offset-[#0F172A] rounded';
 
 export default function StudentWorkspaceFooter() {
   return (
@@ -30,10 +30,10 @@ export default function StudentWorkspaceFooter() {
           <div className="md:max-w-sm">
             <Link
               to="/students"
-              className="mb-5 inline-flex items-center rounded-lg focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#C7F36B] focus-visible:ring-offset-2 focus-visible:ring-offset-[#0F172A]"
+              className="mb-5 inline-flex items-center rounded-lg focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#c7f36b] focus-visible:ring-offset-2 focus-visible:ring-offset-[#0F172A]"
               aria-label="Student workspace home"
             >
-              <span className="inline-flex rounded-lg border-2 border-[#0F172A] bg-white px-3 py-2 shadow-[4px_4px_0_0_#C7F36B]">
+              <span className="inline-flex rounded-lg border-2 border-[#0F172A] bg-white px-3 py-2 shadow-[4px_4px_0_0_#c7f36b]">
                 <img src={LOGO_URL} alt="" className="h-7 object-contain md:h-8" />
               </span>
             </Link>
@@ -44,7 +44,7 @@ export default function StudentWorkspaceFooter() {
           </div>
 
           <div>
-            <h2 className="mb-5 font-mono text-[10px] font-bold uppercase tracking-[0.2em] text-[#C7F36B]">
+            <h2 className="mb-5 font-mono text-[10px] font-bold uppercase tracking-[0.2em] text-[#c7f36b]">
               Workspace
             </h2>
             <ul className="space-y-3" role="list">
@@ -59,7 +59,7 @@ export default function StudentWorkspaceFooter() {
           </div>
 
           <div>
-            <h2 className="mb-5 font-mono text-[10px] font-bold uppercase tracking-[0.2em] text-[#C7F36B]">
+            <h2 className="mb-5 font-mono text-[10px] font-bold uppercase tracking-[0.2em] text-[#c7f36b]">
               More
             </h2>
             <ul className="mb-8 space-y-3" role="list">
@@ -78,12 +78,12 @@ export default function StudentWorkspaceFooter() {
             </ul>
             <div className="rounded-[12px] border-2 border-white/15 bg-[#1E293B]/80 p-4 shadow-[4px_4px_0_0_rgba(0,0,0,0.35)]">
               <p className="mb-2 flex items-center gap-2 font-mono text-[10px] font-bold uppercase tracking-widest text-slate-500">
-                <FiMail className="h-3.5 w-3.5 text-[#C7F36B]" aria-hidden />
+                <FiMail className="h-3.5 w-3.5 text-[#c7f36b]" aria-hidden />
                 Support
               </p>
               <a
                 href="mailto:support@guidexpert.co.in"
-                className="text-sm font-bold text-white underline decoration-[#C7F36B]/50 underline-offset-2 transition hover:text-[#C7F36B] hover:decoration-[#C7F36B]"
+                className="text-sm font-bold text-white underline decoration-[#c7f36b]/50 underline-offset-2 transition hover:text-[#c7f36b] hover:decoration-[#c7f36b]"
               >
                 support@guidexpert.co.in
               </a>

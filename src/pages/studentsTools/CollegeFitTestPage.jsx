@@ -30,6 +30,7 @@ export default function CollegeFitTestPage() {
     <ToolWorkspaceLayout
       title="College Fit Test"
       subtitle="Filter colleges by budget, campus expectations, and placement priorities."
+      compactHero
       howItWorks={[
         'Your fee, campus, and city preferences define the fit baseline.',
         'Placement priority adjusts ranking weight for outcome-focused users.',
@@ -121,7 +122,7 @@ export default function CollegeFitTestPage() {
         <div className="sm:col-span-2">
           <button
             type="submit"
-            className="rounded-[12px] border-2 border-black bg-[#C7F36B] px-5 py-2.5 text-sm font-black shadow-[4px_4px_0px_#000] transition-all hover:-translate-y-0.5"
+            className="rounded-[12px] border-2 border-black bg-[#c7f36b] px-5 py-2.5 text-sm font-black shadow-[4px_4px_0px_#000] transition-all hover:-translate-y-0.5"
           >
             Process Criteria
           </button>

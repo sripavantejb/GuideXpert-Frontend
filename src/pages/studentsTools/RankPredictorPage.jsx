@@ -42,6 +42,7 @@ export default function RankPredictorPage() {
     <ToolWorkspaceLayout
       title="Rank Predictor"
       subtitle="Predict your expected exam rank based on marks and performance analytics."
+      compactHero
       howItWorks={[
         'Your marks are mapped against historical cutoff trends.',
         'The model checks previous rank distributions for similar score bands.',
@@ -56,24 +57,24 @@ export default function RankPredictorPage() {
         'Marks Scored: Enter your expected or actual marks for the selected exam.',
       ]}
       preview={
-        <div className="space-y-5">
+        <div className="space-y-2.5">
           <div>
-            <p className="text-[10px] font-black uppercase tracking-widest text-slate-500">Estimated rank</p>
+            <p className="text-[9px] font-black uppercase tracking-widest text-slate-500">Estimated rank</p>
             <div className="mt-1 flex items-baseline gap-2">
-              <span className="text-3xl font-black tabular-nums tracking-tight text-[#0F172A] sm:text-4xl">
+              <span className="text-xl font-black tabular-nums tracking-tight text-[#0F172A] sm:text-2xl">
                 {PREVIEW_DEMO.rank.toLocaleString()}
               </span>
-              <span className="inline-flex rounded-md border-2 border-black bg-[#C7F36B] p-1 shadow-[2px_2px_0_#000]">
-                <FiTrendingUp className="h-4 w-4 text-[#0F172A]" aria-hidden />
+              <span className="inline-flex rounded-md border-2 border-black bg-[#c7f36b] p-0.5 shadow-[2px_2px_0_#000]">
+                <FiTrendingUp className="h-3 w-3 text-[#0F172A]" aria-hidden />
               </span>
             </div>
           </div>
           <div>
-            <div className="flex justify-between gap-2 text-[10px] font-black uppercase tracking-widest text-slate-500">
+            <div className="flex justify-between gap-2 text-[9px] font-black uppercase tracking-widest text-slate-500">
               <span>Exam percentile</span>
               <span className="tabular-nums text-[#0F172A]">{PREVIEW_DEMO.percentile}%</span>
             </div>
-            <div className="mt-2 h-3 overflow-hidden rounded-full border-[3px] border-black bg-white shadow-[2px_2px_0_#000]">
+            <div className="mt-1 h-2 overflow-hidden rounded-full border-[3px] border-black bg-white shadow-[2px_2px_0_#000]">
               <div
                 className="h-full rounded-full bg-[#0F172A]"
                 style={{ width: `${Math.min(100, PREVIEW_DEMO.percentile)}%` }}
@@ -81,12 +82,12 @@ export default function RankPredictorPage() {
             </div>
           </div>
           <div>
-            <div className="flex justify-between gap-2 text-[10px] font-black uppercase tracking-widest text-slate-500">
+            <div className="flex justify-between gap-2 text-[9px] font-black uppercase tracking-widest text-slate-500">
               <span>Preference profile</span>
               <span className="tabular-nums text-[#0F172A]">{PREVIEW_DEMO.profileComplete.toFixed(1)}%</span>
             </div>
-            <p className="mt-0.5 text-xs font-medium text-slate-500">Course fit + college fit inputs</p>
-            <div className="mt-2 h-3 overflow-hidden rounded-full border-[3px] border-black bg-white shadow-[2px_2px_0_#000]">
+            <p className="mt-0.5 text-[10px] font-medium text-slate-500">Course fit + college fit inputs</p>
+            <div className="mt-1 h-2 overflow-hidden rounded-full border-[3px] border-black bg-white shadow-[2px_2px_0_#000]">
               <div
                 className="h-full rounded-full bg-[#B7E5FF]"
                 style={{ width: `${PREVIEW_DEMO.profileComplete}%` }}
@@ -123,7 +124,7 @@ export default function RankPredictorPage() {
                   <span className="tabular-nums">{result.targetMatch}%</span>
                 </div>
                 <div className="h-3.5 overflow-hidden rounded-full border-[3px] border-black bg-white shadow-[2px_2px_0_#000]">
-                  <div className="h-full rounded-full bg-[#C7F36B]" style={{ width: `${result.targetMatch}%` }} />
+                  <div className="h-full rounded-full bg-[#c7f36b]" style={{ width: `${result.targetMatch}%` }} />
                 </div>
               </div>
               <div>
@@ -184,7 +185,7 @@ export default function RankPredictorPage() {
         <div className="sm:col-span-2">
           <button
             type="submit"
-            className="rounded-[12px] border-[3px] border-black bg-[#C7F36B] px-6 py-3 text-sm font-black text-[#0F172A] shadow-[4px_4px_0_#000] transition-all hover:-translate-y-0.5 hover:shadow-[6px_6px_0_#000]"
+            className="rounded-[12px] border-[3px] border-black bg-[#c7f36b] px-6 py-3 text-sm font-black text-[#0F172A] shadow-[4px_4px_0_#000] transition-all hover:-translate-y-0.5 hover:shadow-[6px_6px_0_#000]"
           >
             Predict Rank
           </button>

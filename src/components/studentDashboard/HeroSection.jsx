@@ -4,7 +4,7 @@ function FloatingDecor() {
   return (
     <div className="pointer-events-none absolute inset-0 overflow-hidden" aria-hidden>
       <svg
-        className="sd-float-1 absolute right-[8%] top-[12%] h-10 w-10 text-[#FFE89A]"
+        className="sd-float-1 absolute right-[8%] top-[12%] h-10 w-10 text-[#c7f36b]"
         viewBox="0 0 24 24"
         fill="currentColor"
       >
@@ -19,7 +19,7 @@ function FloatingDecor() {
       >
         <path d="M5 12h14M12 5l7 7-7 7" strokeLinecap="round" strokeLinejoin="round" />
       </svg>
-      <span className="sd-float-3 absolute left-[18%] top-[40%] flex h-3 w-3 rounded-full bg-[#C7F36B] ring-2 ring-black" />
+      <span className="sd-float-3 absolute left-[18%] top-[40%] flex h-3 w-3 rounded-full bg-[#c7f36b] ring-2 ring-black" />
       <span className="sd-float-2 absolute right-[20%] bottom-[30%] h-2 w-2 rotate-45 bg-[#B7E5FF] ring-1 ring-black" />
       <div className="sd-float-1 absolute right-[12%] top-[45%] h-14 w-14 rounded-full border-2 border-dashed border-white/30" />
     </div>
@@ -43,7 +43,7 @@ export default function HeroSection() {
         <FloatingDecor />
         <div className="relative grid gap-10 lg:grid-cols-2 lg:gap-12 lg:items-center">
           <div>
-            <p className="mb-3 inline-block rounded-full border-2 border-black bg-[#C7F36B] px-3 py-1 text-xs font-bold uppercase tracking-wider text-[#0F172A] shadow-[4px_4px_0_#000]">
+            <p className="mb-3 inline-block rounded-full border-2 border-black bg-[#c7f36b] px-3 py-1 text-xs font-bold uppercase tracking-wider text-[#0F172A] shadow-[4px_4px_0_#000]">
               GuideXpert · Student Intelligence
             </p>
             <h1
@@ -51,7 +51,7 @@ export default function HeroSection() {
               className="sd-font-display text-4xl font-extrabold leading-tight tracking-tight text-white sm:text-5xl lg:text-[3.25rem]"
               style={{ fontWeight: 800 }}
             >
-              Student <span className="text-[#C7F36B]">Intelligence</span> Dashboard
+              Student <span className="text-[#c7f36b]">Intelligence</span> Dashboard
             </h1>
             <p className="mt-4 max-w-xl text-lg text-slate-300 sm:text-xl">
               Estimate rank and percentile, match colleges and branches to your profile, run course and college fit
@@ -67,7 +67,7 @@ export default function HeroSection() {
             </div>
           </div>
           <div className="relative">
-            <div className="relative mx-auto max-w-md overflow-hidden rounded-[14px] border-2 border-black bg-[#0F172A] shadow-[6px_6px_0_#C7F36B] lg:ml-auto">
+            <div className="relative mx-auto max-w-md overflow-hidden rounded-[14px] border-2 border-black bg-[#0F172A] shadow-[6px_6px_0_#c7f36b] lg:ml-auto">
               <div className="flex items-center gap-2 border-b-2 border-black bg-[#0B0E14] px-3 py-2.5">
                 <span className="h-2.5 w-2.5 rounded-full bg-[#FF5F57]" aria-hidden />
                 <span className="h-2.5 w-2.5 rounded-full bg-[#FEBC2E]" aria-hidden />

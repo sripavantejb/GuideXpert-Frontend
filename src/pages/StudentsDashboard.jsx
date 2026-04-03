@@ -34,7 +34,7 @@ const NeoButton = ({ children, primary = false, className = '', onClick }) => {
   const baseStyle =
     'font-bold rounded-[14px] px-6 py-3 border-2 border-[#0F172A] transition-all duration-150 flex items-center justify-center gap-2';
   const typeStyle = primary
-    ? 'bg-[#C7F36B] text-[#0F172A] shadow-[4px_4px_0px_#0F172A] hover:bg-[#b0d95d] active:shadow-[0px_0px_0px_#0F172A] active:translate-y-[4px] active:translate-x-[4px]'
+    ? 'bg-[#c7f36b] text-[#0F172A] shadow-[4px_4px_0px_#0F172A] hover:bg-[#b0d95d] active:shadow-[0px_0px_0px_#0F172A] active:translate-y-[4px] active:translate-x-[4px]'
     : 'bg-white text-[#0F172A] shadow-[4px_4px_0px_#0F172A] hover:bg-slate-50 active:shadow-[0px_0px_0px_#0F172A] active:translate-y-[4px] active:translate-x-[4px]';
 
   return (
@@ -51,7 +51,7 @@ const PreviewActionLink = ({ to, children, primary = true, className = '' }) => 
   const baseStyle =
     'font-bold rounded-[14px] px-6 py-3 border-2 border-[#0F172A] transition-all duration-150 flex items-center justify-center gap-2';
   const typeStyle = primary
-    ? 'bg-[#C7F36B] text-[#0F172A] shadow-[4px_4px_0px_#0F172A] hover:bg-[#b0d95d] hover:-translate-y-0.5'
+    ? 'bg-[#c7f36b] text-[#0F172A] shadow-[4px_4px_0px_#0F172A] hover:bg-[#b0d95d] hover:-translate-y-0.5'
     : 'bg-white text-[#0F172A] shadow-[4px_4px_0px_#0F172A] hover:bg-slate-50 hover:-translate-y-0.5';
   return (
     <Link to={to} className={`${baseStyle} ${typeStyle} ${className}`}>
@@ -119,13 +119,13 @@ const CollegePredictor = () => {
 
 const BranchPredictor = () => {
   return (
-    <NeoCard accentColor="#FFE89A">
+    <NeoCard accentColor="#c7f36b">
       <div className="mb-6 flex items-start justify-between">
         <div>
           <h3 className="mb-1 text-xl font-black tracking-tight text-[#0F172A]">Branch Predictor</h3>
           <p className="text-sm font-medium text-slate-500">Verify specific academic pathways.</p>
         </div>
-        <div className="flex h-10 w-10 items-center justify-center rounded-lg border-2 border-[#0F172A] bg-[#FFE89A] shadow-[2px_2px_0px_#0F172A]">
+        <div className="flex h-10 w-10 items-center justify-center rounded-lg border-2 border-[#0F172A] bg-[#c7f36b] shadow-[2px_2px_0px_#0F172A]">
           <LuRocket className="text-lg text-[#0F172A]" />
         </div>
       </div>
@@ -144,13 +144,13 @@ const BranchPredictor = () => {
 
 const CourseFitTest = () => {
   return (
-    <NeoCard accentColor="#C7F36B">
+    <NeoCard accentColor="#c7f36b">
       <div className="mb-6 flex items-start justify-between">
         <div>
           <h3 className="mb-1 text-xl font-black tracking-tight text-[#0F172A]">Course Fit Test</h3>
           <p className="text-sm font-medium text-slate-500">Behavioral alignment assessment.</p>
         </div>
-        <div className="flex h-10 w-10 items-center justify-center rounded-lg border-2 border-[#0F172A] bg-[#C7F36B] shadow-[2px_2px_0px_#0F172A]">
+        <div className="flex h-10 w-10 items-center justify-center rounded-lg border-2 border-[#0F172A] bg-[#c7f36b] shadow-[2px_2px_0px_#0F172A]">
           <LuGraduationCap className="text-lg text-[#0F172A]" />
         </div>
       </div>
@@ -160,7 +160,7 @@ const CourseFitTest = () => {
           {[0, 1, 2].map((i) => (
             <div
               key={i}
-              className={`h-2 flex-1 rounded-full border-2 border-[#0F172A] ${i === 0 ? 'bg-[#C7F36B]' : 'bg-slate-100'}`}
+              className={`h-2 flex-1 rounded-full border-2 border-[#0F172A] ${i === 0 ? 'bg-[#c7f36b]' : 'bg-slate-100'}`}
             />
           ))}
         </div>
@@ -218,13 +218,13 @@ const CollegeFitTest = () => {
 
 const CollegeComparison = () => {
   return (
-    <NeoCard accentColor="#FFE89A">
+    <NeoCard accentColor="#c7f36b">
       <div className="mb-6 flex items-start justify-between">
         <div>
           <h3 className="mb-1 text-xl font-black tracking-tight text-[#0F172A]">Comparative Analysis</h3>
           <p className="text-sm font-medium text-slate-500">Head-to-head metric evaluation.</p>
         </div>
-        <div className="flex h-10 w-10 items-center justify-center rounded-lg border-2 border-[#0F172A] bg-[#FFE89A] shadow-[2px_2px_0px_#0F172A]">
+        <div className="flex h-10 w-10 items-center justify-center rounded-lg border-2 border-[#0F172A] bg-[#c7f36b] shadow-[2px_2px_0px_#0F172A]">
           <LuScale className="text-lg text-[#0F172A]" />
         </div>
       </div>
@@ -256,7 +256,7 @@ export default function StudentsDashboard() {
   };
 
   return (
-    <div className="min-h-screen bg-[#F8FAFC] font-sans selection:bg-[#C7F36B] selection:text-[#0F172A]">
+    <div className="min-h-screen bg-[#F8FAFC] font-sans selection:bg-[#c7f36b] selection:text-[#0F172A]">
       <StudentWorkspaceNavbar />
 
       <style>{`
@@ -295,7 +295,7 @@ export default function StudentsDashboard() {
         <div className="relative z-10 mx-auto flex max-w-7xl flex-col gap-12 lg:flex-row lg:items-center lg:gap-14">
           <div className="flex-1 lg:max-w-[560px]">
             <div className="mb-8 inline-flex items-center gap-2 rounded-md border border-slate-700 bg-[#1E293B] px-3 py-1.5">
-              <span className="h-2 w-2 animate-pulse rounded-full bg-[#C7F36B]" />
+              <span className="h-2 w-2 animate-pulse rounded-full bg-[#c7f36b]" />
               <span className="font-mono text-[10px] uppercase tracking-widest text-slate-300">
                 System Operational v2.4
               </span>
@@ -303,7 +303,7 @@ export default function StudentsDashboard() {
 
             <h1 className="mb-6 text-5xl font-black leading-[1.02] tracking-tighter text-white lg:text-7xl">
               Student<br />
-              <span className="text-[#C7F36B]">Intelligence</span>
+              <span className="text-[#c7f36b]">Intelligence</span>
               <br />
               Platform.
             </h1>
@@ -331,11 +331,11 @@ export default function StudentsDashboard() {
           </div>
 
           <div className="w-full flex-1 lg:pl-4">
-            <div className="mx-auto w-full max-w-[620px] overflow-hidden rounded-[14px] border-2 border-[#0F172A] bg-white shadow-[8px_8px_0px_#C7F36B]">
+            <div className="mx-auto w-full max-w-[620px] overflow-hidden rounded-[14px] border-2 border-[#0F172A] bg-white shadow-[8px_8px_0px_#c7f36b]">
               <div className="flex items-center gap-2 border-b-2 border-[#0F172A] bg-[#0F172A] px-4 py-3">
                 <div className="h-3 w-3 rounded-full border border-[#0F172A] bg-[#F7B5B5]" />
-                <div className="h-3 w-3 rounded-full border border-[#0F172A] bg-[#FFE89A]" />
-                <div className="h-3 w-3 rounded-full border border-[#0F172A] bg-[#C7F36B]" />
+                <div className="h-3 w-3 rounded-full border border-[#0F172A] bg-[#c7f36b]" />
+                <div className="h-3 w-3 rounded-full border border-[#0F172A] bg-[#c7f36b]" />
                 <div className="ml-4 flex items-center gap-2 font-mono text-[10px] uppercase tracking-widest text-slate-400">
                   <LuTerminal /> Session Active
                 </div>
@@ -345,7 +345,7 @@ export default function StudentsDashboard() {
                 <div className="mb-7">
                   <p className="mb-1 text-xs font-bold uppercase tracking-widest text-slate-500">Global Standing Estimate</p>
                   <h3 className="font-mono text-3xl font-black tracking-tighter text-[#0F172A] sm:text-4xl">
-                    12,430 <span className="text-lg text-[#C7F36B]">▲</span>
+                    12,430 <span className="text-lg text-[#c7f36b]">▲</span>
                   </h3>
                 </div>
 

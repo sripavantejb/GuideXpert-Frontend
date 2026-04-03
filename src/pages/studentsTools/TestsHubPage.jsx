@@ -1,67 +1,56 @@
 import { Link } from 'react-router-dom';
-import ToolNavBar from './components/ToolNavBar';
+import StudentWorkspaceNavbar from '../../components/studentDashboard/StudentWorkspaceNavbar';
+import StudentWorkspaceFooter from '../../components/studentDashboard/StudentWorkspaceFooter';
 
 const TEST_CARDS = [
   {
     title: 'Course Fit Test',
     description: 'Understand which courses align with your aptitude and interests.',
     to: '/students/course-fit-test',
-    accent: '#C7F36B',
   },
   {
     title: 'College Fit Test',
     description: 'Find colleges that match your budget, campus style, and goals.',
     to: '/students/college-fit-test',
-    accent: '#B7E5FF',
   },
 ];
 
 export default function TestsHubPage() {
   return (
-    <div className="min-h-screen bg-[#0F172A] px-4 py-8 sm:px-6 lg:px-8">
-      <div
-        className="fixed inset-0 -z-10"
-        style={{
-          backgroundImage:
-            'linear-gradient(to right, rgba(255,255,255,0.06) 1px, transparent 1px), linear-gradient(to bottom, rgba(255,255,255,0.06) 1px, transparent 1px)',
-          backgroundSize: '40px 40px',
-        }}
-      />
-      <div className="mx-auto max-w-7xl space-y-8">
-        <ToolNavBar />
+    <div className="flex min-h-screen flex-col">
+      <StudentWorkspaceNavbar />
+      <main className="student-tool-page-shell relative flex min-h-0 flex-1 flex-col">
+        <div className="mx-auto w-full max-w-7xl shrink-0 px-4 pt-8 pb-4 sm:px-6 sm:pb-6 lg:px-8">
+          <section className="rounded-[14px] border-[3px] border-black bg-[#0B0E14] p-6 shadow-[4px_4px_0_#000] sm:p-8 lg:p-10">
+            <p className="mb-3 text-[10px] font-bold uppercase tracking-widest text-slate-400">Fit tests hub</p>
+            <h1 className="text-3xl font-black tracking-tight text-white sm:text-4xl">Student fit tests</h1>
+            <p className="mt-2 max-w-2xl text-sm font-normal leading-relaxed text-slate-300 sm:text-base">
+              Explore guided tests to understand your course and college fit.
+            </p>
+          </section>
+        </div>
 
-        <section className="rounded-[14px] border-2 border-black bg-[#0B1327] p-6 text-white shadow-[6px_6px_0px_#000]">
-          <p className="mb-2 inline-flex rounded-md border border-slate-600 bg-[#1E293B] px-3 py-1 text-[10px] font-bold uppercase tracking-widest text-slate-300">
-            Discovery Tests Hub
-          </p>
-          <h1 className="text-3xl font-black tracking-tight sm:text-4xl">Student Fit Tests</h1>
-          <p className="mt-2 text-sm text-slate-300 sm:text-base">
-            Explore guided tests to understand your course and college fit.
-          </p>
-        </section>
-
-        <section className="grid gap-6 md:grid-cols-2">
-          {TEST_CARDS.map((card) => (
-            <article
-              key={card.title}
-              className="rounded-[14px] border-2 border-black bg-white p-5 shadow-[4px_4px_0px_#000] transition-all hover:-translate-y-1"
-            >
-              <div
-                className="mb-4 h-2 rounded-full border border-black"
-                style={{ backgroundColor: card.accent }}
-              />
-              <h2 className="text-xl font-black text-[#0F172A]">{card.title}</h2>
-              <p className="mt-2 text-sm leading-relaxed text-slate-600">{card.description}</p>
-              <Link
-                to={card.to}
-                className="mt-5 inline-flex rounded-[12px] border-2 border-black bg-[#C7F36B] px-4 py-2 text-sm font-black text-[#0F172A] shadow-[4px_4px_0px_#000] transition-all hover:-translate-y-0.5 hover:bg-[#b0d95d]"
-              >
-                Open Tool -&gt;
-              </Link>
-            </article>
-          ))}
-        </section>
-      </div>
+        <div className="mx-auto flex min-h-0 w-full max-w-7xl flex-1 flex-col px-4 pb-10 pt-2 sm:px-6 sm:pb-12 sm:pt-4 lg:px-8">
+          <section className="grid gap-5 md:grid-cols-2">
+              {TEST_CARDS.map((card) => (
+                <article
+                  key={card.title}
+                  className="flex flex-col rounded-[12px] border-[3px] border-black bg-white p-6 shadow-[4px_4px_0_#000]"
+                >
+                  <h2 className="text-lg font-black tracking-tight text-[#0F172A]">{card.title}</h2>
+                  <p className="mt-2 flex-1 text-sm leading-relaxed text-slate-600">{card.description}</p>
+                  <Link
+                    to={card.to}
+                    className="mt-5 inline-flex w-full min-h-[44px] items-center justify-center rounded-[10px] border-[3px] border-black bg-[#c7f36b] px-4 text-sm font-black text-[#0F172A] shadow-[3px_3px_0_#000] transition-transform active:translate-x-0.5 active:translate-y-0.5 active:shadow-none sm:w-auto sm:min-w-[160px]"
+                  >
+                    Open tool
+                  </Link>
+                </article>
+              ))}
+          </section>
+        </div>
+      </main>
+      <StudentWorkspaceFooter />
     </div>
   );
 }

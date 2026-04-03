@@ -28,6 +28,7 @@ export default function CourseFitTestPage() {
     <ToolWorkspaceLayout
       title="Course Fit Test"
       subtitle="Take a short preference quiz to identify courses aligned with your strengths."
+      compactHero
       howItWorks={[
         'Each answer updates your fit profile across aptitude and interest dimensions.',
         'The scoring model maps your profile to course archetypes.',
@@ -49,7 +50,7 @@ export default function CourseFitTestPage() {
       }
       results={
         result ? (
-          <section ref={resultsRef} className="rounded-[14px] border-2 border-black bg-[#C7F36B]/35 p-6 shadow-[4px_4px_0px_#000]">
+          <section ref={resultsRef} className="rounded-[14px] border-2 border-black bg-[#c7f36b]/35 p-6 shadow-[4px_4px_0px_#000]">
             <h2 className="text-2xl font-black text-[#0F172A]">Results Panel</h2>
             <p className="mt-1 text-sm text-slate-600">How to read this result: recommendations are ranked by overall fit from your quiz responses.</p>
             <div className="mt-4 grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
@@ -92,7 +93,7 @@ export default function CourseFitTestPage() {
           <button
             type="button"
             onClick={handleAnswer}
-            className="rounded-[12px] border-2 border-black bg-[#C7F36B] px-5 py-2 text-sm font-black shadow-[3px_3px_0px_#000] transition-all hover:-translate-y-0.5"
+            className="rounded-[12px] border-2 border-black bg-[#c7f36b] px-5 py-2 text-sm font-black shadow-[3px_3px_0px_#000] transition-all hover:-translate-y-0.5"
           >
             {started ? 'Agree' : 'Start Test'}
           </button>
