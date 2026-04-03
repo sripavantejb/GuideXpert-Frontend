@@ -257,7 +257,7 @@ export default function StudentsDashboard() {
   };
 
   return (
-    <div className="min-h-screen overflow-x-hidden bg-[#F8FAFC] font-sans selection:bg-[#C7F36B] selection:text-[#0F172A]">
+    <div className="min-h-screen bg-[#F8FAFC] font-sans selection:bg-[#C7F36B] selection:text-[#0F172A]">
       <StudentWorkspaceNavbar />
 
       <style>{`
@@ -288,6 +288,7 @@ export default function StudentsDashboard() {
         }
       `}</style>
 
+      <div className="overflow-x-hidden">
       {/* Hero Section */}
       <section className="relative flex min-h-screen items-center overflow-hidden border-b-[6px] border-[#0F172A] bg-[#0F172A] px-6 py-12 lg:px-12">
         <div className="blueprint-grid absolute inset-0 z-0" />
@@ -479,8 +480,11 @@ export default function StudentsDashboard() {
         </div>
       </div>
 
-      {/* CTA Section */}
-      <section className="border-y-4 border-[#0F172A] bg-[#C7F36B] px-6 py-24 text-center">
+      {/* CTA Section — id used by StickyToolsSidebar to hide when this band enters the viewport */}
+      <section
+        id="student-dashboard-footer"
+        className="border-y-4 border-[#0F172A] bg-[#C7F36B] px-6 py-24 text-center"
+      >
         <div className="mx-auto max-w-3xl">
           <LuSparkles className="mx-auto mb-6 text-4xl text-[#0F172A]" />
           <h2 className="mb-6 text-4xl font-black tracking-tighter text-[#0F172A] md:text-5xl">
@@ -494,6 +498,7 @@ export default function StudentsDashboard() {
           </NeoButton>
         </div>
       </section>
+      </div>
     </div>
   );
 }

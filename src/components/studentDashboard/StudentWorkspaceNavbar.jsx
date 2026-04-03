@@ -16,7 +16,7 @@ export default function StudentWorkspaceNavbar() {
 
   return (
     <header
-      className="sticky top-0 z-50 border-b-[3px] border-black bg-white shadow-[4px_4px_0_0_#000]"
+      className="sticky top-0 z-100 border-b-[3px] border-black bg-white shadow-[4px_4px_0_0_#000]"
       role="banner"
     >
       <div className="mx-auto flex max-w-[1600px] flex-wrap items-center justify-between gap-3 px-4 py-3 sm:px-6 lg:px-8">

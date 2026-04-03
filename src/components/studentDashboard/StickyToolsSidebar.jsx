@@ -28,6 +28,8 @@ const WORKSPACE_FIT_STRICT_PX = 8;
 
 /** Tailwind `lg` — desktop sidebar is `lg:block` only */
 const LG_MIN_PX = 1024;
+/** Hide sticky tools slightly before the lime footer would overlap the sidebar */
+const FOOTER_INTERSECT_BUFFER_PX = 12;
 
 function clearAsidePinStyles(el) {
   if (!el) return;
@@ -37,8 +39,20 @@ function clearAsidePinStyles(el) {
   el.style.right = '';
 }
 
+function setDesktopToolsHiddenForFooter(asideEl, placeholderEl, hidden) {
+  const els = [asideEl, placeholderEl].filter(Boolean);
+  for (const node of els) {
+    node.classList.toggle('opacity-0', hidden);
+    node.classList.toggle('invisible', hidden);
+    node.classList.toggle('pointer-events-none', hidden);
+    if (hidden) node.setAttribute('aria-hidden', 'true');
+    else node.removeAttribute('aria-hidden');
+  }
+}
+
 export default function StickyToolsSidebar() {
   const asideRef = useRef(null);
+  const placeholderRef = useRef(null);
   const pinnedRef = useRef(false);
   /** Reserves column height when aside is fixed (aside is out of flow). */
   const [reservedHeight, setReservedHeight] = useState(0);
@@ -49,7 +63,10 @@ export default function StickyToolsSidebar() {
     const update = () => {
       const workspace = document.getElementById('student-workspace');
       const anchor = document.getElementById('workspace-applications');
-      if (!workspace || !anchor) return;
+      const footer = document.getElementById('student-dashboard-footer');
+      const footerIntersects =
+        footer != null &&
+        footer.getBoundingClientRect().top < window.innerHeight - FOOTER_INTERSECT_BUFFER_PX;
 
       const isDesktop = window.innerWidth >= LG_MIN_PX;
       if (!isDesktop) {
@@ -58,6 +75,12 @@ export default function StickyToolsSidebar() {
         }
         clearAsidePinStyles(asideEl);
         setReservedHeight((prev) => (prev !== 0 ? 0 : prev));
+        setDesktopToolsHiddenForFooter(asideEl, placeholderRef.current, false);
+        return;
+      }
+
+      if (!workspace || !anchor) {
+        setDesktopToolsHiddenForFooter(asideEl, placeholderRef.current, false);
         return;
       }
 
@@ -97,6 +120,8 @@ export default function StickyToolsSidebar() {
         el.style.right = '';
         setReservedHeight((prev) => (prev !== 0 ? 0 : prev));
       }
+
+      setDesktopToolsHiddenForFooter(asideEl, placeholderRef.current, footerIntersects);
     };
 
     const onScrollOrResize = () => {
@@ -113,6 +138,7 @@ export default function StickyToolsSidebar() {
       window.removeEventListener('scroll', onScrollOrResize);
       window.removeEventListener('resize', onScrollOrResize);
       clearAsidePinStyles(asideEl);
+      setDesktopToolsHiddenForFooter(asideEl, placeholderRef.current, false);
     };
   }, []);
 
@@ -137,6 +163,7 @@ export default function StickyToolsSidebar() {
       {/* Desktop — placeholder keeps row height when aside is fixed; position/size applied in rAF (no per-frame setState). */}
       {reservedHeight > 0 && (
         <div
+          ref={placeholderRef}
           className="hidden w-full max-w-[228px] shrink-0 lg:block"
           aria-hidden
           style={{ height: reservedHeight }}

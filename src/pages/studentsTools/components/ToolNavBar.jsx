@@ -13,7 +13,7 @@ function navLinkClassName({ isActive }) {
 
 export default function ToolNavBar() {
   return (
-    <nav className="overflow-hidden rounded-[14px] border-[3px] border-black bg-white shadow-[6px_6px_0_#000]">
+    <nav className="sticky top-0 z-50 overflow-hidden rounded-[14px] border-[3px] border-black bg-white shadow-[6px_6px_0_#000]">
       <div className="h-1.5 w-full bg-[#C7F36B] border-b-[3px] border-black" aria-hidden />
       <div className="p-4 sm:p-5">
         <div className="grid gap-6 lg:grid-cols-3">
