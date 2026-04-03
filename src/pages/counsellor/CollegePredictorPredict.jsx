@@ -337,6 +337,7 @@ export default function CollegePredictorPredict() {
         accent={examMeta?.accent}
         admissionCategories={examMeta?.admissionCategories ?? []}
         admissionFieldLabel={examMeta?.admissionFieldLabel ?? 'Admission category'}
+        hideAdmissionField={examMeta?.hideAdmissionField ?? false}
         reservationFieldLabel={examMeta?.reservationFieldLabel ?? 'Reservation categories'}
         rankFieldLabel={examMeta?.rankFieldLabel ?? 'Your Rank'}
         reservationOptions={examMeta?.reservationOptions}

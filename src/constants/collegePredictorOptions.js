@@ -177,6 +177,7 @@ export function apEamcetPredictorDisplayTotal(apiTotal) {
  *   districtOptions?: { value: string, label: string }[],
  *   districtOptionsByAdmission?: Record<string, { value: string, label: string }[]>,
  *   districtSelectionHint?: string,
+ *   hideAdmissionField?: boolean,
  *   admissionCategories: { value: string, label: string }[],
  * }} EntranceExamOption
  * @type {EntranceExamOption[]}
@@ -242,7 +243,7 @@ export const ENTRANCE_EXAMS = [
     apiValue: 'TS_EAMCET',
     supported: true,
     defaultReservationCode: 'OC BOYS',
-    admissionFieldLabel: 'Universities',
+    hideAdmissionField: true,
     reservationFieldLabel: 'Category',
     rankFieldLabel: 'Expected TS EAMCET rank',
     reservationOptions: TS_EAMCET_RESERVATION_OPTIONS,
