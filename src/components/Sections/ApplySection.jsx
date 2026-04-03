@@ -226,7 +226,8 @@ const ApplySection = () => {
       const result = await sendOtp(
         formData.fullName.trim(),
         cleanPhone,
-        formData.occupation.trim()
+        formData.occupation.trim(),
+        { osviOutboundCall: true }
       );
 
       // Log response for debugging
@@ -376,7 +377,8 @@ const ApplySection = () => {
       const result = await sendOtp(
         formData.fullName.trim(),
         normalizedPhone,
-        formData.occupation.trim()
+        formData.occupation.trim(),
+        { osviOutboundCall: true }
       );
 
       if (result.success) {

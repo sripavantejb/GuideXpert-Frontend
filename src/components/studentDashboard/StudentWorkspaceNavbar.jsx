@@ -16,12 +16,14 @@ export default function StudentWorkspaceNavbar() {
   const [mobileOpen, setMobileOpen] = useState(false);
   const { pathname } = useLocation();
   const menuId = useId();
+  const [routeKey, setRouteKey] = useState(pathname);
 
   const closeMenu = useCallback(() => setMobileOpen(false), []);
 
-  useEffect(() => {
-    closeMenu();
-  }, [pathname, closeMenu]);
+  if (pathname !== routeKey) {
+    setRouteKey(pathname);
+    setMobileOpen(false);
+  }
 
   useEffect(() => {
     if (!mobileOpen) return;

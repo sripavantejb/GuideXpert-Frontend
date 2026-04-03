@@ -106,16 +106,21 @@ async function apiRequest(endpoint, options = {}) {
  * @param {string} fullName - User's full name
  * @param {string} whatsappNumber - WhatsApp phone number
  * @param {string} occupation - User's occupation
+ * @param {{ osviOutboundCall?: boolean }} [options] - osviOutboundCall: counselor landing only; triggers backend OSVI outbound call when configured
  * @returns {Promise<{success: boolean, message?: string, status?: number}>}
  */
-export const sendOtp = async (fullName, whatsappNumber, occupation) => {
+export const sendOtp = async (fullName, whatsappNumber, occupation, options = {}) => {
+  const body = {
+    fullName,
+    whatsappNumber,
+    occupation,
+  };
+  if (options.osviOutboundCall === true) {
+    body.osviOutboundCall = true;
+  }
   return apiRequest('/send-otp', {
     method: 'POST',
-    body: JSON.stringify({
-      fullName,
-      whatsappNumber,
-      occupation,
-    }),
+    body: JSON.stringify(body),
   });
 };
 
