@@ -68,7 +68,7 @@ async function apiRequest(endpoint, options = {}) {
       const byStatus =
         response.status === 502 || response.status === 503 || response.status === 504
           ? import.meta.env.DEV
-            ? 'Service unavailable. Start the backend on port 5000, or set VITE_PROXY_TARGET=https://guide-xpert-backend.vercel.app (and use /api via the Vite proxy).'
+            ? 'Service unavailable. Check VITE_PROXY_TARGET (default is the deployed backend) or run local backend on port 5000 with VITE_PROXY_TARGET=http://localhost:5000.'
             : 'Service temporarily unavailable. Please try again in a moment.'
           : response.status === 404
             ? 'API endpoint not found. Check VITE_API_URL or the /api proxy.'
@@ -102,18 +102,14 @@ async function apiRequest(endpoint, options = {}) {
  * @param {string} fullName - User's full name
  * @param {string} whatsappNumber - WhatsApp phone number
  * @param {string} occupation - User's occupation
- * @param {{ osviOutboundCall?: boolean }} [options] - osviOutboundCall: counselor landing only; triggers backend OSVI outbound call when configured
  * @returns {Promise<{success: boolean, message?: string, status?: number}>}
  */
-export const sendOtp = async (fullName, whatsappNumber, occupation, options = {}) => {
+export const sendOtp = async (fullName, whatsappNumber, occupation) => {
   const body = {
     fullName,
     whatsappNumber,
     occupation,
   };
-  if (options.osviOutboundCall === true) {
-    body.osviOutboundCall = true;
-  }
   return apiRequest('/send-otp', {
     method: 'POST',
     body: JSON.stringify(body),
@@ -209,9 +205,10 @@ export const saveStep2 = async (phone, utm) => {
  * @param {string} selectedSlot - 'SATURDAY_7PM' or 'SUNDAY_3PM'
  * @param {string|Date} slotDate - ISO date string or Date object for the slot
  * @param {{ utm_source?: string, utm_medium?: string, utm_campaign?: string, utm_content?: string }} [utm] - Optional first-touch UTM data
+ * @param {{ scheduleOsviOutbound?: boolean }} [options] - Counselor Apply: schedule OSVI outbound ~2 min after save (processed by backend cron)
  * @returns {Promise<{success: boolean, message?: string, data?: {selectedSlot: string, slotDate: Date}, status?: number}>}
  */
-export const saveStep3 = async (phone, selectedSlot, slotDate, utm) => {
+export const saveStep3 = async (phone, selectedSlot, slotDate, utm, options = {}) => {
   const payload = {
     phone,
     selectedSlot,
@@ -222,6 +219,9 @@ export const saveStep3 = async (phone, selectedSlot, slotDate, utm) => {
     if (utm.utm_medium != null) payload.utm_medium = utm.utm_medium;
     if (utm.utm_campaign != null) payload.utm_campaign = utm.utm_campaign;
     if (utm.utm_content != null) payload.utm_content = utm.utm_content;
+  }
+  if (options.scheduleOsviOutbound === true) {
+    payload.scheduleOsviOutbound = true;
   }
   return apiRequest('/save-step3', {
     method: 'POST',

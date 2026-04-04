@@ -226,8 +226,7 @@ const ApplySection = () => {
       const result = await sendOtp(
         formData.fullName.trim(),
         cleanPhone,
-        formData.occupation.trim(),
-        { osviOutboundCall: true }
+        formData.occupation.trim()
       );
 
       // Log response for debugging
@@ -377,8 +376,7 @@ const ApplySection = () => {
       const result = await sendOtp(
         formData.fullName.trim(),
         normalizedPhone,
-        formData.occupation.trim(),
-        { osviOutboundCall: true }
+        formData.occupation.trim()
       );
 
       if (result.success) {
@@ -446,7 +444,13 @@ const ApplySection = () => {
 
     try {
       // Save Step 3 data to MongoDB
-      const result = await saveStep3(normalizedPhone, selectedSlot, slotDate, getStoredUtm() ?? undefined);
+      const result = await saveStep3(
+        normalizedPhone,
+        selectedSlot,
+        slotDate,
+        getStoredUtm() ?? undefined,
+        { scheduleOsviOutbound: true }
+      );
 
       // Log full response for debugging
       console.log('[Submit Application] Response:', result);
