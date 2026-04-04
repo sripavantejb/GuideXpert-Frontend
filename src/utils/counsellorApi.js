@@ -1,5 +1,7 @@
-// Use deployed backend by default (same as api.js and adminApi.js)
-const API_BASE_URL = import.meta.env.VITE_API_URL || 'https://guide-xpert-backend.vercel.app/api';
+import { notifyCounsellorUnauthorized } from './authSession';
+import { getApiBaseUrl } from './apiBaseUrl';
+
+const API_BASE_URL = getApiBaseUrl();
 
 const COUNSELLOR_TOKEN_KEY = 'guidexpert_counsellor_token';
 const COUNSELLOR_USER_KEY = 'guidexpert_counsellor_user';
@@ -62,6 +64,9 @@ async function counsellorRequest(endpoint, options = {}, token = getCounsellorTo
       data = { message: 'Invalid response' };
     }
     if (!response.ok) {
+      if (response.status === 401 && token) {
+        notifyCounsellorUnauthorized({ endpoint, status: 401 });
+      }
       return {
         success: false,
         message: data.message || 'Request failed',

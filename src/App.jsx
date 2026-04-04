@@ -85,7 +85,7 @@ import BlogDetails from './pages/BlogDetails';
 import BlogsPage from './pages/BlogsPage';
 import LegacyBlogRedirect from './pages/LegacyBlogRedirect';
 import AdminBlog from './pages/AdminBlog';
-import { onAdminUnauthorized, onWebinarUnauthorized } from './utils/authSession';
+import { onAdminUnauthorized, onCounsellorUnauthorized, onWebinarUnauthorized } from './utils/authSession';
 
 function ProtectedAdmin({ children }) {
   const { isAuthenticated } = useAuth();
@@ -116,6 +116,7 @@ function SessionExpiryRedirects() {
   const location = useLocation();
   const { logout: adminLogout } = useAuth();
   const { logout: webinarLogout } = useWebinarAuth();
+  const { logout: counsellorLogout } = useCounsellorAuth();
 
   useEffect(() => {
     const offAdmin = onAdminUnauthorized(() => {
@@ -130,11 +131,18 @@ function SessionExpiryRedirects() {
         navigate('/webinar/login', { replace: true });
       }
     });
+    const offCounsellor = onCounsellorUnauthorized(() => {
+      counsellorLogout();
+      if (!location.pathname.startsWith('/counsellor/login')) {
+        navigate('/counsellor/login', { replace: true });
+      }
+    });
     return () => {
       offAdmin();
       offWebinar();
+      offCounsellor();
     };
-  }, [adminLogout, webinarLogout, location.pathname, navigate]);
+  }, [adminLogout, counsellorLogout, webinarLogout, location.pathname, navigate]);
 
   return null;
 }

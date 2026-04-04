@@ -1,5 +1,7 @@
 import { notifyAdminUnauthorized } from './authSession';
-const defaultApiUrl = import.meta.env.VITE_API_URL || 'https://guide-xpert-backend.vercel.app/api';
+import { getApiBaseUrl } from './apiBaseUrl';
+
+const defaultApiUrl = getApiBaseUrl();
 const API_BASE_URL = defaultApiUrl;
 const ADMIN_TOKEN_KEY = 'guidexpert_admin_token';
 

@@ -1,6 +1,6 @@
 import { useState, useCallback, useMemo, useEffect, useRef } from 'react';
 import { Link } from 'react-router-dom';
-import { FiChevronDown, FiChevronUp } from 'react-icons/fi';
+import { FiAlertCircle } from 'react-icons/fi';
 import { getPredictedCollegesPublic } from '../utils/api';
 import {
   ENTRANCE_EXAMS,
@@ -11,7 +11,11 @@ import {
   BRANCH_CODES,
   SORT_ORDER_OPTIONS,
   DISTRICTS,
+  rankToCutoff,
+  JEE_RESERVATION_OPTIONS,
 } from '../constants/collegePredictorOptions';
+import { JeeCombinedPredictorForm, CollegeCard } from '../components/Counsellor/CollegePredictor';
+import { formatPredictorClientError } from '../utils/collegePredictorErrors';
 
 const ADMISSION_CATEGORIES = [
   { value: 'GENERAL', label: 'General' },
@@ -22,8 +26,12 @@ const ADMISSION_CATEGORIES = [
 
 const PAGE_SIZE = 10;
 
+/** Same EAMCET-style result cards as counsellor predictor ([examCardConfig] green). */
+const RESULT_CARD_ACCENT = 'green';
+
 const ERROR_MESSAGES = {
-  INVALID_ENTRANCE_EXAM_NAME_ENUM: 'The selected exam is not accepted by the predictor API. Please select a valid exam.',
+  INVALID_ENTRANCE_EXAM_NAME_ENUM:
+    'This exam is not enabled on the predictor service yet, or the exam name is invalid. Try again later or contact support.',
   INVALID_ADMISSION_CATEGORY_NAME_ENUM: 'Invalid admission category. Please select a valid option.',
   INVALID_BRANCH_CODES: 'One or more branch codes are invalid.',
   INVALID_RESERVATION_CATEGORY_CODE: 'Invalid reservation category. Please select a valid option.',
@@ -33,10 +41,8 @@ const ERROR_MESSAGES = {
   UPSTREAM_ERROR: 'The predictor service returned an error. Please try again.',
 };
 
-function getErrorMessage(resStatus, response) {
-  const apiMessage = response && String(response).trim();
-  if (apiMessage) return apiMessage;
-  return ERROR_MESSAGES[resStatus] || 'Something went wrong. Please try again.';
+function getErrorMessage(errData, fallbackMessage) {
+  return formatPredictorClientError(ERROR_MESSAGES, errData, fallbackMessage, { preferResponseFirst: true });
 }
 
 function getPublicFilterSnapshot(f) {
@@ -49,6 +55,35 @@ function getPublicFilterSnapshot(f) {
     branch_codes: [...(f.branch_codes || [])].sort(),
     districts: [...(f.districts || [])].sort(),
     sort_order: f.sort_order,
+  });
+}
+
+function emptyJeeSlotPublic() {
+  return {
+    colleges: [],
+    total: 0,
+    offset: 0,
+    admissionCategoryName: '',
+    error: null,
+  };
+}
+
+function parsePositiveIntRankPublic(s) {
+  const n = Number(s);
+  if (s === '' || Number.isNaN(n) || n < 1 || !Number.isInteger(n)) return null;
+  return n;
+}
+
+function getJeePublicFilterSnapshot(j) {
+  return JSON.stringify({
+    rankMain: j.rankMain,
+    rankAdvanced: j.rankAdvanced,
+    admission_category_name_enum: j.admission_category_name_enum,
+    reservation_category_codes: [...(j.reservation_category_codes || [])].sort(),
+    branch_codes: [...(j.branch_codes || [])].sort(),
+    branchMode: j.branchMode,
+    sort_order: j.sort_order,
+    gender: j.gender,
   });
 }
 
@@ -113,8 +148,50 @@ export default function CollegePredictorPage() {
   const [error, setError] = useState(null);
   const [result, setResult] = useState(null);
   const [offset, setOffset] = useState(0);
-  const [expandedCollegeId, setExpandedCollegeId] = useState(null);
   const lastSuccessfulPublicSnapshotRef = useRef(null);
+  const lastSuccessfulJeePublicSnapshotRef = useRef(null);
+  const hasSuccessfulJeePublicPredictionRef = useRef(false);
+
+  const isJeePublic = form.entrance_exam_name_enum === 'JEE';
+
+  const [jeePublicForm, setJeePublicForm] = useState({
+    rankMain: '',
+    rankAdvanced: '',
+    reservation_category_codes: ['OPEN'],
+    branchMode: 'all',
+    branch_codes: [],
+    sort_order: 'ASC',
+    admission_category_name_enum: 'GENERAL',
+    gender: '',
+  });
+  const [jeePublicSlots, setJeePublicSlots] = useState({
+    main: emptyJeeSlotPublic(),
+    advanced: emptyJeeSlotPublic(),
+  });
+  const [jeePublicActiveTab, setJeePublicActiveTab] = useState('main');
+  const [jeePublicHadMain, setJeePublicHadMain] = useState(false);
+  const [jeePublicHadAdvanced, setJeePublicHadAdvanced] = useState(false);
+  const [jeePublicSearched, setJeePublicSearched] = useState(false);
+
+  useEffect(() => {
+    if (form.entrance_exam_name_enum !== 'JEE') {
+      setJeePublicSlots({ main: emptyJeeSlotPublic(), advanced: emptyJeeSlotPublic() });
+      setJeePublicHadMain(false);
+      setJeePublicHadAdvanced(false);
+      setJeePublicSearched(false);
+      lastSuccessfulJeePublicSnapshotRef.current = null;
+      hasSuccessfulJeePublicPredictionRef.current = false;
+      return;
+    }
+    const meta = getEntranceExamMeta('JEE');
+    setJeePublicForm((prev) => ({
+      ...prev,
+      reservation_category_codes: meta?.defaultReservationCode
+        ? [meta.defaultReservationCode]
+        : ['OPEN'],
+      admission_category_name_enum: meta?.admissionCategories?.[0]?.value ?? 'GENERAL',
+    }));
+  }, [form.entrance_exam_name_enum]);
 
   const updateForm = useCallback((field, value) => {
     setForm((prev) => ({ ...prev, [field]: value }));
@@ -130,11 +207,142 @@ export default function CollegePredictorPage() {
     setError(null);
   }, []);
 
+  const validateJeePublic = useCallback(() => {
+    const rm = parsePositiveIntRankPublic(jeePublicForm.rankMain);
+    const ra = parsePositiveIntRankPublic(jeePublicForm.rankAdvanced);
+    if (rm === null && ra === null) {
+      return 'Enter at least one valid rank (JEE Main and/or JEE Advanced).';
+    }
+    const res = jeePublicForm.reservation_category_codes?.[0];
+    if (!res || !String(res).trim()) return 'Please select a category.';
+    if (
+      jeePublicForm.branchMode === 'specific' &&
+      (!jeePublicForm.branch_codes || jeePublicForm.branch_codes.length === 0)
+    ) {
+      return 'Select at least one branch, or choose “All branches”.';
+    }
+    return null;
+  }, [jeePublicForm]);
+
+  const fetchJeePublicSlot = useCallback(async (slot, pageOffset, append, formSnapshot) => {
+    const meta = getEntranceExamMeta('JEE');
+    const rankStr = slot === 'main' ? formSnapshot.rankMain : formSnapshot.rankAdvanced;
+    const rankNum = parsePositiveIntRankPublic(rankStr);
+    if (rankNum === null) return { ok: false, skipped: true };
+
+    const apiExam =
+      slot === 'main'
+        ? meta?.jeeMainApiExam ?? 'JEE_MAIN'
+        : meta?.jeeAdvancedApiExam ?? 'JEE_ADVANCED';
+    const [cutoffFrom, cutoffTo] = rankToCutoff(rankNum);
+    const resCodes =
+      formSnapshot.reservation_category_codes?.length > 0
+        ? formSnapshot.reservation_category_codes
+        : ['OPEN'];
+
+    const payload = {
+      offset: pageOffset,
+      limit: PAGE_SIZE,
+      exam: apiExam,
+      entrance_exam_name_enum: apiExam,
+      admission_category_name_enum: String(formSnapshot.admission_category_name_enum ?? 'GENERAL'),
+      cutoff_from: cutoffFrom,
+      cutoff_to: cutoffTo,
+      reservation_category_codes: resCodes,
+      sort_order: String(formSnapshot.sort_order ?? 'ASC'),
+      branch_codes:
+        formSnapshot.branchMode === 'specific' && formSnapshot.branch_codes?.length > 0
+          ? formSnapshot.branch_codes
+          : [],
+      districts: [],
+    };
+
+    const res = await getPredictedCollegesPublic(payload);
+
+    if (!res.success) {
+      const errData = res.data || {};
+      const msg = getErrorMessage(errData, res.message);
+      setJeePublicSlots((prev) => ({
+        ...prev,
+        [slot]: append
+          ? { ...prev[slot], error: msg }
+          : { ...emptyJeeSlotPublic(), error: msg },
+      }));
+      return { ok: false, skipped: false };
+    }
+
+    const data = res.data;
+    const rawList = data.colleges || [];
+    setJeePublicSlots((prev) => {
+      const cur = prev[slot];
+      const nextList = append ? [...cur.colleges, ...rawList] : rawList;
+      const rawTotal = data.total_no_of_colleges ?? 0;
+      return {
+        ...prev,
+        [slot]: {
+          colleges: nextList,
+          total: rawTotal,
+          offset: pageOffset,
+          admissionCategoryName: data.admission_category_name || '',
+          error: null,
+        },
+      };
+    });
+    return { ok: true, skipped: false };
+  }, []);
+
+  const handleJeePublicPredictClick = useCallback(async () => {
+    const v = validateJeePublic();
+    if (v) {
+      setError(v);
+      return;
+    }
+    setError(null);
+    setResult(null);
+    setJeePublicSearched(true);
+    setLoading(true);
+    const hasM = parsePositiveIntRankPublic(jeePublicForm.rankMain) !== null;
+    const hasA = parsePositiveIntRankPublic(jeePublicForm.rankAdvanced) !== null;
+    setJeePublicHadMain(hasM);
+    setJeePublicHadAdvanced(hasA);
+    setJeePublicActiveTab(hasM ? 'main' : 'advanced');
+    if (!hasM) setJeePublicSlots((p) => ({ ...p, main: emptyJeeSlotPublic() }));
+    if (!hasA) setJeePublicSlots((p) => ({ ...p, advanced: emptyJeeSlotPublic() }));
+    const snap = { ...jeePublicForm };
+    const tasks = [];
+    if (hasM) tasks.push(fetchJeePublicSlot('main', 0, false, snap));
+    if (hasA) tasks.push(fetchJeePublicSlot('advanced', 0, false, snap));
+    const results = await Promise.all(tasks);
+    const anyOk = results.some((r) => r && r.ok);
+    setLoading(false);
+    if (anyOk) {
+      hasSuccessfulJeePublicPredictionRef.current = true;
+      lastSuccessfulJeePublicSnapshotRef.current = getJeePublicFilterSnapshot(snap);
+    } else {
+      hasSuccessfulJeePublicPredictionRef.current = false;
+      lastSuccessfulJeePublicSnapshotRef.current = null;
+    }
+  }, [jeePublicForm, validateJeePublic, fetchJeePublicSlot]);
+
+  const handleJeePublicLoadMore = useCallback(async () => {
+    const slot = jeePublicActiveTab;
+    const cur = jeePublicSlots[slot];
+    if (!cur || cur.colleges.length >= cur.total) return;
+    setLoading(true);
+    const nextOff = cur.offset + PAGE_SIZE;
+    await fetchJeePublicSlot(slot, nextOff, true, jeePublicForm);
+    setLoading(false);
+  }, [jeePublicActiveTab, jeePublicSlots, jeePublicForm, fetchJeePublicSlot]);
+
   const fetchColleges = useCallback(
     async (pageOffset = 0, append = false) => {
       const examValue = form.entrance_exam_name_enum != null && String(form.entrance_exam_name_enum).trim() !== '' ? String(form.entrance_exam_name_enum).trim() : '';
       if (!examValue) {
         setError('Please select an entrance exam.');
+        return;
+      }
+      if (examValue === 'JEE') {
+        setError('Use the Predict Colleges button on the JEE form.');
         return;
       }
       const rawFrom = form.cutoff_from;
@@ -170,8 +378,10 @@ export default function CollegePredictorPage() {
         reservation_category_codes: [resCode],
         sort_order: String(form.sort_order ?? 'ASC'),
       };
-      if (form.branch_codes?.length > 0) payload.branch_codes = form.branch_codes;
-      if (form.districts?.length > 0) payload.districts = form.districts;
+      payload.branch_codes =
+        Array.isArray(form.branch_codes) && form.branch_codes.length > 0 ? form.branch_codes : [];
+      payload.districts =
+        Array.isArray(form.districts) && form.districts.length > 0 ? form.districts : [];
 
       if (import.meta.env.DEV) {
         console.log('[College Predictor] Request payload:', { ...payload, entrance_exam_name_enum: payload.entrance_exam_name_enum });
@@ -184,7 +394,7 @@ export default function CollegePredictorPage() {
         if (import.meta.env.DEV) {
           console.warn('[College Predictor] API error:', res.status, errData);
         }
-        setError(getErrorMessage(errData.res_status, errData.response || res.message));
+        setError(getErrorMessage(errData, res.message));
         if (!append) {
           setResult(null);
           lastSuccessfulPublicSnapshotRef.current = null;
@@ -219,19 +429,25 @@ export default function CollegePredictorPage() {
   const handleSubmit = useCallback(
     (e) => {
       e.preventDefault();
+      if (form.entrance_exam_name_enum === 'JEE') return;
       setResult(null);
       fetchColleges(0, false);
     },
-    [fetchColleges]
+    [fetchColleges, form.entrance_exam_name_enum]
   );
 
-  const handleLoadMore = () => {
+  const handleLoadMore = useCallback(() => {
+    if (form.entrance_exam_name_enum === 'JEE') {
+      handleJeePublicLoadMore();
+      return;
+    }
     const nextOffset = offset + PAGE_SIZE;
     fetchColleges(nextOffset, true);
-  };
+  }, [form.entrance_exam_name_enum, offset, fetchColleges, handleJeePublicLoadMore]);
 
   /** After results are shown, refetch when districts/branches/etc. change without submitting the form again. */
   useEffect(() => {
+    if (form.entrance_exam_name_enum === 'JEE') return;
     if (!result) {
       lastSuccessfulPublicSnapshotRef.current = null;
       return;
@@ -251,9 +467,45 @@ export default function CollegePredictorPage() {
     fetchColleges(0, false);
   }, [form, result, fetchColleges]);
 
+  useEffect(() => {
+    if (form.entrance_exam_name_enum !== 'JEE') return;
+    if (!hasSuccessfulJeePublicPredictionRef.current) return;
+    if (validateJeePublic()) return;
+    const current = getJeePublicFilterSnapshot(jeePublicForm);
+    if (lastSuccessfulJeePublicSnapshotRef.current === current) return;
+    const hasM = parsePositiveIntRankPublic(jeePublicForm.rankMain) !== null;
+    const hasA = parsePositiveIntRankPublic(jeePublicForm.rankAdvanced) !== null;
+    setJeePublicHadMain(hasM);
+    setJeePublicHadAdvanced(hasA);
+    (async () => {
+      setLoading(true);
+      setError(null);
+      if (!hasM) setJeePublicSlots((p) => ({ ...p, main: emptyJeeSlotPublic() }));
+      if (!hasA) setJeePublicSlots((p) => ({ ...p, advanced: emptyJeeSlotPublic() }));
+      const snap = { ...jeePublicForm };
+      const tasks = [];
+      if (hasM) tasks.push(fetchJeePublicSlot('main', 0, false, snap));
+      if (hasA) tasks.push(fetchJeePublicSlot('advanced', 0, false, snap));
+      const results = await Promise.all(tasks);
+      const anyOk = results.some((r) => r && r.ok);
+      setLoading(false);
+      if (anyOk) {
+        lastSuccessfulJeePublicSnapshotRef.current = getJeePublicFilterSnapshot(snap);
+        hasSuccessfulJeePublicPredictionRef.current = true;
+      }
+    })();
+  }, [jeePublicForm, form.entrance_exam_name_enum, validateJeePublic, fetchJeePublicSlot]);
+
   const total = result?.total_no_of_colleges ?? 0;
   const loaded = result?.colleges?.length ?? 0;
   const hasMore = loaded < total;
+
+  const activeJeePublicSlot = jeePublicSlots[jeePublicActiveTab === 'main' ? 'main' : 'advanced'];
+  const jeePublicLoaded = activeJeePublicSlot?.colleges?.length ?? 0;
+  const jeePublicTotal = activeJeePublicSlot?.total ?? 0;
+  const jeePublicHasMore = jeePublicLoaded < jeePublicTotal;
+  const jeePublicPageTitle = getEntranceExamMeta('JEE')?.predictorPageTitle ?? 'JEE Main and JEE Advanced College Predictor';
+  const jeeBannerErrors = [...new Set([jeePublicSlots.main?.error, jeePublicSlots.advanced?.error].filter(Boolean))];
 
   return (
     <div className="min-h-screen bg-gray-50">
@@ -273,29 +525,44 @@ export default function CollegePredictorPage() {
         <div className="overflow-hidden rounded-xl border border-gray-200 bg-white shadow-sm">
           <div className="border-b border-gray-100 p-4 sm:p-6">
             <p className="text-sm text-gray-600 mb-4">
-              Find colleges by entrance exam, cutoff range, reservation category, and optional branch or district filters.
+              {isJeePublic
+                ? (examMetaPublic?.predictorPageSubtitle ?? 'JEE Main and Advanced prediction with national categories.')
+                : 'Find colleges by entrance exam, cutoff range, reservation category, and optional branch or district filters.'}
             </p>
-            <form onSubmit={handleSubmit} className="space-y-4">
+            <div className="space-y-4">
               <p className="text-xs text-gray-500 mb-2">
                 Fields marked with <span className="text-red-500">*</span> are required.
               </p>
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">
+                  Entrance exam <span className="text-red-500">*</span>
+                </label>
+                <select
+                  name="entrance_exam_name_enum"
+                  value={form.entrance_exam_name_enum ?? ''}
+                  onChange={(e) => updateForm('entrance_exam_name_enum', e.target.value)}
+                  className="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm focus:ring-primary-navy focus:border-primary-navy"
+                >
+                  <option value="">Select exam</option>
+                  {ENTRANCE_EXAMS.map((o) => (
+                    <option key={o.value} value={o.value}>{o.label}</option>
+                  ))}
+                </select>
+              </div>
+              {isJeePublic ? (
+                <JeeCombinedPredictorForm
+                  asForm={false}
+                  values={jeePublicForm}
+                  onChange={setJeePublicForm}
+                  onSubmit={handleJeePublicPredictClick}
+                  loading={loading}
+                  accentKey="purple"
+                  reservationOptions={examMetaPublic?.reservationOptions ?? JEE_RESERVATION_OPTIONS}
+                  reservationFieldLabel={examMetaPublic?.reservationFieldLabel ?? 'Select a Category'}
+                />
+              ) : (
+            <form onSubmit={handleSubmit} className="space-y-4">
               <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">
-                    Entrance exam <span className="text-red-500">*</span>
-                  </label>
-                  <select
-                    name="entrance_exam_name_enum"
-                    value={form.entrance_exam_name_enum ?? ''}
-                    onChange={(e) => updateForm('entrance_exam_name_enum', e.target.value)}
-                    className="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm focus:ring-primary-navy focus:border-primary-navy"
-                  >
-                    <option value="">Select exam</option>
-                    {ENTRANCE_EXAMS.map((o) => (
-                      <option key={o.value} value={o.value}>{o.label}</option>
-                    ))}
-                  </select>
-                </div>
                 {!examMetaPublic?.hideAdmissionField && (
                   <div>
                     <label className="block text-sm font-medium text-gray-700 mb-1">
@@ -416,6 +683,8 @@ export default function CollegePredictorPage() {
                 </button>
               </div>
             </form>
+              )}
+            </div>
             {error && (
               <div className="mt-4 p-3 rounded-lg bg-red-50 border border-red-200 text-red-700 text-sm">
                 {error}
@@ -423,7 +692,91 @@ export default function CollegePredictorPage() {
             )}
           </div>
 
-          {result && (
+          {jeeBannerErrors.length > 0 && isJeePublic && jeePublicSearched && !loading && (
+            <div className="px-6 pt-4">
+              <div className="flex items-start gap-2 p-3 rounded-lg bg-amber-50 border border-amber-200 text-amber-900 text-sm">
+                <FiAlertCircle className="w-5 h-5 shrink-0 mt-0.5" />
+                <div>
+                  <p className="font-semibold">Predictor service note</p>
+                  {jeeBannerErrors.map((msg) => (
+                    <p key={msg} className="mt-1">{msg}</p>
+                  ))}
+                </div>
+              </div>
+            </div>
+          )}
+
+          {isJeePublic && jeePublicSearched && (
+            <div className="bg-gray-50 p-4 sm:p-6 border-t border-gray-100">
+              <h2 className="text-lg font-bold text-gray-900 mb-2">{jeePublicPageTitle}</h2>
+              {(jeePublicHadMain || jeePublicHadAdvanced) && (
+                <div className="flex flex-wrap gap-2 border-b border-gray-200 pb-2 mb-4">
+                  {jeePublicHadMain && (
+                    <button
+                      type="button"
+                      onClick={() => setJeePublicActiveTab('main')}
+                      className={`px-3 py-1.5 text-sm font-semibold rounded-t border-b-2 transition-colors ${
+                        jeePublicActiveTab === 'main'
+                          ? 'border-violet-600 text-violet-900'
+                          : 'text-gray-500 border-transparent hover:text-gray-700'
+                      }`}
+                    >
+                      JEE Main
+                    </button>
+                  )}
+                  {jeePublicHadAdvanced && (
+                    <button
+                      type="button"
+                      onClick={() => setJeePublicActiveTab('advanced')}
+                      className={`px-3 py-1.5 text-sm font-semibold rounded-t border-b-2 transition-colors ${
+                        jeePublicActiveTab === 'advanced'
+                          ? 'border-violet-600 text-violet-900'
+                          : 'text-gray-500 border-transparent hover:text-gray-700'
+                      }`}
+                    >
+                      JEE Advanced
+                    </button>
+                  )}
+                </div>
+              )}
+              {activeJeePublicSlot?.error && (
+                <p className="text-sm text-gray-700 mb-4">{activeJeePublicSlot.error}</p>
+              )}
+              {!activeJeePublicSlot?.error && (
+                <p className="text-sm text-gray-600 mb-4">
+                  {activeJeePublicSlot?.admissionCategoryName && (
+                    <span className="font-medium">{activeJeePublicSlot.admissionCategoryName}</span>
+                  )}
+                  {activeJeePublicSlot?.admissionCategoryName ? ' — ' : null}
+                  Showing {jeePublicLoaded} of {jeePublicTotal} colleges
+                </p>
+              )}
+              <div className="space-y-4">
+                {(activeJeePublicSlot?.colleges || []).map((college, idx) => (
+                  <CollegeCard
+                    key={`jee-${jeePublicActiveTab}-${college.college_id}`}
+                    college={college}
+                    accentKey={RESULT_CARD_ACCENT}
+                    index={idx + 1}
+                  />
+                ))}
+              </div>
+              {jeePublicHasMore && !activeJeePublicSlot?.error && (
+                <div className="mt-4 text-center">
+                  <button
+                    type="button"
+                    onClick={handleLoadMore}
+                    disabled={loading}
+                    className="rounded-lg bg-primary-navy px-4 py-2 text-sm font-semibold text-white hover:bg-primary-navy/90 disabled:opacity-50"
+                  >
+                    {loading ? 'Loading…' : 'Load more'}
+                  </button>
+                </div>
+              )}
+            </div>
+          )}
+
+          {result && !isJeePublic && (
             <div className="bg-gray-50 p-4 sm:p-6">
               {result._demo && (
                 <div className="mb-4 p-3 rounded-lg bg-amber-50 border border-amber-200 text-amber-800 text-sm">
@@ -437,63 +790,16 @@ export default function CollegePredictorPage() {
                 {' — '}
                 Showing {loaded} of {total} colleges
               </p>
-              <ul className="space-y-3">
-                {(result.colleges || []).map((college) => (
-                  <li
+              <div className="space-y-4">
+                {(result.colleges || []).map((college, idx) => (
+                  <CollegeCard
                     key={college.college_id}
-                    className="rounded-lg bg-white border border-gray-200 overflow-hidden"
-                  >
-                    <button
-                      type="button"
-                      onClick={() => setExpandedCollegeId((id) => (id === college.college_id ? null : college.college_id))}
-                      className="flex w-full min-w-0 items-start justify-between gap-3 p-4 text-left hover:bg-gray-50 sm:items-center"
-                    >
-                      <div className="min-w-0 flex-1">
-                        <span className="break-words font-semibold text-gray-900">{college.college_name}</span>
-                        {college.is_promoted && (
-                          <span className="ml-2 inline-block align-middle text-xs bg-amber-100 text-amber-800 px-2 py-0.5 rounded">
-                            Promoted
-                          </span>
-                        )}
-                        <p className="mt-0.5 break-words text-sm text-gray-500">{college.college_address}</p>
-                        {college.district_enum && (
-                          <p className="break-words text-xs text-gray-400">{college.district_enum}</p>
-                        )}
-                      </div>
-                      {expandedCollegeId === college.college_id ? (
-                        <FiChevronUp className="w-5 h-5 text-gray-400 shrink-0" />
-                      ) : (
-                        <FiChevronDown className="w-5 h-5 text-gray-400 shrink-0" />
-                      )}
-                    </button>
-                    {expandedCollegeId === college.college_id && (
-                      <div className="px-4 pb-4 pt-0 border-t border-gray-100">
-                        <p className="text-xs font-medium text-gray-500 uppercase tracking-wide mt-2 mb-2">Branches</p>
-                        <div className="space-y-2">
-                          {(college.branches || []).map((branch, idx) => (
-                            <div
-                              key={branch.branch_code + String(idx)}
-                              className="flex min-w-0 flex-wrap items-start gap-x-4 gap-y-2 rounded bg-gray-50 px-3 py-2 text-sm sm:items-center"
-                            >
-                              <span className="min-w-0 break-words font-medium text-gray-900">
-                                {branch.branch_name || branch.branch_code}
-                              </span>
-                              <span className="shrink-0 text-gray-600">Cutoff: {Number(branch.cutoff)}</span>
-                              <span className="shrink-0 text-gray-600">Fee: ₹{Number(branch.fee).toLocaleString()}</span>
-                              {Array.isArray(branch.reservation_categories) && branch.reservation_categories.length > 0 && (
-                                <span className="min-w-0 max-w-full break-words text-gray-500">
-                                  Categories:{' '}
-                                  {branch.reservation_categories.map((rc) => rc.category_code || rc.name).filter(Boolean).join(', ')}
-                                </span>
-                              )}
-                            </div>
-                          ))}
-                        </div>
-                      </div>
-                    )}
-                  </li>
+                    college={college}
+                    accentKey={RESULT_CARD_ACCENT}
+                    index={idx + 1}
+                  />
                 ))}
-              </ul>
+              </div>
               {hasMore && (
                 <div className="mt-4 text-center">
                   <button
