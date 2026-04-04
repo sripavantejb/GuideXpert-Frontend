@@ -149,12 +149,12 @@ function SessionExpiryRedirects() {
 
 function App() {
   return (
-    <AuthProvider>
-      <BrowserRouter>
+    <BrowserRouter>
+      <AuthProvider>
         <CounsellorAuthProvider>
-        <WebinarAuthProvider>
-        <SessionExpiryRedirects />
-        <Routes>
+          <WebinarAuthProvider>
+            <SessionExpiryRedirects />
+            <Routes>
           <Route path="/" element={<LandingPage />} />
           <Route path="/register" element={<LandingPage />} />
           <Route path="/meet" element={<MeetingRegistration />} />
@@ -321,11 +321,11 @@ function App() {
           </Route>
 
           <Route path="*" element={<Navigate to="/" replace />} />
-        </Routes>
-        </WebinarAuthProvider>
+            </Routes>
+          </WebinarAuthProvider>
         </CounsellorAuthProvider>
-      </BrowserRouter>
-    </AuthProvider>
+      </AuthProvider>
+    </BrowserRouter>
   );
 }
 

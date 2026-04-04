@@ -38,7 +38,7 @@ export default function MhtCetPredictorForm({
 
   const selectedReservation = values.reservation_category_codes?.[0] ?? '';
 
-  /** Migrate legacy OHU codes (e.g. PWDSEBCH) to API-valid O-suffix codes when options change. */
+  /** Migrate legacy OHU codes (e.g. PWDSEBCO) to canonical …S PWD codes when options change. */
   useEffect(() => {
     const v = values.reservation_category_codes?.[0];
     if (!v) return;

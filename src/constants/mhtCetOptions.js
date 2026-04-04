@@ -52,11 +52,10 @@ export const MHT_CET_STATE_LEVEL_RESERVATION_OPTIONS = [
   { value: 'ORPHAN', label: 'ORPHAN' },
   { value: 'PWDOBCS', label: 'PWDOBCS' },
   { value: 'PWDOPENS', label: 'PWDOPENS' },
-  { value: 'PWDROBCS', label: 'PWDROBCS' },
+  { value: 'PWDROBCS', label: 'PWD RBC / SEBC' },
   { value: 'PWDRSCS', label: 'PWDRSCS' },
   { value: 'PWDRSTS', label: 'PWDRSTS' },
   { value: 'PWDSCS', label: 'PWDSCS' },
-  { value: 'PWDSEBCS', label: 'PWDSEBCS' },
   { value: 'PWDSTS', label: 'PWDSTS' },
   { value: 'PWDRNT2S', label: 'PWDRNT2S' },
   { value: 'PWDRNT3S', label: 'PWDRNT3S' },
@@ -88,8 +87,10 @@ export const MHT_CET_HOME_RESERVATION_OPTIONS = [
 ].sort((a, b) => a.value.localeCompare(b.value));
 
 /**
- * Other-than-home-university quota (O suffix).
- * Codes must match earlywave / CAP OHU enums — do not use H/CH suffixes from Home University here.
+ * Other-than-home-university quota (O suffix for general/ladies rows).
+ * PWD rows use the **same** strings as {@link MHT_CET_STATE_LEVEL_RESERVATION_OPTIONS} (…S); earlywave
+ * distinguishes OHU via `admission_category_name_enum`, not invented PWD…O codes (those return INVALID_RESERVATION_CATEGORY_CODE).
+ * PWD SEBC is not a separate upstream enum value; it is combined with PWD RBC as `PWDROBCS` (see normalize).
  */
 export const MHT_CET_OTHER_RESERVATION_OPTIONS = [
   { value: 'GOBCO', label: 'GOBCO' },
@@ -102,12 +103,9 @@ export const MHT_CET_OTHER_RESERVATION_OPTIONS = [
   { value: 'LSTO', label: 'LSTO' },
   { value: 'LNT2O', label: 'LNT2O' },
   { value: 'LVJO', label: 'LVJO' },
-  /** PWD OHU: parallel to {@link MHT_CET_HOME_RESERVATION_OPTIONS} PWDOBCH / PWDOPENH */
-  { value: 'PWDOBCO', label: 'PWDOBCO' },
-  { value: 'PWDOPENO', label: 'PWDOPENO' },
-  /** PWD OHU: RBC / SEBC (O suffix, not CH — CH is Home-quota style and fails INVALID_RESERVATION_CATEGORY_CODE with OHU) */
-  { value: 'PWDROBCO', label: 'PWDROBCO' },
-  { value: 'PWDSEBCO', label: 'PWDSEBCO' },
+  { value: 'PWDOPENS', label: 'PWD OPEN (OHU)' },
+  { value: 'PWDOBCS', label: 'PWD OBC (OHU)' },
+  { value: 'PWDROBCS', label: 'PWD RBC / SEBC (OHU)' },
 ].sort((a, b) => a.value.localeCompare(b.value));
 
 /** Maharashtra revenue districts (names as value/label for API filters). */
@@ -304,10 +302,17 @@ export function mhtCetApiAdmissionCategory(uiRoute) {
   return 'SL';
 }
 
-/** Legacy OHU dropdown values that used Home-style CH suffix; earlywave expects O-suffix codes. */
+/**
+ * Legacy OHU UI values → wire codes (PWDROBCS covers PWD SEBC; upstream rejects PWDSEBCS/PWDSEBCO).
+ */
 const OHU_RESERVATION_CODE_ALIASES = {
-  PWDSEBCH: 'PWDSEBCO',
-  PWDROBCH: 'PWDROBCO',
+  PWDSEBCH: 'PWDROBCS',
+  PWDROBCH: 'PWDROBCS',
+  PWDSEBCO: 'PWDROBCS',
+  PWDROBCO: 'PWDROBCS',
+  PWDOBCO: 'PWDOBCS',
+  PWDOPENO: 'PWDOPENS',
+  PWDSEBCS: 'PWDROBCS',
 };
 
 /**
@@ -351,5 +356,7 @@ export function normalizeMhtReservationCodeForApi(admissionType, code) {
     const mapped = HU_FROM_STATE_LEVEL_ALIASES[c];
     if (mapped) return mapped;
   }
+  // Earlywave rejects PWDSEBCS on all MHTCET admission routes; map to PWDROBCS (validated for SL/HU/OHU).
+  if (c === 'PWDSEBCS' || c === 'PWDSEBCO' || c === 'PWDSEBCH') return 'PWDROBCS';
   return c;
 }
