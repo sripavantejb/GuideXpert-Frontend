@@ -40,6 +40,7 @@ const ApplySection = () => {
   const [slotsLoading, setSlotsLoading] = useState(false);
   const otpInputRefs = useRef([]);
   const prevStepRef = useRef(currentStep);
+  const osviCountdownIntervalRef = useRef(null);
 
   // DD-MM-YYYY for professional date display
   const formatDateDDMMYYYY = (date) => {
@@ -128,6 +129,15 @@ const ApplySection = () => {
   // First-touch UTM capture on registration page load
   useEffect(() => {
     captureUtmFirstTouch();
+  }, []);
+
+  useEffect(() => {
+    return () => {
+      if (osviCountdownIntervalRef.current != null) {
+        clearInterval(osviCountdownIntervalRef.current);
+        osviCountdownIntervalRef.current = null;
+      }
+    };
   }, []);
 
   // Restore "already registered" state from localStorage only (no initial API call)
@@ -456,6 +466,40 @@ const ApplySection = () => {
       console.log('[Submit Application] Response:', result);
 
       if (result.success) {
+        const delayMsRaw = import.meta.env.VITE_OSVI_OUTBOUND_DELAY_MS;
+        const delayMs =
+          delayMsRaw != null &&
+          String(delayMsRaw).trim() !== '' &&
+          !Number.isNaN(Number(delayMsRaw))
+            ? Number(delayMsRaw)
+            : 120000;
+        const delaySec = Math.max(1, Math.round(delayMs / 1000));
+
+        console.log(
+          `[OSVI] Outbound call scheduled on server after slot booking. Browser countdown ~${delaySec}s (see server logs for actual HTTP result).`
+        );
+
+        if (osviCountdownIntervalRef.current != null) {
+          clearInterval(osviCountdownIntervalRef.current);
+          osviCountdownIntervalRef.current = null;
+        }
+        let elapsed = 0;
+        osviCountdownIntervalRef.current = setInterval(() => {
+          const left = delaySec - elapsed;
+          if (left <= 0) {
+            if (osviCountdownIntervalRef.current != null) {
+              clearInterval(osviCountdownIntervalRef.current);
+              osviCountdownIntervalRef.current = null;
+            }
+            console.log(
+              '[OSVI] Countdown finished — server should trigger OSVI around now (verify in Vercel/backend logs: "[OSVI]" HTTP POST / success or failure).'
+            );
+            return;
+          }
+          console.log(`[OSVI] ${left}s remaining until server may trigger outbound call`);
+          elapsed += 1;
+        }, 1000);
+
         // Store booked slot info for popup
         setBookedSlotInfo({
           selectedSlot,
