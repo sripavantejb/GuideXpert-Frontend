@@ -163,6 +163,98 @@ export const TNEA_DISTRICT_OPTIONS = [
 ].sort((a, b) => a.value.localeCompare(b.value));
 
 /**
+ * KEAM category codes — verified HTTP 200 on beta for `KEAM` + `admission_category_name_enum: DEFAULT`
+ * (GENERAL yields INVALID_ADMISSION_CATEGORY_NAME_ENUM). Probe: `node scripts/probeKeamPredictor.js` (GuideXpert-Backend).
+ */
+export const KEAM_RESERVATION_OPTIONS = [
+  { value: 'SM', label: 'SM (State Merit)' },
+  { value: 'EW', label: 'EW (EWS)' },
+  { value: 'EZ', label: 'EZ (Ezhava)' },
+  { value: 'MU', label: 'MU (Muslim)' },
+  { value: 'BH', label: 'BH (Backward Hindu)' },
+  { value: 'LA', label: 'LA (Latin Catholic)' },
+  { value: 'DV', label: 'DV (Differently Abled)' },
+  { value: 'VK', label: 'VK (Viswakarma)' },
+  { value: 'KN', label: 'KN (SIUC Nadar)' },
+  { value: 'BX', label: 'BX (Backward Christian)' },
+  { value: 'KU', label: 'KU (Kudumbi)' },
+  { value: 'ST', label: 'ST (Scheduled Tribe)' },
+  { value: 'SC', label: 'SC (Scheduled Caste)' },
+  { value: 'FW', label: 'FW (Forward)' },
+  { value: 'YN', label: 'YN' },
+  { value: 'CC', label: 'CC (Community)' },
+  { value: 'MG', label: 'MG (Management)' },
+];
+
+/**
+ * Kerala revenue districts for KEAM college-location filter (value === label).
+ * Spelling from `indian-states-districts.json` (state: Kerala). Upstream often returns empty `district_enum`;
+ * we apply `filterCollegesForKeamDistrictPredictor` on the client using address text (see `KEAM_DISTRICT_ADDRESS_KEYWORDS`).
+ */
+export const KEAM_DISTRICT_OPTIONS = [
+  { value: 'Alappuzha', label: 'Alappuzha' },
+  { value: 'Ernakulam', label: 'Ernakulam' },
+  { value: 'Idukki', label: 'Idukki' },
+  { value: 'Kannur', label: 'Kannur' },
+  { value: 'Kasaragod', label: 'Kasaragod' },
+  { value: 'Kollam', label: 'Kollam' },
+  { value: 'Kottayam', label: 'Kottayam' },
+  { value: 'Kozhikode', label: 'Kozhikode' },
+  { value: 'Malappuram', label: 'Malappuram' },
+  { value: 'Palakkad', label: 'Palakkad' },
+  { value: 'Pathanamthitta', label: 'Pathanamthitta' },
+  { value: 'Thiruvananthapuram', label: 'Thiruvananthapuram' },
+  { value: 'Thrissur', label: 'Thrissur' },
+  { value: 'Wayanad', label: 'Wayanad' },
+].sort((a, b) => a.value.localeCompare(b.value));
+
+/**
+ * Maps shared `BRANCH_CODES` values to earlywave KEAM `branch_code` strings.
+ * Beta KEAM data uses CIV/MEC; sending CE/ME yields zero colleges.
+ */
+export function mapKeamBranchCodesForApi(uiCodes) {
+  if (!Array.isArray(uiCodes)) return [];
+  const m = { CE: 'CIV', ME: 'MEC' };
+  return uiCodes.map((c) => m[c] || c);
+}
+
+/**
+ * KEAM responses often have empty `district_enum`; sending district names upstream returns 0 rows.
+ * We match selected Kerala districts against `college_address` (plus `district_enum` when set).
+ */
+const KEAM_DISTRICT_ADDRESS_KEYWORDS = {
+  Alappuzha: ['alappuzha', 'alleppey'],
+  Ernakulam: ['ernakulam', 'kochi', 'cochin', 'edappally', 'aluva'],
+  Idukki: ['idukki', 'munnar', 'thodupuzha'],
+  Kannur: ['kannur', 'thalassery', 'payyannur'],
+  Kasaragod: ['kasaragod', 'kasargod'],
+  Kollam: ['kollam', 'quilon'],
+  Kottayam: ['kottayam', 'pala', 'ettumanoor'],
+  Kozhikode: ['kozhikode', 'calicut', 'vadakara'],
+  Malappuram: ['malappuram', 'manjeri', 'tirur'],
+  Palakkad: ['palakkad', 'palghat', 'ottapalam'],
+  Pathanamthitta: ['pathanamthitta', 'thiruvalla'],
+  Thiruvananthapuram: ['thiruvananthapuram', 'trivandrum'],
+  Thrissur: ['thrissur', 'trichur', 'guruvayur'],
+  Wayanad: ['wayanad', 'kalpetta', 'sulthan bathery'],
+};
+
+export function keamCollegeMatchesDistrictFilters(college, selectedDistrictValues) {
+  if (!Array.isArray(selectedDistrictValues) || selectedDistrictValues.length === 0) return true;
+  const hay = `${college?.college_address || ''} ${college?.district_enum || ''}`.toLowerCase();
+  return selectedDistrictValues.some((dist) => {
+    const keys = KEAM_DISTRICT_ADDRESS_KEYWORDS[dist] || [String(dist).toLowerCase()];
+    return keys.some((k) => hay.includes(k));
+  });
+}
+
+export function filterCollegesForKeamDistrictPredictor(colleges, selectedDistrictValues) {
+  if (!Array.isArray(colleges)) return [];
+  if (!selectedDistrictValues?.length) return colleges;
+  return colleges.filter((c) => keamCollegeMatchesDistrictFilters(c, selectedDistrictValues));
+}
+
+/**
  * Telangana districts for TS EAMCET: earlywave expects **district_enum** short codes (like AP).
  * Labels aligned to TS geography; verified from TS_EAMCET + DEFAULT + OC BOYS responses on beta.
  */
@@ -287,8 +379,20 @@ export const ENTRANCE_EXAMS = [
     description: 'Find Kerala professional college options aligned with your entrance rank.',
     accent: 'teal',
     apiValue: 'KEAM',
-    supported: false,
-    admissionCategories: [],
+    supported: true,
+    defaultReservationCode: 'SM',
+    hideAdmissionField: true,
+    reservationFieldLabel: 'Select a Category',
+    rankFieldLabel: 'Enter Your Expected KEAM Rank',
+    reservationOptions: KEAM_RESERVATION_OPTIONS,
+    reservationSelectSingle: true,
+    districtOptions: KEAM_DISTRICT_OPTIONS,
+    districtSelectionHint:
+      'Choose “All districts” statewide, or pick specific Kerala districts — results are narrowed by matching college addresses (predictor API does not return reliable district codes for KEAM).',
+    predictorPageTitle: 'KEAM College Predictor',
+    predictorPageSubtitle:
+      'Enter your expected rank, category, optional Kerala districts and branches, and your native state and district.',
+    admissionCategories: [{ value: 'DEFAULT', label: 'Kerala professional college admissions' }],
   },
   {
     value: 'AP_EAMCET',
@@ -358,7 +462,7 @@ export const ENTRANCE_EXAMS = [
     description: 'JEE Main and JEE Advanced college prediction with national categories.',
     accent: 'purple',
     apiValue: 'JEE',
-    supported: true,
+    supported: false,
     predictorPageTitle: 'JEE Main and JEE Advanced College Predictor',
     predictorPageSubtitle:
       'Enter at least one expected rank (Main and/or Advanced), category, and optional branch filters.',

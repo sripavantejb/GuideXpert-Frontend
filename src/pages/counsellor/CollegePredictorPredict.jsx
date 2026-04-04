@@ -12,6 +12,8 @@ import {
   filterCollegesForApEamcetPredictor,
   apEamcetPredictorDisplayTotal,
   JEE_RESERVATION_OPTIONS,
+  mapKeamBranchCodesForApi,
+  filterCollegesForKeamDistrictPredictor,
 } from '../../constants/collegePredictorOptions';
 import {
   MHT_CET_ADMISSION_TYPE_OPTIONS,
@@ -28,6 +30,7 @@ import {
   JeeCombinedPredictorForm,
   MhtCetPredictorForm,
   TneaPredictorForm,
+  KeamPredictorForm,
 } from '../../components/Counsellor/CollegePredictor';
 import { formatPredictorClientError } from '../../utils/collegePredictorErrors';
 
@@ -177,6 +180,14 @@ function getTneaFilterSnapshot(t) {
   });
 }
 
+function initialKeamForm(defaultReservation) {
+  return initialTneaForm(defaultReservation);
+}
+
+function getKeamFilterSnapshot(t) {
+  return getTneaFilterSnapshot(t);
+}
+
 function parsePositiveIntRank(s) {
   const n = Number(s);
   if (s === '' || Number.isNaN(n) || n < 1 || !Number.isInteger(n)) return null;
@@ -194,6 +205,7 @@ export default function CollegePredictorPredict() {
   const isJee = exam === 'JEE';
   const isMhtCet = exam === 'MHT_CET';
   const isTnea = exam === 'TNEA';
+  const isKeam = exam === 'KEAM';
 
   const examMeta = getEntranceExamMeta(exam);
   const accent = getAccentClasses(examMeta?.accent);
@@ -239,6 +251,10 @@ export default function CollegePredictorPredict() {
     initialTneaForm(getEntranceExamMeta('TNEA')?.defaultReservationCode)
   );
 
+  const [keamForm, setKeamForm] = useState(() =>
+    initialKeamForm(getEntranceExamMeta('KEAM')?.defaultReservationCode)
+  );
+
   const [colleges, setColleges] = useState([]);
   const [totalCount, setTotalCount] = useState(0);
   const [admissionCategoryName, setAdmissionCategoryName] = useState('');
@@ -257,6 +273,8 @@ export default function CollegePredictorPredict() {
   const hasSuccessfulMhtPredictionRef = useRef(false);
   const lastSuccessfulTneaSnapshotRef = useRef(null);
   const hasSuccessfulTneaPredictionRef = useRef(false);
+  const lastSuccessfulKeamSnapshotRef = useRef(null);
+  const hasSuccessfulKeamPredictionRef = useRef(false);
 
   useEffect(() => {
     const meta = getEntranceExamMeta(exam);
@@ -301,6 +319,11 @@ export default function CollegePredictorPredict() {
       setTneaForm(initialTneaForm(meta.defaultReservationCode));
       lastSuccessfulTneaSnapshotRef.current = null;
       hasSuccessfulTneaPredictionRef.current = false;
+    }
+    if (exam === 'KEAM') {
+      setKeamForm(initialKeamForm(meta.defaultReservationCode));
+      lastSuccessfulKeamSnapshotRef.current = null;
+      hasSuccessfulKeamPredictionRef.current = false;
     }
   }, [exam]);
 
@@ -390,6 +413,32 @@ export default function CollegePredictorPredict() {
     }
     return null;
   }, [tneaForm]);
+
+  const validateKeam = useCallback(() => {
+    const rank = Number(keamForm.rank);
+    if (keamForm.rank === '' || Number.isNaN(rank) || rank < 1 || !Number.isInteger(rank)) {
+      return 'Please enter a valid positive integer for your KEAM rank.';
+    }
+    if (!keamForm.reservation_category_codes?.length) {
+      return 'Please select a category.';
+    }
+    if (keamForm.branchMode === 'specific' && (!keamForm.branch_codes || keamForm.branch_codes.length === 0)) {
+      return 'Select at least one branch, or choose “All branches”.';
+    }
+    if (keamForm.districtMode === 'specific' && (!keamForm.districts || keamForm.districts.length === 0)) {
+      return 'Select at least one Kerala district, or choose “All Districts”.';
+    }
+    if (!keamForm.native_state || !keamForm.native_district) {
+      return 'Please select native state and current district.';
+    }
+    const allowed = new Set(
+      getDistrictOptionsForNativeState(keamForm.native_state).map((o) => o.value)
+    );
+    if (!allowed.has(keamForm.native_district)) {
+      return 'Select a district that belongs to your native state.';
+    }
+    return null;
+  }, [keamForm]);
 
   const fetchMhtColleges = useCallback(
     async (pageOffset = 0, append = false) => {
@@ -572,6 +621,84 @@ export default function CollegePredictorPredict() {
     [examMeta, tneaForm, validateTnea]
   );
 
+  const fetchKeamColleges = useCallback(
+    async (pageOffset = 0, append = false) => {
+      const validationError = validateKeam();
+      if (validationError) {
+        setError(validationError);
+        return;
+      }
+
+      append ? setLoadingMore(true) : setLoading(true);
+      setError(null);
+
+      const [cutoffFrom, cutoffTo] = rankToCutoff(Number(keamForm.rank));
+      const apiExam = examMeta?.apiValue ?? 'KEAM';
+
+      // Upstream KEAM often has empty district_enum; sending district names returns 0 rows — filter client-side.
+      const districts = [];
+      const branch_codes = mapKeamBranchCodesForApi(
+        keamForm.branchMode === 'specific' && keamForm.branch_codes?.length > 0
+          ? keamForm.branch_codes
+          : []
+      );
+      const resCodes =
+        keamForm.reservation_category_codes?.length > 0
+          ? keamForm.reservation_category_codes
+          : examMeta?.defaultReservationCode
+            ? [examMeta.defaultReservationCode]
+            : ['SM'];
+
+      const body = {
+        exam: apiExam,
+        entrance_exam_name_enum: apiExam,
+        admission_category_name_enum: 'DEFAULT',
+        cutoff_from: cutoffFrom,
+        cutoff_to: cutoffTo,
+        sort_order: keamForm.sort_order || 'ASC',
+        branch_codes,
+        districts,
+        reservation_category_codes: resCodes,
+      };
+
+      const res = await getPredictedColleges({
+        offset: pageOffset,
+        limit: PAGE_SIZE,
+        ...body,
+      });
+
+      append ? setLoadingMore(false) : setLoading(false);
+      setHasSearched(true);
+
+      if (!res.success) {
+        const errData = res.data || {};
+        setError(getErrorMessage(errData, res.message));
+        if (!append) {
+          setColleges([]);
+          setTotalCount(0);
+        }
+        hasSuccessfulKeamPredictionRef.current = false;
+        return;
+      }
+
+      const data = res.data;
+      if (!append) {
+        hasSuccessfulKeamPredictionRef.current = true;
+        lastSuccessfulKeamSnapshotRef.current = getKeamFilterSnapshot(keamForm);
+      }
+      const rawList = data.colleges || [];
+      if (append) {
+        setColleges((prev) => [...prev, ...rawList]);
+      } else {
+        setColleges(rawList);
+      }
+      setTotalCount(data.total_no_of_colleges ?? 0);
+      setAdmissionCategoryName(data.admission_category_name || '');
+      setOffset(pageOffset);
+    },
+    [examMeta, keamForm, validateKeam]
+  );
+
   const handleMhtSubmit = useCallback(() => {
     const validationError = validateMht();
     if (validationError) {
@@ -595,6 +722,18 @@ export default function CollegePredictorPredict() {
     setOffset(0);
     fetchTneaColleges(0, false);
   }, [validateTnea, fetchTneaColleges]);
+
+  const handleKeamSubmit = useCallback(() => {
+    const validationError = validateKeam();
+    if (validationError) {
+      setError(validationError);
+      return;
+    }
+    setError(null);
+    setColleges([]);
+    setOffset(0);
+    fetchKeamColleges(0, false);
+  }, [validateKeam, fetchKeamColleges]);
 
   const fetchColleges = useCallback(
     async (pageOffset = 0, append = false) => {
@@ -825,10 +964,12 @@ export default function CollegePredictorPredict() {
       fetchMhtColleges(offset + PAGE_SIZE, true);
     } else if (isTnea) {
       fetchTneaColleges(offset + PAGE_SIZE, true);
+    } else if (isKeam) {
+      fetchKeamColleges(offset + PAGE_SIZE, true);
     } else {
       fetchColleges(offset + PAGE_SIZE, true);
     }
-  }, [isMhtCet, isTnea, offset, fetchColleges, fetchMhtColleges, fetchTneaColleges]);
+  }, [isMhtCet, isTnea, isKeam, offset, fetchColleges, fetchMhtColleges, fetchTneaColleges, fetchKeamColleges]);
 
   // Intentionally no auto-refetch when filters change (including branch/district chips): users click
   // "Predict Colleges" again. Otherwise every branch toggle triggers a full fetch and feels broken.
@@ -884,6 +1025,14 @@ export default function CollegePredictorPredict() {
 
   const normalizedSearch = collegeSearch.trim().toLowerCase();
 
+  const collegesForKeamList = useMemo(() => {
+    if (!isKeam) return colleges;
+    if (keamForm.districtMode !== 'specific' || !keamForm.districts?.length) {
+      return colleges;
+    }
+    return filterCollegesForKeamDistrictPredictor(colleges, keamForm.districts);
+  }, [isKeam, colleges, keamForm.districtMode, keamForm.districts]);
+
   const activeJeeSlotKey = jeeActiveTab === 'main' ? 'main' : 'advanced';
   const activeJeeList = jeeSlots[activeJeeSlotKey]?.colleges ?? [];
   const activeJeeTotal = jeeSlots[activeJeeSlotKey]?.total ?? 0;
@@ -892,7 +1041,7 @@ export default function CollegePredictorPredict() {
 
   const filteredColleges = !isJee
     ? normalizedSearch
-      ? colleges.filter((college) => {
+      ? collegesForKeamList.filter((college) => {
         const haystack = [
           college.college_name,
           college.college_address,
@@ -903,7 +1052,7 @@ export default function CollegePredictorPredict() {
           .toLowerCase();
         return haystack.includes(normalizedSearch);
       })
-      : colleges
+      : collegesForKeamList
     : normalizedSearch
       ? activeJeeList.filter((college) => {
         const haystack = [
@@ -928,7 +1077,7 @@ export default function CollegePredictorPredict() {
     examMeta?.predictorPageSubtitle ??
     (isMhtCet
       ? 'Enter percentile, admission type, and preferences to discover matching colleges.'
-      : isTnea
+      : isTnea || isKeam
         ? 'Enter your expected rank, category, filters, and native place.'
         : 'Enter your rank and discover matching colleges');
 
@@ -982,6 +1131,16 @@ export default function CollegePredictorPredict() {
           values={tneaForm}
           onChange={setTneaForm}
           onSubmit={handleTneaSubmit}
+          loading={loading}
+          accentKey={examMeta?.accent}
+          reservationOptions={examMeta?.reservationOptions}
+          districtOptions={examMeta?.districtOptions}
+        />
+      ) : isKeam ? (
+        <KeamPredictorForm
+          values={keamForm}
+          onChange={setKeamForm}
+          onSubmit={handleKeamSubmit}
           loading={loading}
           accentKey={examMeta?.accent}
           reservationOptions={examMeta?.reservationOptions}
@@ -1220,6 +1379,31 @@ export default function CollegePredictorPredict() {
                     </div>
                   </div>
                 )}
+                {isKeam && (
+                  <div className={`rounded-xl ${accent.headerBg} border border-gray-200/80 px-5 py-4`}>
+                    <p className="text-sm text-gray-700">
+                      Based on your rank and category, you may get into the following colleges:
+                    </p>
+                    <div className="mt-2 flex flex-wrap gap-x-6 gap-y-1 text-base">
+                      <span>
+                        <span className="font-semibold text-gray-800">Rank: </span>
+                        <span className={`font-bold ${accent.headerSub}`}>{keamForm.rank}</span>
+                      </span>
+                      <span>
+                        <span className="font-semibold text-gray-800">Category: </span>
+                        <span className={`font-bold ${accent.headerSub}`}>
+                          {keamForm.reservation_category_codes?.[0] ?? '—'}
+                        </span>
+                      </span>
+                      <span>
+                        <span className="font-semibold text-gray-800">Native: </span>
+                        <span className={`font-bold ${accent.headerSub}`}>
+                          {[keamForm.native_state, keamForm.native_district].filter(Boolean).join(' · ') || '—'}
+                        </span>
+                      </span>
+                    </div>
+                  </div>
+                )}
                 <div className="rounded-xl bg-white border border-gray-200 px-5 py-3 shadow-sm">
                   <div className="flex flex-wrap items-center justify-between gap-3">
                     <div className="flex items-center gap-2.5 text-sm">
@@ -1290,7 +1474,7 @@ export default function CollegePredictorPredict() {
                 <p className="text-sm text-gray-400 mt-1.5 max-w-sm mx-auto">
                   {isMhtCet
                     ? 'Try a different percentile, category, admission type, or district filters.'
-                    : isTnea
+                    : isTnea || isKeam
                       ? 'Try a different rank, category, or widen district/branch filters.'
                       : 'Try a different rank, changing the admission category, or removing some filters'}
                 </p>
@@ -1311,7 +1495,7 @@ export default function CollegePredictorPredict() {
               <>Fill the form above and click <strong>Predict Colleges</strong></>
             ) : isMhtCet ? (
               <>Fill the form above and click <strong>Predict Colleges</strong></>
-            ) : isTnea ? (
+            ) : isTnea || isKeam ? (
               <>Fill the form above and click <strong>Predict Colleges</strong></>
             ) : (
               <>Enter your rank and filters above, then click <strong>Predict Colleges</strong></>
