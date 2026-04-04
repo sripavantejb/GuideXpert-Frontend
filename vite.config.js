@@ -1,19 +1,27 @@
-import { defineConfig } from 'vite'
+import { defineConfig, loadEnv } from 'vite'
 import react from '@vitejs/plugin-react'
 import tailwindcss from '@tailwindcss/vite'
 
+const DEFAULT_PROXY_TARGET = 'http://localhost:5000'
+
 // https://vite.dev/config/
-export default defineConfig({
-  plugins: [react(), tailwindcss()],
-  server: {
-    proxy: {
-      // In dev, proxy /api to deployed backend by default to avoid local backend dependency.
-      // Set VITE_PROXY_TARGET=http://localhost:5000 to use local backend when needed.
-      '/api': {
-        target: process.env.VITE_PROXY_TARGET || 'http://localhost:5000',
-        changeOrigin: true,
-        secure: process.env.VITE_PROXY_TARGET?.startsWith('https') ?? false,
+export default defineConfig(({ mode }) => {
+  // loadEnv reads .env* so VITE_PROXY_TARGET works (process.env alone does not in this file).
+  const env = loadEnv(mode, process.cwd(), 'VITE_')
+  const proxyTarget = (env.VITE_PROXY_TARGET || '').trim() || DEFAULT_PROXY_TARGET
+  const isHttpsTarget = proxyTarget.startsWith('https://')
+
+  return {
+    plugins: [react(), tailwindcss()],
+    server: {
+      proxy: {
+        '/api': {
+          target: proxyTarget,
+          changeOrigin: true,
+          // For https targets, verify TLS; for http (local), leave false.
+          secure: isHttpsTarget,
+        },
       },
     },
-  },
+  }
 })
