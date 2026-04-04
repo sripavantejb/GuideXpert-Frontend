@@ -27,6 +27,7 @@ import {
   CollegeCard,
   JeeCombinedPredictorForm,
   MhtCetPredictorForm,
+  TneaPredictorForm,
 } from '../../components/Counsellor/CollegePredictor';
 import { formatPredictorClientError } from '../../utils/collegePredictorErrors';
 
@@ -148,6 +149,34 @@ function getMhtFilterSnapshot(m) {
   });
 }
 
+function initialTneaForm(defaultReservation) {
+  return {
+    rank: '',
+    reservation_category_codes: defaultReservation ? [defaultReservation] : [],
+    districtMode: 'all',
+    districts: [],
+    branchMode: 'all',
+    branch_codes: [],
+    sort_order: 'ASC',
+    native_state: '',
+    native_district: '',
+  };
+}
+
+function getTneaFilterSnapshot(t) {
+  return JSON.stringify({
+    rank: t.rank,
+    reservation_category_codes: [...(t.reservation_category_codes || [])].sort(),
+    districts: [...(t.districts || [])].sort(),
+    districtMode: t.districtMode,
+    branch_codes: [...(t.branch_codes || [])].sort(),
+    branchMode: t.branchMode,
+    sort_order: t.sort_order,
+    native_state: t.native_state,
+    native_district: t.native_district,
+  });
+}
+
 function parsePositiveIntRank(s) {
   const n = Number(s);
   if (s === '' || Number.isNaN(n) || n < 1 || !Number.isInteger(n)) return null;
@@ -164,6 +193,7 @@ export default function CollegePredictorPredict() {
   const navigate = useNavigate();
   const isJee = exam === 'JEE';
   const isMhtCet = exam === 'MHT_CET';
+  const isTnea = exam === 'TNEA';
 
   const examMeta = getEntranceExamMeta(exam);
   const accent = getAccentClasses(examMeta?.accent);
@@ -205,6 +235,10 @@ export default function CollegePredictorPredict() {
 
   const [mhtForm, setMhtForm] = useState(() => initialMhtForm());
 
+  const [tneaForm, setTneaForm] = useState(() =>
+    initialTneaForm(getEntranceExamMeta('TNEA')?.defaultReservationCode)
+  );
+
   const [colleges, setColleges] = useState([]);
   const [totalCount, setTotalCount] = useState(0);
   const [admissionCategoryName, setAdmissionCategoryName] = useState('');
@@ -221,6 +255,8 @@ export default function CollegePredictorPredict() {
   const hasSuccessfulJeePredictionRef = useRef(false);
   const lastSuccessfulMhtSnapshotRef = useRef(null);
   const hasSuccessfulMhtPredictionRef = useRef(false);
+  const lastSuccessfulTneaSnapshotRef = useRef(null);
+  const hasSuccessfulTneaPredictionRef = useRef(false);
 
   useEffect(() => {
     const meta = getEntranceExamMeta(exam);
@@ -261,6 +297,11 @@ export default function CollegePredictorPredict() {
     setMhtForm(initialMhtForm());
     lastSuccessfulMhtSnapshotRef.current = null;
     hasSuccessfulMhtPredictionRef.current = false;
+    if (exam === 'TNEA') {
+      setTneaForm(initialTneaForm(meta.defaultReservationCode));
+      lastSuccessfulTneaSnapshotRef.current = null;
+      hasSuccessfulTneaPredictionRef.current = false;
+    }
   }, [exam]);
 
   useEffect(() => {
@@ -323,6 +364,32 @@ export default function CollegePredictorPredict() {
     }
     return null;
   }, [mhtForm]);
+
+  const validateTnea = useCallback(() => {
+    const rank = Number(tneaForm.rank);
+    if (tneaForm.rank === '' || Number.isNaN(rank) || rank < 1 || !Number.isInteger(rank)) {
+      return 'Please enter a valid positive integer for your TNEA rank.';
+    }
+    if (!tneaForm.reservation_category_codes?.length) {
+      return 'Please select a category.';
+    }
+    if (tneaForm.branchMode === 'specific' && (!tneaForm.branch_codes || tneaForm.branch_codes.length === 0)) {
+      return 'Select at least one branch, or choose “All branches”.';
+    }
+    if (tneaForm.districtMode === 'specific' && (!tneaForm.districts || tneaForm.districts.length === 0)) {
+      return 'Select at least one Tamil Nadu district, or choose “All Districts”.';
+    }
+    if (!tneaForm.native_state || !tneaForm.native_district) {
+      return 'Please select native state and current district.';
+    }
+    const allowed = new Set(
+      getDistrictOptionsForNativeState(tneaForm.native_state).map((o) => o.value)
+    );
+    if (!allowed.has(tneaForm.native_district)) {
+      return 'Select a district that belongs to your native state.';
+    }
+    return null;
+  }, [tneaForm]);
 
   const fetchMhtColleges = useCallback(
     async (pageOffset = 0, append = false) => {
@@ -426,6 +493,85 @@ export default function CollegePredictorPredict() {
     [examMeta, mhtForm, validateMht]
   );
 
+  const fetchTneaColleges = useCallback(
+    async (pageOffset = 0, append = false) => {
+      const validationError = validateTnea();
+      if (validationError) {
+        setError(validationError);
+        return;
+      }
+
+      append ? setLoadingMore(true) : setLoading(true);
+      setError(null);
+
+      const [cutoffFrom, cutoffTo] = rankToCutoff(Number(tneaForm.rank));
+      const apiExam = examMeta?.apiValue ?? 'TNEA';
+
+      const districts =
+        tneaForm.districtMode === 'specific' && tneaForm.districts?.length > 0
+          ? tneaForm.districts
+          : [];
+      const branch_codes =
+        tneaForm.branchMode === 'specific' && tneaForm.branch_codes?.length > 0
+          ? tneaForm.branch_codes
+          : [];
+      const resCodes =
+        tneaForm.reservation_category_codes?.length > 0
+          ? tneaForm.reservation_category_codes
+          : examMeta?.defaultReservationCode
+            ? [examMeta.defaultReservationCode]
+            : ['OC'];
+
+      const body = {
+        exam: apiExam,
+        entrance_exam_name_enum: apiExam,
+        admission_category_name_enum: 'DEFAULT',
+        cutoff_from: cutoffFrom,
+        cutoff_to: cutoffTo,
+        sort_order: tneaForm.sort_order || 'ASC',
+        branch_codes,
+        districts,
+        reservation_category_codes: resCodes,
+      };
+
+      const res = await getPredictedColleges({
+        offset: pageOffset,
+        limit: PAGE_SIZE,
+        ...body,
+      });
+
+      append ? setLoadingMore(false) : setLoading(false);
+      setHasSearched(true);
+
+      if (!res.success) {
+        const errData = res.data || {};
+        setError(getErrorMessage(errData, res.message));
+        if (!append) {
+          setColleges([]);
+          setTotalCount(0);
+        }
+        hasSuccessfulTneaPredictionRef.current = false;
+        return;
+      }
+
+      const data = res.data;
+      if (!append) {
+        hasSuccessfulTneaPredictionRef.current = true;
+        lastSuccessfulTneaSnapshotRef.current = getTneaFilterSnapshot(tneaForm);
+      }
+      const rawList = data.colleges || [];
+      if (append) {
+        setColleges((prev) => [...prev, ...rawList]);
+      } else {
+        setColleges(rawList);
+      }
+      setTotalCount(data.total_no_of_colleges ?? 0);
+      setAdmissionCategoryName(data.admission_category_name || '');
+      setOffset(pageOffset);
+    },
+    [examMeta, tneaForm, validateTnea]
+  );
+
   const handleMhtSubmit = useCallback(() => {
     const validationError = validateMht();
     if (validationError) {
@@ -437,6 +583,18 @@ export default function CollegePredictorPredict() {
     setOffset(0);
     fetchMhtColleges(0, false);
   }, [validateMht, fetchMhtColleges]);
+
+  const handleTneaSubmit = useCallback(() => {
+    const validationError = validateTnea();
+    if (validationError) {
+      setError(validationError);
+      return;
+    }
+    setError(null);
+    setColleges([]);
+    setOffset(0);
+    fetchTneaColleges(0, false);
+  }, [validateTnea, fetchTneaColleges]);
 
   const fetchColleges = useCallback(
     async (pageOffset = 0, append = false) => {
@@ -665,31 +823,15 @@ export default function CollegePredictorPredict() {
   const handleLoadMore = useCallback(() => {
     if (isMhtCet) {
       fetchMhtColleges(offset + PAGE_SIZE, true);
+    } else if (isTnea) {
+      fetchTneaColleges(offset + PAGE_SIZE, true);
     } else {
       fetchColleges(offset + PAGE_SIZE, true);
     }
-  }, [isMhtCet, offset, fetchColleges, fetchMhtColleges]);
+  }, [isMhtCet, isTnea, offset, fetchColleges, fetchMhtColleges, fetchTneaColleges]);
 
-  useEffect(() => {
-    if (isJee) return;
-    if (isMhtCet) {
-      if (!hasSuccessfulMhtPredictionRef.current) return;
-      if (validateMht()) return;
-      const current = getMhtFilterSnapshot(mhtForm);
-      if (lastSuccessfulMhtSnapshotRef.current === current) return;
-      setColleges([]);
-      setOffset(0);
-      fetchMhtColleges(0, false);
-      return;
-    }
-    if (!hasSuccessfulPredictionRef.current) return;
-    if (validate()) return;
-    const current = getPredictorFilterSnapshot(filters);
-    if (lastSuccessfulFilterSnapshotRef.current === current) return;
-    setColleges([]);
-    setOffset(0);
-    fetchColleges(0, false);
-  }, [filters, validate, fetchColleges, isJee, isMhtCet, mhtForm, validateMht, fetchMhtColleges]);
+  // Intentionally no auto-refetch when filters change (including branch/district chips): users click
+  // "Predict Colleges" again. Otherwise every branch toggle triggers a full fetch and feels broken.
 
   useEffect(() => {
     if (!isJee) return;
@@ -786,7 +928,9 @@ export default function CollegePredictorPredict() {
     examMeta?.predictorPageSubtitle ??
     (isMhtCet
       ? 'Enter percentile, admission type, and preferences to discover matching colleges.'
-      : 'Enter your rank and discover matching colleges');
+      : isTnea
+        ? 'Enter your expected rank, category, filters, and native place.'
+        : 'Enter your rank and discover matching colleges');
 
   const categoryDisplay = reservationLabelForValue(jeeForm.reservation_category_codes?.[0]);
   const rankDisplayMain = parsePositiveIntRank(jeeForm.rankMain);
@@ -832,6 +976,16 @@ export default function CollegePredictorPredict() {
           onSubmit={handleMhtSubmit}
           loading={loading}
           accentKey={examMeta?.accent}
+        />
+      ) : isTnea ? (
+        <TneaPredictorForm
+          values={tneaForm}
+          onChange={setTneaForm}
+          onSubmit={handleTneaSubmit}
+          loading={loading}
+          accentKey={examMeta?.accent}
+          reservationOptions={examMeta?.reservationOptions}
+          districtOptions={examMeta?.districtOptions}
         />
       ) : (
         <FilterPanel
@@ -1041,6 +1195,31 @@ export default function CollegePredictorPredict() {
                     </div>
                   </div>
                 )}
+                {isTnea && (
+                  <div className={`rounded-xl ${accent.headerBg} border border-gray-200/80 px-5 py-4`}>
+                    <p className="text-sm text-gray-700">
+                      Based on your rank and category, you may get into the following colleges:
+                    </p>
+                    <div className="mt-2 flex flex-wrap gap-x-6 gap-y-1 text-base">
+                      <span>
+                        <span className="font-semibold text-gray-800">Rank: </span>
+                        <span className={`font-bold ${accent.headerSub}`}>{tneaForm.rank}</span>
+                      </span>
+                      <span>
+                        <span className="font-semibold text-gray-800">Category: </span>
+                        <span className={`font-bold ${accent.headerSub}`}>
+                          {tneaForm.reservation_category_codes?.[0] ?? '—'}
+                        </span>
+                      </span>
+                      <span>
+                        <span className="font-semibold text-gray-800">Native: </span>
+                        <span className={`font-bold ${accent.headerSub}`}>
+                          {[tneaForm.native_state, tneaForm.native_district].filter(Boolean).join(' · ') || '—'}
+                        </span>
+                      </span>
+                    </div>
+                  </div>
+                )}
                 <div className="rounded-xl bg-white border border-gray-200 px-5 py-3 shadow-sm">
                   <div className="flex flex-wrap items-center justify-between gap-3">
                     <div className="flex items-center gap-2.5 text-sm">
@@ -1111,7 +1290,9 @@ export default function CollegePredictorPredict() {
                 <p className="text-sm text-gray-400 mt-1.5 max-w-sm mx-auto">
                   {isMhtCet
                     ? 'Try a different percentile, category, admission type, or district filters.'
-                    : 'Try a different rank, changing the admission category, or removing some filters'}
+                    : isTnea
+                      ? 'Try a different rank, category, or widen district/branch filters.'
+                      : 'Try a different rank, changing the admission category, or removing some filters'}
                 </p>
               </div>
             )}
@@ -1129,6 +1310,8 @@ export default function CollegePredictorPredict() {
             {isJee ? (
               <>Fill the form above and click <strong>Predict Colleges</strong></>
             ) : isMhtCet ? (
+              <>Fill the form above and click <strong>Predict Colleges</strong></>
+            ) : isTnea ? (
               <>Fill the form above and click <strong>Predict Colleges</strong></>
             ) : (
               <>Enter your rank and filters above, then click <strong>Predict Colleges</strong></>

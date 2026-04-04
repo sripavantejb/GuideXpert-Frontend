@@ -5,3 +5,4 @@ export { default as CollegeCard } from './CollegeCard';
 export { default as BranchSection } from './BranchSection';
 export { default as JeeCombinedPredictorForm } from './JeeCombinedPredictorForm';
 export { default as MhtCetPredictorForm } from './MhtCetPredictorForm';
+export { default as TneaPredictorForm } from './TneaPredictorForm';
