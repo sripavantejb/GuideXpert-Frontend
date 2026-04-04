@@ -113,6 +113,20 @@ export const TS_EAMCET_RESERVATION_OPTIONS = [
  * Telangana districts for TS EAMCET: earlywave expects **district_enum** short codes (like AP).
  * Labels aligned to TS geography; verified from TS_EAMCET + DEFAULT + OC BOYS responses on beta.
  */
+/** JEE Main / Advanced — national category strings (upstream must accept these for JEE_MAIN / JEE_ADVANCED). */
+export const JEE_RESERVATION_OPTIONS = [
+  { value: 'OPEN', label: 'OPEN' },
+  { value: 'OPEN (PwD)', label: 'OPEN (PwD)' },
+  { value: 'EWS', label: 'EWS' },
+  { value: 'EWS (PwD)', label: 'EWS (PwD)' },
+  { value: 'OBC-NCL', label: 'OBC-NCL' },
+  { value: 'OBC-NCL (PwD)', label: 'OBC-NCL (PwD)' },
+  { value: 'SC', label: 'SC' },
+  { value: 'SC (PwD)', label: 'SC (PwD)' },
+  { value: 'ST', label: 'ST' },
+  { value: 'ST (PwD)', label: 'ST (PwD)' },
+];
+
 export const TS_EAMCET_DISTRICT_OPTIONS = [
   { value: 'HNK', label: 'Hanamkonda / Warangal' },
   { value: 'HYD', label: 'Hyderabad' },
@@ -178,6 +192,10 @@ export function apEamcetPredictorDisplayTotal(apiTotal) {
  *   districtOptionsByAdmission?: Record<string, { value: string, label: string }[]>,
  *   districtSelectionHint?: string,
  *   hideAdmissionField?: boolean,
+ *   predictorPageTitle?: string,
+ *   predictorPageSubtitle?: string,
+ *   jeeMainApiExam?: string,
+ *   jeeAdvancedApiExam?: string,
  *   admissionCategories: { value: string, label: string }[],
  * }} EntranceExamOption
  * @type {EntranceExamOption[]}
@@ -202,8 +220,13 @@ export const ENTRANCE_EXAMS = [
     description: 'Explore Maharashtra institutes using your CET score and seat matrix.',
     accent: 'indigo',
     apiValue: 'MHTCET',
-    supported: false,
-    admissionCategories: [],
+    supported: true,
+    defaultReservationCode: 'GOPENS',
+    predictorPageTitle: 'MHT CET College Predictor',
+    predictorPageSubtitle:
+      'Enter your expected percentile, admission type (State / Home / Other), category, and optional district filters.',
+    reservationFieldLabel: 'Select a Category',
+    admissionCategories: [{ value: 'GENERAL', label: 'MHT-CET' }],
   },
   {
     value: 'KEAM',
@@ -266,12 +289,22 @@ export const ENTRANCE_EXAMS = [
   },
   {
     value: 'JEE',
-    label: 'JEE',
-    description: 'JEE Main / Advanced pathways to national and participating institutes.',
+    label: 'JEE Main & Advanced',
+    description: 'JEE Main and JEE Advanced college prediction with national categories.',
     accent: 'purple',
     apiValue: 'JEE',
-    supported: false,
-    admissionCategories: [],
+    supported: true,
+    predictorPageTitle: 'JEE Main and JEE Advanced College Predictor',
+    predictorPageSubtitle:
+      'Enter at least one expected rank (Main and/or Advanced), category, and optional branch filters.',
+    defaultReservationCode: 'OPEN',
+    hideAdmissionField: true,
+    reservationFieldLabel: 'Select a Category',
+    reservationOptions: JEE_RESERVATION_OPTIONS,
+    reservationSelectSingle: true,
+    jeeMainApiExam: 'JEE_MAIN',
+    jeeAdvancedApiExam: 'JEE_ADVANCED',
+    admissionCategories: [{ value: 'GENERAL', label: 'General' }],
   },
 ];
 

@@ -15,7 +15,10 @@ export default function CollegePredictorExams() {
         </p>
       </header>
 
-      <ExamGrid selectedExam={null} onSelect={(exam) => navigate(exam)} />
+      <ExamGrid
+        selectedExam={null}
+        onSelect={(exam) => navigate(`/counsellor/tools/college-predictor/${exam}`)}
+      />
     </div>
   );
 }

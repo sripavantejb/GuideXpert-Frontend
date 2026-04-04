@@ -76,7 +76,7 @@ export default function CollegeCard({ college, accentKey, index }) {
               </span>
             )}
             {topCutoff != null && (
-              <span className="inline-flex items-center gap-1 text-xs font-medium px-2 py-1 rounded-md bg-blue-50 text-blue-700">
+              <span className={`inline-flex items-center gap-1 text-xs font-medium px-2 py-1 rounded-md ${accent.badge}`}>
                 <FiBarChart2 className="w-3 h-3" />
                 Best cutoff: {topCutoff}
               </span>
@@ -103,7 +103,7 @@ export default function CollegeCard({ college, accentKey, index }) {
                   Branches &amp; Cutoffs
                 </p>
               </div>
-              <BranchSection branches={college.branches} accentKey={accentKey} />
+              <BranchSection branches={college.branches} />
               {college.extra_info && (
                 <p className="mt-4 text-xs text-gray-400 italic">{college.extra_info}</p>
               )}

@@ -1,5 +1,6 @@
 const ADMIN_UNAUTHORIZED_EVENT = 'guidexpert:admin-unauthorized';
 const WEBINAR_UNAUTHORIZED_EVENT = 'guidexpert:webinar-unauthorized';
+const COUNSELLOR_UNAUTHORIZED_EVENT = 'guidexpert:counsellor-unauthorized';
 
 function decodeBase64Url(input) {
   try {
@@ -47,4 +48,13 @@ export function onAdminUnauthorized(listener) {
 export function onWebinarUnauthorized(listener) {
   window.addEventListener(WEBINAR_UNAUTHORIZED_EVENT, listener);
   return () => window.removeEventListener(WEBINAR_UNAUTHORIZED_EVENT, listener);
+}
+
+export function notifyCounsellorUnauthorized(detail = {}) {
+  window.dispatchEvent(new CustomEvent(COUNSELLOR_UNAUTHORIZED_EVENT, { detail }));
+}
+
+export function onCounsellorUnauthorized(listener) {
+  window.addEventListener(COUNSELLOR_UNAUTHORIZED_EVENT, listener);
+  return () => window.removeEventListener(COUNSELLOR_UNAUTHORIZED_EVENT, listener);
 }

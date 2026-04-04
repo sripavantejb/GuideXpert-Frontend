@@ -16,6 +16,7 @@ export function CounsellorAuthProvider({ children }) {
   const [user, setUser] = useState(() => getCounsellorUser());
   const [token, setToken] = useState(() => getCounsellorToken());
   const [accessForm, setAccessFormState] = useState(() => getCounsellorAccessForm());
+  /** Do not use client-side JWT exp here: OTP/login tokens must stay valid until the server rejects them (401 → SessionExpiryRedirects). Parsing exp incorrectly caused immediate logout after OTP. */
   const isAuthenticated = !!token;
 
   const login = useCallback(async (email, password) => {
@@ -69,9 +70,11 @@ export function CounsellorAuthProvider({ children }) {
     const t = getCounsellorToken();
     const u = getCounsellorUser();
     if (!t || !u) {
+      setCounsellorToken(null);
+      setCounsellorUser(null);
+      setCounsellorAccessForm(null);
       setToken(null);
       setUser(null);
-      setCounsellorAccessForm(null);
       setAccessFormState(null);
     } else {
       setAccessFormState(getCounsellorAccessForm());

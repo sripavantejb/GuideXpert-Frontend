@@ -15,7 +15,7 @@ export default function BranchSection({ branches }) {
           className="rounded-xl bg-white border border-gray-200/80 overflow-hidden hover:border-gray-300 transition-colors"
         >
           <div className="flex items-stretch">
-            <div className="w-1 shrink-0 bg-gradient-to-b from-blue-400 to-indigo-400" />
+            <div className="w-1 shrink-0 bg-gradient-to-b from-emerald-400 to-emerald-600" />
             <div className="flex-1 p-4">
               <div className="flex flex-wrap items-center justify-between gap-x-4 gap-y-2 mb-2">
                 <span className="text-sm font-bold text-gray-800">
@@ -30,7 +30,7 @@ export default function BranchSection({ branches }) {
                   </span>
                 )}
                 {branch.cutoff != null && (
-                  <span className="inline-flex items-center gap-1.5 text-xs font-semibold px-3 py-1.5 rounded-lg bg-blue-50 text-blue-700 border border-blue-100">
+                  <span className="inline-flex items-center gap-1.5 text-xs font-semibold px-3 py-1.5 rounded-lg bg-emerald-50 text-emerald-800 border border-emerald-100">
                     <FiBarChart2 className="w-3 h-3" />
                     Cutoff: {Number(branch.cutoff)}
                   </span>
@@ -51,7 +51,7 @@ export default function BranchSection({ branches }) {
                         key={`${rc.reservation_category_code || rc.category_code || rc.category_name || rc.name}-${rcIdx}`}
                         className="inline-flex items-center gap-2 px-3 py-1.5 rounded-lg bg-gray-50 border border-gray-200 text-xs hover:bg-gray-100 transition-colors"
                       >
-                        <span className="w-1.5 h-1.5 rounded-full bg-violet-400 shrink-0" />
+                        <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 shrink-0" />
                         <span className="font-semibold text-gray-700">
                           {rc.category_name || rc.name || rc.reservation_category_code || rc.category_code}
                         </span>
