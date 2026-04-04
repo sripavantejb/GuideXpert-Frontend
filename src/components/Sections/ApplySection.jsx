@@ -472,7 +472,7 @@ const ApplySection = () => {
           String(delayMsRaw).trim() !== '' &&
           !Number.isNaN(Number(delayMsRaw))
             ? Number(delayMsRaw)
-            : 120000;
+            : 10000;
         const delaySec = Math.max(1, Math.round(delayMs / 1000));
 
         console.log(

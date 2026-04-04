@@ -205,7 +205,7 @@ export const saveStep2 = async (phone, utm) => {
  * @param {string} selectedSlot - 'SATURDAY_7PM' or 'SUNDAY_3PM'
  * @param {string|Date} slotDate - ISO date string or Date object for the slot
  * @param {{ utm_source?: string, utm_medium?: string, utm_campaign?: string, utm_content?: string }} [utm] - Optional first-touch UTM data
- * @param {{ scheduleOsviOutbound?: boolean }} [options] - Counselor Apply: schedule OSVI outbound ~2 min after save (processed by backend cron)
+ * @param {{ scheduleOsviOutbound?: boolean }} [options] - Counselor Apply: schedule OSVI outbound after delay (default 10s; see OSVI_OUTBOUND_DELAY_MS)
  * @returns {Promise<{success: boolean, message?: string, data?: {selectedSlot: string, slotDate: Date}, status?: number}>}
  */
 export const saveStep3 = async (phone, selectedSlot, slotDate, utm, options = {}) => {
