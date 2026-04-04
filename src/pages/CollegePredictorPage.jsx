@@ -14,7 +14,8 @@ import {
   rankToCutoff,
   JEE_RESERVATION_OPTIONS,
 } from '../constants/collegePredictorOptions';
-import { JeeCombinedPredictorForm, CollegeCard } from '../components/Counsellor/CollegePredictor';
+import { getDistrictOptionsForNativeState } from '../constants/mhtCetOptions';
+import { JeeCombinedPredictorForm, TneaPredictorForm, CollegeCard } from '../components/Counsellor/CollegePredictor';
 import { formatPredictorClientError } from '../utils/collegePredictorErrors';
 
 const ADMISSION_CATEGORIES = [
@@ -87,6 +88,34 @@ function getJeePublicFilterSnapshot(j) {
   });
 }
 
+function initialTneaPublicForm(defaultReservation) {
+  return {
+    rank: '',
+    reservation_category_codes: defaultReservation ? [defaultReservation] : [],
+    districtMode: 'all',
+    districts: [],
+    branchMode: 'all',
+    branch_codes: [],
+    sort_order: 'ASC',
+    native_state: '',
+    native_district: '',
+  };
+}
+
+function getTneaPublicFilterSnapshot(t) {
+  return JSON.stringify({
+    rank: t.rank,
+    reservation_category_codes: [...(t.reservation_category_codes || [])].sort(),
+    districts: [...(t.districts || [])].sort(),
+    districtMode: t.districtMode,
+    branch_codes: [...(t.branch_codes || [])].sort(),
+    branchMode: t.branchMode,
+    sort_order: t.sort_order,
+    native_state: t.native_state,
+    native_district: t.native_district,
+  });
+}
+
 const initialCollegeForm = {
   entrance_exam_name_enum: '',
   admission_category_name_enum: 'GENERAL',
@@ -128,6 +157,11 @@ export default function CollegePredictorPage() {
       reservation_category_code: meta.defaultReservationCode ?? prev.reservation_category_code,
       districts: [],
     }));
+    if (form.entrance_exam_name_enum === 'TNEA') {
+      setTneaPublicForm(initialTneaPublicForm(meta.defaultReservationCode));
+      lastSuccessfulTneaPublicSnapshotRef.current = null;
+      hasSuccessfulTneaPublicPredictionRef.current = false;
+    }
   }, [form.entrance_exam_name_enum]);
 
   /** AP EAMCET: AU vs SVU use different district codes — clear invalid chip selections when region changes. */
@@ -153,6 +187,7 @@ export default function CollegePredictorPage() {
   const hasSuccessfulJeePublicPredictionRef = useRef(false);
 
   const isJeePublic = form.entrance_exam_name_enum === 'JEE';
+  const isTneaPublic = form.entrance_exam_name_enum === 'TNEA';
 
   const [jeePublicForm, setJeePublicForm] = useState({
     rankMain: '',
@@ -172,6 +207,12 @@ export default function CollegePredictorPage() {
   const [jeePublicHadMain, setJeePublicHadMain] = useState(false);
   const [jeePublicHadAdvanced, setJeePublicHadAdvanced] = useState(false);
   const [jeePublicSearched, setJeePublicSearched] = useState(false);
+
+  const [tneaPublicForm, setTneaPublicForm] = useState(() =>
+    initialTneaPublicForm(getEntranceExamMeta('TNEA')?.defaultReservationCode)
+  );
+  const lastSuccessfulTneaPublicSnapshotRef = useRef(null);
+  const hasSuccessfulTneaPublicPredictionRef = useRef(false);
 
   useEffect(() => {
     if (form.entrance_exam_name_enum !== 'JEE') {
@@ -223,6 +264,117 @@ export default function CollegePredictorPage() {
     }
     return null;
   }, [jeePublicForm]);
+
+  const validateTneaPublic = useCallback(() => {
+    const rank = Number(tneaPublicForm.rank);
+    if (tneaPublicForm.rank === '' || Number.isNaN(rank) || rank < 1 || !Number.isInteger(rank)) {
+      return 'Please enter a valid positive integer for your TNEA rank.';
+    }
+    if (!tneaPublicForm.reservation_category_codes?.length) {
+      return 'Please select a category.';
+    }
+    if (tneaPublicForm.branchMode === 'specific' && (!tneaPublicForm.branch_codes || tneaPublicForm.branch_codes.length === 0)) {
+      return 'Select at least one branch, or choose “All branches”.';
+    }
+    if (tneaPublicForm.districtMode === 'specific' && (!tneaPublicForm.districts || tneaPublicForm.districts.length === 0)) {
+      return 'Select at least one Tamil Nadu district, or choose “All Districts”.';
+    }
+    if (!tneaPublicForm.native_state || !tneaPublicForm.native_district) {
+      return 'Please select native state and current district.';
+    }
+    const allowed = new Set(
+      getDistrictOptionsForNativeState(tneaPublicForm.native_state).map((o) => o.value)
+    );
+    if (!allowed.has(tneaPublicForm.native_district)) {
+      return 'Select a district that belongs to your native state.';
+    }
+    return null;
+  }, [tneaPublicForm]);
+
+  const fetchTneaPublicColleges = useCallback(
+    async (pageOffset, append) => {
+      const validationError = validateTneaPublic();
+      if (validationError) {
+        setError(validationError);
+        return;
+      }
+      setLoading(true);
+      setError(null);
+      const [cutoffFrom, cutoffTo] = rankToCutoff(Number(tneaPublicForm.rank));
+      const resCodes =
+        tneaPublicForm.reservation_category_codes?.length > 0
+          ? tneaPublicForm.reservation_category_codes
+          : ['OC'];
+      const branch_codes =
+        tneaPublicForm.branchMode === 'specific' && tneaPublicForm.branch_codes?.length > 0
+          ? tneaPublicForm.branch_codes
+          : [];
+      const districts =
+        tneaPublicForm.districtMode === 'specific' && tneaPublicForm.districts?.length > 0
+          ? tneaPublicForm.districts
+          : [];
+
+      const payload = {
+        offset: pageOffset,
+        limit: PAGE_SIZE,
+        exam: 'TNEA',
+        entrance_exam_name_enum: 'TNEA',
+        admission_category_name_enum: 'DEFAULT',
+        cutoff_from: cutoffFrom,
+        cutoff_to: cutoffTo,
+        reservation_category_codes: resCodes,
+        sort_order: String(tneaPublicForm.sort_order ?? 'ASC'),
+        branch_codes,
+        districts,
+      };
+
+      const res = await getPredictedCollegesPublic(payload);
+      setLoading(false);
+
+      if (!res.success) {
+        const errData = res.data || {};
+        setError(getErrorMessage(errData, res.message));
+        if (!append) {
+          setResult(null);
+          lastSuccessfulTneaPublicSnapshotRef.current = null;
+          hasSuccessfulTneaPublicPredictionRef.current = false;
+        }
+        return;
+      }
+
+      const data = res.data;
+      const rawColleges = data.colleges || [];
+      if (!append) {
+        lastSuccessfulTneaPublicSnapshotRef.current = getTneaPublicFilterSnapshot(tneaPublicForm);
+        hasSuccessfulTneaPublicPredictionRef.current = true;
+        setResult({ ...data, colleges: rawColleges });
+        setOffset(pageOffset);
+        return;
+      }
+      setResult((prev) => {
+        if (!prev) return { ...data, colleges: rawColleges };
+        return {
+          ...data,
+          colleges: [...(prev.colleges || []), ...rawColleges],
+          total_no_of_colleges: data.total_no_of_colleges ?? prev.total_no_of_colleges,
+        };
+      });
+      setOffset(pageOffset);
+    },
+    [tneaPublicForm, validateTneaPublic]
+  );
+
+  const handleTneaPublicPredict = useCallback(async () => {
+    const v = validateTneaPublic();
+    if (v) {
+      setError(v);
+      return;
+    }
+    setError(null);
+    setResult(null);
+    setOffset(0);
+    await fetchTneaPublicColleges(0, false);
+  }, [validateTneaPublic, fetchTneaPublicColleges]);
 
   const fetchJeePublicSlot = useCallback(async (slot, pageOffset, append, formSnapshot) => {
     const meta = getEntranceExamMeta('JEE');
@@ -345,6 +497,10 @@ export default function CollegePredictorPage() {
         setError('Use the Predict Colleges button on the JEE form.');
         return;
       }
+      if (examValue === 'TNEA') {
+        setError('Use Predict Colleges on the TNEA form.');
+        return;
+      }
       const rawFrom = form.cutoff_from;
       const rawTo = form.cutoff_to;
       if (rawFrom === '' || rawTo === '') {
@@ -430,6 +586,7 @@ export default function CollegePredictorPage() {
     (e) => {
       e.preventDefault();
       if (form.entrance_exam_name_enum === 'JEE') return;
+      if (form.entrance_exam_name_enum === 'TNEA') return;
       setResult(null);
       fetchColleges(0, false);
     },
@@ -441,31 +598,20 @@ export default function CollegePredictorPage() {
       handleJeePublicLoadMore();
       return;
     }
-    const nextOffset = offset + PAGE_SIZE;
-    fetchColleges(nextOffset, true);
-  }, [form.entrance_exam_name_enum, offset, fetchColleges, handleJeePublicLoadMore]);
-
-  /** After results are shown, refetch when districts/branches/etc. change without submitting the form again. */
-  useEffect(() => {
-    if (form.entrance_exam_name_enum === 'JEE') return;
-    if (!result) {
-      lastSuccessfulPublicSnapshotRef.current = null;
+    if (form.entrance_exam_name_enum === 'TNEA') {
+      const nextOffset = offset + PAGE_SIZE;
+      fetchTneaPublicColleges(nextOffset, true);
       return;
     }
-    const examValue =
-      form.entrance_exam_name_enum != null && String(form.entrance_exam_name_enum).trim() !== ''
-        ? String(form.entrance_exam_name_enum).trim()
-        : '';
-    if (!examValue) return;
-    if (form.cutoff_from === '' || form.cutoff_to === '') return;
-    const cutoffFrom = parseInt(Number(form.cutoff_from), 10);
-    const cutoffTo = parseInt(Number(form.cutoff_to), 10);
-    if (!Number.isInteger(cutoffFrom) || cutoffFrom < 0 || !Number.isInteger(cutoffTo) || cutoffTo < 0) return;
-    if (cutoffFrom >= cutoffTo) return;
-    const current = getPublicFilterSnapshot(form);
-    if (lastSuccessfulPublicSnapshotRef.current === current) return;
-    fetchColleges(0, false);
-  }, [form, result, fetchColleges]);
+    const nextOffset = offset + PAGE_SIZE;
+    fetchColleges(nextOffset, true);
+  }, [
+    form.entrance_exam_name_enum,
+    offset,
+    fetchColleges,
+    handleJeePublicLoadMore,
+    fetchTneaPublicColleges,
+  ]);
 
   useEffect(() => {
     if (form.entrance_exam_name_enum !== 'JEE') return;
@@ -527,7 +673,10 @@ export default function CollegePredictorPage() {
             <p className="text-sm text-gray-600 mb-4">
               {isJeePublic
                 ? (examMetaPublic?.predictorPageSubtitle ?? 'JEE Main and Advanced prediction with national categories.')
-                : 'Find colleges by entrance exam, cutoff range, reservation category, and optional branch or district filters.'}
+                : isTneaPublic
+                  ? (examMetaPublic?.predictorPageSubtitle ??
+                    'Tamil Nadu engineering admissions — rank, category, and filters.')
+                  : 'Find colleges by entrance exam, cutoff range, reservation category, and optional branch or district filters.'}
             </p>
             <div className="space-y-4">
               <p className="text-xs text-gray-500 mb-2">
@@ -559,6 +708,17 @@ export default function CollegePredictorPage() {
                   accentKey="purple"
                   reservationOptions={examMetaPublic?.reservationOptions ?? JEE_RESERVATION_OPTIONS}
                   reservationFieldLabel={examMetaPublic?.reservationFieldLabel ?? 'Select a Category'}
+                />
+              ) : isTneaPublic ? (
+                <TneaPredictorForm
+                  asForm={false}
+                  values={tneaPublicForm}
+                  onChange={setTneaPublicForm}
+                  onSubmit={handleTneaPublicPredict}
+                  loading={loading}
+                  accentKey={examMetaPublic?.accent ?? 'orange'}
+                  reservationOptions={examMetaPublic?.reservationOptions}
+                  districtOptions={examMetaPublic?.districtOptions}
                 />
               ) : (
             <form onSubmit={handleSubmit} className="space-y-4">

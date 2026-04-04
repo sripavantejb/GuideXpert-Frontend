@@ -110,6 +110,59 @@ export const TS_EAMCET_RESERVATION_OPTIONS = [
 ];
 
 /**
+ * TNEA community codes — verified HTTP 200 on beta for `TNEA` + `admission_category_name_enum: DEFAULT`
+ * (GENERAL yields INVALID_ADMISSION_CATEGORY_NAME_ENUM). Values are short CAP-style codes (OC, BC, …).
+ */
+export const TNEA_RESERVATION_OPTIONS = [
+  { value: 'OC', label: 'OC (Open Competition)' },
+  { value: 'BC', label: 'BC (Backward Class)' },
+  { value: 'BCM', label: 'BCM (Backward Class Muslim)' },
+  { value: 'MBC', label: 'MBC (Most Backward Class)' },
+  { value: 'SC', label: 'SC (Scheduled Caste)' },
+  { value: 'SCA', label: 'SCA (SC – Arunthathiyar)' },
+  { value: 'ST', label: 'ST (Scheduled Tribe)' },
+];
+
+/**
+ * Tamil Nadu revenue districts for college-location filter (value === label).
+ * Spelling aligned to `indian-states-districts.json` and earlywave sample `Chennai` (HTTP 200).
+ */
+export const TNEA_DISTRICT_OPTIONS = [
+  { value: 'Ariyalur', label: 'Ariyalur' },
+  { value: 'Chennai', label: 'Chennai' },
+  { value: 'Coimbatore', label: 'Coimbatore' },
+  { value: 'Cuddalore', label: 'Cuddalore' },
+  { value: 'Dharmapuri', label: 'Dharmapuri' },
+  { value: 'Dindigul', label: 'Dindigul' },
+  { value: 'Erode', label: 'Erode' },
+  { value: 'Kanchipuram', label: 'Kanchipuram' },
+  { value: 'Kanyakumari', label: 'Kanyakumari' },
+  { value: 'Karur', label: 'Karur' },
+  { value: 'Krishnagiri', label: 'Krishnagiri' },
+  { value: 'Madurai', label: 'Madurai' },
+  { value: 'Nagapattinam', label: 'Nagapattinam' },
+  { value: 'Namakkal', label: 'Namakkal' },
+  { value: 'Nilgiris', label: 'Nilgiris' },
+  { value: 'Perambalur', label: 'Perambalur' },
+  { value: 'Pudukkottai', label: 'Pudukkottai' },
+  { value: 'Ramanathapuram', label: 'Ramanathapuram' },
+  { value: 'Salem', label: 'Salem' },
+  { value: 'Sivaganga', label: 'Sivaganga' },
+  { value: 'Thanjavur', label: 'Thanjavur' },
+  { value: 'Theni', label: 'Theni' },
+  { value: 'Thoothukudi (Tuticorin)', label: 'Thoothukudi (Tuticorin)' },
+  { value: 'Tiruchirappalli', label: 'Tiruchirappalli' },
+  { value: 'Tirunelveli', label: 'Tirunelveli' },
+  { value: 'Tiruppur', label: 'Tiruppur' },
+  { value: 'Tiruvallur', label: 'Tiruvallur' },
+  { value: 'Tiruvannamalai', label: 'Tiruvannamalai' },
+  { value: 'Tiruvarur', label: 'Tiruvarur' },
+  { value: 'Vellore', label: 'Vellore' },
+  { value: 'Viluppuram', label: 'Viluppuram' },
+  { value: 'Virudhunagar', label: 'Virudhunagar' },
+].sort((a, b) => a.value.localeCompare(b.value));
+
+/**
  * Telangana districts for TS EAMCET: earlywave expects **district_enum** short codes (like AP).
  * Labels aligned to TS geography; verified from TS_EAMCET + DEFAULT + OC BOYS responses on beta.
  */
@@ -284,8 +337,20 @@ export const ENTRANCE_EXAMS = [
     description: 'Tamil Nadu engineering admissions — cutoffs and branches in one place.',
     accent: 'orange',
     apiValue: 'TNEA',
-    supported: false,
-    admissionCategories: [],
+    supported: true,
+    defaultReservationCode: 'OC',
+    hideAdmissionField: true,
+    reservationFieldLabel: 'Select a Category',
+    rankFieldLabel: 'Enter Your Expected TNEA 2026 Rank',
+    reservationOptions: TNEA_RESERVATION_OPTIONS,
+    reservationSelectSingle: true,
+    districtOptions: TNEA_DISTRICT_OPTIONS,
+    districtSelectionHint:
+      'Choose “All districts” to search statewide, or pick specific Tamil Nadu districts. Native place is for your context; the API filters by college district.',
+    predictorPageTitle: 'TNEA 2026 College Predictor',
+    predictorPageSubtitle:
+      'Enter your expected rank, community category, optional Tamil Nadu districts and branches, and your native state and district.',
+    admissionCategories: [{ value: 'DEFAULT', label: 'Tamil Nadu engineering admissions' }],
   },
   {
     value: 'JEE',
