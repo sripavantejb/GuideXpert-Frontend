@@ -24,6 +24,13 @@ const AUTOMATED_POSTERS = [
     previewSrc: '/gx-poster.svg',
   },
   {
+    id: 'sid',
+    title: 'SID Poster',
+    description: 'SID campaign poster with your name and mobile. Download PNG or PDF after eligibility check.',
+    to: '/sid-poster',
+    previewSrc: '/sid-poster.svg',
+  },
+  {
     id: 'certified',
     title: 'Official certified poster',
     description: 'Your certified counsellor poster from the standard template.',
