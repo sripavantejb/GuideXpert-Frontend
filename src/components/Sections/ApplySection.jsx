@@ -476,7 +476,7 @@ const ApplySection = () => {
         const delaySec = Math.max(1, Math.round(delayMs / 1000));
 
         console.log(
-          `[OSVI] Outbound call scheduled on server after slot booking. Browser countdown ~${delaySec}s (see server logs for actual HTTP result).`
+          `[OSVI] Server waits ~${delaySec}s then places the call before this response; check result.data.data.osviOutboundResult and Vercel logs for "[OSVI]".`
         );
 
         if (osviCountdownIntervalRef.current != null) {
@@ -492,7 +492,7 @@ const ApplySection = () => {
               osviCountdownIntervalRef.current = null;
             }
             console.log(
-              '[OSVI] Countdown finished — server should trigger OSVI around now (verify in Vercel/backend logs: "[OSVI]" HTTP POST / success or failure).'
+              '[OSVI] Countdown finished (cosmetic). If submit already succeeded, OSVI ran during the loading state — check result.data.data.osviOutboundResult.'
             );
             return;
           }
