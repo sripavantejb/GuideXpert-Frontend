@@ -23,6 +23,7 @@ const navItems = [
   { to: '/admin/webinar-progress', label: 'Webinar Progress', icon: FiVideo, sectionKey: 'webinar-progress' },
   { to: '/admin/blogs', label: 'Blog Management', icon: FiBookOpen, sectionKey: 'blogs' },
   { to: '/admin/osvi-calls', label: 'OSVI Calls', icon: FiPhone, sectionKey: 'osvi-calls' },
+  { to: '/admin/osvi-calls-data', label: 'OSVI calls Data', icon: FiPhone, sectionKey: 'osvi-calls-data' },
   { to: '/admin/settings', label: 'Settings', icon: FiSettings, sectionKey: 'settings' },
 ];
 

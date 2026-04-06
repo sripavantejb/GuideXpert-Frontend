@@ -36,6 +36,7 @@ import TrainingFormResponses from './pages/admin/TrainingFormResponses';
 import Announcements from './pages/admin/Announcements';
 import WebinarProgressAdmin from './pages/admin/WebinarProgress';
 import OsviCalls from './pages/admin/OsviCalls';
+import OsviCallsData from './pages/admin/OsviCallsData';
 import CounsellorLogin from './pages/counsellor/CounsellorLogin';
 import WebinarLogin from './pages/webinar/WebinarLogin';
 
@@ -299,6 +300,7 @@ function App() {
             <Route path="webinar-progress" element={<WebinarProgressAdmin />} />
             <Route path="blogs" element={<AdminBlog />} />
             <Route path="osvi-calls" element={<OsviCalls />} />
+            <Route path="osvi-calls-data" element={<OsviCallsData />} />
           </Route>
 
           {/* Counsellor Portal */}

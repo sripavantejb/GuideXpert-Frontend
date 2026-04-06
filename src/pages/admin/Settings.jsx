@@ -14,6 +14,7 @@ const SECTION_OPTIONS = [
   { sectionKey: 'influencer-tracking', label: 'Influencer / UTM Tracking' },
   { sectionKey: 'assessment-results', label: 'Custom Reports' },
   { sectionKey: 'osvi-calls', label: 'OSVI Calls' },
+  { sectionKey: 'osvi-calls-data', label: 'OSVI calls Data' },
   { sectionKey: 'settings', label: 'Settings' },
 ];
 

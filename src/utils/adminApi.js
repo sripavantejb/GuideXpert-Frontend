@@ -652,3 +652,49 @@ export const setOsviSetting = async (input, token = getStoredToken()) => {
       : (input && typeof input === 'object' ? input : {});
   return adminRequest('/app-settings/osvi', { method: 'PATCH', body: JSON.stringify(body) }, token);
 };
+
+/** GET /osvi/call-sessions — list CRM-stored OSVI call sessions (admin auth, no /admin prefix). */
+export const getOsviCallSessionsData = async (params = {}, token = getStoredToken()) => {
+  const search = new URLSearchParams();
+  if (params.page != null) search.set('page', params.page);
+  if (params.limit != null) search.set('limit', params.limit);
+  const query = search.toString();
+  const url = `${API_BASE_URL}/osvi/call-sessions${query ? `?${query}` : ''}`;
+  const headers = {
+    'Content-Type': 'application/json',
+  };
+  if (token) headers.Authorization = `Bearer ${token}`;
+
+  try {
+    const response = await fetch(url, { method: 'GET', headers });
+    let data;
+    try {
+      data = await response.json();
+    } catch {
+      data = { message: 'Invalid response' };
+    }
+    if (!response.ok) {
+      if (response.status === 401) {
+        notifyAdminUnauthorized({ endpoint: '/osvi/call-sessions', status: 401 });
+      }
+      return {
+        success: false,
+        message: data.message || 'Request failed',
+        status: response.status,
+        data,
+      };
+    }
+    return { success: true, data, status: response.status };
+  } catch (error) {
+    const isNetworkError = error.message === 'Failed to fetch' || error.name === 'TypeError';
+    const message = isNetworkError
+      ? `Cannot reach server. Check API URL (${API_BASE_URL}) and network connectivity.`
+      : (error.message || 'Network error');
+    return {
+      success: false,
+      message,
+      status: 0,
+      error,
+    };
+  }
+};
