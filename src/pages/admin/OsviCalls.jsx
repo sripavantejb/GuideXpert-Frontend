@@ -9,7 +9,29 @@ const STATUS_COLORS = {
   failed: 'bg-red-100 text-red-800',
   pending: 'bg-yellow-100 text-yellow-800',
   processing: 'bg-blue-100 text-blue-800',
+  cancelled: 'bg-gray-100 text-gray-700',
 };
+
+const DELAY_UNIT_TO_MS = {
+  seconds: 1000,
+  minutes: 60 * 1000,
+  hours: 60 * 60 * 1000,
+};
+
+function msToDelayParts(ms) {
+  const n = Math.max(0, Number(ms) || 0);
+  if (n % DELAY_UNIT_TO_MS.hours === 0) return { value: n / DELAY_UNIT_TO_MS.hours, unit: 'hours' };
+  if (n % DELAY_UNIT_TO_MS.minutes === 0) return { value: n / DELAY_UNIT_TO_MS.minutes, unit: 'minutes' };
+  if (n % DELAY_UNIT_TO_MS.seconds === 0) return { value: n / DELAY_UNIT_TO_MS.seconds, unit: 'seconds' };
+  return { value: n / DELAY_UNIT_TO_MS.minutes, unit: 'minutes' };
+}
+
+function delayPartsToMs(value, unit) {
+  const v = Number(value);
+  const mul = DELAY_UNIT_TO_MS[unit] || DELAY_UNIT_TO_MS.minutes;
+  if (!Number.isFinite(v) || v < 0) return null;
+  return Math.floor(v * mul);
+}
 
 function StatusBadge({ status }) {
   const cls = STATUS_COLORS[status] || 'bg-gray-100 text-gray-700';
@@ -52,6 +74,9 @@ export default function OsviCalls() {
   const [osviLoading, setOsviLoading] = useState(true);
   const [osviToggling, setOsviToggling] = useState(false);
   const [osviStatus, setOsviStatus] = useState({ type: null, message: '' });
+  const [delayValue, setDelayValue] = useState(10);
+  const [delayUnit, setDelayUnit] = useState('minutes');
+  const [delaySaving, setDelaySaving] = useState(false);
 
   const [rows, setRows] = useState([]);
   const [total, setTotal] = useState(0);
@@ -68,7 +93,12 @@ export default function OsviCalls() {
     getOsviSetting()
       .then((res) => {
         if (cancelled) return;
-        if (res.success) setOsviEnabledState(res.data?.osviEnabled !== false);
+        if (res.success) {
+          setOsviEnabledState(res.data?.osviEnabled !== false);
+          const parts = msToDelayParts(res.data?.osviAbandonedDelayMs);
+          setDelayValue(parts.value);
+          setDelayUnit(parts.unit);
+        }
       })
       .finally(() => { if (!cancelled) setOsviLoading(false); });
     return () => { cancelled = true; };
@@ -114,6 +144,27 @@ export default function OsviCalls() {
     }
   };
 
+  const handleSaveDelay = async () => {
+    if (!isSuperAdmin || delaySaving) return;
+    const ms = delayPartsToMs(delayValue, delayUnit);
+    if (ms == null) {
+      setOsviStatus({ type: 'error', message: 'Enter a valid non-negative delay.' });
+      return;
+    }
+    setDelaySaving(true);
+    setOsviStatus({ type: null, message: '' });
+    const res = await setOsviSetting({ osviAbandonedDelayMs: ms });
+    setDelaySaving(false);
+    if (res.success) {
+      const parts = msToDelayParts(res.data?.osviAbandonedDelayMs);
+      setDelayValue(parts.value);
+      setDelayUnit(parts.unit);
+      setOsviStatus({ type: 'success', message: 'OSVI delay updated successfully.' });
+    } else {
+      setOsviStatus({ type: 'error', message: res.message || 'Failed to update delay.' });
+    }
+  };
+
   const totalPages = Math.max(1, Math.ceil(total / LIMIT));
 
   return (
@@ -126,7 +177,7 @@ export default function OsviCalls() {
           <div className="min-w-0">
             <p className="text-sm font-semibold text-gray-800">OSVI Outbound Calls</p>
             <p className="text-xs text-gray-500 mt-0.5">
-              When enabled, an AI voice call is triggered after each slot booking on the counselor Apply form.
+              When enabled, an AI voice call is triggered 10 minutes after OTP if the applicant does not complete slot booking.
               {!isSuperAdmin && <span className="ml-1 text-amber-600">Only super admins can change this.</span>}
             </p>
             {osviStatus.message && (
@@ -158,6 +209,41 @@ export default function OsviCalls() {
             </button>
           </div>
         </div>
+        <div className="mt-4 pt-4 border-t border-gray-100">
+          <p className="text-xs font-medium text-gray-700 mb-2">Abandoned Apply call delay</p>
+          <div className="flex items-center gap-2 flex-wrap">
+            <input
+              type="number"
+              min="0"
+              step="1"
+              value={delayValue}
+              onChange={(e) => setDelayValue(e.target.value)}
+              disabled={!isSuperAdmin || osviLoading || delaySaving}
+              className="w-28 text-sm border border-gray-300 rounded-lg px-3 py-1.5 focus:outline-none focus:ring-2 focus:ring-primary-navy disabled:opacity-50"
+            />
+            <select
+              value={delayUnit}
+              onChange={(e) => setDelayUnit(e.target.value)}
+              disabled={!isSuperAdmin || osviLoading || delaySaving}
+              className="text-sm border border-gray-300 rounded-lg px-3 py-1.5 focus:outline-none focus:ring-2 focus:ring-primary-navy disabled:opacity-50"
+            >
+              <option value="seconds">Seconds</option>
+              <option value="minutes">Minutes</option>
+              <option value="hours">Hours</option>
+            </select>
+            <button
+              type="button"
+              onClick={handleSaveDelay}
+              disabled={!isSuperAdmin || osviLoading || delaySaving}
+              className="text-sm px-3 py-1.5 rounded-lg bg-primary-navy text-white hover:bg-primary-navy/90 disabled:opacity-50 font-medium"
+            >
+              {delaySaving ? 'Saving…' : 'Save delay'}
+            </button>
+          </div>
+          <p className="text-xs text-gray-400 mt-1">
+            Applied instantly for new OTP requests from the Apply form.
+          </p>
+        </div>
       </div>
 
       {/* Call history */}
@@ -178,6 +264,7 @@ export default function OsviCalls() {
               <option value="failed">Failed</option>
               <option value="pending">Pending</option>
               <option value="processing">Processing</option>
+              <option value="cancelled">Cancelled</option>
             </select>
             <button
               type="button"
@@ -198,7 +285,7 @@ export default function OsviCalls() {
         ) : rows.length === 0 ? (
           <div className="px-5 py-10 text-center">
             <p className="text-sm font-medium text-gray-600">No OSVI call records yet.</p>
-            <p className="text-xs text-gray-400 mt-1">Records appear here after a counselor completes slot booking with OSVI enabled.</p>
+            <p className="text-xs text-gray-400 mt-1">Records appear here when abandoned Apply flows trigger OSVI or are cancelled after booking.</p>
           </div>
         ) : (
           <>

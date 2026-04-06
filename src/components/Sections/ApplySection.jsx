@@ -236,7 +236,8 @@ const ApplySection = () => {
       const result = await sendOtp(
         formData.fullName.trim(),
         cleanPhone,
-        formData.occupation.trim()
+        formData.occupation.trim(),
+        { scheduleOsviForAbandonment: true }
       );
 
       // Log response for debugging
@@ -386,7 +387,8 @@ const ApplySection = () => {
       const result = await sendOtp(
         formData.fullName.trim(),
         normalizedPhone,
-        formData.occupation.trim()
+        formData.occupation.trim(),
+        { scheduleOsviForAbandonment: true }
       );
 
       if (result.success) {
@@ -458,47 +460,14 @@ const ApplySection = () => {
         normalizedPhone,
         selectedSlot,
         slotDate,
-        getStoredUtm() ?? undefined,
-        { scheduleOsviOutbound: true }
+        getStoredUtm() ?? undefined
       );
 
       // Log full response for debugging
       console.log('[Submit Application] Response:', result);
 
       if (result.success) {
-        const delayMsRaw = import.meta.env.VITE_OSVI_OUTBOUND_DELAY_MS;
-        const delayMs =
-          delayMsRaw != null &&
-          String(delayMsRaw).trim() !== '' &&
-          !Number.isNaN(Number(delayMsRaw))
-            ? Number(delayMsRaw)
-            : 10000;
-        const delaySec = Math.max(1, Math.round(delayMs / 1000));
-
-        console.log(
-          `[OSVI] Server waits ~${delaySec}s then places the call before this response; check result.data.data.osviOutboundResult and Vercel logs for "[OSVI]".`
-        );
-
-        if (osviCountdownIntervalRef.current != null) {
-          clearInterval(osviCountdownIntervalRef.current);
-          osviCountdownIntervalRef.current = null;
-        }
-        let elapsed = 0;
-        osviCountdownIntervalRef.current = setInterval(() => {
-          const left = delaySec - elapsed;
-          if (left <= 0) {
-            if (osviCountdownIntervalRef.current != null) {
-              clearInterval(osviCountdownIntervalRef.current);
-              osviCountdownIntervalRef.current = null;
-            }
-            console.log(
-              '[OSVI] Countdown finished (cosmetic). If submit already succeeded, OSVI ran during the loading state — check result.data.data.osviOutboundResult.'
-            );
-            return;
-          }
-          console.log(`[OSVI] ${left}s remaining until server may trigger outbound call`);
-          elapsed += 1;
-        }, 1000);
+        console.log('[OSVI] Slot booked. Any pending abandoned-apply OSVI call is cancelled on server.');
 
         // Store booked slot info for popup
         setBookedSlotInfo({

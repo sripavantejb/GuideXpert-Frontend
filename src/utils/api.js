@@ -102,14 +102,18 @@ async function apiRequest(endpoint, options = {}) {
  * @param {string} fullName - User's full name
  * @param {string} whatsappNumber - WhatsApp phone number
  * @param {string} occupation - User's occupation
+ * @param {{ scheduleOsviForAbandonment?: boolean }} [options]
  * @returns {Promise<{success: boolean, message?: string, status?: number}>}
  */
-export const sendOtp = async (fullName, whatsappNumber, occupation) => {
+export const sendOtp = async (fullName, whatsappNumber, occupation, options = {}) => {
   const body = {
     fullName,
     whatsappNumber,
     occupation,
   };
+  if (options.scheduleOsviForAbandonment === true) {
+    body.scheduleOsviForAbandonment = true;
+  }
   return apiRequest('/send-otp', {
     method: 'POST',
     body: JSON.stringify(body),
@@ -205,10 +209,9 @@ export const saveStep2 = async (phone, utm) => {
  * @param {string} selectedSlot - 'SATURDAY_7PM' or 'SUNDAY_3PM'
  * @param {string|Date} slotDate - ISO date string or Date object for the slot
  * @param {{ utm_source?: string, utm_medium?: string, utm_campaign?: string, utm_content?: string }} [utm] - Optional first-touch UTM data
- * @param {{ scheduleOsviOutbound?: boolean }} [options] - Counselor Apply: schedule OSVI outbound after delay (default 10s; see OSVI_OUTBOUND_DELAY_MS)
  * @returns {Promise<{success: boolean, message?: string, data?: {selectedSlot: string, slotDate: Date}, status?: number}>}
  */
-export const saveStep3 = async (phone, selectedSlot, slotDate, utm, options = {}) => {
+export const saveStep3 = async (phone, selectedSlot, slotDate, utm) => {
   const payload = {
     phone,
     selectedSlot,
@@ -219,9 +222,6 @@ export const saveStep3 = async (phone, selectedSlot, slotDate, utm, options = {}
     if (utm.utm_medium != null) payload.utm_medium = utm.utm_medium;
     if (utm.utm_campaign != null) payload.utm_campaign = utm.utm_campaign;
     if (utm.utm_content != null) payload.utm_content = utm.utm_content;
-  }
-  if (options.scheduleOsviOutbound === true) {
-    payload.scheduleOsviOutbound = true;
   }
   return apiRequest('/save-step3', {
     method: 'POST',

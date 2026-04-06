@@ -234,7 +234,7 @@ export default function Settings() {
         <div className="flex items-center justify-between gap-4 py-3 border-t border-gray-100">
           <div className="min-w-0">
             <p className="text-sm font-medium text-gray-800">OSVI Outbound Calls <span className="text-gray-400 font-normal">(Apply section)</span></p>
-            <p className="text-xs text-gray-500 mt-0.5">When enabled, an AI voice call is triggered after each slot booking on the counselor apply form.</p>
+            <p className="text-xs text-gray-500 mt-0.5">When enabled, an AI voice call is triggered 10 minutes after OTP if the applicant does not complete slot booking.</p>
             {osviStatus.message && (
               <p className={`text-xs mt-1 ${osviStatus.type === 'success' ? 'text-green-600' : 'text-red-600'}`} role="alert">
                 {osviStatus.message}

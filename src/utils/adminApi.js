@@ -641,11 +641,14 @@ export const getOsviSetting = async (token = getStoredToken()) => {
   return adminRequest('/app-settings/osvi', { method: 'GET' }, token);
 };
 
-/** PATCH /admin/app-settings/osvi — set OSVI toggle (super-admin only). */
-export const setOsviSetting = async (enabled, token = getStoredToken()) => {
-  return adminRequest(
-    '/app-settings/osvi',
-    { method: 'PATCH', body: JSON.stringify({ enabled }) },
-    token
-  );
+/**
+ * PATCH /admin/app-settings/osvi — update OSVI settings (super-admin only).
+ * @param {boolean|{enabled?: boolean, osviAbandonedDelayMs?: number}} input
+ */
+export const setOsviSetting = async (input, token = getStoredToken()) => {
+  const body =
+    typeof input === 'boolean'
+      ? { enabled: input }
+      : (input && typeof input === 'object' ? input : {});
+  return adminRequest('/app-settings/osvi', { method: 'PATCH', body: JSON.stringify(body) }, token);
 };
