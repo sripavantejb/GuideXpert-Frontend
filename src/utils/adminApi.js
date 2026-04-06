@@ -635,3 +635,17 @@ export const adminUpdateBlog = async (id, payload, token = getStoredToken()) => 
 export const adminDeleteBlog = async (id, token = getStoredToken()) => {
   return adminRequest(`/blogs/${encodeURIComponent(id)}`, { method: 'DELETE' }, token);
 };
+
+/** GET /admin/app-settings/osvi — get OSVI toggle state. */
+export const getOsviSetting = async (token = getStoredToken()) => {
+  return adminRequest('/app-settings/osvi', { method: 'GET' }, token);
+};
+
+/** PATCH /admin/app-settings/osvi — set OSVI toggle (super-admin only). */
+export const setOsviSetting = async (enabled, token = getStoredToken()) => {
+  return adminRequest(
+    '/app-settings/osvi',
+    { method: 'PATCH', body: JSON.stringify({ enabled }) },
+    token
+  );
+};

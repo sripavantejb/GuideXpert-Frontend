@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { useAuth } from '../../hooks/useAuth';
-import { createAdmin, listAdmins, deleteAdmin, resetAdminPassword, changeMyPassword } from '../../utils/adminApi';
+import { createAdmin, listAdmins, deleteAdmin, resetAdminPassword, changeMyPassword, getOsviSetting, setOsviSetting } from '../../utils/adminApi';
 
 const SECTION_OPTIONS = [
   { sectionKey: 'dashboard', label: 'Dashboard' },
@@ -46,6 +46,11 @@ export default function Settings() {
   const [changePasswordForm, setChangePasswordForm] = useState({ current: '', new: '', confirm: '' });
   const [changePasswordStatus, setChangePasswordStatus] = useState({ type: null, message: '' });
   const [changePasswordSubmitting, setChangePasswordSubmitting] = useState(false);
+
+  const [osviEnabled, setOsviEnabled] = useState(true);
+  const [osviLoading, setOsviLoading] = useState(true);
+  const [osviToggling, setOsviToggling] = useState(false);
+  const [osviStatus, setOsviStatus] = useState({ type: null, message: '' });
 
   const isSuperAdmin = user?.isSuperAdmin === true;
 
@@ -147,6 +152,36 @@ export default function Settings() {
     return () => { cancelled = true; };
   }, [isSuperAdmin]);
 
+  useEffect(() => {
+    let cancelled = false;
+    setOsviLoading(true);
+    getOsviSetting()
+      .then((res) => {
+        if (cancelled) return;
+        if (res.success) setOsviEnabled(res.data?.osviEnabled !== false);
+      })
+      .finally(() => { if (!cancelled) setOsviLoading(false); });
+    return () => { cancelled = true; };
+  }, []);
+
+  const handleOsviToggle = async () => {
+    if (!isSuperAdmin || osviToggling) return;
+    const next = !osviEnabled;
+    setOsviToggling(true);
+    setOsviStatus({ type: null, message: '' });
+    const res = await setOsviSetting(next);
+    setOsviToggling(false);
+    if (res.success) {
+      setOsviEnabled(res.data?.osviEnabled !== false);
+      setOsviStatus({
+        type: 'success',
+        message: res.data?.osviEnabled ? 'OSVI calls enabled.' : 'OSVI calls disabled.',
+      });
+    } else {
+      setOsviStatus({ type: 'error', message: res.message || 'Failed to update setting.' });
+    }
+  };
+
   const handleSectionToggle = (sectionKey) => {
     setForm((prev) => ({
       ...prev,
@@ -190,6 +225,38 @@ export default function Settings() {
   return (
     <div className="max-w-3xl mx-auto">
       <h2 className="text-xl font-semibold text-gray-800 mb-6">Settings</h2>
+
+      {/* Feature Toggles */}
+      <div className="bg-white rounded-lg border border-gray-200 shadow-sm p-6 mb-6">
+        <h3 className="text-lg font-semibold text-gray-800 mb-1">Feature Toggles</h3>
+        <p className="text-sm text-gray-500 mb-5">Control live features for the public-facing site. Only super admins can change these.</p>
+        <div className="flex items-center justify-between gap-4 py-3 border-t border-gray-100">
+          <div className="min-w-0">
+            <p className="text-sm font-medium text-gray-800">OSVI Outbound Calls <span className="text-gray-400 font-normal">(Apply section)</span></p>
+            <p className="text-xs text-gray-500 mt-0.5">When enabled, an AI voice call is triggered after each slot booking on the counselor apply form.</p>
+            {osviStatus.message && (
+              <p className={`text-xs mt-1 ${osviStatus.type === 'success' ? 'text-green-600' : 'text-red-600'}`} role="alert">
+                {osviStatus.message}
+              </p>
+            )}
+          </div>
+          <button
+            type="button"
+            role="switch"
+            aria-checked={osviEnabled}
+            disabled={!isSuperAdmin || osviLoading || osviToggling}
+            onClick={handleOsviToggle}
+            title={!isSuperAdmin ? 'Only super admins can change this' : undefined}
+            className={`relative inline-flex h-6 w-11 shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 focus:outline-none focus:ring-2 focus:ring-primary-navy focus:ring-offset-2 disabled:opacity-50 disabled:cursor-not-allowed ${osviEnabled ? 'bg-primary-navy' : 'bg-gray-200'}`}
+          >
+            <span className="sr-only">{osviEnabled ? 'Disable OSVI calls' : 'Enable OSVI calls'}</span>
+            <span
+              aria-hidden="true"
+              className={`pointer-events-none inline-block h-5 w-5 transform rounded-full bg-white shadow ring-0 transition duration-200 ease-in-out ${osviEnabled ? 'translate-x-5' : 'translate-x-0'}`}
+            />
+          </button>
+        </div>
+      </div>
 
       <div className="bg-white rounded-lg border border-gray-200 shadow-sm p-6 mb-6">
         <h3 className="text-lg font-semibold text-gray-800 mb-2">Change my password</h3>
