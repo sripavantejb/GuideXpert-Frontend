@@ -1,7 +1,7 @@
 import { useState, useRef, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { jsPDF } from 'jspdf';
-import { checkActivationEligibility } from '../utils/api';
+import { checkActivationEligibility, trackPosterDownloadBeacon } from '../utils/api';
 import InterPosterPreview, {
   INTER_POSTER_WIDTH as POSTER_WIDTH,
   INTER_POSTER_HEIGHT as POSTER_HEIGHT,
@@ -151,6 +151,13 @@ export default function InterPosterPage() {
         const fn = `GuideXpert-Poster-${safeFilename(fullName)}-${Date.now()}.png`;
         const a = document.createElement('a'); a.download = fn; a.href = url; a.click();
       }
+      trackPosterDownloadBeacon({
+        posterKey: 'inter',
+        format: 'png',
+        displayName,
+        mobileNumber: mobile10,
+        routeContext: 'public',
+      });
     } catch (e) { console.error(e); }
     setGenerating(false);
   };
@@ -172,6 +179,13 @@ export default function InterPosterPage() {
         const a = document.createElement('a'); a.download = fn; a.href = u; a.click();
         setTimeout(() => URL.revokeObjectURL(u), 5000);
       }
+      trackPosterDownloadBeacon({
+        posterKey: 'inter',
+        format: 'pdf',
+        displayName,
+        mobileNumber: mobile10,
+        routeContext: 'public',
+      });
     } catch (e) { console.error(e); }
     setGenerating(false);
   };

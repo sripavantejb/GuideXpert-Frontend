@@ -37,6 +37,7 @@ import Announcements from './pages/admin/Announcements';
 import WebinarProgressAdmin from './pages/admin/WebinarProgress';
 import OsviCalls from './pages/admin/OsviCalls';
 import OsviCallsData from './pages/admin/OsviCallsData';
+import PosterDownloads from './pages/admin/PosterDownloads';
 import CounsellorLogin from './pages/counsellor/CounsellorLogin';
 import WebinarLogin from './pages/webinar/WebinarLogin';
 
@@ -293,6 +294,7 @@ function App() {
             <Route path="training-feedback" element={<TrainingFeedback />} />
             <Route path="training-form-responses" element={<TrainingFormResponses />} />
             <Route path="influencer-tracking" element={<InfluencerTracking />} />
+            <Route path="poster-downloads" element={<PosterDownloads />} />
             <Route path="assessment-results" element={<AssessmentResults />} />
             <Route path="assessment-2-results" element={<Navigate to="/admin/assessment-results?type=2" replace />} />
             <Route path="assessment-3-results" element={<Navigate to="/admin/assessment-results?type=3" replace />} />

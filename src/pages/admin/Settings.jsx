@@ -12,6 +12,7 @@ const SECTION_OPTIONS = [
   { sectionKey: 'training-form-responses', label: 'Training Form' },
   { sectionKey: 'training-feedback', label: 'Activation Form' },
   { sectionKey: 'influencer-tracking', label: 'Influencer / UTM Tracking' },
+  { sectionKey: 'poster-downloads', label: 'Poster downloads' },
   { sectionKey: 'assessment-results', label: 'Custom Reports' },
   { sectionKey: 'osvi-calls', label: 'OSVI Calls' },
   { sectionKey: 'osvi-calls-data', label: 'OSVI calls Data' },

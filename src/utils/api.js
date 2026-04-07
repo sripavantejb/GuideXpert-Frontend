@@ -1,14 +1,47 @@
 import { getStoredUtm } from './utm';
 import { notifyWebinarUnauthorized } from './authSession';
 import { getApiBaseUrl } from './apiBaseUrl';
+import { getCounsellorToken } from './counsellorApi';
 
-const API_BASE_URL = getApiBaseUrl();
+/**
+ * Fire-and-forget poster download analytics. Does not block UI; failures are silent.
+ * @param {{ posterKey: string, format: 'png'|'pdf', displayName?: string, mobileNumber?: string, routeContext?: 'public'|'portal' }} payload
+ */
+export function trackPosterDownloadBeacon(payload) {
+  if (!payload || typeof payload !== 'object') return;
+  const { posterKey, format, displayName, mobileNumber, routeContext } = payload;
+  if (!posterKey || !format) return;
+  try {
+    const url = `${getApiBaseUrl()}/counsellor/poster-downloads/track`;
+    const bodyObj = {
+      posterKey,
+      format,
+      displayName: displayName != null ? String(displayName) : '',
+      mobileNumber:
+        mobileNumber != null ? String(mobileNumber).replace(/\D/g, '').slice(0, 10) : '',
+    };
+    if (routeContext === 'public' || routeContext === 'portal') {
+      bodyObj.routeContext = routeContext;
+    }
+    const headers = { 'Content-Type': 'application/json' };
+    const token = getCounsellorToken();
+    if (token) headers.Authorization = `Bearer ${token}`;
+    void fetch(url, {
+      method: 'POST',
+      headers,
+      body: JSON.stringify(bodyObj),
+      keepalive: true,
+    }).catch(() => {});
+  } catch {
+    /* silent */
+  }
+}
 
 /**
  * Generic API request handler
  */
 async function apiRequest(endpoint, options = {}) {
-  const url = `${API_BASE_URL}${endpoint}`;
+  const url = `${getApiBaseUrl()}${endpoint}`;
 
   const headers = {
     'Content-Type': 'application/json',
@@ -673,7 +706,7 @@ export const recordCertificateDownload = async (token) => {
 };
 
 export const syncWebinarProgressBeacon = (token, payload) => {
-  const url = `${API_BASE_URL}/webinar-progress/sync`;
+  const url = `${getApiBaseUrl()}/webinar-progress/sync`;
   try {
     fetch(url, {
       method: 'POST',

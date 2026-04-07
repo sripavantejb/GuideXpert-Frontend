@@ -4,7 +4,8 @@ import react from '@vitejs/plugin-react'
 import tailwindcss from '@tailwindcss/vite'
 
 // Default: deployed backend so `npm run dev` works without a local Node server.
-// Override with VITE_PROXY_TARGET=http://localhost:5000 for local backend.
+// For local API (fixes 404 until you redeploy): copy .env.development.example to
+// .env.development.local and set VITE_PROXY_TARGET=http://localhost:5000, then restart Vite.
 const DEFAULT_PROXY_TARGET = 'https://guide-xpert-backend.vercel.app'
 
 // https://vite.dev/config/

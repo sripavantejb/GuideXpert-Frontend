@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { jsPDF } from 'jspdf';
-import { checkActivationEligibility } from '../utils/api';
+import { checkActivationEligibility, trackPosterDownloadBeacon } from '../utils/api';
 import SidPosterPreview, {
   SID_POSTER_WIDTH as POSTER_WIDTH,
   SID_POSTER_HEIGHT as POSTER_HEIGHT,
@@ -154,6 +154,13 @@ export default function SidPosterPage() {
         a.href = url;
         a.click();
       }
+      trackPosterDownloadBeacon({
+        posterKey: 'sid',
+        format: 'png',
+        displayName,
+        mobileNumber: mobile10,
+        routeContext: 'public',
+      });
     } catch (e) {
       console.error(e);
     }
@@ -182,6 +189,13 @@ export default function SidPosterPage() {
         a.click();
         setTimeout(() => URL.revokeObjectURL(u), 5000);
       }
+      trackPosterDownloadBeacon({
+        posterKey: 'sid',
+        format: 'pdf',
+        displayName,
+        mobileNumber: mobile10,
+        routeContext: 'public',
+      });
     } catch (e) {
       console.error(e);
     }

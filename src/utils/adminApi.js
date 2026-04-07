@@ -1,13 +1,11 @@
 import { notifyAdminUnauthorized } from './authSession';
 import { getApiBaseUrl } from './apiBaseUrl';
 
-const defaultApiUrl = getApiBaseUrl();
-const API_BASE_URL = defaultApiUrl;
 const ADMIN_TOKEN_KEY = 'guidexpert_admin_token';
 
 /** Base URL used for admin API (e.g. to show on login page in dev). */
 export function getAdminApiBaseUrl() {
-  return defaultApiUrl;
+  return getApiBaseUrl();
 }
 
 export function getStoredToken() {
@@ -20,7 +18,7 @@ export function setStoredToken(token) {
 }
 
 async function adminRequest(endpoint, options = {}, token = getStoredToken()) {
-  const url = `${API_BASE_URL}/admin${endpoint}`;
+  const url = `${getApiBaseUrl()}/admin${endpoint}`;
   const headers = {
     'Content-Type': 'application/json',
     ...options.headers,
@@ -52,7 +50,7 @@ async function adminRequest(endpoint, options = {}, token = getStoredToken()) {
   } catch (error) {
     const isNetworkError = error.message === 'Failed to fetch' || error.name === 'TypeError';
     const message = isNetworkError
-      ? `Cannot reach server. Check API URL (${API_BASE_URL}) and network connectivity.`
+      ? `Cannot reach server. Check API URL (${getApiBaseUrl()}) and network connectivity.`
       : (error.message || 'Network error');
     return {
       success: false,
@@ -399,7 +397,7 @@ export const unpublishAnnouncement = async (id, token = getStoredToken()) => {
 
 /** Request to /api/influencer-links and /api/influencer-analytics (admin auth, no /admin prefix). */
 async function influencerRequest(path, options = {}, token = getStoredToken()) {
-  const url = `${API_BASE_URL}${path}`;
+  const url = `${getApiBaseUrl()}${path}`;
   const headers = { 'Content-Type': 'application/json', ...options.headers };
   if (token) headers.Authorization = `Bearer ${token}`;
   try {
@@ -535,7 +533,7 @@ export const getWebinarProgressExport = async (paramsOrToken = {}, token = getSt
   const search = new URLSearchParams();
   appendWebinarProgressFilterParams(search, params);
   const query = search.toString();
-  const url = `${API_BASE_URL}/admin/webinar-progress/export${query ? `?${query}` : ''}`;
+  const url = `${getApiBaseUrl()}/admin/webinar-progress/export${query ? `?${query}` : ''}`;
   const headers = {};
   if (actualToken) headers.Authorization = `Bearer ${actualToken}`;
   const response = await fetch(url, { method: 'GET', headers });
@@ -575,7 +573,7 @@ export async function getAdminLeadsExport(params = {}, token = getStoredToken())
   if (params.slotDate && String(params.slotDate).trim()) search.set('slotDate', String(params.slotDate).trim());
   if (params.utm_content) search.set('utm_content', params.utm_content);
   const query = search.toString();
-  const url = `${API_BASE_URL}/admin/leads/export${query ? `?${query}` : ''}`;
+  const url = `${getApiBaseUrl()}/admin/leads/export${query ? `?${query}` : ''}`;
   const headers = {};
   if (token) headers.Authorization = `Bearer ${token}`;
   const response = await fetch(url, { method: 'GET', headers });
@@ -659,7 +657,7 @@ export const getOsviCallSessionsData = async (params = {}, token = getStoredToke
   if (params.page != null) search.set('page', params.page);
   if (params.limit != null) search.set('limit', params.limit);
   const query = search.toString();
-  const url = `${API_BASE_URL}/osvi/call-sessions${query ? `?${query}` : ''}`;
+  const url = `${getApiBaseUrl()}/osvi/call-sessions${query ? `?${query}` : ''}`;
   const headers = {
     'Content-Type': 'application/json',
   };
@@ -688,7 +686,7 @@ export const getOsviCallSessionsData = async (params = {}, token = getStoredToke
   } catch (error) {
     const isNetworkError = error.message === 'Failed to fetch' || error.name === 'TypeError';
     const message = isNetworkError
-      ? `Cannot reach server. Check API URL (${API_BASE_URL}) and network connectivity.`
+      ? `Cannot reach server. Check API URL (${getApiBaseUrl()}) and network connectivity.`
       : (error.message || 'Network error');
     return {
       success: false,
@@ -697,4 +695,28 @@ export const getOsviCallSessionsData = async (params = {}, token = getStoredToke
       error,
     };
   }
+};
+
+/** GET /admin/poster-downloads — paginated poster download events. Pass includeStats: true to also get chart aggregates (one round trip). */
+export const getPosterDownloads = async (params = {}, token = getStoredToken()) => {
+  const search = new URLSearchParams();
+  if (params.page != null) search.set('page', String(params.page));
+  if (params.limit != null) search.set('limit', String(params.limit));
+  if (params.from) search.set('from', params.from);
+  if (params.to) search.set('to', params.to);
+  if (params.posterKey) search.set('posterKey', params.posterKey);
+  if (params.q) search.set('q', params.q);
+  if (params.counsellorId) search.set('counsellorId', params.counsellorId);
+  if (params.includeStats === true) search.set('includeStats', '1');
+  const query = search.toString();
+  return adminRequest(`/poster-downloads${query ? `?${query}` : ''}`, { method: 'GET' }, token);
+};
+
+/** GET /admin/poster-downloads/stats — aggregates by poster and day. */
+export const getPosterDownloadStats = async (params = {}, token = getStoredToken()) => {
+  const search = new URLSearchParams();
+  if (params.from) search.set('from', params.from);
+  if (params.to) search.set('to', params.to);
+  const query = search.toString();
+  return adminRequest(`/poster-downloads/stats${query ? `?${query}` : ''}`, { method: 'GET' }, token);
 };

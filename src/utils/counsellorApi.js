@@ -1,8 +1,6 @@
 import { notifyCounsellorUnauthorized } from './authSession';
 import { getApiBaseUrl } from './apiBaseUrl';
 
-const API_BASE_URL = getApiBaseUrl();
-
 const COUNSELLOR_TOKEN_KEY = 'guidexpert_counsellor_token';
 const COUNSELLOR_USER_KEY = 'guidexpert_counsellor_user';
 const COUNSELLOR_ACCESS_FORM_KEY = 'guidexpert_counsellor_access_form';
@@ -48,7 +46,7 @@ export function setCounsellorAccessForm(accessForm) {
 }
 
 async function counsellorRequest(endpoint, options = {}, token = getCounsellorToken()) {
-  const url = `${API_BASE_URL}/counsellor${endpoint}`;
+  const url = `${getApiBaseUrl()}/counsellor${endpoint}`;
   const headers = {
     'Content-Type': 'application/json',
     ...options.headers,
@@ -193,7 +191,7 @@ export const exportStudents = async (params = {}, token = getCounsellorToken()) 
   if (params.joinedTo) search.set('joinedTo', params.joinedTo);
   if (params.deleted !== undefined && params.deleted !== '') search.set('deleted', String(params.deleted));
   const query = search.toString();
-  const exportUrl = `${API_BASE_URL}/counsellor/students/export${query ? `?${query}` : ''}`;
+  const exportUrl = `${getApiBaseUrl()}/counsellor/students/export${query ? `?${query}` : ''}`;
   const headers = {};
   if (token) headers.Authorization = `Bearer ${token}`;
   const response = await fetch(exportUrl, { method: 'GET', headers });

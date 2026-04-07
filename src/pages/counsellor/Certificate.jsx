@@ -1,7 +1,7 @@
 import { useState, useRef, useEffect } from 'react';
 import html2canvas from 'html2canvas';
 import { jsPDF } from 'jspdf';
-import { checkPosterEligibility } from '../../utils/api';
+import { checkPosterEligibility, trackPosterDownloadBeacon } from '../../utils/api';
 import PosterPreview from '../../components/Counsellor/PosterPreview';
 
 function to10Digits(val) {
@@ -265,6 +265,11 @@ export default function Certificate() {
   const imageWaitMs = isMobileOrTablet() ? 600 : 2500;
   const layoutSettleMs = isMobileOrTablet() ? 80 : 300;
 
+  const certifiedRouteContext =
+    typeof window !== 'undefined' && window.location.pathname.startsWith('/counsellor/')
+      ? 'portal'
+      : 'public';
+
   function triggerPendingDownload() {
     const { url, filename, revoke } = pendingDownloadRef.current;
     if (!url || !filename) return;
@@ -287,6 +292,13 @@ export default function Certificate() {
         const canvas = drawPosterToCanvas(img, fullName, mobile10, scale);
         const dataUrl = canvas.toDataURL('image/png');
         setIosResult({ url: dataUrl, type: 'image' });
+        trackPosterDownloadBeacon({
+          posterKey: 'certified',
+          format: 'png',
+          displayName: fullName,
+          mobileNumber: mobile10,
+          routeContext: certifiedRouteContext,
+        });
       } else {
         const target = exportRef.current || posterRef.current;
         if (!target) return;
@@ -309,6 +321,13 @@ export default function Certificate() {
         link.download = filename;
         link.href = dataUrl;
         link.click();
+        trackPosterDownloadBeacon({
+          posterKey: 'certified',
+          format: 'png',
+          displayName: fullName,
+          mobileNumber: mobile10,
+          routeContext: certifiedRouteContext,
+        });
         if (isMobileOrTablet()) {
           pendingDownloadRef.current = { url: dataUrl, filename };
           setPendingDownload('png');
@@ -342,6 +361,13 @@ export default function Certificate() {
         const pdfUrl = URL.createObjectURL(blob);
         iosResultBlobUrlRef.current = pdfUrl;
         setIosResult({ url: pdfUrl, type: 'pdf' });
+        trackPosterDownloadBeacon({
+          posterKey: 'certified',
+          format: 'pdf',
+          displayName: fullName,
+          mobileNumber: mobile10,
+          routeContext: certifiedRouteContext,
+        });
       } else {
         const target = exportRef.current || posterRef.current;
         if (!target) return;
@@ -373,6 +399,13 @@ export default function Certificate() {
         pdfLink.download = filename;
         pdfLink.href = pdfUrl;
         pdfLink.click();
+        trackPosterDownloadBeacon({
+          posterKey: 'certified',
+          format: 'pdf',
+          displayName: fullName,
+          mobileNumber: mobile10,
+          routeContext: certifiedRouteContext,
+        });
         if (isMobileOrTablet()) {
           pendingDownloadRef.current = { url: pdfUrl, filename, revoke: true };
           setPendingDownload('pdf');
