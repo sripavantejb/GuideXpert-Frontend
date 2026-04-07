@@ -90,29 +90,6 @@ function formatDate(value) {
   });
 }
 
-function identityBadge(m) {
-  if (m === 'jwt')
-    return (
-      <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[0.6875rem] font-semibold bg-emerald-50 text-emerald-700 ring-1 ring-emerald-200/60">
-        <span className="w-1.5 h-1.5 rounded-full bg-emerald-500" />
-        Signed in
-      </span>
-    );
-  if (m === 'phone_match')
-    return (
-      <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[0.6875rem] font-semibold bg-blue-50 text-blue-700 ring-1 ring-blue-200/60">
-        <span className="w-1.5 h-1.5 rounded-full bg-blue-500" />
-        Phone match
-      </span>
-    );
-  return (
-    <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[0.6875rem] font-semibold bg-gray-100 text-gray-500 ring-1 ring-gray-200/60">
-      <span className="w-1.5 h-1.5 rounded-full bg-gray-400" />
-      Anonymous
-    </span>
-  );
-}
-
 function posterBadge(key) {
   const label = POSTER_LABELS[key] || key;
   const colorMap = {
@@ -257,7 +234,7 @@ export default function PosterDownloads() {
           <div>
             <h1 className="text-2xl font-bold text-gray-900 tracking-tight">Poster Downloads</h1>
             <p className="text-sm text-gray-500 mt-0.5">
-              Track counsellor marketing poster exports with identity resolution
+              Who downloaded which poster, format, and whether they match a counsellor account
             </p>
           </div>
         </div>
@@ -548,7 +525,6 @@ export default function PosterDownloads() {
                   <th className="px-5 py-3.5 text-left text-[0.6875rem] font-bold text-gray-500 uppercase tracking-wider">Time</th>
                   <th className="px-5 py-3.5 text-left text-[0.6875rem] font-bold text-gray-500 uppercase tracking-wider">Poster</th>
                   <th className="px-5 py-3.5 text-left text-[0.6875rem] font-bold text-gray-500 uppercase tracking-wider">Format</th>
-                  <th className="px-5 py-3.5 text-left text-[0.6875rem] font-bold text-gray-500 uppercase tracking-wider">Identity</th>
                   <th className="px-5 py-3.5 text-left text-[0.6875rem] font-bold text-gray-500 uppercase tracking-wider">Counsellor</th>
                   <th className="px-5 py-3.5 text-left text-[0.6875rem] font-bold text-gray-500 uppercase tracking-wider">Snapshot</th>
                 </tr>
@@ -561,7 +537,6 @@ export default function PosterDownloads() {
                     </td>
                     <td className="px-5 py-3.5">{posterBadge(row.posterKey)}</td>
                     <td className="px-5 py-3.5">{formatBadge(row.format)}</td>
-                    <td className="px-5 py-3.5">{identityBadge(row.identityMethod)}</td>
                     <td className="px-5 py-3.5 max-w-[200px]">
                       {row.counsellor ? (
                         <div className="flex items-center gap-2.5">
