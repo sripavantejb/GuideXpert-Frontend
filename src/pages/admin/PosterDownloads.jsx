@@ -31,6 +31,7 @@ const POSTER_FILTER_OPTIONS = [
   { value: 'inter', label: 'Inter' },
   { value: 'gx', label: 'GX' },
   { value: 'sid', label: 'SID' },
+  { value: 'jee', label: 'JEE' },
   { value: 'certified', label: 'Certified' },
 ];
 
@@ -39,6 +40,7 @@ const POSTER_LABELS = {
   inter: 'Inter',
   gx: 'GX',
   sid: 'SID',
+  jee: 'JEE',
   certified: 'Certified',
 };
 
@@ -47,6 +49,7 @@ const POSTER_COLORS = {
   Inter: '#7c3aed',
   GX: '#003366',
   SID: '#0891b2',
+  JEE: '#0f766e',
   Certified: '#059669',
 };
 
@@ -97,6 +100,7 @@ function posterBadge(key) {
     inter: 'bg-violet-50 text-violet-700 ring-violet-200/60',
     gx: 'bg-sky-50 text-sky-700 ring-sky-200/60',
     sid: 'bg-cyan-50 text-cyan-700 ring-cyan-200/60',
+    jee: 'bg-teal-50 text-teal-700 ring-teal-200/60',
     certified: 'bg-emerald-50 text-emerald-700 ring-emerald-200/60',
   };
   const cls = colorMap[key] || 'bg-gray-100 text-gray-600 ring-gray-200/60';

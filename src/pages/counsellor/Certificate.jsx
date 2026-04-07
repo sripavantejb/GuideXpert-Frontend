@@ -2,6 +2,7 @@ import { useState, useRef, useEffect } from 'react';
 import html2canvas from 'html2canvas';
 import { jsPDF } from 'jspdf';
 import { checkPosterEligibility, trackPosterDownloadBeacon } from '../../utils/api';
+import { isIOSDevice } from '../../utils/posterDownloadUi';
 import PosterPreview from '../../components/Counsellor/PosterPreview';
 
 function to10Digits(val) {
@@ -16,11 +17,6 @@ function safeFilename(str) {
 const POSTER_WIDTH = 810;
 const POSTER_HEIGHT = 1440;
 const PREVIEW_SCALE = 0.38;
-
-function isMobileOrTablet() {
-  if (typeof navigator === 'undefined') return false;
-  return /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent) || (typeof window !== 'undefined' && 'ontouchstart' in window);
-}
 
 function isIOS() {
   if (typeof navigator === 'undefined') return false;
@@ -162,7 +158,7 @@ export default function Certificate() {
         container.style.zIndex = '9998';
         container.style.overflow = 'visible';
       }
-    } else if (isMobileOrTablet()) {
+    } else if (isIOSDevice()) {
       wrapper.style.left = '-9999px';
       wrapper.style.top = '0';
     }
@@ -262,8 +258,8 @@ export default function Certificate() {
     };
   }
 
-  const imageWaitMs = isMobileOrTablet() ? 600 : 2500;
-  const layoutSettleMs = isMobileOrTablet() ? 80 : 300;
+  const imageWaitMs = isIOSDevice() ? 600 : 2500;
+  const layoutSettleMs = isIOSDevice() ? 80 : 300;
 
   const certifiedRouteContext =
     typeof window !== 'undefined' && window.location.pathname.startsWith('/counsellor/')
@@ -328,7 +324,7 @@ export default function Certificate() {
           mobileNumber: mobile10,
           routeContext: certifiedRouteContext,
         });
-        if (isMobileOrTablet()) {
+        if (isIOSDevice()) {
           pendingDownloadRef.current = { url: dataUrl, filename };
           setPendingDownload('png');
         }
@@ -406,7 +402,7 @@ export default function Certificate() {
           mobileNumber: mobile10,
           routeContext: certifiedRouteContext,
         });
-        if (isMobileOrTablet()) {
+        if (isIOSDevice()) {
           pendingDownloadRef.current = { url: pdfUrl, filename, revoke: true };
           setPendingDownload('pdf');
         } else {
