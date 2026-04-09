@@ -80,6 +80,19 @@ export const EXAM_ACCENT_CLASSES = {
     divider: 'border-purple-200',
     indexBg: 'bg-purple-50 text-purple-600',
   },
+  sky: {
+    strip: 'border-t-4 border-sky-500',
+    selected: 'ring-2 ring-sky-200 border-sky-200',
+    button: 'bg-sky-600 hover:bg-sky-700 text-white',
+    leftStrip: 'border-l-4 border-sky-500',
+    badge: 'bg-sky-50 text-sky-800',
+    headerBg: 'bg-gradient-to-r from-sky-50 to-cyan-100/50',
+    headerText: 'text-sky-950',
+    headerSub: 'text-sky-700',
+    ring: 'ring-sky-100',
+    divider: 'border-sky-200',
+    indexBg: 'bg-sky-50 text-sky-700',
+  },
 };
 
 export function getAccentClasses(accent) {

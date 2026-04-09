@@ -16,9 +16,18 @@ import {
   getJeeReservationCategoryCodes,
   mapKeamBranchCodesForApi,
   filterCollegesForKeamDistrictPredictor,
+  filterCollegesForWbjeeDistrictPredictor,
+  getWbjeeReservationCategoryCode,
+  WBJEE_CATEGORY_OPTIONS,
 } from '../constants/collegePredictorOptions';
 import { getDistrictOptionsForNativeState } from '../constants/mhtCetOptions';
-import { JeeCombinedPredictorForm, TneaPredictorForm, KeamPredictorForm, CollegeCard } from '../components/Counsellor/CollegePredictor';
+import {
+  JeeCombinedPredictorForm,
+  TneaPredictorForm,
+  KeamPredictorForm,
+  WbjeePredictorForm,
+  CollegeCard,
+} from '../components/Counsellor/CollegePredictor';
 import { formatPredictorClientError } from '../utils/collegePredictorErrors';
 
 const ADMISSION_CATEGORIES = [
@@ -127,6 +136,36 @@ function getKeamPublicFilterSnapshot(t) {
   return getTneaPublicFilterSnapshot(t);
 }
 
+function initialWbjeePublicForm(defaultCategory) {
+  const cat = defaultCategory || 'OPEN';
+  return {
+    rankWbjee: '',
+    rankJeeMain: '',
+    reservation_category_codes: [cat],
+    quota: 'all_india',
+    current_state: '',
+    current_district: '',
+    branchMode: 'all',
+    branch_codes: [],
+    sort_order: 'ASC',
+    admission_category_name_enum: 'DEFAULT',
+  };
+}
+
+function getWbjeePublicFilterSnapshot(w) {
+  return JSON.stringify({
+    rankWbjee: w.rankWbjee,
+    rankJeeMain: w.rankJeeMain,
+    reservation_category_codes: [...(w.reservation_category_codes || [])].sort(),
+    quota: w.quota,
+    current_state: w.current_state,
+    current_district: w.current_district,
+    branch_codes: [...(w.branch_codes || [])].sort(),
+    branchMode: w.branchMode,
+    sort_order: w.sort_order,
+  });
+}
+
 const initialCollegeForm = {
   entrance_exam_name_enum: '',
   admission_category_name_enum: 'GENERAL',
@@ -178,6 +217,11 @@ export default function CollegePredictorPage() {
       lastSuccessfulKeamPublicSnapshotRef.current = null;
       hasSuccessfulKeamPublicPredictionRef.current = false;
     }
+    if (form.entrance_exam_name_enum === 'WBJEE') {
+      setWbjeePublicForm(initialWbjeePublicForm(meta.defaultReservationCode));
+      lastSuccessfulWbjeePublicSnapshotRef.current = null;
+      hasSuccessfulWbjeePublicPredictionRef.current = false;
+    }
   }, [form.entrance_exam_name_enum]);
 
   /** AP EAMCET: AU vs SVU use different district codes — clear invalid chip selections when region changes. */
@@ -205,6 +249,7 @@ export default function CollegePredictorPage() {
   const isJeePublic = form.entrance_exam_name_enum === 'JEE';
   const isTneaPublic = form.entrance_exam_name_enum === 'TNEA';
   const isKeamPublic = form.entrance_exam_name_enum === 'KEAM';
+  const isWbjeePublic = form.entrance_exam_name_enum === 'WBJEE';
   const examComingSoon = Boolean(examMetaPublic && examMetaPublic.supported === false);
 
   const [jeePublicForm, setJeePublicForm] = useState({
@@ -237,6 +282,12 @@ export default function CollegePredictorPage() {
   );
   const lastSuccessfulKeamPublicSnapshotRef = useRef(null);
   const hasSuccessfulKeamPublicPredictionRef = useRef(false);
+
+  const [wbjeePublicForm, setWbjeePublicForm] = useState(() =>
+    initialWbjeePublicForm(getEntranceExamMeta('WBJEE')?.defaultReservationCode)
+  );
+  const lastSuccessfulWbjeePublicSnapshotRef = useRef(null);
+  const hasSuccessfulWbjeePublicPredictionRef = useRef(false);
 
   useEffect(() => {
     const jeeMeta = getEntranceExamMeta('JEE');
@@ -343,6 +394,38 @@ export default function CollegePredictorPage() {
     }
     return null;
   }, [keamPublicForm]);
+
+  const validateWbjeePublic = useCallback(() => {
+    const rw = parsePositiveIntRankPublic(wbjeePublicForm.rankWbjee);
+    const rj = parsePositiveIntRankPublic(wbjeePublicForm.rankJeeMain);
+    if (rw === null && rj === null) {
+      return 'Enter at least one valid rank (WBJEE and/or JEE Main).';
+    }
+    const base = wbjeePublicForm.reservation_category_codes?.[0];
+    if (!base || !String(base).trim()) {
+      return 'Please select a category.';
+    }
+    if (!wbjeePublicForm.quota) {
+      return 'Please select a quota (All India or Home State).';
+    }
+    const resCode = getWbjeeReservationCategoryCode(base, wbjeePublicForm.quota);
+    if (!resCode) {
+      return 'This category applies to Home State (West Bengal) quota only. Switch quota or category.';
+    }
+    if (wbjeePublicForm.branchMode === 'specific' && (!wbjeePublicForm.branch_codes || wbjeePublicForm.branch_codes.length === 0)) {
+      return 'Select at least one branch, or choose “All branches”.';
+    }
+    if (!wbjeePublicForm.current_state || !wbjeePublicForm.current_district) {
+      return 'Please select state and district.';
+    }
+    const allowed = new Set(
+      getDistrictOptionsForNativeState(wbjeePublicForm.current_state).map((o) => o.value)
+    );
+    if (!allowed.has(wbjeePublicForm.current_district)) {
+      return 'Select a district that belongs to the selected state.';
+    }
+    return null;
+  }, [wbjeePublicForm]);
 
   const fetchTneaPublicColleges = useCallback(
     async (pageOffset, append) => {
@@ -516,6 +599,92 @@ export default function CollegePredictorPage() {
     await fetchKeamPublicColleges(0, false);
   }, [validateKeamPublic, fetchKeamPublicColleges]);
 
+  const fetchWbjeePublicColleges = useCallback(
+    async (pageOffset, append) => {
+      const validationError = validateWbjeePublic();
+      if (validationError) {
+        setError(validationError);
+        return;
+      }
+      setLoading(true);
+      setError(null);
+      const rw = parsePositiveIntRankPublic(wbjeePublicForm.rankWbjee);
+      const rj = parsePositiveIntRankPublic(wbjeePublicForm.rankJeeMain);
+      const rankNum = rw ?? rj;
+      const [cutoffFrom, cutoffTo] = rankToCutoff(rankNum);
+      const meta = getEntranceExamMeta('WBJEE');
+      const apiExam = meta?.wbjeeApiExam ?? meta?.apiValue ?? 'WBJEE_2024';
+      const base = wbjeePublicForm.reservation_category_codes?.[0];
+      const resCode = getWbjeeReservationCategoryCode(base, wbjeePublicForm.quota);
+      const branch_codes =
+        wbjeePublicForm.branchMode === 'specific' && wbjeePublicForm.branch_codes?.length > 0
+          ? wbjeePublicForm.branch_codes
+          : [];
+      // Same as counsellor: empty districts avoids strict upstream filter that often returns no rows.
+      const districts = [];
+
+      const payload = {
+        offset: pageOffset,
+        limit: PAGE_SIZE,
+        exam: 'WBJEE',
+        entrance_exam_name_enum: apiExam,
+        admission_category_name_enum: 'DEFAULT',
+        cutoff_from: cutoffFrom,
+        cutoff_to: cutoffTo,
+        reservation_category_codes: resCode ? [resCode] : [],
+        sort_order: String(wbjeePublicForm.sort_order ?? 'ASC'),
+        branch_codes,
+        districts,
+      };
+
+      const res = await getPredictedCollegesPublic(payload);
+      setLoading(false);
+
+      if (!res.success) {
+        const errData = res.data || {};
+        setError(getErrorMessage(errData, res.message));
+        if (!append) {
+          setResult(null);
+          lastSuccessfulWbjeePublicSnapshotRef.current = null;
+          hasSuccessfulWbjeePublicPredictionRef.current = false;
+        }
+        return;
+      }
+
+      const data = res.data;
+      const rawColleges = data.colleges || [];
+      if (!append) {
+        lastSuccessfulWbjeePublicSnapshotRef.current = getWbjeePublicFilterSnapshot(wbjeePublicForm);
+        hasSuccessfulWbjeePublicPredictionRef.current = true;
+        setResult({ ...data, colleges: rawColleges });
+        setOffset(pageOffset);
+        return;
+      }
+      setResult((prev) => {
+        if (!prev) return { ...data, colleges: rawColleges };
+        return {
+          ...data,
+          colleges: [...(prev.colleges || []), ...rawColleges],
+          total_no_of_colleges: data.total_no_of_colleges ?? prev.total_no_of_colleges,
+        };
+      });
+      setOffset(pageOffset);
+    },
+    [wbjeePublicForm, validateWbjeePublic]
+  );
+
+  const handleWbjeePublicPredict = useCallback(async () => {
+    const v = validateWbjeePublic();
+    if (v) {
+      setError(v);
+      return;
+    }
+    setError(null);
+    setResult(null);
+    setOffset(0);
+    await fetchWbjeePublicColleges(0, false);
+  }, [validateWbjeePublic, fetchWbjeePublicColleges]);
+
   const fetchJeePublicSlot = useCallback(async (slot, pageOffset, append, formSnapshot) => {
     const meta = getEntranceExamMeta('JEE');
     const rankStr = slot === 'main' ? formSnapshot.rankMain : formSnapshot.rankAdvanced;
@@ -645,6 +814,10 @@ export default function CollegePredictorPage() {
         setError('Use Predict Colleges on the KEAM form.');
         return;
       }
+      if (examValue === 'WBJEE') {
+        setError('Use Predict Colleges on the WBJEE form.');
+        return;
+      }
       const rawFrom = form.cutoff_from;
       const rawTo = form.cutoff_to;
       if (rawFrom === '' || rawTo === '') {
@@ -732,6 +905,7 @@ export default function CollegePredictorPage() {
       if (form.entrance_exam_name_enum === 'JEE') return;
       if (form.entrance_exam_name_enum === 'TNEA') return;
       if (form.entrance_exam_name_enum === 'KEAM') return;
+      if (form.entrance_exam_name_enum === 'WBJEE') return;
       setResult(null);
       fetchColleges(0, false);
     },
@@ -753,6 +927,11 @@ export default function CollegePredictorPage() {
       fetchKeamPublicColleges(nextOffset, true);
       return;
     }
+    if (form.entrance_exam_name_enum === 'WBJEE') {
+      const nextOffset = offset + PAGE_SIZE;
+      fetchWbjeePublicColleges(nextOffset, true);
+      return;
+    }
     const nextOffset = offset + PAGE_SIZE;
     fetchColleges(nextOffset, true);
   }, [
@@ -762,6 +941,7 @@ export default function CollegePredictorPage() {
     handleJeePublicLoadMore,
     fetchTneaPublicColleges,
     fetchKeamPublicColleges,
+    fetchWbjeePublicColleges,
   ]);
 
   useEffect(() => {
@@ -797,13 +977,32 @@ export default function CollegePredictorPage() {
   const loaded = result?.colleges?.length ?? 0;
   const hasMore = loaded < total;
 
-  const keamPublicCollegesDisplayed = useMemo(() => {
-    if (!isKeamPublic || !result?.colleges) return result?.colleges ?? [];
-    if (keamPublicForm.districtMode !== 'specific' || !keamPublicForm.districts?.length) {
-      return result.colleges;
+  const nonJeePublicCollegesDisplayed = useMemo(() => {
+    const list = result?.colleges;
+    if (!list) return [];
+    if (isKeamPublic) {
+      if (keamPublicForm.districtMode !== 'specific' || !keamPublicForm.districts?.length) {
+        return list;
+      }
+      return filterCollegesForKeamDistrictPredictor(list, keamPublicForm.districts);
     }
-    return filterCollegesForKeamDistrictPredictor(result.colleges, keamPublicForm.districts);
-  }, [isKeamPublic, result?.colleges, keamPublicForm.districtMode, keamPublicForm.districts]);
+    if (isWbjeePublic) {
+      if (!wbjeePublicForm.current_district) {
+        return list;
+      }
+      const filtered = filterCollegesForWbjeeDistrictPredictor(list, [wbjeePublicForm.current_district]);
+      // Upstream rows often miss district fields; avoid empty UI when filter text does not match.
+      return filtered.length > 0 ? filtered : list;
+    }
+    return list;
+  }, [
+    result?.colleges,
+    isKeamPublic,
+    isWbjeePublic,
+    keamPublicForm.districtMode,
+    keamPublicForm.districts,
+    wbjeePublicForm.current_district,
+  ]);
 
   const activeJeePublicSlot = jeePublicSlots[jeePublicActiveTab === 'main' ? 'main' : 'advanced'];
   const jeePublicLoaded = activeJeePublicSlot?.colleges?.length ?? 0;
@@ -811,6 +1010,21 @@ export default function CollegePredictorPage() {
   const jeePublicHasMore = jeePublicLoaded < jeePublicTotal;
   const jeePublicPageTitle = getEntranceExamMeta('JEE')?.predictorPageTitle ?? 'JEE Main and JEE Advanced College Predictor';
   const jeeBannerErrors = [...new Set([jeePublicSlots.main?.error, jeePublicSlots.advanced?.error].filter(Boolean))];
+
+  const publicResultsUseClientLocationFilter = useMemo(
+    () =>
+      (isKeamPublic &&
+        keamPublicForm.districtMode === 'specific' &&
+        keamPublicForm.districts?.length > 0) ||
+      (isWbjeePublic && Boolean(wbjeePublicForm.current_district)),
+    [
+      isKeamPublic,
+      isWbjeePublic,
+      keamPublicForm.districtMode,
+      keamPublicForm.districts,
+      wbjeePublicForm.current_district,
+    ]
+  );
 
   return (
     <div className="min-h-screen bg-gray-50">
@@ -840,7 +1054,10 @@ export default function CollegePredictorPage() {
                     : isKeamPublic
                       ? (examMetaPublic?.predictorPageSubtitle ??
                         'Kerala professional admissions — rank, category, and filters.')
-                      : 'Find colleges by entrance exam, cutoff range, reservation category, and optional branch or district filters.'}
+                      : isWbjeePublic
+                        ? (examMetaPublic?.predictorPageSubtitle ??
+                          'West Bengal engineering admissions — WBJEE and/or JEE Main rank, category, and quota.')
+                        : 'Find colleges by entrance exam, cutoff range, reservation category, and optional branch or district filters.'}
             </p>
             <div className="space-y-4">
               {!examComingSoon && (
@@ -905,6 +1122,16 @@ export default function CollegePredictorPage() {
                   accentKey={examMetaPublic?.accent ?? 'teal'}
                   reservationOptions={examMetaPublic?.reservationOptions}
                   districtOptions={examMetaPublic?.districtOptions}
+                />
+              ) : isWbjeePublic ? (
+                <WbjeePredictorForm
+                  asForm={false}
+                  values={wbjeePublicForm}
+                  onChange={setWbjeePublicForm}
+                  onSubmit={handleWbjeePublicPredict}
+                  loading={loading}
+                  accentKey={examMetaPublic?.accent ?? 'sky'}
+                  categoryOptions={examMetaPublic?.reservationOptions ?? WBJEE_CATEGORY_OPTIONS}
                 />
               ) : (
             <form onSubmit={handleSubmit} className="space-y-4">
@@ -1134,12 +1361,12 @@ export default function CollegePredictorPage() {
                   <span className="font-medium">{result.admission_category_name}</span>
                 )}
                 {' — '}
-                {isKeamPublic && keamPublicForm.districtMode === 'specific' && keamPublicForm.districts?.length > 0
-                  ? `Showing ${keamPublicCollegesDisplayed.length} colleges matching district filter (${loaded} loaded from server, ${total} reported total)`
+                {publicResultsUseClientLocationFilter
+                  ? `Showing ${nonJeePublicCollegesDisplayed.length} colleges matching your filters (${loaded} loaded from server, ${total} reported total)`
                   : `Showing ${loaded} of ${total} colleges`}
               </p>
               <div className="space-y-4">
-                {(isKeamPublic ? keamPublicCollegesDisplayed : result.colleges || []).map((college, idx) => (
+                {nonJeePublicCollegesDisplayed.map((college, idx) => (
                   <CollegeCard
                     key={college.college_id}
                     college={college}
