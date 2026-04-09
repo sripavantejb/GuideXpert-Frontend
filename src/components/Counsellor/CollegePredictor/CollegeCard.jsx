@@ -22,23 +22,29 @@ export default function CollegeCard({ college, accentKey, index }) {
   const accent = getAccentClasses(accentKey);
   const branchCount = college.branches?.length ?? 0;
   const topCutoff = getTopCutoff(college.branches);
+  const promoted = college.is_promoted;
 
   return (
     <div
       className={`
-        rounded-2xl bg-white border border-gray-200/80 shadow-sm overflow-hidden
-        transition-all duration-300
-        ${expanded ? `shadow-md ring-1 ${accent.ring}` : 'hover:shadow-md'}
+        rounded-2xl overflow-hidden transition-all duration-300 relative
+        ${promoted
+          ? 'promoted-card border-2 border-yellow-400 shadow-[0_0_20px_rgba(234,179,8,0.25)]'
+          : `bg-white border border-gray-200/80 shadow-sm ${expanded ? `shadow-md ring-1 ${accent.ring}` : 'hover:shadow-md'}`
+        }
         ${accent.leftStrip}
       `}
     >
+      {promoted && (
+        <div className="promoted-shimmer-bar" />
+      )}
       <button
         type="button"
         onClick={() => setExpanded((e) => !e)}
         className="w-full flex items-start gap-4 p-5 sm:p-6 text-left group"
       >
         {index != null && (
-          <div className={`shrink-0 w-10 h-10 rounded-xl flex items-center justify-center text-sm font-bold ${accent.indexBg}`}>
+          <div className={`shrink-0 w-10 h-10 rounded-xl flex items-center justify-center text-sm font-bold ${promoted ? 'bg-yellow-400 text-yellow-900' : accent.indexBg}`}>
             {String(index).padStart(2, '0')}
           </div>
         )}
@@ -48,9 +54,9 @@ export default function CollegeCard({ college, accentKey, index }) {
             <h4 className="text-base font-bold text-gray-900 leading-snug group-hover:text-gray-700 transition-colors">
               {college.college_name}
             </h4>
-            {college.is_promoted && (
-              <span className="shrink-0 inline-flex items-center gap-1 px-2 py-0.5 rounded-md text-[0.6875rem] font-semibold bg-amber-50 text-amber-700 border border-amber-200">
-                <FiStar className="w-3 h-3" />
+            {promoted && (
+              <span className="promoted-badge">
+                <FiStar className="w-3.5 h-3.5 fill-current" />
                 Promoted
               </span>
             )}
