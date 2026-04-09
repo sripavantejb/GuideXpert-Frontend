@@ -258,7 +258,11 @@ export function filterCollegesForKeamDistrictPredictor(colleges, selectedDistric
  * Telangana districts for TS EAMCET: earlywave expects **district_enum** short codes (like AP).
  * Labels aligned to TS geography; verified from TS_EAMCET + DEFAULT + OC BOYS responses on beta.
  */
-/** JEE Main / Advanced — national category strings (upstream must accept these for JEE_MAIN / JEE_ADVANCED). */
+/**
+ * JEE base categories — the user picks one of these; the system expands it into
+ * multiple quota-suffixed codes via getJeeReservationCategoryCodes() before sending.
+ * value = base code used in expansion (must match upstream prefix before _QUOTA).
+ */
 export const JEE_RESERVATION_OPTIONS = [
   { value: 'OPEN', label: 'OPEN' },
   { value: 'OPEN (PwD)', label: 'OPEN (PwD)' },
@@ -271,6 +275,66 @@ export const JEE_RESERVATION_OPTIONS = [
   { value: 'ST', label: 'ST' },
   { value: 'ST (PwD)', label: 'ST (PwD)' },
 ];
+
+/** Whitelist of valid expanded reservation codes for JEE Mains and JEE Advanced (from CollegeDost upstream). */
+export const JEE_MAINS_ADVANCE_RESERVATION_QUOTAS = [
+  'OPEN_HS', 'OPEN_GIRLS_HS', 'EWS_HS', 'EWS_GIRLS_HS',
+  'OBC-NCL_HS', 'OBC-NCL_GIRLS_HS', 'SC_HS', 'SC_GIRLS_HS',
+  'OPEN_OS', 'OPEN_GIRLS_OS', 'EWS_OS', 'OBC-NCL_OS', 'OBC-NCL_GIRLS_OS',
+  'SC_OS', 'SC_GIRLS_OS', 'ST_OS', 'OBC-NCL (PwD)_GIRLS_OS',
+  'OPEN (PwD)_HS', 'OPEN (PwD)_OS', 'EWS_GIRLS_OS', 'ST_GIRLS_OS',
+  'EWS (PwD)_OS', 'ST_HS', 'EWS (PwD)_HS', 'SC (PwD)_HS', 'ST_GIRLS_HS',
+  'OPEN (PwD)_GIRLS_OS', 'OBC-NCL (PwD)_OS', 'ST (PwD)_OS', 'SC (PwD)_OS',
+  'OBC-NCL (PwD)_HS', 'OPEN (PwD)_GIRLS_HS', 'OBC-NCL (PwD)_GIRLS_HS',
+  'ST (PwD)_HS', 'EWS (PwD)_GIRLS_OS', 'SC (PwD)_GIRLS_OS',
+  'EWS (PwD)_GIRLS_HS', 'ST (PwD)_GIRLS_OS',
+  'OPEN_GO', 'OPEN_GIRLS_GO', 'OBC-NCL_GO', 'OBC-NCL_GIRLS_GO',
+  'SC_GO', 'ST_GO', 'EWS_GO', 'SC_GIRLS_GO', 'EWS_GIRLS_GO', 'ST_GIRLS_GO',
+  'OPEN_JK', 'OPEN_GIRLS_JK', 'SC_JK', 'SC_GIRLS_JK', 'ST_JK', 'ST_GIRLS_JK',
+  'EWS_JK', 'OBC-NCL_JK', 'OPEN_LA', 'OPEN (PwD)_JK', 'EWS_GIRLS_JK',
+  'OBC-NCL_GIRLS_JK', 'OPEN_GIRLS_LA', 'OBC-NCL (PwD)_JK', 'SC (PwD)_GIRLS_HS',
+  'OPEN_AI', 'OPEN_GIRLS_AI', 'OPEN (PwD)_AI', 'EWS_AI', 'EWS_GIRLS_AI',
+  'OBC-NCL_AI', 'OBC-NCL_GIRLS_AI', 'OBC-NCL (PwD)_AI',
+  'SC_AI', 'SC_GIRLS_AI', 'SC (PwD)_AI', 'ST_AI', 'ST_GIRLS_AI', 'ST (PwD)_AI',
+  'OPEN (PwD)_GIRLS_AI', 'EWS (PwD)_AI', 'OBC-NCL (PwD)_GIRLS_AI',
+  'EWS (PwD)_GIRLS_AI', 'SC (PwD)_GIRLS_AI',
+];
+
+const _jeeQuotasSet = new Set(JEE_MAINS_ADVANCE_RESERVATION_QUOTAS);
+
+/**
+ * Expand a base JEE category + gender into the array of reservation_category_codes
+ * that the upstream API expects.
+ *
+ * @param {'JEE_MAINS_2024'|'JEE_ADVANCE_2024'|string} examEnum - upstream exam enum
+ * @param {'Male'|'Female'|'male'|'female'|string} gender
+ * @param {string} baseCategory - e.g. 'OPEN', 'OBC-NCL', 'SC (PwD)'
+ * @returns {string[]}
+ */
+export function getJeeReservationCategoryCodes(examEnum, gender, baseCategory) {
+  const isFemale = String(gender || '').toLowerCase() === 'female';
+  const base = String(baseCategory || '').trim();
+  if (!base) return [];
+
+  if (examEnum === 'JEE_MAINS_2024') {
+    const quotas = ['AI', 'GO', 'HS', 'JK', 'LA', 'OS'];
+    const codes = [];
+    for (const q of quotas) {
+      const code = isFemale ? `${base}_GIRLS_${q}` : `${base}_${q}`;
+      if (_jeeQuotasSet.has(code)) {
+        codes.push(code);
+      }
+    }
+    return codes.length > 0 ? codes : [base];
+  }
+
+  if (examEnum === 'JEE_ADVANCE_2024') {
+    const code = isFemale ? `${base}_GIRLS_AI` : `${base}_AI`;
+    return [code];
+  }
+
+  return [base];
+}
 
 export const TS_EAMCET_DISTRICT_OPTIONS = [
   { value: 'HNK', label: 'Hanamkonda / Warangal' },
@@ -462,7 +526,7 @@ export const ENTRANCE_EXAMS = [
     description: 'JEE Main and JEE Advanced college prediction with national categories.',
     accent: 'purple',
     apiValue: 'JEE',
-    supported: false,
+    supported: true,
     predictorPageTitle: 'JEE Main and JEE Advanced College Predictor',
     predictorPageSubtitle:
       'Enter at least one expected rank (Main and/or Advanced), category, and optional branch filters.',
@@ -471,9 +535,9 @@ export const ENTRANCE_EXAMS = [
     reservationFieldLabel: 'Select a Category',
     reservationOptions: JEE_RESERVATION_OPTIONS,
     reservationSelectSingle: true,
-    jeeMainApiExam: 'JEE_MAIN',
-    jeeAdvancedApiExam: 'JEE_ADVANCED',
-    admissionCategories: [{ value: 'GENERAL', label: 'General' }],
+    jeeMainApiExam: 'JEE_MAINS_2024',
+    jeeAdvancedApiExam: 'JEE_ADVANCE_2024',
+    admissionCategories: [{ value: 'DEFAULT', label: 'JEE counselling dataset (DEFAULT)' }],
   },
 ];
 

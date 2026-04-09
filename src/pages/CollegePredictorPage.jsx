@@ -13,6 +13,7 @@ import {
   DISTRICTS,
   rankToCutoff,
   JEE_RESERVATION_OPTIONS,
+  getJeeReservationCategoryCodes,
   mapKeamBranchCodesForApi,
   filterCollegesForKeamDistrictPredictor,
 } from '../constants/collegePredictorOptions';
@@ -213,7 +214,7 @@ export default function CollegePredictorPage() {
     branchMode: 'all',
     branch_codes: [],
     sort_order: 'ASC',
-    admission_category_name_enum: 'GENERAL',
+    admission_category_name_enum: 'DEFAULT',
     gender: '',
   });
   const [jeePublicSlots, setJeePublicSlots] = useState({
@@ -253,7 +254,7 @@ export default function CollegePredictorPage() {
       reservation_category_codes: jeeMeta?.defaultReservationCode
         ? [jeeMeta.defaultReservationCode]
         : ['OPEN'],
-      admission_category_name_enum: jeeMeta?.admissionCategories?.[0]?.value ?? 'GENERAL',
+      admission_category_name_enum: jeeMeta?.admissionCategories?.[0]?.value ?? 'DEFAULT',
     }));
   }, [form.entrance_exam_name_enum]);
 
@@ -279,6 +280,9 @@ export default function CollegePredictorPage() {
     }
     const res = jeePublicForm.reservation_category_codes?.[0];
     if (!res || !String(res).trim()) return 'Please select a category.';
+    if (!jeePublicForm.gender) {
+      return 'Please select a gender (required for JEE category expansion).';
+    }
     if (
       jeePublicForm.branchMode === 'specific' &&
       (!jeePublicForm.branch_codes || jeePublicForm.branch_codes.length === 0)
@@ -523,17 +527,17 @@ export default function CollegePredictorPage() {
         ? meta?.jeeMainApiExam ?? 'JEE_MAIN'
         : meta?.jeeAdvancedApiExam ?? 'JEE_ADVANCED';
     const [cutoffFrom, cutoffTo] = rankToCutoff(rankNum);
-    const resCodes =
-      formSnapshot.reservation_category_codes?.length > 0
-        ? formSnapshot.reservation_category_codes
-        : ['OPEN'];
+    const baseCategory =
+      formSnapshot.reservation_category_codes?.[0] || 'OPEN';
+    const gender = formSnapshot.gender || 'male';
+    const resCodes = getJeeReservationCategoryCodes(apiExam, gender, baseCategory);
 
     const payload = {
       offset: pageOffset,
       limit: PAGE_SIZE,
       exam: apiExam,
       entrance_exam_name_enum: apiExam,
-      admission_category_name_enum: String(formSnapshot.admission_category_name_enum ?? 'GENERAL'),
+      admission_category_name_enum: 'DEFAULT',
       cutoff_from: cutoffFrom,
       cutoff_to: cutoffTo,
       reservation_category_codes: resCodes,

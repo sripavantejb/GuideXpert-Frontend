@@ -12,6 +12,7 @@ import {
   filterCollegesForApEamcetPredictor,
   apEamcetPredictorDisplayTotal,
   JEE_RESERVATION_OPTIONS,
+  getJeeReservationCategoryCodes,
   mapKeamBranchCodesForApi,
   filterCollegesForKeamDistrictPredictor,
 } from '../../constants/collegePredictorOptions';
@@ -231,7 +232,7 @@ export default function CollegePredictorPredict() {
     branchMode: 'all',
     branch_codes: [],
     sort_order: 'ASC',
-    admission_category_name_enum: 'GENERAL',
+    admission_category_name_enum: 'DEFAULT',
     gender: '',
   }));
 
@@ -294,7 +295,7 @@ export default function CollegePredictorPredict() {
       branchMode: 'all',
       branch_codes: [],
       sort_order: 'ASC',
-      admission_category_name_enum: meta.admissionCategories?.[0]?.value ?? 'GENERAL',
+      admission_category_name_enum: meta.admissionCategories?.[0]?.value ?? 'DEFAULT',
       gender: '',
     });
     setJeeSlots({ main: emptyJeeSlot(), advanced: emptyJeeSlot() });
@@ -354,6 +355,9 @@ export default function CollegePredictorPredict() {
     const res = jeeForm.reservation_category_codes?.[0];
     if (!res || !String(res).trim()) {
       return 'Please select a category.';
+    }
+    if (!jeeForm.gender) {
+      return 'Please select a gender (required for JEE category expansion).';
     }
     if (jeeForm.branchMode === 'specific' && (!jeeForm.branch_codes || jeeForm.branch_codes.length === 0)) {
       return 'Select at least one branch, or choose “All branches”.';
@@ -828,15 +832,15 @@ export default function CollegePredictorPredict() {
           : examMeta?.jeeAdvancedApiExam ?? 'JEE_ADVANCED';
       const [cutoffFrom, cutoffTo] = rankToCutoff(rankNum);
 
-      const resCodes =
-        formSnapshot.reservation_category_codes?.length > 0
-          ? formSnapshot.reservation_category_codes
-          : ['OPEN'];
+      const baseCategory =
+        formSnapshot.reservation_category_codes?.[0] || 'OPEN';
+      const gender = formSnapshot.gender || 'male';
+      const resCodes = getJeeReservationCategoryCodes(apiExam, gender, baseCategory);
 
       const body = {
         exam: apiExam,
         entrance_exam_name_enum: apiExam,
-        admission_category_name_enum: formSnapshot.admission_category_name_enum || 'GENERAL',
+        admission_category_name_enum: 'DEFAULT',
         cutoff_from: cutoffFrom,
         cutoff_to: cutoffTo,
         sort_order: formSnapshot.sort_order || 'ASC',
