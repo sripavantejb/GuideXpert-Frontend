@@ -1,7 +1,8 @@
 import { useEffect, useRef, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { jsPDF } from 'jspdf';
-import { checkActivationEligibility } from '../utils/api';
+import { checkActivationEligibility, trackPosterDownloadBeacon } from '../utils/api';
+import { isIOSDevice } from '../utils/posterDownloadUi';
 import SidPosterPreview, {
   SID_POSTER_WIDTH as POSTER_WIDTH,
   SID_POSTER_HEIGHT as POSTER_HEIGHT,
@@ -19,11 +20,6 @@ function safeFilename(str) {
 
 const NAME_MAX_LEN = 50;
 const PREVIEW_MAX_PX = 420;
-
-function isMobileOrTablet() {
-  if (typeof navigator === 'undefined') return false;
-  return /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent) || (typeof window !== 'undefined' && 'ontouchstart' in window);
-}
 
 function loadSidPosterImage() {
   return new Promise((resolve, reject) => {
@@ -145,7 +141,7 @@ export default function SidPosterPage() {
       const img = await loadSidPosterImage();
       const c = drawSidPosterToCanvas(img, displayName, mobile10, 2);
       const url = c.toDataURL('image/png');
-      if (isMobileOrTablet()) {
+      if (isIOSDevice()) {
         setIosResult({ url, type: 'image' });
       } else {
         const fn = `GuideXpert-SID-Poster-${safeFilename(displayName)}-${Date.now()}.png`;
@@ -154,6 +150,13 @@ export default function SidPosterPage() {
         a.href = url;
         a.click();
       }
+      trackPosterDownloadBeacon({
+        posterKey: 'sid',
+        format: 'png',
+        displayName,
+        mobileNumber: mobile10,
+        routeContext: 'public',
+      });
     } catch (e) {
       console.error(e);
     }
@@ -168,7 +171,7 @@ export default function SidPosterPage() {
       const c = drawSidPosterToCanvas(img, displayName, mobile10, 2);
       const pdf = new jsPDF({ orientation: 'portrait', unit: 'px', format: [POSTER_WIDTH, POSTER_HEIGHT], compress: true });
       pdf.addImage(c.toDataURL('image/png'), 'PNG', 0, 0, POSTER_WIDTH, POSTER_HEIGHT);
-      if (isMobileOrTablet()) {
+      if (isIOSDevice()) {
         const u = URL.createObjectURL(pdf.output('blob'));
         iosResultBlobUrlRef.current = u;
         setIosResult({ url: u, type: 'pdf' });
@@ -182,6 +185,13 @@ export default function SidPosterPage() {
         a.click();
         setTimeout(() => URL.revokeObjectURL(u), 5000);
       }
+      trackPosterDownloadBeacon({
+        posterKey: 'sid',
+        format: 'pdf',
+        displayName,
+        mobileNumber: mobile10,
+        routeContext: 'public',
+      });
     } catch (e) {
       console.error(e);
     }

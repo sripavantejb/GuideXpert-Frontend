@@ -1,7 +1,8 @@
 import { useState, useRef, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { jsPDF } from 'jspdf';
-import { checkActivationEligibility } from '../utils/api';
+import { checkActivationEligibility, trackPosterDownloadBeacon } from '../utils/api';
+import { isIOSDevice } from '../utils/posterDownloadUi';
 import InterPosterPreview, {
   INTER_POSTER_WIDTH as POSTER_WIDTH,
   INTER_POSTER_HEIGHT as POSTER_HEIGHT,
@@ -19,11 +20,6 @@ function safeFilename(str) {
 
 const NAME_MAX_LEN = 50;
 const PREVIEW_MAX_PX = 420;
-
-function isMobileOrTablet() {
-  if (typeof navigator === 'undefined') return false;
-  return /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent) || (typeof window !== 'undefined' && 'ontouchstart' in window);
-}
 
 function isIOS() {
   if (typeof navigator === 'undefined') return false;
@@ -145,12 +141,19 @@ export default function InterPosterPage() {
       const img = await loadInterPosterImage();
       const c = drawInterPosterToCanvas(img, fullName, mobile10, 2);
       const url = c.toDataURL('image/png');
-      if (isMobileOrTablet()) {
+      if (isIOSDevice()) {
         setIosResult({ url, type: 'image' });
       } else {
         const fn = `GuideXpert-Poster-${safeFilename(fullName)}-${Date.now()}.png`;
         const a = document.createElement('a'); a.download = fn; a.href = url; a.click();
       }
+      trackPosterDownloadBeacon({
+        posterKey: 'inter',
+        format: 'png',
+        displayName,
+        mobileNumber: mobile10,
+        routeContext: 'public',
+      });
     } catch (e) { console.error(e); }
     setGenerating(false);
   };
@@ -163,7 +166,7 @@ export default function InterPosterPage() {
       const c = drawInterPosterToCanvas(img, fullName, mobile10, 2);
       const pdf = new jsPDF({ orientation: 'portrait', unit: 'px', format: [POSTER_WIDTH, POSTER_HEIGHT], compress: true });
       pdf.addImage(c.toDataURL('image/png'), 'PNG', 0, 0, POSTER_WIDTH, POSTER_HEIGHT);
-      if (isMobileOrTablet()) {
+      if (isIOSDevice()) {
         const u = URL.createObjectURL(pdf.output('blob'));
         iosResultBlobUrlRef.current = u; setIosResult({ url: u, type: 'pdf' });
       } else {
@@ -172,6 +175,13 @@ export default function InterPosterPage() {
         const a = document.createElement('a'); a.download = fn; a.href = u; a.click();
         setTimeout(() => URL.revokeObjectURL(u), 5000);
       }
+      trackPosterDownloadBeacon({
+        posterKey: 'inter',
+        format: 'pdf',
+        displayName,
+        mobileNumber: mobile10,
+        routeContext: 'public',
+      });
     } catch (e) { console.error(e); }
     setGenerating(false);
   };

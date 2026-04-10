@@ -258,7 +258,11 @@ export function filterCollegesForKeamDistrictPredictor(colleges, selectedDistric
  * Telangana districts for TS EAMCET: earlywave expects **district_enum** short codes (like AP).
  * Labels aligned to TS geography; verified from TS_EAMCET + DEFAULT + OC BOYS responses on beta.
  */
-/** JEE Main / Advanced — national category strings (upstream must accept these for JEE_MAIN / JEE_ADVANCED). */
+/**
+ * JEE base categories — the user picks one of these; the system expands it into
+ * multiple quota-suffixed codes via getJeeReservationCategoryCodes() before sending.
+ * value = base code used in expansion (must match upstream prefix before _QUOTA).
+ */
 export const JEE_RESERVATION_OPTIONS = [
   { value: 'OPEN', label: 'OPEN' },
   { value: 'OPEN (PwD)', label: 'OPEN (PwD)' },
@@ -271,6 +275,163 @@ export const JEE_RESERVATION_OPTIONS = [
   { value: 'ST', label: 'ST' },
   { value: 'ST (PwD)', label: 'ST (PwD)' },
 ];
+
+/** Whitelist of valid expanded reservation codes for JEE Mains and JEE Advanced (from CollegeDost upstream). */
+export const JEE_MAINS_ADVANCE_RESERVATION_QUOTAS = [
+  'OPEN_HS', 'OPEN_GIRLS_HS', 'EWS_HS', 'EWS_GIRLS_HS',
+  'OBC-NCL_HS', 'OBC-NCL_GIRLS_HS', 'SC_HS', 'SC_GIRLS_HS',
+  'OPEN_OS', 'OPEN_GIRLS_OS', 'EWS_OS', 'OBC-NCL_OS', 'OBC-NCL_GIRLS_OS',
+  'SC_OS', 'SC_GIRLS_OS', 'ST_OS', 'OBC-NCL (PwD)_GIRLS_OS',
+  'OPEN (PwD)_HS', 'OPEN (PwD)_OS', 'EWS_GIRLS_OS', 'ST_GIRLS_OS',
+  'EWS (PwD)_OS', 'ST_HS', 'EWS (PwD)_HS', 'SC (PwD)_HS', 'ST_GIRLS_HS',
+  'OPEN (PwD)_GIRLS_OS', 'OBC-NCL (PwD)_OS', 'ST (PwD)_OS', 'SC (PwD)_OS',
+  'OBC-NCL (PwD)_HS', 'OPEN (PwD)_GIRLS_HS', 'OBC-NCL (PwD)_GIRLS_HS',
+  'ST (PwD)_HS', 'EWS (PwD)_GIRLS_OS', 'SC (PwD)_GIRLS_OS',
+  'EWS (PwD)_GIRLS_HS', 'ST (PwD)_GIRLS_OS',
+  'OPEN_GO', 'OPEN_GIRLS_GO', 'OBC-NCL_GO', 'OBC-NCL_GIRLS_GO',
+  'SC_GO', 'ST_GO', 'EWS_GO', 'SC_GIRLS_GO', 'EWS_GIRLS_GO', 'ST_GIRLS_GO',
+  'OPEN_JK', 'OPEN_GIRLS_JK', 'SC_JK', 'SC_GIRLS_JK', 'ST_JK', 'ST_GIRLS_JK',
+  'EWS_JK', 'OBC-NCL_JK', 'OPEN_LA', 'OPEN (PwD)_JK', 'EWS_GIRLS_JK',
+  'OBC-NCL_GIRLS_JK', 'OPEN_GIRLS_LA', 'OBC-NCL (PwD)_JK', 'SC (PwD)_GIRLS_HS',
+  'OPEN_AI', 'OPEN_GIRLS_AI', 'OPEN (PwD)_AI', 'EWS_AI', 'EWS_GIRLS_AI',
+  'OBC-NCL_AI', 'OBC-NCL_GIRLS_AI', 'OBC-NCL (PwD)_AI',
+  'SC_AI', 'SC_GIRLS_AI', 'SC (PwD)_AI', 'ST_AI', 'ST_GIRLS_AI', 'ST (PwD)_AI',
+  'OPEN (PwD)_GIRLS_AI', 'EWS (PwD)_AI', 'OBC-NCL (PwD)_GIRLS_AI',
+  'EWS (PwD)_GIRLS_AI', 'SC (PwD)_GIRLS_AI',
+];
+
+const _jeeQuotasSet = new Set(JEE_MAINS_ADVANCE_RESERVATION_QUOTAS);
+
+/**
+ * Expand a base JEE category + gender into the array of reservation_category_codes
+ * that the upstream API expects.
+ *
+ * @param {'JEE_MAINS_2024'|'JEE_ADVANCE_2024'|string} examEnum - upstream exam enum
+ * @param {'Male'|'Female'|'male'|'female'|string} gender
+ * @param {string} baseCategory - e.g. 'OPEN', 'OBC-NCL', 'SC (PwD)'
+ * @returns {string[]}
+ */
+export function getJeeReservationCategoryCodes(examEnum, gender, baseCategory) {
+  const isFemale = String(gender || '').toLowerCase() === 'female';
+  const base = String(baseCategory || '').trim();
+  if (!base) return [];
+
+  if (examEnum === 'JEE_MAINS_2024') {
+    const quotas = ['AI', 'GO', 'HS', 'JK', 'LA', 'OS'];
+    const codes = [];
+    for (const q of quotas) {
+      const code = isFemale ? `${base}_GIRLS_${q}` : `${base}_${q}`;
+      if (_jeeQuotasSet.has(code)) {
+        codes.push(code);
+      }
+    }
+    return codes.length > 0 ? codes : [base];
+  }
+
+  if (examEnum === 'JEE_ADVANCE_2024') {
+    const code = isFemale ? `${base}_GIRLS_AI` : `${base}_AI`;
+    return [code];
+  }
+
+  return [base];
+}
+
+/** Upstream nw-predictors enum; CollegeDost marketing may show WBJEE_JEE_MAINS_2024. */
+export const WBJEE_API_EXAM_ENUM = 'WBJEE_2024';
+
+/** Whitelist: earlywave WBJEE_2024 reservation_category_code values (verified on beta). */
+export const WBJEE_RESERVATION_WHITELIST = [
+  'TUITION_FEE_WAIVER_HS',
+  'OPEN_AI',
+  'OBC_B_HS',
+  'OBC_A_HS',
+  'OPEN_HS',
+  'SC_HS',
+  'ST_HS',
+  'OPEN_PWD_HS',
+  'SC_PWD_HS',
+  'OBC_B_PWD_HS',
+  'OBC_A_PWD_HS',
+  'ST_AI',
+];
+
+const _wbjeeReservationSet = new Set(WBJEE_RESERVATION_WHITELIST);
+
+/** Categories only valid with Home State (West Bengal) quota — no _AI code on upstream. */
+export const WBJEE_HOME_STATE_ONLY_CATEGORY_BASES = new Set([
+  'TUITION_FEE_WAIVER',
+  'OPEN_PWD',
+  'OBC_A_PWD',
+  'OBC_B_PWD',
+  'SC_PWD',
+]);
+
+export const WBJEE_QUOTA_ALL_INDIA = 'all_india';
+export const WBJEE_QUOTA_HOME_WB = 'home_state_wb';
+
+export const WBJEE_QUOTA_OPTIONS = [
+  { value: WBJEE_QUOTA_ALL_INDIA, label: 'All India' },
+  { value: WBJEE_QUOTA_HOME_WB, label: 'Home State (West Bengal)' },
+];
+
+/**
+ * UI labels from WBJEE predictor; value = API base before _AI / _HS.
+ */
+export const WBJEE_CATEGORY_OPTIONS = [
+  { value: 'OPEN', label: 'OPEN' },
+  { value: 'OBC_A', label: 'OBC - A' },
+  { value: 'SC', label: 'SC' },
+  { value: 'ST', label: 'ST' },
+  { value: 'TUITION_FEE_WAIVER', label: 'Tuition Fee Waiver' },
+  { value: 'OBC_B', label: 'OBC - B' },
+  { value: 'OPEN_PWD', label: 'Open (PwD)' },
+  { value: 'OBC_A_PWD', label: 'OBC - A (PwD)' },
+  { value: 'SC_PWD', label: 'SC (PwD)' },
+  { value: 'OBC_B_PWD', label: 'OBC - B (PwD)' },
+];
+
+/**
+ * Resolve WBJEE reservation code for earlywave from category base + quota.
+ * @param {string} categoryBase
+ * @param {'all_india'|'home_state_wb'} quotaKey
+ * @returns {string|null}
+ */
+export function getWbjeeReservationCategoryCode(categoryBase, quotaKey) {
+  const base = String(categoryBase ?? '').trim();
+  if (!base) return null;
+  if (WBJEE_HOME_STATE_ONLY_CATEGORY_BASES.has(base) && quotaKey === WBJEE_QUOTA_ALL_INDIA) {
+    return null;
+  }
+  const suffix = quotaKey === WBJEE_QUOTA_ALL_INDIA ? 'AI' : 'HS';
+  const code = `${base}_${suffix}`;
+  if (!_wbjeeReservationSet.has(code)) return null;
+  return code;
+}
+
+/**
+ * Client-side district filter when upstream district field is unreliable (same idea as KEAM).
+ */
+export function wbjeeCollegeMatchesDistrictFilters(college, selectedDistrictLabels) {
+  if (!Array.isArray(selectedDistrictLabels) || selectedDistrictLabels.length === 0) return true;
+  const hay = `${college?.college_address || ''} ${college?.district_enum || ''} ${college?.college_name || ''}`
+    .toLowerCase()
+    .replace(/[.,/()]/g, ' ')
+    .replace(/\s+/g, ' ')
+    .trim();
+  return selectedDistrictLabels.some((dist) => {
+    const d = String(dist).toLowerCase().trim().replace(/[.,/()]/g, ' ').replace(/\s+/g, ' ');
+    if (!d) return false;
+    if (hay.includes(d)) return true;
+    const token = d.split(/\s+/).find((w) => w.length >= 4);
+    return Boolean(token && hay.includes(token));
+  });
+}
+
+export function filterCollegesForWbjeeDistrictPredictor(colleges, selectedDistrictLabels) {
+  if (!Array.isArray(colleges)) return [];
+  if (!selectedDistrictLabels?.length) return colleges;
+  return colleges.filter((c) => wbjeeCollegeMatchesDistrictFilters(c, selectedDistrictLabels));
+}
 
 export const TS_EAMCET_DISTRICT_OPTIONS = [
   { value: 'HNK', label: 'Hanamkonda / Warangal' },
@@ -341,6 +502,7 @@ export function apEamcetPredictorDisplayTotal(apiTotal) {
  *   predictorPageSubtitle?: string,
  *   jeeMainApiExam?: string,
  *   jeeAdvancedApiExam?: string,
+ *   wbjeeApiExam?: string,
  *   admissionCategories: { value: string, label: string }[],
  * }} EntranceExamOption
  * @type {EntranceExamOption[]}
@@ -462,7 +624,7 @@ export const ENTRANCE_EXAMS = [
     description: 'JEE Main and JEE Advanced college prediction with national categories.',
     accent: 'purple',
     apiValue: 'JEE',
-    supported: false,
+    supported: true,
     predictorPageTitle: 'JEE Main and JEE Advanced College Predictor',
     predictorPageSubtitle:
       'Enter at least one expected rank (Main and/or Advanced), category, and optional branch filters.',
@@ -471,9 +633,28 @@ export const ENTRANCE_EXAMS = [
     reservationFieldLabel: 'Select a Category',
     reservationOptions: JEE_RESERVATION_OPTIONS,
     reservationSelectSingle: true,
-    jeeMainApiExam: 'JEE_MAIN',
-    jeeAdvancedApiExam: 'JEE_ADVANCED',
-    admissionCategories: [{ value: 'GENERAL', label: 'General' }],
+    jeeMainApiExam: 'JEE_MAINS_2024',
+    jeeAdvancedApiExam: 'JEE_ADVANCE_2024',
+    admissionCategories: [{ value: 'DEFAULT', label: 'JEE counselling dataset (DEFAULT)' }],
+  },
+  {
+    value: 'WBJEE',
+    label: 'WBJEE',
+    description:
+      'West Bengal JEE — predict colleges using WBJEE and/or JEE Main rank, category, quota, and location.',
+    accent: 'sky',
+    apiValue: 'WBJEE',
+    wbjeeApiExam: WBJEE_API_EXAM_ENUM,
+    supported: false,
+    defaultReservationCode: 'OPEN',
+    hideAdmissionField: true,
+    reservationFieldLabel: 'Select a Category',
+    reservationOptions: WBJEE_CATEGORY_OPTIONS,
+    reservationSelectSingle: true,
+    predictorPageTitle: 'WBJEE College Predictor',
+    predictorPageSubtitle:
+      'Enter your expected WBJEE 2026 rank and/or JEE Main 2026 rank, category, quota (All India or Home State), optional state and district, and branches.',
+    admissionCategories: [{ value: 'DEFAULT', label: 'WBJEE counselling dataset (DEFAULT)' }],
   },
 ];
 

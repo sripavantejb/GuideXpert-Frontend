@@ -3,11 +3,11 @@ import { useNavigate } from 'react-router-dom';
 import { jsPDF } from 'jspdf';
 import { checkActivationEligibility, trackPosterDownloadBeacon } from '../utils/api';
 import { isIOSDevice } from '../utils/posterDownloadUi';
-import GxPosterPreview, {
-  GX_POSTER_WIDTH as POSTER_WIDTH,
-  GX_POSTER_HEIGHT as POSTER_HEIGHT,
-  GX_POSTER_EXPORT_LAYOUT,
-} from '../components/Counsellor/GxPosterPreview';
+import BtechCsePosterPreview, {
+  BTECH_CSE_POSTER_WIDTH as POSTER_WIDTH,
+  BTECH_CSE_POSTER_HEIGHT as POSTER_HEIGHT,
+  BTECH_CSE_POSTER_EXPORT_LAYOUT,
+} from '../components/Counsellor/BtechCsePosterPreview';
 
 function to10Digits(val) {
   if (val == null) return '';
@@ -21,13 +21,13 @@ function safeFilename(str) {
 const NAME_MAX_LEN = 50;
 const PREVIEW_MAX_PX = 420;
 
-function loadGxPosterImage() {
+function loadBtechCsePosterImage() {
   return new Promise((resolve, reject) => {
     const img = new Image();
     const timeout = setTimeout(() => reject(new Error('Poster image load timeout')), 20000);
     img.onload = () => { clearTimeout(timeout); resolve(img); };
     img.onerror = () => { clearTimeout(timeout); reject(new Error('Failed to load poster image')); };
-    img.src = '/gx-poster.svg';
+    img.src = '/btechcse-poster.svg';
   });
 }
 
@@ -57,7 +57,7 @@ function drawFittedText(ctx, text, x, y, opts) {
   ctx.fillText(display, x, y);
 }
 
-function drawGxPosterToCanvas(img, fullName, mobileNumber, scale = 2) {
+function drawBtechCsePosterToCanvas(img, fullName, mobileNumber, scale = 2) {
   const w = POSTER_WIDTH * scale;
   const h = POSTER_HEIGHT * scale;
   const canvas = document.createElement('canvas');
@@ -68,8 +68,8 @@ function drawGxPosterToCanvas(img, fullName, mobileNumber, scale = 2) {
   ctx.drawImage(img, 0, 0, w, h);
 
   const sx = scale;
-  const nl = GX_POSTER_EXPORT_LAYOUT.name;
-  const pl = GX_POSTER_EXPORT_LAYOUT.phone;
+  const nl = BTECH_CSE_POSTER_EXPORT_LAYOUT.name;
+  const pl = BTECH_CSE_POSTER_EXPORT_LAYOUT.phone;
 
   ctx.textBaseline = 'top';
   drawFittedText(ctx, String(fullName || ' ').trim().slice(0, NAME_MAX_LEN) || ' ', nl.x * sx, nl.y * sx, {
@@ -93,7 +93,7 @@ function drawGxPosterToCanvas(img, fullName, mobileNumber, scale = 2) {
   return canvas;
 }
 
-export default function GxPosterPage() {
+export default function BtechCsePosterPage() {
   const navigate = useNavigate();
   const [fullName, setFullName] = useState('');
   const [mobileNumber, setMobileNumber] = useState('');
@@ -138,20 +138,20 @@ export default function GxPosterPage() {
     if (!(await verifyEligibility())) return;
     setGenerating(true);
     try {
-      const img = await loadGxPosterImage();
-      const c = drawGxPosterToCanvas(img, displayName, mobile10, 2);
+      const img = await loadBtechCsePosterImage();
+      const c = drawBtechCsePosterToCanvas(img, displayName, mobile10, 2);
       const url = c.toDataURL('image/png');
       if (isIOSDevice()) {
         setIosResult({ url, type: 'image' });
       } else {
-        const fn = `GuideXpert-GX-Poster-${safeFilename(displayName)}-${Date.now()}.png`;
+        const fn = `GuideXpert-BTechCSE-Poster-${safeFilename(displayName)}-${Date.now()}.png`;
         const a = document.createElement('a');
         a.download = fn;
         a.href = url;
         a.click();
       }
       trackPosterDownloadBeacon({
-        posterKey: 'gx',
+        posterKey: 'btechcse',
         format: 'png',
         displayName,
         mobileNumber: mobile10,
@@ -167,8 +167,8 @@ export default function GxPosterPage() {
     if (!(await verifyEligibility())) return;
     setGenerating(true);
     try {
-      const img = await loadGxPosterImage();
-      const c = drawGxPosterToCanvas(img, displayName, mobile10, 2);
+      const img = await loadBtechCsePosterImage();
+      const c = drawBtechCsePosterToCanvas(img, displayName, mobile10, 2);
       const pdf = new jsPDF({ orientation: 'portrait', unit: 'px', format: [POSTER_WIDTH, POSTER_HEIGHT], compress: true });
       pdf.addImage(c.toDataURL('image/png'), 'PNG', 0, 0, POSTER_WIDTH, POSTER_HEIGHT);
       if (isIOSDevice()) {
@@ -176,7 +176,7 @@ export default function GxPosterPage() {
         iosResultBlobUrlRef.current = u;
         setIosResult({ url: u, type: 'pdf' });
       } else {
-        const fn = `GuideXpert-GX-Poster-${safeFilename(displayName)}-${Date.now()}.pdf`;
+        const fn = `GuideXpert-BTechCSE-Poster-${safeFilename(displayName)}-${Date.now()}.pdf`;
         const blob = pdf.output('blob');
         const u = URL.createObjectURL(blob);
         const a = document.createElement('a');
@@ -186,7 +186,7 @@ export default function GxPosterPage() {
         setTimeout(() => URL.revokeObjectURL(u), 5000);
       }
       trackPosterDownloadBeacon({
-        posterKey: 'gx',
+        posterKey: 'btechcse',
         format: 'pdf',
         displayName,
         mobileNumber: mobile10,
@@ -238,7 +238,7 @@ export default function GxPosterPage() {
         )}
 
         <div className="text-center mb-8">
-          <h1 className="text-xl sm:text-2xl font-bold text-primary-navy tracking-tight">Download Your GX Poster</h1>
+          <h1 className="text-xl sm:text-2xl font-bold text-primary-navy tracking-tight">Download Your B.Tech CSE Poster</h1>
           <p className="text-sm text-slate-500 mt-1.5 max-w-lg mx-auto">Enter your details below. Eligibility is verified when you click download.</p>
         </div>
 
@@ -300,7 +300,7 @@ export default function GxPosterPage() {
               <div ref={previewBoxRef} className="relative w-full flex justify-center" style={{ maxWidth: PREVIEW_MAX_PX }}>
                 <div className="rounded-lg overflow-hidden shadow-md border border-slate-200/80" style={{ width: scaledW, height: scaledH }}>
                   <div style={{ width: POSTER_WIDTH, height: POSTER_HEIGHT, transform: `scale(${previewScale})`, transformOrigin: 'top left' }}>
-                    <GxPosterPreview ref={posterRef} fullName={displayName} mobileNumber={mobile10 || undefined} />
+                    <BtechCsePosterPreview ref={posterRef} fullName={displayName} mobileNumber={mobile10 || undefined} />
                   </div>
                 </div>
               </div>

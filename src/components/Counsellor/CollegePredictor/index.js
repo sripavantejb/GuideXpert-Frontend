@@ -7,3 +7,4 @@ export { default as JeeCombinedPredictorForm } from './JeeCombinedPredictorForm'
 export { default as MhtCetPredictorForm } from './MhtCetPredictorForm';
 export { default as TneaPredictorForm } from './TneaPredictorForm';
 export { default as KeamPredictorForm } from './KeamPredictorForm';
+export { default as WbjeePredictorForm } from './WbjeePredictorForm';

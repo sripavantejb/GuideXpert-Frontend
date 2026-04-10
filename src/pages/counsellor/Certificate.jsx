@@ -1,7 +1,8 @@
 import { useState, useRef, useEffect } from 'react';
 import html2canvas from 'html2canvas';
 import { jsPDF } from 'jspdf';
-import { checkPosterEligibility } from '../../utils/api';
+import { checkPosterEligibility, trackPosterDownloadBeacon } from '../../utils/api';
+import { isIOSDevice } from '../../utils/posterDownloadUi';
 import PosterPreview from '../../components/Counsellor/PosterPreview';
 
 function to10Digits(val) {
@@ -16,11 +17,6 @@ function safeFilename(str) {
 const POSTER_WIDTH = 810;
 const POSTER_HEIGHT = 1440;
 const PREVIEW_SCALE = 0.38;
-
-function isMobileOrTablet() {
-  if (typeof navigator === 'undefined') return false;
-  return /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent) || (typeof window !== 'undefined' && 'ontouchstart' in window);
-}
 
 function isIOS() {
   if (typeof navigator === 'undefined') return false;
@@ -162,7 +158,7 @@ export default function Certificate() {
         container.style.zIndex = '9998';
         container.style.overflow = 'visible';
       }
-    } else if (isMobileOrTablet()) {
+    } else if (isIOSDevice()) {
       wrapper.style.left = '-9999px';
       wrapper.style.top = '0';
     }
@@ -262,8 +258,13 @@ export default function Certificate() {
     };
   }
 
-  const imageWaitMs = isMobileOrTablet() ? 600 : 2500;
-  const layoutSettleMs = isMobileOrTablet() ? 80 : 300;
+  const imageWaitMs = isIOSDevice() ? 600 : 2500;
+  const layoutSettleMs = isIOSDevice() ? 80 : 300;
+
+  const certifiedRouteContext =
+    typeof window !== 'undefined' && window.location.pathname.startsWith('/counsellor/')
+      ? 'portal'
+      : 'public';
 
   function triggerPendingDownload() {
     const { url, filename, revoke } = pendingDownloadRef.current;
@@ -287,6 +288,13 @@ export default function Certificate() {
         const canvas = drawPosterToCanvas(img, fullName, mobile10, scale);
         const dataUrl = canvas.toDataURL('image/png');
         setIosResult({ url: dataUrl, type: 'image' });
+        trackPosterDownloadBeacon({
+          posterKey: 'certified',
+          format: 'png',
+          displayName: fullName,
+          mobileNumber: mobile10,
+          routeContext: certifiedRouteContext,
+        });
       } else {
         const target = exportRef.current || posterRef.current;
         if (!target) return;
@@ -309,7 +317,14 @@ export default function Certificate() {
         link.download = filename;
         link.href = dataUrl;
         link.click();
-        if (isMobileOrTablet()) {
+        trackPosterDownloadBeacon({
+          posterKey: 'certified',
+          format: 'png',
+          displayName: fullName,
+          mobileNumber: mobile10,
+          routeContext: certifiedRouteContext,
+        });
+        if (isIOSDevice()) {
           pendingDownloadRef.current = { url: dataUrl, filename };
           setPendingDownload('png');
         }
@@ -342,6 +357,13 @@ export default function Certificate() {
         const pdfUrl = URL.createObjectURL(blob);
         iosResultBlobUrlRef.current = pdfUrl;
         setIosResult({ url: pdfUrl, type: 'pdf' });
+        trackPosterDownloadBeacon({
+          posterKey: 'certified',
+          format: 'pdf',
+          displayName: fullName,
+          mobileNumber: mobile10,
+          routeContext: certifiedRouteContext,
+        });
       } else {
         const target = exportRef.current || posterRef.current;
         if (!target) return;
@@ -373,7 +395,14 @@ export default function Certificate() {
         pdfLink.download = filename;
         pdfLink.href = pdfUrl;
         pdfLink.click();
-        if (isMobileOrTablet()) {
+        trackPosterDownloadBeacon({
+          posterKey: 'certified',
+          format: 'pdf',
+          displayName: fullName,
+          mobileNumber: mobile10,
+          routeContext: certifiedRouteContext,
+        });
+        if (isIOSDevice()) {
           pendingDownloadRef.current = { url: pdfUrl, filename, revoke: true };
           setPendingDownload('pdf');
         } else {

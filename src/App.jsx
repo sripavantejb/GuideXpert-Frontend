@@ -37,6 +37,7 @@ import Announcements from './pages/admin/Announcements';
 import WebinarProgressAdmin from './pages/admin/WebinarProgress';
 import OsviCalls from './pages/admin/OsviCalls';
 import OsviCallsData from './pages/admin/OsviCallsData';
+import PosterDownloads from './pages/admin/PosterDownloads';
 import CounsellorLogin from './pages/counsellor/CounsellorLogin';
 import WebinarLogin from './pages/webinar/WebinarLogin';
 
@@ -58,6 +59,8 @@ import HoliPosterPage from './pages/HoliPosterPage';
 import InterPosterPage from './pages/InterPosterPage';
 import GxPosterPage from './pages/GxPosterPage';
 import SidPosterPage from './pages/SidPosterPage';
+import BtechCsePosterPage from './pages/BtechCsePosterPage';
+import JeePosterPage from './pages/JeePosterPage';
 const CollegeReferrals = lazy(() => import('./pages/counsellor/CollegeReferrals'));
 const CollegeReferralDetail = lazy(() => import('./pages/counsellor/CollegeReferralDetail'));
 const AnnouncementsFeed = lazy(() => import('./pages/counsellor/AnnouncementsFeed'));
@@ -167,6 +170,8 @@ function App() {
           <Route path="/interposter" element={<InterPosterPage />} />
           <Route path="/gx-poster" element={<GxPosterPage />} />
           <Route path="/sid-poster" element={<SidPosterPage />} />
+          <Route path="/btechcse-poster" element={<BtechCsePosterPage />} />
+          <Route path="/jee-poster" element={<JeePosterPage />} />
           <Route path="/certificate/:id" element={<Suspense fallback={<div className="min-h-screen flex items-center justify-center bg-gray-50"><div className="animate-pulse text-gray-500">Loading...</div></div>}><CertificateViewPage /></Suspense>} />
           <Route path="/collegepredictor" element={<CollegePredictorPage />} />
           <Route path="/rank-predictor" element={<RankPredictorHome />} />
@@ -293,6 +298,7 @@ function App() {
             <Route path="training-feedback" element={<TrainingFeedback />} />
             <Route path="training-form-responses" element={<TrainingFormResponses />} />
             <Route path="influencer-tracking" element={<InfluencerTracking />} />
+            <Route path="poster-downloads" element={<PosterDownloads />} />
             <Route path="assessment-results" element={<AssessmentResults />} />
             <Route path="assessment-2-results" element={<Navigate to="/admin/assessment-results?type=2" replace />} />
             <Route path="assessment-3-results" element={<Navigate to="/admin/assessment-results?type=3" replace />} />

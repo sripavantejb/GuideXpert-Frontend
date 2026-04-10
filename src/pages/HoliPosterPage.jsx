@@ -2,7 +2,8 @@ import { useState, useRef, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import html2canvas from 'html2canvas';
 import { jsPDF } from 'jspdf';
-import { checkPosterEligibility } from '../utils/api';
+import { checkPosterEligibility, trackPosterDownloadBeacon } from '../utils/api';
+import { isIOSDevice } from '../utils/posterDownloadUi';
 import HoliPosterPreview, { HOLI_POSTER_WIDTH as POSTER_WIDTH, HOLI_POSTER_HEIGHT as POSTER_HEIGHT } from '../components/Counsellor/HoliPosterPreview';
 
 function to10Digits(val) {
@@ -16,11 +17,6 @@ function safeFilename(str) {
 
 const PREVIEW_SCALE = 0.38;
 const NAME_MAX_LEN = 50;
-
-function isMobileOrTablet() {
-  if (typeof navigator === 'undefined') return false;
-  return /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent) || (typeof window !== 'undefined' && 'ontouchstart' in window);
-}
 
 function isIOS() {
   if (typeof navigator === 'undefined') return false;
@@ -177,7 +173,7 @@ export default function HoliPosterPage() {
         container.style.zIndex = '9998';
         container.style.overflow = 'visible';
       }
-    } else if (isMobileOrTablet()) {
+    } else if (isIOSDevice()) {
       wrapper.style.left = '-9999px';
       wrapper.style.top = '0';
     }
@@ -276,8 +272,8 @@ export default function HoliPosterPage() {
     };
   }
 
-  const imageWaitMs = isMobileOrTablet() ? 800 : 3000;
-  const layoutSettleMs = isMobileOrTablet() ? 100 : 400;
+  const imageWaitMs = isIOSDevice() ? 800 : 3000;
+  const layoutSettleMs = isIOSDevice() ? 100 : 400;
 
   function triggerPendingDownload() {
     const { url, filename, revoke } = pendingDownloadRef.current;
@@ -301,6 +297,13 @@ export default function HoliPosterPage() {
         const canvas = drawHoliPosterToCanvas(img, displayName, mobile10, scale);
         const dataUrl = canvas.toDataURL('image/png');
         setIosResult({ url: dataUrl, type: 'image' });
+        trackPosterDownloadBeacon({
+          posterKey: 'holi',
+          format: 'png',
+          displayName,
+          mobileNumber: mobile10,
+          routeContext: 'public',
+        });
       } else {
         const target = exportRef.current || posterRef.current;
         if (!target) return;
@@ -323,7 +326,14 @@ export default function HoliPosterPage() {
         link.download = filename;
         link.href = dataUrl;
         link.click();
-        if (isMobileOrTablet()) {
+        trackPosterDownloadBeacon({
+          posterKey: 'holi',
+          format: 'png',
+          displayName,
+          mobileNumber: mobile10,
+          routeContext: 'public',
+        });
+        if (isIOSDevice()) {
           pendingDownloadRef.current = { url: dataUrl, filename };
           setPendingDownload('png');
         }
@@ -356,6 +366,13 @@ export default function HoliPosterPage() {
         const pdfUrl = URL.createObjectURL(blob);
         iosResultBlobUrlRef.current = pdfUrl;
         setIosResult({ url: pdfUrl, type: 'pdf' });
+        trackPosterDownloadBeacon({
+          posterKey: 'holi',
+          format: 'pdf',
+          displayName,
+          mobileNumber: mobile10,
+          routeContext: 'public',
+        });
       } else {
         const target = exportRef.current || posterRef.current;
         if (!target) return;
@@ -387,7 +404,14 @@ export default function HoliPosterPage() {
         pdfLink.download = filename;
         pdfLink.href = pdfUrl;
         pdfLink.click();
-        if (isMobileOrTablet()) {
+        trackPosterDownloadBeacon({
+          posterKey: 'holi',
+          format: 'pdf',
+          displayName,
+          mobileNumber: mobile10,
+          routeContext: 'public',
+        });
+        if (isIOSDevice()) {
           pendingDownloadRef.current = { url: pdfUrl, filename, revoke: true };
           setPendingDownload('pdf');
         } else {

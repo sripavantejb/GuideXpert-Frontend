@@ -84,7 +84,7 @@ export default function JeeCombinedPredictorForm({
           </select>
         </div>
         <div>
-          <label className="block text-sm font-medium text-gray-700 mb-1">Gender</label>
+          <label className="block text-sm font-medium text-gray-700 mb-1">Gender <span className="text-red-500">*</span></label>
           <select
             value={values.gender ?? ''}
             onChange={(e) => update({ gender: e.target.value })}
@@ -93,8 +93,6 @@ export default function JeeCombinedPredictorForm({
             <option value="">Select your gender</option>
             <option value="male">Male</option>
             <option value="female">Female</option>
-            <option value="other">Other</option>
-            <option value="prefer_not">Prefer not to say</option>
           </select>
         </div>
       </div>
