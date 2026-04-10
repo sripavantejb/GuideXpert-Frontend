@@ -31,6 +31,13 @@ const AUTOMATED_POSTERS = [
     previewSrc: '/sid-poster.svg',
   },
   {
+    id: 'btechcse',
+    title: 'B.Tech CSE Poster',
+    description: 'B.Tech CSE campaign poster with your name and mobile. Download PNG or PDF after eligibility check.',
+    to: '/btechcse-poster',
+    previewSrc: '/btechcse-poster.svg',
+  },
+  {
     id: 'certified',
     title: 'Official certified poster',
     description: 'Your certified counsellor poster from the standard template.',
