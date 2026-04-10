@@ -9,8 +9,16 @@ const DEFAULT_PROXY_TARGET = 'https://guide-xpert-backend.vercel.app'
 
 // https://vite.dev/config/
 export default defineConfig(({ mode }) => {
-  // loadEnv reads .env* so VITE_PROXY_TARGET works (process.env alone does not in this file).
-  const env = loadEnv(mode, process.cwd(), 'VITE_')
+  // loadEnv reads .env* so VITE_PROXY_TARGET works.
+  // On some macOS setups synced files can intermittently throw ECANCELED while reading.
+  // Fall back to process.env/defaults so `npm run dev` still starts.
+  let env = {}
+  try {
+    env = loadEnv(mode, process.cwd(), 'VITE_')
+  } catch (error) {
+    const message = error instanceof Error ? error.message : String(error)
+    console.warn(`[vite] Failed to load .env files (${message}). Falling back to process.env.`)
+  }
   const proxyTarget = (env.VITE_PROXY_TARGET || '').trim() || DEFAULT_PROXY_TARGET
   const isHttpsTarget = proxyTarget.startsWith('https://')
 
