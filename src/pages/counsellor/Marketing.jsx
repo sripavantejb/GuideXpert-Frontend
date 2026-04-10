@@ -38,6 +38,13 @@ const AUTOMATED_POSTERS = [
     previewSrc: '/btechcse-poster.svg',
   },
   {
+    id: 'jee',
+    title: 'JEE Poster',
+    description: 'JEE campaign poster with your name and mobile. Download PNG or PDF after eligibility check.',
+    to: '/jee-poster',
+    previewSrc: '/jee-poster.svg',
+  },
+  {
     id: 'certified',
     title: 'Official certified poster',
     description: 'Your certified counsellor poster from the standard template.',
