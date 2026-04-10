@@ -645,7 +645,7 @@ export const ENTRANCE_EXAMS = [
     accent: 'sky',
     apiValue: 'WBJEE',
     wbjeeApiExam: WBJEE_API_EXAM_ENUM,
-    supported: false,
+    supported: true,
     defaultReservationCode: 'OPEN',
     hideAdmissionField: true,
     reservationFieldLabel: 'Select a Category',
