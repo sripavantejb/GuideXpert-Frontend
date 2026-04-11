@@ -17,6 +17,11 @@ import {
   checkActivationEligibility,
   submitTrainingFeedback,
 } from '../../utils/api';
+import {
+  openCommunityRedirectPlaceholder,
+  navigatePlaceholderToCommunity,
+  closeCommunityRedirectPlaceholder,
+} from '../../utils/whatsappCommunityInvite';
 import { FiDownload, FiAward, FiExternalLink, FiCheckCircle, FiUser, FiCalendar, FiHash } from 'react-icons/fi';
 
 const EDUCATION_OPTIONS = [
@@ -335,11 +340,14 @@ export default function CertificatesPage() {
 
   const handlePreviewDownloadPng = async () => {
     if (!courseCompleted || !previewCertificateId || !activationEligible) return;
+    const placeholder = openCommunityRedirectPlaceholder();
     setDownloading('png');
     try {
       await downloadCertificatePng(displayName, dateStr, previewCertificateId);
       if (webinarToken) recordCertificateDownload(webinarToken).catch(() => {});
+      navigatePlaceholderToCommunity(placeholder);
     } catch (e) {
+      closeCommunityRedirectPlaceholder(placeholder);
       setActionError(e?.message || 'Unable to download certificate PNG. Please try again.');
     } finally {
       setDownloading(null);
@@ -348,11 +356,14 @@ export default function CertificatesPage() {
 
   const handlePreviewDownloadPdf = async () => {
     if (!courseCompleted || !previewCertificateId || !activationEligible) return;
+    const placeholder = openCommunityRedirectPlaceholder();
     setDownloading('pdf');
     try {
       await downloadCertificatePdf(displayName, dateStr, previewCertificateId);
       if (webinarToken) recordCertificateDownload(webinarToken).catch(() => {});
+      navigatePlaceholderToCommunity(placeholder);
     } catch (e) {
+      closeCommunityRedirectPlaceholder(placeholder);
       setActionError(e?.message || 'Unable to download certificate PDF. Please try again.');
     } finally {
       setDownloading(null);

@@ -16,6 +16,11 @@ import {
   recordCertificateDownload,
   checkActivationEligibility,
 } from '../../../utils/api';
+import {
+  openCommunityRedirectPlaceholder,
+  navigatePlaceholderToCommunity,
+  closeCommunityRedirectPlaceholder,
+} from '../../../utils/whatsappCommunityInvite';
 
 function isLegacyCertificateId(id) {
   return !id || typeof id !== 'string' || !String(id).trim().toUpperCase().startsWith('GX');
@@ -251,14 +256,17 @@ export default function CertificateUnlockCard({
   };
 
   const handleDownloadPng = async () => {
+    const placeholder = openCommunityRedirectPlaceholder();
     setDownloading('png');
     setActionError('');
     try {
       const certificateId = await getOrEnsureCertificateId();
       await downloadCertificatePng(displayName, dateStr, certificateId);
       if (webinarToken) recordCertificateDownload(webinarToken).catch(() => {});
+      navigatePlaceholderToCommunity(placeholder);
     } catch (e) {
       console.error(e);
+      closeCommunityRedirectPlaceholder(placeholder);
       setActionError(e?.message || 'Unable to download certificate PNG. Please try again.');
     } finally {
       setDownloading(null);
@@ -266,14 +274,17 @@ export default function CertificateUnlockCard({
   };
 
   const handleDownloadPdf = async () => {
+    const placeholder = openCommunityRedirectPlaceholder();
     setDownloading('pdf');
     setActionError('');
     try {
       const certificateId = await getOrEnsureCertificateId();
       await downloadCertificatePdf(displayName, dateStr, certificateId);
       if (webinarToken) recordCertificateDownload(webinarToken).catch(() => {});
+      navigatePlaceholderToCommunity(placeholder);
     } catch (e) {
       console.error(e);
+      closeCommunityRedirectPlaceholder(placeholder);
       setActionError(e?.message || 'Unable to download certificate PDF. Please try again.');
     } finally {
       setDownloading(null);

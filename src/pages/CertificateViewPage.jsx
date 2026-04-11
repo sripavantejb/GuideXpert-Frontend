@@ -7,6 +7,11 @@ import {
   downloadCertificatePng,
   downloadCertificatePdf,
 } from './webinar/utils/certificateWebinar';
+import {
+  openCommunityRedirectPlaceholder,
+  navigatePlaceholderToCommunity,
+  closeCommunityRedirectPlaceholder,
+} from '../utils/whatsappCommunityInvite';
 import { FiDownload, FiArrowLeft, FiAward, FiCheckCircle, FiCalendar, FiUser, FiHash } from 'react-icons/fi';
 
 function LoadingSkeleton() {
@@ -147,11 +152,14 @@ export default function CertificateViewPage() {
 
   const handleDownloadPng = async () => {
     if (!data) return;
+    const placeholder = openCommunityRedirectPlaceholder();
     setDownloading('png');
     try {
       await downloadCertificatePng(data.fullName, data.dateIssued, data.certificateId);
+      navigatePlaceholderToCommunity(placeholder);
     } catch (e) {
       console.error(e);
+      closeCommunityRedirectPlaceholder(placeholder);
     } finally {
       setDownloading(null);
     }
@@ -159,11 +167,14 @@ export default function CertificateViewPage() {
 
   const handleDownloadPdf = async () => {
     if (!data) return;
+    const placeholder = openCommunityRedirectPlaceholder();
     setDownloading('pdf');
     try {
       await downloadCertificatePdf(data.fullName, data.dateIssued, data.certificateId);
+      navigatePlaceholderToCommunity(placeholder);
     } catch (e) {
       console.error(e);
+      closeCommunityRedirectPlaceholder(placeholder);
     } finally {
       setDownloading(null);
     }
