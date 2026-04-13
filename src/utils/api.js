@@ -5,6 +5,7 @@ import { getCounsellorToken } from './counsellorApi';
 
 /**
  * Fire-and-forget poster download analytics. Does not block UI; failures are silent.
+ * If posterKey is `interresults` and the API returns 400 (older backends without that key), retries once as `inter`.
  * @param {{ posterKey: string, format: 'png'|'pdf', displayName?: string, mobileNumber?: string, routeContext?: 'public'|'portal' }} payload
  */
 export function trackPosterDownloadBeacon(payload) {
@@ -26,12 +27,24 @@ export function trackPosterDownloadBeacon(payload) {
     const headers = { 'Content-Type': 'application/json' };
     const token = getCounsellorToken();
     if (token) headers.Authorization = `Bearer ${token}`;
-    void fetch(url, {
-      method: 'POST',
-      headers,
-      body: JSON.stringify(bodyObj),
-      keepalive: true,
-    }).catch(() => {});
+    const reqInit = { method: 'POST', headers, keepalive: true };
+    void fetch(url, { ...reqInit, body: JSON.stringify(bodyObj) })
+      .then(async (res) => {
+        if (res.ok || posterKey !== 'interresults') return;
+        let data = {};
+        try {
+          data = await res.json();
+        } catch {
+          return;
+        }
+        const msg = String(data.message || '');
+        if (res.status !== 400 || !msg.includes('Invalid posterKey')) return;
+        void fetch(url, {
+          ...reqInit,
+          body: JSON.stringify({ ...bodyObj, posterKey: 'inter' }),
+        }).catch(() => {});
+      })
+      .catch(() => {});
   } catch {
     /* silent */
   }

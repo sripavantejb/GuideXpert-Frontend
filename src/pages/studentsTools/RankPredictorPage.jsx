@@ -1,6 +1,15 @@
-import { useRef, useState } from 'react';
+import { useMemo, useRef, useState } from 'react';
 import { FiTrendingUp } from 'react-icons/fi';
 import ToolWorkspaceLayout from './components/ToolWorkspaceLayout';
+import {
+  examConfig,
+  getExamConfig,
+  getRankPredictorExams,
+  getRankPredictorInputPlaceholder,
+  getRankPredictorInputStep,
+  validateRankPredictorScore,
+} from '../../utils/rankPredictor';
+import { predictRankPublic } from '../../utils/api';
 
 const PREVIEW_DEMO = {
   rank: 12430,
@@ -9,33 +18,72 @@ const PREVIEW_DEMO = {
 };
 
 export default function RankPredictorPage() {
-  const [exam, setExam] = useState('');
-  const [marks, setMarks] = useState('');
+  const exams = useMemo(() => getRankPredictorExams(), []);
+  const [examId, setExamId] = useState('');
+  const [score, setScore] = useState('');
+  const [difficulty, setDifficulty] = useState('Moderate');
   const [errors, setErrors] = useState({});
+  const [formError, setFormError] = useState('');
+  const [loading, setLoading] = useState(false);
   const [result, setResult] = useState(null);
   const resultsRef = useRef(null);
 
-  const handleSubmit = (event) => {
+  const exam = examId ? getExamConfig(examId) : null;
+
+  const handleExamChange = (id) => {
+    setExamId(id);
+    setErrors({});
+    setFormError('');
+    setResult(null);
+  };
+
+  const handleSubmit = async (event) => {
     event.preventDefault();
+    setResult(null);
+    setFormError('');
     const nextErrors = {};
     if (!exam) nextErrors.exam = 'Please select an exam.';
-    if (!marks) nextErrors.marks = 'Please enter marks scored.';
     setErrors(nextErrors);
     if (Object.keys(nextErrors).length > 0) return;
 
-    const marksValue = Number(marks);
-    const percentile = Math.max(70, Math.min(99.9, 70 + marksValue * 0.11));
-    const predictedRank = Math.max(1200, Math.round(25000 - marksValue * 85));
-    const nextResult = {
-      predictedRank,
-      percentile: percentile.toFixed(1),
-      targetMatch: Math.min(99, Math.round(percentile - 2)),
-      profileCompletion: 80,
-    };
-    setResult(nextResult);
-    setTimeout(() => {
-      resultsRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' });
-    }, 60);
+    console.log('Selected exam config:', examConfig[exam.name]);
+
+    const validation = validateRankPredictorScore(score, exam);
+    if (!validation.ok) {
+      setErrors({ score: validation.error });
+      return;
+    }
+    setErrors({});
+
+    setLoading(true);
+    try {
+      const payload = {
+        examId: exam.id,
+        score: validation.value,
+      };
+      if (exam.requiresDifficulty) {
+        payload.options = { difficulty };
+      }
+      const response = await predictRankPublic(payload);
+      if (!response.success) {
+        setFormError(response.message || 'Could not generate prediction. Please try again.');
+        return;
+      }
+      const predicted = response.data || {};
+      setResult({
+        predictedRank: predicted.predictedValue,
+        range: predicted.range,
+        message: predicted.message,
+        metricLabel: predicted.metricLabel,
+      });
+      setTimeout(() => {
+        resultsRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+      }, 60);
+    } catch (err) {
+      setFormError(err.message || 'Could not generate prediction. Please try again.');
+    } finally {
+      setLoading(false);
+    }
   };
 
   return (
@@ -49,12 +97,12 @@ export default function RankPredictorPage() {
         'Normalization patterns adjust the estimate to produce a likely rank and percentile range.',
       ]}
       whatThisToolDoes={[
-        'Estimates your likely rank and percentile using your selected exam and marks.',
-        'Helps you judge if your profile can match target colleges before applying.',
+        'Estimates your likely rank using your selected exam and score (marks, percentile, or normalized score as applicable).',
+        'Helps you judge admission potential before you apply.',
       ]}
       inputGuide={[
-        'Exam Name: Select the exam for which you want a rank estimate.',
-        'Marks Scored: Enter your expected or actual marks for the selected exam.',
+        'Exam: Choose your exam; allowed score type and range update automatically.',
+        'Score: Enter marks, percentile, or normalized score within the shown range for that exam.',
       ]}
       preview={
         <div className="space-y-2.5">
@@ -105,37 +153,22 @@ export default function RankPredictorPage() {
           >
             <h2 className="break-words text-2xl font-black text-[#0F172A] sm:text-3xl">Results Panel</h2>
             <p className="mt-1 text-sm font-medium text-slate-600">
-              How to read this result: lower rank and higher percentile indicate stronger admission potential.
+              Lower rank numbers usually mean better standing. Use the range as a guide, not a guarantee.
             </p>
-            <div className="mt-5 grid gap-4 sm:grid-cols-2">
-              <div className="rounded-[12px] border-[3px] border-black bg-white p-4 shadow-[4px_4px_0_#000]">
-                <p className="text-xs font-bold uppercase tracking-wider text-slate-500">Predicted Rank</p>
-                <p className="mt-1 text-3xl font-black tabular-nums">{result.predictedRank.toLocaleString()}</p>
-              </div>
-              <div className="rounded-[12px] border-[3px] border-black bg-white p-4 shadow-[4px_4px_0_#000]">
-                <p className="text-xs font-bold uppercase tracking-wider text-slate-500">Percentile</p>
-                <p className="mt-1 text-3xl font-black tabular-nums">{result.percentile}%</p>
-              </div>
-            </div>
             <div className="mt-5 space-y-4">
-              <div>
-                <div className="mb-1 flex justify-between text-sm font-bold">
-                  <span>Target College Match</span>
-                  <span className="tabular-nums">{result.targetMatch}%</span>
-                </div>
-                <div className="h-3.5 overflow-hidden rounded-full border-[3px] border-black bg-white shadow-[2px_2px_0_#000]">
-                  <div className="h-full rounded-full bg-[#c7f36b]" style={{ width: `${result.targetMatch}%` }} />
-                </div>
+              <div className="rounded-[12px] border-[3px] border-black bg-white p-4 shadow-[4px_4px_0_#000]">
+                <p className="text-xs font-bold uppercase tracking-wider text-slate-500">{result.metricLabel || 'Prediction'}</p>
+                <p className="mt-1 break-words text-3xl font-black tabular-nums text-[#0F172A]">{result.predictedRank}</p>
               </div>
-              <div>
-                <div className="mb-1 flex justify-between text-sm font-bold">
-                  <span>Profile Completion</span>
-                  <span className="tabular-nums">{result.profileCompletion}%</span>
-                </div>
-                <div className="h-3.5 overflow-hidden rounded-full border-[3px] border-black bg-white shadow-[2px_2px_0_#000]">
-                  <div className="h-full rounded-full bg-[#F7B5B5]" style={{ width: `${result.profileCompletion}%` }} />
-                </div>
+              <div className="rounded-[12px] border-[3px] border-black bg-white p-4 shadow-[4px_4px_0_#000]">
+                <p className="text-xs font-bold uppercase tracking-wider text-slate-500">Range</p>
+                <p className="mt-1 text-lg font-bold text-[#0F172A]">{result.range}</p>
               </div>
+              {result.message ? (
+                <p className="rounded-[12px] border-[3px] border-black bg-white p-4 text-sm font-medium text-slate-700 shadow-[4px_4px_0_#000]">
+                  {result.message}
+                </p>
+              ) : null}
             </div>
           </section>
         ) : null
@@ -145,8 +178,8 @@ export default function RankPredictorPage() {
           <section className="rounded-[14px] border-[3px] border-black bg-white p-6 shadow-[6px_6px_0_#000]">
             <h3 className="text-xl font-black text-[#0F172A]">Next Step Suggestions</h3>
             <ul className="mt-3 list-disc space-y-2 pl-5 text-sm font-medium text-slate-600">
-              <li>Focus on high-weight topics to improve percentile by 1-2 points.</li>
-              <li>Prepare a shortlist of target and safe colleges using this prediction range.</li>
+              <li>Cross-check cutoffs and previous-year data for your target colleges.</li>
+              <li>Prepare a balanced shortlist of target, match, and safe options.</li>
             </ul>
           </section>
         ) : null
@@ -154,40 +187,80 @@ export default function RankPredictorPage() {
     >
       <h2 className="text-xl font-black text-[#0F172A] sm:text-2xl">Input Workspace</h2>
       <p className="mt-1 text-sm font-medium text-slate-600">
-        Enter your details and click Predict Rank to access results.
+        Select your exam, enter your score within the allowed range, then click Predict Rank.
       </p>
-      <form className="mt-5 grid gap-4 sm:grid-cols-2" onSubmit={handleSubmit}>
+      <form noValidate className="mt-5 grid gap-4 sm:grid-cols-2" onSubmit={handleSubmit}>
         <label className="text-sm font-semibold text-[#0F172A]">
-          Exam Name
+          Exam
           <select
-            value={exam}
-            onChange={(e) => setExam(e.target.value)}
+            value={examId}
+            onChange={(e) => handleExamChange(e.target.value)}
             className="mt-1 w-full rounded-[10px] border-[3px] border-black bg-white px-3 py-2 shadow-[2px_2px_0_#000]"
           >
             <option value="">Select Exam</option>
-            <option value="jee-main">JEE Main</option>
-            <option value="bitsat">BITSAT</option>
-            <option value="viteee">VITEEE</option>
+            {exams.map((e) => (
+              <option key={e.id} value={e.id}>
+                {e.name}
+              </option>
+            ))}
           </select>
           {errors.exam ? <span className="mt-1 block text-xs text-red-600">{errors.exam}</span> : null}
         </label>
-        <label className="text-sm font-semibold text-[#0F172A]">
-          Marks Scored
-          <input
-            type="number"
-            value={marks}
-            onChange={(e) => setMarks(e.target.value)}
-            placeholder="e.g. 180"
-            className="mt-1 w-full rounded-[10px] border-[3px] border-black bg-white px-3 py-2 shadow-[2px_2px_0_#000]"
-          />
-          {errors.marks ? <span className="mt-1 block text-xs text-red-600">{errors.marks}</span> : null}
-        </label>
+
+        {exam ? (
+          <>
+            <label className="text-sm font-semibold text-[#0F172A]">
+              {exam.scoreLabel}
+              <input
+                type="number"
+                value={score}
+                min={exam.min}
+                max={exam.max}
+                step={getRankPredictorInputStep(exam)}
+                onChange={(e) => setScore(e.target.value)}
+                placeholder={getRankPredictorInputPlaceholder(exam)}
+                className="mt-1 w-full rounded-[10px] border-[3px] border-black bg-white px-3 py-2 shadow-[2px_2px_0_#000]"
+              />
+              <span className="mt-1 block text-[11px] font-medium text-slate-500">
+                Allowed range: {exam.min} - {exam.max}
+                {exam.type === 'percentile' ? ' (decimals allowed)' : ' (whole numbers only)'}
+              </span>
+              {errors.score ? <span className="mt-1 block text-xs text-red-600">{errors.score}</span> : null}
+            </label>
+            {exam.requiresDifficulty ? (
+              <label className="text-sm font-semibold text-[#0F172A] sm:col-span-2">
+                Difficulty level
+                <select
+                  value={difficulty}
+                  onChange={(e) => setDifficulty(e.target.value)}
+                  className="mt-1 w-full max-w-md rounded-[10px] border-[3px] border-black bg-white px-3 py-2 shadow-[2px_2px_0_#000]"
+                >
+                  {exam.difficultyOptions.map((option) => (
+                    <option key={option} value={option}>
+                      {option}
+                    </option>
+                  ))}
+                </select>
+              </label>
+            ) : null}
+          </>
+        ) : (
+          <div className="text-sm font-medium text-slate-500 sm:flex sm:items-end">
+            Select an exam to enter your score.
+          </div>
+        )}
+
+        {formError ? (
+          <p className="sm:col-span-2 rounded-lg bg-red-50 p-3 text-sm text-red-700">{formError}</p>
+        ) : null}
+
         <div className="sm:col-span-2">
           <button
             type="submit"
-            className="rounded-[12px] border-[3px] border-black bg-[#c7f36b] px-6 py-3 text-sm font-black text-[#0F172A] shadow-[4px_4px_0_#000] transition-all hover:-translate-y-0.5 hover:shadow-[6px_6px_0_#000]"
+            disabled={loading || !exam}
+            className="rounded-[12px] border-[3px] border-black bg-[#c7f36b] px-6 py-3 text-sm font-black text-[#0F172A] shadow-[4px_4px_0_#000] transition-all hover:-translate-y-0.5 hover:shadow-[6px_6px_0_#000] disabled:cursor-not-allowed disabled:opacity-50"
           >
-            Predict Rank
+            {loading ? 'Predicting…' : 'Predict Rank'}
           </button>
         </div>
       </form>
