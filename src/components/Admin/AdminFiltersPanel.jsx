@@ -99,6 +99,10 @@ export default function AdminFiltersPanel({ open, onClose }) {
   };
 
   if (!open) return null;
+  const fieldLabelClass = 'mb-1.5 block text-xs font-medium text-gray-500';
+  const fieldInputClass = 'h-10 w-full rounded-lg border border-gray-300 bg-white px-3 text-sm shadow-sm focus:border-primary-blue-500 focus:outline-none focus:ring-2 focus:ring-primary-blue-500/20';
+  const sectionTitleClass = 'text-xs font-semibold uppercase tracking-wider text-gray-500';
+  const sectionClass = 'space-y-4 rounded-xl border border-gray-100 bg-gray-50/50 p-4';
 
   return (
     <>
@@ -109,75 +113,77 @@ export default function AdminFiltersPanel({ open, onClose }) {
         onClick={onClose}
       />
       <aside
-        className="fixed top-0 right-0 z-50 h-full w-full max-w-md shadow-xl border-l border-gray-200 bg-white flex flex-col"
+        className="fixed top-0 right-0 z-50 flex h-full w-full max-w-md flex-col border-l border-gray-200 bg-white shadow-xl"
         aria-label="Filters"
       >
-        <div className="flex items-center justify-between px-4 py-3 border-b border-gray-200 shrink-0">
-          <h2 className="text-base font-semibold text-gray-900">Filters</h2>
-          <button
-            type="button"
-            onClick={onClose}
-            className="p-2 rounded-lg text-gray-600 hover:bg-gray-100"
-            aria-label="Close"
-          >
-            <FiX className="w-5 h-5" />
-          </button>
+        <div className="shrink-0 border-b border-gray-200 bg-white px-5 py-4">
+          <div className="flex items-center justify-between">
+            <h2 className="text-lg font-semibold tracking-tight text-gray-900">Filters</h2>
+            <button
+              type="button"
+              onClick={onClose}
+              className="rounded-lg p-2 text-gray-600 hover:bg-gray-100"
+              aria-label="Close"
+            >
+              <FiX className="h-5 w-5" />
+            </button>
+          </div>
         </div>
-        <div className="flex-1 overflow-y-auto p-4 space-y-6">
-          <section className="space-y-3">
-            <h3 className="text-xs font-semibold text-gray-500 uppercase tracking-wider">Date range</h3>
+        <div className="flex-1 space-y-5 overflow-y-auto px-5 py-5">
+          <section className={sectionClass}>
+            <h3 className={sectionTitleClass}>Date range</h3>
             <p className="text-sm text-gray-600">{formatRangeSummary(dateRange.from, dateRange.to)}</p>
-            <div className="grid grid-cols-2 gap-3">
+            <div className="grid grid-cols-2 gap-4">
               <div>
-                <label htmlFor="panel-date-from" className="block text-xs font-medium text-gray-500 mb-1">From</label>
+                <label htmlFor="panel-date-from" className={fieldLabelClass}>From</label>
                 <input
                   id="panel-date-from"
                   type="date"
                   value={dateRange.from}
                   onChange={(e) => setFrom(e.target.value)}
-                  className="w-full h-9 px-2 rounded-lg border border-gray-300 text-sm"
+                  className={fieldInputClass}
                 />
               </div>
               <div>
-                <label htmlFor="panel-date-to" className="block text-xs font-medium text-gray-500 mb-1">To</label>
+                <label htmlFor="panel-date-to" className={fieldLabelClass}>To</label>
                 <input
                   id="panel-date-to"
                   type="date"
                   value={dateRange.to}
                   onChange={(e) => setTo(e.target.value)}
-                  className="w-full h-9 px-2 rounded-lg border border-gray-300 text-sm"
+                  className={fieldInputClass}
                 />
               </div>
             </div>
-            <div className="flex flex-wrap gap-2">
-              <button type="button" onClick={() => applyPreset('7d')} className="h-8 px-2.5 rounded-lg border border-gray-300 text-xs font-medium hover:bg-gray-50">7d</button>
-              <button type="button" onClick={() => applyPreset('30d')} className="h-8 px-2.5 rounded-lg border border-gray-300 text-xs font-medium hover:bg-gray-50">30d</button>
-              <button type="button" onClick={() => applyPreset('month')} className="h-8 px-2.5 rounded-lg border border-gray-300 text-xs font-medium hover:bg-gray-50">Month</button>
-              <button type="button" onClick={() => resetRange()} className="h-8 px-2.5 rounded-lg border border-gray-200 text-xs text-gray-600 hover:bg-gray-50">Clear range</button>
+            <div className="flex flex-wrap gap-2.5">
+              <button type="button" onClick={() => applyPreset('7d')} className="h-9 rounded-lg border border-gray-300 bg-white px-3 text-xs font-medium shadow-sm hover:bg-gray-50">7d</button>
+              <button type="button" onClick={() => applyPreset('30d')} className="h-9 rounded-lg border border-gray-300 bg-white px-3 text-xs font-medium shadow-sm hover:bg-gray-50">30d</button>
+              <button type="button" onClick={() => applyPreset('month')} className="h-9 rounded-lg border border-gray-300 bg-white px-3 text-xs font-medium shadow-sm hover:bg-gray-50">Month</button>
+              <button type="button" onClick={() => resetRange()} className="h-9 rounded-lg border border-gray-200 bg-white px-3 text-xs text-gray-600 shadow-sm hover:bg-gray-50">Clear range</button>
             </div>
           </section>
 
-          <section className="space-y-3 border-t border-gray-100 pt-6">
-            <h3 className="text-xs font-semibold text-gray-500 uppercase tracking-wider">Lead list</h3>
-            <p className="text-xs text-gray-500">Applies to the Lead Funnel table and export. Dashboard stats use the date range above.</p>
+          <section className={sectionClass}>
+            <h3 className={sectionTitleClass}>Lead list</h3>
+            <p className="text-xs leading-relaxed text-gray-500">Applies to the Lead Funnel table and export. Dashboard stats use the date range above.</p>
             <div>
-              <label htmlFor="panel-lead-search" className="block text-xs font-medium text-gray-500 mb-1">Search</label>
+              <label htmlFor="panel-lead-search" className={fieldLabelClass}>Search</label>
               <input
                 id="panel-lead-search"
                 type="search"
                 placeholder="Name, phone, email…"
                 value={searchDraft}
                 onChange={(e) => setSearchDraft(e.target.value)}
-                className="w-full h-9 px-3 rounded-lg border border-gray-300 text-sm"
+                className={fieldInputClass}
               />
             </div>
             <div>
-              <label htmlFor="panel-status" className="block text-xs font-medium text-gray-500 mb-1">Status</label>
+              <label htmlFor="panel-status" className={fieldLabelClass}>Status</label>
               <select
                 id="panel-status"
                 value={leadListFilters.applicationStatus}
                 onChange={(e) => patchLead({ applicationStatus: e.target.value })}
-                className="w-full h-9 px-3 rounded-lg border border-gray-300 text-sm"
+                className={fieldInputClass}
               >
                 <option value="">All statuses</option>
                 {ALLOWED_APPLICATION_STATUSES.map((s) => (
@@ -186,12 +192,12 @@ export default function AdminFiltersPanel({ open, onClose }) {
               </select>
             </div>
             <div>
-              <label htmlFor="panel-otp" className="block text-xs font-medium text-gray-500 mb-1">OTP</label>
+              <label htmlFor="panel-otp" className={fieldLabelClass}>OTP</label>
               <select
                 id="panel-otp"
                 value={leadListFilters.otpVerified}
                 onChange={(e) => patchLead({ otpVerified: e.target.value })}
-                className="w-full h-9 px-3 rounded-lg border border-gray-300 text-sm"
+                className={fieldInputClass}
               >
                 <option value="">Any</option>
                 <option value="true">Verified</option>
@@ -199,22 +205,22 @@ export default function AdminFiltersPanel({ open, onClose }) {
               </select>
             </div>
             <div>
-              <label htmlFor="panel-meeting-attended" className="block text-xs font-medium text-gray-500 mb-1">Meeting attended</label>
+              <label htmlFor="panel-meeting-attended" className={fieldLabelClass}>Meeting attended</label>
               <select
                 id="panel-meeting-attended"
                 value={leadListFilters.demoAttended}
                 onChange={(e) => handleMeetingAttendedChange(e.target.value)}
-                className="w-full h-9 px-3 rounded-lg border border-gray-300 text-sm"
+                className={fieldInputClass}
               >
                 <option value="">All</option>
                 <option value="true">Attended</option>
                 <option value="false">Not attended</option>
               </select>
               {leadListFilters.demoAttended === 'false' ? (
-                <p className="text-xs text-gray-500 mt-1">Not attended = slot booked but meeting missed.</p>
+                <p className="mt-1.5 text-xs leading-relaxed text-gray-500">Not attended = slot booked but meeting missed.</p>
               ) : null}
             </div>
-            <fieldset className="border border-gray-200 rounded-lg p-3 space-y-2">
+            <fieldset className="space-y-2.5 rounded-lg border border-gray-200 bg-white p-3.5">
               <legend className="text-xs font-medium text-gray-600 px-1">Slot booked</legend>
               <div className="flex flex-wrap gap-3">
                 {['', 'true', 'false'].map((val) => (
@@ -231,12 +237,12 @@ export default function AdminFiltersPanel({ open, onClose }) {
               </div>
             </fieldset>
             <div>
-              <label htmlFor="panel-slot-id" className="block text-xs font-medium text-gray-500 mb-1">Slot (optional)</label>
+              <label htmlFor="panel-slot-id" className={fieldLabelClass}>Slot (optional)</label>
               <select
                 id="panel-slot-id"
                 value={leadListFilters.selectedSlot}
                 onChange={(e) => patchLead({ selectedSlot: e.target.value })}
-                className="w-full h-9 px-3 rounded-lg border border-gray-300 text-sm"
+                className={fieldInputClass}
               >
                 <option value="">All slots</option>
                 {ALL_SLOT_IDS.map((id) => (
@@ -245,29 +251,29 @@ export default function AdminFiltersPanel({ open, onClose }) {
               </select>
             </div>
             <div>
-              <label htmlFor="panel-slot-date" className="block text-xs font-medium text-gray-500 mb-1">Slot date</label>
+              <label htmlFor="panel-slot-date" className={fieldLabelClass}>Slot date</label>
               <input
                 id="panel-slot-date"
                 type="date"
                 value={leadListFilters.slotDate}
                 onChange={(e) => patchLead({ slotDate: e.target.value })}
-                className="w-full h-9 px-3 rounded-lg border border-gray-300 text-sm"
+                className={fieldInputClass}
               />
               {leadListFilters.slotDate ? (
-                <p className="text-xs text-gray-500 mt-1">
+                <p className="mt-1.5 text-xs leading-relaxed text-gray-500">
                   List counts by this demo day (IST), same as Slots — signup date range above is ignored.
                 </p>
               ) : null}
             </div>
             <div>
-              <label htmlFor="panel-utm" className="block text-xs font-medium text-gray-500 mb-1">Influencer (utm_content)</label>
+              <label htmlFor="panel-utm" className={fieldLabelClass}>Influencer (utm_content)</label>
               <input
                 id="panel-utm"
                 type="text"
                 value={leadListFilters.utm_content}
                 onChange={(e) => patchLead({ utm_content: e.target.value })}
                 placeholder="utm_content"
-                className="w-full h-9 px-3 rounded-lg border border-gray-300 text-sm"
+                className={fieldInputClass}
               />
             </div>
             <button
@@ -294,8 +300,8 @@ export default function AdminFiltersPanel({ open, onClose }) {
             </button>
           </section>
 
-          <section className="space-y-3 border-t border-gray-100 pt-6">
-            <h3 className="text-xs font-semibold text-gray-500 uppercase tracking-wider">Quick actions</h3>
+          <section className={sectionClass}>
+            <h3 className={sectionTitleClass}>Quick actions</h3>
             <Link
               to={`/admin/export${exportQuery()}`}
               onClick={onClose}
