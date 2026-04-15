@@ -113,7 +113,7 @@ export const getAdminLeads = async (params = {}, token = getStoredToken()) => {
   if (params.applicationStatus) search.set('applicationStatus', params.applicationStatus);
   if (params.otpVerified !== undefined && params.otpVerified !== '') search.set('otpVerified', String(params.otpVerified));
   if (params.slotBooked !== undefined && params.slotBooked !== '') search.set('slotBooked', String(params.slotBooked));
-  if (params.demoAttended === true || params.demoAttended === 'true') search.set('demoAttended', 'true');
+  if (params.demoAttended !== undefined && params.demoAttended !== '') search.set('demoAttended', String(params.demoAttended));
   if (params.assessmentWritten === true || params.assessmentWritten === 'true') search.set('assessmentWritten', 'true');
   if (params.activationCompleted === true || params.activationCompleted === 'true') search.set('activationCompleted', 'true');
   if (params.selectedSlot) search.set('selectedSlot', params.selectedSlot);

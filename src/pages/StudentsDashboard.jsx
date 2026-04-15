@@ -82,7 +82,7 @@ const RankPredictor = () => {
         <input className={previewInputClass} placeholder="Marks Scored" disabled />
       </div>
 
-      <PreviewActionLink to="/students/predictors" className="mt-6 w-full">
+      <PreviewActionLink to="/students/rank-predictor" className="mt-6 w-full">
         Run Analysis <LuArrowRight />
       </PreviewActionLink>
     </NeoCard>

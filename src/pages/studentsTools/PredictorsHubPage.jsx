@@ -18,6 +18,16 @@ const PREDICTOR_CARDS = [
     description: 'Check branch opportunities for your preferred institutions.',
     to: '/students/branch-predictor',
   },
+  {
+    title: 'Exam Predictor',
+    description: 'Suggest suitable exams based on your profile and strengths.',
+    to: '/students/exam-predictor',
+  },
+  {
+    title: 'Deadline Manager',
+    description: 'Track important exam and admission deadlines at a glance.',
+    to: '/students/deadline-manager',
+  },
 ];
 
 export default function PredictorsHubPage() {

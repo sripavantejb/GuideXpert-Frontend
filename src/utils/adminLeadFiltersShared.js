@@ -32,7 +32,8 @@ export function leadListFiltersFromSearchParams(searchParams) {
   const otp = searchParams.get('otpVerified') || '';
   const slotB = searchParams.get('slotBooked') || '';
   const q = searchParams.get('q') || '';
-  const demoAttended = searchParams.get('demoAttended') === 'true' ? 'true' : '';
+  const demoAttendedRaw = searchParams.get('demoAttended') || '';
+  const demoAttended = ['true', 'false'].includes(demoAttendedRaw) ? demoAttendedRaw : '';
   const assessmentWritten = searchParams.get('assessmentWritten') === 'true' ? 'true' : '';
   const activationCompleted = searchParams.get('activationCompleted') === 'true' ? 'true' : '';
   return {
@@ -56,7 +57,7 @@ export function leadListFiltersToApiParams(filters) {
     ...(f.applicationStatus && { applicationStatus: f.applicationStatus }),
     ...(f.otpVerified !== '' && f.otpVerified != null && { otpVerified: f.otpVerified }),
     ...(f.slotBooked !== '' && f.slotBooked != null && { slotBooked: f.slotBooked }),
-    ...(f.demoAttended === 'true' && { demoAttended: 'true' }),
+    ...(f.demoAttended !== '' && f.demoAttended != null && { demoAttended: String(f.demoAttended) }),
     ...(f.assessmentWritten === 'true' && { assessmentWritten: 'true' }),
     ...(f.activationCompleted === 'true' && { activationCompleted: 'true' }),
     ...(f.selectedSlot && { selectedSlot: f.selectedSlot }),
@@ -72,7 +73,7 @@ export function leadListFiltersToSearchParams(filters) {
   if (filters.applicationStatus) search.set('applicationStatus', filters.applicationStatus);
   if (filters.otpVerified !== '' && filters.otpVerified != null) search.set('otpVerified', String(filters.otpVerified));
   if (filters.slotBooked !== '' && filters.slotBooked != null) search.set('slotBooked', String(filters.slotBooked));
-  if (filters.demoAttended === 'true') search.set('demoAttended', 'true');
+  if (filters.demoAttended !== '' && filters.demoAttended != null) search.set('demoAttended', String(filters.demoAttended));
   if (filters.assessmentWritten === 'true') search.set('assessmentWritten', 'true');
   if (filters.activationCompleted === 'true') search.set('activationCompleted', 'true');
   if (filters.selectedSlot) search.set('selectedSlot', filters.selectedSlot);
@@ -88,7 +89,7 @@ export function countActiveLeadFilters(filters) {
   if (f.applicationStatus) n += 1;
   if (f.otpVerified !== '' && f.otpVerified != null) n += 1;
   if (f.slotBooked !== '' && f.slotBooked != null) n += 1;
-  if (f.demoAttended === 'true') n += 1;
+  if (f.demoAttended !== '' && f.demoAttended != null) n += 1;
   if (f.assessmentWritten === 'true') n += 1;
   if (f.activationCompleted === 'true') n += 1;
   if (f.selectedSlot) n += 1;

@@ -64,6 +64,15 @@ export default function AdminFiltersPanel({ open, onClose }) {
     commitLeadFilters(next);
   };
 
+  const handleMeetingAttendedChange = (value) => {
+    if (value === 'false') {
+      // "Not attended" means users who booked a slot but missed the meeting.
+      patchLead({ demoAttended: 'false', slotBooked: 'true' });
+      return;
+    }
+    patchLead({ demoAttended: value });
+  };
+
   useEffect(() => {
     const t = setTimeout(() => {
       setLeadListFilters((prev) => {
@@ -188,6 +197,22 @@ export default function AdminFiltersPanel({ open, onClose }) {
                 <option value="true">Verified</option>
                 <option value="false">Not verified</option>
               </select>
+            </div>
+            <div>
+              <label htmlFor="panel-meeting-attended" className="block text-xs font-medium text-gray-500 mb-1">Meeting attended</label>
+              <select
+                id="panel-meeting-attended"
+                value={leadListFilters.demoAttended}
+                onChange={(e) => handleMeetingAttendedChange(e.target.value)}
+                className="w-full h-9 px-3 rounded-lg border border-gray-300 text-sm"
+              >
+                <option value="">All</option>
+                <option value="true">Attended</option>
+                <option value="false">Not attended</option>
+              </select>
+              {leadListFilters.demoAttended === 'false' ? (
+                <p className="text-xs text-gray-500 mt-1">Not attended = slot booked but meeting missed.</p>
+              ) : null}
             </div>
             <fieldset className="border border-gray-200 rounded-lg p-3 space-y-2">
               <legend className="text-xs font-medium text-gray-600 px-1">Slot booked</legend>

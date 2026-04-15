@@ -39,6 +39,7 @@ export default function ToolWorkspaceLayout({
   whatThisToolDoes,
   inputGuide,
   compactHero = false,
+  afterHero = null,
 }) {
   const { pathname } = useLocation();
   const { Icon: HeroIcon, accent } = getHeroMeta(pathname);
@@ -101,6 +102,8 @@ export default function ToolWorkspaceLayout({
             </section>
           </div>
         )}
+
+        {afterHero}
 
         <div className="mx-auto flex min-h-0 w-full min-w-0 max-w-7xl flex-1 flex-col px-4 pb-8 pt-2 sm:px-6 sm:pb-10 sm:pt-4 lg:px-8 lg:pb-12">
           <div className="flex-1 space-y-5 sm:space-y-7">

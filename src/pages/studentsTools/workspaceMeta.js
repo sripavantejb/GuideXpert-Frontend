@@ -6,6 +6,8 @@ import {
   FiMapPin,
   FiColumns,
   FiLayers,
+  FiZap,
+  FiClock,
 } from 'react-icons/fi';
 
 /** Hero icon tile + accent per route (ToolWorkspaceLayout) */
@@ -16,12 +18,16 @@ export const HERO_META_BY_PATH = {
   '/students/course-fit-test': { Icon: FiBookOpen, accent: 'yellow' },
   '/students/college-fit-test': { Icon: FiMapPin, accent: 'pink' },
   '/students/college-comparison': { Icon: FiColumns, accent: 'lime' },
+  '/students/exam-predictor': { Icon: FiZap, accent: 'yellow' },
+  '/students/deadline-manager': { Icon: FiClock, accent: 'blue' },
 };
 
 const DEFAULT_HERO = { Icon: FiLayers, accent: 'lime' };
 
 export function getHeroMeta(pathname) {
-  return HERO_META_BY_PATH[pathname] || DEFAULT_HERO;
+  if (HERO_META_BY_PATH[pathname]) return HERO_META_BY_PATH[pathname];
+  if (pathname.startsWith('/students/rank-predictor/')) return HERO_META_BY_PATH['/students/rank-predictor'];
+  return DEFAULT_HERO;
 }
 
 /** Tailwind border/bg tokens for hero icon tile */

@@ -77,11 +77,14 @@ const CertificatesPage = lazy(() => import('./pages/webinar/CertificatesPage'));
 const CertificateViewPage = lazy(() => import('./pages/CertificateViewPage'));
 const StudentsDashboard = lazy(() => import('./pages/StudentsDashboard'));
 const RankPredictorToolPage = lazy(() => import('./pages/studentsTools/RankPredictorPage'));
+const StudentExamPredictorPage = lazy(() => import('./pages/studentsTools/StudentExamPredictorPage'));
 const CollegePredictorToolPage = lazy(() => import('./pages/studentsTools/CollegePredictorPage'));
 const BranchPredictorToolPage = lazy(() => import('./pages/studentsTools/BranchPredictorPage'));
 const CourseFitTestToolPage = lazy(() => import('./pages/studentsTools/CourseFitTestPage'));
 const CollegeFitTestToolPage = lazy(() => import('./pages/studentsTools/CollegeFitTestPage'));
 const CollegeComparisonToolPage = lazy(() => import('./pages/studentsTools/CollegeComparisonPage'));
+const ExamPredictorToolPage = lazy(() => import('./pages/studentsTools/ExamPredictorPage'));
+const DeadlineManagerToolPage = lazy(() => import('./pages/studentsTools/DeadlineManagerPage'));
 const PredictorsHubPage = lazy(() => import('./pages/studentsTools/PredictorsHubPage'));
 const TestsHubPage = lazy(() => import('./pages/studentsTools/TestsHubPage'));
 import CollegePredictorPage from './pages/CollegePredictorPage';
@@ -199,6 +202,14 @@ function App() {
             }
           />
           <Route
+            path="/students/rank-predictor/:examId"
+            element={
+              <Suspense fallback={<div className="min-h-screen flex items-center justify-center bg-[#0F172A] text-white"><div className="animate-pulse text-sm font-medium">Loading exam predictor…</div></div>}>
+                <StudentExamPredictorPage />
+              </Suspense>
+            }
+          />
+          <Route
             path="/students/predictors"
             element={
               <Suspense fallback={<div className="min-h-screen flex items-center justify-center bg-[#0F172A] text-white"><div className="animate-pulse text-sm font-medium">Loading predictor hub…</div></div>}>
@@ -251,6 +262,22 @@ function App() {
             element={
               <Suspense fallback={<div className="min-h-screen flex items-center justify-center bg-[#0F172A] text-white"><div className="animate-pulse text-sm font-medium">Loading comparison workspace…</div></div>}>
                 <CollegeComparisonToolPage />
+              </Suspense>
+            }
+          />
+          <Route
+            path="/students/exam-predictor"
+            element={
+              <Suspense fallback={<div className="min-h-screen flex items-center justify-center bg-[#0F172A] text-white"><div className="animate-pulse text-sm font-medium">Loading exam predictor…</div></div>}>
+                <ExamPredictorToolPage />
+              </Suspense>
+            }
+          />
+          <Route
+            path="/students/deadline-manager"
+            element={
+              <Suspense fallback={<div className="min-h-screen flex items-center justify-center bg-[#0F172A] text-white"><div className="animate-pulse text-sm font-medium">Loading deadline manager…</div></div>}>
+                <DeadlineManagerToolPage />
               </Suspense>
             }
           />
