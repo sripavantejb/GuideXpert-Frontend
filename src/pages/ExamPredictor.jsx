@@ -2,7 +2,7 @@ import { useMemo, useState } from 'react';
 import { Link, Navigate, useParams } from 'react-router-dom';
 import RankForm from '../components/rankPredictor/RankForm';
 import ResultCard from '../components/rankPredictor/ResultCard';
-import { getExamConfig } from '../utils/rankPredictor';
+import { examConfig, getExamConfig, validateRankPredictorScore } from '../utils/rankPredictor';
 import { predictRankPublic } from '../utils/api';
 
 function ExamPredictor() {
@@ -21,16 +21,15 @@ function ExamPredictor() {
     setResult(null);
     setError('');
 
-    if (score === '') {
-      setError('Please enter marks to continue.');
+    console.log('Selected exam config:', examConfig[exam.name]);
+
+    const validation = validateRankPredictorScore(score, exam);
+    if (!validation.ok) {
+      setError(validation.error);
       return;
     }
 
-    const numericScore = Number(score);
-    if (Number.isNaN(numericScore)) {
-      setError('Only numeric values are allowed.');
-      return;
-    }
+    const numericScore = validation.value;
 
     setLoading(true);
     try {

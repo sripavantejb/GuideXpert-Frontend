@@ -29,6 +29,7 @@ const POSTER_FILTER_OPTIONS = [
   { value: '', label: 'All posters' },
   { value: 'holi', label: 'Holi' },
   { value: 'inter', label: 'Inter' },
+  { value: 'interresults', label: 'Inter results' },
   { value: 'gx', label: 'GX' },
   { value: 'sid', label: 'SID' },
   { value: 'btechcse', label: 'B.Tech CSE' },
@@ -39,6 +40,7 @@ const POSTER_FILTER_OPTIONS = [
 const POSTER_LABELS = {
   holi: 'Holi',
   inter: 'Inter',
+  interresults: 'Inter results',
   gx: 'GX',
   sid: 'SID',
   btechcse: 'B.Tech CSE',
@@ -49,6 +51,7 @@ const POSTER_LABELS = {
 const POSTER_COLORS = {
   Holi: '#e11d48',
   Inter: '#7c3aed',
+  'Inter results': '#ca8a04',
   GX: '#003366',
   SID: '#0891b2',
   'B.Tech CSE': '#7c2d12',
@@ -101,6 +104,7 @@ function posterBadge(key) {
   const colorMap = {
     holi: 'bg-rose-50 text-rose-700 ring-rose-200/60',
     inter: 'bg-violet-50 text-violet-700 ring-violet-200/60',
+    interresults: 'bg-amber-50 text-amber-800 ring-amber-200/60',
     gx: 'bg-sky-50 text-sky-700 ring-sky-200/60',
     sid: 'bg-cyan-50 text-cyan-700 ring-cyan-200/60',
     btechcse: 'bg-orange-50 text-orange-900 ring-orange-200/60',

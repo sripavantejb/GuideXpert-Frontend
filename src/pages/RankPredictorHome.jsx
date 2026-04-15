@@ -12,6 +12,7 @@ const EXAM_ICONS = {
   tnea: '📐',
   tseamcet: '🧮',
   wbjee: '🌉',
+  icet: '📗',
 };
 
 function RankPredictorHome() {

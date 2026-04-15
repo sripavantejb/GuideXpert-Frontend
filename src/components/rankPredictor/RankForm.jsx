@@ -1,3 +1,5 @@
+import { getRankPredictorInputPlaceholder, getRankPredictorInputStep } from '../../utils/rankPredictor';
+
 function RankForm({
   exam,
   score,
@@ -8,8 +10,10 @@ function RankForm({
   loading,
   error,
 }) {
+  const step = getRankPredictorInputStep(exam);
+
   return (
-    <form onSubmit={onSubmit} className="min-w-0 rounded-2xl border border-gray-200 bg-white p-4 shadow-sm sm:p-6">
+    <form noValidate onSubmit={onSubmit} className="min-w-0 rounded-2xl border border-gray-200 bg-white p-4 shadow-sm sm:p-6">
       <h2 className="text-lg font-bold text-gray-900 sm:text-xl">
         {exam.title || `${exam.name} Rank Predictor`}
       </h2>
@@ -21,14 +25,17 @@ function RankForm({
           <input
             type="number"
             value={score}
-            min={exam.minScore}
-            max={exam.maxScore}
-            step={exam.step || 1}
+            min={exam.min}
+            max={exam.max}
+            step={step}
             onChange={(e) => onScoreChange(e.target.value)}
             className="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm focus:border-primary-navy focus:outline-none"
-            placeholder={`Enter ${exam.scoreLabel.toLowerCase()}`}
+            placeholder={getRankPredictorInputPlaceholder(exam)}
           />
-          <p className="mt-1 text-xs text-gray-500">Allowed range: {exam.minScore} - {exam.maxScore}</p>
+          <p className="mt-1 text-xs text-gray-500">
+            Allowed range: {exam.min} - {exam.max}
+            {exam.type === 'percentile' ? ' (decimals allowed)' : ' (whole numbers only)'}
+          </p>
         </div>
 
         {exam.requiresDifficulty && (

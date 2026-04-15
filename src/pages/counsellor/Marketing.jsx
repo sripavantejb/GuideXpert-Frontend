@@ -22,6 +22,14 @@ const AUTOMATED_POSTERS = [
     releasedAt: '2024-06-01',
   },
   {
+    id: 'interresults',
+    title: 'Inter results',
+    description: 'Inter results campaign poster with your name and mobile (yellow text). Download PNG or PDF after eligibility check.',
+    to: '/inter-results-poster',
+    previewSrc: '/inter-results-poster.svg',
+    releasedAt: '2026-04-13',
+  },
+  {
     id: 'gx',
     title: 'GX Poster',
     description: 'New GX campaign poster with your name and mobile at the bottom-right.',
