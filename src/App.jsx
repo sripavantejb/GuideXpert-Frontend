@@ -38,6 +38,8 @@ import WebinarProgressAdmin from './pages/admin/WebinarProgress';
 import OsviCalls from './pages/admin/OsviCalls';
 import OsviCallsData from './pages/admin/OsviCallsData';
 import PosterDownloads from './pages/admin/PosterDownloads';
+import PosterAutomationAdminPage from './pages/admin/posters/PosterAutomationAdminPage';
+import PosterPublicPage from './pages/PosterPublicPage';
 import CounsellorLogin from './pages/counsellor/CounsellorLogin';
 import WebinarLogin from './pages/webinar/WebinarLogin';
 
@@ -59,6 +61,7 @@ import HoliPosterPage from './pages/HoliPosterPage';
 import InterPosterPage from './pages/InterPosterPage';
 import GxPosterPage from './pages/GxPosterPage';
 import SidPosterPage from './pages/SidPosterPage';
+import WrongCareerChoicePosterPage from './pages/WrongCareerChoicePosterPage';
 import InterResultsPosterPage from './pages/InterResultsPosterPage';
 import BtechCsePosterPage from './pages/BtechCsePosterPage';
 import JeePosterPage from './pages/JeePosterPage';
@@ -174,6 +177,7 @@ function App() {
           <Route path="/interposter" element={<InterPosterPage />} />
           <Route path="/gx-poster" element={<GxPosterPage />} />
           <Route path="/sid-poster" element={<SidPosterPage />} />
+          <Route path="/wrong-career-choice" element={<WrongCareerChoicePosterPage />} />
           <Route path="/inter-results-poster" element={<InterResultsPosterPage />} />
           <Route path="/btechcse-poster" element={<BtechCsePosterPage />} />
           <Route path="/jee-poster" element={<JeePosterPage />} />
@@ -328,6 +332,7 @@ function App() {
             <Route path="training-form-responses" element={<TrainingFormResponses />} />
             <Route path="influencer-tracking" element={<InfluencerTracking />} />
             <Route path="poster-downloads" element={<PosterDownloads />} />
+            <Route path="posters" element={<PosterAutomationAdminPage />} />
             <Route path="assessment-results" element={<AssessmentResults />} />
             <Route path="assessment-2-results" element={<Navigate to="/admin/assessment-results?type=2" replace />} />
             <Route path="assessment-3-results" element={<Navigate to="/admin/assessment-results?type=3" replace />} />
@@ -360,6 +365,8 @@ function App() {
             <Route path="settings" element={<ErrorBoundary><Suspense fallback={<div className="h-64 flex items-center justify-center p-4"><PageSkeleton /></div>}><CounsellorSettings /></Suspense></ErrorBoundary>} />
             <Route path="help" element={<ErrorBoundary><Suspense fallback={<div className="h-64 flex items-center justify-center p-4"><PageSkeleton /></div>}><CounsellorHelp /></Suspense></ErrorBoundary>} />
           </Route>
+
+          <Route path="/p/*" element={<PosterPublicPage />} />
 
           <Route path="*" element={<Navigate to="/" replace />} />
             </Routes>

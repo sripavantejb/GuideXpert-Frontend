@@ -760,16 +760,22 @@
 
 }
 
-/* Sidebar nav: iOS-style thin pill scrollbar + smooth scrolling (dark sidebars) */
+/* Sidebar nav: iOS-style thin pill scrollbar (overlay, transparent track) */
 .sidebar-nav-scroll {
   scroll-behavior: smooth;
   -webkit-overflow-scrolling: touch;
   scrollbar-width: thin;
-  scrollbar-color: rgba(255, 255, 255, 0.38) transparent;
+  /* Firefox: faint thumb until hover / scroll-active */
+  scrollbar-color: rgba(255, 255, 255, 0.14) transparent;
+}
+
+.sidebar-nav-scroll:hover,
+.sidebar-nav-scroll.sidebar-nav-scroll--active {
+  scrollbar-color: rgba(255, 255, 255, 0.42) transparent;
 }
 
 .sidebar-nav-scroll::-webkit-scrollbar {
-  width: 5px;
+  width: 4px;
 }
 
 .sidebar-nav-scroll::-webkit-scrollbar-button {
@@ -782,25 +788,37 @@
   background: transparent;
 }
 
-/* Inset “floating” thumb like iOS (background-clip padding) */
+/* Floating capsule thumb — inset so it reads narrower like iOS */
 .sidebar-nav-scroll::-webkit-scrollbar-thumb {
-  background-color: rgba(255, 255, 255, 0.28);
   border-radius: 9999px;
-  border: 2px solid transparent;
+  border: 1px solid transparent;
   background-clip: padding-box;
-  min-height: 48px;
+  min-height: 40px;
+  background-color: rgba(255, 255, 255, 0.12);
+  transition: background-color 0.25s ease;
+}
+
+.sidebar-nav-scroll:hover::-webkit-scrollbar-thumb,
+.sidebar-nav-scroll.sidebar-nav-scroll--active::-webkit-scrollbar-thumb {
+  background-color: rgba(255, 255, 255, 0.38);
 }
 
 .sidebar-nav-scroll::-webkit-scrollbar-thumb:hover {
-  background-color: rgba(255, 255, 255, 0.45);
+  background-color: rgba(255, 255, 255, 0.48);
 }
 
 .sidebar-nav-scroll::-webkit-scrollbar-thumb:active {
-  background-color: rgba(255, 255, 255, 0.55);
+  background-color: rgba(255, 255, 255, 0.58);
 }
 
 .sidebar-nav-scroll::-webkit-scrollbar-corner {
   background: transparent;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .sidebar-nav-scroll::-webkit-scrollbar-thumb {
+    transition: none;
+  }
 }
 
 /* YouTube embed: ensure iframe fills container so video is not cropped */

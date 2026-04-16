@@ -50,6 +50,23 @@ export function trackPosterDownloadBeacon(payload) {
   }
 }
 
+/** GET /posters/by-route?route=... — public dynamic poster template. */
+export async function getPosterByRoute(route) {
+  const q = encodeURIComponent(String(route ?? '/'));
+  return apiRequest(`/posters/by-route?route=${q}`, { method: 'GET' });
+}
+
+/** POST /posters/verify-activation — published route + mobile → TrainingFeedback name/mobile. */
+export async function verifyPosterActivation(route, mobile) {
+  return apiRequest('/posters/verify-activation', {
+    method: 'POST',
+    body: JSON.stringify({
+      route: String(route ?? ''),
+      mobile: String(mobile ?? ''),
+    }),
+  });
+}
+
 /**
  * Generic API request handler
  */

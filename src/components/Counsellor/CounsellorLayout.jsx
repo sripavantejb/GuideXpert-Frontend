@@ -1,4 +1,5 @@
 import { createElement, useState, useCallback, useEffect } from 'react';
+import { useSidebarScrollbarActivity } from '../../hooks/useSidebarScrollbarActivity';
 import { Link, NavLink, Outlet, useLocation, useNavigate } from 'react-router-dom';
 import { useCounsellorAuth } from '../../contexts/CounsellorAuthContext';
 import {
@@ -139,6 +140,7 @@ export default function CounsellorLayout() {
 
   const unreadCount = announcements.filter((a) => !a.read).length;
   const [isMobile, setIsMobile] = useState(false);
+  const { onScroll: onSidebarScroll, active: sidebarScrollActive } = useSidebarScrollbarActivity();
   useEffect(() => {
     const mq = window.matchMedia('(max-width: 767px)');
     const update = () => setIsMobile(mq.matches);
@@ -189,7 +191,10 @@ export default function CounsellorLayout() {
         </Link>
 
         {/* Navigation — iOS-style overlay scrollbar (see .sidebar-nav-scroll in index.css) */}
-        <nav className="sidebar-nav-scroll flex-1 min-h-0 overflow-y-auto overscroll-y-contain py-5 flex flex-col gap-6 px-3">
+        <nav
+          className={`sidebar-nav-scroll flex-1 min-h-0 overflow-y-auto overscroll-y-contain py-5 flex flex-col gap-6 px-3${sidebarScrollActive ? ' sidebar-nav-scroll--active' : ''}`}
+          onScroll={onSidebarScroll}
+        >
           {/* Main */}
           <div>
             <p className="px-3 mb-2 text-[0.6875rem] font-semibold text-slate-500 uppercase tracking-wider">Main</p>
