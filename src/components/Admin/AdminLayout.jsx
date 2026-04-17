@@ -11,6 +11,7 @@ import { countActiveLeadFilters } from '../../utils/adminLeadFiltersShared';
 const navItems = [
   { to: '/admin/dashboard', label: 'Dashboard', icon: FiLayout, sectionKey: 'dashboard' },
   { to: '/admin/funnel-analytics', label: 'Funnel Analytics', icon: FiBarChart2, sectionKey: 'funnel-analytics' },
+  { to: '/admin/certified-counsellors', label: 'Certified Counsellors', icon: FiUsers, sectionKey: 'certified-counsellors' },
   { to: '/admin/leads', label: 'Lead Funnel', icon: FiUsers, sectionKey: 'leads' },
   { to: '/admin/analytics', label: 'Analytics', icon: FiBarChart2, sectionKey: 'analytics' },
   { to: '/admin/meeting-attendance', label: 'User Productivity', icon: FiVideo, sectionKey: 'meeting-attendance' },

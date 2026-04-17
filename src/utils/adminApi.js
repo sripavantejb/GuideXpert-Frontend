@@ -133,6 +133,13 @@ export const getAdminStats = async (params = {}, token = getStoredToken()) => {
   return adminRequest(`/stats${query ? `?${query}` : ''}`, { method: 'GET' }, token);
 };
 
+export const getCertifiedCounsellors = async (params = {}, token = getStoredToken()) => {
+  const search = new URLSearchParams();
+  if (params.q && String(params.q).trim()) search.set('q', String(params.q).trim());
+  const query = search.toString();
+  return adminRequest(`/certified-counsellors${query ? `?${query}` : ''}`, { method: 'GET' }, token);
+};
+
 export const getLead = async (id, token = getStoredToken()) => {
   return adminRequest(`/leads/${encodeURIComponent(id)}`, { method: 'GET' }, token);
 };

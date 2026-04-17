@@ -38,6 +38,7 @@ import WebinarProgressAdmin from './pages/admin/WebinarProgress';
 import OsviCalls from './pages/admin/OsviCalls';
 import OsviCallsData from './pages/admin/OsviCallsData';
 import PosterDownloads from './pages/admin/PosterDownloads';
+import CertifiedCounsellors from './pages/admin/CertifiedCounsellors';
 import CounsellorLogin from './pages/counsellor/CounsellorLogin';
 import WebinarLogin from './pages/webinar/WebinarLogin';
 
@@ -317,6 +318,7 @@ function App() {
             <Route index element={<Navigate to="/admin/dashboard" replace />} />
             <Route path="dashboard" element={<Overview />} />
             <Route path="funnel-analytics" element={<FunnelAnalytics />} />
+            <Route path="certified-counsellors" element={<CertifiedCounsellors />} />
             <Route path="leads" element={<Leads />} />
             <Route path="lead-status" element={<LeadStatus />} />
             <Route path="analytics" element={<Analytics />} />

@@ -1,4 +1,4 @@
-import { useMemo, useRef, useState } from 'react';
+import { useCallback, useMemo, useRef, useState } from 'react';
 import { Navigate, useParams } from 'react-router-dom';
 import {
   FiTrendingUp,
@@ -13,8 +13,8 @@ import {
   FiGrid,
 } from 'react-icons/fi';
 import ToolWorkspaceLayout from './components/ToolWorkspaceLayout';
+import RankPredictorWithLeadGate from '../../components/rankPredictor/RankPredictorWithLeadGate';
 import { getExamConfig } from '../../utils/rankPredictor';
-import { predictRankPublic } from '../../utils/api';
 
 const EXAM_ICON_MAP = {
   apeamcet: { Icon: FiBookOpen, bg: 'bg-[#B7E5FF]' },
@@ -36,55 +36,14 @@ export default function StudentExamPredictorPage() {
   const exam = useMemo(() => getExamConfig(examId), [examId]);
   const { Icon: ExamIcon, bg: iconBg } = EXAM_ICON_MAP[examId] || DEFAULT_ICON;
 
-  const [score, setScore] = useState('');
-  const [difficulty, setDifficulty] = useState('Moderate');
-  const [loading, setLoading] = useState(false);
   const [result, setResult] = useState(null);
-  const [error, setError] = useState('');
   const resultsRef = useRef(null);
 
+  const onResultChange = useCallback((next) => {
+    setResult(next);
+  }, []);
+
   if (!exam) return <Navigate to="/students/rank-predictor" replace />;
-
-  const handleSubmit = async (e) => {
-    e.preventDefault();
-    setResult(null);
-    setError('');
-
-    if (score === '') {
-      setError('Please enter your marks to continue.');
-      return;
-    }
-    const numericScore = Number(score);
-    if (Number.isNaN(numericScore)) {
-      setError('Only numeric values are allowed.');
-      return;
-    }
-
-    setLoading(true);
-    try {
-      const payload = { examId: exam.id, score: numericScore };
-      if (exam.requiresDifficulty) {
-        payload.options = { difficulty };
-      }
-      const response = await predictRankPublic(payload);
-      if (!response.success) {
-        setError(response.message || 'Could not generate prediction. Please try again.');
-        return;
-      }
-      const predicted = response.data || {};
-      setResult({
-        predictedValue: predicted.predictedValue,
-        range: predicted.range,
-        message: predicted.message,
-        metricLabel: predicted.metricLabel,
-      });
-      setTimeout(() => resultsRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' }), 60);
-    } catch (err) {
-      setError(err.message || 'Could not generate prediction. Please try again.');
-    } finally {
-      setLoading(false);
-    }
-  };
 
   return (
     <ToolWorkspaceLayout
@@ -101,8 +60,9 @@ export default function StudentExamPredictorPage() {
         'Helps you gauge where you stand before counseling rounds begin.',
       ]}
       inputGuide={[
-        `${exam.scoreLabel}: Enter your expected or actual ${exam.scoreLabel.toLowerCase()} (${exam.minScore} – ${exam.maxScore}).`,
+        `${exam.scoreLabel}: Enter your expected or actual ${exam.scoreLabel.toLowerCase()} (${exam.min} – ${exam.max}).`,
         ...(exam.requiresDifficulty ? ['Difficulty: Select the paper difficulty for more accurate prediction.'] : []),
+        'Verify your mobile with OTP so we can save your lead and show your prediction.',
       ]}
       preview={
         <div className="space-y-2.5">
@@ -115,7 +75,7 @@ export default function StudentExamPredictorPage() {
           <div>
             <p className="text-[9px] font-black uppercase tracking-widest text-slate-500">Score range</p>
             <p className="mt-0.5 text-lg font-black tabular-nums text-[#0F172A]">
-              {exam.minScore} – {exam.maxScore}
+              {exam.min} – {exam.max}
             </p>
           </div>
           <div>
@@ -172,67 +132,27 @@ export default function StudentExamPredictorPage() {
         ) : null
       }
     >
-      <div className="mb-6 flex items-center gap-4">
-        <div className={`flex h-14 w-14 shrink-0 items-center justify-center rounded-[12px] border-[3px] border-black shadow-[3px_3px_0_#000] ${iconBg}`}>
-          <ExamIcon className="h-6 w-6 text-[#0F172A]" strokeWidth={2.5} />
-        </div>
-        <div>
-          <h2 className="text-xl font-black tracking-tight text-[#0F172A] sm:text-2xl">
-            {exam.title || `${exam.name} Predictor`}
-          </h2>
-          <p className="mt-0.5 text-sm font-medium text-slate-500">Enter your score and get an instant prediction.</p>
-        </div>
-      </div>
-
-      <form className="grid gap-4 sm:grid-cols-2" onSubmit={handleSubmit}>
-        <label className="text-sm font-semibold text-[#0F172A]">
-          {exam.scoreLabel || 'Score'}
-          <span className="ml-1 text-xs font-normal text-slate-400">
-            ({exam.minScore} – {exam.maxScore})
-          </span>
-          <input
-            type="number"
-            value={score}
-            step={exam.step || 1}
-            min={exam.minScore}
-            max={exam.maxScore}
-            onChange={(e) => setScore(e.target.value)}
-            placeholder={`Enter ${(exam.scoreLabel || 'score').toLowerCase()}`}
-            className="mt-1 w-full rounded-[10px] border-[3px] border-black bg-white px-3 py-2 shadow-[2px_2px_0_#000]"
-          />
-          <p className="mt-1 text-xs text-slate-400">Allowed range: {exam.minScore} – {exam.maxScore}</p>
-        </label>
-
-        {exam.requiresDifficulty && (
-          <label className="text-sm font-semibold text-[#0F172A]">
-            Difficulty Level
-            <select
-              value={difficulty}
-              onChange={(e) => setDifficulty(e.target.value)}
-              className="mt-1 w-full rounded-[10px] border-[3px] border-black bg-white px-3 py-2 shadow-[2px_2px_0_#000]"
-            >
-              {exam.difficultyOptions.map((opt) => (
-                <option key={opt} value={opt}>{opt}</option>
-              ))}
-            </select>
-          </label>
+      <RankPredictorWithLeadGate
+        exam={exam}
+        variant="student"
+        onResultChange={onResultChange}
+        resultsRef={resultsRef}
+        headerSlot={(
+          <div className="mb-6 flex items-center gap-4">
+            <div className={`flex h-14 w-14 shrink-0 items-center justify-center rounded-[12px] border-[3px] border-black shadow-[3px_3px_0_#000] ${iconBg}`}>
+              <ExamIcon className="h-6 w-6 text-[#0F172A]" strokeWidth={2.5} />
+            </div>
+            <div>
+              <h2 className="text-xl font-black tracking-tight text-[#0F172A] sm:text-2xl">
+                {exam.title || `${exam.name} Predictor`}
+              </h2>
+              <p className="mt-0.5 text-sm font-medium text-slate-500">
+                Enter your score, verify your phone, then see your prediction.
+              </p>
+            </div>
+          </div>
         )}
-
-        <div className="sm:col-span-2">
-          {error && (
-            <p className="mb-3 rounded-[10px] border-2 border-red-300 bg-red-50 px-3 py-2 text-sm font-semibold text-red-700">
-              {error}
-            </p>
-          )}
-          <button
-            type="submit"
-            disabled={loading}
-            className="rounded-[12px] border-[3px] border-black bg-[#c7f36b] px-6 py-3 text-sm font-black text-[#0F172A] shadow-[4px_4px_0_#000] transition-all hover:-translate-y-0.5 hover:shadow-[6px_6px_0_#000] disabled:cursor-not-allowed disabled:opacity-60"
-          >
-            {loading ? 'Predicting\u2026' : 'Predict Rank'}
-          </button>
-        </div>
-      </form>
+      />
     </ToolWorkspaceLayout>
   );
 }

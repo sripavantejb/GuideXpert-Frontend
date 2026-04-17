@@ -79,9 +79,19 @@ const COPY_FIELDS = [
   { key: 'adminNotes', label: 'Admin Notes' },
   { key: 'leadStatus', label: 'Lead Status' },
   { key: 'leadDescription', label: 'Lead Description' },
+  { key: 'rankPredictorLead', label: 'Rank predictor' },
 ];
 
+function formatRankPredictorLead(lead) {
+  const r = lead?.rankPredictorLead;
+  if (!r || typeof r !== 'object') return '';
+  const parts = [r.examId, r.score != null && r.score !== '' ? String(r.score) : ''];
+  if (r.difficulty) parts.push(r.difficulty);
+  return parts.filter(Boolean).join(' · ');
+}
+
 function getLeadCellValue(lead, key) {
+  if (key === 'rankPredictorLead') return formatRankPredictorLead(lead);
   const v = lead[key];
   if (key === 'otpVerified') return v ? 'Yes' : 'No';
   if (key === 'slotBooked') return v ? 'Yes' : 'No';
@@ -484,6 +494,9 @@ export default function Leads() {
                           )}
                         </div>
                         <div><dt className="text-gray-500">Occupation</dt><dd className="text-gray-900">{detailLead.occupation || '—'}</dd></div>
+                        {formatRankPredictorLead(detailLead) ? (
+                          <div><dt className="text-gray-500">Rank predictor</dt><dd className="text-gray-900 wrap-break-word">{formatRankPredictorLead(detailLead)}</dd></div>
+                        ) : null}
                         <div><dt className="text-gray-500">Email</dt><dd className="text-gray-900">{detailLead.email || '—'}</dd></div>
                         <div><dt className="text-gray-500">Status</dt><dd><span className={`inline-flex px-2 py-0.5 rounded text-xs font-medium ${detailLead.applicationStatus === 'completed' ? 'bg-green-100 text-green-800' : detailLead.applicationStatus === 'registered' ? 'bg-blue-100 text-blue-800' : 'bg-amber-100 text-amber-800'}`}>{detailLead.applicationStatus || '—'}</span></dd></div>
                         <div><dt className="text-gray-500">Step</dt><dd className="text-gray-900">{detailLead.currentStep ?? '—'}</dd></div>

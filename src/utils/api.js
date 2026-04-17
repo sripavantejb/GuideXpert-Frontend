@@ -198,9 +198,10 @@ export const verifyOtp = async (phone, otp, options = {}) => {
  * @param {string} whatsappNumber - WhatsApp phone number
  * @param {string} occupation - User's occupation
  * @param {{ utm_source?: string, utm_medium?: string, utm_campaign?: string, utm_content?: string }} [utm] - Optional first-touch UTM data
+ * @param {{ rankPredictorLead?: { examId: string, score: number, difficulty?: string } }} [options] - Optional rank predictor snapshot (organic leads)
  * @returns {Promise<{success: boolean, message?: string, status?: number}>}
  */
-export const saveStep1 = async (fullName, whatsappNumber, occupation, utm) => {
+export const saveStep1 = async (fullName, whatsappNumber, occupation, utm, options = {}) => {
   const payload = {
     fullName,
     whatsappNumber,
@@ -212,6 +213,9 @@ export const saveStep1 = async (fullName, whatsappNumber, occupation, utm) => {
     if (utm.utm_medium != null) payload.utm_medium = utm.utm_medium;
     if (utm.utm_campaign != null) payload.utm_campaign = utm.utm_campaign;
     if (utm.utm_content != null) payload.utm_content = utm.utm_content;
+  }
+  if (options.rankPredictorLead && typeof options.rankPredictorLead === 'object') {
+    payload.rankPredictorLead = options.rankPredictorLead;
   }
   return apiRequest('/save-step1', {
     method: 'POST',

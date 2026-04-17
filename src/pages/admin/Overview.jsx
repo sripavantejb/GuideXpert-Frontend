@@ -33,6 +33,9 @@ const FUNNEL_CARD_LEADS_PARAMS = {
   'kpi-in-progress': { params: { applicationStatus: 'in_progress' }, hasExactList: true },
   'kpi-registered': { params: { applicationStatus: 'registered' }, hasExactList: true },
   'kpi-completed': { params: { applicationStatus: 'completed' }, hasExactList: true },
+  'organic-rank-total': { params: { utm_content: 'organic_rank_predictor' }, hasExactList: true },
+  'organic-rank-otp-verified': { params: { utm_content: 'organic_rank_predictor', otpVerified: 'true' }, hasExactList: true },
+  'organic-rank-slot-booked': { params: { utm_content: 'organic_rank_predictor', otpVerified: 'true', slotBooked: 'true' }, hasExactList: true },
 };
 
 const DRAG_THRESHOLD_PX = 5;
@@ -125,6 +128,12 @@ export default function Overview() {
   const [utmLinks, setUtmLinks] = useState([]);
   const [utmLinksLoading, setUtmLinksLoading] = useState(false);
   const [utmLinksError, setUtmLinksError] = useState('');
+  const [organicLeadStats, setOrganicLeadStats] = useState({
+    total: 0,
+    otpVerified: 0,
+    slotBooked: 0,
+    loading: false,
+  });
   const [liveTick, setLiveTick] = useState(0);
 
   useEffect(() => {
@@ -204,6 +213,47 @@ export default function Overview() {
     });
     return () => { cancelled = true; };
   }, [logout, refreshTrigger]);
+
+  useEffect(() => {
+    let cancelled = false;
+    setOrganicLeadStats((prev) => ({ ...prev, loading: true }));
+
+    const baseParams = {};
+    if (dateRange.from) baseParams.from = dateRange.from;
+    if (dateRange.to) baseParams.to = dateRange.to;
+
+    const getTotalFromResponse = (res) => {
+      if (!res?.success) return null;
+      const totalFromPagination = Number(res?.data?.pagination?.total);
+      if (Number.isFinite(totalFromPagination)) return totalFromPagination;
+      const list = Array.isArray(res?.data?.data) ? res.data.data : [];
+      return list.length;
+    };
+
+    Promise.all([
+      getAdminLeads({ ...baseParams, utm_content: 'organic_rank_predictor', page: 1, limit: 1 }, getStoredToken()),
+      getAdminLeads({ ...baseParams, utm_content: 'organic_rank_predictor', otpVerified: 'true', page: 1, limit: 1 }, getStoredToken()),
+      getAdminLeads({ ...baseParams, utm_content: 'organic_rank_predictor', otpVerified: 'true', slotBooked: 'true', page: 1, limit: 1 }, getStoredToken()),
+    ]).then(([totalRes, otpRes, slotRes]) => {
+      if (cancelled) return;
+      if ([totalRes, otpRes, slotRes].some((r) => r?.status === 401)) {
+        logout();
+        window.location.href = '/admin/login';
+        return;
+      }
+      setOrganicLeadStats({
+        total: getTotalFromResponse(totalRes) ?? 0,
+        otpVerified: getTotalFromResponse(otpRes) ?? 0,
+        slotBooked: getTotalFromResponse(slotRes) ?? 0,
+        loading: false,
+      });
+    }).catch(() => {
+      if (cancelled) return;
+      setOrganicLeadStats((prev) => ({ ...prev, loading: false }));
+    });
+
+    return () => { cancelled = true; };
+  }, [dateRange.from, dateRange.to, refreshTrigger, logout]);
 
   useLayoutEffect(() => {
     setContentSize(null);
@@ -428,6 +478,9 @@ export default function Overview() {
     'kpi-in-progress': 'Leads whose application status is in progress.',
     'kpi-registered': 'Leads whose application status is registered.',
     'kpi-completed': 'Leads whose application status is completed.',
+    'organic-rank-total': 'Organic leads created from the rank predictor flow.',
+    'organic-rank-otp-verified': 'Organic rank predictor leads that completed OTP verification.',
+    'organic-rank-slot-booked': 'Organic rank predictor leads that verified OTP and booked a slot.',
   };
 
   function getPopoverContent(cardId) {
@@ -474,6 +527,12 @@ export default function Overview() {
         return { ...base, label: 'Registered', value: stats?.registered ?? 0, conversionPct: total > 0 ? Math.round(((stats?.registered ?? 0) / total) * 100) : null, conversionLabel: 'of total' };
       case 'kpi-completed':
         return { ...base, label: 'Completed', value: stats?.completed ?? 0, conversionPct: total > 0 ? Math.round(((stats?.completed ?? 0) / total) * 100) : null, conversionLabel: 'of total' };
+      case 'organic-rank-total':
+        return { ...base, label: 'Organic rank leads', value: organicLeadStats.total ?? 0, conversionPct: total > 0 ? Math.round(((organicLeadStats.total ?? 0) / total) * 100) : null, conversionLabel: 'of total leads' };
+      case 'organic-rank-otp-verified':
+        return { ...base, label: 'Organic rank OTP verified', value: organicLeadStats.otpVerified ?? 0, conversionPct: (organicLeadStats.total ?? 0) > 0 ? Math.round(((organicLeadStats.otpVerified ?? 0) / (organicLeadStats.total ?? 1)) * 100) : null, conversionLabel: 'of organic rank leads' };
+      case 'organic-rank-slot-booked':
+        return { ...base, label: 'Organic rank slot booked', value: organicLeadStats.slotBooked ?? 0, conversionPct: (organicLeadStats.otpVerified ?? 0) > 0 ? Math.round(((organicLeadStats.slotBooked ?? 0) / (organicLeadStats.otpVerified ?? 1)) * 100) : null, conversionLabel: 'of OTP verified' };
       default:
         return { ...base, label: '', value: 0, conversionPct: null, conversionLabel: null };
     }
@@ -805,6 +864,50 @@ export default function Overview() {
             funnelCard
             ariaExpanded={!!popoverCardId && popoverCardId === 'kpi-completed'}
             onActivate={(e) => handleCardClick('kpi-completed', e)}
+          />
+        </div>
+      </section>
+
+      {/* Organic rank predictor leads */}
+      <section aria-labelledby="section-organic-rank-leads" className="mb-2">
+        <h2 id="section-organic-rank-leads" className="text-sm font-bold text-gray-700 uppercase tracking-wider mb-1">Organic rank predictor leads</h2>
+        <p className="text-sm text-gray-500 mb-5">Separate counts for leads coming from the rank predictor lead-gate flow.</p>
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 lg:gap-5">
+          <KpiCard
+            label="Organic Total"
+            value={organicLeadStats.total}
+            title="Organic rank predictor leads — click to list"
+            icon={FiUsers}
+            accent="hero"
+            subtitle={organicLeadStats.loading ? 'Refreshing…' : (total > 0 ? `${Math.round((organicLeadStats.total / total) * 100)}% of total leads` : '')}
+            interactive
+            funnelCard
+            ariaExpanded={!!popoverCardId && popoverCardId === 'organic-rank-total'}
+            onActivate={(e) => handleCardClick('organic-rank-total', e)}
+          />
+          <KpiCard
+            label="Organic OTP Verified"
+            value={organicLeadStats.otpVerified}
+            title="Organic rank leads with OTP verified — click to list"
+            icon={FiCheckCircle}
+            accent
+            subtitle={organicLeadStats.loading ? 'Refreshing…' : (organicLeadStats.total > 0 ? `${Math.round((organicLeadStats.otpVerified / organicLeadStats.total) * 100)}% of organic total` : '')}
+            interactive
+            funnelCard
+            ariaExpanded={!!popoverCardId && popoverCardId === 'organic-rank-otp-verified'}
+            onActivate={(e) => handleCardClick('organic-rank-otp-verified', e)}
+          />
+          <KpiCard
+            label="Organic Slot Booked"
+            value={organicLeadStats.slotBooked}
+            title="Organic rank leads with slot booked — click to list"
+            icon={FiCalendar}
+            accent
+            subtitle={organicLeadStats.loading ? 'Refreshing…' : (organicLeadStats.otpVerified > 0 ? `${Math.round((organicLeadStats.slotBooked / organicLeadStats.otpVerified) * 100)}% of organic OTP verified` : '')}
+            interactive
+            funnelCard
+            ariaExpanded={!!popoverCardId && popoverCardId === 'organic-rank-slot-booked'}
+            onActivate={(e) => handleCardClick('organic-rank-slot-booked', e)}
           />
         </div>
       </section>

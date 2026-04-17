@@ -4,6 +4,7 @@ import { createAdmin, listAdmins, deleteAdmin, resetAdminPassword, changeMyPassw
 
 const SECTION_OPTIONS = [
   { sectionKey: 'dashboard', label: 'Dashboard' },
+  { sectionKey: 'certified-counsellors', label: 'Certified Counsellors' },
   { sectionKey: 'leads', label: 'Lead Funnel' },
   { sectionKey: 'analytics', label: 'Analytics' },
   { sectionKey: 'meeting-attendance', label: 'User Productivity' },
