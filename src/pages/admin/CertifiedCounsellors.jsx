@@ -82,6 +82,8 @@ export default function CertifiedCounsellors() {
     setDrawerLoading(false);
   };
 
+  const getRowId = (row) => row?.id || row?._id || '';
+
   return (
     <div className="max-w-7xl mx-auto space-y-5">
       <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
@@ -156,11 +158,15 @@ export default function CertifiedCounsellors() {
                 </tr>
               </thead>
               <tbody className="divide-y divide-gray-100">
-                {rows.map((row) => (
+                {rows.map((row, index) => {
+                  const rowId = getRowId(row);
+                  const canOpen = Boolean(rowId);
+                  return (
                   <tr
-                    key={row._id}
-                    className="hover:bg-gray-50/60 cursor-pointer"
-                    onClick={() => openDrawer(row._id)}
+                    key={rowId || `${row.phone || 'row'}-${index}`}
+                    className={`hover:bg-gray-50/60 ${canOpen ? 'cursor-pointer' : 'cursor-not-allowed opacity-70'}`}
+                    onClick={() => canOpen && openDrawer(rowId)}
+                    title={canOpen ? 'View counsellor details' : 'Details unavailable for this row'}
                   >
                     <td className="px-4 py-3 text-sm font-medium text-gray-800">{row.name || '—'}</td>
                     <td className="px-4 py-3 text-sm text-gray-600">{row.email || '—'}</td>
@@ -168,7 +174,8 @@ export default function CertifiedCounsellors() {
                     <td className="px-4 py-3 text-sm text-right font-semibold text-gray-900">{Number(row.studentCount) || 0}</td>
                     <td className="px-4 py-3 text-sm text-gray-600">{formatDate(row.createdAt)}</td>
                   </tr>
-                ))}
+                );
+                })}
               </tbody>
             </table>
           </div>
