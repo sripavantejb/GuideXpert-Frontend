@@ -67,11 +67,25 @@ export default function CertifiedCounsellors() {
     setDrawerLoading(false);
   };
 
-  const openDrawer = async (id) => {
-    if (!id) return;
-    setSelectedCounsellorId(id);
+  const openDrawer = async (row) => {
+    const id = row?.id || row?._id || '';
+    setSelectedCounsellorId(id || `row-${Date.now()}`);
     setDrawerError('');
-    setDrawerData(null);
+    setDrawerData({
+      _id: id || null,
+      name: row?.name || '',
+      email: row?.email || '',
+      phone: row?.phone || '',
+      joinedAt: row?.createdAt || null,
+      studentCount: Number(row?.studentCount) || 0,
+      notes: '',
+      students: [],
+    });
+    if (!id) {
+      setDrawerLoading(false);
+      setDrawerError('Detailed data is unavailable for this counsellor row.');
+      return;
+    }
     setDrawerLoading(true);
     const res = await getCertifiedCounsellorDetail(id);
     if (res.success && res.data?.data) {
@@ -165,7 +179,7 @@ export default function CertifiedCounsellors() {
                   <tr
                     key={rowId || `${row.phone || 'row'}-${index}`}
                     className={`hover:bg-gray-50/60 ${canOpen ? 'cursor-pointer' : 'cursor-not-allowed opacity-70'}`}
-                    onClick={() => canOpen && openDrawer(rowId)}
+                    onClick={() => openDrawer(row)}
                     title={canOpen ? 'View counsellor details' : 'Details unavailable for this row'}
                   >
                     <td className="px-4 py-3 text-sm font-medium text-gray-800">{row.name || '—'}</td>
