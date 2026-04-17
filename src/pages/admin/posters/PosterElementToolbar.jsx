@@ -93,7 +93,9 @@ function OverlaySection({ title, icon, field, onChange, accentClass }) {
 
         <div className="grid grid-cols-2 gap-3">
           <label className="block">
-            <FieldLabel>Size (px)</FieldLabel>
+            <FieldLabel hint="Relative to 1080px-wide poster; download matches this.">
+              Size (px)
+            </FieldLabel>
             <input
               type="number"
               min={4}

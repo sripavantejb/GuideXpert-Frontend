@@ -1,4 +1,5 @@
 import { normalizeHexForCss } from '../../utils/posterColor';
+import { POSTER_OVERLAY_MAX_WIDTH_PX } from '../../utils/posterExportDimensions';
 
 function clampPct(n) {
   return Math.min(100, Math.max(0, n));
@@ -62,7 +63,7 @@ export default function PosterTextOverlays({
             data-poster-overlay={key}
             role={interactive ? 'button' : undefined}
             tabIndex={interactive ? 0 : undefined}
-            className={`absolute max-w-[90%] whitespace-pre-wrap break-words outline-none select-none touch-none ${
+            className={`absolute whitespace-pre-wrap break-words outline-none select-none touch-none ${
               interactive
                 ? isSelected
                   ? 'z-10 cursor-grab ring-2 ring-violet-500 ring-offset-1 active:cursor-grabbing'
@@ -72,6 +73,8 @@ export default function PosterTextOverlays({
             style={{
               left: `${Number(el.x) || 0}%`,
               top: `${Number(el.y) || 0}%`,
+              maxWidth: `min(${POSTER_OVERLAY_MAX_WIDTH_PX}px, 90%)`,
+              fontFamily: "'Inter', sans-serif",
               fontSize: `${Number(el.fontSize) || 16}px`,
               color: normalizeHexForCss(el.color),
               fontWeight: el.fontWeight || '400',

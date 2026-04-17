@@ -35,6 +35,7 @@ const POSTER_FILTER_OPTIONS = [
   { value: 'btechcse', label: 'B.Tech CSE' },
   { value: 'jee', label: 'JEE' },
   { value: 'certified', label: 'Certified' },
+  { value: 'automated', label: 'Automated (/p/…)' },
 ];
 
 const POSTER_LABELS = {
@@ -46,6 +47,7 @@ const POSTER_LABELS = {
   btechcse: 'B.Tech CSE',
   jee: 'JEE',
   certified: 'Certified',
+  automated: 'Automated (/p/…)',
 };
 
 const POSTER_COLORS = {
@@ -57,6 +59,7 @@ const POSTER_COLORS = {
   'B.Tech CSE': '#7c2d12',
   JEE: '#0f766e',
   Certified: '#059669',
+  'Automated (/p/…)': '#0369a1',
 };
 
 const DATE_PRESETS = [
@@ -110,6 +113,7 @@ function posterBadge(key) {
     btechcse: 'bg-orange-50 text-orange-900 ring-orange-200/60',
     jee: 'bg-teal-50 text-teal-700 ring-teal-200/60',
     certified: 'bg-emerald-50 text-emerald-700 ring-emerald-200/60',
+    automated: 'bg-sky-50 text-sky-800 ring-sky-200/60',
   };
   const cls = colorMap[key] || 'bg-gray-100 text-gray-600 ring-gray-200/60';
   return (

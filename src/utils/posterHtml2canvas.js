@@ -30,6 +30,9 @@ function sanitizeCloneForHtml2canvas(root, doc) {
     el.style.outline = 'none';
     el.style.textShadow = 'none';
     el.style.filter = 'none';
+    el.style.transition = 'none';
+    el.style.animation = 'none';
+    el.style.transform = 'none';
 
     for (const child of el.children) walk(child);
   };
@@ -124,6 +127,13 @@ export function applyFrozenOverlayRects(originalRoot, clonedRoot) {
       clone.style.fontStyle = cs.fontStyle;
       clone.style.color = cs.color;
       clone.style.textAlign = cs.textAlign;
+      clone.style.textRendering = cs.textRendering;
+      clone.style.wordSpacing = cs.wordSpacing;
+      clone.style.fontFeatureSettings = cs.fontFeatureSettings;
+      const wfs = cs.getPropertyValue('-webkit-font-smoothing');
+      const mozOsx = cs.getPropertyValue('-moz-osx-font-smoothing');
+      if (wfs) clone.style.setProperty('-webkit-font-smoothing', wfs);
+      if (mozOsx) clone.style.setProperty('-moz-osx-font-smoothing', mozOsx);
     }
   }
 }
