@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
-import { FiRefreshCw, FiSearch, FiUsers } from 'react-icons/fi';
+import { FiRefreshCw, FiSearch, FiUsers, FiX } from 'react-icons/fi';
 import TableSkeleton from '../../components/UI/TableSkeleton';
-import { getCertifiedCounsellors } from '../../utils/adminApi';
+import { getCertifiedCounsellorDetail, getCertifiedCounsellors } from '../../utils/adminApi';
 
 function formatDate(value) {
   if (!value) return '—';
@@ -21,6 +21,10 @@ export default function CertifiedCounsellors() {
   const [error, setError] = useState('');
   const [query, setQuery] = useState('');
   const [searchDraft, setSearchDraft] = useState('');
+  const [selectedCounsellorId, setSelectedCounsellorId] = useState('');
+  const [drawerLoading, setDrawerLoading] = useState(false);
+  const [drawerError, setDrawerError] = useState('');
+  const [drawerData, setDrawerData] = useState(null);
 
   const loadRows = useCallback(async (search = '', background = false) => {
     if (background) setRefreshing(true);
@@ -54,6 +58,28 @@ export default function CertifiedCounsellors() {
 
   const handleRefresh = async () => {
     await loadRows(query, true);
+  };
+
+  const closeDrawer = () => {
+    setSelectedCounsellorId('');
+    setDrawerData(null);
+    setDrawerError('');
+    setDrawerLoading(false);
+  };
+
+  const openDrawer = async (id) => {
+    if (!id) return;
+    setSelectedCounsellorId(id);
+    setDrawerError('');
+    setDrawerData(null);
+    setDrawerLoading(true);
+    const res = await getCertifiedCounsellorDetail(id);
+    if (res.success && res.data?.data) {
+      setDrawerData(res.data.data);
+    } else {
+      setDrawerError(res.message || 'Failed to load counsellor detail.');
+    }
+    setDrawerLoading(false);
   };
 
   return (
@@ -131,7 +157,11 @@ export default function CertifiedCounsellors() {
               </thead>
               <tbody className="divide-y divide-gray-100">
                 {rows.map((row) => (
-                  <tr key={row._id} className="hover:bg-gray-50/60">
+                  <tr
+                    key={row._id}
+                    className="hover:bg-gray-50/60 cursor-pointer"
+                    onClick={() => openDrawer(row._id)}
+                  >
                     <td className="px-4 py-3 text-sm font-medium text-gray-800">{row.name || '—'}</td>
                     <td className="px-4 py-3 text-sm text-gray-600">{row.email || '—'}</td>
                     <td className="px-4 py-3 text-sm text-gray-600">{row.phone || '—'}</td>
@@ -144,6 +174,108 @@ export default function CertifiedCounsellors() {
           </div>
         )}
       </div>
+
+      {selectedCounsellorId ? (
+        <div className="fixed inset-0 z-50">
+          <button
+            type="button"
+            className="absolute inset-0 bg-black/30"
+            onClick={closeDrawer}
+            aria-label="Close counsellor detail drawer"
+          />
+          <aside className="absolute right-0 top-0 h-full w-full max-w-2xl bg-white shadow-xl border-l border-gray-200 flex flex-col">
+            <div className="px-5 py-4 border-b border-gray-200 flex items-center justify-between">
+              <h3 className="text-base font-semibold text-gray-900">Counsellor Details</h3>
+              <button
+                type="button"
+                onClick={closeDrawer}
+                className="inline-flex items-center justify-center rounded-md border border-gray-300 p-2 text-gray-600 hover:bg-gray-50"
+                aria-label="Close"
+              >
+                <FiX className="w-4 h-4" />
+              </button>
+            </div>
+
+            {drawerLoading ? (
+              <div className="p-4">
+                <TableSkeleton columns={2} rows={6} />
+              </div>
+            ) : drawerError ? (
+              <div className="p-6 text-sm text-red-600">{drawerError}</div>
+            ) : !drawerData ? (
+              <div className="p-6 text-sm text-gray-500">No details found.</div>
+            ) : (
+              <div className="p-5 space-y-5 overflow-y-auto">
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 text-sm">
+                  <div>
+                    <p className="text-gray-500">Counsellor name</p>
+                    <p className="font-medium text-gray-900">{drawerData.name || '—'}</p>
+                  </div>
+                  <div>
+                    <p className="text-gray-500">Counsellor email</p>
+                    <p className="font-medium text-gray-900 break-all">{drawerData.email || '—'}</p>
+                  </div>
+                  <div>
+                    <p className="text-gray-500">Phone</p>
+                    <p className="font-medium text-gray-900">{drawerData.phone || '—'}</p>
+                  </div>
+                  <div>
+                    <p className="text-gray-500">Joined</p>
+                    <p className="font-medium text-gray-900">{formatDate(drawerData.joinedAt)}</p>
+                  </div>
+                  <div>
+                    <p className="text-gray-500">Student count</p>
+                    <p className="font-medium text-gray-900">{Number(drawerData.studentCount) || 0}</p>
+                  </div>
+                </div>
+
+                <div>
+                  <p className="text-sm text-gray-500 mb-1">Notes</p>
+                  <p className="text-sm text-gray-800 whitespace-pre-wrap rounded-lg border border-gray-200 bg-gray-50 p-3">
+                    {drawerData.notes?.trim() || '—'}
+                  </p>
+                </div>
+
+                <div className="space-y-2">
+                  <h4 className="text-sm font-semibold text-gray-900">Students</h4>
+                  {Array.isArray(drawerData.students) && drawerData.students.length > 0 ? (
+                    <div className="overflow-x-auto border border-gray-200 rounded-lg">
+                      <table className="w-full min-w-[800px]">
+                        <thead className="bg-gray-50">
+                          <tr>
+                            <th className="text-left text-xs font-semibold uppercase tracking-wide text-gray-500 px-3 py-2">Name</th>
+                            <th className="text-left text-xs font-semibold uppercase tracking-wide text-gray-500 px-3 py-2">Phone</th>
+                            <th className="text-left text-xs font-semibold uppercase tracking-wide text-gray-500 px-3 py-2">Email</th>
+                            <th className="text-left text-xs font-semibold uppercase tracking-wide text-gray-500 px-3 py-2">Course</th>
+                            <th className="text-left text-xs font-semibold uppercase tracking-wide text-gray-500 px-3 py-2">Status</th>
+                            <th className="text-left text-xs font-semibold uppercase tracking-wide text-gray-500 px-3 py-2">Created</th>
+                            <th className="text-left text-xs font-semibold uppercase tracking-wide text-gray-500 px-3 py-2">Notes</th>
+                          </tr>
+                        </thead>
+                        <tbody className="divide-y divide-gray-100">
+                          {drawerData.students.map((student) => (
+                            <tr key={student._id}>
+                              <td className="px-3 py-2 text-sm font-medium text-gray-900">{student.fullName || '—'}</td>
+                              <td className="px-3 py-2 text-sm text-gray-700">{student.phone || '—'}</td>
+                              <td className="px-3 py-2 text-sm text-gray-700 break-all">{student.email || '—'}</td>
+                              <td className="px-3 py-2 text-sm text-gray-700">{student.course || '—'}</td>
+                              <td className="px-3 py-2 text-sm text-gray-700">{student.status || '—'}</td>
+                              <td className="px-3 py-2 text-sm text-gray-700">{formatDate(student.createdAt)}</td>
+                              <td className="px-3 py-2 text-sm text-gray-700 whitespace-pre-wrap">{student.notes?.trim() || '—'}</td>
+                            </tr>
+                          ))}
+                        </tbody>
+                      </table>
+                    </div>
+                  ) : (
+                    <p className="text-sm text-gray-500">No students found for this counsellor.</p>
+                  )}
+                </div>
+              </div>
+            )}
+          </aside>
+        </div>
+      ) : null}
     </div>
   );
 }

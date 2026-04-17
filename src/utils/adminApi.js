@@ -140,6 +140,10 @@ export const getCertifiedCounsellors = async (params = {}, token = getStoredToke
   return adminRequest(`/certified-counsellors${query ? `?${query}` : ''}`, { method: 'GET' }, token);
 };
 
+export const getCertifiedCounsellorDetail = async (id, token = getStoredToken()) => {
+  return adminRequest(`/certified-counsellors/${encodeURIComponent(id)}`, { method: 'GET' }, token);
+};
+
 export const getLead = async (id, token = getStoredToken()) => {
   return adminRequest(`/leads/${encodeURIComponent(id)}`, { method: 'GET' }, token);
 };
