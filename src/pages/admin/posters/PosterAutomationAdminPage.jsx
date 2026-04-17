@@ -19,6 +19,7 @@ import {
   deletePosterTemplate,
   publishPosterTemplate,
   unpublishPosterTemplate,
+  setPosterMarketingFeatured,
 } from '../../../utils/adminApi';
 import { getPosterHtml2canvasOptions } from '../../../utils/posterHtml2canvas';
 import { clearPosterRouteCache } from '../../../components/Posters/usePosterByRoute';
@@ -27,6 +28,7 @@ import PosterEditorCanvas from './PosterEditorCanvas';
 import PosterListSidebar from './PosterListSidebar';
 import PosterElementToolbar from './PosterElementToolbar';
 import { normalizeHexForCss, normalizeOverlayFieldColors } from '../../../utils/posterColor';
+import { trackPosterDownloadBeacon } from '../../../utils/api';
 
 function normalizeRouteClient(route) {
   let s = String(route ?? '').trim();
@@ -52,6 +54,8 @@ function emptyDraft() {
     nameField: defaultNameField(),
     mobileField: defaultMobileField(),
     published: false,
+    marketingFeatured: false,
+    marketingFeaturedAt: null,
   };
 }
 
@@ -75,6 +79,8 @@ function cloneDraftFromPoster(p) {
     nameField: normalizeOverlayFieldColors(nameSrc),
     mobileField: normalizeOverlayFieldColors(mobileSrc),
     published: !!p.published,
+    marketingFeatured: !!p.marketingFeatured,
+    marketingFeaturedAt: p.marketingFeaturedAt ?? null,
   };
 }
 
@@ -100,6 +106,7 @@ function posterDraftsEqual(a, b) {
   if (normalizeRouteClient(a.route) !== normalizeRouteClient(b.route)) return false;
   if (a.svgTemplate !== b.svgTemplate) return false;
   if (!!a.published !== !!b.published) return false;
+  if (!!a.marketingFeatured !== !!b.marketingFeatured) return false;
   const na = normalizeOverlayFieldForCompare(a.nameField);
   const nb = normalizeOverlayFieldForCompare(b.nameField);
   const ma = normalizeOverlayFieldForCompare(a.mobileField);
@@ -155,6 +162,7 @@ export default function PosterAutomationAdminPage() {
   const [saving, setSaving] = useState(false);
   const [publishing, setPublishing] = useState(false);
   const [exporting, setExporting] = useState(false);
+  const [marketingFeatSaving, setMarketingFeatSaving] = useState(false);
   const [urlCopied, setUrlCopied] = useState(false);
   const [posterApiMisconfigured, setPosterApiMisconfigured] = useState(false);
   const [saveJustSucceeded, setSaveJustSucceeded] = useState(false);
@@ -369,6 +377,33 @@ export default function PosterAutomationAdminPage() {
     clearPosterRouteCache(normalizeRouteClient(d.route));
   }, []);
 
+  const handleMarketingFeatured = async (featured) => {
+    if (isNew || !selectedId) return;
+    if (isDirty) {
+      setError('Save or discard your changes before changing the Marketing highlight.');
+      return;
+    }
+    if (!draft.published) {
+      setError('Publish the template first.');
+      return;
+    }
+    setMarketingFeatSaving(true);
+    setError('');
+    try {
+      const res = await setPosterMarketingFeatured(selectedId, featured);
+      if (!res.success) {
+        setError(res.message || 'Could not update counsellor Marketing highlight.');
+        return;
+      }
+      const body = res.data;
+      const p = body?.poster ?? body?.data?.poster;
+      mergePosterResponse(p);
+      await loadList();
+    } finally {
+      setMarketingFeatSaving(false);
+    }
+  };
+
   /**
    * Saves draft when new or dirty, then POST /publish. Publish works even with unsaved edits (auto-saves first).
    * New templates: use Save & publish (same flow — save creates id, then publish).
@@ -523,6 +558,13 @@ export default function PosterAutomationAdminPage() {
       a.href = url;
       a.download = `${(draft.name || 'poster').replace(/\s+/g, '-').slice(0, 48)}.png`;
       a.click();
+      trackPosterDownloadBeacon({
+        posterKey: 'automated',
+        format: 'png',
+        displayName: draft.name || 'poster',
+        routeContext: 'admin',
+        posterRoute: normalizeRouteClient(draft.route),
+      });
     } catch (err) {
       console.error(err);
       setError('PNG export failed.');
@@ -548,6 +590,13 @@ export default function PosterAutomationAdminPage() {
       });
       pdf.addImage(canvas.toDataURL('image/png'), 'PNG', 0, 0, w, h);
       pdf.save(`${(draft.name || 'poster').replace(/\s+/g, '-').slice(0, 48)}.pdf`);
+      trackPosterDownloadBeacon({
+        posterKey: 'automated',
+        format: 'pdf',
+        displayName: draft.name || 'poster',
+        routeContext: 'admin',
+        posterRoute: normalizeRouteClient(draft.route),
+      });
     } catch (err) {
       console.error(err);
       setError('PDF export failed.');
@@ -793,6 +842,54 @@ export default function PosterAutomationAdminPage() {
                     {publishing ? 'Updating…' : 'Unpublish'}
                   </button>
                 </div>
+                {!isNew && selectedId && draft.published ? (
+                  <div className="mt-4 rounded-xl border border-sky-200/90 bg-sky-50/90 px-4 py-3 sm:px-5">
+                    <p className="text-[0.6875rem] font-semibold uppercase tracking-wide text-sky-900/90">
+                      Counsellor Marketing
+                    </p>
+                    <p className="mt-1.5 text-sm leading-relaxed text-slate-700">
+                      Show this live template as the highlighted <strong className="font-semibold">Latest</strong> card on{' '}
+                      <span className="font-medium text-slate-800">Counsellor → Marketing</span>. Only one template can be
+                      highlighted at a time.
+                    </p>
+                    <div className="mt-3 flex flex-wrap gap-2">
+                      <button
+                        type="button"
+                        onClick={() => void handleMarketingFeatured(true)}
+                        disabled={
+                          loading ||
+                          saving ||
+                          publishing ||
+                          marketingFeatSaving ||
+                          !!draft.marketingFeatured ||
+                          isDirty
+                        }
+                        className="inline-flex items-center justify-center rounded-xl border border-sky-600 bg-sky-600 px-4 py-2.5 text-sm font-semibold text-white shadow-sm transition hover:bg-sky-700 disabled:cursor-not-allowed disabled:opacity-50"
+                      >
+                        {draft.marketingFeatured
+                          ? 'Shown as Latest'
+                          : marketingFeatSaving
+                            ? 'Applying…'
+                            : 'Show in counsellor Marketing as Latest'}
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => void handleMarketingFeatured(false)}
+                        disabled={
+                          loading ||
+                          saving ||
+                          publishing ||
+                          marketingFeatSaving ||
+                          !draft.marketingFeatured ||
+                          isDirty
+                        }
+                        className="inline-flex items-center justify-center rounded-xl border border-slate-300 bg-white px-4 py-2.5 text-sm font-medium text-slate-800 shadow-sm transition hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-50"
+                      >
+                        {marketingFeatSaving ? 'Removing…' : 'Remove from Marketing highlight'}
+                      </button>
+                    </div>
+                  </div>
+                ) : null}
               </div>
             </div>
 

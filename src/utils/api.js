@@ -2,15 +2,16 @@ import { getStoredUtm } from './utm';
 import { notifyWebinarUnauthorized } from './authSession';
 import { getApiBaseUrl } from './apiBaseUrl';
 import { getCounsellorToken } from './counsellorApi';
+import { normalizeAutomatedPosterSlug } from './posterTrackRoute';
 
 /**
  * Fire-and-forget poster download analytics. Does not block UI; failures are silent.
  * If posterKey is `interresults` and the API returns 400 (older backends without that key), retries once as `inter`.
- * @param {{ posterKey: string, format: 'png'|'pdf', displayName?: string, mobileNumber?: string, routeContext?: 'public'|'portal' }} payload
+ * @param {{ posterKey: string, format: 'png'|'pdf', displayName?: string, mobileNumber?: string, routeContext?: 'public'|'portal'|'admin', route?: string, posterRoute?: string }} payload
  */
 export function trackPosterDownloadBeacon(payload) {
   if (!payload || typeof payload !== 'object') return;
-  const { posterKey, format, displayName, mobileNumber, routeContext } = payload;
+  const { posterKey, format, displayName, mobileNumber, routeContext, route, posterRoute } = payload;
   if (!posterKey || !format) return;
   try {
     const url = `${getApiBaseUrl()}/counsellor/poster-downloads/track`;
@@ -21,13 +22,28 @@ export function trackPosterDownloadBeacon(payload) {
       mobileNumber:
         mobileNumber != null ? String(mobileNumber).replace(/\D/g, '').slice(0, 10) : '',
     };
-    if (routeContext === 'public' || routeContext === 'portal') {
+    const pathRaw = posterRoute ?? route;
+    const routeStr = pathRaw != null && String(pathRaw).trim() ? String(pathRaw).trim() : '';
+    if (posterKey === 'automated') {
+      if (routeStr) {
+        bodyObj.posterRoute = routeStr;
+      }
+      const slug = normalizeAutomatedPosterSlug(pathRaw);
+      if (slug) {
+        /** Explicit slug so the API can persist even if path parsing differs on the server. */
+        bodyObj.automatedRouteSlug = slug;
+      }
+    } else if (routeStr) {
+      bodyObj.posterRoute = routeStr;
+    }
+    if (routeContext === 'public' || routeContext === 'portal' || routeContext === 'admin') {
       bodyObj.routeContext = routeContext;
     }
     const headers = { 'Content-Type': 'application/json' };
     const token = getCounsellorToken();
     if (token) headers.Authorization = `Bearer ${token}`;
-    const reqInit = { method: 'POST', headers, keepalive: true };
+    /** keepalive: false — some environments drop or truncate JSON bodies on keepalive POSTs. */
+    const reqInit = { method: 'POST', headers, keepalive: false };
     void fetch(url, { ...reqInit, body: JSON.stringify(bodyObj) })
       .then(async (res) => {
         if (res.ok || posterKey !== 'interresults') return;
@@ -54,6 +70,11 @@ export function trackPosterDownloadBeacon(payload) {
 export async function getPosterByRoute(route) {
   const q = encodeURIComponent(String(route ?? '/'));
   return apiRequest(`/posters/by-route?route=${q}`, { method: 'GET' });
+}
+
+/** GET /posters/marketing-featured — published template highlighted for counsellor Marketing (or null). */
+export async function getMarketingFeaturedPoster() {
+  return apiRequest('/posters/marketing-featured', { method: 'GET' });
 }
 
 /** POST /posters/verify-activation — published route + mobile → TrainingFeedback name/mobile. */

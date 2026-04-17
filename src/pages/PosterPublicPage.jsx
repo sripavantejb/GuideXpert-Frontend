@@ -235,6 +235,7 @@ export default function PosterPublicPage() {
         displayName: session.name,
         mobileNumber: String(session.mobile).replace(/\D/g, '').slice(-10),
         routeContext: 'public',
+        posterRoute: poster?.route || pathname,
       });
     } catch (err) {
       console.error(err);
@@ -242,7 +243,7 @@ export default function PosterPublicPage() {
     } finally {
       setExporting(false);
     }
-  }, [designFrame.height, designFrame.width, poster?.name, session, triggerBlobDownload]);
+  }, [designFrame.height, designFrame.width, pathname, poster?.name, poster?.route, session, triggerBlobDownload]);
 
   const runExportPdf = useCallback(async () => {
     if (!session) return;
@@ -282,6 +283,7 @@ export default function PosterPublicPage() {
         displayName: session.name,
         mobileNumber: String(session.mobile).replace(/\D/g, '').slice(-10),
         routeContext: 'public',
+        posterRoute: poster?.route || pathname,
       });
     } catch (err) {
       console.error(err);
@@ -289,7 +291,7 @@ export default function PosterPublicPage() {
     } finally {
       setExporting(false);
     }
-  }, [designFrame.height, designFrame.width, poster?.name, session]);
+  }, [designFrame.height, designFrame.width, pathname, poster?.name, poster?.route, session]);
 
   if (!routeOk) {
     return (

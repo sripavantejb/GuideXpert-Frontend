@@ -772,3 +772,15 @@ export const publishPosterTemplate = async (id, token = getStoredToken()) => {
 export const unpublishPosterTemplate = async (id, token = getStoredToken()) => {
   return adminRequest(`/posters/${encodeURIComponent(id)}/unpublish`, { method: 'POST' }, token);
 };
+
+/** POST /admin/posters/:id/marketing-featured — body: { featured: boolean } */
+export const setPosterMarketingFeatured = async (id, featured, token = getStoredToken()) => {
+  return adminRequest(
+    `/posters/${encodeURIComponent(id)}/marketing-featured`,
+    {
+      method: 'POST',
+      body: JSON.stringify({ featured: !!featured }),
+    },
+    token
+  );
+};

@@ -35,7 +35,8 @@ const POSTER_FILTER_OPTIONS = [
   { value: 'btechcse', label: 'B.Tech CSE' },
   { value: 'jee', label: 'JEE' },
   { value: 'certified', label: 'Certified' },
-  { value: 'automated', label: 'Automated (/p/…)' },
+  { value: 'wrongcareerchoice', label: 'Wrong career choice' },
+  { value: 'automated', label: 'Automated (all /p/… routes)' },
 ];
 
 const POSTER_LABELS = {
@@ -47,8 +48,31 @@ const POSTER_LABELS = {
   btechcse: 'B.Tech CSE',
   jee: 'JEE',
   certified: 'Certified',
-  automated: 'Automated (/p/…)',
+  wrongcareerchoice: 'Wrong career choice',
+  automated: 'Automated',
 };
+
+/** Resolved label for table/chart (dynamic /p/… slug when present). */
+function getPosterDisplayName(row) {
+  const k = row?.posterKey;
+  const slug = row?.automatedRouteSlug;
+  if (k === 'automated') {
+    const s = slug != null && String(slug).trim() ? String(slug).trim() : '';
+    return s || 'Automated (no route)';
+  }
+  return POSTER_LABELS[k] || k;
+}
+
+function chartFillForPoster(row) {
+  const name = getPosterDisplayName(row);
+  if (POSTER_COLORS[name]) return POSTER_COLORS[name];
+  if (row?.posterKey !== 'automated') return '#003366';
+  let h = 0;
+  const str = name || '';
+  for (let i = 0; i < str.length; i += 1) h = ((h << 5) - h + str.charCodeAt(i)) | 0;
+  const hue = Math.abs(h) % 360;
+  return `hsl(${hue}, 48%, 40%)`;
+}
 
 const POSTER_COLORS = {
   Holi: '#e11d48',
@@ -59,7 +83,9 @@ const POSTER_COLORS = {
   'B.Tech CSE': '#7c2d12',
   JEE: '#0f766e',
   Certified: '#059669',
-  'Automated (/p/…)': '#0369a1',
+  'Wrong career choice': '#a21caf',
+  Automated: '#0369a1',
+  'Automated (no route)': '#0369a1',
 };
 
 const DATE_PRESETS = [
@@ -102,8 +128,9 @@ function formatDate(value) {
   });
 }
 
-function posterBadge(key) {
-  const label = POSTER_LABELS[key] || key;
+function posterBadge(row) {
+  const label = getPosterDisplayName(row);
+  const key = row?.posterKey;
   const colorMap = {
     holi: 'bg-rose-50 text-rose-700 ring-rose-200/60',
     inter: 'bg-violet-50 text-violet-700 ring-violet-200/60',
@@ -113,9 +140,13 @@ function posterBadge(key) {
     btechcse: 'bg-orange-50 text-orange-900 ring-orange-200/60',
     jee: 'bg-teal-50 text-teal-700 ring-teal-200/60',
     certified: 'bg-emerald-50 text-emerald-700 ring-emerald-200/60',
+    wrongcareerchoice: 'bg-fuchsia-50 text-fuchsia-900 ring-fuchsia-200/60',
     automated: 'bg-sky-50 text-sky-800 ring-sky-200/60',
   };
-  const cls = colorMap[key] || 'bg-gray-100 text-gray-600 ring-gray-200/60';
+  const cls =
+    key === 'automated'
+      ? 'bg-sky-50 text-sky-800 ring-sky-200/60'
+      : colorMap[key] || 'bg-gray-100 text-gray-600 ring-gray-200/60';
   return (
     <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-bold ring-1 ${cls}`}>
       {label}
@@ -231,9 +262,9 @@ export default function PosterDownloads() {
   const hasActiveFilters = filters.from || filters.to || filters.posterKey || filters.q;
 
   const chartData = byPoster.map((row) => ({
-    name: POSTER_LABELS[row.posterKey] || row.posterKey,
+    name: getPosterDisplayName(row),
     count: row.count,
-    fill: POSTER_COLORS[POSTER_LABELS[row.posterKey]] || '#003366',
+    fill: chartFillForPoster(row),
   }));
 
   const totalDownloads = byPoster.reduce((s, r) => s + (r.count || 0), 0);
@@ -418,7 +449,7 @@ export default function PosterDownloads() {
                   type="search"
                   value={filters.q}
                   onChange={(e) => setFilter('q', e.target.value)}
-                  placeholder="Name or mobile..."
+                  placeholder="Name, mobile, or /p/ route slug…"
                   className="block w-full rounded-xl border border-gray-200 pl-9 pr-3 py-2.5 text-sm focus:ring-2 focus:ring-[#003366]/20 focus:border-[#003366] transition-all"
                 />
               </div>
@@ -551,7 +582,7 @@ export default function PosterDownloads() {
                     <td className="px-5 py-3.5 whitespace-nowrap">
                       <span className="text-sm text-gray-800 font-medium">{formatDate(row.downloadedAt)}</span>
                     </td>
-                    <td className="px-5 py-3.5">{posterBadge(row.posterKey)}</td>
+                    <td className="px-5 py-3.5">{posterBadge(row)}</td>
                     <td className="px-5 py-3.5">{formatBadge(row.format)}</td>
                     <td className="px-5 py-3.5 max-w-[200px]">
                       {row.counsellor ? (
