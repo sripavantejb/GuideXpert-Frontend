@@ -12,6 +12,7 @@ dist
 .env
 .env.*
 !.env.example
+!.env.development.local.example
 dist-ssr
 *.local
 

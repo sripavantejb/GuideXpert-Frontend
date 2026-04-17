@@ -727,3 +727,44 @@ export const getPosterDownloadStats = async (params = {}, token = getStoredToken
   const query = search.toString();
   return adminRequest(`/poster-downloads/stats${query ? `?${query}` : ''}`, { method: 'GET' }, token);
 };
+
+/** GET /admin/posters — list poster templates. */
+export const listPosterTemplates = async (token = getStoredToken()) => {
+  return adminRequest('/posters', { method: 'GET' }, token);
+};
+
+/** GET /admin/posters/:id */
+export const getPosterTemplate = async (id, token = getStoredToken()) => {
+  return adminRequest(`/posters/${encodeURIComponent(id)}`, { method: 'GET' }, token);
+};
+
+/** POST /admin/posters — body: { name, route, svgTemplate, elements } */
+export const createPosterTemplate = async (payload, token = getStoredToken()) => {
+  return adminRequest('/posters', {
+    method: 'POST',
+    body: JSON.stringify(payload),
+  }, token);
+};
+
+/** PUT /admin/posters/:id */
+export const updatePosterTemplate = async (id, payload, token = getStoredToken()) => {
+  return adminRequest(`/posters/${encodeURIComponent(id)}`, {
+    method: 'PUT',
+    body: JSON.stringify(payload),
+  }, token);
+};
+
+/** DELETE /admin/posters/:id */
+export const deletePosterTemplate = async (id, token = getStoredToken()) => {
+  return adminRequest(`/posters/${encodeURIComponent(id)}`, { method: 'DELETE' }, token);
+};
+
+/** POST /admin/posters/:id/publish */
+export const publishPosterTemplate = async (id, token = getStoredToken()) => {
+  return adminRequest(`/posters/${encodeURIComponent(id)}/publish`, { method: 'POST' }, token);
+};
+
+/** POST /admin/posters/:id/unpublish */
+export const unpublishPosterTemplate = async (id, token = getStoredToken()) => {
+  return adminRequest(`/posters/${encodeURIComponent(id)}/unpublish`, { method: 'POST' }, token);
+};

@@ -5,6 +5,7 @@
   "type": "module",
   "scripts": {
     "dev": "vite",
+    "dev:local-api": "VITE_PROXY_TARGET=http://localhost:5000 VITE_API_URL=http://localhost:5000/api vite",
     "build": "vite build",
     "lint": "eslint .",
     "preview": "vite preview"

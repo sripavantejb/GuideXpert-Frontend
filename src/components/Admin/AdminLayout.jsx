@@ -1,7 +1,8 @@
-import { useState, useMemo, useEffect } from 'react';
+import { createElement, useState, useMemo, useEffect } from 'react';
+import { useSidebarScrollbarActivity } from '../../hooks/useSidebarScrollbarActivity';
 import { Link, NavLink, Outlet, useLocation, useNavigate } from 'react-router-dom';
 import { HiMenu, HiX } from 'react-icons/hi';
-import { FiLayout, FiUsers, FiBarChart2, FiDownload, FiSettings, FiCalendar, FiVideo, FiFileText, FiBell, FiLink, FiClipboard, FiMessageSquare, FiBookOpen, FiImage, FiPhone } from 'react-icons/fi';
+import { FiLayout, FiUsers, FiBarChart2, FiDownload, FiSettings, FiCalendar, FiVideo, FiFileText, FiBell, FiLink, FiClipboard, FiMessageSquare, FiBookOpen, FiImage, FiPhone, FiLayers } from 'react-icons/fi';
 import { useAuth } from '../../hooks/useAuth';
 import { AdminDashboardProvider } from '../../contexts/AdminDashboardContext';
 import { useAdminDateRange } from '../../hooks/useAdminDateRange';
@@ -21,6 +22,7 @@ const navItems = [
   { to: '/admin/training-feedback', label: 'Activation Form', icon: FiMessageSquare, sectionKey: 'training-feedback' },
   { to: '/admin/influencer-tracking', label: 'Influencer / UTM Tracking', icon: FiLink, sectionKey: 'influencer-tracking' },
   { to: '/admin/poster-downloads', label: 'Poster downloads', icon: FiImage, sectionKey: 'poster-downloads' },
+  { to: '/admin/posters', label: 'Poster automation', icon: FiLayers, sectionKey: 'poster-automation' },
   { to: '/admin/assessment-results', label: 'Custom Reports', icon: FiFileText, sectionKey: 'assessment-results' },
   { to: '/admin/webinar-progress', label: 'Webinar Progress', icon: FiVideo, sectionKey: 'webinar-progress' },
   { to: '/admin/blogs', label: 'Blog Management', icon: FiBookOpen, sectionKey: 'blogs' },
@@ -71,6 +73,7 @@ export default function AdminLayout() {
     }
   }, [user, isPathAllowed, visibleNavItems, navigate, currentPath]);
   const initials = (user?.username || 'A').slice(0, 2).toUpperCase();
+  const { onScroll: onSidebarScroll, active: sidebarScrollActive } = useSidebarScrollbarActivity();
 
   return (
     <div className="counsellor-portal min-h-screen h-screen overflow-hidden bg-gray-50 flex">
@@ -107,7 +110,10 @@ export default function AdminLayout() {
           </div>
         </Link>
 
-        <nav className="flex-1 overflow-y-auto py-5 flex flex-col gap-6 px-3">
+        <nav
+          className={`sidebar-nav-scroll flex-1 min-h-0 overflow-y-auto overscroll-y-contain py-5 flex flex-col gap-6 px-3${sidebarScrollActive ? ' sidebar-nav-scroll--active' : ''}`}
+          onScroll={onSidebarScroll}
+        >
           <div>
             <p className="px-3 mb-2 text-[0.6875rem] font-semibold text-white/50 uppercase tracking-wider">Menu</p>
             <div className="space-y-0.5">
@@ -125,7 +131,10 @@ export default function AdminLayout() {
                     }`
                   }
                 >
-                  <Icon className="w-[1.125rem] h-[1.125rem] shrink-0 opacity-90" aria-hidden />
+                  {createElement(Icon, {
+                    className: 'w-[1.125rem] h-[1.125rem] shrink-0 opacity-90',
+                    'aria-hidden': true,
+                  })}
                   <span>{label}</span>
                 </NavLink>
               ))}
