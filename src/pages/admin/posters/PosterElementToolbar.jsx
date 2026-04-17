@@ -1,5 +1,6 @@
-import { createElement } from 'react';
+import { createElement, useState, useEffect } from 'react';
 import { FiUser, FiSmartphone } from 'react-icons/fi';
+import { normalizeHexForColorInput, normalizeHexForCss } from '../../../utils/posterColor';
 
 const WEIGHTS = ['300', '400', '500', '600', '700', '800'];
 
@@ -34,6 +35,19 @@ function AlignmentPills({ value, onChange }) {
 }
 
 function OverlaySection({ title, icon, field, onChange, accentClass }) {
+  const [colorText, setColorText] = useState(() => field.color ?? '#111827');
+  useEffect(() => {
+    // Sync hex text when parent updates (load template, native color picker).
+    // eslint-disable-next-line react-hooks/set-state-in-effect -- prop→local sync for partial hex typing
+    setColorText(field.color ?? '#111827');
+  }, [field.color]);
+
+  const commitColorFromText = () => {
+    const next = normalizeHexForCss(colorText);
+    setColorText(next);
+    onChange({ color: next });
+  };
+
   return (
     <div className={`rounded-2xl border border-gray-200 bg-white p-5 shadow-sm ring-1 ring-black/[0.02] ${accentClass}`}>
       <div className="mb-4 flex items-center gap-2 border-b border-gray-100 pb-3">
@@ -115,14 +129,25 @@ function OverlaySection({ title, icon, field, onChange, accentClass }) {
           <div className="mt-1.5 flex gap-2">
             <input
               type="color"
-              value={/^#/.test(field.color || '') ? field.color : '#111827'}
-              onChange={(e) => onChange({ color: e.target.value })}
+              value={normalizeHexForColorInput(field.color)}
+              onChange={(e) => {
+                const v = e.target.value;
+                setColorText(v);
+                onChange({ color: v });
+              }}
               className="h-11 w-14 cursor-pointer rounded-xl border border-gray-200 bg-white p-1"
             />
             <input
               type="text"
-              value={field.color ?? '#111827'}
-              onChange={(e) => onChange({ color: e.target.value })}
+              value={colorText}
+              onChange={(e) => setColorText(e.target.value)}
+              onBlur={commitColorFromText}
+              onKeyDown={(e) => {
+                if (e.key === 'Enter') {
+                  e.preventDefault();
+                  e.currentTarget.blur();
+                }
+              }}
               className="min-w-0 flex-1 rounded-xl border border-gray-200 px-3 py-2 text-sm font-mono focus:border-primary-blue-400 focus:outline-none focus:ring-2 focus:ring-primary-blue-400/20"
             />
           </div>

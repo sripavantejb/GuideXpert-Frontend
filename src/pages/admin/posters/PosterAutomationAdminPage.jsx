@@ -20,11 +20,13 @@ import {
   publishPosterTemplate,
   unpublishPosterTemplate,
 } from '../../../utils/adminApi';
+import { getPosterHtml2canvasOptions } from '../../../utils/posterHtml2canvas';
 import { clearPosterRouteCache } from '../../../components/Posters/usePosterByRoute';
 import DashboardLayout from '../../../components/Admin/DashboardLayout';
 import PosterEditorCanvas from './PosterEditorCanvas';
 import PosterListSidebar from './PosterListSidebar';
 import PosterElementToolbar from './PosterElementToolbar';
+import { normalizeHexForCss, normalizeOverlayFieldColors } from '../../../utils/posterColor';
 
 function normalizeRouteClient(route) {
   let s = String(route ?? '').trim();
@@ -62,14 +64,60 @@ const POSTER_API_404_SAVE_HINT =
   'The poster API returned 404. Fix the backend/proxy (see the yellow notice above); Save cannot reach the server until then.';
 
 function cloneDraftFromPoster(p) {
+  const nameSrc =
+    p.nameField && typeof p.nameField === 'object' ? { ...p.nameField } : defaultNameField();
+  const mobileSrc =
+    p.mobileField && typeof p.mobileField === 'object' ? { ...p.mobileField } : defaultMobileField();
   return {
     name: p.name || '',
     route: p.route || '/p/my-campaign',
     svgTemplate: p.svgTemplate || '',
-    nameField: p.nameField && typeof p.nameField === 'object' ? { ...p.nameField } : defaultNameField(),
-    mobileField: p.mobileField && typeof p.mobileField === 'object' ? { ...p.mobileField } : defaultMobileField(),
+    nameField: normalizeOverlayFieldColors(nameSrc),
+    mobileField: normalizeOverlayFieldColors(mobileSrc),
     published: !!p.published,
   };
+}
+
+/** Stable semantic equality for isDirty (avoids JSON key-order false negatives). */
+function normalizeOverlayFieldForCompare(f) {
+  if (!f || typeof f !== 'object') {
+    return { x: 0, y: 0, fontSize: 16, color: '#111827', fontWeight: '400', textAlign: 'left' };
+  }
+  return {
+    x: Math.round((Number(f.x) || 0) * 1000) / 1000,
+    y: Math.round((Number(f.y) || 0) * 1000) / 1000,
+    fontSize: Math.round((Number(f.fontSize) || 16) * 1000) / 1000,
+    color: normalizeHexForCss(f.color),
+    fontWeight: String(f.fontWeight ?? '400'),
+    textAlign: String(f.textAlign || 'left'),
+  };
+}
+
+function posterDraftsEqual(a, b) {
+  if (a === b) return true;
+  if (!a || !b) return false;
+  if (String(a.name ?? '').trim() !== String(b.name ?? '').trim()) return false;
+  if (normalizeRouteClient(a.route) !== normalizeRouteClient(b.route)) return false;
+  if (a.svgTemplate !== b.svgTemplate) return false;
+  if (!!a.published !== !!b.published) return false;
+  const na = normalizeOverlayFieldForCompare(a.nameField);
+  const nb = normalizeOverlayFieldForCompare(b.nameField);
+  const ma = normalizeOverlayFieldForCompare(a.mobileField);
+  const mb = normalizeOverlayFieldForCompare(b.mobileField);
+  return (
+    na.x === nb.x &&
+    na.y === nb.y &&
+    na.fontSize === nb.fontSize &&
+    na.color === nb.color &&
+    na.fontWeight === nb.fontWeight &&
+    na.textAlign === nb.textAlign &&
+    ma.x === mb.x &&
+    ma.y === mb.y &&
+    ma.fontSize === mb.fontSize &&
+    ma.color === mb.color &&
+    ma.fontWeight === mb.fontWeight &&
+    ma.textAlign === mb.textAlign
+  );
 }
 
 function TemplateTokensReference({ previewVariables }) {
@@ -109,6 +157,8 @@ export default function PosterAutomationAdminPage() {
   const [exporting, setExporting] = useState(false);
   const [urlCopied, setUrlCopied] = useState(false);
   const [posterApiMisconfigured, setPosterApiMisconfigured] = useState(false);
+  const [saveJustSucceeded, setSaveJustSucceeded] = useState(false);
+  const saveOkTimerRef = useRef(null);
   const fileRef = useRef(null);
   const posterExportRef = useRef(null);
 
@@ -154,10 +204,30 @@ export default function PosterAutomationAdminPage() {
     };
   }, [loadList]);
 
+  const triggerSaveOk = useCallback(() => {
+    if (saveOkTimerRef.current) clearTimeout(saveOkTimerRef.current);
+    setSaveJustSucceeded(true);
+    saveOkTimerRef.current = setTimeout(() => {
+      setSaveJustSucceeded(false);
+      saveOkTimerRef.current = null;
+    }, 2000);
+  }, []);
+
+  useEffect(
+    () => () => {
+      if (saveOkTimerRef.current) clearTimeout(saveOkTimerRef.current);
+    },
+    []
+  );
+
   const isDirty = useMemo(() => {
     if (isNew) return true;
-    if (!baseline) return false;
-    return JSON.stringify(draft) !== JSON.stringify(baseline);
+    // No baseline yet (never clicked "New template" or loaded one from the list): compare to empty draft
+    // so editing name/route/SVG still marks Unsaved and enables Save.
+    if (!baseline) {
+      return !posterDraftsEqual(draft, emptyDraft());
+    }
+    return !posterDraftsEqual(draft, baseline);
   }, [draft, baseline, isNew]);
 
   const selectPoster = (id) => {
@@ -191,23 +261,24 @@ export default function PosterAutomationAdminPage() {
     setSelectedOverlayKey(null);
   };
 
+  /** @returns {Promise<{ success: boolean; id?: string; published?: boolean }>} */
   const handleSave = async () => {
     const routeNorm = normalizeRouteClient(draft.route);
     if (!draft.name.trim()) {
       setError('Name is required.');
-      return;
+      return { success: false };
     }
     if (!routeNorm.startsWith('/p/') || routeNorm.length <= 3) {
       setError('Frontend route must start with /p/ (for example /p/winter-drive) so visitors get a matching public page.');
-      return;
+      return { success: false };
     }
     if (!draft.svgTemplate.trim()) {
       setError('Upload an SVG template first.');
-      return;
+      return { success: false };
     }
     if (!/<svg[\s>/]/i.test(draft.svgTemplate)) {
       setError('SVG template must contain an <svg> root.');
-      return;
+      return { success: false };
     }
 
     setSaving(true);
@@ -220,28 +291,34 @@ export default function PosterAutomationAdminPage() {
         nameField: draft.nameField,
         mobileField: draft.mobileField,
       };
-      if (isNew) {
-        const res = await createPosterTemplate(payload);
-        if (!res.success) {
-          if (isPosterAdmin404(res)) {
-            setPosterApiMisconfigured(true);
-            setError(POSTER_API_404_SAVE_HINT);
-          } else {
-            setError(res.message || 'Save failed');
+      try {
+        // Create when there is no server row yet (new template, or first-time edits without clicking "New template")
+        if (!selectedId) {
+          const res = await createPosterTemplate(payload);
+          if (!res.success) {
+            if (isPosterAdmin404(res)) {
+              setPosterApiMisconfigured(true);
+              setError(POSTER_API_404_SAVE_HINT);
+            } else {
+              setError(res.message || 'Save failed');
+            }
+            return { success: false };
           }
-          return;
-        }
-        const created = res.data?.poster ?? res.data;
-        if (created?.id) {
+          const poster = res.data?.poster ?? res.data?.data?.poster;
+          if (!poster || typeof poster !== 'object' || !poster.id) {
+            setError('Server did not return a saved template. Try again or check the API response.');
+            return { success: false };
+          }
           clearPosterRouteCache(routeNorm);
           setIsNew(false);
-          setSelectedId(created.id);
-          const d = cloneDraftFromPoster(created);
+          setSelectedId(poster.id);
+          const d = cloneDraftFromPoster(poster);
           setDraft(d);
           setBaseline(JSON.parse(JSON.stringify(d)));
+          await loadList();
+          triggerSaveOk();
+          return { success: true, id: poster.id, published: !!poster.published };
         }
-        await loadList();
-      } else if (selectedId) {
         const res = await updatePosterTemplate(selectedId, payload);
         if (!res.success) {
           if (isPosterAdmin404(res)) {
@@ -250,15 +327,15 @@ export default function PosterAutomationAdminPage() {
           } else {
             setError(res.message || 'Save failed');
           }
-          return;
+          return { success: false };
         }
         clearPosterRouteCache(routeNorm);
-        const updated = res.data?.poster ?? res.data;
+        const updated = res.data?.poster ?? res.data?.data?.poster;
         if (baseline) {
           const prev = normalizeRouteClient(baseline.route);
           if (prev !== routeNorm) clearPosterRouteCache(prev);
         }
-        if (updated && typeof updated === 'object') {
+        if (updated && typeof updated === 'object' && updated.id) {
           const d = cloneDraftFromPoster(updated);
           setDraft(d);
           setBaseline(JSON.parse(JSON.stringify(d)));
@@ -268,9 +345,104 @@ export default function PosterAutomationAdminPage() {
           setBaseline(JSON.parse(JSON.stringify(merged)));
         }
         await loadList();
+        triggerSaveOk();
+        const pub =
+          updated && typeof updated === 'object' && 'published' in updated
+            ? !!updated.published
+            : !!draft.published;
+        return { success: true, id: selectedId, published: pub };
+      } catch (err) {
+        console.error('[handleSave]', err);
+        setError('Save failed unexpectedly. Check the network tab or try again.');
+        return { success: false };
       }
     } finally {
       setSaving(false);
+    }
+  };
+
+  const mergePosterResponse = useCallback((p) => {
+    if (!p || typeof p !== 'object') return;
+    const d = cloneDraftFromPoster(p);
+    setDraft(d);
+    setBaseline(JSON.parse(JSON.stringify(d)));
+    clearPosterRouteCache(normalizeRouteClient(d.route));
+  }, []);
+
+  /**
+   * Saves draft when new or dirty, then POST /publish. Publish works even with unsaved edits (auto-saves first).
+   * New templates: use Save & publish (same flow — save creates id, then publish).
+   */
+  const runPublishFlow = async () => {
+    if (!routeOkForPublic || !draft.svgTemplate.trim()) {
+      setError('Use a /p/… route and upload an SVG before publishing.');
+      return;
+    }
+    setPublishing(true);
+    setError('');
+    try {
+      let id = selectedId;
+      let alreadyPublished = !!draft.published;
+
+      if (isNew || isDirty) {
+        const saved = await handleSave();
+        if (!saved.success) return;
+        id = saved.id ?? selectedId;
+        alreadyPublished = !!saved.published;
+      }
+
+      if (alreadyPublished) {
+        await loadList();
+        return;
+      }
+
+      if (!id) {
+        setError('Save the template first to create a record, then publish.');
+        return;
+      }
+
+      const res = await publishPosterTemplate(id);
+      if (!res.success) {
+        if (isPosterAdmin404(res)) {
+          setPosterApiMisconfigured(true);
+          setError(POSTER_API_404_SAVE_HINT);
+        } else {
+          setError(res.message || res.data?.message || 'Publish failed');
+        }
+        return;
+      }
+      const p = res.data?.poster ?? res.data?.data?.poster;
+      mergePosterResponse(p);
+      await loadList();
+    } finally {
+      setPublishing(false);
+    }
+  };
+
+  const handleUnpublish = async () => {
+    if (isNew || !selectedId) return;
+    if (isDirty) {
+      setError('Save or discard your changes before unpublishing.');
+      return;
+    }
+    setPublishing(true);
+    setError('');
+    try {
+      const res = await unpublishPosterTemplate(selectedId);
+      if (!res.success) {
+        if (isPosterAdmin404(res)) {
+          setPosterApiMisconfigured(true);
+          setError(POSTER_API_404_SAVE_HINT);
+        } else {
+          setError(res.message || res.data?.message || 'Unpublish failed');
+        }
+        return;
+      }
+      const p = res.data?.poster ?? res.data?.data?.poster;
+      mergePosterResponse(p);
+      await loadList();
+    } finally {
+      setPublishing(false);
     }
   };
 
@@ -297,56 +469,6 @@ export default function PosterAutomationAdminPage() {
       await loadList();
     } finally {
       setSaving(false);
-    }
-  };
-
-  const handlePublish = async () => {
-    if (isNew || !selectedId || isDirty) return;
-    setPublishing(true);
-    setError('');
-    try {
-      const res = await publishPosterTemplate(selectedId);
-      if (!res.success) {
-        const missing = isPosterAdmin404(res);
-        if (missing) setPosterApiMisconfigured(true);
-        setError(missing ? POSTER_API_404_SAVE_HINT : res.message || 'Publish failed');
-        return;
-      }
-      const p = res.data?.poster;
-      if (p) {
-        const d = cloneDraftFromPoster(p);
-        setDraft(d);
-        setBaseline(JSON.parse(JSON.stringify(d)));
-        clearPosterRouteCache(normalizeRouteClient(d.route));
-      }
-      await loadList();
-    } finally {
-      setPublishing(false);
-    }
-  };
-
-  const handleUnpublish = async () => {
-    if (isNew || !selectedId || isDirty) return;
-    setPublishing(true);
-    setError('');
-    try {
-      const res = await unpublishPosterTemplate(selectedId);
-      if (!res.success) {
-        const missing = isPosterAdmin404(res);
-        if (missing) setPosterApiMisconfigured(true);
-        setError(missing ? POSTER_API_404_SAVE_HINT : res.message || 'Unpublish failed');
-        return;
-      }
-      const p = res.data?.poster;
-      if (p) {
-        const d = cloneDraftFromPoster(p);
-        setDraft(d);
-        setBaseline(JSON.parse(JSON.stringify(d)));
-        clearPosterRouteCache(normalizeRouteClient(d.route));
-      }
-      await loadList();
-    } finally {
-      setPublishing(false);
     }
   };
 
@@ -395,12 +517,7 @@ export default function PosterAutomationAdminPage() {
     setExporting(true);
     try {
       const html2canvas = (await import('html2canvas')).default;
-      const canvas = await html2canvas(node, {
-        scale: 2,
-        useCORS: true,
-        backgroundColor: '#ffffff',
-        logging: false,
-      });
+      const canvas = await html2canvas(node, getPosterHtml2canvasOptions({ originalRoot: node }));
       const url = canvas.toDataURL('image/png');
       const a = document.createElement('a');
       a.href = url;
@@ -421,12 +538,7 @@ export default function PosterAutomationAdminPage() {
     try {
       const html2canvas = (await import('html2canvas')).default;
       const { jsPDF } = await import('jspdf');
-      const canvas = await html2canvas(node, {
-        scale: 2,
-        useCORS: true,
-        backgroundColor: '#ffffff',
-        logging: false,
-      });
+      const canvas = await html2canvas(node, getPosterHtml2canvasOptions({ originalRoot: node }));
       const w = canvas.width;
       const h = canvas.height;
       const pdf = new jsPDF({
@@ -446,8 +558,30 @@ export default function PosterAutomationAdminPage() {
 
   const routeNorm = normalizeRouteClient(draft.route);
   const routeOkForPublic = routeNorm.startsWith('/p/') && routeNorm.length > 3;
-  const publishActionsEnabled =
-    !isNew && !!selectedId && !isDirty && routeOkForPublic && !!draft.svgTemplate.trim();
+  const publishPrereqsOk = routeOkForPublic && !!draft.svgTemplate.trim();
+  /** Existing template, not yet live — Publish saves first when there are unsaved edits. */
+  const canPublishPrimary =
+    publishPrereqsOk && !isNew && !!selectedId && !draft.published;
+  /** Unpublish requires a clean draft so server state matches what you see. */
+  const canUnpublishPrimary =
+    publishPrereqsOk && !isNew && !!selectedId && !!draft.published && !isDirty;
+  const canSaveAndPublish =
+    publishPrereqsOk &&
+    (isNew || !!selectedId || isDirty) &&
+    (isNew || isDirty || !draft.published);
+
+  const saveButtonLabel = useMemo(() => {
+    if (saving) return 'Saving…';
+    if (saveJustSucceeded) return 'Saved';
+    return 'Save template';
+  }, [saving, saveJustSucceeded]);
+
+  const saveButtonTitle = useMemo(() => {
+    if (saving) return 'Saving…';
+    if (publishing) return 'Wait for publishing to finish.';
+    if (!isDirty) return 'No changes to save.';
+    return 'Save your changes to the server';
+  }, [saving, publishing, isDirty]);
 
   const toolBtn =
     'inline-flex items-center gap-2 rounded-xl border border-gray-200 bg-white px-3.5 py-2 text-sm font-medium text-gray-800 shadow-sm transition hover:border-gray-300 hover:bg-gray-50 disabled:cursor-not-allowed disabled:opacity-50';
@@ -455,7 +589,7 @@ export default function PosterAutomationAdminPage() {
   return (
     <DashboardLayout
       title="Poster automation"
-      subtitle="Design an SVG template, position name and mobile overlays, then save and publish to a public URL under /p/… End users verify with mobile against activation records."
+      subtitle="Design an SVG template, position name and mobile overlays, then Save template. Use Publish (or Save & publish) so the public /p/… page is available for downloads. Unpublish hides the live page."
     >
       {posterApiMisconfigured ? (
         <div
@@ -529,7 +663,7 @@ export default function PosterAutomationAdminPage() {
             isNew={isNew}
             onSelect={selectPoster}
             onCreate={handleCreate}
-            disabled={loading || saving}
+            disabled={loading || saving || publishing}
           />
         </aside>
 
@@ -563,18 +697,30 @@ export default function PosterAutomationAdminPage() {
               <div className="flex flex-wrap items-center gap-2">
                 <button
                   type="button"
-                  onClick={handleSave}
-                  disabled={saving || !isDirty}
+                  onClick={() => void handleSave()}
+                  disabled={saving || publishing || !isDirty}
+                  title={saveButtonTitle}
+                  aria-label={saveButtonTitle}
                   className="inline-flex items-center gap-2 rounded-xl bg-primary-navy px-4 py-2.5 text-sm font-semibold text-white shadow-sm transition hover:opacity-[0.97] disabled:cursor-not-allowed disabled:opacity-45"
                 >
                   <FiSave className="h-4 w-4" aria-hidden />
-                  {saving ? 'Saving…' : 'Save'}
+                  {saveButtonLabel}
                 </button>
+                {canSaveAndPublish ? (
+                  <button
+                    type="button"
+                    onClick={() => void runPublishFlow()}
+                    disabled={saving || publishing || loading}
+                    className="inline-flex items-center gap-2 rounded-xl border border-emerald-600 bg-emerald-600 px-4 py-2.5 text-sm font-semibold text-white shadow-sm transition hover:bg-emerald-700 disabled:cursor-not-allowed disabled:opacity-50"
+                  >
+                    {publishing ? 'Publishing…' : 'Save & publish'}
+                  </button>
+                ) : null}
                 {!isNew && selectedId ? (
                   <button
                     type="button"
                     onClick={handleDiscard}
-                    disabled={saving || !isDirty}
+                    disabled={saving || publishing || !isDirty}
                     className="rounded-xl border border-gray-200 bg-white px-4 py-2.5 text-sm font-medium text-gray-700 shadow-sm transition hover:bg-gray-50 disabled:cursor-not-allowed disabled:opacity-45"
                   >
                     Discard
@@ -584,7 +730,7 @@ export default function PosterAutomationAdminPage() {
                   <button
                     type="button"
                     onClick={handleDelete}
-                    disabled={saving}
+                    disabled={saving || publishing}
                     className="inline-flex items-center gap-1.5 rounded-xl border border-red-200 bg-red-50/80 px-3 py-2.5 text-sm font-medium text-red-700 transition hover:bg-red-100 disabled:opacity-50"
                   >
                     <FiTrash2 className="h-4 w-4" aria-hidden />
@@ -600,34 +746,32 @@ export default function PosterAutomationAdminPage() {
                   <h3 className="text-xs font-semibold uppercase tracking-wide text-emerald-900/80">Publishing</h3>
                   {isNew || !selectedId ? (
                     <p className="mt-1.5 text-sm leading-relaxed text-emerald-900/80">
-                      <strong className="font-semibold text-emerald-950">Save this template</strong> (use <span className="font-medium">Save</span> above) to unlock publishing. Only saved templates can go live at a{' '}
-                      <code className="rounded bg-white/80 px-1 py-0.5 font-mono text-[0.8125rem] text-emerald-950">/p/…</code> URL.
+                      <strong className="font-semibold text-emerald-950">Save this template</strong> first, then use{' '}
+                      <span className="font-medium">Save &amp; publish</span> or <span className="font-medium">Publish</span> below
+                      so the public <code className="rounded bg-white/80 px-1 py-0.5 font-mono text-[0.8125rem] text-emerald-950">/p/…</code> URL
+                      loads this poster for visitors.
                     </p>
                   ) : (
                     <p className="mt-1.5 text-sm text-slate-600">
                       {draft.published
-                        ? 'This template is live. Unpublish to hide it from the public page; visitors will get a “not found” until you publish again.'
-                        : 'Publishing makes this design available at your public URL. Save any edits first, then publish.'}
+                        ? 'This template is live at your public URL. Unpublish to hide it from the public page.'
+                        : 'Publishing saves any pending edits and makes this design available at your public URL.'}
                     </p>
                   )}
                 </div>
                 <div className="flex shrink-0 flex-wrap items-center gap-2">
                   <button
                     type="button"
-                    onClick={handlePublish}
-                    disabled={
-                      saving || publishing || isNew || !selectedId || !publishActionsEnabled || draft.published
-                    }
+                    onClick={() => void runPublishFlow()}
+                    disabled={saving || publishing || !canPublishPrimary}
                     title={
                       isNew || !selectedId
-                        ? 'Save the template first'
-                        : isDirty
-                          ? 'Save changes before publishing'
-                          : !routeOkForPublic
-                            ? 'Use a route starting with /p/'
-                            : !draft.svgTemplate.trim()
-                              ? 'Add an SVG first'
-                              : undefined
+                        ? 'Save the template first (or use Save & publish)'
+                        : !publishPrereqsOk
+                          ? 'Use a route starting with /p/ and add an SVG'
+                          : draft.published
+                            ? 'Already published'
+                            : undefined
                     }
                     className="inline-flex min-h-[2.75rem] min-w-[7.5rem] items-center justify-center gap-2 rounded-xl border border-emerald-300 bg-emerald-600 px-5 py-2.5 text-sm font-semibold text-white shadow-sm transition hover:bg-emerald-700 disabled:cursor-not-allowed disabled:opacity-50"
                   >
@@ -635,9 +779,14 @@ export default function PosterAutomationAdminPage() {
                   </button>
                   <button
                     type="button"
-                    onClick={handleUnpublish}
-                    disabled={
-                      saving || publishing || isNew || !selectedId || !publishActionsEnabled || !draft.published
+                    onClick={() => void handleUnpublish()}
+                    disabled={saving || publishing || !canUnpublishPrimary}
+                    title={
+                      isDirty
+                        ? 'Save or discard changes before unpublishing'
+                        : !draft.published
+                          ? 'Nothing to unpublish'
+                          : undefined
                     }
                     className="inline-flex min-h-[2.75rem] items-center justify-center rounded-xl border border-slate-300 bg-white px-5 py-2.5 text-sm font-medium text-slate-800 shadow-sm transition hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-50"
                   >
@@ -660,14 +809,14 @@ export default function PosterAutomationAdminPage() {
                     e.target.value = '';
                   }}
                 />
-                <button type="button" onClick={() => fileRef.current?.click()} disabled={loading || saving} className={toolBtn}>
+                <button type="button" onClick={() => fileRef.current?.click()} disabled={loading || saving || publishing} className={toolBtn}>
                   <FiUpload className="h-4 w-4 text-gray-500" aria-hidden />
                   Upload SVG
                 </button>
                 <button
                   type="button"
                   onClick={handleExportPng}
-                  disabled={exporting || !draft.svgTemplate.trim() || loading}
+                  disabled={exporting || !draft.svgTemplate.trim() || loading || publishing}
                   className={toolBtn}
                 >
                   <FiImage className="h-4 w-4 text-gray-500" aria-hidden />
@@ -676,7 +825,7 @@ export default function PosterAutomationAdminPage() {
                 <button
                   type="button"
                   onClick={handleExportPdf}
-                  disabled={exporting || !draft.svgTemplate.trim() || loading}
+                  disabled={exporting || !draft.svgTemplate.trim() || loading || publishing}
                   className={toolBtn}
                 >
                   <FiFileText className="h-4 w-4 text-gray-500" aria-hidden />
@@ -686,7 +835,7 @@ export default function PosterAutomationAdminPage() {
               <button
                 type="button"
                 onClick={() => void loadList()}
-                disabled={loading || saving}
+                disabled={loading || saving || publishing}
                 className="inline-flex items-center justify-center gap-2 self-start rounded-xl border border-transparent px-2 py-2 text-sm font-medium text-gray-600 hover:bg-white hover:ring-1 hover:ring-gray-200 sm:self-auto"
               >
                 <FiRefreshCw className={`h-4 w-4 ${loading ? 'animate-spin' : ''}`} aria-hidden />

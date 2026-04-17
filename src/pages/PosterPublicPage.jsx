@@ -5,6 +5,7 @@ import { verifyPosterActivation } from '../utils/api';
 import { usePosterByRoute } from '../components/Posters/usePosterByRoute';
 import PosterSvgLayer from '../components/Posters/PosterSvgLayer';
 import PosterTextOverlays from '../components/Posters/PosterTextOverlays';
+import { getPosterHtml2canvasOptions } from '../utils/posterHtml2canvas';
 
 function parseSvgAspectRatio(svg) {
   if (!svg || typeof svg !== 'string') return 3 / 4;
@@ -85,12 +86,7 @@ export default function PosterPublicPage() {
     setExporting(true);
     try {
       const html2canvas = (await import('html2canvas')).default;
-      const canvas = await html2canvas(node, {
-        scale: 2,
-        useCORS: true,
-        backgroundColor: '#ffffff',
-        logging: false,
-      });
+      const canvas = await html2canvas(node, getPosterHtml2canvasOptions({ originalRoot: node }));
       const url = canvas.toDataURL('image/png');
       const a = document.createElement('a');
       a.href = url;
@@ -111,12 +107,7 @@ export default function PosterPublicPage() {
     try {
       const html2canvas = (await import('html2canvas')).default;
       const { jsPDF } = await import('jspdf');
-      const canvas = await html2canvas(node, {
-        scale: 2,
-        useCORS: true,
-        backgroundColor: '#ffffff',
-        logging: false,
-      });
+      const canvas = await html2canvas(node, getPosterHtml2canvasOptions({ originalRoot: node }));
       const w = canvas.width;
       const h = canvas.height;
       const pdf = new jsPDF({
