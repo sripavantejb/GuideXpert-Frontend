@@ -87,6 +87,9 @@ export async function capturePosterToCanvas(liveRoot, frameSize) {
   clone.style.minHeight = `${fh}px`;
   clone.style.borderRadius = '0';
   clone.style.boxShadow = 'none';
+  /** Preview uses transform:scale(); html2canvas often captures a blank or wrong layer if scale remains. */
+  clone.style.transform = 'none';
+  clone.style.transformOrigin = 'top left';
 
   host.appendChild(clone);
   document.body.appendChild(host);

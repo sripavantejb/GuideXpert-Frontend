@@ -21,7 +21,8 @@ import {
   unpublishPosterTemplate,
   setPosterMarketingFeatured,
 } from '../../../utils/adminApi';
-import { getPosterHtml2canvasOptions } from '../../../utils/posterHtml2canvas';
+import { getDesignFrameSize } from '../../../utils/posterExportDimensions';
+import { capturePosterToCanvas } from '../../../utils/posterExportCapture';
 import { clearPosterRouteCache } from '../../../components/Posters/usePosterByRoute';
 import DashboardLayout from '../../../components/Admin/DashboardLayout';
 import PosterEditorCanvas from './PosterEditorCanvas';
@@ -177,6 +178,8 @@ export default function PosterAutomationAdminPage() {
     }),
     []
   );
+
+  const designFrame = useMemo(() => getDesignFrameSize(draft.svgTemplate), [draft.svgTemplate]);
 
   const publicUrl = useMemo(() => {
     const path = normalizeRouteClient(draft.route);
@@ -551,8 +554,10 @@ export default function PosterAutomationAdminPage() {
     if (!(node instanceof HTMLElement)) return;
     setExporting(true);
     try {
-      const html2canvas = (await import('html2canvas')).default;
-      const canvas = await html2canvas(node, getPosterHtml2canvasOptions({ originalRoot: node }));
+      const canvas = await capturePosterToCanvas(node, {
+        width: designFrame.width,
+        height: designFrame.height,
+      });
       const url = canvas.toDataURL('image/png');
       const a = document.createElement('a');
       a.href = url;
@@ -578,9 +583,11 @@ export default function PosterAutomationAdminPage() {
     if (!(node instanceof HTMLElement)) return;
     setExporting(true);
     try {
-      const html2canvas = (await import('html2canvas')).default;
       const { jsPDF } = await import('jspdf');
-      const canvas = await html2canvas(node, getPosterHtml2canvasOptions({ originalRoot: node }));
+      const canvas = await capturePosterToCanvas(node, {
+        width: designFrame.width,
+        height: designFrame.height,
+      });
       const w = canvas.width;
       const h = canvas.height;
       const pdf = new jsPDF({
