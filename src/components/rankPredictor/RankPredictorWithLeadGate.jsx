@@ -10,6 +10,7 @@ import {
   verifyOtp,
   saveStep1,
   saveStep2,
+  saveRankPredictorPrediction,
 } from '../../utils/api';
 import {
   RANK_PREDICTOR_LEAD_OCCUPATION,
@@ -272,6 +273,15 @@ export default function RankPredictorWithLeadGate({
           fullName: fullName.trim(),
           otpVerified: true,
           capturedAt: new Date().toISOString(),
+        });
+        void saveRankPredictorPrediction(normalizedPhone, {
+          examId: exam.id,
+          predictedValue: normalized.predictedValue,
+          range: normalized.range,
+          metricLabel: normalized.metricLabel,
+          message: normalized.message,
+        }).then((r) => {
+          if (!r?.success) console.warn('[RankPredictorWithLeadGate] saveRankPredictorPrediction:', r?.message);
         });
       }
       if (variant === 'public') {

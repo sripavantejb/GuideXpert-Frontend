@@ -88,6 +88,24 @@ function formatRankPredictorLead(lead) {
   if (!r || typeof r !== 'object') return '';
   const parts = [r.examId, r.score != null && r.score !== '' ? String(r.score) : ''];
   if (r.difficulty) parts.push(r.difficulty);
+  if (r.predictedValue !== undefined && r.predictedValue !== null && r.predictedValue !== '') {
+    const pv =
+      typeof r.predictedValue === 'number' ? r.predictedValue.toLocaleString() : String(r.predictedValue);
+    parts.push(`Predicted: ${pv}`);
+  }
+  if (
+    r.rangeLow != null &&
+    r.rangeHigh != null &&
+    Number.isFinite(Number(r.rangeLow)) &&
+    Number.isFinite(Number(r.rangeHigh))
+  ) {
+    parts.push(`Range: ${Number(r.rangeLow).toLocaleString()}–${Number(r.rangeHigh).toLocaleString()}`);
+  }
+  if (r.metricLabel) parts.push(r.metricLabel);
+  if (r.predictionMessage) {
+    const msg = String(r.predictionMessage);
+    parts.push(msg.length > 100 ? `${msg.slice(0, 100)}…` : msg);
+  }
   return parts.filter(Boolean).join(' · ');
 }
 
@@ -520,6 +538,12 @@ export default function Leads({ organicOnly = false }) {
                         <div><dt className="text-gray-500">Occupation</dt><dd className="text-gray-900">{detailLead.occupation || '—'}</dd></div>
                         {formatRankPredictorLead(detailLead) ? (
                           <div><dt className="text-gray-500">Rank predictor</dt><dd className="text-gray-900 wrap-break-word">{formatRankPredictorLead(detailLead)}</dd></div>
+                        ) : null}
+                        {detailLead.rankPredictorLead?.predictedAt ? (
+                          <div>
+                            <dt className="text-gray-500">Prediction saved at</dt>
+                            <dd className="text-gray-900">{formatDate(detailLead.rankPredictorLead.predictedAt)}</dd>
+                          </div>
                         ) : null}
                         <div><dt className="text-gray-500">Email</dt><dd className="text-gray-900">{detailLead.email || '—'}</dd></div>
                         <div><dt className="text-gray-500">Status</dt><dd><span className={`inline-flex px-2 py-0.5 rounded text-xs font-medium ${detailLead.applicationStatus === 'completed' ? 'bg-green-100 text-green-800' : detailLead.applicationStatus === 'registered' ? 'bg-blue-100 text-blue-800' : 'bg-amber-100 text-amber-800'}`}>{detailLead.applicationStatus || '—'}</span></dd></div>
