@@ -61,7 +61,7 @@ export default function Reports() {
         <div className="bg-white rounded-xl border border-gray-200 shadow-sm p-5">
           <h4 className="text-sm font-semibold text-gray-700 mb-4">Sessions Over Time</h4>
           <div className="h-64 min-h-[240px] w-full min-w-0">
-            <ResponsiveContainer width="100%" height="100%" minHeight={240}>
+            <ResponsiveContainer width="100%" height="100%" minWidth={0} minHeight={240}>
               <LineChart data={performanceData} margin={{ top: 5, right: 10, left: 0, bottom: 0 }}>
                 <CartesianGrid strokeDasharray="3 3" stroke="#f1f5f9" />
                 <XAxis dataKey="month" tick={{ fontSize: 12, fill: '#6b7280' }} axisLine={false} tickLine={false} />
@@ -76,7 +76,7 @@ export default function Reports() {
         <div className="bg-white rounded-xl border border-gray-200 shadow-sm p-5">
           <h4 className="text-sm font-semibold text-gray-700 mb-4">Admissions by Month</h4>
           <div className="h-64 min-h-[240px] w-full min-w-0">
-            <ResponsiveContainer width="100%" height="100%" minHeight={240}>
+            <ResponsiveContainer width="100%" height="100%" minWidth={0} minHeight={240}>
               <BarChart data={performanceData} margin={{ top: 5, right: 10, left: 0, bottom: 0 }}>
                 <CartesianGrid strokeDasharray="3 3" stroke="#f1f5f9" />
                 <XAxis dataKey="month" tick={{ fontSize: 12, fill: '#6b7280' }} axisLine={false} tickLine={false} />

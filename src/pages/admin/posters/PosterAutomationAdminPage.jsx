@@ -29,6 +29,7 @@ import PosterEditorCanvas from './PosterEditorCanvas';
 import PosterListSidebar from './PosterListSidebar';
 import PosterElementToolbar from './PosterElementToolbar';
 import { normalizeHexForCss, normalizeOverlayFieldColors } from '../../../utils/posterColor';
+import { buildOverlayFieldPayload } from '../../../utils/posterTemplatePayload';
 import { trackPosterDownloadBeacon } from '../../../utils/api';
 
 function normalizeRouteClient(route) {
@@ -68,6 +69,15 @@ function isPosterAdmin404(res) {
 const POSTER_API_404_SAVE_HINT =
   'The poster API returned 404. Fix the backend/proxy (see the yellow notice above); Save cannot reach the server until then.';
 
+function formatPosterSaveError(res) {
+  const code = res?.data?.code;
+  let base = res?.message || 'Save failed';
+  if (code === 'POSTER_SVG_EMPTY' && Array.isArray(res?.data?.bodyKeys)) {
+    base += ` — server: hasSvgKey=${String(res.data.hasSvgKey)}, keys=[${res.data.bodyKeys.join(', ')}]`;
+  }
+  return code ? `${base} [${code}]` : base;
+}
+
 function cloneDraftFromPoster(p) {
   const nameSrc =
     p.nameField && typeof p.nameField === 'object' ? { ...p.nameField } : defaultNameField();
@@ -76,7 +86,7 @@ function cloneDraftFromPoster(p) {
   return {
     name: p.name || '',
     route: p.route || '/p/my-campaign',
-    svgTemplate: p.svgTemplate || '',
+    svgTemplate: p.svgTemplate == null ? '' : String(p.svgTemplate),
     nameField: normalizeOverlayFieldColors(nameSrc),
     mobileField: normalizeOverlayFieldColors(mobileSrc),
     published: !!p.published,
@@ -100,6 +110,14 @@ function normalizeOverlayFieldForCompare(f) {
   };
 }
 
+function normalizeNameFieldForCompare(f) {
+  const base = normalizeOverlayFieldForCompare(f);
+  const xe = Number(f?.xEnd);
+  const xEnd =
+    Number.isFinite(xe) && xe > base.x ? Math.round(xe * 1000) / 1000 : null;
+  return { ...base, xEnd };
+}
+
 function posterDraftsEqual(a, b) {
   if (a === b) return true;
   if (!a || !b) return false;
@@ -108,8 +126,8 @@ function posterDraftsEqual(a, b) {
   if (a.svgTemplate !== b.svgTemplate) return false;
   if (!!a.published !== !!b.published) return false;
   if (!!a.marketingFeatured !== !!b.marketingFeatured) return false;
-  const na = normalizeOverlayFieldForCompare(a.nameField);
-  const nb = normalizeOverlayFieldForCompare(b.nameField);
+  const na = normalizeNameFieldForCompare(a.nameField);
+  const nb = normalizeNameFieldForCompare(b.nameField);
   const ma = normalizeOverlayFieldForCompare(a.mobileField);
   const mb = normalizeOverlayFieldForCompare(b.mobileField);
   return (
@@ -119,6 +137,7 @@ function posterDraftsEqual(a, b) {
     na.color === nb.color &&
     na.fontWeight === nb.fontWeight &&
     na.textAlign === nb.textAlign &&
+    na.xEnd === nb.xEnd &&
     ma.x === mb.x &&
     ma.y === mb.y &&
     ma.fontSize === mb.fontSize &&
@@ -283,11 +302,12 @@ export default function PosterAutomationAdminPage() {
       setError('Frontend route must start with /p/ (for example /p/winter-drive) so visitors get a matching public page.');
       return { success: false };
     }
-    if (!draft.svgTemplate.trim()) {
+    const svgForCheck = draft.svgTemplate == null ? '' : String(draft.svgTemplate);
+    if (!svgForCheck.trim()) {
       setError('Upload an SVG template first.');
       return { success: false };
     }
-    if (!/<svg[\s>/]/i.test(draft.svgTemplate)) {
+    if (!/<svg[\s>/]/i.test(svgForCheck)) {
       setError('SVG template must contain an <svg> root.');
       return { success: false };
     }
@@ -295,12 +315,19 @@ export default function PosterAutomationAdminPage() {
     setSaving(true);
     setError('');
     try {
+      let svgNorm = svgForCheck;
+      if (svgNorm.charCodeAt(0) === 0xfeff) svgNorm = svgNorm.slice(1);
+      svgNorm = svgNorm.trim();
+      if (!svgNorm.length) {
+        setError('SVG template became empty after normalization. Re-upload the file.');
+        return { success: false };
+      }
       const payload = {
         name: draft.name.trim(),
         route: routeNorm,
-        svgTemplate: draft.svgTemplate,
-        nameField: draft.nameField,
-        mobileField: draft.mobileField,
+        svgTemplate: svgNorm,
+        nameField: buildOverlayFieldPayload(draft.nameField, 'name'),
+        mobileField: buildOverlayFieldPayload(draft.mobileField, 'mobile'),
       };
       try {
         // Create when there is no server row yet (new template, or first-time edits without clicking "New template")
@@ -311,7 +338,7 @@ export default function PosterAutomationAdminPage() {
               setPosterApiMisconfigured(true);
               setError(POSTER_API_404_SAVE_HINT);
             } else {
-              setError(res.message || 'Save failed');
+              setError(formatPosterSaveError(res));
             }
             return { success: false };
           }
@@ -336,7 +363,7 @@ export default function PosterAutomationAdminPage() {
             setPosterApiMisconfigured(true);
             setError(POSTER_API_404_SAVE_HINT);
           } else {
-            setError(res.message || 'Save failed');
+            setError(formatPosterSaveError(res));
           }
           return { success: false };
         }
@@ -529,14 +556,25 @@ export default function PosterAutomationAdminPage() {
   };
 
   const onSvgFile = (file) => {
-    if (!file || file.type !== 'image/svg+xml') {
+    if (!file) {
+      setError('Please choose a file.');
+      return;
+    }
+    const lower = (file.name || '').toLowerCase();
+    const mimeOk =
+      file.type === 'image/svg+xml' ||
+      file.type === 'image/svg' ||
+      file.type === '' ||
+      file.type === 'application/octet-stream';
+    if (!lower.endsWith('.svg') && !mimeOk) {
       setError('Please choose an .svg file.');
       return;
     }
     const reader = new FileReader();
     reader.onload = () => {
-      const text = typeof reader.result === 'string' ? reader.result : '';
-      setDraft((d) => ({ ...d, svgTemplate: text }));
+      let text = typeof reader.result === 'string' ? reader.result : '';
+      if (text.charCodeAt(0) === 0xfeff) text = text.slice(1);
+      setDraft((d) => ({ ...d, svgTemplate: text.trim() }));
       setError('');
     };
     reader.onerror = () => setError('Failed to read file.');

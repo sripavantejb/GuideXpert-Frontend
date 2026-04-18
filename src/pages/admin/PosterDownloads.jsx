@@ -472,7 +472,7 @@ export default function PosterDownloads() {
           )}
         </div>
         <div className="px-5 py-4">
-          <div className="h-52 w-full">
+          <div className="h-52 w-full min-w-0">
             {loading ? (
               <div className="h-full flex items-center justify-center">
                 <div className="w-8 h-8 rounded-full border-2 border-[#003366] border-t-transparent animate-spin" />
@@ -483,7 +483,7 @@ export default function PosterDownloads() {
                 <p className="text-sm">No downloads in this range</p>
               </div>
             ) : (
-              <ResponsiveContainer width="100%" height="100%">
+              <ResponsiveContainer width="100%" height="100%" minWidth={0} minHeight={200}>
                 <BarChart data={chartData} margin={{ top: 4, right: 4, left: 0, bottom: 0 }} barCategoryGap="25%">
                   <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#f1f5f9" />
                   <XAxis

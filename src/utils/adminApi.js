@@ -20,7 +20,7 @@ export function setStoredToken(token) {
 async function adminRequest(endpoint, options = {}, token = getStoredToken()) {
   const url = `${getApiBaseUrl()}/admin${endpoint}`;
   const headers = {
-    'Content-Type': 'application/json',
+    'Content-Type': 'application/json; charset=utf-8',
     ...options.headers,
   };
   if (token) headers.Authorization = `Bearer ${token}`;

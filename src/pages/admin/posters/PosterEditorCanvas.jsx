@@ -11,6 +11,25 @@ const MIN_PREVIEW_WIDTH_PX = 120;
 
 const GUIDE_THRESHOLD = 1.8;
 
+/** Shows where the name text’s right edge is capped (corridor mode); admin preview only. */
+function NameEndXGuide({ xEndPct }) {
+  if (xEndPct == null || !Number.isFinite(xEndPct)) return null;
+  return (
+    <div className="pointer-events-none absolute inset-0 z-[14]" aria-hidden>
+      <div
+        className="absolute top-0 bottom-0 w-0 border-l-2 border-dashed border-amber-500"
+        style={{ left: `${xEndPct}%` }}
+      />
+      <div
+        className="absolute top-1 z-[1] -translate-x-1/2 rounded bg-amber-500 px-1.5 py-0.5 text-center text-[0.5625rem] font-semibold uppercase tracking-wide text-white shadow-sm ring-1 ring-amber-600/30"
+        style={{ left: `${xEndPct}%` }}
+      >
+        End X
+      </div>
+    </div>
+  );
+}
+
 function GuideLines({ verticalPcts, horizontalPcts }) {
   return (
     <div className="pointer-events-none absolute inset-0 z-[15]" aria-hidden>
@@ -93,6 +112,16 @@ const PosterEditorCanvas = forwardRef(function PosterEditorCanvas(
     return { v: [...v], h: [...h] };
   }, [dragging, nameField, mobileField]);
 
+  /** Same validity as corridor layout in PosterTextOverlays (xEnd > x). */
+  const nameEndXGuidePct = useMemo(() => {
+    const xf = nameField;
+    if (!xf || typeof xf !== 'object') return null;
+    const x = Number(xf.x);
+    const xe = Number(xf.xEnd);
+    if (!Number.isFinite(x) || !Number.isFinite(xe) || xe <= x) return null;
+    return Math.round(xe * 100) / 100;
+  }, [nameField]);
+
   const handleDragPosition = (key, x, y) => {
     setDragging({ key, x, y });
     onUpdateFieldPosition(key, x, y);
@@ -169,6 +198,7 @@ const PosterEditorCanvas = forwardRef(function PosterEditorCanvas(
                 svgTemplate={svgTemplate}
                 className="absolute inset-0 h-full w-full overflow-hidden [&>svg]:block [&>svg]:h-full [&>svg]:w-full"
               />
+              <NameEndXGuide xEndPct={nameEndXGuidePct} />
               {dragging && <GuideLines verticalPcts={guideLines.v} horizontalPcts={guideLines.h} />}
               <PosterTextOverlays
                 nameField={nameField}

@@ -34,7 +34,7 @@ function AlignmentPills({ value, onChange }) {
   );
 }
 
-function OverlaySection({ title, icon, field, onChange, accentClass }) {
+function OverlaySection({ title, icon, field, onChange, accentClass, showEndX = false }) {
   const [colorText, setColorText] = useState(() => field.color ?? '#111827');
   useEffect(() => {
     // Sync hex text when parent updates (load template, native color picker).
@@ -89,6 +89,31 @@ function OverlaySection({ title, icon, field, onChange, accentClass }) {
               />
             </label>
           </div>
+          {showEndX ? (
+            <label className="mt-2 block">
+              <FieldLabel hint="Right edge cap (%). Live preview shows an amber dashed line. Leave empty for multi-line (legacy).">
+                End X (%)
+              </FieldLabel>
+              <input
+                type="number"
+                min={0}
+                max={100}
+                step={0.1}
+                value={field.xEnd != null && Number.isFinite(Number(field.xEnd)) ? field.xEnd : ''}
+                onChange={(e) => {
+                  const raw = e.target.value;
+                  if (raw === '') {
+                    onChange({ xEnd: undefined });
+                    return;
+                  }
+                  const n = Number(raw);
+                  onChange({ xEnd: Number.isFinite(n) ? n : undefined });
+                }}
+                placeholder="Optional"
+                className="mt-1 w-full rounded-xl border border-gray-200 px-3 py-2 text-sm tabular-nums focus:border-primary-blue-400 focus:outline-none focus:ring-2 focus:ring-primary-blue-400/20"
+              />
+            </label>
+          ) : null}
         </div>
 
         <div className="grid grid-cols-2 gap-3">
@@ -168,6 +193,7 @@ export default function PosterElementToolbar({ nameField, mobileField, onChangeN
         field={nameField}
         onChange={onChangeName}
         accentClass="border-l-4 border-l-violet-400/90"
+        showEndX
       />
       <OverlaySection
         title="Mobile number"
