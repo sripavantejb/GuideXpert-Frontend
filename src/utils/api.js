@@ -294,18 +294,24 @@ export const saveStep2 = async (phone, utm) => {
 /**
  * Persist rank predictor model output on the lead (organic student flow). POST /save-rank-predictor-prediction
  * @param {string} phone - 10-digit normalized phone
- * @param {{ examId: string, predictedValue?: number|string, range?: { low?: number, high?: number }, metricLabel?: string, message?: string }} payload
+ * @param {{ examId: string, predictedValue?: number|string, range?: { low?: number, high?: number }|string, metricLabel?: string, message?: string }} payload
  */
 export const saveRankPredictorPrediction = async (phone, payload) => {
   const digits = String(phone || '').replace(/\D/g, '');
   const p = digits.length >= 10 ? digits.slice(-10) : digits;
+  const rangeOut =
+    payload.range !== undefined && payload.range !== null && payload.range !== ''
+      ? typeof payload.range === 'object' && !Array.isArray(payload.range)
+        ? payload.range
+        : String(payload.range)
+      : undefined;
   const body = {
     phone: p,
     examId: payload.examId,
     ...(payload.predictedValue !== undefined && payload.predictedValue !== null
       ? { predictedValue: payload.predictedValue }
       : {}),
-    ...(payload.range && typeof payload.range === 'object' ? { range: payload.range } : {}),
+    ...(rangeOut !== undefined ? { range: rangeOut } : {}),
     ...(payload.metricLabel ? { metricLabel: payload.metricLabel } : {}),
     ...(payload.message ? { message: payload.message } : {}),
   };

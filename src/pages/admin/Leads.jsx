@@ -109,6 +109,16 @@ function formatRankPredictorLead(lead) {
   return parts.filter(Boolean).join(' · ');
 }
 
+/** Short label + full string for hover (organic leads table). */
+function rankPredictionTablePreview(lead) {
+  const full = formatRankPredictorLead(lead);
+  if (!full) return { display: '—', title: '' };
+  return {
+    display: full.length > 90 ? `${full.slice(0, 87)}…` : full,
+    title: full,
+  };
+}
+
 function getLeadCellValue(lead, key) {
   if (key === 'rankPredictorLead') return formatRankPredictorLead(lead);
   const v = lead[key];
@@ -125,6 +135,7 @@ function getLeadCellValue(lead, key) {
  * @param {{ organicOnly?: boolean }} props - When true, list is scoped to student rank predictor organic leads (utm_content).
  */
 export default function Leads({ organicOnly = false }) {
+  const leadTableColCount = organicOnly ? 15 : 14;
   const { logout } = useAuth();
   const { dateRange, leadListFilters, setLeadListFilters } = useAdminDateRange();
   const [searchParams, setSearchParams] = useSearchParams();
@@ -423,7 +434,7 @@ export default function Leads({ organicOnly = false }) {
       )}
 
       {loading ? (
-        <TableSkeleton rows={8} cols={14} />
+        <TableSkeleton rows={8} cols={leadTableColCount} />
       ) : (
         <>
           <div className="overflow-x-auto rounded-lg border border-gray-200 bg-white shadow-sm mb-4">
@@ -433,6 +444,11 @@ export default function Leads({ organicOnly = false }) {
                   <th className="px-3 py-2 font-semibold text-gray-700 text-xs uppercase tracking-wider">Name</th>
                   <th className="px-3 py-2 font-semibold text-gray-700 text-xs uppercase tracking-wider">Phone</th>
                   <th className="px-3 py-2 font-semibold text-gray-700 text-xs uppercase tracking-wider">Occupation</th>
+                  {organicOnly ? (
+                    <th className="px-3 py-2 font-semibold text-gray-700 text-xs uppercase tracking-wider min-w-[140px]">
+                      Rank prediction
+                    </th>
+                  ) : null}
                   <th className="px-3 py-2 font-semibold text-gray-700 text-xs uppercase tracking-wider text-center">OTP</th>
                   <th className="px-3 py-2 font-semibold text-gray-700 text-xs uppercase tracking-wider text-center whitespace-nowrap">Slot</th>
                   <th className="px-3 py-2 font-semibold text-gray-700 text-xs uppercase tracking-wider">Status</th>
@@ -449,12 +465,14 @@ export default function Leads({ organicOnly = false }) {
               <tbody className="divide-y divide-gray-100">
                 {leads.length === 0 ? (
                   <tr>
-                    <td colSpan={14} className="px-3 py-8 text-center text-gray-500 text-sm">
+                    <td colSpan={leadTableColCount} className="px-3 py-8 text-center text-gray-500 text-sm">
                       No leads found
                     </td>
                   </tr>
                 ) : (
-                  leads.map((lead, i) => (
+                  leads.map((lead, i) => {
+                    const predPreview = organicOnly ? rankPredictionTablePreview(lead) : null;
+                    return (
                     <tr
                       key={lead.id}
                       className={`hover:bg-primary-blue-50/50 transition-colors ${i % 2 === 0 ? 'bg-white' : 'bg-gray-50/60'}`}
@@ -462,6 +480,14 @@ export default function Leads({ organicOnly = false }) {
                       <td className="px-3 py-2 align-middle min-w-[120px] text-sm">{lead.fullName || '—'}</td>
                       <td className="px-3 py-2 align-middle whitespace-nowrap text-sm">{lead.phone || '—'}</td>
                       <td className="px-3 py-2 align-middle min-w-[100px] text-sm">{lead.occupation || '—'}</td>
+                      {organicOnly && predPreview ? (
+                        <td
+                          className="px-3 py-2 align-middle max-w-[min(280px,28vw)] text-xs text-gray-700"
+                          title={predPreview.title}
+                        >
+                          {predPreview.display}
+                        </td>
+                      ) : null}
                       <td className="px-3 py-2 align-middle text-center text-sm">{lead.otpVerified ? 'Yes' : 'No'}</td>
                       <td className="px-3 py-2 align-middle text-center whitespace-nowrap text-gray-600 text-sm">{slotLabel(lead)}</td>
                       <td className="px-3 py-2 align-middle">
@@ -480,7 +506,12 @@ export default function Leads({ organicOnly = false }) {
                       <td className="px-3 py-2 align-middle text-center text-gray-600 text-sm">{lead.currentStep ?? '—'}</td>
                       <td className="px-3 py-2 align-middle text-gray-600 max-w-[160px] truncate text-sm" title={lead.email || ''}>{lead.email || '—'}</td>
                       <td className="px-3 py-2 align-middle text-gray-600 text-sm">{lead.interestLevel || '—'}</td>
-                      <td className="px-3 py-2 align-middle text-gray-600 text-sm">{lead.utm_content || '—'}</td>
+                      <td
+                        className="px-3 py-2 align-middle max-w-[140px] truncate text-gray-600 text-sm"
+                        title={lead.utm_content || ''}
+                      >
+                        {lead.utm_content || '—'}
+                      </td>
                       <td className="px-3 py-2 align-middle text-gray-600 text-sm">{lead.utm_source || '—'}</td>
                       <td className="px-3 py-2 align-middle whitespace-nowrap text-gray-600 text-xs">{formatDate(lead.createdAt)}</td>
                       <td className="px-3 py-2 align-middle whitespace-nowrap text-gray-600 text-xs">{formatDate(lead.updatedAt)}</td>
@@ -495,7 +526,8 @@ export default function Leads({ organicOnly = false }) {
                         </button>
                       </td>
                     </tr>
-                  ))
+                    );
+                  })
                 )}
               </tbody>
             </table>

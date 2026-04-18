@@ -46,6 +46,8 @@ export default function RankPredictorWithLeadGate({
   const [predicting, setPredicting] = useState(false);
   const [numericScore, setNumericScore] = useState(/** @type {number | null} */ (null));
   const [publicResult, setPublicResult] = useState(null);
+  /** Shown when prediction could not be persisted for admin (student flow). */
+  const [predictionSyncError, setPredictionSyncError] = useState('');
 
   const otpInputRefs = useRef(/** @type {(HTMLInputElement | null)[]} */ ([]));
 
@@ -68,6 +70,7 @@ export default function RankPredictorWithLeadGate({
     setLeadError('');
     setOtpError('');
     setSuccessMessage('');
+    setPredictionSyncError('');
     onResultChange(null);
   };
 
@@ -243,6 +246,7 @@ export default function RankPredictorWithLeadGate({
         return;
       }
 
+      setPredictionSyncError('');
       setPredicting(true);
       const payload = { examId: exam.id, score: numericScore };
       if (exam.requiresDifficulty) {
@@ -274,15 +278,18 @@ export default function RankPredictorWithLeadGate({
           otpVerified: true,
           capturedAt: new Date().toISOString(),
         });
-        void saveRankPredictorPrediction(normalizedPhone, {
+        const syncRes = await saveRankPredictorPrediction(normalizedPhone, {
           examId: exam.id,
           predictedValue: normalized.predictedValue,
           range: normalized.range,
           metricLabel: normalized.metricLabel,
           message: normalized.message,
-        }).then((r) => {
-          if (!r?.success) console.warn('[RankPredictorWithLeadGate] saveRankPredictorPrediction:', r?.message);
         });
+        if (!syncRes?.success) {
+          const msg = syncRes?.message || 'Could not save prediction for admin.';
+          console.warn('[RankPredictorWithLeadGate] saveRankPredictorPrediction:', msg);
+          setPredictionSyncError(msg);
+        }
       }
       if (variant === 'public') {
         setPublicResult({
@@ -600,6 +607,11 @@ export default function RankPredictorWithLeadGate({
           <p className={isStudent ? 'text-base font-black text-[#0F172A]' : 'text-lg font-semibold text-gray-900'}>
             {isStudent ? 'Your prediction is ready — check the results panel.' : 'Your prediction is ready.'}
           </p>
+          {isStudent && predictionSyncError ? (
+            <p className="mt-3 rounded-[10px] border-2 border-amber-300 bg-amber-50 px-3 py-2 text-sm font-semibold text-amber-900">
+              Admin could not save this prediction ({predictionSyncError}). If this persists, contact support with your phone number.
+            </p>
+          ) : null}
           {!isStudent && publicResult && <ResultCard result={publicResult} />}
           {resultActions}
         </div>
