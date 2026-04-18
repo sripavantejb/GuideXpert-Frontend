@@ -15,6 +15,7 @@ import {
   RANK_PREDICTOR_LEAD_OCCUPATION,
   RANK_PREDICTOR_LEAD_UTM,
 } from '../../utils/rankPredictorLeadConstants';
+import { saveOrganicRankLeadSnapshot } from '../../utils/organicRankLeadLocal';
 import ResultCard from './ResultCard';
 
 export default function RankPredictorWithLeadGate({
@@ -25,6 +26,8 @@ export default function RankPredictorWithLeadGate({
   headerSlot = null,
 }) {
   const isStudent = variant === 'student';
+  /** Logged-in counsellor portal: predict from score only (no OTP / lead capture). */
+  const isCounsellor = variant === 'counsellor';
 
   const [wizardStep, setWizardStep] = useState(/** @type {'marks' | 'lead' | 'result'} */ ('marks'));
   const [score, setScore] = useState('');
@@ -67,7 +70,44 @@ export default function RankPredictorWithLeadGate({
     onResultChange(null);
   };
 
-  const handleMarksNext = (e) => {
+  const runDirectPrediction = async (scoreValue) => {
+    setPredicting(true);
+    setMarksError('');
+    setLeadError('');
+    try {
+      const payload = { examId: exam.id, score: scoreValue };
+      if (exam.requiresDifficulty) {
+        payload.options = { difficulty };
+      }
+      const response = await predictRankPublic(payload);
+      if (!response.success) {
+        setMarksError(response.message || 'Could not generate prediction. Please try again.');
+        return;
+      }
+      const predicted = response.data || {};
+      const normalized = {
+        predictedValue: predicted.predictedValue,
+        range: predicted.range || null,
+        message: predicted.message,
+        metricLabel: predicted.metricLabel,
+      };
+      onResultChange(normalized);
+      setWizardStep('result');
+      setPublicResult({
+        predictedRank: normalized.predictedValue,
+        range: normalized.range,
+        message: normalized.message,
+        metricLabel: normalized.metricLabel,
+      });
+      setTimeout(() => resultsRef?.current?.scrollIntoView({ behavior: 'smooth', block: 'start' }), 60);
+    } catch (err) {
+      setMarksError(err.message || 'Something went wrong.');
+    } finally {
+      setPredicting(false);
+    }
+  };
+
+  const handleMarksNext = async (e) => {
     e.preventDefault();
     setMarksError('');
     const validation = validateRankPredictorScore(score, exam);
@@ -76,6 +116,10 @@ export default function RankPredictorWithLeadGate({
       return;
     }
     setNumericScore(validation.value);
+    if (isCounsellor) {
+      await runDirectPrediction(validation.value);
+      return;
+    }
     setWizardStep('lead');
   };
 
@@ -217,6 +261,19 @@ export default function RankPredictorWithLeadGate({
       };
       onResultChange(normalized);
       setWizardStep('result');
+      if (isStudent) {
+        const phoneDigits = normalizePhoneDigits(phone);
+        saveOrganicRankLeadSnapshot({
+          examId: exam.id,
+          examName: exam.name || exam.title || exam.id,
+          score: numericScore,
+          ...(exam.requiresDifficulty && difficulty ? { difficulty } : {}),
+          phoneLast4: phoneDigits.length >= 4 ? phoneDigits.slice(-4) : phoneDigits,
+          fullName: fullName.trim(),
+          otpVerified: true,
+          capturedAt: new Date().toISOString(),
+        });
+      }
       if (variant === 'public') {
         setPublicResult({
           predictedRank: normalized.predictedValue,
@@ -273,7 +330,11 @@ export default function RankPredictorWithLeadGate({
           <h2 className="text-lg font-bold text-gray-900 sm:text-xl">
             {exam.title || `${exam.name} Rank Predictor`}
           </h2>
-          <p className="mt-1 text-sm text-gray-600">Enter your score, then verify your phone to see your prediction.</p>
+          <p className="mt-1 text-sm text-gray-600">
+            {isCounsellor
+              ? 'Enter your score to see the predicted rank. No phone verification required in the counsellor portal.'
+              : 'Enter your score, then verify your phone to see your prediction.'}
+          </p>
         </div>
       )}
       <label className={isStudent ? 'text-sm font-semibold text-[#0F172A]' : 'block'}>
@@ -341,13 +402,14 @@ export default function RankPredictorWithLeadGate({
         )}
         <button
           type="submit"
+          disabled={isCounsellor && predicting}
           className={
             isStudent
               ? 'rounded-[12px] border-[3px] border-black bg-[#c7f36b] px-6 py-3 text-sm font-black text-[#0F172A] shadow-[4px_4px_0_#000] transition-all hover:-translate-y-0.5 hover:shadow-[6px_6px_0_#000]'
-              : 'w-full min-h-11 rounded-lg bg-primary-navy px-5 py-2.5 text-sm font-semibold text-white transition-colors hover:bg-primary-navy/90 sm:w-auto'
+              : 'w-full min-h-11 rounded-lg bg-primary-navy px-5 py-2.5 text-sm font-semibold text-white transition-colors hover:bg-primary-navy/90 disabled:opacity-60 sm:w-auto'
           }
         >
-          Next
+          {isCounsellor ? (predicting ? 'Predicting…' : 'Get prediction') : 'Next'}
         </button>
       </div>
     </form>

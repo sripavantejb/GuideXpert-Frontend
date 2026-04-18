@@ -2,7 +2,7 @@ import { createElement, useState, useMemo, useEffect } from 'react';
 import { useSidebarScrollbarActivity } from '../../hooks/useSidebarScrollbarActivity';
 import { Link, NavLink, Outlet, useLocation, useNavigate } from 'react-router-dom';
 import { HiMenu, HiX } from 'react-icons/hi';
-import { FiLayout, FiUsers, FiBarChart2, FiDownload, FiSettings, FiCalendar, FiVideo, FiFileText, FiBell, FiLink, FiClipboard, FiMessageSquare, FiBookOpen, FiImage, FiPhone, FiLayers } from 'react-icons/fi';
+import { FiLayout, FiUsers, FiBarChart2, FiDownload, FiSettings, FiCalendar, FiVideo, FiFileText, FiBell, FiLink, FiClipboard, FiMessageSquare, FiBookOpen, FiImage, FiPhone, FiLayers, FiTarget } from 'react-icons/fi';
 import { useAuth } from '../../hooks/useAuth';
 import { AdminDashboardProvider } from '../../contexts/AdminDashboardContext';
 import { useAdminDateRange } from '../../hooks/useAdminDateRange';
@@ -14,6 +14,7 @@ const navItems = [
   { to: '/admin/funnel-analytics', label: 'Funnel Analytics', icon: FiBarChart2, sectionKey: 'funnel-analytics' },
   { to: '/admin/certified-counsellors', label: 'Certified Counsellors', icon: FiUsers, sectionKey: 'certified-counsellors' },
   { to: '/admin/leads', label: 'Lead Funnel', icon: FiUsers, sectionKey: 'leads' },
+  { to: '/admin/organic-rank-leads', label: 'Organic rank leads', icon: FiTarget, sectionKey: 'leads' },
   { to: '/admin/analytics', label: 'Analytics', icon: FiBarChart2, sectionKey: 'analytics' },
   { to: '/admin/meeting-attendance', label: 'User Productivity', icon: FiVideo, sectionKey: 'meeting-attendance' },
   { to: '/admin/export', label: 'Export Data', icon: FiDownload, sectionKey: 'export' },

@@ -55,6 +55,8 @@ const CounsellorSessions = lazy(() => import('./pages/counsellor/Sessions'));
 const CounsellorMarketing = lazy(() => import('./pages/counsellor/Marketing'));
 /* Tools and Certificate loaded eagerly to avoid dynamic import chunk failures */
 import CounsellorTools from './pages/counsellor/Tools';
+import CounsellorRankPredictorHome from './pages/counsellor/CounsellorRankPredictorHome';
+import CounsellorExamPredictor from './pages/counsellor/CounsellorExamPredictor';
 import CounsellorCertificate from './pages/counsellor/Certificate';
 const CollegePredictorExams = lazy(() => import('./pages/counsellor/CollegePredictorExams'));
 const CollegePredictorPredict = lazy(() => import('./pages/counsellor/CollegePredictorPredict'));
@@ -324,6 +326,7 @@ function App() {
             <Route path="funnel-analytics" element={<FunnelAnalytics />} />
             <Route path="certified-counsellors" element={<CertifiedCounsellors />} />
             <Route path="leads" element={<Leads />} />
+            <Route path="organic-rank-leads" element={<Leads organicOnly />} />
             <Route path="lead-status" element={<LeadStatus />} />
             <Route path="analytics" element={<Analytics />} />
             <Route path="slots" element={<Slots />} />
@@ -354,6 +357,8 @@ function App() {
             <Route path="admissions" element={<ErrorBoundary><Suspense fallback={<div className="h-64 flex items-center justify-center p-4"><PageSkeleton /></div>}><CounsellorAdmissions /></Suspense></ErrorBoundary>} />
             <Route path="sessions" element={<ErrorBoundary><Suspense fallback={<div className="h-64 flex items-center justify-center p-4"><PageSkeleton /></div>}><CounsellorSessions /></Suspense></ErrorBoundary>} />
             <Route path="tools" element={<ErrorBoundary><CounsellorTools /></ErrorBoundary>} />
+            <Route path="tools/rank-predictor" element={<ErrorBoundary><CounsellorRankPredictorHome /></ErrorBoundary>} />
+            <Route path="tools/rank-predictor/:examId" element={<ErrorBoundary><CounsellorExamPredictor /></ErrorBoundary>} />
             <Route path="tools/college-predictor" element={<ErrorBoundary><Suspense fallback={<div className="h-64 flex items-center justify-center p-4"><PageSkeleton /></div>}><CollegePredictorExams /></Suspense></ErrorBoundary>} />
             <Route path="tools/college-predictor/:exam" element={<ErrorBoundary><Suspense fallback={<div className="h-64 flex items-center justify-center p-4"><PageSkeleton /></div>}><CollegePredictorPredict /></Suspense></ErrorBoundary>} />
             <Route path="marketing" element={<ErrorBoundary><Suspense fallback={<div className="h-64 flex items-center justify-center p-4"><PageSkeleton /></div>}><CounsellorMarketing /></Suspense></ErrorBoundary>} />

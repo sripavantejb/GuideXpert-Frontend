@@ -12,6 +12,7 @@ import {
 } from 'react-icons/lu';
 import StudentWorkspaceNavbar from '../components/studentDashboard/StudentWorkspaceNavbar';
 import StudentWorkspaceFooter from '../components/studentDashboard/StudentWorkspaceFooter';
+import { readOrganicRankLeadSnapshot } from '../utils/organicRankLeadLocal';
 
 // ----------------------------------------------------------------------------
 // Reusable UI Components (Professional Neo-Brutalist)
@@ -248,8 +249,20 @@ const CollegeComparison = () => {
 // Main Page Layout
 // ----------------------------------------------------------------------------
 
+function formatCapturedAt(iso) {
+  if (!iso) return '';
+  try {
+    const d = new Date(iso);
+    if (Number.isNaN(d.getTime())) return '';
+    return d.toLocaleString('en-IN', { dateStyle: 'medium', timeStyle: 'short' });
+  } catch {
+    return '';
+  }
+}
+
 export default function StudentsDashboard() {
   const navigate = useNavigate();
+  const organicLead = readOrganicRankLeadSnapshot();
 
   const scrollToSection = (id) => {
     document.getElementById(id)?.scrollIntoView({ behavior: 'smooth', block: 'start' });
@@ -377,6 +390,57 @@ export default function StudentsDashboard() {
 
       <div id="student-workspace" className="w-full">
         <div className="mx-auto max-w-[1600px] lg:px-6 xl:px-8">
+          {organicLead && (
+            <section
+              className="min-w-0 px-4 pb-0 pt-12 sm:px-6 sm:pt-14 lg:px-6 lg:pl-12 lg:pr-6 lg:pt-16"
+              aria-labelledby="organic-lead-heading"
+            >
+              <NeoCard accentColor="#c7f36b">
+                <div className="flex flex-col gap-4 md:flex-row md:items-start md:justify-between">
+                  <div className="min-w-0">
+                    <p className="mb-1 text-[10px] font-black uppercase tracking-widest text-slate-500">Saved on this device</p>
+                    <h2 id="organic-lead-heading" className="text-xl font-black tracking-tight text-[#0F172A] sm:text-2xl">
+                      Your rank predictor submission
+                    </h2>
+                    <dl className="mt-4 grid gap-2 text-sm font-medium text-slate-600 sm:grid-cols-2 sm:gap-x-8">
+                      <div>
+                        <dt className="text-xs font-bold uppercase tracking-wide text-slate-400">Exam</dt>
+                        <dd className="font-bold text-[#0F172A]">{organicLead.examName}</dd>
+                      </div>
+                      <div>
+                        <dt className="text-xs font-bold uppercase tracking-wide text-slate-400">Score submitted</dt>
+                        <dd className="tabular-nums font-bold text-[#0F172A]">{organicLead.score}</dd>
+                      </div>
+                      {organicLead.difficulty ? (
+                        <div>
+                          <dt className="text-xs font-bold uppercase tracking-wide text-slate-400">Difficulty</dt>
+                          <dd className="font-bold text-[#0F172A]">{organicLead.difficulty}</dd>
+                        </div>
+                      ) : null}
+                      <div>
+                        <dt className="text-xs font-bold uppercase tracking-wide text-slate-400">Mobile (last 4)</dt>
+                        <dd className="font-mono font-bold text-[#0F172A]">···· {organicLead.phoneLast4}</dd>
+                      </div>
+                      <div>
+                        <dt className="text-xs font-bold uppercase tracking-wide text-slate-400">OTP</dt>
+                        <dd className="font-bold text-emerald-800">{organicLead.otpVerified ? 'Verified' : '—'}</dd>
+                      </div>
+                      <div className="sm:col-span-2">
+                        <dt className="text-xs font-bold uppercase tracking-wide text-slate-400">Captured</dt>
+                        <dd className="text-[#0F172A]">{formatCapturedAt(organicLead.capturedAt) || '—'}</dd>
+                      </div>
+                    </dl>
+                  </div>
+                  <PreviewActionLink
+                    to={organicLead.examId ? `/students/rank-predictor/${organicLead.examId}` : '/students/rank-predictor'}
+                    className="shrink-0 md:mt-0"
+                  >
+                    Open rank predictor <LuArrowRight />
+                  </PreviewActionLink>
+                </div>
+              </NeoCard>
+            </section>
+          )}
           <section
             className="min-w-0 px-4 py-16 sm:px-6 sm:py-20 lg:px-6 lg:py-24 lg:pl-12 lg:pr-6"
             aria-labelledby="workspace-applications-heading"

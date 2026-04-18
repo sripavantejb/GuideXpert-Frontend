@@ -1349,7 +1349,18 @@ export default function Overview() {
             const c = getPopoverContent(popoverCardId);
             const config = FUNNEL_CARD_LEADS_PARAMS[popoverCardId];
             const query = buildLeadsQuery(popoverCardId);
-            const viewAllUrl = query ? `/admin/leads?${query}` : '/admin/leads';
+            const viewAllUrl = (() => {
+              if (String(popoverCardId || '').startsWith('organic-rank-')) {
+                const s = new URLSearchParams(query);
+                s.delete('utm_content');
+                const q = s.toString();
+                return q ? `/admin/organic-rank-leads?${q}` : '/admin/organic-rank-leads';
+              }
+              return query ? `/admin/leads?${query}` : '/admin/leads';
+            })();
+            const leadsRowBasePath = String(popoverCardId || '').startsWith('organic-rank-')
+              ? '/admin/organic-rank-leads'
+              : '/admin/leads';
             const hasExactList = config?.hasExactList;
             const viewRelatedLabel = config?.viewRelatedLabel;
             return (
@@ -1460,7 +1471,7 @@ export default function Overview() {
                             </div>
                             <p className="mt-3">
                               <Link
-                                to={`/admin/leads?q=${encodeURIComponent(lead.phone || '')}`}
+                                to={`${leadsRowBasePath}?q=${encodeURIComponent(lead.phone || '')}`}
                                 className="text-sm font-medium text-primary-navy hover:underline"
                               >
                                 View in Leads

@@ -1,10 +1,10 @@
 import { Link } from 'react-router-dom';
 import { FiArrowRight } from 'react-icons/fi';
 
-function ExamCard({ exam }) {
+function ExamCard({ exam, linkBase = '/rank-predictor' }) {
   return (
     <Link
-      to={`/rank-predictor/${exam.id}`}
+      to={`${linkBase.replace(/\/$/, '')}/${exam.id}`}
       className="group flex min-h-[44px] min-w-0 flex-col rounded-2xl border border-gray-200 bg-white p-4 shadow-sm transition-all duration-200 hover:-translate-y-1 hover:shadow-xl sm:p-6"
     >
       <div className="mb-4 inline-flex h-12 w-12 items-center justify-center rounded-xl bg-primary-navy/10 text-xl">

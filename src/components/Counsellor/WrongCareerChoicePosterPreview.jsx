@@ -20,8 +20,23 @@ const FallbackWrongCareerChoiceSvg = () => (
 
 /** Initial anchors; we can fine tune after visual review. */
 const WRONG_CAREER_CHOICE_POSTER_ACCENT = '#fd8002';
-const NAME_ANCHOR = { x: 760, y: 868, maxWidth: 360, fontSize: 24, fontWeight: 600, color: WRONG_CAREER_CHOICE_POSTER_ACCENT };
-const PHONE_ANCHOR = { x: 760, y: 905, maxWidth: 330, fontSize: 22, fontWeight: 600, color: WRONG_CAREER_CHOICE_POSTER_ACCENT };
+const NAME_ANCHOR = { 
+  x: 430, 
+  y: 545, 
+  maxWidth: 360, 
+  fontSize: 24, 
+  fontWeight: 600, 
+  color: WRONG_CAREER_CHOICE_POSTER_ACCENT 
+};
+
+const PHONE_ANCHOR = { 
+  x: 430, 
+  y: 580, 
+  maxWidth: 360, 
+  fontSize: 22, 
+  fontWeight: 600, 
+  color: WRONG_CAREER_CHOICE_POSTER_ACCENT 
+};
 
 const WrongCareerChoicePosterPreview = forwardRef(function WrongCareerChoicePosterPreview(
   { fullName = '', mobileNumber = '', forExport = false, onExportImageLoad },

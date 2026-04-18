@@ -16,6 +16,7 @@ import {
 import { copyTextToClipboard } from '../../utils/clipboard';
 import { ADMIN_VIEW_ALL_LIMIT } from '../../constants/adminListLimits';
 import { fetchAllPaginatedRows } from '../../utils/adminPagedFetch';
+import { RANK_PREDICTOR_LEAD_UTM } from '../../utils/rankPredictorLeadConstants';
 
 function formatDate(d) {
   if (!d) return '—';
@@ -102,7 +103,10 @@ function getLeadCellValue(lead, key) {
   return String(v);
 }
 
-export default function Leads() {
+/**
+ * @param {{ organicOnly?: boolean }} props - When true, list is scoped to student rank predictor organic leads (utm_content).
+ */
+export default function Leads({ organicOnly = false }) {
   const { logout } = useAuth();
   const { dateRange, leadListFilters, setLeadListFilters } = useAdminDateRange();
   const [searchParams, setSearchParams] = useSearchParams();
@@ -131,15 +135,19 @@ export default function Leads() {
 
   const [viewAll, setViewAll] = useState(false);
 
-  /* eslint-disable react-hooks/set-state-in-effect -- apply /admin/leads query string to context + UI */
+  /* eslint-disable react-hooks/set-state-in-effect -- apply query string to context + UI */
   useEffect(() => {
     const raw = searchParams.toString();
     if (!raw) return;
     const parsed = leadListFiltersFromSearchParams(searchParams);
-    setLeadListFilters(parsed);
+    if (organicOnly) {
+      setLeadListFilters({ ...parsed, utm_content: RANK_PREDICTOR_LEAD_UTM.utm_content });
+    } else {
+      setLeadListFilters(parsed);
+    }
     setSearchDraft(parsed.q || '');
     setPagination((prev) => ({ ...prev, page: 1 }));
-  }, [searchParams, setLeadListFilters]);
+  }, [searchParams, setLeadListFilters, organicOnly]);
   /* eslint-enable react-hooks/set-state-in-effect */
 
   const openLeadDetail = (leadId) => {
@@ -244,13 +252,14 @@ export default function Leads() {
       setLeadListFilters((prev) => {
         if ((prev.q || '') === searchDraft) return prev;
         const next = { ...prev, q: searchDraft };
-        setSearchParams(leadListFiltersToSearchParams(next), { replace: true });
+        const forUrl = organicOnly ? { ...next, utm_content: RANK_PREDICTOR_LEAD_UTM.utm_content } : next;
+        setSearchParams(leadListFiltersToSearchParams(forUrl), { replace: true });
         setPagination((p) => ({ ...p, page: 1 }));
         return next;
       });
     }, 300);
     return () => clearTimeout(t);
-  }, [searchDraft, setLeadListFilters, setSearchParams]);
+  }, [searchDraft, setLeadListFilters, setSearchParams, organicOnly]);
 
   useEffect(() => {
     cancelledRef.current = false;
@@ -264,6 +273,7 @@ export default function Leads() {
       ...(dateRange.from && { from: dateRange.from }),
       ...(dateRange.to && { to: dateRange.to }),
       ...leadListFiltersToApiParams(leadListFilters),
+      ...(organicOnly ? { utm_content: RANK_PREDICTOR_LEAD_UTM.utm_content } : {}),
     };
     const tick = queueMicrotask || ((fn) => setTimeout(fn, 0));
     tick(() => {
@@ -291,7 +301,7 @@ export default function Leads() {
     return () => {
       cancelledRef.current = true;
     };
-  }, [viewAll, pagination.page, dateRange.from, dateRange.to, leadListFilters, logout]);
+  }, [viewAll, pagination.page, dateRange.from, dateRange.to, leadListFilters, logout, organicOnly]);
 
   const goToPage = (p) => {
     const next = Math.max(1, Math.min(p, pagination.totalPages));
@@ -305,6 +315,7 @@ export default function Leads() {
       ...(dateRange.from && { from: dateRange.from }),
       ...(dateRange.to && { to: dateRange.to }),
       ...leadListFiltersToApiParams(leadListFilters),
+      ...(organicOnly ? { utm_content: RANK_PREDICTOR_LEAD_UTM.utm_content } : {}),
     };
     const result = await fetchAllPaginatedRows((page, limit) =>
       getAdminLeads({ ...baseParams, page, limit }, getStoredToken())
@@ -324,13 +335,15 @@ export default function Leads() {
     setCopyModalOpen(true);
   };
 
+  const pageTitle = organicOnly ? 'Organic rank predictor leads' : 'Leads';
+
   return (
     <div className="max-w-[1400px] mx-auto px-1">
       <h2
         className="text-xl font-semibold text-gray-800 mb-4 tracking-tight"
-        aria-label={`Leads, ${pagination.total.toLocaleString()} total`}
+        aria-label={`${pageTitle}, ${pagination.total.toLocaleString()} total`}
       >
-        Leads{' '}
+        {pageTitle}{' '}
         <span className={`font-semibold text-gray-600 tabular-nums ${loading ? 'opacity-60' : ''}`}>
           ({pagination.total.toLocaleString()})
         </span>
@@ -338,7 +351,18 @@ export default function Leads() {
 
       <div className="bg-white border border-gray-200 rounded-lg shadow-sm p-4 mb-4">
         <p className="text-sm text-gray-600 mb-3">
-          Date range and lead filters (status, OTP, slot, influencer, etc.) are in <strong className="font-medium text-gray-800">Filters</strong> in the header. Search below updates the same query as the panel.
+          {organicOnly
+            ? (
+              <>
+                This list is scoped to <strong className="font-medium text-gray-800">organic rank predictor</strong> leads. Date range and other lead filters are in{' '}
+                <strong className="font-medium text-gray-800">Filters</strong> in the header. Search below updates the same query as the panel.
+              </>
+            )
+            : (
+              <>
+                Date range and lead filters (status, OTP, slot, influencer, etc.) are in <strong className="font-medium text-gray-800">Filters</strong> in the header. Search below updates the same query as the panel.
+              </>
+            )}
         </p>
         <div className="flex flex-wrap items-center gap-3">
           <input

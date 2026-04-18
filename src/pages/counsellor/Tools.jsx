@@ -158,7 +158,7 @@ function Tools() {
             desc={t.desc}
             icon={t.icon}
             onLaunch={() => {
-              if (t.id === 'rank') navigate('/rank-predictor');
+              if (t.id === 'rank') navigate('/counsellor/tools/rank-predictor');
               else if (t.id === 'college') navigate('college-predictor');
               else setActiveTool(t.id);
             }}
