@@ -1,7 +1,11 @@
-import { useMemo } from 'react';
+import { useMemo, useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
+import { FiImage } from 'react-icons/fi';
+import { getMarketingFeaturedPoster } from '../../utils/api';
 
 const RECENT_DAYS = 30;
+
+const DYNAMIC_FEATURED_ID = 'automated-marketing-featured';
 
 /** Placeholder release dates — adjust ISO strings to match real go-live dates. */
 const AUTOMATED_POSTERS = [
@@ -86,6 +90,14 @@ function parseReleasedAt(iso) {
   return Number.isNaN(t) ? null : t;
 }
 
+/** YYYY-MM-DD for sorting when API gives a full ISO date. */
+function toDateKeyFeatured(isoOrDate) {
+  if (isoOrDate == null) return null;
+  const d = new Date(isoOrDate);
+  if (Number.isNaN(d.getTime())) return null;
+  return d.toISOString().slice(0, 10);
+}
+
 function formatSinceLabel(iso) {
   if (!iso) return null;
   const d = new Date(`${iso}T12:00:00`);
@@ -94,7 +106,42 @@ function formatSinceLabel(iso) {
 }
 
 export default function Marketing() {
+  const [apiFeatured, setApiFeatured] = useState(null);
+  const [featuredLoading, setFeaturedLoading] = useState(true);
+
+  useEffect(() => {
+    let cancelled = false;
+    (async () => {
+      const res = await getMarketingFeaturedPoster();
+      if (cancelled) return;
+      setFeaturedLoading(false);
+      if (res.success && res.data?.poster) {
+        setApiFeatured(res.data.poster);
+      } else {
+        setApiFeatured(null);
+      }
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, []);
+
   const { sortedPosters, latestIds, recentIds } = useMemo(() => {
+    const dynamicFeatured = apiFeatured
+      ? [
+          {
+            id: DYNAMIC_FEATURED_ID,
+            title: apiFeatured.name,
+            description:
+              'Dynamic poster from GuideXpert. Open the link, verify with your registered mobile, then download PNG or PDF.',
+            to: apiFeatured.route,
+            releasedAt: toDateKeyFeatured(apiFeatured.marketingFeaturedAt) || '2026-01-01',
+            isDynamicFeatured: true,
+            pinnedLast: false,
+          },
+        ]
+      : [];
+
     const campaigns = AUTOMATED_POSTERS.filter((p) => !p.pinnedLast);
     const pinned = AUTOMATED_POSTERS.filter((p) => p.pinnedLast);
 
@@ -104,6 +151,31 @@ export default function Marketing() {
       if (ta !== tb) return tb - ta;
       return String(a.id).localeCompare(String(b.id));
     });
+
+    if (dynamicFeatured.length > 0) {
+      const latestIds = new Set([DYNAMIC_FEATURED_ID]);
+      const now = Date.now();
+      const cutoff = now - RECENT_DAYS * 24 * 60 * 60 * 1000;
+      const featuredTime = apiFeatured?.marketingFeaturedAt
+        ? new Date(apiFeatured.marketingFeaturedAt).getTime()
+        : 0;
+      const recentIds = new Set(
+        sortedCampaigns
+          .filter((p) => {
+            const t = parseReleasedAt(p.releasedAt);
+            return t != null && t >= cutoff;
+          })
+          .map((p) => p.id)
+      );
+      if (featuredTime >= cutoff) {
+        recentIds.add(DYNAMIC_FEATURED_ID);
+      }
+      return {
+        sortedPosters: [...dynamicFeatured, ...sortedCampaigns, ...pinned],
+        latestIds,
+        recentIds,
+      };
+    }
 
     const times = sortedCampaigns
       .map((p) => parseReleasedAt(p.releasedAt))
@@ -134,7 +206,7 @@ export default function Marketing() {
       latestIds,
       recentIds,
     };
-  }, []);
+  }, [apiFeatured]);
 
   return (
     <div className="max-w-7xl mx-auto">
@@ -142,6 +214,9 @@ export default function Marketing() {
         <h2 className="text-xl font-bold text-[#003366] tracking-tight">All marketing posters</h2>
         <p className="text-sm text-slate-600 mt-0.5">
           Newest campaigns appear first. The latest release is highlighted. Standard certificate template is at the end.
+          {!featuredLoading && apiFeatured
+            ? ' The administrator may feature one dynamic /p/… poster at the top as Latest.'
+            : null}
         </p>
       </div>
 
@@ -151,7 +226,7 @@ export default function Marketing() {
           const isRecent = recentIds.has(item.id);
           const sinceLabel = formatSinceLabel(item.releasedAt);
           const isCampaign = !item.pinnedLast;
-          const showTypeBadge = !item.hideTypeBadge;
+          const showTypeBadge = !item.hideTypeBadge && !item.isDynamicFeatured;
           const prev = i > 0 ? sortedPosters[i - 1] : null;
           const showTemplateDivider = Boolean(item.pinnedLast && prev && !prev.pinnedLast);
 
@@ -177,6 +252,11 @@ export default function Marketing() {
                   />
                 )}
                 <div className="flex flex-wrap items-center gap-2 mb-3">
+                  {item.isDynamicFeatured ? (
+                    <span className="inline-block px-2 py-0.5 rounded-full text-xs font-medium bg-violet-100 text-violet-900">
+                      Dynamic
+                    </span>
+                  ) : null}
                   {showTypeBadge && (
                     <span className="inline-block px-2 py-0.5 rounded-full text-xs font-medium bg-slate-100 text-slate-700">
                       Campaign
@@ -194,11 +274,20 @@ export default function Marketing() {
                   )}
                 </div>
                 <div className="flex justify-center mb-4 rounded-lg bg-slate-50 border border-slate-100 overflow-hidden min-h-[200px] max-h-[280px]">
-                  <img
-                    src={item.previewSrc}
-                    alt=""
-                    className="max-w-full max-h-[260px] w-auto object-contain object-center"
-                  />
+                  {item.isDynamicFeatured ? (
+                    <div className="flex w-full flex-col items-center justify-center gap-2 py-10 px-4 bg-gradient-to-br from-slate-100/90 to-slate-50 text-slate-400">
+                      <FiImage className="h-14 w-14 shrink-0 opacity-80" aria-hidden />
+                      <span className="text-xs font-medium text-slate-500 text-center leading-snug">
+                        Preview on the public page after you open the link
+                      </span>
+                    </div>
+                  ) : (
+                    <img
+                      src={item.previewSrc}
+                      alt=""
+                      className="max-w-full max-h-[260px] w-auto object-contain object-center"
+                    />
+                  )}
                 </div>
                 <h3 className="text-base font-semibold text-slate-900 mb-0.5">{item.title}</h3>
                 {sinceLabel && (

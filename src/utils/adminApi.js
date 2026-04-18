@@ -20,7 +20,7 @@ export function setStoredToken(token) {
 async function adminRequest(endpoint, options = {}, token = getStoredToken()) {
   const url = `${getApiBaseUrl()}/admin${endpoint}`;
   const headers = {
-    'Content-Type': 'application/json',
+    'Content-Type': 'application/json; charset=utf-8',
     ...options.headers,
   };
   if (token) headers.Authorization = `Bearer ${token}`;
@@ -771,4 +771,16 @@ export const publishPosterTemplate = async (id, token = getStoredToken()) => {
 /** POST /admin/posters/:id/unpublish */
 export const unpublishPosterTemplate = async (id, token = getStoredToken()) => {
   return adminRequest(`/posters/${encodeURIComponent(id)}/unpublish`, { method: 'POST' }, token);
+};
+
+/** POST /admin/posters/:id/marketing-featured — body: { featured: boolean } */
+export const setPosterMarketingFeatured = async (id, featured, token = getStoredToken()) => {
+  return adminRequest(
+    `/posters/${encodeURIComponent(id)}/marketing-featured`,
+    {
+      method: 'POST',
+      body: JSON.stringify({ featured: !!featured }),
+    },
+    token
+  );
 };

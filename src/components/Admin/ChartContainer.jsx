@@ -3,7 +3,7 @@
  */
 export default function ChartContainer({ title, children, loading, empty, emptyMessage = 'No data available' }) {
   return (
-    <div className="rounded-xl border border-gray-200 bg-white p-4 lg:p-6 portal-card">
+    <div className="min-w-0 rounded-xl border border-gray-200 bg-white p-4 lg:p-6 portal-card">
       {title && (
         <h3 className="text-sm font-semibold text-gray-700 mb-4">{title}</h3>
       )}

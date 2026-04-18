@@ -691,7 +691,7 @@ export default function InfluencerTracking() {
             ) : barChartData.length === 0 ? (
               <div className="h-full flex items-center justify-center text-gray-500 text-sm">No data</div>
             ) : (
-              <ResponsiveContainer width="100%" height="100%" minHeight={200}>
+              <ResponsiveContainer width="100%" height="100%" minWidth={0} minHeight={200}>
                 <BarChart data={barChartData} margin={{ top: 8, right: 8, left: 0, bottom: 0 }}>
                   <XAxis dataKey="name" tick={{ fontSize: 11 }} />
                   <YAxis allowDecimals={false} tick={{ fontSize: 11 }} />
@@ -717,7 +717,7 @@ export default function InfluencerTracking() {
             ) : trendData.length === 0 ? (
               <div className="h-full flex items-center justify-center text-gray-500 text-sm">No data</div>
             ) : (
-              <ResponsiveContainer width="100%" height="100%" minHeight={200}>
+              <ResponsiveContainer width="100%" height="100%" minWidth={0} minHeight={200}>
                 <LineChart data={trendData} margin={{ top: 8, right: 8, left: 0, bottom: 0 }}>
                   <CartesianGrid strokeDasharray="3 3" stroke="#eee" />
                   <XAxis dataKey="date" tick={{ fontSize: 11 }} tickFormatter={(v) => (v && v.length >= 10 ? `${v.slice(8, 10)}/${v.slice(5, 7)}` : v)} />

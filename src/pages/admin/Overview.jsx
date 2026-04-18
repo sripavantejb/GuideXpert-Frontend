@@ -709,8 +709,8 @@ export default function Overview() {
           emptyMessage="No page visit data for the selected period"
         >
           {pageVisitsChartData.length > 0 && (
-            <div className="h-64 w-full">
-              <ResponsiveContainer width="100%" height="100%">
+            <div className="h-64 w-full min-w-0">
+              <ResponsiveContainer width="100%" height="100%" minWidth={0} minHeight={256}>
                 <AreaChart
                   data={
                     (() => {
@@ -917,8 +917,8 @@ export default function Overview() {
         <h2 id="section-lead-pipeline" className="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-4">Lead pipeline</h2>
         <ChartContainer title="" empty={pipelineEmpty} emptyMessage="No data for the selected period">
           {!pipelineEmpty && (
-            <div className="h-64 w-full">
-              <ResponsiveContainer width="100%" height="100%">
+            <div className="h-64 w-full min-w-0">
+              <ResponsiveContainer width="100%" height="100%" minWidth={0} minHeight={256}>
                 <BarChart data={pipelineChartData} margin={{ top: 8, right: 8, left: 8, bottom: 8 }}>
                   <XAxis dataKey="name" tick={{ fontSize: 12 }} stroke="#64748b" />
                   <YAxis tick={{ fontSize: 12 }} stroke="#64748b" />
@@ -969,8 +969,8 @@ export default function Overview() {
               emptyMessage="No UTM links with cost data"
             >
               {!utmLinksLoading && !utmBudgetEmpty && (
-                <div className="h-64 w-full">
-                  <ResponsiveContainer width="100%" height="100%">
+                <div className="h-64 w-full min-w-0">
+                  <ResponsiveContainer width="100%" height="100%" minWidth={0} minHeight={256}>
                     <BarChart data={utmBudgetData} margin={{ top: 8, right: 8, left: 8, bottom: 8 }}>
                       <XAxis
                         dataKey="name"
@@ -1000,8 +1000,8 @@ export default function Overview() {
               emptyMessage="No cost-per-lead data for the selected sources"
             >
               {!utmLinksLoading && !utmCostPerLeadEmpty && (
-                <div className="h-64 w-full">
-                  <ResponsiveContainer width="100%" height="100%">
+                <div className="h-64 w-full min-w-0">
+                  <ResponsiveContainer width="100%" height="100%" minWidth={0} minHeight={256}>
                     <BarChart data={utmCostPerLeadData} margin={{ top: 8, right: 8, left: 8, bottom: 8 }}>
                       <XAxis
                         dataKey="name"
@@ -1031,8 +1031,8 @@ export default function Overview() {
           <h2 id="section-signups" className="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-4">Signups over time</h2>
           <ChartContainer title="" empty={signupsOverTime.length === 0} emptyMessage="No data for the selected period">
             {signupsOverTime.length > 0 && (
-              <div className="h-64 w-full">
-                <ResponsiveContainer width="100%" height="100%">
+              <div className="h-64 w-full min-w-0">
+                <ResponsiveContainer width="100%" height="100%" minWidth={0} minHeight={256}>
                   <AreaChart data={signupsOverTime} margin={{ top: 8, right: 8, left: 8, bottom: 8 }}>
                     <CartesianGrid strokeDasharray="3 3" stroke="#e2e8f0" />
                     <XAxis dataKey="date" tick={{ fontSize: 11 }} stroke="#64748b" />
@@ -1053,8 +1053,8 @@ export default function Overview() {
           <h2 id="section-slot-distribution" className="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-4">Slot distribution</h2>
           <ChartContainer title="" empty={slotData.length === 0} emptyMessage="No slot bookings yet">
             {slotData.length > 0 && (
-              <div className="h-64 w-full">
-                <ResponsiveContainer width="100%" height="100%">
+              <div className="h-64 w-full min-w-0">
+                <ResponsiveContainer width="100%" height="100%" minWidth={0} minHeight={256}>
                   <BarChart data={slotData} layout="vertical" margin={{ top: 8, right: 8, left: 8, bottom: 8 }}>
                     <XAxis type="number" tick={{ fontSize: 11 }} stroke="#64748b" />
                     <YAxis type="category" dataKey="name" width={80} tick={{ fontSize: 11 }} stroke="#64748b" />
