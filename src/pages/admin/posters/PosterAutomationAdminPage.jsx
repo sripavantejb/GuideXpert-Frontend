@@ -78,6 +78,22 @@ function formatPosterSaveError(res) {
   return code ? `${base} [${code}]` : base;
 }
 
+/** Coerce overlay x / y / xEnd / fontSize to 2 decimal places after load. */
+function normalizeOverlayFieldNumerics(field) {
+  if (!field || typeof field !== 'object') return field;
+  const out = { ...field };
+  out.x = Math.round((Number(out.x) || 0) * 100) / 100;
+  out.y = Math.round((Number(out.y) || 0) * 100) / 100;
+  out.fontSize = Math.round((Number(out.fontSize) || 16) * 100) / 100;
+  const xe = Number(out.xEnd);
+  if (out.xEnd != null && out.xEnd !== '' && Number.isFinite(xe)) {
+    out.xEnd = Math.round(xe * 100) / 100;
+  } else {
+    delete out.xEnd;
+  }
+  return out;
+}
+
 function cloneDraftFromPoster(p) {
   const nameSrc =
     p.nameField && typeof p.nameField === 'object' ? { ...p.nameField } : defaultNameField();
@@ -87,8 +103,8 @@ function cloneDraftFromPoster(p) {
     name: p.name || '',
     route: p.route || '/p/my-campaign',
     svgTemplate: p.svgTemplate == null ? '' : String(p.svgTemplate),
-    nameField: normalizeOverlayFieldColors(nameSrc),
-    mobileField: normalizeOverlayFieldColors(mobileSrc),
+    nameField: normalizeOverlayFieldNumerics(normalizeOverlayFieldColors(nameSrc)),
+    mobileField: normalizeOverlayFieldNumerics(normalizeOverlayFieldColors(mobileSrc)),
     published: !!p.published,
     marketingFeatured: !!p.marketingFeatured,
     marketingFeaturedAt: p.marketingFeaturedAt ?? null,
@@ -749,8 +765,8 @@ export default function PosterAutomationAdminPage() {
         </div>
       ) : null}
 
-      <div className="flex flex-col gap-5 xl:flex-row xl:items-stretch xl:gap-6">
-        <aside className="w-full shrink-0 xl:w-[280px]">
+      <div className="flex flex-col gap-5 lg:flex-row lg:items-stretch lg:gap-6">
+        <aside className="w-full shrink-0 lg:w-[280px]">
           <PosterListSidebar
             posters={posters}
             selectedId={selectedId}
@@ -834,8 +850,8 @@ export default function PosterAutomationAdminPage() {
               </div>
             </div>
 
-            <div className="border-b border-emerald-100 bg-gradient-to-r from-emerald-50/90 to-white px-5 py-4">
-              <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
+                       <div className="border-b border-emerald-100 bg-gradient-to-r from-emerald-50/90 to-white px-5 py-4">
+              <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between sm:gap-4">
                 <div className="min-w-0 flex-1">
                   <h3 className="text-xs font-semibold uppercase tracking-wide text-emerald-900/80">Publishing</h3>
                   {isNew || !selectedId ? (
@@ -846,7 +862,7 @@ export default function PosterAutomationAdminPage() {
                       loads this poster for visitors.
                     </p>
                   ) : (
-                    <p className="mt-1.5 text-sm text-slate-600">
+                    <p className="mt-1.5 text-sm leading-relaxed text-slate-600">
                       {draft.published
                         ? 'This template is live at your public URL. Unpublish to hide it from the public page.'
                         : 'Publishing saves any pending edits and makes this design available at your public URL.'}
@@ -887,55 +903,55 @@ export default function PosterAutomationAdminPage() {
                     {publishing ? 'Updating…' : 'Unpublish'}
                   </button>
                 </div>
-                {!isNew && selectedId && draft.published ? (
-                  <div className="mt-4 rounded-xl border border-sky-200/90 bg-sky-50/90 px-4 py-3 sm:px-5">
-                    <p className="text-[0.6875rem] font-semibold uppercase tracking-wide text-sky-900/90">
-                      Counsellor Marketing
-                    </p>
-                    <p className="mt-1.5 text-sm leading-relaxed text-slate-700">
-                      Show this live template as the highlighted <strong className="font-semibold">Latest</strong> card on{' '}
-                      <span className="font-medium text-slate-800">Counsellor → Marketing</span>. Only one template can be
-                      highlighted at a time.
-                    </p>
-                    <div className="mt-3 flex flex-wrap gap-2">
-                      <button
-                        type="button"
-                        onClick={() => void handleMarketingFeatured(true)}
-                        disabled={
-                          loading ||
-                          saving ||
-                          publishing ||
-                          marketingFeatSaving ||
-                          !!draft.marketingFeatured ||
-                          isDirty
-                        }
-                        className="inline-flex items-center justify-center rounded-xl border border-sky-600 bg-sky-600 px-4 py-2.5 text-sm font-semibold text-white shadow-sm transition hover:bg-sky-700 disabled:cursor-not-allowed disabled:opacity-50"
-                      >
-                        {draft.marketingFeatured
-                          ? 'Shown as Latest'
-                          : marketingFeatSaving
-                            ? 'Applying…'
-                            : 'Show in counsellor Marketing as Latest'}
-                      </button>
-                      <button
-                        type="button"
-                        onClick={() => void handleMarketingFeatured(false)}
-                        disabled={
-                          loading ||
-                          saving ||
-                          publishing ||
-                          marketingFeatSaving ||
-                          !draft.marketingFeatured ||
-                          isDirty
-                        }
-                        className="inline-flex items-center justify-center rounded-xl border border-slate-300 bg-white px-4 py-2.5 text-sm font-medium text-slate-800 shadow-sm transition hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-50"
-                      >
-                        {marketingFeatSaving ? 'Removing…' : 'Remove from Marketing highlight'}
-                      </button>
-                    </div>
-                  </div>
-                ) : null}
               </div>
+              {!isNew && selectedId && draft.published ? (
+                <div className="mt-4 w-full rounded-xl border border-sky-200/90 bg-sky-50/90 px-4 py-3 sm:px-5">
+                  <p className="text-[0.6875rem] font-semibold uppercase tracking-wide text-sky-900/90">
+                    Counsellor Marketing
+                  </p>
+                  <p className="mt-1.5 text-sm leading-relaxed text-slate-700">
+                    Show this live template as the highlighted <strong className="font-semibold">Latest</strong> card on{' '}
+                    <span className="font-medium text-slate-800">Counsellor → Marketing</span>. Only one template can be
+                    highlighted at a time.
+                  </p>
+                  <div className="mt-3 flex flex-wrap gap-2">
+                    <button
+                      type="button"
+                      onClick={() => void handleMarketingFeatured(true)}
+                      disabled={
+                        loading ||
+                        saving ||
+                        publishing ||
+                        marketingFeatSaving ||
+                        !!draft.marketingFeatured ||
+                        isDirty
+                      }
+                      className="inline-flex items-center justify-center rounded-xl border border-sky-600 bg-sky-600 px-4 py-2.5 text-sm font-semibold text-white shadow-sm transition hover:bg-sky-700 disabled:cursor-not-allowed disabled:opacity-50"
+                    >
+                      {draft.marketingFeatured
+                        ? 'Shown as Latest'
+                        : marketingFeatSaving
+                          ? 'Applying…'
+                          : 'Show in counsellor Marketing as Latest'}
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => void handleMarketingFeatured(false)}
+                      disabled={
+                        loading ||
+                        saving ||
+                        publishing ||
+                        marketingFeatSaving ||
+                        !draft.marketingFeatured ||
+                        isDirty
+                      }
+                      className="inline-flex items-center justify-center rounded-xl border border-slate-300 bg-white px-4 py-2.5 text-sm font-medium text-slate-800 shadow-sm transition hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-50"
+                    >
+                      {marketingFeatSaving ? 'Removing…' : 'Remove from Marketing highlight'}
+                    </button>
+                  </div>
+                </div>
+              ) : null}
             </div>
 
             <div className="flex flex-col gap-3 border-b border-gray-100 bg-gray-50/70 px-4 py-3 sm:flex-row sm:flex-wrap sm:items-center sm:justify-between">
@@ -1049,47 +1065,46 @@ export default function PosterAutomationAdminPage() {
                   </div>
                 </div>
               ) : (
-                <PosterEditorCanvas
-                  ref={posterExportRef}
-                  svgTemplate={draft.svgTemplate}
-                  nameField={draft.nameField}
-                  mobileField={draft.mobileField}
-                  variables={previewVariables}
-                  selectedKey={selectedOverlayKey}
-                  onSelectKey={setSelectedOverlayKey}
-                  onUpdateFieldPosition={updateFieldPosition}
-                  onFileDrop={handleDrop}
-                  emptyHint="Drop an SVG here or use Upload SVG"
-                />
+                <div className="grid grid-cols-1 gap-6 lg:grid-cols-[minmax(0,1fr)_minmax(280px,380px)] lg:items-start">
+                  <PosterEditorCanvas
+                    ref={posterExportRef}
+                    svgTemplate={draft.svgTemplate}
+                    nameField={draft.nameField}
+                    mobileField={draft.mobileField}
+                    variables={previewVariables}
+                    selectedKey={selectedOverlayKey}
+                    onSelectKey={setSelectedOverlayKey}
+                    onUpdateFieldPosition={updateFieldPosition}
+                    onFileDrop={handleDrop}
+                    emptyHint="Drop an SVG here or use Upload SVG"
+                  />
+                  <div className="min-w-0 space-y-5 lg:sticky lg:top-4 lg:self-start">
+                    <div className="rounded-2xl border border-gray-200 bg-gradient-to-b from-slate-50/80 to-white p-1 shadow-sm ring-1 ring-black/[0.03]">
+                      <div className="rounded-[0.875rem] border border-gray-100/80 bg-white px-4 py-3">
+                        <div className="flex items-center gap-2">
+                          <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-primary-navy/10 text-primary-navy">
+                            <FiSidebar className="h-5 w-5" aria-hidden />
+                          </div>
+                          <div>
+                            <h3 className="text-sm font-semibold text-gray-900">Inspector</h3>
+                            <p className="text-xs text-gray-500">Name & mobile — position and style</p>
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                    <PosterElementToolbar
+                      nameField={draft.nameField}
+                      mobileField={draft.mobileField}
+                      onChangeName={(patch) => setDraft((d) => ({ ...d, nameField: { ...d.nameField, ...patch } }))}
+                      onChangeMobile={(patch) => setDraft((d) => ({ ...d, mobileField: { ...d.mobileField, ...patch } }))}
+                    />
+                    <TemplateTokensReference previewVariables={previewVariables} />
+                  </div>
+                </div>
               )}
             </div>
           </div>
         </div>
-
-        <aside className="w-full shrink-0 xl:w-[380px]">
-          <div className="space-y-5 xl:sticky xl:top-4">
-            <div className="rounded-2xl border border-gray-200 bg-gradient-to-b from-slate-50/80 to-white p-1 shadow-sm ring-1 ring-black/[0.03]">
-              <div className="rounded-[0.875rem] border border-gray-100/80 bg-white px-4 py-3">
-                <div className="flex items-center gap-2">
-                  <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-primary-navy/10 text-primary-navy">
-                    <FiSidebar className="h-5 w-5" aria-hidden />
-                  </div>
-                  <div>
-                    <h3 className="text-sm font-semibold text-gray-900">Inspector</h3>
-                    <p className="text-xs text-gray-500">Name & mobile — position and style</p>
-                  </div>
-                </div>
-              </div>
-            </div>
-            <PosterElementToolbar
-              nameField={draft.nameField}
-              mobileField={draft.mobileField}
-              onChangeName={(patch) => setDraft((d) => ({ ...d, nameField: { ...d.nameField, ...patch } }))}
-              onChangeMobile={(patch) => setDraft((d) => ({ ...d, mobileField: { ...d.mobileField, ...patch } }))}
-            />
-            <TemplateTokensReference previewVariables={previewVariables} />
-          </div>
-        </aside>
       </div>
     </DashboardLayout>
   );

@@ -4,6 +4,12 @@ import { normalizeHexForColorInput, normalizeHexForCss } from '../../../utils/po
 
 const WEIGHTS = ['300', '400', '500', '600', '700', '800'];
 
+function finitePct(v) {
+  const n = Number(v);
+  if (!Number.isFinite(n)) return 0;
+  return Math.round(Math.min(100, Math.max(0, n)) * 100) / 100;
+}
+
 function FieldLabel({ children, hint }) {
   return (
     <span className="flex items-baseline justify-between gap-2">
@@ -71,8 +77,8 @@ function OverlaySection({ title, icon, field, onChange, accentClass, showEndX = 
                 min={0}
                 max={100}
                 step={0.1}
-                value={field.x ?? 0}
-                onChange={(e) => onChange({ x: Number(e.target.value) || 0 })}
+                value={finitePct(field.x)}
+                onChange={(e) => onChange({ x: finitePct(e.target.value) })}
                 className="mt-1 w-full rounded-xl border border-gray-200 px-3 py-2 text-sm tabular-nums focus:border-primary-blue-400 focus:outline-none focus:ring-2 focus:ring-primary-blue-400/20"
               />
             </label>
@@ -83,8 +89,8 @@ function OverlaySection({ title, icon, field, onChange, accentClass, showEndX = 
                 min={0}
                 max={100}
                 step={0.1}
-                value={field.y ?? 0}
-                onChange={(e) => onChange({ y: Number(e.target.value) || 0 })}
+                value={finitePct(field.y)}
+                onChange={(e) => onChange({ y: finitePct(e.target.value) })}
                 className="mt-1 w-full rounded-xl border border-gray-200 px-3 py-2 text-sm tabular-nums focus:border-primary-blue-400 focus:outline-none focus:ring-2 focus:ring-primary-blue-400/20"
               />
             </label>
@@ -99,7 +105,11 @@ function OverlaySection({ title, icon, field, onChange, accentClass, showEndX = 
                 min={0}
                 max={100}
                 step={0.1}
-                value={field.xEnd != null && Number.isFinite(Number(field.xEnd)) ? field.xEnd : ''}
+                value={
+                  field.xEnd != null && Number.isFinite(Number(field.xEnd))
+                    ? finitePct(field.xEnd)
+                    : ''
+                }
                 onChange={(e) => {
                   const raw = e.target.value;
                   if (raw === '') {
@@ -107,7 +117,7 @@ function OverlaySection({ title, icon, field, onChange, accentClass, showEndX = 
                     return;
                   }
                   const n = Number(raw);
-                  onChange({ xEnd: Number.isFinite(n) ? n : undefined });
+                  onChange({ xEnd: Number.isFinite(n) ? finitePct(n) : undefined });
                 }}
                 placeholder="Optional"
                 className="mt-1 w-full rounded-xl border border-gray-200 px-3 py-2 text-sm tabular-nums focus:border-primary-blue-400 focus:outline-none focus:ring-2 focus:ring-primary-blue-400/20"
