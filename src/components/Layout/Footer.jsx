@@ -85,7 +85,7 @@ const Footer = () => {
                 <div className="min-w-0 flex-1">
                   <p className="font-medium text-white text-sm mb-1">WhatsApp</p>
                   <a
-                    href="https://wa.me/918143266699"
+                    href="https://wa.me/916304153659"
                     target="_blank"
                     rel="noopener noreferrer"
                     className={`text-sm ${linkClass}`}
