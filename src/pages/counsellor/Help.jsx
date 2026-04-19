@@ -51,7 +51,7 @@ export default function Help() {
             <div className="min-w-0 flex-1">
               <p className="font-medium text-gray-800 text-sm mb-1">WhatsApp</p>
               <a
-                href="https://wa.me/918143266699"
+                href="https://wa.me/916304153659"
                 target="_blank"
                 rel="noopener noreferrer"
                 className="text-sm text-[#003366] hover:underline focus:outline-none focus:ring-2 focus:ring-[#003366]/20 focus:ring-offset-1 rounded"
