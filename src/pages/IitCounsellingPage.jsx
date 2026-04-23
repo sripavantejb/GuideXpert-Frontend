@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useState } from 'react';
+import { getApiBaseUrl } from '../utils/apiBaseUrl';
 
 const STUDENT_PARENT_OPTIONS = ['Student', 'Parent'];
 const CLASS_OPTIONS = ['12th Appearing', '12th Passed'];
@@ -44,6 +45,8 @@ export default function IitCounsellingPage() {
   const [submitting, setSubmitting] = useState(false);
   const [submitState, setSubmitState] = useState({ ok: false, message: '' });
 
+  const apiBase = useMemo(() => getApiBaseUrl(), []);
+
   const stepConfig = useMemo(() => ({
     1: ['fullName', 'mobileNumber', 'studentOrParent', 'classStatus', 'stream', 'city', 'slotBooking', 'top5Colleges'],
     2: ['careerDecisionClarity', 'collegeDecisionStakeholder', 'expectedBudget', 'topCollegePriority'],
@@ -62,7 +65,7 @@ export default function IitCounsellingPage() {
       utm_content: queryParams.get('utm_content') || '',
     };
 
-    fetch('/api/iit-counselling/visit', {
+    fetch(`${apiBase}/iit-counselling/visit`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(payload),
@@ -75,7 +78,7 @@ export default function IitCounsellingPage() {
         }
       })
       .catch(() => {});
-  }, []);
+  }, [apiBase]);
 
   const handleInputChange = (key, value) => {
     setFormData((prev) => ({ ...prev, [key]: value }));
@@ -100,10 +103,10 @@ export default function IitCounsellingPage() {
     if (Object.keys(nextErrors).length > 0) return false;
 
     const endpoint = currentStep === 1
-      ? '/api/iit-counselling/section1'
+      ? `${apiBase}/iit-counselling/section1`
       : currentStep === 2
-        ? '/api/iit-counselling/section2'
-        : '/api/iit-counselling/section3';
+        ? `${apiBase}/iit-counselling/section2`
+        : `${apiBase}/iit-counselling/section3`;
 
     const payload = currentStep === 1
       ? {
