@@ -24,6 +24,7 @@ import Overview from './pages/admin/Overview';
 import FunnelAnalytics from './pages/admin/FunnelAnalytics';
 import Leads from './pages/admin/Leads';
 import IitCounselling from './pages/admin/IitCounselling';
+import IitCounsellingUtm from './pages/admin/IitCounsellingUtm';
 import Analytics from './pages/admin/Analytics';
 import Slots from './pages/admin/Slots';
 import Export from './pages/admin/Export';
@@ -337,6 +338,7 @@ function App() {
             <Route path="certified-counsellors" element={<CertifiedCounsellors />} />
             <Route path="leads" element={<Leads />} />
             <Route path="iit-counselling" element={<IitCounselling />} />
+            <Route path="iit-counselling-utm" element={<IitCounsellingUtm />} />
             <Route path="organic-rank-leads" element={<Leads organicOnly />} />
             <Route path="lead-status" element={<LeadStatus />} />
             <Route path="analytics" element={<Analytics />} />

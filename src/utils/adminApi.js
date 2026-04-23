@@ -177,6 +177,16 @@ export const getIitCounsellingVisitAnalytics = async (params = {}, token = getSt
   return adminRequest(`/iit-counselling/visits${query ? `?${query}` : ''}`, { method: 'GET' }, token);
 };
 
+export const getIitCounsellingUtmAnalytics = async (params = {}, token = getStoredToken()) => {
+  const search = new URLSearchParams();
+  if (params.fromDate && String(params.fromDate).trim()) search.set('fromDate', String(params.fromDate).trim());
+  if (params.toDate && String(params.toDate).trim()) search.set('toDate', String(params.toDate).trim());
+  if (params.fromTime && String(params.fromTime).trim()) search.set('fromTime', String(params.fromTime).trim());
+  if (params.toTime && String(params.toTime).trim()) search.set('toTime', String(params.toTime).trim());
+  const query = search.toString();
+  return adminRequest(`/iit-counselling/utm-analytics${query ? `?${query}` : ''}`, { method: 'GET' }, token);
+};
+
 export const updateLeadNotes = async (id, adminNotes, token = getStoredToken()) => {
   return adminRequest(`/leads/${encodeURIComponent(id)}`, {
     method: 'PATCH',
