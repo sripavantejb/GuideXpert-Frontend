@@ -71,10 +71,10 @@ const Footer = () => {
                 <div className="min-w-0 flex-1">
                   <p className="font-medium text-white text-sm mb-1">Phone Support</p>
                   <a
-                    href="tel:+916304153659"
+                    href="tel:+916304153859"
                     className={`text-sm ${linkClass}`}
                   >
-                    +91 6304-153659
+                    +91 6304-153859
                   </a>
                 </div>
               </li>

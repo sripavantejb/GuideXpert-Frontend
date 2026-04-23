@@ -3,7 +3,8 @@ import { normalizeHexForCss } from '../../utils/posterColor';
 import { POSTER_OVERLAY_MAX_WIDTH_PX } from '../../utils/posterExportDimensions';
 
 function clampPct(n) {
-  return Math.min(100, Math.max(0, n));
+  const v = Math.min(100, Math.max(0, n));
+  return Math.round(v * 100) / 100;
 }
 
 function alignTransform(textAlign) {
