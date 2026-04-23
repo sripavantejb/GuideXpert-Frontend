@@ -3,6 +3,7 @@ import { getAdminStats, getStoredToken } from '../../utils/adminApi';
 import { useAuth } from '../../hooks/useAuth';
 import { useAdminDateRange } from '../../hooks/useAdminDateRange';
 import AnalyticsSkeleton from '../../components/UI/AnalyticsSkeleton';
+import SalesAnalyticsUtmSection from '../../components/Admin/SalesAnalyticsUtmSection';
 
 function formatRangeLabel(from, to) {
   if (!from && !to) return 'selected range';
@@ -92,6 +93,10 @@ export default function Analytics() {
           All figures below use the dashboard <strong className="font-medium text-gray-800">date range</strong> from{' '}
           <strong className="font-medium text-gray-800">Filters</strong> in the header ({rangeSummary}).
         </p>
+      </div>
+
+      <div className="mb-8">
+        <SalesAnalyticsUtmSection />
       </div>
 
       <div className="space-y-8">

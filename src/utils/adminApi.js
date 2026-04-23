@@ -205,6 +205,24 @@ export const deleteIitCounsellingSavedUtmLink = async (id, token = getStoredToke
   return adminRequest(`${IIT_SAVED_UTM_BASE}/${encodeURIComponent(id)}`, { method: 'DELETE' }, token);
 };
 
+/** Saved registration UTM links from Admin → Analytics only (separate Mongo collection from influencer tracking). */
+const SALES_ANALYTICS_SAVED_UTM_BASE = '/sales-analytics-saved-utm-links';
+
+export const getSalesAnalyticsSavedUtmLinks = async (token = getStoredToken()) => {
+  return adminRequest(SALES_ANALYTICS_SAVED_UTM_BASE, { method: 'GET' }, token);
+};
+
+export const createSalesAnalyticsSavedUtmLink = async (payload, token = getStoredToken()) => {
+  return adminRequest(SALES_ANALYTICS_SAVED_UTM_BASE, {
+    method: 'POST',
+    body: JSON.stringify(payload),
+  }, token);
+};
+
+export const deleteSalesAnalyticsSavedUtmLink = async (id, token = getStoredToken()) => {
+  return adminRequest(`${SALES_ANALYTICS_SAVED_UTM_BASE}/${encodeURIComponent(id)}`, { method: 'DELETE' }, token);
+};
+
 export const updateLeadNotes = async (id, adminNotes, token = getStoredToken()) => {
   return adminRequest(`/leads/${encodeURIComponent(id)}`, {
     method: 'PATCH',
