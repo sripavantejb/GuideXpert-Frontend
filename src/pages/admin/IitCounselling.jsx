@@ -143,15 +143,18 @@ function TrendChart({ points = [], granularity = 'daily', filters = {} }) {
   };
   const getY = (value) => margin.top + (1 - value / maxValue) * plotHeight;
 
+  const TOTAL_Y_OFFSET = -2;
+  const UNIQUE_Y_OFFSET = 2;
+
   const totalSeries = series.map((point, index) => ({
     x: getX(index),
-    y: getY(Number(point.totalVisits) || 0),
+    y: getY(Number(point.totalVisits) || 0) + TOTAL_Y_OFFSET,
     value: Number(point.totalVisits) || 0,
     label: point.bucket,
   }));
   const uniqueSeries = series.map((point, index) => ({
     x: getX(index),
-    y: getY(Number(point.uniqueVisitors) || 0),
+    y: getY(Number(point.uniqueVisitors) || 0) + UNIQUE_Y_OFFSET,
     value: Number(point.uniqueVisitors) || 0,
     label: point.bucket,
   }));
