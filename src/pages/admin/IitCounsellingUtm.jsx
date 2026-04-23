@@ -13,6 +13,7 @@ import {
   Bar,
   BarChart,
   CartesianGrid,
+  Cell,
   Line,
   LineChart,
   ResponsiveContainer,
@@ -126,7 +127,7 @@ function formatChartDate(isoDateStr) {
 
 function ChartSkeleton() {
   return (
-    <div className="h-[240px] flex items-center justify-center bg-gray-50 rounded-lg animate-pulse">
+    <div className="h-[220px] min-h-[220px] flex items-center justify-center bg-gray-50 rounded-lg animate-pulse">
       <div className="text-gray-400 text-sm">Loading chart…</div>
     </div>
   );
@@ -292,10 +293,12 @@ export default function IitCounsellingUtm() {
     const src = [...(data?.byContent || [])]
       .sort((a, b) => (Number(b.visits) || 0) - (Number(a.visits) || 0))
       .slice(0, 10);
-    return src.map((row) => {
+    return src.map((row, i) => {
       const label = row.utm_content || '—';
+      const short = label.length > 14 ? `${String(label).slice(0, 14)}…` : label;
       return {
-        name: label.length > 14 ? `${String(label).slice(0, 14)}…` : label,
+        // Recharts keys bars by `name`; suffix keeps keys unique when truncated labels match.
+        name: `${short}\u200c${i}`,
         visits: row.visits ?? 0,
         fullName: label,
       };
@@ -314,8 +317,16 @@ export default function IitCounsellingUtm() {
       date: p.bucket || '',
       count: Number(p.totalVisits) || 0,
     }));
-    if (raw.length > LINE_POINT_CAP) return raw.slice(-LINE_POINT_CAP);
-    return raw;
+    const byDay = new Map();
+    for (const row of raw) {
+      const d = row.date;
+      if (!d) continue;
+      byDay.set(d, (byDay.get(d) || 0) + row.count);
+    }
+    const merged = [...byDay.entries()].map(([date, count]) => ({ date, count }));
+    merged.sort((a, b) => String(a.date).localeCompare(String(b.date)));
+    if (merged.length > LINE_POINT_CAP) return merged.slice(-LINE_POINT_CAP);
+    return merged;
   }, [visitTrend]);
 
   const filteredSortedCombo = useMemo(() => {
@@ -592,55 +603,71 @@ export default function IitCounsellingUtm() {
         </div>
       </div>
 
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        <div className={cardClass}>
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 min-w-0">
+        <div className={`${cardClass} min-w-0`}>
           <div className={sectionHeaderClass}>
             <h3 className="text-sm font-semibold text-gray-800">Visits by utm_content</h3>
             <p className="text-xs text-gray-500 mt-0.5">Top 10 by visit count (current date range)</p>
           </div>
-          <div className="p-4 h-[240px] min-h-[200px] w-full min-w-0">
+          <div className="p-4 h-[260px] min-h-[220px] w-full min-w-0">
             {loading ? (
               <ChartSkeleton />
             ) : barChartData.length === 0 ? (
               <div className="h-full flex items-center justify-center text-gray-500 text-sm">No data</div>
             ) : (
-              <ResponsiveContainer width="100%" height="100%" minWidth={0} minHeight={200}>
-                <BarChart data={barChartData} margin={{ top: 8, right: 8, left: 0, bottom: 0 }}>
-                  <XAxis dataKey="name" tick={{ fontSize: 11 }} />
-                  <YAxis allowDecimals={false} tick={{ fontSize: 11 }} />
+              <ResponsiveContainer width="100%" height="100%" minWidth={0} minHeight={220} debounce={50}>
+                <BarChart data={barChartData} margin={{ top: 8, right: 8, left: 0, bottom: 4 }}>
+                  <XAxis
+                    dataKey="name"
+                    tick={{ fontSize: 11 }}
+                    tickFormatter={(v) => (typeof v === 'string' && v.includes('\u200c') ? v.split('\u200c')[0] : v)}
+                  />
+                  <YAxis allowDecimals={false} tick={{ fontSize: 11 }} width={36} />
                   <Tooltip
                     formatter={(value) => [value, 'Visits']}
                     labelFormatter={(_, payload) => payload?.[0]?.payload?.fullName ?? ''}
                     contentStyle={{ fontSize: 12 }}
                   />
-                  <Bar dataKey="visits" fill="#003366" name="Visits" radius={[4, 4, 0, 0]} />
+                  <Bar dataKey="visits" fill="#003366" name="Visits" radius={[4, 4, 0, 0]} isAnimationActive={false}>
+                    {barChartData.map((entry, index) => (
+                      <Cell key={`iit-utm-bar-${index}-${String(entry.fullName)}`} />
+                    ))}
+                  </Bar>
                 </BarChart>
               </ResponsiveContainer>
             )}
           </div>
         </div>
-        <div className={cardClass}>
+        <div className={`${cardClass} min-w-0`}>
           <div className={sectionHeaderClass}>
             <h3 className="text-sm font-semibold text-gray-800">Visits over time</h3>
             <p className="text-xs text-gray-500 mt-0.5">Daily count (IST), current date range</p>
           </div>
-          <div className="p-4 h-[240px] min-h-[200px] w-full min-w-0">
+          <div className="p-4 h-[260px] min-h-[220px] w-full min-w-0">
             {trendLoading ? (
               <ChartSkeleton />
             ) : lineChartData.length === 0 ? (
               <div className="h-full flex items-center justify-center text-gray-500 text-sm">No data</div>
             ) : (
-              <ResponsiveContainer width="100%" height="100%" minWidth={0} minHeight={200}>
-                <LineChart data={lineChartData} margin={{ top: 8, right: 8, left: 0, bottom: 0 }}>
+              <ResponsiveContainer width="100%" height="100%" minWidth={0} minHeight={220} debounce={50}>
+                <LineChart data={lineChartData} margin={{ top: 8, right: 8, left: 0, bottom: 4 }}>
                   <CartesianGrid strokeDasharray="3 3" stroke="#eee" />
                   <XAxis dataKey="date" tick={{ fontSize: 11 }} tickFormatter={(v) => (v && v.length >= 10 ? `${v.slice(8, 10)}/${v.slice(5, 7)}` : v)} />
-                  <YAxis allowDecimals={false} tick={{ fontSize: 11 }} />
+                  <YAxis allowDecimals={false} tick={{ fontSize: 11 }} width={36} />
                   <Tooltip
                     formatter={(value) => [value, 'Visits']}
                     labelFormatter={(label) => (label ? formatChartDate(label) : '')}
                     contentStyle={{ fontSize: 12 }}
                   />
-                  <Line type="monotone" dataKey="count" stroke="#003366" strokeWidth={2} name="Visits" dot={{ r: 3 }} />
+                  <Line
+                    type="monotone"
+                    dataKey="count"
+                    stroke="#003366"
+                    strokeWidth={2}
+                    name="Visits"
+                    dot={{ r: 3 }}
+                    isAnimationActive={false}
+                  />
                 </LineChart>
               </ResponsiveContainer>
             )}
@@ -849,7 +876,7 @@ export default function IitCounsellingUtm() {
                 </thead>
                 <tbody className="divide-y divide-gray-100">
                   {savedIitLinks.map((row) => (
-                    <tr key={row.id} className="hover:bg-gray-50/80">
+                    <tr key={`iit-saved-${String(row.id)}-${row.createdAt || ''}`} className="hover:bg-gray-50/80">
                       <td className="px-4 py-3 font-medium text-gray-900 max-w-[140px] truncate" title={row.influencerName}>{row.influencerName}</td>
                       <td className="px-4 py-3 text-gray-700">{row.platform}</td>
                       <td className="px-4 py-3 text-gray-600 max-w-[120px] truncate" title={row.campaign}>{row.campaign}</td>
