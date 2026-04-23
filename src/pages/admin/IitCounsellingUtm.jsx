@@ -258,9 +258,9 @@ export default function IitCounsellingUtm() {
           result.status === 404 &&
           (msg === 'not found' || msg.includes('submission not found'));
         if (missingSavedLinksRoute) {
-          setSavedIitLinks([]);
+          // Do not clear rows already added this session (Save works; list GET may 404 on older hosts).
           setSavedLinksEnvHint(
-            'Saved links need a backend with GET /api/admin/iit-counselling/saved-utm-links. Deploy the latest API, or point the Vite dev proxy at your local server (e.g. VITE_PROXY_TARGET=http://127.0.0.1:5000 in frontend/.env.development.local).',
+            'List could not reload from the server. Use Refresh after deploying the API, or set VITE_PROXY_TARGET to your local backend (port 5000).',
           );
           return;
         }
@@ -268,8 +268,9 @@ export default function IitCounsellingUtm() {
         setSavedIitLinks([]);
         return;
       }
-      const list = result.data?.data ?? [];
-      setSavedIitLinks(Array.isArray(list) ? list : []);
+      const body = result.data;
+      const list = Array.isArray(body?.data) ? body.data : Array.isArray(body) ? body : [];
+      setSavedIitLinks(list);
     });
   }, [logout]);
 
@@ -472,7 +473,6 @@ export default function IitCounsellingUtm() {
       const rest = prev.filter((r) => String(r.id) !== idStr);
       return [row, ...rest];
     });
-    fetchSavedIitLinks();
   };
 
   const handleDeleteSavedIitLink = async (id) => {
@@ -491,7 +491,7 @@ export default function IitCounsellingUtm() {
       setSavedLinksError(result.message || 'Failed to delete link');
       return;
     }
-    fetchSavedIitLinks();
+    setSavedIitLinks((prev) => prev.filter((r) => String(r.id) !== String(id)));
   };
 
   const dateRangeToolbar = (
@@ -852,9 +852,9 @@ export default function IitCounsellingUtm() {
         <div className="border-t border-gray-200 px-6 py-5 bg-gray-50/40">
           <div className="flex flex-wrap items-center justify-between gap-3 mb-4">
             <div>
-              <h3 className="text-sm font-semibold text-gray-800">Saved IIT counselling links</h3>
+              <h3 className="text-sm font-semibold text-gray-800">Saved names and links</h3>
               <p className="text-xs text-gray-500 mt-0.5">
-                Stored in a dedicated database collection for this page only—not the Influencer / UTM Tracking (<span className="font-mono">/register</span>) list.
+                Names you save with <span className="font-medium">Save</span> are stored in the database and listed here.
               </p>
             </div>
             <button
