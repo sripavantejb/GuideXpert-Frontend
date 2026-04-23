@@ -83,6 +83,7 @@ const SettingsPage = lazy(() => import('./pages/webinar/SettingsPage'));
 const CertificatesPage = lazy(() => import('./pages/webinar/CertificatesPage'));
 const CertificateViewPage = lazy(() => import('./pages/CertificateViewPage'));
 const StudentsDashboard = lazy(() => import('./pages/StudentsDashboard'));
+const IitCounsellingPage = lazy(() => import('./pages/IitCounsellingPage'));
 const RankPredictorToolPage = lazy(() => import('./pages/studentsTools/RankPredictorPage'));
 const StudentExamPredictorPage = lazy(() => import('./pages/studentsTools/StudentExamPredictorPage'));
 const CollegePredictorToolPage = lazy(() => import('./pages/studentsTools/CollegePredictorPage'));
@@ -188,6 +189,14 @@ function App() {
           <Route path="/collegepredictor" element={<CollegePredictorPage />} />
           <Route path="/rank-predictor" element={<RankPredictorHome />} />
           <Route path="/rank-predictor/:examId" element={<ExamPredictor />} />
+          <Route
+            path="/iit-counselling"
+            element={
+              <Suspense fallback={<div className="min-h-screen flex items-center justify-center bg-[#0F172A] text-white"><div className="animate-pulse text-sm font-medium">Loading counselling form…</div></div>}>
+                <IitCounsellingPage />
+              </Suspense>
+            }
+          />
           <Route
             path="/students"
             element={
