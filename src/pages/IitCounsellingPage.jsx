@@ -222,7 +222,7 @@ export default function IitCounsellingPage() {
               <Field label="6. City" error={errors.city}>
                 <input className={neoInputClass} value={formData.city} onChange={(e) => handleInputChange('city', e.target.value)} />
               </Field>
-              <ChoiceGroup label="7. SLOT Booking (Are you available for a FREE IITian session this Sunday? (Yes / No / Need another time))" options={SLOT_BOOKING_OPTIONS} value={formData.slotBooking} onChange={(value) => handleInputChange('slotBooking', value)} error={errors.slotBooking} />
+              <ChoiceGroup label="7. SLOT Booking(Are you available for a FREE IITian session this Sunday?" options={SLOT_BOOKING_OPTIONS} value={formData.slotBooking} onChange={(value) => handleInputChange('slotBooking', value)} error={errors.slotBooking} />
               <Field label="8. Your Top 5 colleges (comma separated)" error={errors.top5Colleges}>
                 <textarea className={`${neoInputClass} min-h-[100px]`} value={formData.top5Colleges} onChange={(e) => handleInputChange('top5Colleges', e.target.value)} />
               </Field>
