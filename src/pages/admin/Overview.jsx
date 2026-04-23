@@ -196,7 +196,7 @@ export default function Overview() {
     let cancelled = false;
     setUtmLinksLoading(true);
     setUtmLinksError('');
-    getInfluencerLinks(getStoredToken()).then((res) => {
+    getInfluencerLinks(getStoredToken(), { linkTarget: 'registration' }).then((res) => {
       if (cancelled) return;
       if (!res.success) {
         if (res.status === 401) {

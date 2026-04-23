@@ -478,8 +478,11 @@ export const createInfluencerLink = async (payload, save = false, token = getSto
   }, token);
 };
 
-export const getInfluencerLinks = async (token = getStoredToken()) => {
-  return influencerRequest('/influencer-links', { method: 'GET' }, token);
+export const getInfluencerLinks = async (token = getStoredToken(), params = {}) => {
+  const search = new URLSearchParams();
+  if (params.linkTarget) search.set('linkTarget', params.linkTarget);
+  const query = search.toString();
+  return influencerRequest(`/influencer-links${query ? `?${query}` : ''}`, { method: 'GET' }, token);
 };
 
 export const deleteInfluencerLink = async (id, token = getStoredToken()) => {

@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useState } from 'react';
+import { Link } from 'react-router-dom';
 import { FiEye, FiUsers, FiBarChart2, FiCheckCircle } from 'react-icons/fi';
 import {
   getIitCounsellingSubmissions,
@@ -354,6 +355,12 @@ export default function IitCounselling() {
         <div>
           <h2 className="text-2xl font-semibold text-gray-900 tracking-tight">IIT Counselling Analytics</h2>
           <p className="text-sm text-gray-500 mt-1">Page visits, conversion insights, and submission details in one place.</p>
+          <Link
+            to="/admin/iit-counselling-utm#iit-utm-generator"
+            className="inline-flex mt-2 text-sm font-medium text-primary-navy hover:underline"
+          >
+            Generate UTM link for campaigns
+          </Link>
         </div>
         <div className="flex flex-wrap items-end gap-2 rounded-xl border border-gray-200 bg-white px-3 py-2 shadow-sm">
           <div>

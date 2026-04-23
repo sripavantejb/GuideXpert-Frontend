@@ -1,6 +1,6 @@
 import { useState, useEffect, useCallback, useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { FiCopy, FiSave, FiRefreshCw, FiTrash2, FiLink, FiBarChart2, FiEye, FiX } from 'react-icons/fi';
+import { FiCopy, FiRefreshCw, FiLink, FiBarChart2, FiEye, FiX } from 'react-icons/fi';
 import {
   BarChart,
   Bar,
@@ -13,10 +13,6 @@ import {
   CartesianGrid,
 } from 'recharts';
 import {
-  getInfluencerLinks,
-  createInfluencerLink,
-  deleteInfluencerLink,
-  updateInfluencerLink,
   getInfluencerAnalytics,
   getInfluencerAnalyticsTrend,
   getAdminLeads,
@@ -25,39 +21,7 @@ import {
 import { useAuth } from '../../hooks/useAuth';
 import TableSkeleton from '../../components/UI/TableSkeleton';
 import CopyToSheetsModal from '../../components/Admin/CopyToSheetsModal';
-
-const PLATFORMS = [
-  { value: 'Instagram', label: 'Instagram' },
-  { value: 'YouTube', label: 'YouTube' },
-  { value: 'Twitter', label: 'Twitter' },
-  { value: 'X', label: 'X' },
-  { value: 'WhatsApp', label: 'WhatsApp' },
-  { value: 'Telegram', label: 'Telegram' },
-  { value: 'Facebook', label: 'Facebook' },
-  { value: 'LinkedIn', label: 'LinkedIn' },
-];
-
-const DEFAULT_CAMPAIGN = 'guide_xperts';
-
-const LINKS_SORT_OPTIONS = [
-  { value: 'date-desc', label: 'Date created (newest first)' },
-  { value: 'date-asc', label: 'Date created (oldest first)' },
-  { value: 'name-asc', label: 'Influencer name A–Z' },
-  { value: 'name-desc', label: 'Influencer name Z–A' },
-  { value: 'platform', label: 'Platform' },
-];
-
-const LINKS_COPY_FIELDS = [
-  { key: 'influencerName', label: 'Influencer' },
-  { key: 'platform', label: 'Platform' },
-  { key: 'campaign', label: 'Campaign' },
-  { key: 'utmLink', label: 'UTM Link' },
-  { key: 'createdAt', label: 'Date created' },
-  { key: 'leadCount', label: 'Leads' },
-  { key: 'cost', label: 'Cost' },
-  { key: 'costPerLead', label: 'Cost per lead' },
-  { key: 'latestLeadAt', label: 'Latest lead' },
-];
+import InfluencerLinkCreationWorkspace from '../../components/Admin/InfluencerLinkCreationWorkspace';
 
 const ANALYTICS_COPY_FIELDS = [
   { key: 'influencerName', label: 'Influencer Name' },
@@ -65,15 +29,6 @@ const ANALYTICS_COPY_FIELDS = [
   { key: 'totalRegistrations', label: 'Total Registrations' },
   { key: 'latestRegistration', label: 'Latest Registration' },
 ];
-
-function getLinkCellValue(link, key) {
-  const v = link[key];
-  if (key === 'createdAt' || key === 'latestLeadAt') return v ? formatDate(v) : '';
-  if (key === 'cost') return formatCost(v);
-  if (key === 'costPerLead') return formatCostPerLead(v);
-  if (v == null || v === '') return '';
-  return String(v);
-}
 
 function getAnalyticsCellValue(row, key) {
   const v = row[key];
@@ -152,33 +107,8 @@ function ChartSkeleton() {
 
 export default function InfluencerTracking() {
   const { logout } = useAuth();
-  const [form, setForm] = useState({
-    influencerName: '',
-    platform: 'Instagram',
-    campaign: DEFAULT_CAMPAIGN,
-    cost: '',
-  });
-  const [generatedLink, setGeneratedLink] = useState(null);
-  const [linkError, setLinkError] = useState('');
-  const [linkLoading, setLinkLoading] = useState(false);
-  const [saveLoading, setSaveLoading] = useState(false);
-  const [copyFeedback, setCopyFeedback] = useState(false);
-
-  const [savedLinks, setSavedLinks] = useState([]);
-  const [linksLoading, setLinksLoading] = useState(true);
-  const [linksError, setLinksError] = useState('');
-  const [deletingId, setDeletingId] = useState(null);
-  const [copiedLinkId, setCopiedLinkId] = useState(null);
-  const [savedLinksSearch, setSavedLinksSearch] = useState('');
-  const [savedLinksPlatform, setSavedLinksPlatform] = useState('');
-  const [linksSort, setLinksSort] = useState('date-desc');
-  const [linksPage, setLinksPage] = useState(1);
-  const linksPerPage = 10;
-  const [selectedLinkIds, setSelectedLinkIds] = useState(new Set());
-  const [linkToDelete, setLinkToDelete] = useState(null);
-  const [bulkDeleteConfirm, setBulkDeleteConfirm] = useState(false);
-  const [viewAllLinks, setViewAllLinks] = useState(false);
-  const [copyLinksModalOpen, setCopyLinksModalOpen] = useState(false);
+  /** Mirror of saved links from InfluencerLinkCreationWorkspace (for detail modal). */
+  const [savedLinksSnapshot, setSavedLinksSnapshot] = useState([]);
   const [copyAnalyticsModalOpen, setCopyAnalyticsModalOpen] = useState(false);
 
   const [analytics, setAnalytics] = useState([]);
@@ -198,32 +128,10 @@ export default function InfluencerTracking() {
   const [detailLeads, setDetailLeads] = useState([]);
   const [detailLeadsPagination, setDetailLeadsPagination] = useState({ page: 1, limit: 10, total: 0, totalPages: 1 });
   const [detailLeadsLoading, setDetailLeadsLoading] = useState(false);
-
-  const [editingCostLinkId, setEditingCostLinkId] = useState(null);
-  const [editingCostValue, setEditingCostValue] = useState('');
-  const [costUpdateLoading, setCostUpdateLoading] = useState(false);
+  const [copiedDetailLinkId, setCopiedDetailLinkId] = useState(null);
 
   const navigate = useNavigate();
   const token = getStoredToken();
-
-  const fetchLinks = useCallback(() => {
-    setLinksLoading(true);
-    setLinksError('');
-    getInfluencerLinks(token).then((result) => {
-      if (!result.success) {
-        if (result.status === 401) {
-          logout();
-          window.location.href = '/admin/login';
-          return;
-        }
-        setLinksError(result.message || 'Failed to load links');
-        setLinksLoading(false);
-        return;
-      }
-      setSavedLinks(result.data?.data ?? []);
-      setLinksLoading(false);
-    });
-  }, [token, logout]);
 
   const fetchAnalytics = useCallback(() => {
     setAnalyticsLoading(true);
@@ -264,11 +172,6 @@ export default function InfluencerTracking() {
   }, [token, analyticsFilters.from, analyticsFilters.to]);
 
   useEffect(() => {
-    const t = setTimeout(() => fetchLinks(), 0);
-    return () => clearTimeout(t);
-  }, [fetchLinks]);
-
-  useEffect(() => {
     const t = setTimeout(() => fetchAnalytics(), 0);
     return () => clearTimeout(t);
   }, [fetchAnalytics]);
@@ -281,13 +184,12 @@ export default function InfluencerTracking() {
   // Refetch when user returns to this tab (e.g. after deleting data in MongoDB) so data stays live
   useEffect(() => {
     const onFocus = () => {
-      fetchLinks();
       fetchAnalytics();
       fetchTrend();
     };
     window.addEventListener('focus', onFocus);
     return () => window.removeEventListener('focus', onFocus);
-  }, [fetchLinks, fetchAnalytics, fetchTrend]);
+  }, [fetchAnalytics, fetchTrend]);
 
   // Poll analytics/trend every 60s while tab is visible so MongoDB changes show up live
   useEffect(() => {
@@ -322,37 +224,6 @@ export default function InfluencerTracking() {
     }));
   }, [analytics]);
 
-  const filteredSavedLinks = useMemo(() => {
-    let list = savedLinks;
-    const q = savedLinksSearch.trim().toLowerCase();
-    if (q) {
-      list = list.filter(
-        (l) =>
-          (l.influencerName || '').toLowerCase().includes(q) ||
-          (l.campaign || '').toLowerCase().includes(q)
-      );
-    }
-    if (savedLinksPlatform) {
-      list = list.filter((l) => l.platform === savedLinksPlatform);
-    }
-    if (linksSort === 'date-desc') list = [...list].sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
-    else if (linksSort === 'date-asc') list = [...list].sort((a, b) => new Date(a.createdAt) - new Date(b.createdAt));
-    else if (linksSort === 'name-asc') list = [...list].sort((a, b) => (a.influencerName || '').localeCompare(b.influencerName || ''));
-    else if (linksSort === 'name-desc') list = [...list].sort((a, b) => (b.influencerName || '').localeCompare(a.influencerName || ''));
-    else if (linksSort === 'platform') list = [...list].sort((a, b) => (a.platform || '').localeCompare(b.platform || ''));
-    return list;
-  }, [savedLinks, savedLinksSearch, savedLinksPlatform, linksSort]);
-
-  const paginatedLinks = useMemo(() => {
-    if (viewAllLinks) return filteredSavedLinks;
-    const start = (linksPage - 1) * linksPerPage;
-    return filteredSavedLinks.slice(start, start + linksPerPage);
-  }, [viewAllLinks, filteredSavedLinks, linksPage, linksPerPage]);
-
-  const linksToCopy = filteredSavedLinks;
-
-  const linksTotalPages = Math.max(1, Math.ceil(filteredSavedLinks.length / linksPerPage));
-
   const filteredAnalytics = useMemo(() => {
     if (!analyticsSearch.trim()) return analytics;
     const q = analyticsSearch.trim().toLowerCase();
@@ -362,8 +233,8 @@ export default function InfluencerTracking() {
   const detailLinksForName = useMemo(() => {
     if (!detailInfluencer?.name) return [];
     const key = normalizeInfluencerName(detailInfluencer.name);
-    return savedLinks.filter((l) => normalizeInfluencerName(l.influencerName) === key);
-  }, [detailInfluencer?.name, savedLinks]);
+    return savedLinksSnapshot.filter((l) => normalizeInfluencerName(l.influencerName) === key);
+  }, [detailInfluencer?.name, savedLinksSnapshot]);
 
   const detailTotalLeads = useMemo(() => {
     if (!detailInfluencer?.name) return 0;
@@ -406,214 +277,23 @@ export default function InfluencerTracking() {
     fetchDetailLeads();
   }, [detailInfluencer, detailLeadsPagination.page, fetchDetailLeads]);
 
-  const handleFormChange = (e) => {
-    const { name, value } = e.target;
-    setForm((prev) => ({ ...prev, [name]: value }));
-    setLinkError('');
-  };
-
-  const handleGenerate = async (e) => {
-    e.preventDefault();
-    setLinkError('');
-    if (!form.influencerName.trim()) {
-      setLinkError('Influencer name is required.');
-      return;
-    }
-    setLinkLoading(true);
-    setGeneratedLink(null);
-    const result = await createInfluencerLink(
-      {
-        influencerName: form.influencerName.trim(),
-        platform: form.platform,
-        campaign: form.campaign.trim() || DEFAULT_CAMPAIGN,
-      },
-      false,
-      token
-    );
-    setLinkLoading(false);
-    if (!result.success) {
-      if (result.status === 401) {
-        logout();
-        window.location.href = '/admin/login';
-        return;
-      }
-      setLinkError(result.message || 'Failed to generate link');
-      return;
-    }
-    setGeneratedLink(result.data?.data?.utmLink ?? null);
-  };
-
-  const handleCopy = (url, id) => {
-    const toCopy = url || generatedLink;
-    if (!toCopy) return;
-    navigator.clipboard.writeText(toCopy).then(() => {
-      if (id) {
-        setCopiedLinkId(id);
-        setTimeout(() => setCopiedLinkId(null), 2000);
-      } else {
-        setCopyFeedback(true);
-        setTimeout(() => setCopyFeedback(false), 2000);
-      }
-    });
-  };
-
-  const handleSave = async () => {
-    if (!form.influencerName.trim()) return;
-    setSaveLoading(true);
-    setLinkError('');
-    const payload = {
-      influencerName: form.influencerName.trim(),
-      platform: form.platform,
-      campaign: form.campaign.trim() || DEFAULT_CAMPAIGN,
-    };
-    const costTrimmed = typeof form.cost === 'string' ? form.cost.trim() : '';
-    if (costTrimmed !== '') {
-      const costNum = Number(costTrimmed);
-      if (!Number.isNaN(costNum) && costNum >= 0) payload.cost = costNum;
-    }
-    const result = await createInfluencerLink(
-      payload,
-      true,
-      token
-    );
-    setSaveLoading(false);
-    if (!result.success) {
-      if (result.status === 401) {
-        logout();
-        window.location.href = '/admin/login';
-        return;
-      }
-      setLinkError(result.message || 'Failed to save link');
-      return;
-    }
-    setGeneratedLink(result.data?.data?.utmLink ?? generatedLink);
-    fetchLinks();
-    openDetailView(form.influencerName.trim(), form.platform);
-  };
-
   const openDetailView = (name, platform) => {
     if (!name) return;
     setDetailInfluencer({ name, platform: platform || '' });
     setDetailLeadsPagination((p) => ({ ...p, page: 1 }));
   };
 
-  const handleDeleteClick = (link) => setLinkToDelete(link);
-
-  const handleDeleteConfirm = async () => {
-    if (!linkToDelete?.id) {
-      setLinkToDelete(null);
-      return;
-    }
-    setDeletingId(linkToDelete.id);
-    setLinksError('');
-    const result = await deleteInfluencerLink(linkToDelete.id, token);
-    setDeletingId(null);
-    setLinkToDelete(null);
-    if (!result.success) {
-      if (result.status === 401) {
-        logout();
-        window.location.href = '/admin/login';
-        return;
-      }
-      setLinksError(result.message || 'Failed to delete link');
-      return;
-    }
-    fetchLinks();
-    fetchAnalytics();
-    fetchTrend();
-  };
-
-  const handleBulkDeleteConfirm = async () => {
-    const ids = Array.from(selectedLinkIds);
-    if (ids.length === 0) {
-      setBulkDeleteConfirm(false);
-      return;
-    }
-    setLinksError('');
-    for (const id of ids) {
-      await deleteInfluencerLink(id, token);
-    }
-    setSelectedLinkIds(new Set());
-    setBulkDeleteConfirm(false);
-    fetchLinks();
-    fetchAnalytics();
-    fetchTrend();
-  };
-
-  const startEditCost = (link) => {
-    setLinkError('');
-    setEditingCostLinkId(link.id);
-    setEditingCostValue(link.cost != null && link.cost !== '' ? String(link.cost) : '');
-  };
-
-  const cancelEditCost = () => {
-    setEditingCostLinkId(null);
-    setEditingCostValue('');
-  };
-
-  const saveEditCost = async () => {
-    if (editingCostLinkId == null) return;
-    const trimmed = editingCostValue.trim();
-    const costPayload = trimmed === '' ? null : (() => {
-      const n = Number(trimmed);
-      return !Number.isNaN(n) && n >= 0 ? n : null;
-    })();
-    if (costPayload === undefined) return; // invalid
-    setCostUpdateLoading(true);
-    const result = await updateInfluencerLink(editingCostLinkId, { cost: costPayload }, token);
-    setCostUpdateLoading(false);
-    if (result.success) {
-      setEditingCostLinkId(null);
-      setEditingCostValue('');
-      fetchLinks();
-    } else {
-      setLinkError(result.message || 'Failed to update cost');
-    }
-  };
-
-  const toggleSelectLink = (id) => {
-    setSelectedLinkIds((prev) => {
-      const next = new Set(prev);
-      if (next.has(id)) next.delete(id);
-      else next.add(id);
-      return next;
+  const copyDetailLinkUrl = (url, id) => {
+    if (!url) return;
+    navigator.clipboard.writeText(url).then(() => {
+      setCopiedDetailLinkId(id);
+      setTimeout(() => setCopiedDetailLinkId(null), 2000);
     });
-  };
-
-  const toggleSelectAllLinks = () => {
-    if (selectedLinkIds.size === paginatedLinks.length) {
-      setSelectedLinkIds(new Set());
-    } else {
-      setSelectedLinkIds(new Set(paginatedLinks.map((l) => l.id)));
-    }
   };
 
   const setDatePreset = (preset) => {
     const { from, to } = getDatePresetRange(preset);
     setAnalyticsFilters((p) => ({ ...p, from, to, preset }));
-  };
-
-  const exportLinksCsv = () => {
-    const headers = ['Influencer', 'Platform', 'Campaign', 'UTM Link', 'Date created', 'Leads', 'Cost', 'Cost per lead', 'Latest lead'];
-    const rows = filteredSavedLinks.map((l) => [
-      l.influencerName ?? '',
-      l.platform ?? '',
-      l.campaign ?? '',
-      l.utmLink ?? '',
-      l.createdAt ? formatDate(l.createdAt) : '',
-      l.leadCount ?? 0,
-      l.cost != null ? String(l.cost) : '',
-      l.costPerLead != null ? String(l.costPerLead) : '',
-      l.latestLeadAt ? formatDate(l.latestLeadAt) : '',
-    ]);
-    const csv = [headers.join(','), ...rows.map((r) => r.map((c) => `"${String(c).replace(/"/g, '""')}"`).join(','))].join('\n');
-    const blob = new Blob([csv], { type: 'text/csv;charset=utf-8' });
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement('a');
-    a.href = url;
-    a.download = `influencer-links-${new Date().toISOString().slice(0, 10)}.csv`;
-    a.click();
-    URL.revokeObjectURL(url);
   };
 
   const exportAnalyticsCsv = () => {
@@ -653,7 +333,7 @@ export default function InfluencerTracking() {
             <FiLink className="w-4 h-4" />
             <span>Saved links</span>
           </div>
-          <p className="text-2xl font-semibold text-gray-900 mt-1">{savedLinks.length}</p>
+          <p className="text-2xl font-semibold text-gray-900 mt-1">{savedLinksSnapshot.length}</p>
         </div>
         <div className={cardClass + ' p-4'}>
           <div className="flex items-center gap-2 text-gray-500 text-sm">
@@ -735,309 +415,14 @@ export default function InfluencerTracking() {
         </div>
       </div>
 
-      {/* Generate UTM Link */}
-      <section className={cardClass}>
-        <div className={sectionHeaderClass + ' py-2 sm:py-3'}>
-          <h2 className="text-base font-semibold text-gray-800">Generate UTM Link</h2>
-          <p className="text-sm text-gray-500 mt-0.5">
-            Create a unique registration link. Copy to share or Save to store below.
-          </p>
-        </div>
-        <form onSubmit={handleGenerate} className="p-6 space-y-5">
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
-            <div>
-              <label htmlFor="influencerName" className="block text-sm font-medium text-gray-700 mb-1.5">Influencer Name</label>
-              <input
-                id="influencerName"
-                name="influencerName"
-                type="text"
-                value={form.influencerName}
-                onChange={handleFormChange}
-                placeholder="e.g. John Doe"
-                className="w-full h-10 rounded-lg border border-gray-300 px-3 text-sm focus:ring-2 focus:ring-primary-navy/30 focus:border-primary-navy outline-none"
-              />
-            </div>
-            <div>
-              <label htmlFor="platform" className="block text-sm font-medium text-gray-700 mb-1.5">Platform</label>
-              <select
-                id="platform"
-                name="platform"
-                value={form.platform}
-                onChange={handleFormChange}
-                className="w-full h-10 rounded-lg border border-gray-300 px-3 text-sm focus:ring-2 focus:ring-primary-navy/30 focus:border-primary-navy outline-none bg-white"
-              >
-                {PLATFORMS.map((p) => (
-                  <option key={p.value} value={p.value}>{p.label}</option>
-                ))}
-              </select>
-            </div>
-            <div>
-              <label htmlFor="campaign" className="block text-sm font-medium text-gray-700 mb-1.5">Campaign Name</label>
-              <input
-                id="campaign"
-                name="campaign"
-                type="text"
-                value={form.campaign}
-                onChange={handleFormChange}
-                placeholder={DEFAULT_CAMPAIGN}
-                className="w-full h-10 rounded-lg border border-gray-300 px-3 text-sm focus:ring-2 focus:ring-primary-navy/30 focus:border-primary-navy outline-none"
-              />
-            </div>
-            <div>
-              <label htmlFor="cost" className="block text-sm font-medium text-gray-700 mb-1.5">Cost (₹)</label>
-              <input
-                id="cost"
-                name="cost"
-                type="number"
-                min="0"
-                step="0.01"
-                value={form.cost}
-                onChange={handleFormChange}
-                placeholder="Optional"
-                className="w-full h-10 rounded-lg border border-gray-300 px-3 text-sm focus:ring-2 focus:ring-primary-navy/30 focus:border-primary-navy outline-none"
-              />
-              <p className="text-xs text-gray-500 mt-0.5">Optional; used for cost per lead when saving.</p>
-            </div>
-          </div>
-          {linkError && <p className="text-sm text-red-600" role="alert">{linkError}</p>}
-          <div className="flex flex-wrap items-center gap-3 pt-2">
-            <button
-              type="submit"
-              disabled={linkLoading || !form.influencerName.trim()}
-              className="inline-flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium text-white bg-primary-navy hover:bg-primary-navy/90 focus:ring-2 focus:ring-primary-navy focus:ring-offset-2 disabled:opacity-50 disabled:pointer-events-none"
-            >
-              {linkLoading ? 'Generating…' : 'Generate Link'}
-            </button>
-            {generatedLink && (
-              <>
-                <button type="button" onClick={() => handleCopy(null)} className="inline-flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium text-gray-700 bg-gray-100 hover:bg-gray-200 border border-gray-300">
-                  <FiCopy className="w-4 h-4" />{copyFeedback ? 'Copied' : 'Copy'}
-                </button>
-                <button type="button" onClick={handleSave} disabled={saveLoading} className="inline-flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium text-white bg-primary-navy hover:bg-primary-navy/90 disabled:opacity-50">
-                  <FiSave className="w-4 h-4" />{saveLoading ? 'Saving…' : 'Save to list'}
-                </button>
-              </>
-            )}
-          </div>
-          {generatedLink && (
-            <div className="mt-4 p-4 rounded-lg border border-gray-200 bg-gray-50">
-              <p className="text-sm font-medium text-gray-700 mb-1">Generated link</p>
-              <p className="text-sm text-gray-800 break-all font-mono">{generatedLink}</p>
-            </div>
-          )}
-        </form>
-      </section>
-
-      {/* Saved links */}
-      <section className={cardClass}>
-        <div className={sectionHeaderClass + ' flex flex-wrap items-center justify-between gap-4'}>
-          <div>
-            <h2 className="text-base font-semibold text-gray-800">Saved Influencer Links</h2>
-            <p className="text-sm text-gray-500 mt-0.5">Links saved for reuse. Leads column shows count per link. Search, filter, export or bulk delete.</p>
-          </div>
-          <div className="flex items-center gap-2">
-            <button type="button" onClick={fetchLinks} disabled={linksLoading} className="p-2 rounded-lg text-gray-500 hover:bg-gray-200 disabled:opacity-50" title="Refresh">
-              <FiRefreshCw className={`w-5 h-5 ${linksLoading ? 'animate-spin' : ''}`} />
-            </button>
-            <button type="button" onClick={exportLinksCsv} disabled={filteredSavedLinks.length === 0} className="text-sm px-3 py-1.5 rounded-lg border border-gray-300 hover:bg-gray-50 disabled:opacity-50">
-              Export CSV
-            </button>
-          </div>
-        </div>
-        <div className="p-4 border-b border-gray-100 flex flex-wrap gap-3">
-          <input
-            type="search"
-            placeholder="Search by influencer or campaign"
-            value={savedLinksSearch}
-            onChange={(e) => { setSavedLinksSearch(e.target.value); setLinksPage(1); }}
-            className="rounded-lg border border-gray-300 px-3 py-2 text-sm w-56 focus:ring-2 focus:ring-primary-navy/30 focus:border-primary-navy outline-none"
-          />
-          <select
-            value={savedLinksPlatform}
-            onChange={(e) => { setSavedLinksPlatform(e.target.value); setLinksPage(1); }}
-            className="rounded-lg border border-gray-300 px-3 py-2 text-sm focus:ring-2 focus:ring-primary-navy/30 focus:border-primary-navy outline-none bg-white"
-          >
-            <option value="">All platforms</option>
-            {PLATFORMS.map((p) => <option key={p.value} value={p.value}>{p.label}</option>)}
-          </select>
-          <select
-            value={linksSort}
-            onChange={(e) => setLinksSort(e.target.value)}
-            className="rounded-lg border border-gray-300 px-3 py-2 text-sm focus:ring-2 focus:ring-primary-navy/30 outline-none bg-white"
-          >
-            {LINKS_SORT_OPTIONS.map((o) => <option key={o.value} value={o.value}>{o.label}</option>)}
-          </select>
-          <label className="inline-flex items-center gap-2 cursor-pointer text-sm text-gray-700 ml-2 pl-2 border-l border-gray-200">
-            <input
-              type="checkbox"
-              checked={viewAllLinks}
-              onChange={(e) => {
-                setViewAllLinks(e.target.checked);
-                if (!e.target.checked) setLinksPage(1);
-              }}
-              className="rounded border-gray-300 text-primary-blue-500 focus:ring-primary-blue-500"
-              aria-label="View all links in one list"
-            />
-            View all
-          </label>
-          <button
-            type="button"
-            onClick={() => setCopyLinksModalOpen(true)}
-            className="inline-flex items-center gap-1.5 ml-2 px-3 py-1.5 rounded-lg border border-gray-300 text-sm font-medium text-gray-700 hover:bg-gray-50 transition-colors"
-            aria-label="Copy to sheets"
-          >
-            <FiCopy className="w-4 h-4" /> Copy
-          </button>
-          {(savedLinksSearch || savedLinksPlatform) && (
-            <span className="text-sm text-gray-500 self-center">Showing {filteredSavedLinks.length} of {savedLinks.length} links</span>
-          )}
-          {selectedLinkIds.size > 0 && (
-            <button
-              type="button"
-              onClick={() => setBulkDeleteConfirm(true)}
-              className="text-sm px-3 py-1.5 rounded-lg bg-red-600 text-white hover:bg-red-700"
-            >
-              Delete selected ({selectedLinkIds.size})
-            </button>
-          )}
-        </div>
-        {linksLoading ? (
-          <div className="px-6 py-8"><TableSkeleton rows={8} cols={11} /></div>
-        ) : linksError ? (
-          <div className="px-6 py-6"><p className="text-red-600 text-sm" role="alert">{linksError}</p></div>
-        ) : filteredSavedLinks.length === 0 ? (
-          <div className="px-6 py-12 text-center">
-            <p className="text-gray-500 text-sm">No saved links yet.</p>
-            <p className="text-gray-400 text-xs mt-1">Generate and save a link above to see it here.</p>
-          </div>
-        ) : (
-          <>
-            <div className="overflow-x-auto">
-              <table className="min-w-full divide-y divide-gray-200">
-                <thead className="bg-gray-50">
-                  <tr>
-                    <th className="px-4 py-2 w-10">
-                      <input
-                        type="checkbox"
-                        checked={paginatedLinks.length > 0 && selectedLinkIds.size === paginatedLinks.length}
-                        onChange={toggleSelectAllLinks}
-                        className="rounded border-gray-300"
-                      />
-                    </th>
-                    <th className="px-6 py-3 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">Influencer</th>
-                    <th className="px-6 py-3 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">Platform</th>
-                    <th className="px-6 py-3 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">Campaign</th>
-                    <th className="px-6 py-3 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">UTM Link</th>
-                    <th className="px-6 py-3 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">Date created</th>
-                    <th className="px-6 py-3 text-right text-xs font-semibold text-gray-600 uppercase tracking-wider">Leads</th>
-                    <th className="px-6 py-3 text-right text-xs font-semibold text-gray-600 uppercase tracking-wider">Cost</th>
-                    <th className="px-6 py-3 text-right text-xs font-semibold text-gray-600 uppercase tracking-wider">Cost per lead</th>
-                    <th className="px-6 py-3 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">Latest lead</th>
-                  </tr>
-                </thead>
-                <tbody className="divide-y divide-gray-100">
-                  {paginatedLinks.map((link, i) => (
-                    <tr key={link.id} className={i % 2 === 0 ? 'bg-white' : 'bg-gray-50/60 hover:bg-primary-blue-50/30'}>
-                      <td className="px-4 py-3">
-                        <input
-                          type="checkbox"
-                          checked={selectedLinkIds.has(link.id)}
-                          onChange={() => toggleSelectLink(link.id)}
-                          className="rounded border-gray-300"
-                        />
-                      </td>
-                      <td className="px-6 py-3 text-sm">
-                        <div className="flex items-center gap-2">
-                          <button
-                            type="button"
-                            onClick={() => openDetailView(link.influencerName, link.platform)}
-                            className="font-medium text-gray-900 hover:text-primary-navy hover:underline text-left"
-                          >
-                            {link.influencerName}
-                          </button>
-                          {(() => {
-                            const sameNameCount = savedLinks.filter(
-                              (l) => normalizeInfluencerName(l.influencerName) === normalizeInfluencerName(link.influencerName)
-                            ).length;
-                            if (sameNameCount > 1) {
-                              return (
-                                <span className="text-xs text-gray-500 bg-gray-100 px-1.5 py-0.5 rounded">
-                                  {sameNameCount} links
-                                </span>
-                              );
-                            }
-                            return null;
-                          })()}
-                        </div>
-                      </td>
-                      <td className="px-6 py-3 text-sm text-gray-600">{link.platform}</td>
-                      <td className="px-6 py-3 text-sm text-gray-600">{link.campaign}</td>
-                      <td className="px-6 py-3 text-sm max-w-[200px]">
-                        <a href={link.utmLink} target="_blank" rel="noopener noreferrer" title={link.utmLink} className="text-primary-navy hover:underline truncate block font-mono text-xs">
-                          {link.utmLink}
-                        </a>
-                      </td>
-                      <td className="px-6 py-3 text-sm text-gray-500">{formatDate(link.createdAt)}</td>
-                      <td className="px-6 py-3 text-sm text-gray-900 text-right font-medium">{link.leadCount ?? 0}</td>
-                      <td className="px-6 py-3 text-sm text-gray-600 text-right">
-                        {editingCostLinkId === link.id ? (
-                          <div className="flex items-center justify-end gap-1">
-                            <input
-                              type="number"
-                              min="0"
-                              step="0.01"
-                              value={editingCostValue}
-                              onChange={(e) => setEditingCostValue(e.target.value)}
-                              className="w-24 rounded border border-gray-300 px-2 py-1 text-sm"
-                              aria-label="Cost"
-                            />
-                            <button type="button" onClick={saveEditCost} disabled={costUpdateLoading} className="text-xs px-2 py-1 rounded bg-primary-navy text-white hover:bg-primary-navy/90 disabled:opacity-50">Save</button>
-                            <button type="button" onClick={cancelEditCost} disabled={costUpdateLoading} className="text-xs px-2 py-1 rounded border border-gray-300 hover:bg-gray-50 disabled:opacity-50">Cancel</button>
-                          </div>
-                        ) : (
-                          <div className="flex flex-col items-end gap-1.5">
-                            <span className="text-gray-700">{formatCost(link.cost)}</span>
-                            <button type="button" onClick={() => startEditCost(link)} className="text-xs px-2 py-0.5 rounded border border-gray-300 text-gray-600 hover:bg-gray-100 hover:border-gray-400">
-                              Edit cost
-                            </button>
-                          </div>
-                        )}
-                      </td>
-                      <td className="px-6 py-3 text-sm text-gray-600 text-right">{formatCostPerLead(link.costPerLead)}</td>
-                      <td className="px-6 py-3 text-sm text-gray-500">{link.latestLeadAt ? formatDate(link.latestLeadAt) : '—'}</td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
-            <div className="px-6 py-3 border-t border-gray-100 flex items-center justify-between">
-              {viewAllLinks ? (
-                <p className="text-sm text-gray-500">
-                  Showing all {filteredSavedLinks.length} links
-                </p>
-              ) : linksTotalPages > 1 ? (
-                <>
-                  <p className="text-sm text-gray-500">Page {linksPage} of {linksTotalPages}</p>
-                  <div className="flex gap-2">
-                    <button type="button" onClick={() => setLinksPage((p) => Math.max(1, p - 1))} disabled={linksPage <= 1} className="px-3 py-1 rounded border border-gray-300 text-sm disabled:opacity-50">Previous</button>
-                    <button type="button" onClick={() => setLinksPage((p) => Math.min(linksTotalPages, p + 1))} disabled={linksPage >= linksTotalPages} className="px-3 py-1 rounded border border-gray-300 text-sm disabled:opacity-50">Next</button>
-                  </div>
-                </>
-              ) : (
-                <p className="text-sm text-gray-500">Page {linksPage} of {linksTotalPages}</p>
-              )}
-            </div>
-          </>
-        )}
-      </section>
-
-      <CopyToSheetsModal
-        fields={LINKS_COPY_FIELDS}
-        records={linksToCopy}
-        getCellValue={getLinkCellValue}
-        open={copyLinksModalOpen}
-        onClose={() => setCopyLinksModalOpen(false)}
-        recordLabel="links"
+      <InfluencerLinkCreationWorkspace
+        onLinksMutated={() => {
+          fetchAnalytics();
+          fetchTrend();
+        }}
+        onLinksUpdated={setSavedLinksSnapshot}
+        onAfterSave={(name, platform) => openDetailView(name, platform)}
+        onOpenInfluencerDetail={openDetailView}
       />
 
       {/* Analytics */}
@@ -1210,10 +595,10 @@ export default function InfluencerTracking() {
                             <td className="px-4 py-2 text-right">
                               <button
                                 type="button"
-                                onClick={() => handleCopy(link.utmLink, link.id)}
+                                onClick={() => copyDetailLinkUrl(link.utmLink, link.id)}
                                 className="inline-flex items-center gap-1 px-2 py-1 rounded text-sm text-gray-600 hover:bg-gray-100"
                               >
-                                <FiCopy className="w-4 h-4" /> {copiedLinkId === link.id ? 'Copied' : 'Copy'}
+                                <FiCopy className="w-4 h-4" /> {copiedDetailLinkId === link.id ? 'Copied' : 'Copy'}
                               </button>
                             </td>
                           </tr>
@@ -1307,34 +692,6 @@ export default function InfluencerTracking() {
                   </>
                 )}
               </section>
-            </div>
-          </div>
-        </div>
-      )}
-
-      {/* Delete single modal */}
-      {linkToDelete && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50" role="dialog" aria-modal="true">
-          <div className="bg-white rounded-xl shadow-xl max-w-sm w-full p-6">
-            <h3 className="font-semibold text-gray-800">Delete link?</h3>
-            <p className="text-sm text-gray-600 mt-2">Delete the link for &quot;{linkToDelete.influencerName}&quot;? This cannot be undone.</p>
-            <div className="flex gap-3 mt-6 justify-end">
-              <button type="button" onClick={() => setLinkToDelete(null)} className="px-4 py-2 rounded-lg border border-gray-300 text-sm hover:bg-gray-50">Cancel</button>
-              <button type="button" onClick={handleDeleteConfirm} className="px-4 py-2 rounded-lg bg-red-600 text-white text-sm hover:bg-red-700">Delete</button>
-            </div>
-          </div>
-        </div>
-      )}
-
-      {/* Bulk delete modal */}
-      {bulkDeleteConfirm && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50" role="dialog" aria-modal="true">
-          <div className="bg-white rounded-xl shadow-xl max-w-sm w-full p-6">
-            <h3 className="font-semibold text-gray-800">Delete selected links?</h3>
-            <p className="text-sm text-gray-600 mt-2">Delete {selectedLinkIds.size} link(s)? This cannot be undone.</p>
-            <div className="flex gap-3 mt-6 justify-end">
-              <button type="button" onClick={() => setBulkDeleteConfirm(false)} className="px-4 py-2 rounded-lg border border-gray-300 text-sm hover:bg-gray-50">Cancel</button>
-              <button type="button" onClick={handleBulkDeleteConfirm} className="px-4 py-2 rounded-lg bg-red-600 text-white text-sm hover:bg-red-700">Delete all</button>
             </div>
           </div>
         </div>

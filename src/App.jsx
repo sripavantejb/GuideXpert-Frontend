@@ -31,6 +31,7 @@ import Export from './pages/admin/Export';
 import Settings from './pages/admin/Settings';
 import MeetingAttendance from './pages/admin/MeetingAttendance';
 import InfluencerTracking from './pages/admin/InfluencerTracking';
+import InfluencerCreate from './pages/admin/InfluencerCreate';
 import LeadStatus from './pages/admin/LeadStatus';
 import AssessmentResults from './pages/admin/AssessmentResults';
 import TrainingFeedback from './pages/admin/TrainingFeedback';
@@ -348,6 +349,7 @@ function App() {
             <Route path="meeting-attendance" element={<MeetingAttendance />} />
             <Route path="training-feedback" element={<TrainingFeedback />} />
             <Route path="training-form-responses" element={<TrainingFormResponses />} />
+            <Route path="influencer-create" element={<InfluencerCreate />} />
             <Route path="influencer-tracking" element={<InfluencerTracking />} />
             <Route path="poster-downloads" element={<PosterDownloads />} />
             <Route path="posters" element={<PosterAutomationAdminPage />} />
