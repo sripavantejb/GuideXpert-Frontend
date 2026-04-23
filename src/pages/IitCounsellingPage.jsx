@@ -45,6 +45,14 @@ export default function IitCounsellingPage() {
   const [submitting, setSubmitting] = useState(false);
   const [submitState, setSubmitState] = useState({ ok: false, message: '' });
 
+  const [otp, setOtp] = useState('');
+  const [otpSent, setOtpSent] = useState(false);
+  const [otpVerified, setOtpVerified] = useState(false);
+  const [otpLoading, setOtpLoading] = useState(false);
+  const [otpError, setOtpError] = useState('');
+  const [otpInfo, setOtpInfo] = useState('');
+  const [resendIn, setResendIn] = useState(0);
+
   const apiBase = useMemo(() => getApiBaseUrl(), []);
 
   const stepConfig = useMemo(() => ({
@@ -80,9 +88,125 @@ export default function IitCounsellingPage() {
       .catch(() => {});
   }, [apiBase]);
 
+  useEffect(() => {
+    if (resendIn <= 0) return undefined;
+    const timer = setInterval(() => {
+      setResendIn((prev) => (prev > 0 ? prev - 1 : 0));
+    }, 1000);
+    return () => clearInterval(timer);
+  }, [resendIn]);
+
   const handleInputChange = (key, value) => {
     setFormData((prev) => ({ ...prev, [key]: value }));
     setErrors((prev) => ({ ...prev, [key]: '' }));
+    if (key === 'mobileNumber' && !otpVerified) {
+      if (otpSent) {
+        setOtpSent(false);
+        setOtp('');
+        setOtpError('');
+        setOtpInfo('');
+      }
+    }
+  };
+
+  const handleMobileChange = (value) => {
+    const digitsOnly = value.replace(/\D/g, '').slice(0, 10);
+    handleInputChange('mobileNumber', digitsOnly);
+  };
+
+  const canRequestOtp = () => {
+    const name = formData.fullName.trim();
+    const phone = formData.mobileNumber.trim();
+    return name.length >= 2 && /^\d{10}$/.test(phone);
+  };
+
+  const missingOtpRequirementHint = () => {
+    const name = formData.fullName.trim();
+    const phone = formData.mobileNumber.trim();
+    if (name.length < 2) return 'Enter your full name to enable OTP.';
+    if (!/^\d{10}$/.test(phone)) return 'Enter a valid 10-digit mobile number to enable OTP.';
+    return '';
+  };
+
+  const handleSendOtp = async () => {
+    if (otpLoading || resendIn > 0) return;
+    setOtpError('');
+    setOtpInfo('');
+    if (!canRequestOtp()) {
+      setOtpError(missingOtpRequirementHint() || 'Please complete your name and mobile number first.');
+      return;
+    }
+    setOtpLoading(true);
+    try {
+      const response = await fetch(`${apiBase}/send-otp`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          fullName: formData.fullName.trim(),
+          phone: formData.mobileNumber.trim(),
+          occupation: formData.studentOrParent || 'IIT Counselling',
+        }),
+      });
+      const result = await response.json().catch(() => ({}));
+      if (!response.ok || result?.success === false) {
+        throw new Error(result?.message || `Could not send OTP (status ${response.status}).`);
+      }
+      setOtpSent(true);
+      setOtp('');
+      setResendIn(30);
+      setOtpInfo('OTP sent to your mobile number.');
+    } catch (error) {
+      const message = error?.message || 'Could not send OTP. Please try again.';
+      const friendly = /failed to fetch|networkerror|typeerror/i.test(message)
+        ? 'Could not reach the OTP service. Please check your internet and try again.'
+        : message;
+      setOtpError(friendly);
+    } finally {
+      setOtpLoading(false);
+    }
+  };
+
+  const handleVerifyOtp = async () => {
+    if (otpLoading) return;
+    setOtpError('');
+    setOtpInfo('');
+    if (!/^\d{6}$/.test(otp.trim())) {
+      setOtpError('Enter the 6-digit OTP you received.');
+      return;
+    }
+    setOtpLoading(true);
+    try {
+      const response = await fetch(`${apiBase}/verify-otp`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          phone: formData.mobileNumber.trim(),
+          otp: otp.trim(),
+        }),
+      });
+      const result = await response.json().catch(() => ({}));
+      if (!response.ok || result?.success === false) {
+        throw new Error(result?.message || 'Invalid OTP. Please try again.');
+      }
+      setOtpVerified(true);
+      setOtp('');
+      setOtpError('');
+      setOtpInfo('Mobile number verified successfully.');
+      setErrors((prev) => ({ ...prev, mobileNumber: '' }));
+    } catch (error) {
+      setOtpError(error?.message || 'Invalid OTP. Please try again.');
+    } finally {
+      setOtpLoading(false);
+    }
+  };
+
+  const handleEditPhone = () => {
+    setOtpVerified(false);
+    setOtpSent(false);
+    setOtp('');
+    setOtpError('');
+    setOtpInfo('');
+    setResendIn(0);
   };
 
   const validateStep = (step) => {
@@ -93,6 +217,9 @@ export default function IitCounsellingPage() {
     });
     if (formData.mobileNumber && !/^\d{10}$/.test(formData.mobileNumber.trim())) {
       nextErrors.mobileNumber = 'Enter a valid 10-digit mobile number.';
+    }
+    if (step === 1 && !otpVerified) {
+      nextErrors.mobileNumber = 'Please verify your mobile number with OTP first.';
     }
     return nextErrors;
   };
@@ -118,6 +245,7 @@ export default function IitCounsellingPage() {
           city: formData.city.trim(),
           slotBooking: formData.slotBooking,
           visitorFingerprint,
+          otpVerified: true,
           top5Colleges: formData.top5Colleges
             .split(',')
             .map((item) => item.trim())
@@ -213,9 +341,88 @@ export default function IitCounsellingPage() {
               <Field label="1. Full Name" error={errors.fullName}>
                 <input className={neoInputClass} value={formData.fullName} onChange={(e) => handleInputChange('fullName', e.target.value)} />
               </Field>
-              <Field label="2. Mobile Number" error={errors.mobileNumber}>
-                <input className={neoInputClass} inputMode="numeric" maxLength={10} value={formData.mobileNumber} onChange={(e) => handleInputChange('mobileNumber', e.target.value.replace(/\D/g, ''))} />
-              </Field>
+              <div className="sm:col-span-2">
+                <label className={neoLabelClass}>2. Mobile Number</label>
+                <div className="flex flex-col gap-2 sm:flex-row sm:items-stretch">
+                  <div className="relative flex-1">
+                    <input
+                      className={`${neoInputClass} ${otpVerified ? 'bg-emerald-50 pr-28' : 'pr-24'}`}
+                      inputMode="numeric"
+                      maxLength={10}
+                      value={formData.mobileNumber}
+                      onChange={(e) => handleMobileChange(e.target.value)}
+                      readOnly={otpVerified}
+                      aria-invalid={Boolean(errors.mobileNumber)}
+                    />
+                    {otpVerified ? (
+                      <span className="absolute right-3 top-1/2 -translate-y-1/2 rounded-md border-2 border-emerald-700 bg-emerald-100 px-2 py-1 text-[10px] font-black uppercase tracking-wide text-emerald-800">
+                        Verified
+                      </span>
+                    ) : null}
+                  </div>
+                  {otpVerified ? (
+                    <button
+                      type="button"
+                      onClick={handleEditPhone}
+                      className="rounded-[10px] border-2 border-[#0F172A] bg-white px-4 py-3 text-xs font-black uppercase tracking-wide text-[#0F172A] transition-all hover:-translate-y-0.5 hover:bg-slate-50"
+                    >
+                      Edit
+                    </button>
+                  ) : (
+                    <button
+                      type="button"
+                      onClick={handleSendOtp}
+                      disabled={otpLoading || resendIn > 0 || !canRequestOtp()}
+                      title={!canRequestOtp() ? missingOtpRequirementHint() : (resendIn > 0 ? `Resend available in ${resendIn}s` : undefined)}
+                      className="rounded-[10px] border-2 border-[#0F172A] bg-[#0F172A] px-4 py-3 text-xs font-black uppercase tracking-wide text-white shadow-[3px_3px_0px_#c7f36b] transition-all hover:-translate-y-0.5 hover:bg-[#1E293B] disabled:cursor-not-allowed disabled:opacity-60"
+                    >
+                      {otpLoading && !otpSent ? 'Sending...' : otpSent ? (resendIn > 0 ? `Resend in ${resendIn}s` : 'Resend OTP') : 'Send OTP'}
+                    </button>
+                  )}
+                </div>
+                {errors.mobileNumber ? <p className="mt-1 text-xs font-bold text-red-700">{errors.mobileNumber}</p> : null}
+                {!otpVerified && !otpSent && !errors.mobileNumber && !canRequestOtp() ? (
+                  <p className="mt-1 text-xs font-semibold text-slate-600">{missingOtpRequirementHint()}</p>
+                ) : null}
+
+                {otpSent && !otpVerified ? (
+                  <div className="mt-3 rounded-[10px] border-2 border-[#0F172A] bg-[#F8FAFC] p-3">
+                    <label className="mb-2 block text-xs font-black uppercase tracking-wide text-[#0F172A]">Enter OTP</label>
+                    <div className="flex flex-col gap-2 sm:flex-row sm:items-stretch">
+                      <input
+                        className={`${neoInputClass} tracking-[0.5em]`}
+                        inputMode="numeric"
+                        maxLength={6}
+                        value={otp}
+                        onChange={(e) => {
+                          setOtp(e.target.value.replace(/\D/g, '').slice(0, 6));
+                          if (otpError) setOtpError('');
+                        }}
+                        placeholder="6-digit code"
+                      />
+                      <button
+                        type="button"
+                        onClick={handleVerifyOtp}
+                        disabled={otpLoading || otp.length !== 6}
+                        className="rounded-[10px] border-2 border-[#0F172A] bg-[#c7f36b] px-5 py-3 text-xs font-black uppercase tracking-wide text-[#0F172A] shadow-[3px_3px_0px_#0F172A] transition-all hover:-translate-y-0.5 hover:bg-[#b0d95d] disabled:cursor-not-allowed disabled:opacity-60"
+                      >
+                        {otpLoading ? 'Verifying...' : 'Verify'}
+                      </button>
+                    </div>
+                    {otpError ? (
+                      <p className="mt-2 text-xs font-bold text-red-700">{otpError}</p>
+                    ) : otpInfo ? (
+                      <p className="mt-2 text-xs font-bold text-emerald-800">{otpInfo}</p>
+                    ) : null}
+                  </div>
+                ) : null}
+                {otpVerified && otpInfo ? (
+                  <p className="mt-2 text-xs font-bold text-emerald-800">{otpInfo}</p>
+                ) : null}
+                {!otpSent && otpError ? (
+                  <p className="mt-2 text-xs font-bold text-red-700">{otpError}</p>
+                ) : null}
+              </div>
               <ChoiceGroup label="3. Student or Parent?" options={STUDENT_PARENT_OPTIONS} value={formData.studentOrParent} onChange={(value) => handleInputChange('studentOrParent', value)} error={errors.studentOrParent} />
               <ChoiceGroup label="4. Class" options={CLASS_OPTIONS} value={formData.classStatus} onChange={(value) => handleInputChange('classStatus', value)} error={errors.classStatus} />
               <ChoiceGroup label="5. Stream" options={STREAM_OPTIONS} value={formData.stream} onChange={(value) => handleInputChange('stream', value)} error={errors.stream} />
@@ -259,7 +466,8 @@ export default function IitCounsellingPage() {
               </button>
               <button
                 type="submit"
-                disabled={submitting}
+                disabled={submitting || (currentStep === 1 && !otpVerified)}
+                title={currentStep === 1 && !otpVerified ? 'Verify your mobile number with OTP to continue' : undefined}
                 className="rounded-[14px] border-2 border-[#0F172A] bg-[#c7f36b] px-6 py-3 text-sm font-black uppercase tracking-wide text-[#0F172A] shadow-[4px_4px_0px_#0F172A] transition-all hover:-translate-y-0.5 hover:bg-[#b0d95d] disabled:cursor-not-allowed disabled:opacity-70"
               >
                 {submitting ? 'Saving...' : currentStep === 3 ? 'Submit Final Section' : 'Save & Next'}
