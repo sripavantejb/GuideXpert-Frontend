@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import { getApiBaseUrl } from '../utils/apiBaseUrl';
 
 const STUDENT_PARENT_OPTIONS = ['Student', 'Parent'];
@@ -52,6 +52,7 @@ export default function IitCounsellingPage() {
   const [otpError, setOtpError] = useState('');
   const [otpInfo, setOtpInfo] = useState('');
   const [resendIn, setResendIn] = useState(0);
+  const otpInputRefs = useRef([]);
 
   const apiBase = useMemo(() => getApiBaseUrl(), []);
 
@@ -95,6 +96,17 @@ export default function IitCounsellingPage() {
     }, 1000);
     return () => clearInterval(timer);
   }, [resendIn]);
+
+  useEffect(() => {
+    if (otpSent && !otpVerified) {
+      const first = otpInputRefs.current[0];
+      if (first) {
+        const timeout = setTimeout(() => first.focus(), 50);
+        return () => clearTimeout(timeout);
+      }
+    }
+    return undefined;
+  }, [otpSent, otpVerified]);
 
   const handleInputChange = (key, value) => {
     setFormData((prev) => ({ ...prev, [key]: value }));
@@ -207,6 +219,68 @@ export default function IitCounsellingPage() {
     setOtpError('');
     setOtpInfo('');
     setResendIn(0);
+  };
+
+  const updateOtpDigit = (index, rawValue) => {
+    const digit = rawValue.replace(/\D/g, '').slice(-1);
+    setOtp((prev) => {
+      const chars = prev.split('');
+      while (chars.length < 6) chars.push('');
+      chars[index] = digit;
+      return chars.slice(0, 6).join('');
+    });
+    if (otpError) setOtpError('');
+    if (digit && index < 5) {
+      const next = otpInputRefs.current[index + 1];
+      if (next) next.focus();
+    }
+  };
+
+  const handleOtpKeyDown = (index, event) => {
+    const key = event.key;
+    if (key === 'Backspace') {
+      event.preventDefault();
+      setOtp((prev) => {
+        const chars = prev.split('');
+        while (chars.length < 6) chars.push('');
+        if (chars[index]) {
+          chars[index] = '';
+          return chars.join('');
+        }
+        if (index > 0) {
+          chars[index - 1] = '';
+          const prevInput = otpInputRefs.current[index - 1];
+          if (prevInput) prevInput.focus();
+        }
+        return chars.join('');
+      });
+      if (otpError) setOtpError('');
+      return;
+    }
+    if (key === 'ArrowLeft' && index > 0) {
+      event.preventDefault();
+      const prevInput = otpInputRefs.current[index - 1];
+      if (prevInput) prevInput.focus();
+    } else if (key === 'ArrowRight' && index < 5) {
+      event.preventDefault();
+      const nextInput = otpInputRefs.current[index + 1];
+      if (nextInput) nextInput.focus();
+    } else if (key === 'Enter' && otp.length === 6) {
+      event.preventDefault();
+      handleVerifyOtp();
+    }
+  };
+
+  const handleOtpPaste = (event) => {
+    const text = event.clipboardData?.getData('text') || '';
+    const digits = text.replace(/\D/g, '').slice(0, 6);
+    if (!digits) return;
+    event.preventDefault();
+    setOtp(digits);
+    if (otpError) setOtpError('');
+    const focusIndex = Math.min(digits.length, 5);
+    const target = otpInputRefs.current[focusIndex];
+    if (target) target.focus();
   };
 
   const validateStep = (step) => {
@@ -388,18 +462,25 @@ export default function IitCounsellingPage() {
                 {otpSent && !otpVerified ? (
                   <div className="mt-3 rounded-[10px] border-2 border-[#0F172A] bg-[#F8FAFC] p-3">
                     <label className="mb-2 block text-xs font-black uppercase tracking-wide text-[#0F172A]">Enter OTP</label>
-                    <div className="flex flex-col gap-2 sm:flex-row sm:items-stretch">
-                      <input
-                        className={`${neoInputClass} tracking-[0.5em]`}
-                        inputMode="numeric"
-                        maxLength={6}
-                        value={otp}
-                        onChange={(e) => {
-                          setOtp(e.target.value.replace(/\D/g, '').slice(0, 6));
-                          if (otpError) setOtpError('');
-                        }}
-                        placeholder="6-digit code"
-                      />
+                    <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+                      <div className="flex items-center gap-2" onPaste={handleOtpPaste}>
+                        {Array.from({ length: 6 }).map((_, index) => (
+                          <input
+                            key={index}
+                            ref={(el) => { otpInputRefs.current[index] = el; }}
+                            type="text"
+                            inputMode="numeric"
+                            autoComplete="one-time-code"
+                            maxLength={1}
+                            value={otp[index] || ''}
+                            onChange={(e) => updateOtpDigit(index, e.target.value)}
+                            onKeyDown={(e) => handleOtpKeyDown(index, e)}
+                            onFocus={(e) => e.target.select()}
+                            aria-label={`OTP digit ${index + 1}`}
+                            className="h-12 w-12 rounded-[10px] border-2 border-[#0F172A] bg-white text-center text-lg font-black text-[#0F172A] outline-none transition-all focus:-translate-y-0.5 focus:shadow-[3px_3px_0px_#0F172A]"
+                          />
+                        ))}
+                      </div>
                       <button
                         type="button"
                         onClick={handleVerifyOtp}
