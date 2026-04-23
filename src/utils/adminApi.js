@@ -474,7 +474,7 @@ async function influencerRequest(path, options = {}, token = getStoredToken()) {
 export const createInfluencerLink = async (payload, save = false, token = getStoredToken()) => {
   return influencerRequest('/influencer-links', {
     method: 'POST',
-    body: JSON.stringify({ ...payload, save }),
+    body: JSON.stringify({ ...payload, save: Boolean(save) }),
   }, token);
 };
 

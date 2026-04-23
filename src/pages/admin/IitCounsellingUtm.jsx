@@ -79,6 +79,26 @@ function parseUtmParamsFromHref(href) {
   }
 }
 
+/** Map POST /influencer-links saved payload to the same shape as GET list rows. */
+function mapCreateResponseToSavedLinkRow(saved) {
+  if (!saved || typeof saved !== 'object') return null;
+  const id = saved.id != null ? String(saved.id) : (saved._id != null ? String(saved._id) : '');
+  if (!id) return null;
+  return {
+    id,
+    influencerName: saved.influencerName,
+    platform: saved.platform,
+    campaign: saved.campaign,
+    utmLink: saved.utmLink,
+    linkTarget: saved.linkTarget || 'iitCounselling',
+    cost: saved.cost ?? null,
+    costPerLead: saved.costPerLead ?? null,
+    leadCount: saved.leadCount ?? 0,
+    latestLeadAt: saved.latestLeadAt ?? null,
+    createdAt: saved.createdAt,
+  };
+}
+
 /** Saved row is for the IIT counselling page, not registration influencer links. */
 function isIitCounsellingSavedLinkRow(row) {
   if (!row || typeof row !== 'object') return false;
@@ -419,14 +439,36 @@ export default function IitCounsellingUtm() {
         window.location.href = '/admin/login';
         return;
       }
-      setGenLinkError(result.message || 'Failed to save link');
+      const errMsg = result.message || result.data?.message || 'Failed to save link';
+      setGenLinkError(errMsg);
       return;
     }
-    const savedUrl = result.data?.data?.utmLink;
-    if (typeof savedUrl === 'string' && savedUrl.trim()) {
-      setCanonicalIitUtmLink(savedUrl.trim());
+    const apiBody = result.data;
+    const saved = apiBody?.data != null && typeof apiBody.data === 'object' ? apiBody.data : apiBody;
+    const savedId = saved?.id ?? saved?._id;
+    // Persisted save includes a Mongo id; a "generate only" response has no id.
+    if (savedId == null) {
+      setGenLinkError(
+        apiBody?.message
+        || 'Link was not saved (no record id returned). If the API is older than this screen, redeploy the backend.'
+      );
+      return;
+    }
+    const row = mapCreateResponseToSavedLinkRow(saved);
+    if (!row || !isIitCounsellingSavedLinkRow(row)) {
+      setGenLinkError('Saved link is not an IIT counselling URL. Check server IIT_COUNSELLING_PAGE_URL and linkTarget.');
+      return;
+    }
+    const savedUrl = typeof row.utmLink === 'string' ? row.utmLink.trim() : '';
+    if (savedUrl) {
+      setCanonicalIitUtmLink(savedUrl);
     }
     setGenSaveSuccess('Saved to the list.');
+    setSavedIitLinks((prev) => {
+      const idStr = String(row.id);
+      const rest = prev.filter((r) => String(r.id) !== idStr);
+      return [row, ...rest];
+    });
     fetchSavedIitLinks();
   };
 
