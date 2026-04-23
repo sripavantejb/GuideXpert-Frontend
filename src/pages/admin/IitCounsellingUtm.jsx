@@ -197,6 +197,8 @@ export default function IitCounsellingUtm() {
   const [savedIitLinks, setSavedIitLinks] = useState([]);
   const [savedLinksLoading, setSavedLinksLoading] = useState(true);
   const [savedLinksError, setSavedLinksError] = useState('');
+  /** Set when the API returns 404 (route missing on host) or wrong handler (legacy server). */
+  const [savedLinksEnvHint, setSavedLinksEnvHint] = useState('');
   const [deletingLinkId, setDeletingLinkId] = useState(null);
 
   const sharedFilters = useMemo(() => ({
@@ -242,12 +244,24 @@ export default function IitCounsellingUtm() {
     const t = getStoredToken();
     setSavedLinksLoading(true);
     setSavedLinksError('');
+    setSavedLinksEnvHint('');
     getIitCounsellingSavedUtmLinks(t).then((result) => {
       setSavedLinksLoading(false);
       if (!result.success) {
         if (result.status === 401) {
           logout();
           window.location.href = '/admin/login';
+          return;
+        }
+        const msg = String(result.message || '').toLowerCase();
+        const missingSavedLinksRoute =
+          result.status === 404 &&
+          (msg === 'not found' || msg.includes('submission not found'));
+        if (missingSavedLinksRoute) {
+          setSavedIitLinks([]);
+          setSavedLinksEnvHint(
+            'Saved links need a backend with GET /api/admin/iit-counselling/saved-utm-links. Deploy the latest API, or point the Vite dev proxy at your local server (e.g. VITE_PROXY_TARGET=http://127.0.0.1:5000 in frontend/.env.development.local).',
+          );
           return;
         }
         setSavedLinksError(result.message || 'Failed to load saved links');
@@ -856,10 +870,17 @@ export default function IitCounsellingUtm() {
           {savedLinksError ? (
             <p className="text-sm text-red-600 mb-3" role="alert">{savedLinksError}</p>
           ) : null}
+          {savedLinksEnvHint ? (
+            <p className="text-sm text-amber-800 bg-amber-50 border border-amber-200 rounded-lg px-3 py-2 mb-3" role="status">
+              {savedLinksEnvHint}
+            </p>
+          ) : null}
           {savedLinksLoading ? (
             <div className="py-6"><TableSkeleton rows={4} cols={7} /></div>
           ) : savedIitLinks.length === 0 ? (
-            <p className="text-sm text-gray-500 py-4">No saved links yet. Generate a URL and use Save to list.</p>
+            savedLinksEnvHint ? null : (
+              <p className="text-sm text-gray-500 py-4">No saved links yet. Generate a URL and use Save to list.</p>
+            )
           ) : (
             <div className="overflow-x-auto rounded-lg border border-gray-200 bg-white">
               <table className="min-w-full divide-y divide-gray-200 text-sm">
