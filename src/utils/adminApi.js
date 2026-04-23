@@ -187,6 +187,22 @@ export const getIitCounsellingUtmAnalytics = async (params = {}, token = getStor
   return adminRequest(`/iit-counselling/utm-analytics${query ? `?${query}` : ''}`, { method: 'GET' }, token);
 };
 
+/** Saved IIT counselling UTM links (separate DB collection from influencer /register links). */
+export const getIitCounsellingSavedUtmLinks = async (token = getStoredToken()) => {
+  return adminRequest('/iit-counselling/saved-utm-links', { method: 'GET' }, token);
+};
+
+export const createIitCounsellingSavedUtmLink = async (payload, token = getStoredToken()) => {
+  return adminRequest('/iit-counselling/saved-utm-links', {
+    method: 'POST',
+    body: JSON.stringify(payload),
+  }, token);
+};
+
+export const deleteIitCounsellingSavedUtmLink = async (id, token = getStoredToken()) => {
+  return adminRequest(`/iit-counselling/saved-utm-links/${encodeURIComponent(id)}`, { method: 'DELETE' }, token);
+};
+
 export const updateLeadNotes = async (id, adminNotes, token = getStoredToken()) => {
   return adminRequest(`/leads/${encodeURIComponent(id)}`, {
     method: 'PATCH',

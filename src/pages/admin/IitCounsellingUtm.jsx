@@ -21,11 +21,11 @@ import {
   YAxis,
 } from 'recharts';
 import {
-  createInfluencerLink,
-  deleteInfluencerLink,
+  createIitCounsellingSavedUtmLink,
+  deleteIitCounsellingSavedUtmLink,
+  getIitCounsellingSavedUtmLinks,
   getIitCounsellingUtmAnalytics,
   getIitCounsellingVisitAnalytics,
-  getInfluencerLinks,
   getStoredToken,
 } from '../../utils/adminApi';
 import { useAuth } from '../../hooks/useAuth';
@@ -79,7 +79,7 @@ function parseUtmParamsFromHref(href) {
   }
 }
 
-/** Map POST /influencer-links saved payload to the same shape as GET list rows. */
+/** Map POST saved-utm-links response to table row shape. */
 function mapCreateResponseToSavedLinkRow(saved) {
   if (!saved || typeof saved !== 'object') return null;
   const id = saved.id != null ? String(saved.id) : (saved._id != null ? String(saved._id) : '');
@@ -90,28 +90,9 @@ function mapCreateResponseToSavedLinkRow(saved) {
     platform: saved.platform,
     campaign: saved.campaign,
     utmLink: saved.utmLink,
-    linkTarget: saved.linkTarget || 'iitCounselling',
     cost: saved.cost ?? null,
-    costPerLead: saved.costPerLead ?? null,
-    leadCount: saved.leadCount ?? 0,
-    latestLeadAt: saved.latestLeadAt ?? null,
     createdAt: saved.createdAt,
   };
-}
-
-/** Saved row is for the IIT counselling page, not registration influencer links. */
-function isIitCounsellingSavedLinkRow(row) {
-  if (!row || typeof row !== 'object') return false;
-  if (row.linkTarget === 'iitCounselling') return true;
-  const raw = row.utmLink;
-  if (typeof raw !== 'string' || !raw.trim()) return false;
-  try {
-    const u = new URL(raw.trim());
-    const path = (u.pathname || '').replace(/\/+$/, '') || '/';
-    return path === '/iit-counselling' || path.endsWith('/iit-counselling');
-  } catch {
-    return false;
-  }
 }
 
 function getDatePresetRange(preset) {
@@ -260,7 +241,7 @@ export default function IitCounsellingUtm() {
     const t = getStoredToken();
     setSavedLinksLoading(true);
     setSavedLinksError('');
-    getInfluencerLinks(t, { linkTarget: 'iitCounselling' }).then((result) => {
+    getIitCounsellingSavedUtmLinks(t).then((result) => {
       setSavedLinksLoading(false);
       if (!result.success) {
         if (result.status === 401) {
@@ -273,9 +254,7 @@ export default function IitCounsellingUtm() {
         return;
       }
       const list = result.data?.data ?? [];
-      const arr = Array.isArray(list) ? list : [];
-      // Older APIs ignore ?linkTarget= — never show registration /register rows here.
-      setSavedIitLinks(arr.filter(isIitCounsellingSavedLinkRow));
+      setSavedIitLinks(Array.isArray(list) ? list : []);
     });
   }, [logout]);
 
@@ -424,14 +403,13 @@ export default function IitCounsellingUtm() {
       influencerName: genInfluencerName.trim(),
       platform: genPlatform,
       campaign: (genCampaign || '').trim() || DEFAULT_CAMPAIGN,
-      linkTarget: 'iitCounselling',
     };
     const costTrimmed = typeof genCost === 'string' ? genCost.trim() : '';
     if (costTrimmed !== '') {
       const costNum = Number(costTrimmed);
       if (!Number.isNaN(costNum) && costNum >= 0) payload.cost = costNum;
     }
-    const result = await createInfluencerLink(payload, true, t);
+    const result = await createIitCounsellingSavedUtmLink(payload, t);
     setGenSaveLoading(false);
     if (!result.success) {
       if (result.status === 401) {
@@ -455,8 +433,8 @@ export default function IitCounsellingUtm() {
       return;
     }
     const row = mapCreateResponseToSavedLinkRow(saved);
-    if (!row || !isIitCounsellingSavedLinkRow(row)) {
-      setGenLinkError('Saved link is not an IIT counselling URL. Check server IIT_COUNSELLING_PAGE_URL and linkTarget.');
+    if (!row) {
+      setGenLinkError('Invalid save response from server.');
       return;
     }
     const savedUrl = typeof row.utmLink === 'string' ? row.utmLink.trim() : '';
@@ -477,7 +455,7 @@ export default function IitCounsellingUtm() {
     const t = getStoredToken();
     setDeletingLinkId(id);
     setSavedLinksError('');
-    const result = await deleteInfluencerLink(id, t);
+    const result = await deleteIitCounsellingSavedUtmLink(id, t);
     setDeletingLinkId(null);
     if (!result.success) {
       if (result.status === 401) {
@@ -835,7 +813,7 @@ export default function IitCounsellingUtm() {
             <div>
               <h3 className="text-sm font-semibold text-gray-800">Saved IIT counselling links</h3>
               <p className="text-xs text-gray-500 mt-0.5">
-                Only links for the <span className="font-mono">/iit-counselling</span> landing page (saved from this section or tagged in the database). Registration influencer links are excluded.
+                Stored in a dedicated database collection for this page only—not the Influencer / UTM Tracking (<span className="font-mono">/register</span>) list.
               </p>
             </div>
             <button
