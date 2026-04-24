@@ -127,7 +127,7 @@ function formatChartDate(isoDateStr) {
 
 function ChartSkeleton() {
   return (
-    <div className="h-[220px] min-h-[220px] flex items-center justify-center bg-gray-50 rounded-lg animate-pulse">
+    <div className="h-[240px] flex items-center justify-center bg-gray-50 rounded-lg animate-pulse">
       <div className="text-gray-400 text-sm">Loading chart…</div>
     </div>
   );
@@ -579,7 +579,8 @@ export default function IitCounsellingUtm() {
       <div>
         <h2 className="text-xl font-semibold text-gray-800">IIT Counselling UTM</h2>
         <p className="text-sm text-gray-500 mt-1">
-          Same charts and layout as Influencer / UTM Tracking. All data is for the public route{' '}
+          Create trackable counselling links and view performance by UTM source/content.
+          {' '}All data is for the public route{' '}
           <span className="font-mono text-xs bg-gray-100 px-1 rounded">/iit-counselling</span>
           {' '}only (page visits and UTMs from that URL).
         </p>
@@ -617,32 +618,32 @@ export default function IitCounsellingUtm() {
         </div>
       </div>
 
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 min-w-0">
-        <div className={`${cardClass} min-w-0`}>
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+        <div className={cardClass}>
           <div className={sectionHeaderClass}>
             <h3 className="text-sm font-semibold text-gray-800">Visits by utm_content</h3>
             <p className="text-xs text-gray-500 mt-0.5">Top 10 by visit count (current date range)</p>
           </div>
-          <div className="p-4 h-[260px] min-h-[220px] w-full min-w-0">
+          <div className="p-4 h-[240px] min-h-[200px] w-full min-w-0">
             {loading ? (
               <ChartSkeleton />
             ) : barChartData.length === 0 ? (
               <div className="h-full flex items-center justify-center text-gray-500 text-sm">No data</div>
             ) : (
-              <ResponsiveContainer width="100%" height="100%" minWidth={0} minHeight={220} debounce={50}>
-                <BarChart data={barChartData} margin={{ top: 8, right: 8, left: 0, bottom: 4 }}>
+              <ResponsiveContainer width="100%" height="100%" minWidth={0} minHeight={200}>
+                <BarChart data={barChartData} margin={{ top: 8, right: 8, left: 0, bottom: 0 }}>
                   <XAxis
                     dataKey="name"
                     tick={{ fontSize: 11 }}
                     tickFormatter={(v) => (typeof v === 'string' && v.includes('\u200c') ? v.split('\u200c')[0] : v)}
                   />
-                  <YAxis allowDecimals={false} tick={{ fontSize: 11 }} width={36} />
+                  <YAxis allowDecimals={false} tick={{ fontSize: 11 }} />
                   <Tooltip
                     formatter={(value) => [value, 'Visits']}
                     labelFormatter={(_, payload) => payload?.[0]?.payload?.fullName ?? ''}
                     contentStyle={{ fontSize: 12 }}
                   />
-                  <Bar dataKey="visits" fill="#003366" name="Visits" radius={[4, 4, 0, 0]} isAnimationActive={false}>
+                  <Bar dataKey="visits" fill="#003366" name="Visits" radius={[4, 4, 0, 0]}>
                     {barChartData.map((entry, index) => (
                       <Cell key={`iit-utm-bar-${index}-${String(entry.fullName)}`} />
                     ))}
@@ -652,22 +653,22 @@ export default function IitCounsellingUtm() {
             )}
           </div>
         </div>
-        <div className={`${cardClass} min-w-0`}>
+        <div className={cardClass}>
           <div className={sectionHeaderClass}>
             <h3 className="text-sm font-semibold text-gray-800">Visits over time</h3>
             <p className="text-xs text-gray-500 mt-0.5">Daily count (IST), current date range</p>
           </div>
-          <div className="p-4 h-[260px] min-h-[220px] w-full min-w-0">
+          <div className="p-4 h-[240px] min-h-[200px] w-full min-w-0">
             {trendLoading ? (
               <ChartSkeleton />
             ) : lineChartData.length === 0 ? (
               <div className="h-full flex items-center justify-center text-gray-500 text-sm">No data</div>
             ) : (
-              <ResponsiveContainer width="100%" height="100%" minWidth={0} minHeight={220} debounce={50}>
-                <LineChart data={lineChartData} margin={{ top: 8, right: 8, left: 0, bottom: 4 }}>
+              <ResponsiveContainer width="100%" height="100%" minWidth={0} minHeight={200}>
+                <LineChart data={lineChartData} margin={{ top: 8, right: 8, left: 0, bottom: 0 }}>
                   <CartesianGrid strokeDasharray="3 3" stroke="#eee" />
                   <XAxis dataKey="date" tick={{ fontSize: 11 }} tickFormatter={(v) => (v && v.length >= 10 ? `${v.slice(8, 10)}/${v.slice(5, 7)}` : v)} />
-                  <YAxis allowDecimals={false} tick={{ fontSize: 11 }} width={36} />
+                  <YAxis allowDecimals={false} tick={{ fontSize: 11 }} />
                   <Tooltip
                     formatter={(value) => [value, 'Visits']}
                     labelFormatter={(label) => (label ? formatChartDate(label) : '')}
@@ -680,7 +681,6 @@ export default function IitCounsellingUtm() {
                     strokeWidth={2}
                     name="Visits"
                     dot={{ r: 3 }}
-                    isAnimationActive={false}
                   />
                 </LineChart>
               </ResponsiveContainer>
@@ -785,21 +785,21 @@ export default function IitCounsellingUtm() {
             </button>
             <button
               type="button"
-              onClick={handleSaveIitLinkToList}
-              disabled={!genInfluencerName.trim() || genSaveLoading}
-              className="inline-flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium text-white bg-emerald-700 hover:bg-emerald-800 focus:ring-2 focus:ring-emerald-600 focus:ring-offset-2 disabled:opacity-50 disabled:pointer-events-none"
-            >
-              <FiSave className="w-4 h-4" aria-hidden />
-              {genSaveLoading ? 'Saving…' : 'Save to list'}
-            </button>
-            <button
-              type="button"
               onClick={copyGeneratedIitLink}
               disabled={!displayIitUtmLink}
               className="inline-flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium text-gray-700 bg-gray-100 hover:bg-gray-200 border border-gray-300 disabled:opacity-50 disabled:pointer-events-none"
             >
               <FiCopy className="w-4 h-4" aria-hidden />
               {genCopied ? 'Copied' : 'Copy'}
+            </button>
+            <button
+              type="button"
+              onClick={handleSaveIitLinkToList}
+              disabled={!genInfluencerName.trim() || genSaveLoading}
+              className="inline-flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium text-white bg-primary-navy hover:bg-primary-navy/90 focus:ring-2 focus:ring-primary-navy focus:ring-offset-2 disabled:opacity-50 disabled:pointer-events-none"
+            >
+              <FiSave className="w-4 h-4" aria-hidden />
+              {genSaveLoading ? 'Saving…' : 'Save to list'}
             </button>
             <button
               type="button"

@@ -532,36 +532,55 @@ export default function IitCounselling() {
         </div>
         {error ? <p className="text-red-600 text-sm">{error}</p> : null}
         <div className="overflow-x-auto rounded-lg border border-gray-200">
-        <table className="min-w-[780px] w-full text-left text-sm">
+        <table className="min-w-[1180px] w-full text-left text-sm">
           <thead>
             <tr className="bg-gray-50 border-b border-gray-200">
               <th className="px-3 py-2 text-xs uppercase tracking-wider">Name</th>
               <th className="px-3 py-2 text-xs uppercase tracking-wider">Phone</th>
               <th className="px-3 py-2 text-xs uppercase tracking-wider">Current Step</th>
               <th className="px-3 py-2 text-xs uppercase tracking-wider">Completed</th>
+              <th className="px-3 py-2 text-xs uppercase tracking-wider">UTM Source</th>
+              <th className="px-3 py-2 text-xs uppercase tracking-wider">UTM Medium</th>
+              <th className="px-3 py-2 text-xs uppercase tracking-wider">UTM Campaign</th>
+              <th className="px-3 py-2 text-xs uppercase tracking-wider">UTM Content</th>
               <th className="px-3 py-2 text-xs uppercase tracking-wider">Updated</th>
               <th className="px-3 py-2 text-xs uppercase tracking-wider text-center">Action</th>
             </tr>
           </thead>
           <tbody className="divide-y divide-gray-100">
             {loading ? (
-              <tr><td colSpan={6} className="px-3 py-6 text-center text-gray-500">Loading...</td></tr>
+              <tr><td colSpan={10} className="px-3 py-6 text-center text-gray-500">Loading...</td></tr>
             ) : rows.length === 0 ? (
-              <tr><td colSpan={6} className="px-3 py-6 text-center text-gray-500">No submissions found</td></tr>
-            ) : rows.map((row) => (
-              <tr key={row.id}>
-                <td className="px-3 py-2">{row.fullName || '—'}</td>
-                <td className="px-3 py-2">{row.phone || '—'}</td>
-                <td className="px-3 py-2">{row.currentStep || 1}</td>
-                <td className="px-3 py-2">{row.isCompleted ? 'Yes' : 'No'}</td>
-                <td className="px-3 py-2">{formatDateTime(row.updatedAt)}</td>
-                <td className="px-3 py-2 text-center">
-                  <button type="button" onClick={() => openDetail(row.id)} className="inline-flex items-center gap-1 text-primary-navy hover:underline">
-                    <FiEye className="w-4 h-4" /> View
-                  </button>
-                </td>
-              </tr>
-            ))}
+              <tr><td colSpan={10} className="px-3 py-6 text-center text-gray-500">No submissions found</td></tr>
+            ) : rows.map((row) => {
+              const utm = row.utm || {};
+              const utmCell = (value) => (
+                <span
+                  className={value ? 'text-gray-800' : 'text-gray-400'}
+                  title={value || 'No UTM data'}
+                >
+                  {value || '—'}
+                </span>
+              );
+              return (
+                <tr key={row.id}>
+                  <td className="px-3 py-2">{row.fullName || '—'}</td>
+                  <td className="px-3 py-2">{row.phone || '—'}</td>
+                  <td className="px-3 py-2">{row.currentStep || 1}</td>
+                  <td className="px-3 py-2">{row.isCompleted ? 'Yes' : 'No'}</td>
+                  <td className="px-3 py-2 max-w-[180px] truncate">{utmCell(utm.utm_source)}</td>
+                  <td className="px-3 py-2 max-w-[180px] truncate">{utmCell(utm.utm_medium)}</td>
+                  <td className="px-3 py-2 max-w-[200px] truncate">{utmCell(utm.utm_campaign)}</td>
+                  <td className="px-3 py-2 max-w-[200px] truncate">{utmCell(utm.utm_content)}</td>
+                  <td className="px-3 py-2">{formatDateTime(row.updatedAt)}</td>
+                  <td className="px-3 py-2 text-center">
+                    <button type="button" onClick={() => openDetail(row.id)} className="inline-flex items-center gap-1 text-primary-navy hover:underline">
+                      <FiEye className="w-4 h-4" /> View
+                    </button>
+                  </td>
+                </tr>
+              );
+            })}
           </tbody>
         </table>
         </div>
@@ -589,6 +608,18 @@ export default function IitCounselling() {
                   <SectionBlock title="Section 1: Basic Details" data={detail.section1Data} />
                   <SectionBlock title="Section 2" data={detail.section2Data} />
                   <SectionBlock title="Section 3" data={detail.section3Data} />
+                  {detail.utm ? (
+                    <SectionBlock
+                      title="UTM Attribution"
+                      data={{
+                        Source: detail.utm.utm_source || '—',
+                        Medium: detail.utm.utm_medium || '—',
+                        Campaign: detail.utm.utm_campaign || '—',
+                        Content: detail.utm.utm_content || '—',
+                        Referrer: detail.utm.referrer || '—',
+                      }}
+                    />
+                  ) : null}
                 </>
               ) : null}
             </div>
