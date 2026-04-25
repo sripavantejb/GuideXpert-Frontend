@@ -1,15 +1,12 @@
 import { useState, useRef, useEffect } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 import html2canvas from 'html2canvas';
 import { jsPDF } from 'jspdf';
 import { checkPosterEligibility, trackPosterDownloadBeacon } from '../utils/api';
 import { isIOSDevice } from '../utils/posterDownloadUi';
+import { usePosterIdentity } from '../hooks/usePosterIdentity';
+import PosterIdentityNotice from '../components/Counsellor/PosterIdentityNotice';
 import HoliPosterPreview, { HOLI_POSTER_WIDTH as POSTER_WIDTH, HOLI_POSTER_HEIGHT as POSTER_HEIGHT } from '../components/Counsellor/HoliPosterPreview';
-
-function to10Digits(val) {
-  if (val == null) return '';
-  return String(val).replace(/\D/g, '').trim().slice(0, 10);
-}
 
 function safeFilename(str) {
   return (str || 'poster').replace(/[^a-zA-Z0-9-_]/g, '-').replace(/-+/g, '-').slice(0, 60);
@@ -97,8 +94,10 @@ function drawHoliPosterToCanvas(img, fullName, mobileNumber, scale = 2) {
 
 export default function HoliPosterPage() {
   const navigate = useNavigate();
-  const [fullName, setFullName] = useState('');
-  const [mobileNumber, setMobileNumber] = useState('');
+  const identity = usePosterIdentity();
+  const { displayPhone, validationPhone, hasActivation, hasIdentity, usedSettingsOverride } = identity;
+  const fullName = identity.displayName;
+  const mobileNumber = displayPhone;
   const [confirmChecked, setConfirmChecked] = useState(false);
   const [showConfirmModal, setShowConfirmModal] = useState(false);
   const [showIneligibleModal, setShowIneligibleModal] = useState(false);
@@ -117,9 +116,9 @@ export default function HoliPosterPage() {
   const exportImageReadyRef = useRef(false);
   const pendingDownloadRef = useRef({ url: null, filename: null, revoke: false });
 
-  const mobile10 = to10Digits(mobileNumber);
-  const displayName = fullName.trim().slice(0, NAME_MAX_LEN);
-  const canSubmit = displayName.length > 0 && mobile10.length === 10 && confirmChecked;
+  const mobile10 = displayPhone;
+  const displayName = fullName.slice(0, NAME_MAX_LEN);
+  const canSubmit = hasActivation && hasIdentity && confirmChecked;
   const formLocked = eligible;
 
   const handleOpenConfirmModal = () => {
@@ -137,7 +136,7 @@ export default function HoliPosterPage() {
   const handleConfirmAndGenerate = async () => {
     setShowConfirmModal(false);
     setCheckingEligibility(true);
-    const result = await checkPosterEligibility(mobile10);
+    const result = await checkPosterEligibility(validationPhone);
     setCheckingEligibility(false);
     const eligibleResult = result.data?.eligible ?? result.eligible;
     if (result.success && eligibleResult) {
@@ -475,7 +474,9 @@ export default function HoliPosterPage() {
       )}
 
       <h1 className="text-2xl font-bold mb-2 bg-gradient-to-r from-[#c026d3] via-[#db2777] to-[#ea580c] bg-clip-text text-transparent">Holi Poster</h1>
-      <p className="text-gray-700 mb-6">Enter your name and phone number. If you have completed the training, you can preview and download your Holi poster in PNG or PDF.</p>
+      <p className="text-gray-700 mb-6">Your poster is generated using the name and phone number on your counsellor profile. Update them anytime in <Link to="/counsellor/settings" className="text-[#c026d3] underline font-medium">Settings</Link>.</p>
+
+      <PosterIdentityNotice className="mb-6" />
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
         <div className="space-y-4 rounded-2xl bg-gradient-to-b from-white to-[#fdf2f8] p-6 shadow-lg border border-[#fbcfe8]/40">
@@ -484,58 +485,62 @@ export default function HoliPosterPage() {
             <input
               type="text"
               value={fullName}
-              onChange={(e) => setFullName(e.target.value)}
-              placeholder="Enter your full name"
-              disabled={formLocked}
+              readOnly
+              aria-readonly="true"
+              placeholder="Sign in to load your name"
               maxLength={NAME_MAX_LEN + 5}
-              className="mt-1 block w-full rounded-md border border-gray-300 px-3 py-2 shadow-sm focus:border-primary-navy focus:ring-1 focus:ring-primary-navy disabled:bg-gray-100 disabled:cursor-not-allowed"
+              className="mt-1 block w-full rounded-md border border-gray-300 bg-gray-50 px-3 py-2 shadow-sm cursor-not-allowed text-gray-700"
             />
-            {fullName.length > NAME_MAX_LEN && (
-              <p className="mt-1 text-xs text-amber-600">Name will be truncated to {NAME_MAX_LEN} characters on the poster.</p>
-            )}
           </label>
           <label className="block">
             <span className="text-sm font-medium text-gray-700">Mobile Number</span>
             <input
               type="tel"
               value={mobileNumber}
-              onChange={(e) => setMobileNumber(e.target.value)}
-              placeholder="10-digit mobile number"
+              readOnly
+              aria-readonly="true"
+              placeholder="Sign in to load your phone"
               maxLength={14}
-              disabled={formLocked}
-              className="mt-1 block w-full rounded-md border border-gray-300 px-3 py-2 shadow-sm focus:border-primary-navy focus:ring-1 focus:ring-primary-navy disabled:bg-gray-100 disabled:cursor-not-allowed"
+              className="mt-1 block w-full rounded-md border border-gray-300 bg-gray-50 px-3 py-2 shadow-sm cursor-not-allowed text-gray-700"
             />
-            {mobileNumber && mobile10.length !== 10 && (
-              <p className="mt-1 text-sm text-red-600">Enter a valid 10-digit mobile number.</p>
-            )}
           </label>
 
-          <p className="text-sm text-amber-700 bg-amber-50 border border-amber-200 rounded-md px-3 py-2">
-            Please ensure your name is correct. This name will appear on your poster.
+          <p className="text-xs text-gray-500">
+            {usedSettingsOverride ? 'Pulled from your Settings profile.' : 'Pulled from your activation form.'}{' '}
+            <Link to="/counsellor/settings" className="text-[#c026d3] underline font-medium">Edit in Settings</Link>
           </p>
 
-          <label className="flex items-start gap-2 cursor-pointer">
-            <input
-              type="checkbox"
-              checked={confirmChecked}
-              onChange={(e) => setConfirmChecked(e.target.checked)}
-              disabled={formLocked}
-              className="mt-1 rounded border-gray-300 text-primary-navy focus:ring-primary-navy"
-            />
-            <span className="text-sm text-gray-700">I confirm that the above details are correct.</span>
-          </label>
-
-          {!eligible ? (
-            <button
-              type="button"
-              onClick={handleOpenConfirmModal}
-              disabled={!canSubmit || checkingEligibility}
-              className="w-full inline-flex items-center justify-center rounded-xl bg-gradient-to-r from-[#c026d3] to-[#ea580c] px-4 py-2.5 text-sm font-semibold text-white shadow-md hover:from-[#a21caf] hover:to-[#c2410c] hover:shadow-lg disabled:opacity-60 disabled:cursor-not-allowed transition-all"
-            >
-              {checkingEligibility ? 'Checking eligibility…' : 'Check Eligibility'}
-            </button>
+          {!hasActivation ? (
+            <div className="rounded-xl bg-red-50 border border-red-200 px-3 py-2 text-sm text-red-800">
+              We could not find your activation form details. Please {' '}
+              <Link to="/counsellor/login" className="underline font-semibold">sign in</Link> and complete the activation form to download this poster.
+            </div>
           ) : (
-            <div className="rounded-xl bg-green-50 border border-green-200 px-3 py-2 text-sm text-green-800 font-medium">You are eligible. Your poster is ready to download below.</div>
+            <>
+              <label className="flex items-start gap-2 cursor-pointer">
+                <input
+                  type="checkbox"
+                  checked={confirmChecked}
+                  onChange={(e) => setConfirmChecked(e.target.checked)}
+                  disabled={formLocked}
+                  className="mt-1 rounded border-gray-300 text-primary-navy focus:ring-primary-navy"
+                />
+                <span className="text-sm text-gray-700">I confirm that the above details are correct.</span>
+              </label>
+
+              {!eligible ? (
+                <button
+                  type="button"
+                  onClick={handleOpenConfirmModal}
+                  disabled={!canSubmit || checkingEligibility}
+                  className="w-full inline-flex items-center justify-center rounded-xl bg-gradient-to-r from-[#c026d3] to-[#ea580c] px-4 py-2.5 text-sm font-semibold text-white shadow-md hover:from-[#a21caf] hover:to-[#c2410c] hover:shadow-lg disabled:opacity-60 disabled:cursor-not-allowed transition-all"
+                >
+                  {checkingEligibility ? 'Checking eligibility…' : 'Check Eligibility'}
+                </button>
+              ) : (
+                <div className="rounded-xl bg-green-50 border border-green-200 px-3 py-2 text-sm text-green-800 font-medium">You are eligible. Your poster is ready to download below.</div>
+              )}
+            </>
           )}
         </div>
 

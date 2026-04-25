@@ -1,18 +1,15 @@
 import { useState, useRef, useEffect } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 import { jsPDF } from 'jspdf';
 import { checkActivationEligibility, trackPosterDownloadBeacon } from '../utils/api';
 import { isIOSDevice } from '../utils/posterDownloadUi';
+import { usePosterIdentity } from '../hooks/usePosterIdentity';
+import PosterIdentityNotice from '../components/Counsellor/PosterIdentityNotice';
 import InterPosterPreview, {
   INTER_POSTER_WIDTH as POSTER_WIDTH,
   INTER_POSTER_HEIGHT as POSTER_HEIGHT,
   INTER_POSTER_EXPORT_LAYOUT,
 } from '../components/Counsellor/InterPosterPreview';
-
-function to10Digits(val) {
-  if (val == null) return '';
-  return String(val).replace(/\D/g, '').trim().slice(0, 10);
-}
 
 function safeFilename(str) {
   return (str || 'poster').replace(/[^a-zA-Z0-9-_]/g, '-').replace(/-+/g, '-').slice(0, 60);
@@ -91,9 +88,12 @@ function drawInterPosterToCanvas(img, fullName, mobileNumber, scale = 2) {
 
 export default function InterPosterPage() {
   const navigate = useNavigate();
-  const [firstName, setFirstName] = useState('');
-  const [lastName, setLastName] = useState('');
-  const [mobileNumber, setMobileNumber] = useState('');
+  const identity = usePosterIdentity();
+  const { displayName: identityName, displayPhone, validationPhone, hasActivation, hasIdentity, usedSettingsOverride } = identity;
+  const nameParts = identityName.split(/\s+/).filter(Boolean);
+  const firstName = nameParts[0] || '';
+  const lastName = nameParts.slice(1).join(' ');
+  const mobileNumber = displayPhone;
   const [showIneligibleModal, setShowIneligibleModal] = useState(false);
   const [ineligibleMessage, setIneligibleMessage] = useState('');
   const [generating, setGenerating] = useState(false);
@@ -103,9 +103,9 @@ export default function InterPosterPage() {
   const previewBoxRef = useRef(null);
   const [previewScale, setPreviewScale] = useState(PREVIEW_MAX_PX / POSTER_WIDTH);
 
-  const mobile10 = to10Digits(mobileNumber);
-  const fullName = [firstName.trim(), lastName.trim()].filter(Boolean).join(' ');
-  const displayName = fullName.trim().slice(0, NAME_MAX_LEN);
+  const mobile10 = displayPhone;
+  const fullName = identityName;
+  const displayName = fullName.slice(0, NAME_MAX_LEN);
   const formLocked = false;
 
   useEffect(() => {
@@ -122,10 +122,15 @@ export default function InterPosterPage() {
     return () => ro.disconnect();
   }, []);
 
-  const canDownload = displayName.length > 0 && mobile10.length === 10;
+  const canDownload = hasActivation && hasIdentity;
 
   async function verifyEligibility() {
-    const result = await checkActivationEligibility(mobile10);
+    if (!hasActivation) {
+      setIneligibleMessage('We could not find your activation form details. Please complete the activation form to download this poster.');
+      setShowIneligibleModal(true);
+      return false;
+    }
+    const result = await checkActivationEligibility(validationPhone);
     const payload = result.data?.data ?? result.data;
     const isEligible = Boolean(result.eligible ?? payload?.exists ?? payload?.eligible ?? false);
     if (result.success && isEligible) return true;
@@ -231,6 +236,8 @@ export default function InterPosterPage() {
           <p className="text-sm text-slate-500 mt-1.5 max-w-lg mx-auto">Enter your details below. Eligibility is verified when you click download.</p>
         </div>
 
+        <PosterIdentityNotice className="mb-6" />
+
         {/* Main card */}
         <div className="bg-white rounded-2xl shadow-lg border border-slate-100 overflow-hidden">
           <div className="grid grid-cols-1 md:grid-cols-2">
@@ -242,27 +249,36 @@ export default function InterPosterPage() {
               <div className="space-y-4">
                 <div>
                   <label className="text-xs font-semibold text-slate-600 uppercase tracking-wide">First Name</label>
-                  <input type="text" value={firstName} onChange={e => setFirstName(e.target.value)} placeholder="Enter first name" disabled={formLocked}
-                    className="mt-1.5 block w-full rounded-lg border border-slate-200 bg-slate-50 px-3.5 py-2.5 text-sm text-slate-900 placeholder:text-slate-400 focus:border-primary-navy focus:ring-2 focus:ring-primary-navy/20 focus:bg-white transition" />
+                  <input type="text" value={firstName} readOnly aria-readonly="true" placeholder="Sign in to load your name"
+                    className="mt-1.5 block w-full rounded-lg border border-slate-200 bg-slate-100 px-3.5 py-2.5 text-sm text-slate-700 cursor-not-allowed placeholder:text-slate-400" />
                 </div>
                 <div>
                   <label className="text-xs font-semibold text-slate-600 uppercase tracking-wide">Last Name</label>
-                  <input type="text" value={lastName} onChange={e => setLastName(e.target.value)} placeholder="Enter last name" disabled={formLocked}
-                    className="mt-1.5 block w-full rounded-lg border border-slate-200 bg-slate-50 px-3.5 py-2.5 text-sm text-slate-900 placeholder:text-slate-400 focus:border-primary-navy focus:ring-2 focus:ring-primary-navy/20 focus:bg-white transition" />
+                  <input type="text" value={lastName} readOnly aria-readonly="true" placeholder="—"
+                    className="mt-1.5 block w-full rounded-lg border border-slate-200 bg-slate-100 px-3.5 py-2.5 text-sm text-slate-700 cursor-not-allowed placeholder:text-slate-400" />
                 </div>
                 <div>
                   <label className="text-xs font-semibold text-slate-600 uppercase tracking-wide">Mobile Number</label>
-                  <input type="tel" value={mobileNumber} onChange={e => setMobileNumber(e.target.value)} placeholder="10-digit mobile number" maxLength={14} disabled={formLocked}
-                    className="mt-1.5 block w-full rounded-lg border border-slate-200 bg-slate-50 px-3.5 py-2.5 text-sm text-slate-900 placeholder:text-slate-400 focus:border-primary-navy focus:ring-2 focus:ring-primary-navy/20 focus:bg-white transition" />
-                  {mobileNumber && mobile10.length !== 10 && <p className="mt-1 text-xs text-red-500">Enter a valid 10-digit number.</p>}
+                  <input type="tel" value={mobileNumber} readOnly aria-readonly="true" placeholder="Sign in to load your phone" maxLength={14}
+                    className="mt-1.5 block w-full rounded-lg border border-slate-200 bg-slate-100 px-3.5 py-2.5 text-sm text-slate-700 cursor-not-allowed placeholder:text-slate-400" />
                 </div>
               </div>
 
-              <div className="mt-5 text-xs text-amber-700 bg-amber-50/80 border border-amber-200/60 rounded-lg px-3 py-2.5 leading-relaxed">
-                Please double-check your name — it will appear on the poster exactly as entered.
-              </div>
+              <p className="mt-3 text-xs text-slate-500">
+                {usedSettingsOverride ? 'Pulled from your Settings profile.' : 'Pulled from your activation form.'}{' '}
+                <Link to="/counsellor/settings" className="text-primary-navy underline font-medium">Edit in Settings</Link>
+              </p>
 
-              {/* Download buttons — always visible when form is valid */}
+              {!hasActivation ? (
+                <div className="mt-4 text-xs text-red-700 bg-red-50 border border-red-200 rounded-lg px-3 py-2.5 leading-relaxed">
+                  We could not find your activation form details. Please <Link to="/counsellor/login" className="underline font-semibold">sign in</Link> and complete the activation form to download this poster.
+                </div>
+              ) : (
+                <div className="mt-4 text-xs text-amber-700 bg-amber-50/80 border border-amber-200/60 rounded-lg px-3 py-2.5 leading-relaxed">
+                  These details come from your Settings profile (or activation form by default). They will appear on the downloaded poster.
+                </div>
+              )}
+
               <div className="mt-5 flex flex-col gap-2.5">
                 <button onClick={handlePng} disabled={generating || !canDownload}
                   className="w-full rounded-lg bg-primary-navy py-2.5 text-sm font-semibold text-white shadow-md shadow-primary-navy/20 hover:shadow-lg hover:shadow-primary-navy/30 active:scale-[0.98] transition disabled:opacity-50 disabled:cursor-not-allowed">
@@ -272,9 +288,6 @@ export default function InterPosterPage() {
                   className="w-full rounded-lg border border-slate-200 bg-white py-2.5 text-sm font-semibold text-slate-700 shadow-sm hover:bg-slate-50 active:scale-[0.98] transition disabled:opacity-50 disabled:cursor-not-allowed">
                   {generating ? 'Generating…' : 'Download as PDF'}
                 </button>
-                {!canDownload && (
-                  <p className="text-xs text-slate-400 text-center">Enter your name and a valid 10-digit number to enable download.</p>
-                )}
               </div>
             </div>
 

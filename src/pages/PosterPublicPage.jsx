@@ -1,5 +1,5 @@
 import { useMemo, useRef, useState, useCallback, useEffect, useLayoutEffect } from 'react';
-import { useLocation } from 'react-router-dom';
+import { Link, useLocation } from 'react-router-dom';
 import {
   FiAlertCircle,
   FiCheckCircle,
@@ -7,6 +7,7 @@ import {
   FiImage,
   FiLoader,
   FiLock,
+  FiSettings,
 } from 'react-icons/fi';
 import { trackPosterDownloadBeacon, verifyPosterActivation } from '../utils/api';
 import { usePosterByRoute } from '../components/Posters/usePosterByRoute';
@@ -18,6 +19,7 @@ import {
   getPreviewFrameSize,
   POSTER_PREVIEW_MIN_SLOT_PX,
 } from '../utils/posterExportDimensions';
+import { usePosterIdentity } from '../hooks/usePosterIdentity';
 
 /** Public `/p/` preview: narrower than admin max so the card stays balanced beside the form. */
 const POSTER_PUBLIC_PREVIEW_MAX_SLOT_PX = 520;
@@ -76,11 +78,21 @@ export default function PosterPublicPage() {
 
   const showPosterCanvas = Boolean(!loading && poster?.svgTemplate);
 
+  const identity = usePosterIdentity();
+  /** True when a counsellor is signed in with an activation form on file. We pre-fill / auto-verify in this case. */
+  const counsellorMode = identity.hasActivation;
+
   const [mobileInput, setMobileInput] = useState('');
   const [verifying, setVerifying] = useState(false);
   const [verifyError, setVerifyError] = useState('');
   const [exportError, setExportError] = useState('');
   const [session, setSession] = useState(null);
+  const autoVerifiedRef = useRef({ pathname: '', phone: '' });
+
+  useEffect(() => {
+    if (!counsellorMode) return;
+    setMobileInput(identity.validationPhone);
+  }, [counsellorMode, identity.validationPhone]);
 
   const exportRef = useRef(null);
   const posterColumnMeasureRef = useRef(null);
@@ -163,34 +175,72 @@ export default function PosterPublicPage() {
 
   const displayVariables = session ? unlockedVariables : LOCKED_PREVIEW_VARIABLES;
 
+  /** Shared verifier used by both manual submit and counsellor auto-verify. Returns true on success. */
+  const runVerification = useCallback(
+    async (rawMobile, { useIdentityForDisplay = false } = {}) => {
+      const m = normalizeMobileInput(rawMobile);
+      if (!m) {
+        setVerifyError('Enter a valid 10-digit mobile number.');
+        return false;
+      }
+      setVerifying(true);
+      setVerifyError('');
+      try {
+        const res = await verifyPosterActivation(pathname, m);
+        if (!res.success) {
+          setVerifyError(res.message || 'Verification failed.');
+          return false;
+        }
+        const body = res.data;
+        if (!body || body.success !== true) {
+          setVerifyError((body && body.message) || 'No activation record found for this number.');
+          return false;
+        }
+        if (useIdentityForDisplay) {
+          setSession({
+            name: identity.displayName || (body.name != null ? String(body.name) : ''),
+            mobile: identity.displayPhone || (body.mobile != null ? String(body.mobile) : m),
+          });
+        } else {
+          setSession({
+            name: body.name != null ? String(body.name) : '',
+            mobile: body.mobile != null ? String(body.mobile) : m,
+          });
+        }
+        return true;
+      } finally {
+        setVerifying(false);
+      }
+    },
+    [pathname, identity.displayName, identity.displayPhone]
+  );
+
   const handleVerify = async (e) => {
     e.preventDefault();
-    setVerifyError('');
-    const m = normalizeMobileInput(mobileInput);
-    if (!m) {
-      setVerifyError('Enter a valid 10-digit mobile number.');
-      return;
-    }
-    setVerifying(true);
-    try {
-      const res = await verifyPosterActivation(pathname, m);
-      if (!res.success) {
-        setVerifyError(res.message || 'Verification failed.');
-        return;
-      }
-      const body = res.data;
-      if (!body || body.success !== true) {
-        setVerifyError((body && body.message) || 'No activation record found for this number.');
-        return;
-      }
-      setSession({
-        name: body.name != null ? String(body.name) : '',
-        mobile: body.mobile != null ? String(body.mobile) : m,
-      });
-    } finally {
-      setVerifying(false);
-    }
+    await runVerification(mobileInput, { useIdentityForDisplay: counsellorMode });
   };
+
+  /** When a counsellor opens an automated poster, pre-verify with their activation phone so they
+   *  do not have to type it again. We do this once per (pathname, validationPhone) pair. */
+  useEffect(() => {
+    if (!counsellorMode || !showPosterCanvas) return;
+    if (session) return;
+    const seen = autoVerifiedRef.current;
+    if (seen.pathname === pathname && seen.phone === identity.validationPhone) return;
+    autoVerifiedRef.current = { pathname, phone: identity.validationPhone };
+    void runVerification(identity.validationPhone, { useIdentityForDisplay: true });
+  }, [counsellorMode, showPosterCanvas, pathname, identity.validationPhone, session, runVerification]);
+
+  /** Reflect live Settings edits onto the already-unlocked preview without re-verifying. */
+  useEffect(() => {
+    if (!counsellorMode || !session) return;
+    const desiredName = identity.displayName || '';
+    const desiredMobile = identity.displayPhone || '';
+    const currentMobile10 = String(session.mobile ?? '').replace(/\D/g, '').slice(-10);
+    if (session.name !== desiredName || currentMobile10 !== desiredMobile) {
+      setSession({ name: desiredName, mobile: desiredMobile });
+    }
+  }, [counsellorMode, identity.displayName, identity.displayPhone, session]);
 
   const triggerBlobDownload = useCallback((blob, filename) => {
     const url = URL.createObjectURL(blob);
@@ -410,52 +460,113 @@ export default function PosterPublicPage() {
                 </div>
                 <div className="w-full max-w-sm justify-self-center lg:justify-self-stretch lg:border-l lg:border-slate-100 lg:pl-8">
                 {!session ? (
-                  <form onSubmit={handleVerify} className="space-y-4" aria-busy={verifying}>
-                    <label className="block text-left">
-                      <span className="text-xs font-semibold uppercase tracking-wide text-slate-500">
-                        Mobile number
-                      </span>
-                      <input
-                        type="tel"
-                        inputMode="numeric"
-                        autoComplete="tel"
-                        value={mobileInput}
-                        onChange={(e) => setMobileInput(e.target.value)}
-                        className="mt-1.5 w-full rounded-lg border border-slate-200 bg-white px-3 py-3 text-base text-slate-900 outline-none transition focus:border-primary-navy focus:ring-2 focus:ring-primary-navy/20"
-                        placeholder="10-digit number"
-                        maxLength={14}
-                        aria-invalid={Boolean(verifyError)}
-                        aria-describedby={verifyError ? 'verify-err' : undefined}
-                      />
-                    </label>
-                    {verifyError ? (
-                      <div
-                        id="verify-err"
-                        className="flex items-start gap-2 rounded-lg border border-red-200 bg-red-50 px-3 py-2 text-sm text-red-900"
-                        role="alert"
-                      >
-                        <FiAlertCircle className="mt-0.5 h-4 w-4 shrink-0" aria-hidden />
-                        <span>{verifyError}</span>
+                  counsellorMode ? (
+                    <div className="space-y-4" aria-busy={verifying}>
+                      <div className="rounded-xl border border-slate-200 bg-slate-50 px-4 py-3 text-left">
+                        <p className="text-[11px] font-semibold uppercase tracking-wide text-slate-500">
+                          Signed in as
+                        </p>
+                        <p className="mt-1 text-sm font-semibold text-slate-900">
+                          {identity.displayName || 'Counsellor'}
+                        </p>
+                        <p className="mt-0.5 text-xs tabular-nums text-slate-600">
+                          {formatMobileDisplay(identity.displayPhone)}
+                        </p>
+                        <p className="mt-2 text-[11px] leading-relaxed text-slate-500">
+                          {identity.usedSettingsOverride
+                            ? 'Pulled from your Settings profile.'
+                            : 'Pulled from your activation form.'}
+                          {' '}
+                          <Link
+                            to="/counsellor/settings"
+                            className="inline-flex items-center gap-1 font-semibold text-primary-navy hover:underline"
+                          >
+                            <FiSettings className="h-3 w-3" aria-hidden />
+                            Edit in Settings
+                          </Link>
+                        </p>
                       </div>
-                    ) : null}
-                    <button
-                      type="submit"
-                      disabled={verifying}
-                      className="flex w-full items-center justify-center gap-2 rounded-lg bg-primary-navy py-3 text-sm font-semibold text-white shadow-sm transition hover:bg-[#002952] disabled:cursor-not-allowed disabled:opacity-55"
-                    >
-                      {verifying ? (
-                        <>
-                          <FiLoader className="h-4 w-4 animate-spin" aria-hidden />
-                          Verifying…
-                        </>
+                      {verifyError ? (
+                        <div
+                          className="flex items-start gap-2 rounded-lg border border-red-200 bg-red-50 px-3 py-2 text-sm text-red-900"
+                          role="alert"
+                        >
+                          <FiAlertCircle className="mt-0.5 h-4 w-4 shrink-0" aria-hidden />
+                          <span>{verifyError}</span>
+                        </div>
                       ) : (
-                        <>
-                          <FiLock className="h-4 w-4 opacity-90" aria-hidden />
-                          Verify and unlock
-                        </>
+                        <p className="text-xs text-slate-500">
+                          {verifying
+                            ? 'Verifying your activation phone with our records…'
+                            : 'Validating your activation phone with our records.'}
+                        </p>
                       )}
-                    </button>
-                  </form>
+                      {verifyError ? (
+                        <button
+                          type="button"
+                          onClick={() => void runVerification(identity.validationPhone, { useIdentityForDisplay: true })}
+                          disabled={verifying}
+                          className="flex w-full items-center justify-center gap-2 rounded-lg bg-primary-navy py-3 text-sm font-semibold text-white shadow-sm transition hover:bg-[#002952] disabled:cursor-not-allowed disabled:opacity-55"
+                        >
+                          {verifying ? (
+                            <>
+                              <FiLoader className="h-4 w-4 animate-spin" aria-hidden />
+                              Retrying…
+                            </>
+                          ) : (
+                            'Retry verification'
+                          )}
+                        </button>
+                      ) : null}
+                    </div>
+                  ) : (
+                    <form onSubmit={handleVerify} className="space-y-4" aria-busy={verifying}>
+                      <label className="block text-left">
+                        <span className="text-xs font-semibold uppercase tracking-wide text-slate-500">
+                          Mobile number
+                        </span>
+                        <input
+                          type="tel"
+                          inputMode="numeric"
+                          autoComplete="tel"
+                          value={mobileInput}
+                          onChange={(e) => setMobileInput(e.target.value)}
+                          className="mt-1.5 w-full rounded-lg border border-slate-200 bg-white px-3 py-3 text-base text-slate-900 outline-none transition focus:border-primary-navy focus:ring-2 focus:ring-primary-navy/20"
+                          placeholder="10-digit number"
+                          maxLength={14}
+                          aria-invalid={Boolean(verifyError)}
+                          aria-describedby={verifyError ? 'verify-err' : undefined}
+                        />
+                      </label>
+                      {verifyError ? (
+                        <div
+                          id="verify-err"
+                          className="flex items-start gap-2 rounded-lg border border-red-200 bg-red-50 px-3 py-2 text-sm text-red-900"
+                          role="alert"
+                        >
+                          <FiAlertCircle className="mt-0.5 h-4 w-4 shrink-0" aria-hidden />
+                          <span>{verifyError}</span>
+                        </div>
+                      ) : null}
+                      <button
+                        type="submit"
+                        disabled={verifying}
+                        className="flex w-full items-center justify-center gap-2 rounded-lg bg-primary-navy py-3 text-sm font-semibold text-white shadow-sm transition hover:bg-[#002952] disabled:cursor-not-allowed disabled:opacity-55"
+                      >
+                        {verifying ? (
+                          <>
+                            <FiLoader className="h-4 w-4 animate-spin" aria-hidden />
+                            Verifying…
+                          </>
+                        ) : (
+                          <>
+                            <FiLock className="h-4 w-4 opacity-90" aria-hidden />
+                            Verify and unlock
+                          </>
+                        )}
+                      </button>
+                    </form>
+                  )
                 ) : null}
 
                 {session ? (
@@ -511,6 +622,21 @@ export default function PosterPublicPage() {
                       <span className="mx-2 text-slate-300">·</span>
                       <span className="tabular-nums text-slate-600">{unlockedVariables.mobile}</span>
                     </p>
+                    {counsellorMode ? (
+                      <p className="text-center text-[11px] text-slate-500">
+                        {identity.usedSettingsOverride
+                          ? 'Showing your Settings profile details.'
+                          : 'Showing your activation-form details.'}
+                        {' '}
+                        <Link
+                          to="/counsellor/settings"
+                          className="inline-flex items-center gap-1 font-semibold text-primary-navy hover:underline"
+                        >
+                          <FiSettings className="h-3 w-3" aria-hidden />
+                          Edit in Settings
+                        </Link>
+                      </p>
+                    ) : null}
                   </div>
                 ) : null}
                 </div>

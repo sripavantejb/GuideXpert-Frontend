@@ -1,18 +1,15 @@
 import { useEffect, useRef, useState } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 import { jsPDF } from 'jspdf';
 import { checkActivationEligibility, trackPosterDownloadBeacon } from '../utils/api';
 import { isIOSDevice } from '../utils/posterDownloadUi';
+import { usePosterIdentity } from '../hooks/usePosterIdentity';
+import PosterIdentityNotice from '../components/Counsellor/PosterIdentityNotice';
 import JeePosterPreview, {
   JEE_POSTER_WIDTH as POSTER_WIDTH,
   JEE_POSTER_HEIGHT as POSTER_HEIGHT,
   JEE_POSTER_EXPORT_LAYOUT,
 } from '../components/Counsellor/JeePosterPreview';
-
-function to10Digits(val) {
-  if (val == null) return '';
-  return String(val).replace(/\D/g, '').trim().slice(0, 10);
-}
 
 function safeFilename(str) {
   return (str || 'poster').replace(/[^a-zA-Z0-9-_]/g, '-').replace(/-+/g, '-').slice(0, 60);
@@ -95,8 +92,10 @@ function drawJeePosterToCanvas(img, fullName, mobileNumber, scale = 2) {
 
 export default function JeePosterPage() {
   const navigate = useNavigate();
-  const [fullName, setFullName] = useState('');
-  const [mobileNumber, setMobileNumber] = useState('');
+  const identity = usePosterIdentity();
+  const { displayPhone, validationPhone, hasActivation, hasIdentity, usedSettingsOverride } = identity;
+  const fullName = identity.displayName;
+  const mobileNumber = displayPhone;
   const [showIneligibleModal, setShowIneligibleModal] = useState(false);
   const [ineligibleMessage, setIneligibleMessage] = useState('');
   const [generating, setGenerating] = useState(false);
@@ -106,9 +105,9 @@ export default function JeePosterPage() {
   const previewBoxRef = useRef(null);
   const [previewScale, setPreviewScale] = useState(PREVIEW_MAX_PX / POSTER_WIDTH);
 
-  const mobile10 = to10Digits(mobileNumber);
-  const displayName = String(fullName || '').trim().slice(0, NAME_MAX_LEN);
-  const canDownload = displayName.length > 0 && mobile10.length === 10;
+  const mobile10 = displayPhone;
+  const displayName = fullName.slice(0, NAME_MAX_LEN);
+  const canDownload = hasActivation && hasIdentity;
 
   useEffect(() => {
     const el = previewBoxRef.current;
@@ -125,7 +124,12 @@ export default function JeePosterPage() {
   }, []);
 
   async function verifyEligibility() {
-    const result = await checkActivationEligibility(mobile10);
+    if (!hasActivation) {
+      setIneligibleMessage('We could not find your activation form details. Please complete the activation form to download this poster.');
+      setShowIneligibleModal(true);
+      return false;
+    }
+    const result = await checkActivationEligibility(validationPhone);
     const payload = result.data?.data ?? result.data;
     const isEligible = Boolean(result.eligible ?? payload?.exists ?? payload?.eligible ?? false);
     if (result.success && isEligible) return true;
@@ -242,6 +246,8 @@ export default function JeePosterPage() {
           <p className="text-sm text-slate-500 mt-1.5 max-w-lg mx-auto">Enter your details below. Eligibility is verified when you click download.</p>
         </div>
 
+        <PosterIdentityNotice className="mb-6" />
+
         <div className="bg-white rounded-2xl shadow-lg border border-slate-100 overflow-hidden">
           <div className="grid grid-cols-1 md:grid-cols-2">
             <div className="p-5 sm:p-7 border-b md:border-b-0 md:border-r border-slate-100">
@@ -253,9 +259,10 @@ export default function JeePosterPage() {
                   <input
                     type="text"
                     value={fullName}
-                    onChange={(e) => setFullName(e.target.value)}
-                    placeholder="Enter your name"
-                    className="mt-1.5 block w-full rounded-lg border border-slate-200 bg-slate-50 px-3.5 py-2.5 text-sm text-slate-900 placeholder:text-slate-400 focus:border-primary-navy focus:ring-2 focus:ring-primary-navy/20 focus:bg-white transition"
+                    readOnly
+                    aria-readonly="true"
+                    placeholder="Sign in to load your name"
+                    className="mt-1.5 block w-full rounded-lg border border-slate-200 bg-slate-100 px-3.5 py-2.5 text-sm text-slate-700 cursor-not-allowed placeholder:text-slate-400"
                   />
                 </div>
                 <div>
@@ -263,18 +270,29 @@ export default function JeePosterPage() {
                   <input
                     type="tel"
                     value={mobileNumber}
-                    onChange={(e) => setMobileNumber(e.target.value)}
-                    placeholder="10-digit mobile number"
+                    readOnly
+                    aria-readonly="true"
+                    placeholder="Sign in to load your phone"
                     maxLength={14}
-                    className="mt-1.5 block w-full rounded-lg border border-slate-200 bg-slate-50 px-3.5 py-2.5 text-sm text-slate-900 placeholder:text-slate-400 focus:border-primary-navy focus:ring-2 focus:ring-primary-navy/20 focus:bg-white transition"
+                    className="mt-1.5 block w-full rounded-lg border border-slate-200 bg-slate-100 px-3.5 py-2.5 text-sm text-slate-700 cursor-not-allowed placeholder:text-slate-400"
                   />
-                  {mobileNumber && mobile10.length !== 10 && <p className="mt-1 text-xs text-red-500">Enter a valid 10-digit number.</p>}
                 </div>
               </div>
 
-              <div className="mt-5 text-xs text-amber-700 bg-amber-50/80 border border-amber-200/60 rounded-lg px-3 py-2.5 leading-relaxed">
-                Please double-check your name and mobile number before downloading.
-              </div>
+              <p className="mt-3 text-xs text-slate-500">
+                {usedSettingsOverride ? 'Pulled from your Settings profile.' : 'Pulled from your activation form.'}{' '}
+                <Link to="/counsellor/settings" className="text-primary-navy underline font-medium">Edit in Settings</Link>
+              </p>
+
+              {!hasActivation ? (
+                <div className="mt-4 text-xs text-red-700 bg-red-50 border border-red-200 rounded-lg px-3 py-2.5 leading-relaxed">
+                  We could not find your activation form details. Please <Link to="/counsellor/login" className="underline font-semibold">sign in</Link> and complete the activation form to download this poster.
+                </div>
+              ) : (
+                <div className="mt-4 text-xs text-amber-700 bg-amber-50/80 border border-amber-200/60 rounded-lg px-3 py-2.5 leading-relaxed">
+                  These details come from your Settings profile (or activation form by default). They will appear on the downloaded poster.
+                </div>
+              )}
 
               <div className="mt-5 flex flex-col gap-2.5">
                 <button
@@ -291,7 +309,6 @@ export default function JeePosterPage() {
                 >
                   {generating ? 'Generating…' : 'Download as PDF'}
                 </button>
-                {!canDownload && <p className="text-xs text-slate-400 text-center">Enter your name and a valid 10-digit number to enable download.</p>}
               </div>
             </div>
 
