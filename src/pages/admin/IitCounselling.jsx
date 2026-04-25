@@ -1,7 +1,8 @@
-import { useEffect, useMemo, useState } from 'react';
+import { useCallback, useEffect, useMemo, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { FiEye, FiUsers, FiBarChart2, FiCheckCircle } from 'react-icons/fi';
 import {
+  getAllIitCounsellingSubmissionsPaginated,
   getIitCounsellingSubmissions,
   getIitCounsellingSubmission,
   getIitCounsellingVisitAnalytics,
@@ -25,7 +26,80 @@ function formatLabel(raw) {
 function formatTopColleges(value) {
   if (!Array.isArray(value) || value.length === 0) return '—';
   const cleaned = value.map((item) => String(item || '').trim()).filter(Boolean);
-  return cleaned.length ? cleaned.join(', ') : '—';
+  return cleaned.length ? cleaned.join('\n') : '—';
+}
+
+const IIT_SUBMISSION_COLUMNS = [
+  { key: 'name', label: 'Name' },
+  { key: 'phone', label: 'Phone' },
+  { key: 'currentStep', label: 'Current Step' },
+  { key: 'completed', label: 'Completed' },
+  { key: 'topColleges', label: 'Top Colleges' },
+  { key: 'utmSource', label: 'UTM Source' },
+  { key: 'utmMedium', label: 'UTM Medium' },
+  { key: 'utmCampaign', label: 'UTM Campaign' },
+  { key: 'utmContent', label: 'UTM Content' },
+  { key: 'updated', label: 'Updated' },
+];
+
+function mapIitSubmissionRecord(row) {
+  const utm = row?.utm || {};
+  const topColleges = formatTopColleges(row?.section1Data?.top5Colleges);
+  const updatedDate = row?.updatedAt ? new Date(row.updatedAt) : null;
+  const updatedEpoch = updatedDate && !Number.isNaN(updatedDate.getTime()) ? updatedDate.getTime() : null;
+  const updatedIso = updatedDate && !Number.isNaN(updatedDate.getTime()) ? updatedDate.toISOString() : '';
+  return {
+    id: row?.id || '',
+    name: row?.fullName || '—',
+    phone: row?.phone || '—',
+    currentStep: row?.currentStep || 1,
+    completed: row?.isCompleted ? 'Yes' : 'No',
+    topColleges,
+    topCollegesDisplay: topColleges === '—' ? '—' : topColleges.replace(/\n+/g, ', '),
+    utmSource: utm.utm_source || '—',
+    utmMedium: utm.utm_medium || '—',
+    utmCampaign: utm.utm_campaign || '—',
+    utmContent: utm.utm_content || '—',
+    updated: formatDateTime(row?.updatedAt),
+    updatedIso,
+    updatedEpoch,
+    raw: row,
+  };
+}
+
+function applySubmissionViewFilters(mappedRows, viewFilters) {
+  const sourceQ = viewFilters.utmSource.trim().toLowerCase();
+  const mediumQ = viewFilters.utmMedium.trim().toLowerCase();
+  const campaignQ = viewFilters.utmCampaign.trim().toLowerCase();
+  const contentQ = viewFilters.utmContent.trim().toLowerCase();
+  const updatedFromMs = viewFilters.updatedFrom ? new Date(viewFilters.updatedFrom).getTime() : null;
+  const updatedToMs = viewFilters.updatedTo ? new Date(viewFilters.updatedTo).getTime() : null;
+
+  return mappedRows.filter((row) => {
+    if (sourceQ && !String(row.utmSource || '').toLowerCase().includes(sourceQ)) return false;
+    if (mediumQ && !String(row.utmMedium || '').toLowerCase().includes(mediumQ)) return false;
+    if (campaignQ && !String(row.utmCampaign || '').toLowerCase().includes(campaignQ)) return false;
+    if (contentQ && !String(row.utmContent || '').toLowerCase().includes(contentQ)) return false;
+    if (updatedFromMs != null && Number.isFinite(updatedFromMs) && (!Number.isFinite(row.updatedEpoch) || row.updatedEpoch < updatedFromMs)) return false;
+    if (updatedToMs != null && Number.isFinite(updatedToMs) && (!Number.isFinite(row.updatedEpoch) || row.updatedEpoch > updatedToMs)) return false;
+    return true;
+  });
+}
+
+function tsvEscapeCell(value) {
+  const text = String(value ?? '');
+  if (/[\t\n\r"]/.test(text)) {
+    return `"${text.replace(/"/g, '""')}"`;
+  }
+  return text;
+}
+
+function serializeRowsToTsv(columns, rows) {
+  const header = columns.map((c) => tsvEscapeCell(c.label)).join('\t');
+  const body = rows
+    .map((row) => columns.map((c) => tsvEscapeCell(row[c.key] ?? '')).join('\t'))
+    .join('\n');
+  return body ? `${header}\n${body}` : header;
 }
 
 function SectionBlock({ title, data }) {
@@ -306,6 +380,11 @@ export default function IitCounselling() {
   const [detailLoading, setDetailLoading] = useState(false);
   const [submissionsViewAllOpen, setSubmissionsViewAllOpen] = useState(false);
   const [submissionsCopied, setSubmissionsCopied] = useState(false);
+  const [copyingAll, setCopyingAll] = useState(false);
+  const [copyError, setCopyError] = useState('');
+  const [allSubmissionRows, setAllSubmissionRows] = useState([]);
+  const [allSubmissionRowsLoading, setAllSubmissionRowsLoading] = useState(false);
+  const [allSubmissionRowsError, setAllSubmissionRowsError] = useState('');
   const [viewFilters, setViewFilters] = useState({
     utmSource: '',
     utmMedium: '',
@@ -377,36 +456,17 @@ export default function IitCounselling() {
     document.body.removeChild(ta);
   };
 
-  const filteredSubmissionRows = useMemo(() => {
-    const sourceQ = viewFilters.utmSource.trim().toLowerCase();
-    const mediumQ = viewFilters.utmMedium.trim().toLowerCase();
-    const campaignQ = viewFilters.utmCampaign.trim().toLowerCase();
-    const contentQ = viewFilters.utmContent.trim().toLowerCase();
-    const updatedFromMs = viewFilters.updatedFrom ? new Date(viewFilters.updatedFrom).getTime() : null;
-    const updatedToMs = viewFilters.updatedTo ? new Date(viewFilters.updatedTo).getTime() : null;
-
-    return rows.filter((row) => {
-      const utm = row.utm || {};
-      const sourceVal = String(utm.utm_source || '').toLowerCase();
-      const mediumVal = String(utm.utm_medium || '').toLowerCase();
-      const campaignVal = String(utm.utm_campaign || '').toLowerCase();
-      const contentVal = String(utm.utm_content || '').toLowerCase();
-      const updatedMs = row.updatedAt ? new Date(row.updatedAt).getTime() : NaN;
-
-      if (sourceQ && !sourceVal.includes(sourceQ)) return false;
-      if (mediumQ && !mediumVal.includes(mediumQ)) return false;
-      if (campaignQ && !campaignVal.includes(campaignQ)) return false;
-      if (contentQ && !contentVal.includes(contentQ)) return false;
-      if (updatedFromMs != null && Number.isFinite(updatedFromMs) && (!Number.isFinite(updatedMs) || updatedMs < updatedFromMs)) return false;
-      if (updatedToMs != null && Number.isFinite(updatedToMs) && (!Number.isFinite(updatedMs) || updatedMs > updatedToMs)) return false;
-      return true;
-    });
-  }, [rows, viewFilters]);
+  const pageMappedRows = useMemo(() => rows.map(mapIitSubmissionRecord), [rows]);
+  const viewSourceRows = useMemo(() => (allSubmissionRows.length ? allSubmissionRows : pageMappedRows), [allSubmissionRows, pageMappedRows]);
+  const filteredSubmissionRows = useMemo(
+    () => applySubmissionViewFilters(viewSourceRows, viewFilters),
+    [viewSourceRows, viewFilters]
+  );
 
   const viewFilterOptions = useMemo(() => {
     const addUnique = (arr, value) => {
       const v = String(value || '').trim();
-      if (v) arr.add(v);
+      if (v && v !== '—') arr.add(v);
     };
     const sourceSet = new Set();
     const mediumSet = new Set();
@@ -414,15 +474,13 @@ export default function IitCounselling() {
     const contentSet = new Set();
     const updatedSet = new Set();
 
-    rows.forEach((row) => {
-      const utm = row.utm || {};
-      addUnique(sourceSet, utm.utm_source);
-      addUnique(mediumSet, utm.utm_medium);
-      addUnique(campaignSet, utm.utm_campaign);
-      addUnique(contentSet, utm.utm_content);
-      if (row.updatedAt) {
-        const iso = new Date(row.updatedAt).toISOString();
-        if (iso) updatedSet.add(iso);
+    viewSourceRows.forEach((row) => {
+      addUnique(sourceSet, row.utmSource);
+      addUnique(mediumSet, row.utmMedium);
+      addUnique(campaignSet, row.utmCampaign);
+      addUnique(contentSet, row.utmContent);
+      if (row.updatedIso) {
+        updatedSet.add(row.updatedIso);
       }
     });
 
@@ -436,32 +494,67 @@ export default function IitCounselling() {
       contents: Array.from(contentSet).sort(sortText),
       updatedTimes: Array.from(updatedSet).sort(sortTimeDesc),
     };
-  }, [rows]);
+  }, [viewSourceRows]);
 
-  const submissionRowsForCopy = useMemo(
-    () => filteredSubmissionRows.map((row) => {
-      const utm = row.utm || {};
-      const topColleges = formatTopColleges(row.section1Data?.top5Colleges);
-      return [
-        row.fullName || '—',
-        row.phone || '—',
-        row.currentStep || 1,
-        row.isCompleted ? 'Yes' : 'No',
-        topColleges,
-        utm.utm_source || '—',
-        utm.utm_medium || '—',
-        utm.utm_campaign || '—',
-        utm.utm_content || '—',
-        formatDateTime(row.updatedAt),
-      ];
-    }),
-    [filteredSubmissionRows]
-  );
+  useEffect(() => {
+    setAllSubmissionRows([]);
+    setAllSubmissionRowsError('');
+  }, [search, sharedFilters]);
+
+  const fetchAllMatchingSubmissions = useCallback(async () => {
+    setAllSubmissionRowsLoading(true);
+    setAllSubmissionRowsError('');
+    try {
+      const token = getStoredToken();
+      const res = await getAllIitCounsellingSubmissionsPaginated(
+        { q: search, ...sharedFilters, limit: 200 },
+        token
+      );
+      if (!res.success) throw new Error(res.message || 'Failed to load all submissions');
+      const rowsData = Array.isArray(res.data?.data) ? res.data.data : [];
+      const aggregated = rowsData.map(mapIitSubmissionRecord);
+
+      setAllSubmissionRows(aggregated);
+      return aggregated;
+    } catch (err) {
+      const message = err?.message || 'Failed to fetch all submissions.';
+      setAllSubmissionRowsError(message);
+      return [];
+    } finally {
+      setAllSubmissionRowsLoading(false);
+    }
+  }, [search, sharedFilters]);
+
+  useEffect(() => {
+    if (!submissionsViewAllOpen) return;
+    fetchAllMatchingSubmissions();
+  }, [submissionsViewAllOpen, fetchAllMatchingSubmissions]);
 
   const copyAllSubmissions = async () => {
-    if (!submissionRowsForCopy.length) return;
-    const header = ['Name', 'Phone', 'Current Step', 'Completed', 'Top Colleges', 'UTM Source', 'UTM Medium', 'UTM Campaign', 'UTM Content', 'Updated'];
-    const text = [header, ...submissionRowsForCopy].map((cols) => cols.map((v) => String(v)).join('\t')).join('\n');
+    setCopyError('');
+    setCopyingAll(true);
+    const fetchedRows = await fetchAllMatchingSubmissions();
+    const copyRows = applySubmissionViewFilters(
+      fetchedRows.length ? fetchedRows : viewSourceRows,
+      viewFilters
+    ).map((row) => ({
+      name: row.name,
+      phone: row.phone,
+      currentStep: row.currentStep,
+      completed: row.completed,
+      topColleges: row.topColleges,
+      utmSource: row.utmSource,
+      utmMedium: row.utmMedium,
+      utmCampaign: row.utmCampaign,
+      utmContent: row.utmContent,
+      updated: row.updated,
+    }));
+    if (!copyRows.length) {
+      setCopyingAll(false);
+      setCopyError('No rows available to copy for current filters.');
+      return;
+    }
+    const text = serializeRowsToTsv(IIT_SUBMISSION_COLUMNS, copyRows);
     try {
       if (typeof navigator !== 'undefined' && navigator.clipboard?.writeText) {
         await navigator.clipboard.writeText(text);
@@ -471,6 +564,7 @@ export default function IitCounselling() {
     } catch {
       copyTextFallback(text);
     }
+    setCopyingAll(false);
     setSubmissionsCopied(true);
     window.setTimeout(() => setSubmissionsCopied(false), 1400);
   };
@@ -647,7 +741,7 @@ export default function IitCounselling() {
             <button
               type="button"
               onClick={() => setSubmissionsViewAllOpen(true)}
-              disabled={rows.length === 0}
+              disabled={pageMappedRows.length === 0}
               className="h-9 rounded-lg border border-gray-300 px-3 text-sm text-gray-700 hover:bg-gray-50 disabled:opacity-50"
             >
               View all
@@ -655,10 +749,10 @@ export default function IitCounselling() {
             <button
               type="button"
               onClick={copyAllSubmissions}
-              disabled={rows.length === 0}
+              disabled={pageMappedRows.length === 0 || copyingAll}
               className="h-9 rounded-lg border border-gray-300 px-3 text-sm text-gray-700 hover:bg-gray-50 disabled:opacity-50"
             >
-              {submissionsCopied ? 'Copied' : 'Copy all'}
+              {copyingAll ? 'Copying...' : (submissionsCopied ? 'Copied' : 'Copy all')}
             </button>
             <input
               type="search"
@@ -675,6 +769,7 @@ export default function IitCounselling() {
           </div>
         </div>
         {error ? <p className="text-red-600 text-sm">{error}</p> : null}
+        {copyError ? <p className="text-red-600 text-sm">{copyError}</p> : null}
         <div className="overflow-x-auto rounded-lg border border-gray-200">
         <table className="min-w-[1180px] w-full text-left text-sm">
           <thead>
@@ -695,11 +790,9 @@ export default function IitCounselling() {
           <tbody className="divide-y divide-gray-100">
             {loading ? (
               <tr><td colSpan={11} className="px-3 py-6 text-center text-gray-500">Loading...</td></tr>
-            ) : rows.length === 0 ? (
+            ) : pageMappedRows.length === 0 ? (
               <tr><td colSpan={11} className="px-3 py-6 text-center text-gray-500">No submissions found</td></tr>
-            ) : rows.map((row) => {
-              const utm = row.utm || {};
-              const topColleges = formatTopColleges(row.section1Data?.top5Colleges);
+            ) : pageMappedRows.map((row) => {
               const utmCell = (value) => (
                 <span
                   className={value ? 'text-gray-800' : 'text-gray-400'}
@@ -710,18 +803,18 @@ export default function IitCounselling() {
               );
               return (
                 <tr key={row.id}>
-                  <td className="px-3 py-2">{row.fullName || '—'}</td>
-                  <td className="px-3 py-2">{row.phone || '—'}</td>
-                  <td className="px-3 py-2">{row.currentStep || 1}</td>
-                  <td className="px-3 py-2">{row.isCompleted ? 'Yes' : 'No'}</td>
-                  <td className="px-3 py-2 max-w-[300px] truncate" title={topColleges}>{topColleges}</td>
-                  <td className="px-3 py-2 max-w-[180px] truncate">{utmCell(utm.utm_source)}</td>
-                  <td className="px-3 py-2 max-w-[180px] truncate">{utmCell(utm.utm_medium)}</td>
-                  <td className="px-3 py-2 max-w-[200px] truncate">{utmCell(utm.utm_campaign)}</td>
-                  <td className="px-3 py-2 max-w-[200px] truncate">{utmCell(utm.utm_content)}</td>
-                  <td className="px-3 py-2">{formatDateTime(row.updatedAt)}</td>
+                  <td className="px-3 py-2">{row.name}</td>
+                  <td className="px-3 py-2">{row.phone}</td>
+                  <td className="px-3 py-2">{row.currentStep}</td>
+                  <td className="px-3 py-2">{row.completed}</td>
+                  <td className="px-3 py-2 max-w-[300px] truncate" title={row.topColleges}>{row.topCollegesDisplay}</td>
+                  <td className="px-3 py-2 max-w-[180px] truncate">{utmCell(row.utmSource)}</td>
+                  <td className="px-3 py-2 max-w-[180px] truncate">{utmCell(row.utmMedium)}</td>
+                  <td className="px-3 py-2 max-w-[200px] truncate">{utmCell(row.utmCampaign)}</td>
+                  <td className="px-3 py-2 max-w-[200px] truncate">{utmCell(row.utmContent)}</td>
+                  <td className="px-3 py-2">{row.updated}</td>
                   <td className="px-3 py-2 text-center">
-                    <button type="button" onClick={() => openDetail(row.id)} className="inline-flex items-center gap-1 text-primary-navy hover:underline">
+                    <button type="button" onClick={() => openDetail(row.raw?.id || row.id)} className="inline-flex items-center gap-1 text-primary-navy hover:underline">
                       <FiEye className="w-4 h-4" /> View
                     </button>
                   </td>
@@ -738,15 +831,16 @@ export default function IitCounselling() {
           <div className="w-full max-w-6xl rounded-xl bg-white shadow-xl">
             <div className="flex items-center justify-between border-b border-gray-200 px-4 py-3">
               <h4 className="text-sm font-semibold text-gray-900">
-                IIT Counselling Submissions - Viewed ({filteredSubmissionRows.length}/{rows.length})
+                IIT Counselling Submissions - Viewed ({filteredSubmissionRows.length}/{viewSourceRows.length})
               </h4>
               <div className="flex items-center gap-2">
                 <button
                   type="button"
                   onClick={copyAllSubmissions}
+                  disabled={copyingAll || allSubmissionRowsLoading}
                   className="rounded border border-gray-300 px-2 py-1 text-[11px] font-medium text-gray-700 hover:bg-gray-50"
                 >
-                  {submissionsCopied ? 'Copied' : 'Copy all'}
+                  {copyingAll ? 'Copying...' : (submissionsCopied ? 'Copied' : 'Copy all')}
                 </button>
                 <button
                   type="button"
@@ -758,6 +852,12 @@ export default function IitCounselling() {
               </div>
             </div>
             <div className="max-h-[70vh] overflow-auto p-4">
+              {allSubmissionRowsLoading ? (
+                <p className="mb-3 text-sm text-gray-500">Loading all matching rows...</p>
+              ) : null}
+              {allSubmissionRowsError ? (
+                <p className="mb-3 text-sm text-red-600">{allSubmissionRowsError}</p>
+              ) : null}
               <div className="mb-4 grid grid-cols-1 gap-2 md:grid-cols-3">
                 <select
                   value={viewFilters.utmSource}
@@ -848,20 +948,18 @@ export default function IitCounselling() {
                 </thead>
                 <tbody className="divide-y divide-gray-100">
                   {filteredSubmissionRows.map((row) => {
-                    const utm = row.utm || {};
-                    const topColleges = formatTopColleges(row.section1Data?.top5Colleges);
                     return (
                       <tr key={`viewall-${row.id}`}>
-                        <td className="px-3 py-2 break-all">{row.fullName || '—'}</td>
-                        <td className="px-3 py-2">{row.phone || '—'}</td>
-                        <td className="px-3 py-2">{row.currentStep || 1}</td>
-                        <td className="px-3 py-2">{row.isCompleted ? 'Yes' : 'No'}</td>
-                        <td className="px-3 py-2 break-all">{topColleges}</td>
-                        <td className="px-3 py-2 break-all">{utm.utm_source || '—'}</td>
-                        <td className="px-3 py-2 break-all">{utm.utm_medium || '—'}</td>
-                        <td className="px-3 py-2 break-all">{utm.utm_campaign || '—'}</td>
-                        <td className="px-3 py-2 break-all">{utm.utm_content || '—'}</td>
-                        <td className="px-3 py-2">{formatDateTime(row.updatedAt)}</td>
+                        <td className="px-3 py-2 break-all">{row.name}</td>
+                        <td className="px-3 py-2">{row.phone}</td>
+                        <td className="px-3 py-2">{row.currentStep}</td>
+                        <td className="px-3 py-2">{row.completed}</td>
+                        <td className="px-3 py-2 break-all whitespace-pre-wrap">{row.topColleges}</td>
+                        <td className="px-3 py-2 break-all">{row.utmSource}</td>
+                        <td className="px-3 py-2 break-all">{row.utmMedium}</td>
+                        <td className="px-3 py-2 break-all">{row.utmCampaign}</td>
+                        <td className="px-3 py-2 break-all">{row.utmContent}</td>
+                        <td className="px-3 py-2">{row.updated}</td>
                       </tr>
                     );
                   })}

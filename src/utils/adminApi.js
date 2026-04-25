@@ -162,6 +162,35 @@ export const getIitCounsellingSubmissions = async (params = {}, token = getStore
   return adminRequest(`/iit-counselling${query ? `?${query}` : ''}`, { method: 'GET' }, token);
 };
 
+export const getAllIitCounsellingSubmissionsPaginated = async (params = {}, token = getStoredToken()) => {
+  const limit = params.limit != null ? Number(params.limit) : 200;
+  let page = 1;
+  let totalPages = 1;
+  const allRows = [];
+
+  while (page <= totalPages) {
+    const res = await getIitCounsellingSubmissions({ ...params, page, limit }, token);
+    if (!res.success) return res;
+    const rows = Array.isArray(res.data?.data) ? res.data.data : [];
+    allRows.push(...rows);
+    totalPages = Number(res.data?.pagination?.totalPages) || 1;
+    page += 1;
+  }
+
+  return {
+    success: true,
+    data: {
+      data: allRows,
+      pagination: {
+        total: allRows.length,
+        page: 1,
+        totalPages: 1,
+        limit,
+      },
+    },
+  };
+};
+
 export const getIitCounsellingSubmission = async (id, token = getStoredToken()) => {
   return adminRequest(`/iit-counselling/${encodeURIComponent(id)}`, { method: 'GET' }, token);
 };
