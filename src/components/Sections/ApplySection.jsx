@@ -68,6 +68,10 @@ const ApplySection = () => {
     return rawSlots.filter((slot) => slot && typeof slot === 'object' && slot.id != null);
   };
 
+  /** Stable radio / form value when the same slot id appears on two calendar days (demo fallback). */
+  const getSlotSelectionKey = (slot) =>
+    slot && typeof slot.selectionId === 'string' && slot.selectionId ? slot.selectionId : slot?.id;
+
   const hasEnabledSlots = (list) => list.some((s) => s && s.enabled !== false);
 
   // Fetch demo slots from API on mount
@@ -427,8 +431,12 @@ const ApplySection = () => {
     }
 
     // Reject disabled slots (e.g. if form state was tampered)
-    const selectedSlotData = slots.find((s) => s?.id === formData.timeSlot);
-    if (selectedSlotData && selectedSlotData.enabled === false) {
+    const selectedSlotData = slots.find((s) => getSlotSelectionKey(s) === formData.timeSlot);
+    if (!selectedSlotData || !selectedSlotData.id) {
+      setError('Please select a valid time slot');
+      return;
+    }
+    if (selectedSlotData.enabled === false) {
       setError('This slot is no longer available. Please choose another.');
       return;
     }
@@ -444,8 +452,8 @@ const ApplySection = () => {
     console.log('[Submit Application] Using verified phone:', normalizedPhone);
     
     // Selected slot ID and date from API slots (selectedSlotData already validated as enabled above)
-    const selectedSlot = formData.timeSlot;
-    const slotDate = selectedSlotData?.date || new Date().toISOString();
+    const selectedSlot = selectedSlotData.id;
+    const slotDate = selectedSlotData.date || new Date().toISOString();
 
     // Log submission data
     console.log('[Submit Application] Request:', {
@@ -858,25 +866,26 @@ const ApplySection = () => {
                   ) : (
                     <div className="apply-slot-by-date">
                       {slots.map((slot) => {
+                        const selectionKey = getSlotSelectionKey(slot);
                         const slotDateObj = new Date(slot.date);
                         const dayHeading = formatSlotDayHeading(slotDateObj);
                         const timeRange = formatSlotTimeRange(slotDateObj);
-                        const isSelected = formData.timeSlot === slot.id;
+                        const isSelected = formData.timeSlot === selectionKey;
                         const isDisabled = slot.enabled === false;
                         const slotLabel = typeof slot.label === 'string' ? slot.label : '';
                         return (
-                          <div key={slot.id} className="apply-slot-date-group">
+                          <div key={selectionKey} className="apply-slot-date-group">
                             <p className="apply-slot-date-heading">{dayHeading}</p>
                             <div className="apply-slot-day-options">
                               <label
-                                htmlFor={`apply-slot-${slot.id}`}
+                                htmlFor={`apply-slot-${selectionKey}`}
                                 className={`apply-slot-card ${isSelected ? 'apply-slot-card-selected' : ''} ${isDisabled ? 'apply-slot-card-disabled' : ''}`}
                               >
                                 <input
                                   type="radio"
-                                  id={`apply-slot-${slot.id}`}
+                                  id={`apply-slot-${selectionKey}`}
                                   name="timeSlot"
-                                  value={slot.id}
+                                  value={selectionKey}
                                   checked={isSelected}
                                   onChange={handleChange}
                                   required={!hasEnabledSlots(slots)}
