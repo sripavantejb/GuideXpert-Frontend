@@ -1,7 +1,7 @@
 import { useState, useRef, useEffect, useCallback } from 'react';
 import { registerForMeeting, sendOtp, verifyOtp, checkMeetingDemoEligibility } from '../utils/api';
 
-const GOOGLE_MEET_LINK = 'https://meet.google.com/rgk-pwrg-jze';
+const DEFAULT_GOOGLE_MEET_LINK = 'https://meet.google.com/rgk-pwrg-jze';
 
 const POLL_MS = 30000;
 
@@ -27,7 +27,7 @@ function eligibilityFromResponse(apiResult) {
   return body.data && typeof body.data === 'object' ? body.data : body;
 }
 
-export default function MeetingRegistration() {
+export default function MeetingRegistration({ redirectMeetUrl = DEFAULT_GOOGLE_MEET_LINK }) {
   const [step, setStep] = useState(1);
 
   const [name, setName] = useState('');
@@ -74,12 +74,12 @@ export default function MeetingRegistration() {
         setSubmitError(reg.message || 'Could not complete meeting registration. Please try again.');
         return;
       }
-      window.location.href = GOOGLE_MEET_LINK;
+      window.location.href = redirectMeetUrl;
     } catch {
       joiningRef.current = false;
       setSubmitError('Network error. Please try again.');
     }
-  }, []);
+  }, [redirectMeetUrl]);
 
   const recheckEligibilityAndJoin = useCallback(async () => {
     const phone = normalizedPhone();

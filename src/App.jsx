@@ -178,6 +178,8 @@ function App() {
           <Route path="/" element={<LandingPage />} />
           <Route path="/register" element={<LandingPage />} />
           <Route path="/meet" element={<MeetingRegistration />} />
+          <Route path="/meet1" element={<MeetingRegistration redirectMeetUrl="https://meet.google.com/ryt-wtjh-gep" />} />
+          <Route path="/meet2" element={<MeetingRegistration redirectMeetUrl="https://meet.google.com/izo-wyts-sas" />} />
           <Route path="/training" element={<TrainingMeeting />} />
           <Route path="/counsellor-poster" element={<Suspense fallback={<div className="min-h-screen"><PageSkeleton /></div>}><CounsellorCertificate /></Suspense>} />
           <Route path="/holiposter" element={<HoliPosterPage />} />
