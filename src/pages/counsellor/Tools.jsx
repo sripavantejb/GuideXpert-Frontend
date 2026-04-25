@@ -1,7 +1,6 @@
 import { useState, useRef, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { FiTarget, FiBarChart2, FiZap, FiClock, FiArrowRight, FiArrowLeft, FiActivity, FiCrosshair, FiStar } from 'react-icons/fi';
-import StudentAssessmentsPanel from '../../components/Counsellor/StudentAssessmentsPanel';
 
 const toolCards = [
   { id: 'college', title: 'College Predictor', desc: 'Suggest colleges based on rank, region, budget and preferences.', icon: FiTarget },
@@ -65,10 +64,14 @@ function ToolCard({ title, desc, icon, onLaunch }) {
   );
 }
 
-function AssessmentToolCard({ title, desc, icon, onLaunch }) {
+function AssessmentToolCard({ title, desc, icon, onLaunch, comingSoon = false }) {
   const Icon = icon;
   return (
-    <div className="rounded-xl bg-white shadow-sm border border-gray-100 transition-all duration-200 hover:shadow-md hover:-translate-y-0.5 overflow-hidden flex flex-col h-full">
+    <div
+      className={`rounded-xl bg-white shadow-sm border border-gray-100 overflow-hidden flex flex-col h-full ${
+        comingSoon ? 'opacity-95' : 'transition-all duration-200 hover:shadow-md hover:-translate-y-0.5'
+      }`}
+    >
       <div className="h-1.5 w-full shrink-0 bg-primary-navy" />
       <div className="p-6 flex flex-col flex-1 min-h-0">
         <div className="mb-4 shrink-0">
@@ -78,13 +81,23 @@ function AssessmentToolCard({ title, desc, icon, onLaunch }) {
         </div>
         <h3 className="mb-2 text-base font-bold text-gray-900 shrink-0">{title}</h3>
         <p className="text-sm leading-relaxed text-gray-500 flex-1 min-h-0 mb-6">{desc}</p>
-        <button
-          type="button"
-          onClick={onLaunch}
-          className="mt-auto shrink-0 inline-flex items-center gap-1.5 rounded-lg bg-primary-navy px-4 py-2 text-xs font-semibold text-white transition-colors hover:bg-primary-navy/90 w-fit"
-        >
-          Launch Tool <FiArrowRight className="w-3.5 h-3.5" />
-        </button>
+        {comingSoon ? (
+          <button
+            type="button"
+            disabled
+            className="mt-auto shrink-0 inline-flex cursor-not-allowed items-center gap-1.5 rounded-lg border border-slate-200 bg-slate-100 px-4 py-2 text-xs font-semibold text-slate-500 w-fit"
+          >
+            Coming soon
+          </button>
+        ) : (
+          <button
+            type="button"
+            onClick={onLaunch}
+            className="mt-auto shrink-0 inline-flex items-center gap-1.5 rounded-lg bg-primary-navy px-4 py-2 text-xs font-semibold text-white transition-colors hover:bg-primary-navy/90 w-fit"
+          >
+            Launch Tool <FiArrowRight className="w-3.5 h-3.5" />
+          </button>
+        )}
       </div>
     </div>
   );
@@ -99,7 +112,7 @@ function ComingSoonPanel() {
   );
 }
 
-const COMING_SOON_IDS = ['rank', 'exam', 'deadline', 'future-fit'];
+const COMING_SOON_IDS = ['rank', 'exam', 'deadline', 'career-dna', 'course-fit', 'future-fit'];
 
 function ActiveToolPanel({ activeTool, onBack }) {
   return (
@@ -113,8 +126,6 @@ function ActiveToolPanel({ activeTool, onBack }) {
         Back to Tools
       </button>
 
-      {activeTool === 'career-dna' && <StudentAssessmentsPanel type="career-dna" />}
-      {activeTool === 'course-fit' && <StudentAssessmentsPanel type="course-fit" />}
       {COMING_SOON_IDS.includes(activeTool) && <ComingSoonPanel />}
     </div>
   );
@@ -177,6 +188,7 @@ function Tools() {
             title={t.title}
             desc={t.desc}
             icon={t.icon}
+            comingSoon
             onLaunch={() => setActiveTool(t.id)}
           />
         ))}
