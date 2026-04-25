@@ -23,7 +23,7 @@ const navItems = [
   { to: '/admin/slots', label: 'Slots', icon: FiCalendar, sectionKey: 'slots' },
   { to: '/admin/training-form-responses', label: 'Training Form', icon: FiClipboard, sectionKey: 'training-form-responses' },
   { to: '/admin/training-feedback', label: 'Activation Form', icon: FiMessageSquare, sectionKey: 'training-feedback' },
-  { to: '/admin/influencer-create', label: 'Create influencer links', icon: FiUserPlus, sectionKey: 'influencer-tracking' },
+  { to: '/admin/influencer-create', label: 'Create influencer links', icon: FiUserPlus, sectionKey: 'influencer-tracking', hideInSidebar: true },
   { to: '/admin/influencer-tracking', label: 'Influencer / UTM Tracking', icon: FiLink, sectionKey: 'influencer-tracking' },
   { to: '/admin/poster-downloads', label: 'Poster downloads', icon: FiImage, sectionKey: 'poster-downloads' },
   { to: '/admin/posters', label: 'Poster automation', icon: FiLayers, sectionKey: 'poster-automation' },
@@ -67,6 +67,10 @@ export default function AdminLayout() {
   };
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const visibleNavItems = useMemo(() => getVisibleNavItems(user), [user]);
+  const sidebarNavItems = useMemo(
+    () => visibleNavItems.filter((item) => !item.hideInSidebar),
+    [visibleNavItems]
+  );
   const allowedPaths = useMemo(() => new Set(visibleNavItems.map((item) => item.to)), [visibleNavItems]);
   const currentPath = location.pathname;
   const isPathAllowed = currentPath === '/admin' || currentPath === '/admin/' || allowedPaths.has(currentPath);
@@ -121,7 +125,7 @@ export default function AdminLayout() {
           <div>
             <p className="px-3 mb-2 text-[0.6875rem] font-semibold text-white/50 uppercase tracking-wider">Menu</p>
             <div className="space-y-0.5">
-              {visibleNavItems.map(({ to, label, icon: Icon }) => (
+              {sidebarNavItems.map(({ to, label, icon: Icon }) => (
                 <NavLink
                   key={to}
                   to={to}
