@@ -298,6 +298,16 @@ export default function IitCounselling() {
   const [analyticsLoading, setAnalyticsLoading] = useState(true);
   const [detail, setDetail] = useState(null);
   const [detailLoading, setDetailLoading] = useState(false);
+  const [submissionsViewAllOpen, setSubmissionsViewAllOpen] = useState(false);
+  const [submissionsCopied, setSubmissionsCopied] = useState(false);
+  const [viewFilters, setViewFilters] = useState({
+    utmSource: '',
+    utmMedium: '',
+    utmCampaign: '',
+    utmContent: '',
+    updatedFrom: '',
+    updatedTo: '',
+  });
 
   const sharedFilters = useMemo(() => ({
     fromDate,
@@ -348,6 +358,114 @@ export default function IitCounselling() {
   const uniqueVisitors = analytics?.uniqueVisitors || 0;
   const totalSubmissions = analytics?.totalSubmissions || pagination.total || 0;
   const conversionRate = analytics?.conversionRate || 0;
+
+  const copyTextFallback = (text) => {
+    const ta = document.createElement('textarea');
+    ta.value = text;
+    ta.setAttribute('readonly', 'readonly');
+    ta.style.position = 'fixed';
+    ta.style.left = '-9999px';
+    document.body.appendChild(ta);
+    ta.select();
+    document.execCommand('copy');
+    document.body.removeChild(ta);
+  };
+
+  const filteredSubmissionRows = useMemo(() => {
+    const sourceQ = viewFilters.utmSource.trim().toLowerCase();
+    const mediumQ = viewFilters.utmMedium.trim().toLowerCase();
+    const campaignQ = viewFilters.utmCampaign.trim().toLowerCase();
+    const contentQ = viewFilters.utmContent.trim().toLowerCase();
+    const updatedFromMs = viewFilters.updatedFrom ? new Date(viewFilters.updatedFrom).getTime() : null;
+    const updatedToMs = viewFilters.updatedTo ? new Date(viewFilters.updatedTo).getTime() : null;
+
+    return rows.filter((row) => {
+      const utm = row.utm || {};
+      const sourceVal = String(utm.utm_source || '').toLowerCase();
+      const mediumVal = String(utm.utm_medium || '').toLowerCase();
+      const campaignVal = String(utm.utm_campaign || '').toLowerCase();
+      const contentVal = String(utm.utm_content || '').toLowerCase();
+      const updatedMs = row.updatedAt ? new Date(row.updatedAt).getTime() : NaN;
+
+      if (sourceQ && !sourceVal.includes(sourceQ)) return false;
+      if (mediumQ && !mediumVal.includes(mediumQ)) return false;
+      if (campaignQ && !campaignVal.includes(campaignQ)) return false;
+      if (contentQ && !contentVal.includes(contentQ)) return false;
+      if (updatedFromMs != null && Number.isFinite(updatedFromMs) && (!Number.isFinite(updatedMs) || updatedMs < updatedFromMs)) return false;
+      if (updatedToMs != null && Number.isFinite(updatedToMs) && (!Number.isFinite(updatedMs) || updatedMs > updatedToMs)) return false;
+      return true;
+    });
+  }, [rows, viewFilters]);
+
+  const viewFilterOptions = useMemo(() => {
+    const addUnique = (arr, value) => {
+      const v = String(value || '').trim();
+      if (v) arr.add(v);
+    };
+    const sourceSet = new Set();
+    const mediumSet = new Set();
+    const campaignSet = new Set();
+    const contentSet = new Set();
+    const updatedSet = new Set();
+
+    rows.forEach((row) => {
+      const utm = row.utm || {};
+      addUnique(sourceSet, utm.utm_source);
+      addUnique(mediumSet, utm.utm_medium);
+      addUnique(campaignSet, utm.utm_campaign);
+      addUnique(contentSet, utm.utm_content);
+      if (row.updatedAt) {
+        const iso = new Date(row.updatedAt).toISOString();
+        if (iso) updatedSet.add(iso);
+      }
+    });
+
+    const sortText = (a, b) => a.localeCompare(b, 'en', { sensitivity: 'base' });
+    const sortTimeDesc = (a, b) => new Date(b).getTime() - new Date(a).getTime();
+
+    return {
+      sources: Array.from(sourceSet).sort(sortText),
+      mediums: Array.from(mediumSet).sort(sortText),
+      campaigns: Array.from(campaignSet).sort(sortText),
+      contents: Array.from(contentSet).sort(sortText),
+      updatedTimes: Array.from(updatedSet).sort(sortTimeDesc),
+    };
+  }, [rows]);
+
+  const submissionRowsForCopy = useMemo(
+    () => filteredSubmissionRows.map((row) => {
+      const utm = row.utm || {};
+      return [
+        row.fullName || '—',
+        row.phone || '—',
+        row.currentStep || 1,
+        row.isCompleted ? 'Yes' : 'No',
+        utm.utm_source || '—',
+        utm.utm_medium || '—',
+        utm.utm_campaign || '—',
+        utm.utm_content || '—',
+        formatDateTime(row.updatedAt),
+      ];
+    }),
+    [filteredSubmissionRows]
+  );
+
+  const copyAllSubmissions = async () => {
+    if (!submissionRowsForCopy.length) return;
+    const header = ['Name', 'Phone', 'Current Step', 'Completed', 'UTM Source', 'UTM Medium', 'UTM Campaign', 'UTM Content', 'Updated'];
+    const text = [header, ...submissionRowsForCopy].map((cols) => cols.map((v) => String(v)).join('\t')).join('\n');
+    try {
+      if (typeof navigator !== 'undefined' && navigator.clipboard?.writeText) {
+        await navigator.clipboard.writeText(text);
+      } else {
+        copyTextFallback(text);
+      }
+    } catch {
+      copyTextFallback(text);
+    }
+    setSubmissionsCopied(true);
+    window.setTimeout(() => setSubmissionsCopied(false), 1400);
+  };
 
   return (
     <div className="max-w-[1400px] mx-auto px-1 space-y-4">
@@ -517,18 +635,36 @@ export default function IitCounselling() {
           <h3 className="text-base font-semibold text-gray-900">
             IIT Counselling Submissions <span className="text-gray-500">({pagination.total || 0})</span>
           </h3>
-          <input
-            type="search"
-            placeholder="Search by name or phone..."
-            value={search}
-            onChange={(e) => {
-              setLoading(true);
-              setError('');
-              setSearch(e.target.value);
-              setPage(1);
-            }}
-            className="w-full sm:w-72 h-9 px-3 rounded-lg border border-gray-300 focus:ring-2 focus:ring-primary-blue-500 focus:border-primary-blue-500 outline-none text-sm"
-          />
+          <div className="flex w-full flex-wrap items-center justify-end gap-2 sm:w-auto">
+            <button
+              type="button"
+              onClick={() => setSubmissionsViewAllOpen(true)}
+              disabled={rows.length === 0}
+              className="h-9 rounded-lg border border-gray-300 px-3 text-sm text-gray-700 hover:bg-gray-50 disabled:opacity-50"
+            >
+              View all
+            </button>
+            <button
+              type="button"
+              onClick={copyAllSubmissions}
+              disabled={rows.length === 0}
+              className="h-9 rounded-lg border border-gray-300 px-3 text-sm text-gray-700 hover:bg-gray-50 disabled:opacity-50"
+            >
+              {submissionsCopied ? 'Copied' : 'Copy all'}
+            </button>
+            <input
+              type="search"
+              placeholder="Search by name or phone..."
+              value={search}
+              onChange={(e) => {
+                setLoading(true);
+                setError('');
+                setSearch(e.target.value);
+                setPage(1);
+              }}
+              className="w-full sm:w-72 h-9 px-3 rounded-lg border border-gray-300 focus:ring-2 focus:ring-primary-blue-500 focus:border-primary-blue-500 outline-none text-sm"
+            />
+          </div>
         </div>
         {error ? <p className="text-red-600 text-sm">{error}</p> : null}
         <div className="overflow-x-auto rounded-lg border border-gray-200">
@@ -585,6 +721,147 @@ export default function IitCounselling() {
         </table>
         </div>
       </div>
+
+      {submissionsViewAllOpen ? (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4" role="dialog" aria-modal="true">
+          <div className="w-full max-w-6xl rounded-xl bg-white shadow-xl">
+            <div className="flex items-center justify-between border-b border-gray-200 px-4 py-3">
+              <h4 className="text-sm font-semibold text-gray-900">
+                IIT Counselling Submissions - Viewed ({filteredSubmissionRows.length}/{rows.length})
+              </h4>
+              <div className="flex items-center gap-2">
+                <button
+                  type="button"
+                  onClick={copyAllSubmissions}
+                  className="rounded border border-gray-300 px-2 py-1 text-[11px] font-medium text-gray-700 hover:bg-gray-50"
+                >
+                  {submissionsCopied ? 'Copied' : 'Copy all'}
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setSubmissionsViewAllOpen(false)}
+                  className="rounded border border-gray-300 px-2 py-1 text-[11px] font-medium text-gray-700 hover:bg-gray-50"
+                >
+                  Close
+                </button>
+              </div>
+            </div>
+            <div className="max-h-[70vh] overflow-auto p-4">
+              <div className="mb-4 grid grid-cols-1 gap-2 md:grid-cols-3">
+                <select
+                  value={viewFilters.utmSource}
+                  onChange={(e) => setViewFilters((prev) => ({ ...prev, utmSource: e.target.value }))}
+                  className="h-9 rounded border border-gray-300 px-3 text-sm outline-none focus:ring-2 focus:ring-primary-blue-500 bg-white"
+                >
+                  <option value="">UTM Source (All)</option>
+                  {viewFilterOptions.sources.map((v) => (
+                    <option key={`src-${v}`} value={v}>{v}</option>
+                  ))}
+                </select>
+                <select
+                  value={viewFilters.utmMedium}
+                  onChange={(e) => setViewFilters((prev) => ({ ...prev, utmMedium: e.target.value }))}
+                  className="h-9 rounded border border-gray-300 px-3 text-sm outline-none focus:ring-2 focus:ring-primary-blue-500 bg-white"
+                >
+                  <option value="">UTM Medium (All)</option>
+                  {viewFilterOptions.mediums.map((v) => (
+                    <option key={`med-${v}`} value={v}>{v}</option>
+                  ))}
+                </select>
+                <select
+                  value={viewFilters.utmCampaign}
+                  onChange={(e) => setViewFilters((prev) => ({ ...prev, utmCampaign: e.target.value }))}
+                  className="h-9 rounded border border-gray-300 px-3 text-sm outline-none focus:ring-2 focus:ring-primary-blue-500 bg-white"
+                >
+                  <option value="">UTM Campaign (All)</option>
+                  {viewFilterOptions.campaigns.map((v) => (
+                    <option key={`cmp-${v}`} value={v}>{v}</option>
+                  ))}
+                </select>
+                <select
+                  value={viewFilters.utmContent}
+                  onChange={(e) => setViewFilters((prev) => ({ ...prev, utmContent: e.target.value }))}
+                  className="h-9 rounded border border-gray-300 px-3 text-sm outline-none focus:ring-2 focus:ring-primary-blue-500 bg-white"
+                >
+                  <option value="">UTM Content (All)</option>
+                  {viewFilterOptions.contents.map((v) => (
+                    <option key={`cnt-${v}`} value={v}>{v}</option>
+                  ))}
+                </select>
+                <select
+                  value={viewFilters.updatedFrom}
+                  onChange={(e) => setViewFilters((prev) => ({ ...prev, updatedFrom: e.target.value }))}
+                  className="h-9 rounded border border-gray-300 px-3 text-sm outline-none focus:ring-2 focus:ring-primary-blue-500 bg-white"
+                  title="Updated from"
+                >
+                  <option value="">Updated From (All)</option>
+                  {viewFilterOptions.updatedTimes.map((v) => (
+                    <option key={`from-${v}`} value={v}>{formatDateTime(v)}</option>
+                  ))}
+                </select>
+                <div className="flex items-center gap-2">
+                  <select
+                    value={viewFilters.updatedTo}
+                    onChange={(e) => setViewFilters((prev) => ({ ...prev, updatedTo: e.target.value }))}
+                    className="h-9 w-full rounded border border-gray-300 px-3 text-sm outline-none focus:ring-2 focus:ring-primary-blue-500 bg-white"
+                    title="Updated to"
+                  >
+                    <option value="">Updated To (All)</option>
+                    {viewFilterOptions.updatedTimes.map((v) => (
+                      <option key={`to-${v}`} value={v}>{formatDateTime(v)}</option>
+                    ))}
+                  </select>
+                  <button
+                    type="button"
+                    onClick={() => setViewFilters({ utmSource: '', utmMedium: '', utmCampaign: '', utmContent: '', updatedFrom: '', updatedTo: '' })}
+                    className="h-9 shrink-0 rounded border border-gray-300 px-3 text-xs text-gray-700 hover:bg-gray-50"
+                  >
+                    Reset
+                  </button>
+                </div>
+              </div>
+              <table className="min-w-[1180px] w-full text-left text-sm">
+                <thead>
+                  <tr className="bg-gray-50 border-b border-gray-200">
+                    <th className="px-3 py-2 text-xs uppercase tracking-wider">Name</th>
+                    <th className="px-3 py-2 text-xs uppercase tracking-wider">Phone</th>
+                    <th className="px-3 py-2 text-xs uppercase tracking-wider">Current Step</th>
+                    <th className="px-3 py-2 text-xs uppercase tracking-wider">Completed</th>
+                    <th className="px-3 py-2 text-xs uppercase tracking-wider">UTM Source</th>
+                    <th className="px-3 py-2 text-xs uppercase tracking-wider">UTM Medium</th>
+                    <th className="px-3 py-2 text-xs uppercase tracking-wider">UTM Campaign</th>
+                    <th className="px-3 py-2 text-xs uppercase tracking-wider">UTM Content</th>
+                    <th className="px-3 py-2 text-xs uppercase tracking-wider">Updated</th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-gray-100">
+                  {filteredSubmissionRows.map((row) => {
+                    const utm = row.utm || {};
+                    return (
+                      <tr key={`viewall-${row.id}`}>
+                        <td className="px-3 py-2 break-all">{row.fullName || '—'}</td>
+                        <td className="px-3 py-2">{row.phone || '—'}</td>
+                        <td className="px-3 py-2">{row.currentStep || 1}</td>
+                        <td className="px-3 py-2">{row.isCompleted ? 'Yes' : 'No'}</td>
+                        <td className="px-3 py-2 break-all">{utm.utm_source || '—'}</td>
+                        <td className="px-3 py-2 break-all">{utm.utm_medium || '—'}</td>
+                        <td className="px-3 py-2 break-all">{utm.utm_campaign || '—'}</td>
+                        <td className="px-3 py-2 break-all">{utm.utm_content || '—'}</td>
+                        <td className="px-3 py-2">{formatDateTime(row.updatedAt)}</td>
+                      </tr>
+                    );
+                  })}
+                  {filteredSubmissionRows.length === 0 ? (
+                    <tr>
+                      <td colSpan={9} className="px-3 py-6 text-center text-gray-500">No rows match current filters.</td>
+                    </tr>
+                  ) : null}
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+      ) : null}
 
       <div className="flex items-center justify-between text-sm text-gray-600">
         <span>Page {page} of {pagination.totalPages || 1}</span>
