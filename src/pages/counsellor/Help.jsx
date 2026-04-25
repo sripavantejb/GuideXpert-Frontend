@@ -28,21 +28,28 @@ const initialForm = {
 
 function RadioGroup({ label, required = false, options, value, onChange, name }) {
   return (
-    <fieldset className="rounded-xl border border-gray-200 bg-white p-4">
-      <legend className="px-1 text-sm font-semibold text-gray-800">
+    <fieldset className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
+      <legend className="px-1 text-sm font-semibold text-slate-800">
         {label} {required ? <span className="text-red-500">*</span> : null}
       </legend>
-      <div className="mt-2 space-y-2">
+      <div className="mt-3 grid grid-cols-1 gap-2 sm:grid-cols-2">
         {options.map((option) => (
-          <label key={option} className="flex cursor-pointer items-center gap-2 text-sm text-gray-700">
+          <label
+            key={option}
+            className={`flex cursor-pointer items-center gap-3 rounded-xl border px-3 py-2 text-sm transition ${
+              value === option
+                ? 'border-primary-navy bg-primary-navy/5 text-primary-navy'
+                : 'border-slate-200 bg-white text-slate-700 hover:border-slate-300 hover:bg-slate-50'
+            }`}
+          >
             <input
               type="radio"
               name={name}
               checked={value === option}
               onChange={() => onChange(option)}
-              className="h-4 w-4 border-gray-300 text-primary-navy focus:ring-primary-navy"
+              className="h-4 w-4 border-slate-300 text-primary-navy focus:ring-primary-navy"
             />
-            <span>{option}</span>
+            <span className="font-medium">{option}</span>
           </label>
         ))}
       </div>
@@ -88,40 +95,50 @@ export default function Help() {
   };
 
   return (
-    <div className="max-w-3xl mx-auto">
-      <div className="mb-6">
-        <h2 className="text-2xl font-bold tracking-tight text-primary-navy">Counsellor Support Form</h2>
-        <p className="text-sm text-gray-500 mt-1">Share where you are getting stuck and what support you need.</p>
+    <div className="mx-auto max-w-4xl">
+      <div className="mb-6 overflow-hidden rounded-3xl border border-slate-200 bg-linear-to-r from-slate-900 via-primary-navy to-blue-900 px-6 py-7 text-white shadow-xl">
+        <p className="text-xs font-semibold uppercase tracking-[0.16em] text-blue-100/90">GuideXpert Support Desk</p>
+        <h2
+          className="mt-2 text-2xl font-extrabold tracking-tight text-white sm:text-3xl"
+          style={{ textShadow: '0 1px 2px rgba(0, 0, 0, 0.35)' }}
+        >
+          Counsellor Support Form
+        </h2>
+        <p className="mt-2 max-w-2xl text-sm text-blue-100">
+          Tell us where you're blocked in your lead journey. Our team will review your request and help you close faster.
+        </p>
       </div>
 
-      <form onSubmit={submit} className="space-y-4">
-        <div className="rounded-xl border border-gray-200 bg-white p-4">
-          <label className="mb-1 block text-sm font-semibold text-gray-800">
-            Name <span className="text-red-500">*</span>
-          </label>
-          <input
-            type="text"
-            value={form.name}
-            onChange={(e) => update('name', e.target.value)}
-            required
-            className="h-10 w-full rounded-lg border border-gray-300 px-3 text-sm outline-none focus:ring-2 focus:ring-primary-blue-500"
-            placeholder="Your name"
-          />
-        </div>
+      <form onSubmit={submit} className="space-y-5 rounded-3xl border border-slate-200 bg-white p-5 shadow-lg sm:p-7">
+        <div className="grid gap-4 sm:grid-cols-2">
+          <div className="rounded-2xl border border-slate-200 bg-slate-50/50 p-4">
+            <label className="mb-1.5 block text-sm font-semibold text-slate-800">
+              Name <span className="text-red-500">*</span>
+            </label>
+            <input
+              type="text"
+              value={form.name}
+              onChange={(e) => update('name', e.target.value)}
+              required
+              className="h-11 w-full rounded-xl border border-slate-300 bg-white px-3 text-sm outline-none transition focus:border-primary-navy focus:ring-2 focus:ring-primary-blue-500/20"
+              placeholder="Enter your full name"
+            />
+          </div>
 
-        <div className="rounded-xl border border-gray-200 bg-white p-4">
-          <label className="mb-1 block text-sm font-semibold text-gray-800">
-            Registered Mobile Number <span className="text-red-500">*</span>
-          </label>
-          <input
-            type="tel"
-            inputMode="numeric"
-            value={form.registeredMobileNumber}
-            onChange={(e) => update('registeredMobileNumber', e.target.value.replace(/\D/g, '').slice(0, 10))}
-            required
-            className="h-10 w-full rounded-lg border border-gray-300 px-3 text-sm outline-none focus:ring-2 focus:ring-primary-blue-500"
-            placeholder="10-digit number"
-          />
+          <div className="rounded-2xl border border-slate-200 bg-slate-50/50 p-4">
+            <label className="mb-1.5 block text-sm font-semibold text-slate-800">
+              Registered Mobile Number <span className="text-red-500">*</span>
+            </label>
+            <input
+              type="tel"
+              inputMode="numeric"
+              value={form.registeredMobileNumber}
+              onChange={(e) => update('registeredMobileNumber', e.target.value.replace(/\D/g, '').slice(0, 10))}
+              required
+              className="h-11 w-full rounded-xl border border-slate-300 bg-white px-3 text-sm outline-none transition focus:border-primary-navy focus:ring-2 focus:ring-primary-blue-500/20"
+              placeholder="10-digit mobile number"
+            />
+          </div>
         </div>
 
         <RadioGroup
@@ -169,30 +186,39 @@ export default function Help() {
           name="supportNeeded"
         />
 
-        <div className="rounded-xl border border-gray-200 bg-white p-4">
-          <label className="mb-1 block text-sm font-semibold text-gray-800">Any other questions do you have?</label>
+        <div className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
+          <label className="mb-1.5 block text-sm font-semibold text-slate-800">Any other questions do you have?</label>
           <textarea
             rows={4}
             value={form.otherQuestions}
             onChange={(e) => update('otherQuestions', e.target.value)}
-            className="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-primary-blue-500"
-            placeholder="Write your question"
+            className="w-full rounded-xl border border-slate-300 px-3 py-2.5 text-sm outline-none transition focus:border-primary-navy focus:ring-2 focus:ring-primary-blue-500/20"
+            placeholder="Share additional context so we can support you better"
           />
         </div>
 
         {feedback.message ? (
-          <p className={`rounded-lg px-3 py-2 text-sm ${feedback.type === 'success' ? 'bg-emerald-50 text-emerald-700' : 'bg-red-50 text-red-700'}`}>
+          <p
+            className={`rounded-xl border px-4 py-3 text-sm font-medium ${
+              feedback.type === 'success'
+                ? 'border-emerald-200 bg-emerald-50 text-emerald-700'
+                : 'border-red-200 bg-red-50 text-red-700'
+            }`}
+          >
             {feedback.message}
           </p>
         ) : null}
 
-        <button
-          type="submit"
-          disabled={submitting}
-          className="inline-flex h-10 items-center justify-center rounded-lg bg-primary-navy px-5 text-sm font-semibold text-white hover:bg-primary-navy/90 disabled:opacity-60"
-        >
-          {submitting ? 'Submitting...' : 'Submit'}
-        </button>
+        <div className="flex flex-wrap items-center justify-between gap-3 border-t border-slate-200 pt-4">
+          <p className="text-xs text-slate-500">Your request is reviewed by the support team and prioritized by urgency.</p>
+          <button
+            type="submit"
+            disabled={submitting}
+            className="inline-flex h-11 items-center justify-center rounded-xl bg-linear-to-r from-primary-navy to-blue-800 px-6 text-sm font-semibold text-white shadow-md transition hover:opacity-95 disabled:opacity-60"
+          >
+            {submitting ? 'Submitting...' : 'Submit Request'}
+          </button>
+        </div>
       </form>
     </div>
   );
