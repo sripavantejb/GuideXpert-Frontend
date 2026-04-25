@@ -22,6 +22,12 @@ function formatLabel(raw) {
     .replace(/\b\w/g, (ch) => ch.toUpperCase());
 }
 
+function formatTopColleges(value) {
+  if (!Array.isArray(value) || value.length === 0) return '—';
+  const cleaned = value.map((item) => String(item || '').trim()).filter(Boolean);
+  return cleaned.length ? cleaned.join(', ') : '—';
+}
+
 function SectionBlock({ title, data }) {
   if (!data) return null;
   return (
@@ -31,7 +37,7 @@ function SectionBlock({ title, data }) {
         {Object.entries(data).map(([key, value]) => (
           <div key={key} className="grid grid-cols-1 gap-0.5">
             <dt className="text-gray-500">{formatLabel(key)}</dt>
-            <dd className="text-gray-900 break-words">
+            <dd className="text-gray-900 wrap-break-word">
               {Array.isArray(value) ? (value.length ? value.join(', ') : '—') : (value ?? '—') || '—'}
             </dd>
           </div>
@@ -435,11 +441,13 @@ export default function IitCounselling() {
   const submissionRowsForCopy = useMemo(
     () => filteredSubmissionRows.map((row) => {
       const utm = row.utm || {};
+      const topColleges = formatTopColleges(row.section1Data?.top5Colleges);
       return [
         row.fullName || '—',
         row.phone || '—',
         row.currentStep || 1,
         row.isCompleted ? 'Yes' : 'No',
+        topColleges,
         utm.utm_source || '—',
         utm.utm_medium || '—',
         utm.utm_campaign || '—',
@@ -452,7 +460,7 @@ export default function IitCounselling() {
 
   const copyAllSubmissions = async () => {
     if (!submissionRowsForCopy.length) return;
-    const header = ['Name', 'Phone', 'Current Step', 'Completed', 'UTM Source', 'UTM Medium', 'UTM Campaign', 'UTM Content', 'Updated'];
+    const header = ['Name', 'Phone', 'Current Step', 'Completed', 'Top Colleges', 'UTM Source', 'UTM Medium', 'UTM Campaign', 'UTM Content', 'Updated'];
     const text = [header, ...submissionRowsForCopy].map((cols) => cols.map((v) => String(v)).join('\t')).join('\n');
     try {
       if (typeof navigator !== 'undefined' && navigator.clipboard?.writeText) {
@@ -675,6 +683,7 @@ export default function IitCounselling() {
               <th className="px-3 py-2 text-xs uppercase tracking-wider">Phone</th>
               <th className="px-3 py-2 text-xs uppercase tracking-wider">Current Step</th>
               <th className="px-3 py-2 text-xs uppercase tracking-wider">Completed</th>
+              <th className="px-3 py-2 text-xs uppercase tracking-wider">Top Colleges</th>
               <th className="px-3 py-2 text-xs uppercase tracking-wider">UTM Source</th>
               <th className="px-3 py-2 text-xs uppercase tracking-wider">UTM Medium</th>
               <th className="px-3 py-2 text-xs uppercase tracking-wider">UTM Campaign</th>
@@ -685,11 +694,12 @@ export default function IitCounselling() {
           </thead>
           <tbody className="divide-y divide-gray-100">
             {loading ? (
-              <tr><td colSpan={10} className="px-3 py-6 text-center text-gray-500">Loading...</td></tr>
+              <tr><td colSpan={11} className="px-3 py-6 text-center text-gray-500">Loading...</td></tr>
             ) : rows.length === 0 ? (
-              <tr><td colSpan={10} className="px-3 py-6 text-center text-gray-500">No submissions found</td></tr>
+              <tr><td colSpan={11} className="px-3 py-6 text-center text-gray-500">No submissions found</td></tr>
             ) : rows.map((row) => {
               const utm = row.utm || {};
+              const topColleges = formatTopColleges(row.section1Data?.top5Colleges);
               const utmCell = (value) => (
                 <span
                   className={value ? 'text-gray-800' : 'text-gray-400'}
@@ -704,6 +714,7 @@ export default function IitCounselling() {
                   <td className="px-3 py-2">{row.phone || '—'}</td>
                   <td className="px-3 py-2">{row.currentStep || 1}</td>
                   <td className="px-3 py-2">{row.isCompleted ? 'Yes' : 'No'}</td>
+                  <td className="px-3 py-2 max-w-[300px] truncate" title={topColleges}>{topColleges}</td>
                   <td className="px-3 py-2 max-w-[180px] truncate">{utmCell(utm.utm_source)}</td>
                   <td className="px-3 py-2 max-w-[180px] truncate">{utmCell(utm.utm_medium)}</td>
                   <td className="px-3 py-2 max-w-[200px] truncate">{utmCell(utm.utm_campaign)}</td>
@@ -827,6 +838,7 @@ export default function IitCounselling() {
                     <th className="px-3 py-2 text-xs uppercase tracking-wider">Phone</th>
                     <th className="px-3 py-2 text-xs uppercase tracking-wider">Current Step</th>
                     <th className="px-3 py-2 text-xs uppercase tracking-wider">Completed</th>
+                    <th className="px-3 py-2 text-xs uppercase tracking-wider">Top Colleges</th>
                     <th className="px-3 py-2 text-xs uppercase tracking-wider">UTM Source</th>
                     <th className="px-3 py-2 text-xs uppercase tracking-wider">UTM Medium</th>
                     <th className="px-3 py-2 text-xs uppercase tracking-wider">UTM Campaign</th>
@@ -837,12 +849,14 @@ export default function IitCounselling() {
                 <tbody className="divide-y divide-gray-100">
                   {filteredSubmissionRows.map((row) => {
                     const utm = row.utm || {};
+                    const topColleges = formatTopColleges(row.section1Data?.top5Colleges);
                     return (
                       <tr key={`viewall-${row.id}`}>
                         <td className="px-3 py-2 break-all">{row.fullName || '—'}</td>
                         <td className="px-3 py-2">{row.phone || '—'}</td>
                         <td className="px-3 py-2">{row.currentStep || 1}</td>
                         <td className="px-3 py-2">{row.isCompleted ? 'Yes' : 'No'}</td>
+                        <td className="px-3 py-2 break-all">{topColleges}</td>
                         <td className="px-3 py-2 break-all">{utm.utm_source || '—'}</td>
                         <td className="px-3 py-2 break-all">{utm.utm_medium || '—'}</td>
                         <td className="px-3 py-2 break-all">{utm.utm_campaign || '—'}</td>
@@ -853,7 +867,7 @@ export default function IitCounselling() {
                   })}
                   {filteredSubmissionRows.length === 0 ? (
                     <tr>
-                      <td colSpan={9} className="px-3 py-6 text-center text-gray-500">No rows match current filters.</td>
+                      <td colSpan={10} className="px-3 py-6 text-center text-gray-500">No rows match current filters.</td>
                     </tr>
                   ) : null}
                 </tbody>
