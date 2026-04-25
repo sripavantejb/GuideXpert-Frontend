@@ -114,6 +114,9 @@ export const getAdminLeads = async (params = {}, token = getStoredToken()) => {
   if (params.otpVerified !== undefined && params.otpVerified !== '') search.set('otpVerified', String(params.otpVerified));
   if (params.slotBooked !== undefined && params.slotBooked !== '') search.set('slotBooked', String(params.slotBooked));
   if (params.demoAttended !== undefined && params.demoAttended !== '') search.set('demoAttended', String(params.demoAttended));
+  if (params.trainingFormFilled !== undefined && params.trainingFormFilled !== '') {
+    search.set('trainingFormFilled', String(params.trainingFormFilled));
+  }
   if (params.assessmentWritten === true || params.assessmentWritten === 'true') search.set('assessmentWritten', 'true');
   if (params.activationCompleted === true || params.activationCompleted === 'true') search.set('activationCompleted', 'true');
   if (params.selectedSlot) search.set('selectedSlot', params.selectedSlot);
