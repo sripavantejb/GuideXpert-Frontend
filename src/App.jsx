@@ -365,6 +365,16 @@ function App() {
 
           {/* Counsellor Portal */}
           <Route path="/counsellor/login" element={<CounsellorLogin />} />
+          <Route
+            path="/counsellor-support"
+            element={
+              <ErrorBoundary>
+                <Suspense fallback={<div className="min-h-screen flex items-center justify-center bg-gray-50"><div className="animate-pulse text-gray-500">Loading...</div></div>}>
+                  <CounsellorHelp />
+                </Suspense>
+              </ErrorBoundary>
+            }
+          />
           <Route path="/counsellor" element={<ProtectedCounsellor><CounsellorProfileProvider><CounsellorTrainingProvider><CounsellorLayout /></CounsellorTrainingProvider></CounsellorProfileProvider></ProtectedCounsellor>}>
             <Route index element={<Navigate to="/counsellor/dashboard" replace />} />
             <Route path="dashboard" element={<ErrorBoundary><Suspense fallback={<div className="h-64 flex items-center justify-center p-4"><PageSkeleton /></div>}><CounsellorDashboard /></Suspense></ErrorBoundary>} />
@@ -385,7 +395,6 @@ function App() {
             <Route path="announcements-feed" element={<ErrorBoundary><Suspense fallback={<div className="h-64 flex items-center justify-center p-4"><PageSkeleton /></div>}><AnnouncementsFeed /></Suspense></ErrorBoundary>} />
             <Route path="training" element={<ErrorBoundary><Suspense fallback={<div className="h-64 flex items-center justify-center p-4"><PageSkeleton /></div>}><CounsellorTraining /></Suspense></ErrorBoundary>} />
             <Route path="settings" element={<ErrorBoundary><Suspense fallback={<div className="h-64 flex items-center justify-center p-4"><PageSkeleton /></div>}><CounsellorSettings /></Suspense></ErrorBoundary>} />
-            <Route path="help" element={<ErrorBoundary><Suspense fallback={<div className="h-64 flex items-center justify-center p-4"><PageSkeleton /></div>}><CounsellorHelp /></Suspense></ErrorBoundary>} />
           </Route>
 
           <Route path="/p/*" element={<PosterPublicPage />} />
