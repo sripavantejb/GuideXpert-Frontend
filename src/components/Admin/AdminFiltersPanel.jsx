@@ -220,6 +220,19 @@ export default function AdminFiltersPanel({ open, onClose }) {
                 <p className="mt-1.5 text-xs leading-relaxed text-gray-500">Not attended = slot booked but meeting missed.</p>
               ) : null}
             </div>
+            <div>
+              <label htmlFor="panel-training-form-filled" className={fieldLabelClass}>Training form status</label>
+              <select
+                id="panel-training-form-filled"
+                value={leadListFilters.trainingFormFilled}
+                onChange={(e) => patchLead({ trainingFormFilled: e.target.value })}
+                className={fieldInputClass}
+              >
+                <option value="">Any</option>
+                <option value="true">Training form filled</option>
+                <option value="false">Training form not filled</option>
+              </select>
+            </div>
             <fieldset className="space-y-2.5 rounded-lg border border-gray-200 bg-white p-3.5">
               <legend className="text-xs font-medium text-gray-600 px-1">Slot booked</legend>
               <div className="flex flex-wrap gap-3">
@@ -286,6 +299,7 @@ export default function AdminFiltersPanel({ open, onClose }) {
                   demoAttended: '',
                   assessmentWritten: '',
                   activationCompleted: '',
+                  trainingFormFilled: '',
                   selectedSlot: '',
                   slotDate: '',
                   utm_content: '',

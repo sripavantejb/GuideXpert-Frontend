@@ -17,6 +17,7 @@ export function defaultLeadListFilters() {
     demoAttended: '',
     assessmentWritten: '',
     activationCompleted: '',
+    trainingFormFilled: '',
     selectedSlot: '',
     slotDate: '',
     utm_content: '',
@@ -36,6 +37,8 @@ export function leadListFiltersFromSearchParams(searchParams) {
   const demoAttended = ['true', 'false'].includes(demoAttendedRaw) ? demoAttendedRaw : '';
   const assessmentWritten = searchParams.get('assessmentWritten') === 'true' ? 'true' : '';
   const activationCompleted = searchParams.get('activationCompleted') === 'true' ? 'true' : '';
+  const trainingFormFilledRaw = searchParams.get('trainingFormFilled') || '';
+  const trainingFormFilled = ['true', 'false'].includes(trainingFormFilledRaw) ? trainingFormFilledRaw : '';
   return {
     applicationStatus: ALLOWED_APPLICATION_STATUSES.includes(status) ? status : '',
     otpVerified: ['true', 'false'].includes(otp) ? otp : '',
@@ -43,6 +46,7 @@ export function leadListFiltersFromSearchParams(searchParams) {
     demoAttended,
     assessmentWritten,
     activationCompleted,
+    trainingFormFilled,
     selectedSlot: slot,
     slotDate,
     utm_content: utm,
@@ -60,6 +64,7 @@ export function leadListFiltersToApiParams(filters) {
     ...(f.demoAttended !== '' && f.demoAttended != null && { demoAttended: String(f.demoAttended) }),
     ...(f.assessmentWritten === 'true' && { assessmentWritten: 'true' }),
     ...(f.activationCompleted === 'true' && { activationCompleted: 'true' }),
+    ...(f.trainingFormFilled !== '' && f.trainingFormFilled != null && { trainingFormFilled: String(f.trainingFormFilled) }),
     ...(f.selectedSlot && { selectedSlot: f.selectedSlot }),
     ...(f.slotDate && { slotDate: f.slotDate }),
     ...(f.utm_content && { utm_content: f.utm_content }),
@@ -76,6 +81,7 @@ export function leadListFiltersToSearchParams(filters) {
   if (filters.demoAttended !== '' && filters.demoAttended != null) search.set('demoAttended', String(filters.demoAttended));
   if (filters.assessmentWritten === 'true') search.set('assessmentWritten', 'true');
   if (filters.activationCompleted === 'true') search.set('activationCompleted', 'true');
+  if (filters.trainingFormFilled !== '' && filters.trainingFormFilled != null) search.set('trainingFormFilled', String(filters.trainingFormFilled));
   if (filters.selectedSlot) search.set('selectedSlot', filters.selectedSlot);
   if (filters.slotDate) search.set('slotDate', filters.slotDate);
   if (filters.utm_content) search.set('utm_content', filters.utm_content);
@@ -92,6 +98,7 @@ export function countActiveLeadFilters(filters) {
   if (f.demoAttended !== '' && f.demoAttended != null) n += 1;
   if (f.assessmentWritten === 'true') n += 1;
   if (f.activationCompleted === 'true') n += 1;
+  if (f.trainingFormFilled !== '' && f.trainingFormFilled != null) n += 1;
   if (f.selectedSlot) n += 1;
   if (f.slotDate) n += 1;
   if (f.utm_content) n += 1;
