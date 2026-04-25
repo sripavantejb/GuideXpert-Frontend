@@ -431,6 +431,21 @@ export const registerForMeeting = async (name, mobileNumber) => {
 };
 
 /**
+ * Register for the /iitcounsellingmeet attendance flow.
+ * Has NO booking / time-window check on the server: the IIT counselling meet
+ * is open to anyone who can verify their phone via OTP.
+ * @param {string} name - 2-100 char name
+ * @param {string} mobileNumber - 10-digit mobile number
+ * @returns {Promise<{success: boolean, message?: string, data?: Object, status?: number}>}
+ */
+export const registerForIitMeet = async (name, mobileNumber) => {
+  return apiRequest('/iit-meet/register', {
+    method: 'POST',
+    body: JSON.stringify({ name, mobileNumber }),
+  });
+};
+
+/**
  * Register for training meeting (saves name and mobile to training attendance, then redirect to training Meet link)
  * @param {string} name - User's full name
  * @param {string} mobileNumber - 10-digit mobile number

@@ -8,6 +8,7 @@ const SECTION_OPTIONS = [
   { sectionKey: 'leads', label: 'Lead Funnel' },
   { sectionKey: 'analytics', label: 'Analytics' },
   { sectionKey: 'meeting-attendance', label: 'User Productivity' },
+  { sectionKey: 'iit-meet-attendance', label: 'IIT Meet Attendance' },
   { sectionKey: 'export', label: 'Export Data' },
   { sectionKey: 'slots', label: 'Slots' },
   { sectionKey: 'training-form-responses', label: 'Training Form' },

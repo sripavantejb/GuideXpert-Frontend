@@ -9,6 +9,7 @@ import { CounsellorTrainingProvider } from './contexts/CounsellorTrainingContext
 import LandingPage from './pages/LandingPage';
 import AdminLogin from './pages/AdminLogin';
 import MeetingRegistration from './pages/MeetingRegistration';
+import IitCounsellingMeet from './pages/IitCounsellingMeet';
 import TrainingMeeting from './pages/TrainingMeeting';
 import FeedbackForm from './pages/FeedbackForm';
 import TrainingForm from './pages/TrainingForm';
@@ -30,6 +31,7 @@ import Slots from './pages/admin/Slots';
 import Export from './pages/admin/Export';
 import Settings from './pages/admin/Settings';
 import MeetingAttendance from './pages/admin/MeetingAttendance';
+import IitMeetAttendance from './pages/admin/IitMeetAttendance';
 import InfluencerTracking from './pages/admin/InfluencerTracking';
 import InfluencerCreate from './pages/admin/InfluencerCreate';
 import LeadStatus from './pages/admin/LeadStatus';
@@ -181,6 +183,7 @@ function App() {
           <Route path="/meet" element={<MeetingRegistration />} />
           <Route path="/meet1" element={<MeetingRegistration redirectMeetUrl="https://meet.google.com/ryt-wtjh-gep" />} />
           <Route path="/meet2" element={<MeetingRegistration redirectMeetUrl="https://meet.google.com/izo-wyts-sas" />} />
+          <Route path="/iitcounsellingmeet" element={<IitCounsellingMeet />} />
           <Route path="/training" element={<TrainingMeeting />} />
           <Route path="/counsellor-poster" element={<Suspense fallback={<div className="min-h-screen"><PageSkeleton /></div>}><CounsellorCertificate /></Suspense>} />
           <Route path="/holiposter" element={<HoliPosterPage />} />
@@ -350,6 +353,7 @@ function App() {
             <Route path="export" element={<Export />} />
             <Route path="settings" element={<Settings />} />
             <Route path="meeting-attendance" element={<MeetingAttendance />} />
+            <Route path="iit-meet-attendance" element={<IitMeetAttendance />} />
             <Route path="training-feedback" element={<TrainingFeedback />} />
             <Route path="counsellor-support-requests" element={<CounsellorSupportRequests />} />
             <Route path="training-form-responses" element={<TrainingFormResponses />} />
