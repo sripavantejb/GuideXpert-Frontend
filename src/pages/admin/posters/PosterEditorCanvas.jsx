@@ -11,6 +11,10 @@ const MIN_PREVIEW_WIDTH_PX = 120;
 
 const GUIDE_THRESHOLD = 1.8;
 
+function getAnchorXPct(field) {
+  return Number(field?.anchorX ?? field?.x);
+}
+
 /** Shows where the name text’s right edge is capped (corridor mode); admin preview only. */
 function NameEndXGuide({ xEndPct }) {
   if (xEndPct == null || !Number.isFinite(xEndPct)) return null;
@@ -107,7 +111,10 @@ const PosterEditorCanvas = forwardRef(function PosterEditorCanvas(
     const h = new Set();
     if (Math.abs(x - 50) < GUIDE_THRESHOLD) v.add(50);
     if (Math.abs(y - 50) < GUIDE_THRESHOLD) h.add(50);
-    if (other && Math.abs(x - Number(other.x)) < GUIDE_THRESHOLD) v.add(Math.round(Number(other.x) * 100) / 100);
+    const otherX = getAnchorXPct(other);
+    if (Number.isFinite(otherX) && Math.abs(x - otherX) < GUIDE_THRESHOLD) {
+      v.add(Math.round(otherX * 100) / 100);
+    }
     if (other && Math.abs(y - Number(other.y)) < GUIDE_THRESHOLD) h.add(Math.round(Number(other.y) * 100) / 100);
     return { v: [...v], h: [...h] };
   }, [dragging, nameField, mobileField]);
@@ -116,7 +123,7 @@ const PosterEditorCanvas = forwardRef(function PosterEditorCanvas(
   const nameEndXGuidePct = useMemo(() => {
     const xf = nameField;
     if (!xf || typeof xf !== 'object') return null;
-    const x = Number(xf.x);
+    const x = getAnchorXPct(xf);
     const xe = Number(xf.xEnd);
     if (!Number.isFinite(x) || !Number.isFinite(xe) || xe <= x) return null;
     return Math.round(xe * 100) / 100;

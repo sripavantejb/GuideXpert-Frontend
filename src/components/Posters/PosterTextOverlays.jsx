@@ -1,23 +1,18 @@
 import { useLayoutEffect, useRef, useState } from 'react';
 import { normalizeHexForCss } from '../../utils/posterColor';
-import { POSTER_OVERLAY_MAX_WIDTH_PX } from '../../utils/posterExportDimensions';
 
 function clampPct(n) {
   const v = Math.min(100, Math.max(0, n));
   return Math.round(v * 100) / 100;
 }
 
-function alignTransform(textAlign) {
-  if (textAlign === 'center') return 'translateX(-50%)';
-  if (textAlign === 'right') return 'translateX(-100%)';
-  return 'translateX(0)';
-}
-
 const OVERLAY_KEYS = ['name', 'mobile'];
 
 function isCorridorNameField(overlayKey, field) {
   if (overlayKey !== 'name') return false;
-  const x = Number(field?.x);
+  const anchorType = ['start', 'end', 'center'].includes(field?.anchorType) ? field.anchorType : 'start';
+  if (anchorType !== 'start') return false;
+  const x = Number(field?.anchorX ?? field?.x);
   const xEnd = Number(field?.xEnd);
   return Number.isFinite(x) && Number.isFinite(xEnd) && xEnd > x;
 }
@@ -69,7 +64,7 @@ function NameCorridorOverlay({
 }) {
   const rootRef = useRef(null);
   const measureRef = useRef(null);
-  const xStart = Number(el.x) || 0;
+  const xStart = Number(el.anchorX ?? el.x) || 0;
   const xEnd = Number(el.xEnd);
   const [leftPct, setLeftPct] = useState(xStart);
 
@@ -151,7 +146,149 @@ function NameCorridorOverlay({
               const rect = container.getBoundingClientRect();
               const startX = e.clientX;
               const startY = e.clientY;
-              const startLeft = Number(el.x) || 0;
+              const startLeft = Number(el.anchorX ?? el.x) || 0;
+              const startTop = Number(el.y) || 0;
+              const target = e.currentTarget;
+              target.setPointerCapture(e.pointerId);
+              const move = (ev) => {
+                const dx = ev.clientX - startX;
+                const dy = ev.clientY - startY;
+                const nx = startLeft + (dx / rect.width) * 100;
+                const ny = startTop + (dy / rect.height) * 100;
+                onDragPosition(overlayKey, clampPct(nx), clampPct(ny));
+              };
+              const up = () => {
+                try {
+                  target.releasePointerCapture(e.pointerId);
+                } catch {
+                  /* ignore */
+                }
+                onDragEnd?.();
+                window.removeEventListener('pointermove', move);
+                window.removeEventListener('pointerup', up);
+              };
+              window.addEventListener('pointermove', move);
+              window.addEventListener('pointerup', up);
+            }
+          : undefined
+      }
+    >
+      <span ref={measureRef} className="inline-block">
+        {text}
+      </span>
+    </div>
+  );
+}
+
+function computeAnchorLeftPct(rootEl, measureEl, anchorXPct, anchorType) {
+  if (anchorType === 'start') return anchorXPct;
+  const parent = rootEl?.offsetParent;
+  if (!(parent instanceof HTMLElement) || !(measureEl instanceof HTMLElement)) return anchorXPct;
+  const W = parent.clientWidth;
+  if (W <= 0) return anchorXPct;
+  const textWidthPx = measureOverlayTextWidthPx(measureEl);
+  if (textWidthPx <= 0) return anchorXPct;
+  const anchorPx = (anchorXPct / 100) * W;
+  const leftPx = anchorType === 'end' ? anchorPx - textWidthPx : anchorPx - textWidthPx / 2;
+  return (leftPx / W) * 100;
+}
+
+function AnchoredOverlay({
+  el,
+  text,
+  overlayKey,
+  interactive,
+  isSelected,
+  onSelectKey,
+  onDragPosition,
+  onDragStart,
+  onDragEnd,
+  containerRef,
+}) {
+  const rootRef = useRef(null);
+  const measureRef = useRef(null);
+  const anchorXPct = Number(el.anchorX ?? el.x) || 0;
+  const anchorType = ['start', 'end', 'center'].includes(el.anchorType) ? el.anchorType : 'start';
+  const [leftPct, setLeftPct] = useState(anchorXPct);
+
+  useLayoutEffect(() => {
+    const root = rootRef.current;
+    const m = measureRef.current;
+    if (!root || !m) return undefined;
+    let cancelled = false;
+    const run = () => {
+      const r = rootRef.current;
+      const meas = measureRef.current;
+      if (!r || !meas || cancelled) return;
+      setLeftPct(computeAnchorLeftPct(r, meas, anchorXPct, anchorType));
+    };
+    run();
+    const parent = root.offsetParent;
+    if (!(parent instanceof HTMLElement)) return undefined;
+    const ro = new ResizeObserver(run);
+    ro.observe(parent);
+    if (typeof document !== 'undefined' && document.fonts?.ready) {
+      void document.fonts.ready.then(() => {
+        if (!cancelled) run();
+      });
+    }
+    return () => {
+      cancelled = true;
+      ro.disconnect();
+    };
+  }, [anchorXPct, anchorType, text, el.fontSize, el.fontWeight]);
+
+  return (
+    <div
+      ref={rootRef}
+      data-poster-overlay={overlayKey}
+      role={interactive ? 'button' : undefined}
+      tabIndex={interactive ? 0 : undefined}
+      className={`absolute whitespace-nowrap outline-none select-none touch-none ${
+        interactive
+          ? isSelected
+            ? 'z-10 cursor-grab ring-2 ring-violet-500 ring-offset-1 active:cursor-grabbing'
+            : 'z-[5] cursor-pointer hover:ring-1 hover:ring-gray-400'
+          : ''
+      }`}
+      style={{
+        left: `${leftPct}%`,
+        top: `${Number(el.y) || 0}%`,
+        fontFamily: "'Inter', sans-serif",
+        fontSize: `${Number(el.fontSize) || 16}px`,
+        color: normalizeHexForCss(el.color),
+        fontWeight: el.fontWeight || '400',
+        textAlign: el.textAlign || 'left',
+        transform: 'translateX(0)',
+        lineHeight: 1.2,
+        pointerEvents: interactive ? 'auto' : 'none',
+      }}
+      onClick={(e) => {
+        if (!interactive) return;
+        e.stopPropagation();
+        onSelectKey?.(overlayKey);
+      }}
+      onKeyDown={(e) => {
+        if (!interactive) return;
+        if (e.key === 'Enter' || e.key === ' ') {
+          e.preventDefault();
+          onSelectKey?.(overlayKey);
+        }
+      }}
+      onPointerDown={
+        interactive && onDragPosition && containerRef
+          ? (e) => {
+              if (e.button !== 0) return;
+              e.stopPropagation();
+              e.preventDefault();
+              onSelectKey?.(overlayKey);
+              onDragStart?.(overlayKey);
+              const container = containerRef.current;
+              if (!(container instanceof HTMLElement)) return;
+              const rect = container.getBoundingClientRect();
+              const startX = e.clientX;
+              const startY = e.clientY;
+              const startLeft = Number(el.anchorX ?? el.x) || 0;
               const startTop = Number(el.y) || 0;
               const target = e.currentTarget;
               target.setPointerCapture(e.pointerId);
@@ -214,11 +351,13 @@ export default function PosterTextOverlays({
     name: {
       field: nameField || {},
       text: variables.name != null ? String(variables.name) : '',
+      placeholder: 'Sample name',
       label: 'Name',
     },
     mobile: {
       field: mobileField || {},
       text: variables.mobile != null ? String(variables.mobile) : '',
+      placeholder: '98765 43210',
       label: 'Mobile',
     },
   };
@@ -227,7 +366,9 @@ export default function PosterTextOverlays({
     <>
       {OVERLAY_KEYS.map((key) => {
         const el = cfg[key].field;
-        const text = cfg[key].text || '\u00a0';
+        const fieldTextValue = el?.textValue != null ? String(el.textValue) : '';
+        const fallbackText = cfg[key].text || cfg[key].placeholder;
+        const text = (fieldTextValue || fallbackText || '\u00a0').trim() || '\u00a0';
         const isSelected = selectedKey === key;
         if (isCorridorNameField(key, el)) {
           return (
@@ -247,85 +388,19 @@ export default function PosterTextOverlays({
           );
         }
         return (
-          <div
+          <AnchoredOverlay
             key={key}
-            data-poster-overlay={key}
-            role={interactive ? 'button' : undefined}
-            tabIndex={interactive ? 0 : undefined}
-            className={`absolute whitespace-pre-wrap break-words outline-none select-none touch-none ${
-              interactive
-                ? isSelected
-                  ? 'z-10 cursor-grab ring-2 ring-violet-500 ring-offset-1 active:cursor-grabbing'
-                  : 'z-[5] cursor-pointer hover:ring-1 hover:ring-gray-400'
-                : ''
-            }`}
-            style={{
-              left: `${Number(el.x) || 0}%`,
-              top: `${Number(el.y) || 0}%`,
-              maxWidth: `min(${POSTER_OVERLAY_MAX_WIDTH_PX}px, 90%)`,
-              fontFamily: "'Inter', sans-serif",
-              fontSize: `${Number(el.fontSize) || 16}px`,
-              color: normalizeHexForCss(el.color),
-              fontWeight: el.fontWeight || '400',
-              textAlign: el.textAlign || 'left',
-              transform: alignTransform(el.textAlign),
-              lineHeight: 1.2,
-              pointerEvents: interactive ? 'auto' : 'none',
-            }}
-            onClick={(e) => {
-              if (!interactive) return;
-              e.stopPropagation();
-              onSelectKey?.(key);
-            }}
-            onKeyDown={(e) => {
-              if (!interactive) return;
-              if (e.key === 'Enter' || e.key === ' ') {
-                e.preventDefault();
-                onSelectKey?.(key);
-              }
-            }}
-            onPointerDown={
-              interactive && onDragPosition && containerRef
-                ? (e) => {
-                    if (e.button !== 0) return;
-                    e.stopPropagation();
-                    e.preventDefault();
-                    onSelectKey?.(key);
-                    onDragStart?.(key);
-                    const container = containerRef.current;
-                    if (!(container instanceof HTMLElement)) return;
-                    const rect = container.getBoundingClientRect();
-                    const startX = e.clientX;
-                    const startY = e.clientY;
-                    const startLeft = Number(el.x) || 0;
-                    const startTop = Number(el.y) || 0;
-                    const target = e.currentTarget;
-                    target.setPointerCapture(e.pointerId);
-                    const move = (ev) => {
-                      const dx = ev.clientX - startX;
-                      const dy = ev.clientY - startY;
-                      const nx = startLeft + (dx / rect.width) * 100;
-                      const ny = startTop + (dy / rect.height) * 100;
-                      onDragPosition(key, clampPct(nx), clampPct(ny));
-                    };
-                    const up = () => {
-                      try {
-                        target.releasePointerCapture(e.pointerId);
-                      } catch {
-                        /* ignore */
-                      }
-                      onDragEnd?.();
-                      window.removeEventListener('pointermove', move);
-                      window.removeEventListener('pointerup', up);
-                    };
-                    window.addEventListener('pointermove', move);
-                    window.addEventListener('pointerup', up);
-                  }
-                : undefined
-            }
-          >
-            {text}
-          </div>
+            el={el}
+            text={text}
+            overlayKey={key}
+            interactive={interactive}
+            isSelected={isSelected}
+            onSelectKey={onSelectKey}
+            onDragPosition={onDragPosition}
+            onDragStart={onDragStart}
+            onDragEnd={onDragEnd}
+            containerRef={containerRef}
+          />
         );
       })}
     </>

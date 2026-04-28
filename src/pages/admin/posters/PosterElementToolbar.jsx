@@ -71,14 +71,17 @@ function OverlaySection({ title, icon, field, onChange, accentClass, showEndX = 
           <FieldLabel>Position (%)</FieldLabel>
           <div className="mt-2 grid grid-cols-2 gap-3">
             <label className="block">
-              <span className="text-[0.625rem] text-gray-400">X</span>
+              <span className="text-[0.625rem] text-gray-400">Anchor X</span>
               <input
                 type="number"
                 min={0}
                 max={100}
                 step={0.1}
-                value={finitePct(field.x)}
-                onChange={(e) => onChange({ x: finitePct(e.target.value) })}
+                value={finitePct(field.anchorX ?? field.x)}
+                onChange={(e) => {
+                  const nextAnchorX = finitePct(e.target.value);
+                  onChange({ x: nextAnchorX, anchorX: nextAnchorX });
+                }}
                 className="mt-1 w-full rounded-xl border border-gray-200 px-3 py-2 text-sm tabular-nums focus:border-primary-blue-400 focus:outline-none focus:ring-2 focus:ring-primary-blue-400/20"
               />
             </label>
@@ -92,6 +95,30 @@ function OverlaySection({ title, icon, field, onChange, accentClass, showEndX = 
                 value={finitePct(field.y)}
                 onChange={(e) => onChange({ y: finitePct(e.target.value) })}
                 className="mt-1 w-full rounded-xl border border-gray-200 px-3 py-2 text-sm tabular-nums focus:border-primary-blue-400 focus:outline-none focus:ring-2 focus:ring-primary-blue-400/20"
+              />
+            </label>
+          </div>
+          <div className="mt-2 grid grid-cols-1 gap-3 sm:grid-cols-2">
+            <label className="block">
+              <FieldLabel>Anchor Type</FieldLabel>
+              <select
+                value={['start', 'end', 'center'].includes(field.anchorType) ? field.anchorType : 'start'}
+                onChange={(e) => onChange({ anchorType: e.target.value })}
+                className="mt-1 w-full rounded-xl border border-gray-200 bg-white px-3 py-2 text-sm focus:border-primary-blue-400 focus:outline-none focus:ring-2 focus:ring-primary-blue-400/20"
+              >
+                <option value="start">Start</option>
+                <option value="end">End</option>
+                <option value="center">Center</option>
+              </select>
+            </label>
+            <label className="block">
+              <FieldLabel>Text Value</FieldLabel>
+              <input
+                type="text"
+                value={field.textValue != null ? String(field.textValue) : ''}
+                onChange={(e) => onChange({ textValue: e.target.value })}
+                placeholder={title === 'Name' ? 'Sample name' : '98765 43210'}
+                className="mt-1 w-full rounded-xl border border-gray-200 px-3 py-2 text-sm focus:border-primary-blue-400 focus:outline-none focus:ring-2 focus:ring-primary-blue-400/20"
               />
             </label>
           </div>

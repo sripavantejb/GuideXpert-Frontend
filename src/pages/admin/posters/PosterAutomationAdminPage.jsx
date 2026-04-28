@@ -41,11 +41,31 @@ function normalizeRouteClient(route) {
 }
 
 function defaultNameField() {
-  return { x: 12, y: 12, fontSize: 22, color: '#111827', fontWeight: '600', textAlign: 'left' };
+  return {
+    x: 12,
+    anchorX: 12,
+    anchorType: 'start',
+    y: 12,
+    textValue: 'Sample name',
+    fontSize: 22,
+    color: '#111827',
+    fontWeight: '600',
+    textAlign: 'left',
+  };
 }
 
 function defaultMobileField() {
-  return { x: 12, y: 24, fontSize: 18, color: '#111827', fontWeight: '500', textAlign: 'left' };
+  return {
+    x: 12,
+    anchorX: 12,
+    anchorType: 'start',
+    y: 24,
+    textValue: '98765 43210',
+    fontSize: 18,
+    color: '#111827',
+    fontWeight: '500',
+    textAlign: 'left',
+  };
 }
 
 function emptyDraft() {
@@ -82,8 +102,12 @@ function formatPosterSaveError(res) {
 function normalizeOverlayFieldNumerics(field) {
   if (!field || typeof field !== 'object') return field;
   const out = { ...field };
-  out.x = Math.round((Number(out.x) || 0) * 100) / 100;
+  const normalizedAnchorX = Math.round((Number(out.anchorX ?? out.x) || 0) * 100) / 100;
+  out.anchorX = normalizedAnchorX;
+  out.x = normalizedAnchorX;
+  out.anchorType = ['start', 'end', 'center'].includes(out.anchorType) ? out.anchorType : 'start';
   out.y = Math.round((Number(out.y) || 0) * 100) / 100;
+  out.textValue = out.textValue != null ? String(out.textValue).slice(0, 500) : '';
   out.fontSize = Math.round((Number(out.fontSize) || 16) * 100) / 100;
   const xe = Number(out.xEnd);
   if (out.xEnd != null && out.xEnd !== '' && Number.isFinite(xe)) {
@@ -114,11 +138,25 @@ function cloneDraftFromPoster(p) {
 /** Stable semantic equality for isDirty (avoids JSON key-order false negatives). */
 function normalizeOverlayFieldForCompare(f) {
   if (!f || typeof f !== 'object') {
-    return { x: 0, y: 0, fontSize: 16, color: '#111827', fontWeight: '400', textAlign: 'left' };
+    return {
+      x: 0,
+      anchorX: 0,
+      anchorType: 'start',
+      y: 0,
+      textValue: '',
+      fontSize: 16,
+      color: '#111827',
+      fontWeight: '400',
+      textAlign: 'left',
+    };
   }
+  const normalizedAnchorX = Math.round((Number(f.anchorX ?? f.x) || 0) * 1000) / 1000;
   return {
-    x: Math.round((Number(f.x) || 0) * 1000) / 1000,
+    x: normalizedAnchorX,
+    anchorX: normalizedAnchorX,
+    anchorType: ['start', 'end', 'center'].includes(f.anchorType) ? String(f.anchorType) : 'start',
     y: Math.round((Number(f.y) || 0) * 1000) / 1000,
+    textValue: f.textValue != null ? String(f.textValue) : '',
     fontSize: Math.round((Number(f.fontSize) || 16) * 1000) / 1000,
     color: normalizeHexForCss(f.color),
     fontWeight: String(f.fontWeight ?? '400'),
@@ -148,14 +186,20 @@ function posterDraftsEqual(a, b) {
   const mb = normalizeOverlayFieldForCompare(b.mobileField);
   return (
     na.x === nb.x &&
+    na.anchorX === nb.anchorX &&
+    na.anchorType === nb.anchorType &&
     na.y === nb.y &&
+    na.textValue === nb.textValue &&
     na.fontSize === nb.fontSize &&
     na.color === nb.color &&
     na.fontWeight === nb.fontWeight &&
     na.textAlign === nb.textAlign &&
     na.xEnd === nb.xEnd &&
     ma.x === mb.x &&
+    ma.anchorX === mb.anchorX &&
+    ma.anchorType === mb.anchorType &&
     ma.y === mb.y &&
+    ma.textValue === mb.textValue &&
     ma.fontSize === mb.fontSize &&
     ma.color === mb.color &&
     ma.fontWeight === mb.fontWeight &&
@@ -567,7 +611,7 @@ export default function PosterAutomationAdminPage() {
     const k = key === 'name' ? 'nameField' : 'mobileField';
     setDraft((d) => ({
       ...d,
-      [k]: { ...d[k], x, y },
+      [k]: { ...d[k], x, anchorX: x, y },
     }));
   };
 
