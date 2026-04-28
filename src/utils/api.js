@@ -77,6 +77,26 @@ export async function getMarketingFeaturedPoster() {
   return apiRequest('/posters/marketing-featured', { method: 'GET' });
 }
 
+/** GET /posters/marketing — all published dynamic poster templates for counsellor Marketing. */
+export async function getMarketingPosters() {
+  const res = await apiRequest('/posters/marketing', { method: 'GET' });
+  if (res.success || res.status !== 404) return res;
+  const fallback = await getMarketingFeaturedPoster();
+  if (!fallback.success) return fallback;
+  const posters = Array.isArray(fallback.data?.posters)
+    ? fallback.data.posters
+    : fallback.data?.poster
+      ? [fallback.data.poster]
+      : [];
+  return {
+    ...fallback,
+    data: {
+      ...fallback.data,
+      posters,
+    },
+  };
+}
+
 /** POST /posters/verify-activation — published route + mobile → TrainingFeedback name/mobile. */
 export async function verifyPosterActivation(route, mobile) {
   return apiRequest('/posters/verify-activation', {

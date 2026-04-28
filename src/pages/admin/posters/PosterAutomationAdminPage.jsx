@@ -70,7 +70,8 @@ function defaultMobileField() {
 
 function emptyDraft() {
   return {
-    name: 'New poster',
+    name: '',
+    description: '',
     route: '/p/my-campaign',
     svgTemplate: '',
     nameField: defaultNameField(),
@@ -125,6 +126,7 @@ function cloneDraftFromPoster(p) {
     p.mobileField && typeof p.mobileField === 'object' ? { ...p.mobileField } : defaultMobileField();
   return {
     name: p.name || '',
+    description: p.description != null ? String(p.description) : '',
     route: p.route || '/p/my-campaign',
     svgTemplate: p.svgTemplate == null ? '' : String(p.svgTemplate),
     nameField: normalizeOverlayFieldNumerics(normalizeOverlayFieldColors(nameSrc)),
@@ -176,6 +178,7 @@ function posterDraftsEqual(a, b) {
   if (a === b) return true;
   if (!a || !b) return false;
   if (String(a.name ?? '').trim() !== String(b.name ?? '').trim()) return false;
+  if (String(a.description ?? '').trim() !== String(b.description ?? '').trim()) return false;
   if (normalizeRouteClient(a.route) !== normalizeRouteClient(b.route)) return false;
   if (a.svgTemplate !== b.svgTemplate) return false;
   if (!!a.published !== !!b.published) return false;
@@ -384,6 +387,7 @@ export default function PosterAutomationAdminPage() {
       }
       const payload = {
         name: draft.name.trim(),
+        description: String(draft.description ?? '').trim().slice(0, 500),
         route: routeNorm,
         svgTemplate: svgNorm,
         nameField: buildOverlayFieldPayload(draft.nameField, 'name'),
@@ -954,9 +958,9 @@ export default function PosterAutomationAdminPage() {
                     Counsellor Marketing
                   </p>
                   <p className="mt-1.5 text-sm leading-relaxed text-slate-700">
-                    Show this live template as the highlighted <strong className="font-semibold">Latest</strong> card on{' '}
-                    <span className="font-medium text-slate-800">Counsellor → Marketing</span>. Only one template can be
-                    highlighted at a time.
+                    This published template appears as its own card on{' '}
+                    <span className="font-medium text-slate-800">Counsellor → Marketing</span>. You can optionally mark it
+                    as highlighted without hiding other published templates.
                   </p>
                   <div className="mt-3 flex flex-wrap gap-2">
                     <button
@@ -973,10 +977,10 @@ export default function PosterAutomationAdminPage() {
                       className="inline-flex items-center justify-center rounded-xl border border-sky-600 bg-sky-600 px-4 py-2.5 text-sm font-semibold text-white shadow-sm transition hover:bg-sky-700 disabled:cursor-not-allowed disabled:opacity-50"
                     >
                       {draft.marketingFeatured
-                        ? 'Shown as Latest'
+                        ? 'Highlighted in Marketing'
                         : marketingFeatSaving
                           ? 'Applying…'
-                          : 'Show in counsellor Marketing as Latest'}
+                          : 'Highlight in counsellor Marketing'}
                     </button>
                     <button
                       type="button"
@@ -991,7 +995,7 @@ export default function PosterAutomationAdminPage() {
                       }
                       className="inline-flex items-center justify-center rounded-xl border border-slate-300 bg-white px-4 py-2.5 text-sm font-medium text-slate-800 shadow-sm transition hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-50"
                     >
-                      {marketingFeatSaving ? 'Removing…' : 'Remove from Marketing highlight'}
+                      {marketingFeatSaving ? 'Removing…' : 'Remove Marketing highlight'}
                     </button>
                   </div>
                 </div>
@@ -1053,7 +1057,7 @@ export default function PosterAutomationAdminPage() {
                     value={draft.name}
                     onChange={(e) => setDraft((d) => ({ ...d, name: e.target.value }))}
                     className="mt-2 w-full rounded-xl border border-gray-200 bg-white px-4 py-2.5 text-sm text-gray-900 shadow-sm focus:border-primary-blue-400 focus:outline-none focus:ring-2 focus:ring-primary-blue-400/20"
-                    placeholder="e.g. Certificate poster"
+                    placeholder="e.g. Inter Results Campaign (shown in Counsellor Marketing)"
                   />
                 </label>
                 <label className="block">
@@ -1075,6 +1079,21 @@ export default function PosterAutomationAdminPage() {
                     {!routeOkForPublic ? (
                       <span className="mt-1 block text-amber-700">Must start with /p/ so it matches the public app route.</span>
                     ) : null}
+                  </span>
+                </label>
+              </div>
+              <div className="mb-6">
+                <label className="block">
+                  <span className="text-[0.6875rem] font-semibold uppercase tracking-wide text-gray-500">Marketing description</span>
+                  <textarea
+                    value={draft.description}
+                    onChange={(e) => setDraft((d) => ({ ...d, description: e.target.value }))}
+                    className="mt-2 min-h-[84px] w-full rounded-xl border border-gray-200 bg-white px-4 py-2.5 text-sm text-gray-900 shadow-sm focus:border-primary-blue-400 focus:outline-none focus:ring-2 focus:ring-primary-blue-400/20"
+                    placeholder="e.g. Inter results campaign poster with your name and mobile. Download PNG or PDF after eligibility check."
+                    maxLength={500}
+                  />
+                  <span className="mt-1 block text-right text-[0.6875rem] text-gray-400">
+                    {String(draft.description ?? '').length}/500
                   </span>
                 </label>
               </div>

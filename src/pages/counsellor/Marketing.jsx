@@ -1,11 +1,13 @@
 import { useMemo, useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
-import { FiImage } from 'react-icons/fi';
-import { getMarketingFeaturedPoster } from '../../utils/api';
+import { getMarketingPosters } from '../../utils/api';
+import PosterSvgLayer from '../../components/Posters/PosterSvgLayer';
+import PosterTextOverlays from '../../components/Posters/PosterTextOverlays';
+import { getDesignFrameSize } from '../../utils/posterExportDimensions';
 
 const RECENT_DAYS = 30;
-
-const DYNAMIC_FEATURED_ID = 'automated-marketing-featured';
+const DYNAMIC_PREVIEW_MAX_WIDTH_PX = 260;
+const DYNAMIC_PREVIEW_MAX_HEIGHT_PX = 260;
 
 /** Placeholder release dates — adjust ISO strings to match real go-live dates. */
 const AUTOMATED_POSTERS = [
@@ -91,7 +93,7 @@ function parseReleasedAt(iso) {
 }
 
 /** YYYY-MM-DD for sorting when API gives a full ISO date. */
-function toDateKeyFeatured(isoOrDate) {
+function toDateKey(isoOrDate) {
   if (isoOrDate == null) return null;
   const d = new Date(isoOrDate);
   if (Number.isNaN(d.getTime())) return null;
@@ -105,20 +107,59 @@ function formatSinceLabel(iso) {
   return `Since ${d.toLocaleDateString('en-IN', { month: 'short', year: 'numeric' })}`;
 }
 
+function DynamicPosterPreview({ poster }) {
+  const designFrame = useMemo(() => getDesignFrameSize(poster?.svgTemplate), [poster?.svgTemplate]);
+  const scale = useMemo(() => {
+    if (!designFrame.width || !designFrame.height) return 0;
+    return Math.min(
+      DYNAMIC_PREVIEW_MAX_WIDTH_PX / designFrame.width,
+      DYNAMIC_PREVIEW_MAX_HEIGHT_PX / designFrame.height
+    );
+  }, [designFrame.height, designFrame.width]);
+  const previewWidth = Math.max(1, Math.round(designFrame.width * scale));
+  const previewHeight = Math.max(1, Math.round(designFrame.height * scale));
+
+  return (
+    <div
+      className="relative overflow-hidden bg-white shadow-sm ring-1 ring-slate-200/80"
+      style={{ width: previewWidth, height: previewHeight }}
+    >
+      <div
+        className="relative overflow-hidden bg-white"
+        style={{
+          width: designFrame.width,
+          height: designFrame.height,
+          transform: `scale(${scale})`,
+          transformOrigin: 'top left',
+        }}
+      >
+        <PosterSvgLayer
+          svgTemplate={poster?.svgTemplate}
+          className="absolute inset-0 h-full w-full overflow-hidden [&>svg]:block [&>svg]:h-full [&>svg]:w-full"
+        />
+        <PosterTextOverlays
+          nameField={poster?.nameField}
+          mobileField={poster?.mobileField}
+        />
+      </div>
+    </div>
+  );
+}
+
 export default function Marketing() {
-  const [apiFeatured, setApiFeatured] = useState(null);
-  const [featuredLoading, setFeaturedLoading] = useState(true);
+  const [dynamicPosters, setDynamicPosters] = useState([]);
+  const [dynamicLoading, setDynamicLoading] = useState(true);
 
   useEffect(() => {
     let cancelled = false;
     (async () => {
-      const res = await getMarketingFeaturedPoster();
+      const res = await getMarketingPosters();
       if (cancelled) return;
-      setFeaturedLoading(false);
-      if (res.success && res.data?.poster) {
-        setApiFeatured(res.data.poster);
+      setDynamicLoading(false);
+      if (res.success && Array.isArray(res.data?.posters)) {
+        setDynamicPosters(res.data.posters);
       } else {
-        setApiFeatured(null);
+        setDynamicPosters([]);
       }
     })();
     return () => {
@@ -127,22 +168,23 @@ export default function Marketing() {
   }, []);
 
   const { sortedPosters, latestIds, recentIds } = useMemo(() => {
-    const dynamicFeatured = apiFeatured
-      ? [
-          {
-            id: DYNAMIC_FEATURED_ID,
-            title: apiFeatured.name,
-            description:
-              'Dynamic poster from GuideXpert. Open the link, verify with your registered mobile, then download PNG or PDF.',
-            to: apiFeatured.route,
-            releasedAt: toDateKeyFeatured(apiFeatured.marketingFeaturedAt) || '2026-01-01',
-            isDynamicFeatured: true,
-            pinnedLast: false,
-          },
-        ]
-      : [];
+    const dynamicCampaigns = dynamicPosters
+      .filter((poster) => poster && poster.route && poster.name && poster.svgTemplate)
+      .map((poster) => ({
+        id: `dynamic-${poster.id || poster.route}`,
+        title: poster.name,
+        description:
+          poster.description && String(poster.description).trim()
+            ? String(poster.description)
+            : 'Dynamic poster from GuideXpert. Open the link, verify with your registered mobile, then download PNG or PDF.',
+        to: poster.route,
+        releasedAt: toDateKey(poster.publishedAt || poster.updatedAt || poster.createdAt) || '2026-01-01',
+        isDynamicPoster: true,
+        dynamicPoster: poster,
+        pinnedLast: false,
+      }));
 
-    const campaigns = AUTOMATED_POSTERS.filter((p) => !p.pinnedLast);
+    const campaigns = [...dynamicCampaigns, ...AUTOMATED_POSTERS.filter((p) => !p.pinnedLast)];
     const pinned = AUTOMATED_POSTERS.filter((p) => p.pinnedLast);
 
     const sortedCampaigns = [...campaigns].sort((a, b) => {
@@ -151,31 +193,6 @@ export default function Marketing() {
       if (ta !== tb) return tb - ta;
       return String(a.id).localeCompare(String(b.id));
     });
-
-    if (dynamicFeatured.length > 0) {
-      const latestIds = new Set([DYNAMIC_FEATURED_ID]);
-      const now = Date.now();
-      const cutoff = now - RECENT_DAYS * 24 * 60 * 60 * 1000;
-      const featuredTime = apiFeatured?.marketingFeaturedAt
-        ? new Date(apiFeatured.marketingFeaturedAt).getTime()
-        : 0;
-      const recentIds = new Set(
-        sortedCampaigns
-          .filter((p) => {
-            const t = parseReleasedAt(p.releasedAt);
-            return t != null && t >= cutoff;
-          })
-          .map((p) => p.id)
-      );
-      if (featuredTime >= cutoff) {
-        recentIds.add(DYNAMIC_FEATURED_ID);
-      }
-      return {
-        sortedPosters: [...dynamicFeatured, ...sortedCampaigns, ...pinned],
-        latestIds,
-        recentIds,
-      };
-    }
 
     const times = sortedCampaigns
       .map((p) => parseReleasedAt(p.releasedAt))
@@ -206,17 +223,15 @@ export default function Marketing() {
       latestIds,
       recentIds,
     };
-  }, [apiFeatured]);
+  }, [dynamicPosters]);
 
   return (
     <div className="max-w-7xl mx-auto">
       <div className="mb-8">
         <h2 className="text-xl font-bold text-[#003366] tracking-tight">All marketing posters</h2>
         <p className="text-sm text-slate-600 mt-0.5">
-          Newest campaigns appear first. The latest release is highlighted. Standard certificate template is at the end.
-          {!featuredLoading && apiFeatured
-            ? ' The administrator may feature one dynamic /p/… poster at the top as Latest.'
-            : null}
+          Newest campaigns appear first. The latest release is highlighted. Admin-published dynamic posters appear alongside campaigns. Standard certificate template is at the end.
+          {dynamicLoading ? ' Loading dynamic posters…' : null}
         </p>
       </div>
 
@@ -226,7 +241,7 @@ export default function Marketing() {
           const isRecent = recentIds.has(item.id);
           const sinceLabel = formatSinceLabel(item.releasedAt);
           const isCampaign = !item.pinnedLast;
-          const showTypeBadge = !item.hideTypeBadge && !item.isDynamicFeatured;
+          const showTypeBadge = !item.hideTypeBadge;
           const prev = i > 0 ? sortedPosters[i - 1] : null;
           const showTemplateDivider = Boolean(item.pinnedLast && prev && !prev.pinnedLast);
 
@@ -252,11 +267,6 @@ export default function Marketing() {
                   />
                 )}
                 <div className="flex flex-wrap items-center gap-2 mb-3">
-                  {item.isDynamicFeatured ? (
-                    <span className="inline-block px-2 py-0.5 rounded-full text-xs font-medium bg-violet-100 text-violet-900">
-                      Dynamic
-                    </span>
-                  ) : null}
                   {showTypeBadge && (
                     <span className="inline-block px-2 py-0.5 rounded-full text-xs font-medium bg-slate-100 text-slate-700">
                       Campaign
@@ -274,13 +284,8 @@ export default function Marketing() {
                   )}
                 </div>
                 <div className="flex justify-center mb-4 rounded-lg bg-slate-50 border border-slate-100 overflow-hidden min-h-[200px] max-h-[280px]">
-                  {item.isDynamicFeatured ? (
-                    <div className="flex w-full flex-col items-center justify-center gap-2 py-10 px-4 bg-gradient-to-br from-slate-100/90 to-slate-50 text-slate-400">
-                      <FiImage className="h-14 w-14 shrink-0 opacity-80" aria-hidden />
-                      <span className="text-xs font-medium text-slate-500 text-center leading-snug">
-                        Preview on the public page after you open the link
-                      </span>
-                    </div>
+                  {item.isDynamicPoster ? (
+                    <DynamicPosterPreview poster={item.dynamicPoster} />
                   ) : (
                     <img
                       src={item.previewSrc}
