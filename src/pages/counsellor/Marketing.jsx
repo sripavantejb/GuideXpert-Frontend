@@ -52,14 +52,6 @@ const AUTOMATED_POSTERS = [
     releasedAt: '2025-01-01',
   },
   {
-    id: 'wrongcareerchoice',
-    title: 'Wrong Career Choice Poster',
-    description: 'Wrong Career Choice campaign poster with your name and mobile. Download PNG or PDF after eligibility check.',
-    to: '/wrong-career-choice',
-    previewSrc: '/wrong-career-choice-poster.svg',
-    releasedAt: '2026-04-16',
-  },
-  {
     id: 'jee',
     title: 'JEE Poster',
     description: 'JEE campaign poster with your name and mobile. Download PNG or PDF after eligibility check.',
