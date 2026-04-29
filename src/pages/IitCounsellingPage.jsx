@@ -1,10 +1,10 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { getApiBaseUrl } from '../utils/apiBaseUrl';
+import { getAvailableSlots } from '../utils/weekendSlots';
 
 const STUDENT_PARENT_OPTIONS = ['Student', 'Parent'];
 const CLASS_OPTIONS = ['12th Appearing', '12th Passed'];
 const STREAM_OPTIONS = ['MPC', 'BiPC', 'Commerce', 'Others'];
-const SLOT_BOOKING_OPTIONS = ['Saturday 6PM', 'Sunday 11AM'];
 const CAREER_DECISION_OPTIONS = ['Very clear', 'Somewhat clear', 'Completely confused'];
 const COLLEGE_DECISION_OPTIONS = ['Self', 'Parents', 'Both'];
 const BUDGET_OPTIONS = ['<1L', '1-3L', '3-6L', '6L+'];
@@ -55,6 +55,7 @@ export default function IitCounsellingPage() {
   const otpInputRefs = useRef([]);
 
   const apiBase = useMemo(() => getApiBaseUrl(), []);
+  const slotBookingOptions = useMemo(() => getAvailableSlots(), []);
 
   const stepConfig = useMemo(() => ({
     1: ['fullName', 'mobileNumber', 'studentOrParent', 'classStatus', 'stream', 'city', 'slotBooking', 'top5Colleges'],
@@ -510,7 +511,13 @@ export default function IitCounsellingPage() {
               <Field label="6. City" error={errors.city}>
                 <input className={neoInputClass} value={formData.city} onChange={(e) => handleInputChange('city', e.target.value)} />
               </Field>
-              <ChoiceGroup label="7. SLOT Booking(Are you available for a FREE IITian session this Sunday?" options={SLOT_BOOKING_OPTIONS} value={formData.slotBooking} onChange={(value) => handleInputChange('slotBooking', value)} error={errors.slotBooking} />
+              <ChoiceGroup
+                label="7. Select Your Demo Slot"
+                options={slotBookingOptions}
+                value={formData.slotBooking}
+                onChange={(value) => handleInputChange('slotBooking', value)}
+                error={errors.slotBooking}
+              />
               <Field label="8. Your Top 5 colleges (comma separated)" error={errors.top5Colleges}>
                 <textarea className={`${neoInputClass} min-h-[100px]`} value={formData.top5Colleges} onChange={(e) => handleInputChange('top5Colleges', e.target.value)} />
               </Field>
@@ -584,24 +591,36 @@ function Field({ label, children, error }) {
 }
 
 function ChoiceGroup({ label, options, value, onChange, error }) {
+  const normalizedOptions = options
+    .map((option) => {
+      if (typeof option === 'string') {
+        return { value: option, label: option };
+      }
+      return {
+        value: option?.value || '',
+        label: option?.label || option?.value || '',
+      };
+    })
+    .filter((option) => option.value);
+
   return (
     <div className="sm:col-span-1">
       <p className={neoLabelClass}>
         {label}
       </p>
       <div className="space-y-2 rounded-[10px] border-2 border-[#0F172A] bg-[#F8FAFC] p-3">
-        {options.map((option) => {
-          const id = `${label}-${option}`;
+        {normalizedOptions.map((option) => {
+          const id = `${label}-${option.value}`;
           return (
-            <label key={option} htmlFor={id} className="flex cursor-pointer items-center gap-2 text-sm font-semibold text-[#0F172A]">
+            <label key={option.value} htmlFor={id} className="flex cursor-pointer items-center gap-2 text-sm font-semibold text-[#0F172A]">
               <input
                 id={id}
                 type="radio"
-                checked={value === option}
-                onChange={() => onChange(option)}
+                checked={value === option.value}
+                onChange={() => onChange(option.value)}
                 className="h-4 w-4 border-2 border-[#0F172A] accent-[#0F172A]"
               />
-              {option}
+              {option.label}
             </label>
           );
         })}
