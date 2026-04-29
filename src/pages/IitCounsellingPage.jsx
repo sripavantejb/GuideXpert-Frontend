@@ -4,7 +4,7 @@ import { getApiBaseUrl } from '../utils/apiBaseUrl';
 const STUDENT_PARENT_OPTIONS = ['Student', 'Parent'];
 const CLASS_OPTIONS = ['12th Appearing', '12th Passed'];
 const STREAM_OPTIONS = ['MPC', 'BiPC', 'Commerce', 'Others'];
-const SLOT_BOOKING_OPTIONS = ['Yes', 'No', 'Need another time'];
+const SLOT_BOOKING_OPTIONS = ['Saturday 6PM', 'Sunday 11AM'];
 const CAREER_DECISION_OPTIONS = ['Very clear', 'Somewhat clear', 'Completely confused'];
 const COLLEGE_DECISION_OPTIONS = ['Self', 'Parents', 'Both'];
 const BUDGET_OPTIONS = ['<1L', '1-3L', '3-6L', '6L+'];
