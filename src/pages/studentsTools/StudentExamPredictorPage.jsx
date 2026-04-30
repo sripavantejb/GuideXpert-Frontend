@@ -31,6 +31,15 @@ const EXAM_ICON_MAP = {
 
 const DEFAULT_ICON = { Icon: FiBarChart2, bg: 'bg-[#c7f36b]' };
 
+function formatResultRange(range) {
+  if (range == null || range === '') return '\u2014';
+  if (typeof range === 'string') return range;
+  if (typeof range === 'object' && range.low != null && range.high != null) {
+    return `${Number(range.low).toLocaleString()} \u2013 ${Number(range.high).toLocaleString()}`;
+  }
+  return String(range);
+}
+
 export default function StudentExamPredictorPage() {
   const { examId } = useParams();
   const exam = useMemo(() => getExamConfig(examId), [examId]);
@@ -111,9 +120,7 @@ export default function StudentExamPredictorPage() {
               {result.range && (
                 <div className="rounded-[12px] border-[3px] border-black bg-white p-4 shadow-[4px_4px_0_#000]">
                   <p className="text-xs font-bold uppercase tracking-wider text-slate-500">Range</p>
-                  <p className="mt-1 text-xl font-black tabular-nums">
-                    {result.range.low?.toLocaleString()} – {result.range.high?.toLocaleString()}
-                  </p>
+                  <p className="mt-1 text-xl font-black tabular-nums">{formatResultRange(result.range)}</p>
                 </div>
               )}
             </div>

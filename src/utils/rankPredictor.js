@@ -92,15 +92,6 @@ const EXAM_DEFINITIONS = [
     max: 200,
     type: 'marks',
   },
-  {
-    id: 'icet',
-    name: 'ICET',
-    description: 'Predict ICET rank range from score.',
-    scoreLabel: 'Marks',
-    min: 0,
-    max: 200,
-    type: 'marks',
-  },
 ];
 
 /** @type {Record<string, { min: number, max: number, type: 'marks' | 'percentile' | 'normalized' }>} */
