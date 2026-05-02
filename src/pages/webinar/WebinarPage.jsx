@@ -142,8 +142,9 @@ export default function WebinarPage() {
       setLastActivityAt(new Date().toISOString());
       setCompletedSessions((prev) => (prev.includes(sessionId) ? prev : [...prev, sessionId]));
       setSessionProgress((prev) => ({ ...prev, [sessionId]: 100 }));
+      setPlaybackPosition((prev) => ({ ...prev, [sessionId]: 0 }));
     },
-    []
+    [setPlaybackPosition]
   );
 
   const handleProgressUpdate = useCallback((sessionId, percent) => {

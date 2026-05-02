@@ -1,4 +1,4 @@
-import { useRef, useState, useEffect, useCallback } from 'react';
+import { useRef, useState, useEffect, useLayoutEffect, useCallback } from 'react';
 import { FiPlay, FiPause, FiVolume2, FiVolumeX, FiMaximize, FiMinimize, FiRotateCcw, FiRotateCw, FiLock } from 'react-icons/fi';
 import { HiHeart } from 'react-icons/hi';
 import { useWebinar } from '../context/WebinarContext';
@@ -31,6 +31,13 @@ function getYouTubeVideoId(videoUrl) {
 }
 
 const YOUTUBE_IFRAME_API_URL = 'https://www.youtube.com/iframe_api';
+
+/** Dev-only diagnostics for webinar playback (avoid console noise in production). */
+function devLogVideo(label, payload) {
+  if (import.meta.env.DEV) {
+    console.debug(`[WebinarVideo] ${label}`, payload ?? '');
+  }
+}
 
 function useYouTubeIFrameAPI() {
   const [ready, setReady] = useState(false);
@@ -154,16 +161,10 @@ function isIOSMobileDevice() {
 }
 
 const YT_PLAYER_STATE_ENDED = 0;
+const YT_PLAYER_STATE_PLAYING = 1;
+const YT_PLAYER_STATE_BUFFERING = 3;
 
 function CompletionOverlay({ visible, onNextSession, onWatchAgain, hasNextSession, isIntro }) {
-  const [mounted, setMounted] = useState(false);
-  useEffect(() => {
-    if (visible) {
-      const t = requestAnimationFrame(() => requestAnimationFrame(() => setMounted(true)));
-      return () => cancelAnimationFrame(t);
-    }
-    setMounted(false);
-  }, [visible]);
   if (!visible) return null;
 
   const heading = isIntro ? 'Intro Completed' : 'Session Completed';
@@ -175,18 +176,16 @@ function CompletionOverlay({ visible, onNextSession, onWatchAgain, hasNextSessio
 
   return (
     <div
-      className="absolute inset-0 z-[20] flex items-center justify-center p-4 bg-black/60 backdrop-blur-[20px] transition-opacity duration-300"
+      className="absolute inset-0 z-[25] flex items-center justify-center p-4 bg-black/70 backdrop-blur-md transition-opacity duration-150"
       role="status"
       aria-live="polite"
       aria-label={heading}
     >
       <div
-        className={`max-w-sm w-full p-4 sm:p-6 rounded-[20px] border border-white/20 transition-all duration-300 ease-out ${
-          mounted ? 'opacity-100 scale-100' : 'opacity-0 scale-95'
-        }`}
+        className="max-w-sm w-full p-4 sm:p-6 rounded-[20px] border border-white/20 transition-all duration-150 ease-out opacity-100 scale-100"
         style={{
-          background: 'rgba(255,255,255,0.1)',
-          backdropFilter: 'blur(20px)',
+          background: 'rgba(255,255,255,0.12)',
+          backdropFilter: 'blur(12px)',
           boxShadow: '0 20px 50px rgba(0,0,0,0.25)',
         }}
       >
@@ -220,6 +219,12 @@ function CompletionOverlay({ visible, onNextSession, onWatchAgain, hasNextSessio
   );
 }
 
+/**
+ * YouTube path: loads `session.videoUrl` via **YouTube IFrame API** (`YT.Player` + extracted `videoId`,
+ * host `youtube-nocookie.com`). Data may use `watch?v=`, `embed/`, or `youtu.be/` — only the id is used.
+ * The iframe has `pointer-events: none` in CSS (`.yt-player-mount iframe`) so native YT UI never steals taps;
+ * playback uses custom controls + `playVideo()` / `pauseVideo()`.
+ */
 function YouTubePlayerWithControls({
   session,
   initialPosition = 0,
@@ -232,6 +237,7 @@ function YouTubePlayerWithControls({
   hasNextSession,
   isIntro = false,
   allowFullSeek = false,
+  sessionAlreadyCompleted = false,
 }) {
   const containerRef = useRef(null);
   const playerRef = useRef(null);
@@ -242,6 +248,8 @@ function YouTubePlayerWithControls({
   const endedRef = useRef(false);
   const ytMaxWatchedRef = useRef(maxWatchedTime);
   const resumedRef = useRef(false);
+  const pendingPlayAfterReadyRef = useRef(false);
+  const pendingWatchAgainRef = useRef(false);
   const apiReady = useYouTubeIFrameAPI();
   const videoId = getYouTubeVideoId(session?.videoUrl);
 
@@ -249,7 +257,7 @@ function YouTubePlayerWithControls({
   const [ytProgress, setYtProgress] = useState(0);
   const [ytCurrentTime, setYtCurrentTime] = useState(0);
   const [ytDuration, setYtDuration] = useState(0);
-  const [showCompletionOverlay, setShowCompletionOverlay] = useState(false);
+  const [showCompletionOverlay, setShowCompletionOverlay] = useState(() => !!sessionAlreadyCompleted);
   const [playerReady, setPlayerReady] = useState(false);
   const [containerHasSize, setContainerHasSize] = useState(false);
   const [hasStarted, setHasStarted] = useState(false);
@@ -274,8 +282,26 @@ function YouTubePlayerWithControls({
   const playerContainerId = `yt-player-${session?.id ?? 'default'}`;
   const ytFullscreenActive = ytFullscreen || ytPseudoFullscreen;
 
-  // Wait for 16:9 container to have real dimensions before creating YT iframe (avoids cropped video)
   useEffect(() => {
+    devLogVideo('state', {
+      sessionId: session?.id,
+      videoUrl: session?.videoUrl,
+      videoId,
+      containerHasSize,
+      apiReady,
+      playerReady,
+      ytEmbedError,
+    });
+  }, [session?.id, session?.videoUrl, videoId, containerHasSize, apiReady, playerReady, ytEmbedError]);
+
+  useEffect(() => {
+    if (session?.videoUrl && !videoId) {
+      devLogVideo('videoIdMissing', { sessionId: session?.id, videoUrl: session.videoUrl });
+    }
+  }, [session?.id, session?.videoUrl, videoId]);
+
+  // Sync size before paint + on resize; avoids stuck !containerHasSize when RO fires late
+  useLayoutEffect(() => {
     const el = containerRef.current;
     if (!el) return;
     const check = () => {
@@ -283,9 +309,27 @@ function YouTubePlayerWithControls({
       if (rect.width >= 100 && rect.height >= 56) setContainerHasSize(true);
     };
     check();
+    const raf = requestAnimationFrame(() => check());
+    return () => cancelAnimationFrame(raf);
+  }, [session?.id]);
+
+  useEffect(() => {
+    const el = containerRef.current;
+    if (!el) return;
+    const check = () => {
+      const rect = el.getBoundingClientRect();
+      if (rect.width >= 100 && rect.height >= 56) setContainerHasSize(true);
+    };
     const ro = new ResizeObserver(() => check());
     ro.observe(el);
-    return () => ro.disconnect();
+    const fallback = window.setTimeout(() => {
+      const r = el.getBoundingClientRect();
+      if (r.width >= 80 && r.height >= 45) setContainerHasSize(true);
+    }, 400);
+    return () => {
+      ro.disconnect();
+      window.clearTimeout(fallback);
+    };
   }, [session?.id]);
 
   useEffect(() => {
@@ -294,8 +338,18 @@ function YouTubePlayerWithControls({
     metadataSentRef.current = false;
     setYtEmbedError(null);
     const id = playerContainerId;
-    const timeoutId = setTimeout(() => {
-      if (!document.getElementById(id)) return;
+    const pendingTimeouts = [];
+    let cancelled = false;
+
+    const clearPending = () => {
+      while (pendingTimeouts.length) {
+        const t = pendingTimeouts.pop();
+        clearTimeout(t);
+      }
+    };
+
+    const mountPlayer = () => {
+      if (cancelled) return;
       try {
         const player = new window.YT.Player(id, {
           videoId,
@@ -324,6 +378,31 @@ function YouTubePlayerWithControls({
                 iframeEl.setAttribute('allowfullscreen', 'true');
               }
               setPlayerReady(true);
+              devLogVideo('ytOnReady', { sessionId: session?.id, videoId });
+              if (pendingWatchAgainRef.current && event.target?.seekTo && event.target?.playVideo) {
+                pendingWatchAgainRef.current = false;
+                try {
+                  event.target.seekTo(0, true);
+                  event.target.playVideo();
+                  setYtCurrentTime(0);
+                  setYtProgress(0);
+                  setHasStarted(true);
+                  setYtPlaying(true);
+                  setShowCompletionOverlay(false);
+                } catch {
+                  pendingWatchAgainRef.current = true; /* retry on next ready */
+                }
+              } else if (pendingPlayAfterReadyRef.current) {
+                pendingPlayAfterReadyRef.current = false;
+                devLogVideo('pendingPlayAfterReady', { action: 'playNow', sessionId: session?.id, videoId });
+                try {
+                  event.target.playVideo?.();
+                  setHasStarted(true);
+                  setYtPlaying(true);
+                } catch {
+                  /* Deferred play may be blocked without a user gesture on strict mobile; user can tap play again. */
+                }
+              }
               const d = event.target.getDuration?.();
               if (Number.isFinite(d) && d > 0) {
                 setYtDuration(d);
@@ -343,6 +422,11 @@ function YouTubePlayerWithControls({
               setYtEmbedError(msg);
             },
             onStateChange(event) {
+              const st = event?.data;
+              // Skip BUFFERING to limit console noise; other states map to playback lifecycle.
+              if (st !== undefined && st !== YT_PLAYER_STATE_BUFFERING) {
+                devLogVideo('ytStateChange', { sessionId: session?.id, videoId, state: st });
+              }
               if (event.data === YT_PLAYER_STATE_ENDED) {
                 event.target.pauseVideo();
                 setYtPlaying(false);
@@ -364,10 +448,37 @@ function YouTubePlayerWithControls({
         console.error('YouTube player init error:', err);
         setYtEmbedError('Could not start the player');
       }
-    }, 350);
+    };
+
+    const MAX_ATTEMPTS = 15;
+    const RETRY_MS = 160;
+    const tryInit = (attempt) => {
+      if (cancelled) return;
+      const mountEl = document.getElementById(id);
+      if (mountEl) {
+        mountPlayer();
+        return;
+      }
+      if (attempt + 1 >= MAX_ATTEMPTS) {
+        setYtEmbedError('Video player failed to load. Try refreshing the page or open the video on YouTube.');
+        return;
+      }
+      const t = setTimeout(() => tryInit(attempt + 1), RETRY_MS);
+      pendingTimeouts.push(t);
+    };
+
+    let kickRaf = requestAnimationFrame(() => {
+      kickRaf = null;
+      tryInit(0);
+    });
 
     return () => {
-      clearTimeout(timeoutId);
+      cancelled = true;
+      if (kickRaf != null) {
+        cancelAnimationFrame(kickRaf);
+        kickRaf = null;
+      }
+      clearPending();
       if (progressIntervalRef.current) {
         clearInterval(progressIntervalRef.current);
         progressIntervalRef.current = null;
@@ -375,7 +486,9 @@ function YouTubePlayerWithControls({
       if (playerRef.current?.destroy) {
         try {
           playerRef.current.destroy();
-        } catch (_) {}
+        } catch {
+          /* destroy may throw if iframe already gone */
+        }
         playerRef.current = null;
       }
       setPlayerReady(false);
@@ -424,31 +537,57 @@ function YouTubePlayerWithControls({
   }, [session?.id, ytDuration]);
 
   useEffect(() => {
-    setShowCompletionOverlay(false);
-    setContainerHasSize(false);
+    ytMaxWatchedRef.current = maxWatchedTime;
+  }, [maxWatchedTime]);
+
+  useEffect(() => {
     setHasStarted(false);
     setYtPseudoFullscreen(false);
     endedRef.current = false;
     metadataSentRef.current = false;
     resumedRef.current = false;
+    pendingPlayAfterReadyRef.current = false;
+    pendingWatchAgainRef.current = false;
     ytMaxWatchedRef.current = maxWatchedTime;
   }, [session?.id]);
 
   useEffect(() => {
+    setShowCompletionOverlay(!!sessionAlreadyCompleted);
+  }, [session?.id, sessionAlreadyCompleted]);
+
+  useEffect(() => {
     if (!playerReady || resumedRef.current) return;
-    const pos = initialPosition;
-    if (pos > 0 && playerRef.current?.seekTo) {
+    const player = playerRef.current;
+    if (!player?.seekTo) return;
+    const rawPos = Number(initialPosition) || 0;
+    if (rawPos <= 0) {
       resumedRef.current = true;
-      playerRef.current.seekTo(pos, true);
-      setYtCurrentTime(pos);
-      const d = typeof playerRef.current.getDuration === 'function' ? playerRef.current.getDuration() : ytDuration;
-      if (Number.isFinite(d) && d > 0) setYtProgress((pos / d) * 100);
+      return;
     }
+    const d =
+      typeof player.getDuration === 'function' && Number.isFinite(player.getDuration())
+        ? player.getDuration()
+        : ytDuration;
+    if (!Number.isFinite(d) || d <= 1) return;
+
+    const EPS = 0.5;
+    const atEnd = rawPos >= d - EPS;
+    const seekTo = atEnd ? 0 : Math.min(rawPos, d - EPS);
+    resumedRef.current = true;
+    player.seekTo(seekTo, true);
+    setYtCurrentTime(seekTo);
+    setYtProgress(d > 0 ? (seekTo / d) * 100 : 0);
   }, [playerReady, initialPosition, ytDuration]);
 
   const handleWatchAgain = useCallback(() => {
     const player = playerRef.current;
-    if (!player?.seekTo || !player?.playVideo) return;
+    if (!player?.seekTo || !player?.playVideo) {
+      pendingWatchAgainRef.current = true;
+      devLogVideo('watchAgain', { action: 'deferUntilReady', sessionId: session?.id, videoId });
+      setShowCompletionOverlay(false);
+      return;
+    }
+    pendingWatchAgainRef.current = false;
     endedRef.current = false;
     player.seekTo(0, true);
     player.playVideo();
@@ -471,22 +610,46 @@ function YouTubePlayerWithControls({
         setYtProgress(Math.min(100, (t / dur) * 100));
       }
     }, 150);
-  }, [ytDuration]);
+  }, [ytDuration, session?.id, videoId]);
 
   const toggleYtPlay = useCallback(() => {
     const player = playerRef.current;
-    if (!player?.playVideo || !player?.pauseVideo) return;
+    if (!player?.playVideo || !player?.pauseVideo) {
+      pendingPlayAfterReadyRef.current = true;
+      devLogVideo('toggleYtPlay', { action: 'deferUntilReady', sessionId: session?.id, videoId });
+      return;
+    }
     const state = typeof player.getPlayerState === 'function' ? player.getPlayerState() : null;
-    const isPlayingState = state === 1;
+    const isPlayingState = state === YT_PLAYER_STATE_PLAYING;
     if (isPlayingState || ytPlaying) {
+      devLogVideo('toggleYtPlay', { action: 'pause', sessionId: session?.id, videoId, ytState: state });
       player.pauseVideo();
       setYtPlaying(false);
     } else {
+      devLogVideo('toggleYtPlay', { action: 'play', sessionId: session?.id, videoId, ytState: state });
       setHasStarted(true);
+      if (state === YT_PLAYER_STATE_ENDED && player.seekTo) {
+        player.seekTo(0, true);
+        setYtCurrentTime(0);
+        const dur = typeof player.getDuration === 'function' ? player.getDuration() : ytDuration;
+        if (Number.isFinite(dur) && dur > 0) setYtProgress(0);
+      }
       player.playVideo();
       setYtPlaying(true);
+      window.setTimeout(() => {
+        const p = playerRef.current;
+        if (!p?.getPlayerState || !p.playVideo) return;
+        const s = typeof p.getPlayerState === 'function' ? p.getPlayerState() : null;
+        if (s !== YT_PLAYER_STATE_PLAYING) {
+          try {
+            p.playVideo();
+          } catch {
+            /* noop */
+          }
+        }
+      }, 280);
     }
-  }, [ytPlaying]);
+  }, [ytPlaying, ytDuration, session?.id, videoId]);
 
   const syncYtFullscreenState = useCallback(() => {
     const inFullscreen = !!getFullscreenElement();
@@ -730,7 +893,7 @@ function YouTubePlayerWithControls({
   return (
     <div
       ref={containerRef}
-      className={`relative w-full flex-shrink-0 rounded-none sm:rounded-xl overflow-hidden bg-black focus:outline-none focus-visible:ring-2 focus-visible:ring-primary-navy focus-visible:ring-offset-2 [&:fullscreen]:!fixed [&:fullscreen]:!inset-0 [&:fullscreen]:!w-screen [&:fullscreen]:!h-[100dvh] [&:fullscreen]:!max-h-[100dvh] [&:fullscreen]:!min-h-0 [&:fullscreen]:flex [&:fullscreen]:flex-col [&:fullscreen]:rounded-none [&:-webkit-full-screen]:!fixed [&:-webkit-full-screen]:!inset-0 [&:-webkit-full-screen]:!w-screen [&:-webkit-full-screen]:!h-[100dvh] [&:-webkit-full-screen]:!max-h-[100dvh] [&:-webkit-full-screen]:flex [&:-webkit-full-screen]:flex-col [&:-webkit-full-screen]:rounded-none ${ytPseudoFullscreen ? '!fixed !inset-0 !w-screen !h-[100dvh] !z-[2147483647] !rounded-none !flex !flex-col' : ''}`}
+      className={`relative w-full flex-shrink-0 rounded-none sm:rounded-xl overflow-hidden bg-black focus:outline-none focus-visible:ring-2 focus-visible:ring-primary-navy focus-visible:ring-offset-2 [&:fullscreen]:!fixed [&:fullscreen]:!inset-0 [&:fullscreen]:!w-screen [&:fullscreen]:!h-[100dvh] [&:fullscreen]:!max-h-[100dvh] [&:fullscreen]:!min-h-0 [&:fullscreen]:flex [&:fullscreen]:flex-col [&:fullscreen]:rounded-none [&:-webkit-full-screen]:!fixed [&:-webkit-full-screen]:!inset-0 [&:-webkit-full-screen]:!w-screen [&:-webkit-full-screen]:!h-[100dvh] [&:-webkit-full-screen]:!max-h-[100dvh] [&:-webkit-full-screen]:flex [&:-webkit-full-screen]:flex-col [&:-webkit-full-screen]:rounded-none ${ytPseudoFullscreen ? '!fixed !inset-0 !w-screen !h-[100dvh] !z-40 !rounded-none !flex !flex-col' : ''}`}
       style={{
         boxShadow: '0 2px 8px rgba(0,0,0,0.08)',
         paddingTop: ytFullscreenActive && isMobilePlayer ? 'env(safe-area-inset-top)' : undefined,
@@ -752,17 +915,20 @@ function YouTubePlayerWithControls({
         <div
           className={`absolute inset-0 w-full h-full ${ytFullscreenActive ? 'max-h-[100dvh] max-w-[100vw]' : ''}`}
         >
-          {/* Thumbnail / loading until player is ready - player stays visible after completion */}
+          {/* Poster + light spinner above iframe until player ready (iframe sits at z-[1]) */}
           {!playerReady && session?.thumbnail && (
             <div
-              className="absolute inset-0 w-full h-full bg-cover bg-center transition-opacity duration-300 z-0"
+              className="absolute inset-0 w-full h-full bg-cover bg-center transition-opacity duration-200 z-[2] pointer-events-none"
               style={{ backgroundImage: `url(${session.thumbnail})` }}
               aria-hidden
             />
           )}
           {!playerReady && !ytEmbedError && (
-            <div className="absolute inset-0 flex items-center justify-center bg-gray-900 z-0" aria-hidden>
-              <div className="h-10 w-10 rounded-full border-2 border-white/30 border-t-white animate-spin" />
+            <div
+              className="absolute inset-0 z-[2] flex items-center justify-center pointer-events-none bg-black/25"
+              aria-hidden
+            >
+              <div className="h-10 w-10 rounded-full border-2 border-white/40 border-t-white animate-spin bg-black/35 p-0.5 shadow-lg" />
             </div>
           )}
           {ytEmbedError && videoId && (
@@ -798,15 +964,14 @@ function YouTubePlayerWithControls({
             onClickCapture={handleYtOverlayClickCapture}
           />
           {/* Opaque paused/start cover fully hides native YouTube title/watch-later/share overlays */}
-          {!ytPlaying && !showCompletionOverlay && !ytEmbedError && (
+          {playerReady && !ytPlaying && !showCompletionOverlay && !ytEmbedError && (
             <button
               type="button"
               onClick={toggleYtPlay}
-              className="absolute inset-0 z-[4] flex items-center justify-center focus:outline-none focus-visible:ring-2 focus-visible:ring-white/50 bg-black"
-              style={session?.thumbnail ? { backgroundImage: `url(${session.thumbnail})`, backgroundSize: 'cover', backgroundPosition: 'center' } : undefined}
+              className="absolute inset-0 z-[4] flex items-center justify-center focus:outline-none focus-visible:ring-2 focus-visible:ring-white/50 bg-black/65"
               aria-label={hasStarted ? 'Resume webinar' : 'Play webinar'}
             >
-              <span className="absolute inset-0 bg-black/20" aria-hidden />
+              <span className="absolute inset-0 bg-black/25" aria-hidden />
               <span className="flex items-center justify-center w-14 h-14 rounded-full bg-white/90 text-black shadow-lg">
                 <FiPlay className="w-7 h-7 ml-0.5" />
               </span>
@@ -819,13 +984,6 @@ function YouTubePlayerWithControls({
               aria-hidden
             />
           )}
-          <CompletionOverlay
-            visible={showCompletionOverlay}
-            onNextSession={onNextSession}
-            onWatchAgain={handleWatchAgain}
-            hasNextSession={hasNextSession}
-            isIntro={isIntro}
-          />
         </div>
       </div>
       {/* Controls overlay: transparent dark blue (theme) for visibility */}
@@ -930,6 +1088,16 @@ function YouTubePlayerWithControls({
           </button>
         </div>
       </div>
+      {/* Must sit above z-[5] controls (sibling); was hidden under the bottom bar when nested in the video stack */}
+      {showCompletionOverlay && (
+        <CompletionOverlay
+          visible
+          onNextSession={onNextSession}
+          onWatchAgain={handleWatchAgain}
+          hasNextSession={hasNextSession}
+          isIntro={isIntro}
+        />
+      )}
     </div>
   );
 }
@@ -951,6 +1119,7 @@ export default function VideoPlayer({
   onAutoplayDone,
   isIntro = false,
   allowFullSeek = false,
+  sessionAlreadyCompleted = false,
 }) {
   const { settings } = useWebinar();
   const containerRef = useRef(null);
@@ -1362,6 +1531,7 @@ export default function VideoPlayer({
         hasNextSession={hasNextSession}
         isIntro={isIntro}
         allowFullSeek={allowFullSeek}
+        sessionAlreadyCompleted={sessionAlreadyCompleted}
       />
     );
   }
@@ -1387,7 +1557,7 @@ export default function VideoPlayer({
         }
       >
         {loading && (
-          <div className="absolute inset-0 flex flex-col justify-between bg-gray-800/95 p-4" aria-hidden aria-busy="true">
+          <div className="absolute inset-0 flex flex-col justify-between bg-gray-800/95 p-4 pointer-events-none" aria-hidden aria-busy="true">
             <div className="flex-1 flex items-center justify-center">
               <div className="h-12 w-12 rounded-full border-2 border-primary-navy/30 border-t-primary-navy animate-spin" />
             </div>
@@ -1414,7 +1584,6 @@ export default function VideoPlayer({
         <video
           ref={videoRef}
           className={`absolute inset-0 w-full h-full ${isMobilePlayer && isFullscreen ? 'object-cover' : 'object-contain'} ${isFullscreen ? 'max-h-[100dvh] max-w-[100vw]' : ''}`}
-          poster={session.thumbnail ?? undefined}
           playsInline
           onClick={handleVideoClick}
           onTouchEnd={handleVideoTouchEnd}

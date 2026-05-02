@@ -151,16 +151,15 @@ export const getLead = async (id, token = getStoredToken()) => {
   return adminRequest(`/leads/${encodeURIComponent(id)}`, { method: 'GET' }, token);
 };
 
+/**
+ * IIT counselling list. Only sends `page`, `limit`, `q` — many deployments error or return non-JSON
+ * for extra query keys (date/slot/demo filters). Filter those client-side in the admin UI instead.
+ */
 export const getIitCounsellingSubmissions = async (params = {}, token = getStoredToken()) => {
   const search = new URLSearchParams();
   if (params.page != null) search.set('page', String(params.page));
   if (params.limit != null) search.set('limit', String(params.limit));
   if (params.q && String(params.q).trim()) search.set('q', String(params.q).trim());
-  if (params.fromDate && String(params.fromDate).trim()) search.set('fromDate', String(params.fromDate).trim());
-  if (params.toDate && String(params.toDate).trim()) search.set('toDate', String(params.toDate).trim());
-  if (params.fromTime && String(params.fromTime).trim()) search.set('fromTime', String(params.fromTime).trim());
-  if (params.toTime && String(params.toTime).trim()) search.set('toTime', String(params.toTime).trim());
-  if (params.granularity && String(params.granularity).trim()) search.set('granularity', String(params.granularity).trim());
   const query = search.toString();
   return adminRequest(`/iit-counselling${query ? `?${query}` : ''}`, { method: 'GET' }, token);
 };

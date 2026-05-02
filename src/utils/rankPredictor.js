@@ -5,7 +5,7 @@ const EXAM_DEFINITIONS = [
     description: 'Predict AP EAMCET rank range from marks.',
     scoreLabel: 'Marks',
     min: 0,
-    max: 160,
+    max: 100,
     type: 'marks',
   },
   {
@@ -32,7 +32,7 @@ const EXAM_DEFINITIONS = [
     description: 'Predict JEE Main rank from total marks.',
     scoreLabel: 'Marks',
     min: 0,
-    max: 300,
+    max: 100,
     type: 'marks',
   },
   {

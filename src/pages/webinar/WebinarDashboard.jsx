@@ -135,6 +135,7 @@ export default function WebinarDashboard() {
     (sessionId) => {
       setCompletedSessions((prev) => (prev.includes(sessionId) ? prev : [...prev, sessionId]));
       setSessionProgress((prev) => ({ ...prev, [sessionId]: 100 }));
+      setPlaybackPosition((prev) => ({ ...prev, [sessionId]: 0 }));
       if (settings?.autoplayNext) {
         const daySessions = getSessionsByDay(activeDay);
         const idx = daySessions.findIndex((s) => s.id === sessionId);
@@ -144,7 +145,7 @@ export default function WebinarDashboard() {
         }
       }
     },
-    [setCompletedSessions, settings?.autoplayNext, activeDay]
+    [setCompletedSessions, setPlaybackPosition, settings?.autoplayNext, activeDay]
   );
 
   const handleProgressUpdate = useCallback(
@@ -326,7 +327,11 @@ export default function WebinarDashboard() {
               ) : (
                 <>
                   <VideoPlayer
+                    key={activeSessionId}
                     session={activeSession}
+                    sessionAlreadyCompleted={Boolean(
+                      activeSessionId && completedSessions.includes(activeSessionId)
+                    )}
                     initialPosition={activeSessionId ? playbackPosition[activeSessionId] : 0}
                     onTimeUpdate={handleTimeUpdate}
                     onEnded={handleVideoEnded}

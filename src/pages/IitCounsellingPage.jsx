@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { getApiBaseUrl } from '../utils/apiBaseUrl';
-import { getAvailableSlots } from '../utils/weekendSlots';
+import { formatDateISTYYYYMMDD, getAvailableSlots } from '../utils/weekendSlots';
 
 const STUDENT_PARENT_OPTIONS = ['Student', 'Parent'];
 const CLASS_OPTIONS = ['12th Appearing', '12th Passed'];
@@ -310,6 +310,12 @@ export default function IitCounsellingPage() {
         ? `${apiBase}/iit-counselling/section2`
         : `${apiBase}/iit-counselling/section3`;
 
+    const selectedSlotOption = currentStep === 1
+      ? slotBookingOptions.find((o) => o.value === formData.slotBooking)
+      : null;
+    const slotBookingDate =
+      selectedSlotOption?.date ? formatDateISTYYYYMMDD(selectedSlotOption.date) : '';
+
     const payload = currentStep === 1
       ? {
           fullName: formData.fullName.trim(),
@@ -319,6 +325,7 @@ export default function IitCounsellingPage() {
           stream: formData.stream,
           city: formData.city.trim(),
           slotBooking: formData.slotBooking,
+          ...(slotBookingDate ? { slotBookingDate } : {}),
           visitorFingerprint,
           otpVerified: true,
           top5Colleges: formData.top5Colleges

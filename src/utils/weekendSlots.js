@@ -96,3 +96,33 @@ export function getAvailableSlots(currentDate = new Date()) {
 
   return showOnlySunday ? [sundaySlot] : [saturdaySlot, sundaySlot];
 }
+
+/** IST calendar date YYYY-MM-DD for a Date instance. */
+export function formatDateISTYYYYMMDD(date) {
+  if (!date || !(date instanceof Date) || Number.isNaN(date.getTime())) return '';
+  return new Intl.DateTimeFormat('en-CA', {
+    timeZone: 'Asia/Kolkata',
+    year: 'numeric',
+    month: '2-digit',
+    day: '2-digit',
+  }).format(date);
+}
+
+/**
+ * Demo slot calendar day (IST) for admin rows: prefer stored section1Data.slotBookingDate,
+ * else derive from booking time + slot value (legacy).
+ * @param {{ section1Data?: { slotBooking?: string, slotBookingDate?: string }, createdAt?: string, updatedAt?: string }} row
+ * @returns {string} YYYY-MM-DD or ''
+ */
+export function deriveSlotDemoDateKeyIST(row) {
+  const stored = String(row?.section1Data?.slotBookingDate ?? '').trim();
+  if (/^\d{4}-\d{2}-\d{2}$/.test(stored)) return stored;
+  const slotVal = String(row?.section1Data?.slotBooking ?? '').trim();
+  if (!slotVal) return '';
+  const anchor = row?.createdAt || row?.updatedAt;
+  if (!anchor) return '';
+  const slots = getAvailableSlots(new Date(anchor));
+  const match = slots.find((s) => s.value === slotVal);
+  if (!match?.date) return '';
+  return formatDateISTYYYYMMDD(match.date);
+}

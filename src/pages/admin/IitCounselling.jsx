@@ -8,6 +8,7 @@ import {
   getIitCounsellingVisitAnalytics,
   getStoredToken
 } from '../../utils/adminApi';
+import { deriveSlotDemoDateKeyIST, getAvailableSlots } from '../../utils/weekendSlots';
 
 function formatDateTime(value) {
   if (!value) return '—';
@@ -29,12 +30,21 @@ function formatTopColleges(value) {
   return cleaned.length ? cleaned.join('\n') : '—';
 }
 
+function formatDemoDateDisplay(dateKey) {
+  if (!dateKey || !/^\d{4}-\d{2}-\d{2}$/.test(String(dateKey))) return '—';
+  const d = new Date(`${dateKey}T12:00:00+05:30`);
+  if (Number.isNaN(d.getTime())) return '—';
+  return d.toLocaleDateString('en-IN', { dateStyle: 'medium' });
+}
+
 const IIT_SUBMISSION_COLUMNS = [
   { key: 'name', label: 'Name' },
   { key: 'phone', label: 'Phone' },
   { key: 'currentStep', label: 'Current Step' },
   { key: 'completed', label: 'Completed' },
   { key: 'topColleges', label: 'Top Colleges' },
+  { key: 'slot', label: 'Slot' },
+  { key: 'demoDate', label: 'Demo date' },
   { key: 'utmSource', label: 'UTM Source' },
   { key: 'utmMedium', label: 'UTM Medium' },
   { key: 'utmCampaign', label: 'UTM Campaign' },
@@ -45,6 +55,8 @@ const IIT_SUBMISSION_COLUMNS = [
 function mapIitSubmissionRecord(row) {
   const utm = row?.utm || {};
   const topColleges = formatTopColleges(row?.section1Data?.top5Colleges);
+  const slotRaw = String(row?.section1Data?.slotBooking ?? '').trim();
+  const demoDateKey = deriveSlotDemoDateKeyIST(row);
   const updatedDate = row?.updatedAt ? new Date(row.updatedAt) : null;
   const updatedEpoch = updatedDate && !Number.isNaN(updatedDate.getTime()) ? updatedDate.getTime() : null;
   const updatedIso = updatedDate && !Number.isNaN(updatedDate.getTime()) ? updatedDate.toISOString() : '';
@@ -56,6 +68,9 @@ function mapIitSubmissionRecord(row) {
     completed: row?.isCompleted ? 'Yes' : 'No',
     topColleges,
     topCollegesDisplay: topColleges === '—' ? '—' : topColleges.replace(/\n+/g, ', '),
+    slot: slotRaw || '—',
+    demoDate: formatDemoDateDisplay(demoDateKey),
+    demoDateKey,
     utmSource: utm.utm_source || '—',
     utmMedium: utm.utm_medium || '—',
     utmCampaign: utm.utm_campaign || '—',
@@ -72,10 +87,12 @@ function applySubmissionViewFilters(mappedRows, viewFilters) {
   const mediumQ = viewFilters.utmMedium.trim().toLowerCase();
   const campaignQ = viewFilters.utmCampaign.trim().toLowerCase();
   const contentQ = viewFilters.utmContent.trim().toLowerCase();
+  const slotExact = viewFilters.slot.trim();
   const updatedFromMs = viewFilters.updatedFrom ? new Date(viewFilters.updatedFrom).getTime() : null;
   const updatedToMs = viewFilters.updatedTo ? new Date(viewFilters.updatedTo).getTime() : null;
 
   return mappedRows.filter((row) => {
+    if (slotExact && String(row.slot || '') !== slotExact) return false;
     if (sourceQ && !String(row.utmSource || '').toLowerCase().includes(sourceQ)) return false;
     if (mediumQ && !String(row.utmMedium || '').toLowerCase().includes(mediumQ)) return false;
     if (campaignQ && !String(row.utmCampaign || '').toLowerCase().includes(campaignQ)) return false;
@@ -369,6 +386,7 @@ export default function IitCounselling() {
   const [page, setPage] = useState(1);
   const [pagination, setPagination] = useState({ total: 0, totalPages: 1 });
   const [search, setSearch] = useState('');
+  const [slotFilter, setSlotFilter] = useState('');
   const [fromDate, setFromDate] = useState('');
   const [toDate, setToDate] = useState('');
   const [fromTime, setFromTime] = useState('00:00');
@@ -385,7 +403,10 @@ export default function IitCounselling() {
   const [allSubmissionRows, setAllSubmissionRows] = useState([]);
   const [allSubmissionRowsLoading, setAllSubmissionRowsLoading] = useState(false);
   const [allSubmissionRowsError, setAllSubmissionRowsError] = useState('');
+  /** Mapped rows when From+To date filters demo slot calendar range (client-paginated). */
+  const [dateRangeMappedAll, setDateRangeMappedAll] = useState([]);
   const [viewFilters, setViewFilters] = useState({
+    slot: '',
     utmSource: '',
     utmMedium: '',
     utmCampaign: '',
@@ -402,9 +423,15 @@ export default function IitCounselling() {
     granularity,
   }), [fromDate, toDate, fromTime, toTime, granularity]);
 
+  /** Fetch all pages and filter in-browser (demo date and/or slot) — avoids unsupported IIT list query params. */
+  const heavyClientFilter = Boolean((fromDate && toDate) || String(slotFilter).trim());
+
   useEffect(() => {
+    if (heavyClientFilter) return;
     let cancelled = false;
-    getIitCounsellingSubmissions({ page, limit: 25, q: search, ...sharedFilters }, getStoredToken()).then((res) => {
+    setLoading(true);
+    setError('');
+    getIitCounsellingSubmissions({ page, limit: 25, q: search }, getStoredToken()).then((res) => {
       if (cancelled) return;
       setLoading(false);
       if (!res.success) {
@@ -415,7 +442,48 @@ export default function IitCounselling() {
       setPagination(res.data?.pagination || { total: 0, totalPages: 1 });
     });
     return () => { cancelled = true; };
-  }, [page, search, sharedFilters]);
+  }, [page, search, heavyClientFilter]);
+
+  useEffect(() => {
+    if (!heavyClientFilter) {
+      setDateRangeMappedAll([]);
+      return;
+    }
+    let cancelled = false;
+    setLoading(true);
+    setError('');
+    getAllIitCounsellingSubmissionsPaginated({ q: search, limit: 200 }, getStoredToken()).then((res) => {
+      if (cancelled) return;
+      setLoading(false);
+      if (!res.success) {
+        setError(res.message || 'Failed to load IIT counselling submissions');
+        setDateRangeMappedAll([]);
+        return;
+      }
+      const rowsData = Array.isArray(res.data?.data) ? res.data.data : [];
+      let filtered = rowsData.map(mapIitSubmissionRecord);
+      if (fromDate && toDate) {
+        filtered = filtered.filter(
+          (row) =>
+            row.demoDateKey &&
+            row.demoDateKey >= fromDate &&
+            row.demoDateKey <= toDate
+        );
+      }
+      const slotTrim = String(slotFilter).trim();
+      if (slotTrim) {
+        filtered = filtered.filter((row) => String(row.slot) === slotTrim);
+      }
+      setDateRangeMappedAll(filtered);
+    });
+    return () => { cancelled = true; };
+  }, [heavyClientFilter, search, fromDate, toDate, slotFilter]);
+
+  useEffect(() => {
+    if (!heavyClientFilter || dateRangeMappedAll.length === 0) return;
+    const totalPages = Math.max(1, Math.ceil(dateRangeMappedAll.length / 25));
+    if (page > totalPages) setPage(totalPages);
+  }, [heavyClientFilter, dateRangeMappedAll, page]);
 
   useEffect(() => {
     let cancelled = false;
@@ -456,7 +524,40 @@ export default function IitCounselling() {
     document.body.removeChild(ta);
   };
 
-  const pageMappedRows = useMemo(() => rows.map(mapIitSubmissionRecord), [rows]);
+  const submissionPagination = useMemo(() => {
+    if (heavyClientFilter) {
+      const total = dateRangeMappedAll.length;
+      const totalPages = Math.max(1, Math.ceil(total / 25));
+      return { total, totalPages };
+    }
+    return {
+      total: pagination.total || 0,
+      totalPages: pagination.totalPages || 1,
+    };
+  }, [heavyClientFilter, dateRangeMappedAll, pagination]);
+
+  const pageMappedRows = useMemo(() => {
+    if (heavyClientFilter) {
+      const start = (page - 1) * 25;
+      return dateRangeMappedAll.slice(start, start + 25);
+    }
+    return rows.map(mapIitSubmissionRecord);
+  }, [heavyClientFilter, dateRangeMappedAll, page, rows]);
+
+  const slotToolbarOptions = useMemo(() => {
+    const fromForm = getAvailableSlots().map((o) => ({ value: o.value, label: o.label }));
+    const seen = new Set(fromForm.map((o) => o.value));
+    const sourceRows = heavyClientFilter ? dateRangeMappedAll : pageMappedRows;
+    sourceRows.forEach((row) => {
+      const s = row.slot;
+      if (s && s !== '—' && !seen.has(s)) {
+        seen.add(s);
+        fromForm.push({ value: s, label: s });
+      }
+    });
+    return fromForm;
+  }, [heavyClientFilter, dateRangeMappedAll, pageMappedRows]);
+
   const viewSourceRows = useMemo(() => (allSubmissionRows.length ? allSubmissionRows : pageMappedRows), [allSubmissionRows, pageMappedRows]);
   const filteredSubmissionRows = useMemo(
     () => applySubmissionViewFilters(viewSourceRows, viewFilters),
@@ -472,9 +573,11 @@ export default function IitCounselling() {
     const mediumSet = new Set();
     const campaignSet = new Set();
     const contentSet = new Set();
+    const slotSet = new Set();
     const updatedSet = new Set();
 
     viewSourceRows.forEach((row) => {
+      addUnique(slotSet, row.slot);
       addUnique(sourceSet, row.utmSource);
       addUnique(mediumSet, row.utmMedium);
       addUnique(campaignSet, row.utmCampaign);
@@ -488,6 +591,7 @@ export default function IitCounselling() {
     const sortTimeDesc = (a, b) => new Date(b).getTime() - new Date(a).getTime();
 
     return {
+      slots: Array.from(slotSet).sort(sortText),
       sources: Array.from(sourceSet).sort(sortText),
       mediums: Array.from(mediumSet).sort(sortText),
       campaigns: Array.from(campaignSet).sort(sortText),
@@ -496,23 +600,51 @@ export default function IitCounselling() {
     };
   }, [viewSourceRows]);
 
+  const modalSlotSelectOptions = useMemo(() => {
+    const seen = new Set();
+    const out = [];
+    getAvailableSlots().forEach((o) => {
+      if (!seen.has(o.value)) {
+        seen.add(o.value);
+        out.push({ value: o.value, label: o.label });
+      }
+    });
+    viewFilterOptions.slots.forEach((v) => {
+      if (!seen.has(v)) {
+        seen.add(v);
+        out.push({ value: v, label: v });
+      }
+    });
+    out.sort((a, b) => a.label.localeCompare(b.label, 'en', { sensitivity: 'base' }));
+    return out;
+  }, [viewFilterOptions.slots]);
+
   useEffect(() => {
     setAllSubmissionRows([]);
     setAllSubmissionRowsError('');
-  }, [search, sharedFilters]);
+  }, [search, slotFilter, fromDate, toDate]);
 
   const fetchAllMatchingSubmissions = useCallback(async () => {
     setAllSubmissionRowsLoading(true);
     setAllSubmissionRowsError('');
     try {
       const token = getStoredToken();
-      const res = await getAllIitCounsellingSubmissionsPaginated(
-        { q: search, ...sharedFilters, limit: 200 },
-        token
-      );
+      const res = await getAllIitCounsellingSubmissionsPaginated({ q: search, limit: 200 }, token);
       if (!res.success) throw new Error(res.message || 'Failed to load all submissions');
       const rowsData = Array.isArray(res.data?.data) ? res.data.data : [];
-      const aggregated = rowsData.map(mapIitSubmissionRecord);
+      let aggregated = rowsData.map(mapIitSubmissionRecord);
+      if (fromDate && toDate) {
+        aggregated = aggregated.filter(
+          (row) =>
+            row.demoDateKey &&
+            row.demoDateKey >= fromDate &&
+            row.demoDateKey <= toDate
+        );
+      }
+      const slotTrim = String(slotFilter).trim();
+      if (slotTrim) {
+        aggregated = aggregated.filter((row) => String(row.slot) === slotTrim);
+      }
 
       setAllSubmissionRows(aggregated);
       return aggregated;
@@ -523,7 +655,7 @@ export default function IitCounselling() {
     } finally {
       setAllSubmissionRowsLoading(false);
     }
-  }, [search, sharedFilters]);
+  }, [search, slotFilter, fromDate, toDate]);
 
   useEffect(() => {
     if (!submissionsViewAllOpen) return;
@@ -543,6 +675,8 @@ export default function IitCounselling() {
       currentStep: row.currentStep,
       completed: row.completed,
       topColleges: row.topColleges,
+      slot: row.slot,
+      demoDate: row.demoDate,
       utmSource: row.utmSource,
       utmMedium: row.utmMedium,
       utmCampaign: row.utmCampaign,
@@ -734,9 +868,18 @@ export default function IitCounselling() {
 
       <div className="bg-white border border-gray-200 rounded-xl shadow-sm p-4 space-y-4">
         <div className="flex flex-wrap items-center justify-between gap-2">
-          <h3 className="text-base font-semibold text-gray-900">
-            IIT Counselling Submissions <span className="text-gray-500">({pagination.total || 0})</span>
-          </h3>
+          <div className="min-w-0 flex-1">
+            <h3 className="text-base font-semibold text-gray-900">
+              IIT Counselling Submissions <span className="text-gray-500">({submissionPagination.total || 0})</span>
+            </h3>
+            <p className="text-xs text-gray-500 mt-1 max-w-3xl leading-relaxed">
+              <strong>Total Submissions</strong> in the cards above uses visit/conversion analytics for the selected date and time range.
+              This table lists stored submissions; when you set a demo date range and/or a slot, rows are filtered in the browser to match saved demo date and slot values.
+              {heavyClientFilter ? (
+                <span className="text-gray-600"> Showing {submissionPagination.total} row(s) after those filters.</span>
+              ) : null}
+            </p>
+          </div>
           <div className="flex w-full flex-wrap items-center justify-end gap-2 sm:w-auto">
             <button
               type="button"
@@ -754,6 +897,22 @@ export default function IitCounselling() {
             >
               {copyingAll ? 'Copying...' : (submissionsCopied ? 'Copied' : 'Copy all')}
             </button>
+            <select
+              value={slotFilter}
+              onChange={(e) => {
+                setLoading(true);
+                setError('');
+                setSlotFilter(e.target.value);
+                setPage(1);
+              }}
+              className="h-9 min-w-[10rem] rounded-lg border border-gray-300 px-2 text-sm outline-none focus:ring-2 focus:ring-primary-blue-500 bg-white"
+              aria-label="Filter by demo slot"
+            >
+              <option value="">All slots</option>
+              {slotToolbarOptions.map((o) => (
+                <option key={o.value} value={o.value}>{o.label}</option>
+              ))}
+            </select>
             <input
               type="search"
               placeholder="Search by name or phone..."
@@ -771,7 +930,7 @@ export default function IitCounselling() {
         {error ? <p className="text-red-600 text-sm">{error}</p> : null}
         {copyError ? <p className="text-red-600 text-sm">{copyError}</p> : null}
         <div className="overflow-x-auto rounded-lg border border-gray-200">
-        <table className="min-w-[1180px] w-full text-left text-sm">
+        <table className="min-w-[1380px] w-full text-left text-sm">
           <thead>
             <tr className="bg-gray-50 border-b border-gray-200">
               <th className="px-3 py-2 text-xs uppercase tracking-wider">Name</th>
@@ -779,6 +938,8 @@ export default function IitCounselling() {
               <th className="px-3 py-2 text-xs uppercase tracking-wider">Current Step</th>
               <th className="px-3 py-2 text-xs uppercase tracking-wider">Completed</th>
               <th className="px-3 py-2 text-xs uppercase tracking-wider">Top Colleges</th>
+              <th className="px-3 py-2 text-xs uppercase tracking-wider">Slot</th>
+              <th className="px-3 py-2 text-xs uppercase tracking-wider">Demo date</th>
               <th className="px-3 py-2 text-xs uppercase tracking-wider">UTM Source</th>
               <th className="px-3 py-2 text-xs uppercase tracking-wider">UTM Medium</th>
               <th className="px-3 py-2 text-xs uppercase tracking-wider">UTM Campaign</th>
@@ -789,9 +950,9 @@ export default function IitCounselling() {
           </thead>
           <tbody className="divide-y divide-gray-100">
             {loading ? (
-              <tr><td colSpan={11} className="px-3 py-6 text-center text-gray-500">Loading...</td></tr>
+              <tr><td colSpan={13} className="px-3 py-6 text-center text-gray-500">Loading...</td></tr>
             ) : pageMappedRows.length === 0 ? (
-              <tr><td colSpan={11} className="px-3 py-6 text-center text-gray-500">No submissions found</td></tr>
+              <tr><td colSpan={13} className="px-3 py-6 text-center text-gray-500">No submissions found</td></tr>
             ) : pageMappedRows.map((row) => {
               const utmCell = (value) => (
                 <span
@@ -808,6 +969,8 @@ export default function IitCounselling() {
                   <td className="px-3 py-2">{row.currentStep}</td>
                   <td className="px-3 py-2">{row.completed}</td>
                   <td className="px-3 py-2 max-w-[300px] truncate" title={row.topColleges}>{row.topCollegesDisplay}</td>
+                  <td className="px-3 py-2 max-w-[200px] truncate" title={row.slot}>{row.slot}</td>
+                  <td className="px-3 py-2 whitespace-nowrap text-gray-800">{row.demoDate}</td>
                   <td className="px-3 py-2 max-w-[180px] truncate">{utmCell(row.utmSource)}</td>
                   <td className="px-3 py-2 max-w-[180px] truncate">{utmCell(row.utmMedium)}</td>
                   <td className="px-3 py-2 max-w-[200px] truncate">{utmCell(row.utmCampaign)}</td>
@@ -859,6 +1022,16 @@ export default function IitCounselling() {
                 <p className="mb-3 text-sm text-red-600">{allSubmissionRowsError}</p>
               ) : null}
               <div className="mb-4 grid grid-cols-1 gap-2 md:grid-cols-3">
+                <select
+                  value={viewFilters.slot}
+                  onChange={(e) => setViewFilters((prev) => ({ ...prev, slot: e.target.value }))}
+                  className="h-9 rounded border border-gray-300 px-3 text-sm outline-none focus:ring-2 focus:ring-primary-blue-500 bg-white"
+                >
+                  <option value="">Slot (All)</option>
+                  {modalSlotSelectOptions.map((o) => (
+                    <option key={`slot-${o.value}`} value={o.value}>{o.label}</option>
+                  ))}
+                </select>
                 <select
                   value={viewFilters.utmSource}
                   onChange={(e) => setViewFilters((prev) => ({ ...prev, utmSource: e.target.value }))}
@@ -924,14 +1097,22 @@ export default function IitCounselling() {
                   </select>
                   <button
                     type="button"
-                    onClick={() => setViewFilters({ utmSource: '', utmMedium: '', utmCampaign: '', utmContent: '', updatedFrom: '', updatedTo: '' })}
+                    onClick={() => setViewFilters({
+                      slot: '',
+                      utmSource: '',
+                      utmMedium: '',
+                      utmCampaign: '',
+                      utmContent: '',
+                      updatedFrom: '',
+                      updatedTo: '',
+                    })}
                     className="h-9 shrink-0 rounded border border-gray-300 px-3 text-xs text-gray-700 hover:bg-gray-50"
                   >
                     Reset
                   </button>
                 </div>
               </div>
-              <table className="min-w-[1180px] w-full text-left text-sm">
+              <table className="min-w-[1380px] w-full text-left text-sm">
                 <thead>
                   <tr className="bg-gray-50 border-b border-gray-200">
                     <th className="px-3 py-2 text-xs uppercase tracking-wider">Name</th>
@@ -939,6 +1120,8 @@ export default function IitCounselling() {
                     <th className="px-3 py-2 text-xs uppercase tracking-wider">Current Step</th>
                     <th className="px-3 py-2 text-xs uppercase tracking-wider">Completed</th>
                     <th className="px-3 py-2 text-xs uppercase tracking-wider">Top Colleges</th>
+                    <th className="px-3 py-2 text-xs uppercase tracking-wider">Slot</th>
+                    <th className="px-3 py-2 text-xs uppercase tracking-wider">Demo date</th>
                     <th className="px-3 py-2 text-xs uppercase tracking-wider">UTM Source</th>
                     <th className="px-3 py-2 text-xs uppercase tracking-wider">UTM Medium</th>
                     <th className="px-3 py-2 text-xs uppercase tracking-wider">UTM Campaign</th>
@@ -955,6 +1138,8 @@ export default function IitCounselling() {
                         <td className="px-3 py-2">{row.currentStep}</td>
                         <td className="px-3 py-2">{row.completed}</td>
                         <td className="px-3 py-2 break-all whitespace-pre-wrap">{row.topColleges}</td>
+                        <td className="px-3 py-2 break-all">{row.slot}</td>
+                        <td className="px-3 py-2 break-all whitespace-nowrap">{row.demoDate}</td>
                         <td className="px-3 py-2 break-all">{row.utmSource}</td>
                         <td className="px-3 py-2 break-all">{row.utmMedium}</td>
                         <td className="px-3 py-2 break-all">{row.utmCampaign}</td>
@@ -965,7 +1150,7 @@ export default function IitCounselling() {
                   })}
                   {filteredSubmissionRows.length === 0 ? (
                     <tr>
-                      <td colSpan={10} className="px-3 py-6 text-center text-gray-500">No rows match current filters.</td>
+                      <td colSpan={12} className="px-3 py-6 text-center text-gray-500">No rows match current filters.</td>
                     </tr>
                   ) : null}
                 </tbody>
@@ -976,10 +1161,10 @@ export default function IitCounselling() {
       ) : null}
 
       <div className="flex items-center justify-between text-sm text-gray-600">
-        <span>Page {page} of {pagination.totalPages || 1}</span>
+        <span>Page {page} of {submissionPagination.totalPages || 1}</span>
         <div className="flex gap-2">
           <button type="button" onClick={() => { setLoading(true); setPage((p) => Math.max(1, p - 1)); }} disabled={page <= 1} className="px-3 py-1 rounded border border-gray-300 disabled:opacity-40">Previous</button>
-          <button type="button" onClick={() => { setLoading(true); setPage((p) => Math.min(pagination.totalPages || 1, p + 1)); }} disabled={page >= (pagination.totalPages || 1)} className="px-3 py-1 rounded border border-gray-300 disabled:opacity-40">Next</button>
+          <button type="button" onClick={() => { setLoading(true); setPage((p) => Math.min(submissionPagination.totalPages || 1, p + 1)); }} disabled={page >= (submissionPagination.totalPages || 1)} className="px-3 py-1 rounded border border-gray-300 disabled:opacity-40">Next</button>
         </div>
       </div>
 

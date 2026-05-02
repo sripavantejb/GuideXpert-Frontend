@@ -53,7 +53,7 @@ export default function Sidebar({
   return (
     <>
       <div
-        className="fixed inset-0 bg-black/50 z-20 lg:hidden transition-opacity duration-200"
+        className="fixed inset-0 bg-black/50 z-40 lg:hidden transition-opacity duration-200"
         aria-hidden={!sidebarOpen}
         style={{
           visibility: sidebarOpen ? 'visible' : 'hidden',
@@ -65,7 +65,7 @@ export default function Sidebar({
       <aside
         data-tour="sidebar"
         className={`
-          fixed inset-y-0 left-0 z-30 flex flex-col max-w-[85vw] lg:max-w-none
+          fixed inset-y-0 left-0 z-50 flex flex-col max-w-[85vw] lg:max-w-none
           bg-sidebar-blue border-r border-white/8
           transform transition-[transform,width] duration-200 ease-out
           lg:transform-none
