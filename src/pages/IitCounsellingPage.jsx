@@ -55,7 +55,20 @@ export default function IitCounsellingPage() {
   const otpInputRefs = useRef([]);
 
   const apiBase = useMemo(() => getApiBaseUrl(), []);
-  const slotBookingOptions = useMemo(() => getAvailableSlots(), []);
+  const [slotOptionsTick, setSlotOptionsTick] = useState(0);
+  useEffect(() => {
+    const bump = () => setSlotOptionsTick((t) => t + 1);
+    const id = window.setInterval(bump, 60_000);
+    const onVis = () => {
+      if (document.visibilityState === 'visible') bump();
+    };
+    document.addEventListener('visibilitychange', onVis);
+    return () => {
+      window.clearInterval(id);
+      document.removeEventListener('visibilitychange', onVis);
+    };
+  }, []);
+  const slotBookingOptions = useMemo(() => getAvailableSlots(), [slotOptionsTick]);
 
   const stepConfig = useMemo(() => ({
     1: ['fullName', 'mobileNumber', 'studentOrParent', 'classStatus', 'stream', 'city', 'slotBooking', 'top5Colleges'],
