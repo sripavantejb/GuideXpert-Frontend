@@ -367,8 +367,13 @@ export default function PosterTextOverlays({
       {OVERLAY_KEYS.map((key) => {
         const el = cfg[key].field;
         const fieldTextValue = el?.textValue != null ? String(el.textValue) : '';
-        const fallbackText = cfg[key].text || cfg[key].placeholder;
-        const text = (fieldTextValue || fallbackText || '\u00a0').trim() || '\u00a0';
+        const rawVar = cfg[key].text != null ? String(cfg[key].text) : '';
+        const varText = rawVar.trim() !== '' ? rawVar : '';
+        const ph = cfg[key].placeholder;
+        const raw = interactive
+          ? fieldTextValue || varText || ph || '\u00a0'
+          : varText || fieldTextValue || ph || '\u00a0';
+        const text = String(raw).trim() || '\u00a0';
         const isSelected = selectedKey === key;
         if (isCorridorNameField(key, el)) {
           return (
