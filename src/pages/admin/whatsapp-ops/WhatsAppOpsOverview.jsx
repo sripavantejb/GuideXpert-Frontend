@@ -174,6 +174,92 @@ export default function WhatsAppOpsOverview() {
   const selectedTemplate = selectedKind
     ? templateKinds.find((k) => k.id === selectedKind) || FALLBACK_TEMPLATE_KINDS.find((k) => k.id === selectedKind)
     : null;
+  const isAllTemplates = !selectedKind;
+
+  const volumeCards = isAllTemplates
+    ? [
+        {
+          label: 'Slots booked',
+          value: asNumber(dayData?.bookedSlotsCount),
+          accent: true,
+          subtitle: 'Booked for selected IST day',
+          className: 'border-indigo-100 bg-indigo-50/30'
+        },
+        {
+          label: 'WhatsApp attempts',
+          value: asNumber(dailyOverall.whatsappAttempts),
+          subtitle: 'All template attempts (day)',
+          className: 'border-sky-100 bg-sky-50/30'
+        },
+        {
+          label: 'Slot-booked attempts',
+          value: asNumber(dailyOverall.slotBookedAttempts),
+          subtitle: 'Immediate template attempts',
+          className: 'border-cyan-100 bg-cyan-50/30'
+        },
+        {
+          label: 'Failed',
+          value: asNumber(dailyOverall.whatsappFailed),
+          subtitle: 'Failed events (day)',
+          className: 'border-rose-100 bg-rose-50/30'
+        }
+      ]
+    : [
+        {
+          label: `${selectedTemplate?.label || 'Template'} attempts`,
+          value: asNumber(dailySelected.whatsappAttempts),
+          accent: true,
+          subtitle: 'Selected template only',
+          className: 'border-indigo-100 bg-indigo-50/30'
+        },
+        {
+          label: `${selectedTemplate?.label || 'Template'} failed`,
+          value: asNumber(dailySelected.whatsappFailed),
+          subtitle: 'Selected template failures',
+          className: 'border-rose-100 bg-rose-50/30'
+        },
+        {
+          label: `${selectedTemplate?.label || 'Template'} delivered`,
+          value: asNumber(dailySelected.deliveredCount),
+          subtitle: 'Selected template delivered',
+          className: 'border-emerald-100 bg-emerald-50/30'
+        },
+        {
+          label: `${selectedTemplate?.label || 'Template'} retries`,
+          value: asNumber(dailySelected.retried),
+          subtitle: 'Selected template retried',
+          className: 'border-amber-100 bg-amber-50/30'
+        }
+      ];
+
+  const pipelineSource = isAllTemplates ? dailyOverall : dailySelected;
+  const pipelinePrefix = isAllTemplates ? '' : `${selectedTemplate?.label || 'Template'} `;
+  const pipelineCards = [
+    {
+      label: `${pipelinePrefix}Submitted`,
+      value: asNumber(pipelineSource.providerAcceptedCount),
+      subtitle: isAllTemplates ? 'Provider accepted/submitted' : 'Submitted for selected template',
+      className: 'border-blue-100 bg-blue-50/30'
+    },
+    {
+      label: `${pipelinePrefix}Delivered`,
+      value: asNumber(pipelineSource.deliveredCount),
+      subtitle: isAllTemplates ? 'Device delivered callbacks' : 'Delivered for selected template',
+      className: 'border-emerald-100 bg-emerald-50/30'
+    },
+    {
+      label: `${pipelinePrefix}Read`,
+      value: asNumber(pipelineSource.readCount),
+      subtitle: isAllTemplates ? 'Read callbacks received' : 'Read for selected template',
+      className: 'border-violet-100 bg-violet-50/30'
+    },
+    {
+      label: `${pipelinePrefix}Retried / Exhausted`,
+      value: `${asNumber(pipelineSource.retried)} / ${asNumber(pipelineSource.retryExhausted)}`,
+      subtitle: isAllTemplates ? 'Reliability pipeline' : 'Retry outcomes for selected template',
+      className: 'border-amber-100 bg-amber-50/30'
+    }
+  ];
 
   return (
     <div className="space-y-6">
@@ -425,26 +511,39 @@ export default function WhatsAppOpsOverview() {
               <div className="rounded-xl border border-indigo-200 bg-indigo-50/60 px-4 py-3 text-xs text-indigo-900">
                 Daily drilldown is IST-based and shows exact stored booking + WhatsApp pipeline metrics for the selected date.
               </div>
-              <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-4">
-                <KpiCard label="Slots booked" value={asNumber(dayData?.bookedSlotsCount)} accent />
-                <KpiCard label="WhatsApp attempts" value={asNumber(dailyOverall.whatsappAttempts)} />
-                <KpiCard label="Slot-booked attempts" value={asNumber(dailyOverall.slotBookedAttempts)} />
-                <KpiCard label="Failed" value={asNumber(dailyOverall.whatsappFailed)} />
-              </div>
-              <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-4">
-                <KpiCard label="Submitted" value={asNumber(dailyOverall.providerAcceptedCount)} />
-                <KpiCard label="Delivered" value={asNumber(dailyOverall.deliveredCount)} />
-                <KpiCard label="Read" value={asNumber(dailyOverall.readCount)} />
-                <KpiCard label="Retried / Exhausted" value={`${asNumber(dailyOverall.retried)} / ${asNumber(dailyOverall.retryExhausted)}`} />
-              </div>
-              {selectedKind && (
+              <div className="rounded-2xl border border-indigo-100 bg-gradient-to-br from-white to-indigo-50/40 p-4 shadow-sm">
+                <p className="mb-3 text-[11px] font-semibold uppercase tracking-wide text-indigo-700">
+                  {isAllTemplates ? 'Volume' : 'Selected template volume'}
+                </p>
                 <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-4">
-                  <KpiCard label="Selected kind attempts" value={asNumber(dailySelected.whatsappAttempts)} />
-                  <KpiCard label="Selected kind failed" value={asNumber(dailySelected.whatsappFailed)} />
-                  <KpiCard label="Selected kind delivered" value={asNumber(dailySelected.deliveredCount)} />
-                  <KpiCard label="Selected kind retries" value={asNumber(dailySelected.retried)} />
+                  {volumeCards.map((card) => (
+                    <KpiCard
+                      key={card.label}
+                      label={card.label}
+                      value={card.value}
+                      subtitle={card.subtitle}
+                      accent={card.accent}
+                      className={card.className}
+                    />
+                  ))}
                 </div>
-              )}
+              </div>
+              <div className="rounded-2xl border border-sky-100 bg-gradient-to-br from-white to-sky-50/40 p-4 shadow-sm">
+                <p className="mb-3 text-[11px] font-semibold uppercase tracking-wide text-sky-700">
+                  {isAllTemplates ? 'Pipeline & reliability' : 'Selected template pipeline & reliability'}
+                </p>
+                <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-4">
+                  {pipelineCards.map((card) => (
+                    <KpiCard
+                      key={card.label}
+                      label={card.label}
+                      value={card.value}
+                      subtitle={card.subtitle}
+                      className={card.className}
+                    />
+                  ))}
+                </div>
+              </div>
             </div>
           </div>
 
