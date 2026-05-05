@@ -176,31 +176,33 @@ export default function WhatsAppOpsOverview() {
     : null;
   const isAllTemplates = !selectedKind;
 
+  const scopeLabel = isAllTemplates ? 'All templates' : (selectedTemplate?.label || 'Selected template');
+
   const volumeCards = isAllTemplates
     ? [
         {
           label: 'Slots booked',
           value: asNumber(dayData?.bookedSlotsCount),
           accent: true,
-          subtitle: 'Booked for selected IST day',
+          subtitle: `${scopeLabel} • ${selectedDate}`,
           className: 'border-indigo-100 bg-indigo-50/30'
         },
         {
           label: 'WhatsApp attempts',
           value: asNumber(dailyOverall.whatsappAttempts),
-          subtitle: 'All template attempts (day)',
+          subtitle: `${scopeLabel} • attempts`,
           className: 'border-sky-100 bg-sky-50/30'
         },
         {
           label: 'Slot-booked attempts',
           value: asNumber(dailyOverall.slotBookedAttempts),
-          subtitle: 'Immediate template attempts',
+          subtitle: `${scopeLabel} • slot_booked`,
           className: 'border-cyan-100 bg-cyan-50/30'
         },
         {
           label: 'Failed',
           value: asNumber(dailyOverall.whatsappFailed),
-          subtitle: 'Failed events (day)',
+          subtitle: `${scopeLabel} • failures`,
           className: 'border-rose-100 bg-rose-50/30'
         }
       ]
@@ -209,25 +211,25 @@ export default function WhatsAppOpsOverview() {
           label: `${selectedTemplate?.label || 'Template'} attempts`,
           value: asNumber(dailySelected.whatsappAttempts),
           accent: true,
-          subtitle: 'Selected template only',
+          subtitle: `${scopeLabel} • attempts`,
           className: 'border-indigo-100 bg-indigo-50/30'
         },
         {
           label: `${selectedTemplate?.label || 'Template'} failed`,
           value: asNumber(dailySelected.whatsappFailed),
-          subtitle: 'Selected template failures',
+          subtitle: `${scopeLabel} • failures`,
           className: 'border-rose-100 bg-rose-50/30'
         },
         {
           label: `${selectedTemplate?.label || 'Template'} delivered`,
           value: asNumber(dailySelected.deliveredCount),
-          subtitle: 'Selected template delivered',
+          subtitle: `${scopeLabel} • delivered`,
           className: 'border-emerald-100 bg-emerald-50/30'
         },
         {
           label: `${selectedTemplate?.label || 'Template'} retries`,
           value: asNumber(dailySelected.retried),
-          subtitle: 'Selected template retried',
+          subtitle: `${scopeLabel} • retries`,
           className: 'border-amber-100 bg-amber-50/30'
         }
       ];
@@ -238,36 +240,36 @@ export default function WhatsAppOpsOverview() {
     {
       label: `${pipelinePrefix}Submitted`,
       value: asNumber(pipelineSource.providerAcceptedCount),
-      subtitle: isAllTemplates ? 'Provider accepted/submitted' : 'Submitted for selected template',
+      subtitle: isAllTemplates ? `${scopeLabel} • submitted` : `${scopeLabel} • submitted`,
       className: 'border-blue-100 bg-blue-50/30'
     },
     {
       label: `${pipelinePrefix}Delivered`,
       value: asNumber(pipelineSource.deliveredCount),
-      subtitle: isAllTemplates ? 'Device delivered callbacks' : 'Delivered for selected template',
+      subtitle: isAllTemplates ? `${scopeLabel} • delivered` : `${scopeLabel} • delivered`,
       className: 'border-emerald-100 bg-emerald-50/30'
     },
     {
       label: `${pipelinePrefix}Read`,
       value: asNumber(pipelineSource.readCount),
-      subtitle: isAllTemplates ? 'Read callbacks received' : 'Read for selected template',
+      subtitle: isAllTemplates ? `${scopeLabel} • read` : `${scopeLabel} • read`,
       className: 'border-violet-100 bg-violet-50/30'
     },
     {
       label: `${pipelinePrefix}Retried / Exhausted`,
       value: `${asNumber(pipelineSource.retried)} / ${asNumber(pipelineSource.retryExhausted)}`,
-      subtitle: isAllTemplates ? 'Reliability pipeline' : 'Retry outcomes for selected template',
+      subtitle: isAllTemplates ? `${scopeLabel} • reliability` : `${scopeLabel} • reliability`,
       className: 'border-amber-100 bg-amber-50/30'
     }
   ];
 
   return (
     <div className="space-y-6">
-      <header className="rounded-2xl border border-slate-200 bg-gradient-to-br from-white via-slate-50 to-indigo-50/70 p-5 sm:p-6 shadow-sm">
+      <header className="rounded-2xl border border-primary-blue-200 bg-gradient-to-br from-white via-primary-blue-50/20 to-primary-blue-100/30 p-5 sm:p-6 shadow-sm">
         <div className="flex flex-wrap items-start justify-between gap-4 border-b border-gray-200/80 pb-4">
           <div>
-            <h1 className="text-2xl font-bold tracking-tight text-gray-900">Overview</h1>
-            <p className="text-sm text-gray-600 mt-1 max-w-3xl">
+            <h1 className="text-2xl font-semibold tracking-tight text-primary-navy">Overview</h1>
+            <p className="text-sm text-slate-600 mt-1 max-w-3xl">
               Daily IST drill-down for slot bookings and WhatsApp delivery pipeline. Click any date to inspect exact metrics.
             </p>
           </div>
@@ -278,7 +280,7 @@ export default function WhatsAppOpsOverview() {
                 type="date"
                 value={from}
                 onChange={(e) => setRange((r) => ({ ...r, from: e.target.value }))}
-                className="mt-1 block rounded-lg border border-gray-200 px-2 py-1.5 text-sm"
+                className="mt-1 block rounded-lg border border-gray-200 bg-white px-2 py-1.5 text-sm shadow-sm transition focus:border-primary-blue-400 focus:outline-none focus:ring-2 focus:ring-primary-blue-100"
               />
             </label>
             <label className="text-xs font-medium text-gray-600">
@@ -287,7 +289,7 @@ export default function WhatsAppOpsOverview() {
                 type="date"
                 value={to}
                 onChange={(e) => setRange((r) => ({ ...r, to: e.target.value }))}
-                className="mt-1 block rounded-lg border border-gray-200 px-2 py-1.5 text-sm"
+                className="mt-1 block rounded-lg border border-gray-200 bg-white px-2 py-1.5 text-sm shadow-sm transition focus:border-primary-blue-400 focus:outline-none focus:ring-2 focus:ring-primary-blue-100"
               />
             </label>
             <label className="text-xs font-medium text-gray-600">
@@ -301,7 +303,7 @@ export default function WhatsAppOpsOverview() {
                   setMonthCursor(v.slice(0, 7));
                   setRange({ from: v, to: v });
                 }}
-                className="mt-1 block rounded-lg border border-gray-200 px-2 py-1.5 text-sm"
+                className="mt-1 block rounded-lg border border-gray-200 bg-white px-2 py-1.5 text-sm shadow-sm transition focus:border-primary-blue-400 focus:outline-none focus:ring-2 focus:ring-primary-blue-100"
               />
             </label>
             <label className="flex items-center gap-2 text-xs text-gray-600 cursor-pointer mt-6">
@@ -319,7 +321,7 @@ export default function WhatsAppOpsOverview() {
             <button
               type="button"
               onClick={loadAll}
-              className="mt-6 inline-flex items-center gap-1 rounded-lg border border-gray-200 bg-white px-3 py-2 text-sm font-semibold shadow-sm hover:bg-gray-50"
+            className="mt-6 inline-flex items-center gap-1 rounded-lg border border-gray-200 bg-white px-3 py-2 text-sm font-semibold shadow-sm transition hover:-translate-y-0.5 hover:bg-gray-50"
             >
               <FiRefreshCw size={16} />
               Refresh
@@ -327,8 +329,8 @@ export default function WhatsAppOpsOverview() {
           </div>
         </div>
 
-        <section className="mt-4 rounded-xl border border-gray-200 bg-white/95 p-3 sm:p-4 shadow-sm">
-          <p className="text-xs font-semibold uppercase tracking-wide text-gray-500 mb-3">Template message type</p>
+        <section className="mt-4 rounded-xl border border-primary-blue-200 bg-white/95 p-3 sm:p-4 shadow-sm">
+          <p className="text-xs font-semibold uppercase tracking-[0.14em] text-primary-navy mb-3">Template message type</p>
           <div className="flex flex-wrap gap-2">
             <button
               type="button"
@@ -336,7 +338,7 @@ export default function WhatsAppOpsOverview() {
               aria-pressed={selectedKind === null}
               className={`rounded-lg px-3 py-1.5 text-sm font-semibold border transition-colors ${
                 selectedKind === null
-                  ? 'bg-primary-navy text-white border-primary-navy'
+                  ? 'bg-primary-navy text-white border-primary-navy shadow-sm'
                   : 'bg-white text-gray-700 border-gray-200 hover:bg-gray-50'
               }`}
             >
@@ -350,7 +352,7 @@ export default function WhatsAppOpsOverview() {
                 aria-pressed={selectedKind === kind.id}
                 className={`rounded-lg px-3 py-1.5 text-sm font-semibold border transition-colors ${
                   selectedKind === kind.id
-                    ? 'bg-primary-navy text-white border-primary-navy'
+                    ? 'bg-primary-navy text-white border-primary-navy shadow-sm'
                     : 'bg-white text-gray-700 border-gray-200 hover:bg-gray-50'
                 }`}
               >
@@ -395,17 +397,17 @@ export default function WhatsAppOpsOverview() {
       {payload && (
         <>
           <div className="grid gap-6 lg:grid-cols-3">
-            <div className="rounded-2xl border border-gray-200 bg-white shadow-lg overflow-hidden lg:col-span-1">
-              <div className="bg-gradient-to-r from-primary-blue-50 to-indigo-50 px-4 py-3 border-b border-gray-200">
+            <div className="rounded-2xl border border-primary-blue-200 bg-white shadow-sm overflow-hidden lg:col-span-1">
+              <div className="px-4 py-3 border-b border-primary-blue-200 bg-gradient-to-r from-primary-blue-50 to-white">
                 <div className="flex items-center justify-between gap-2">
-                  <div className="flex items-center gap-1 p-0.5 bg-white rounded-lg shadow-sm">
+                  <div className="flex items-center gap-1 p-0.5 bg-white rounded-lg border border-primary-blue-200">
                     <button
                       type="button"
                       onClick={() => setCalendarMode('day')}
                       className={`px-3 py-1.5 rounded-md text-xs font-semibold transition-all ${
                         calendarMode === 'day'
-                          ? 'bg-primary-blue-600 text-white shadow-md'
-                          : 'text-gray-600 hover:bg-gray-100'
+                          ? 'bg-primary-navy text-white shadow-sm'
+                          : 'text-slate-600 hover:bg-slate-100'
                       }`}
                     >
                       Day
@@ -415,8 +417,8 @@ export default function WhatsAppOpsOverview() {
                       onClick={() => setCalendarMode('range')}
                       className={`px-3 py-1.5 rounded-md text-xs font-semibold transition-all ${
                         calendarMode === 'range'
-                          ? 'bg-primary-blue-600 text-white shadow-md'
-                          : 'text-gray-600 hover:bg-gray-100'
+                          ? 'bg-primary-navy text-white shadow-sm'
+                          : 'text-slate-600 hover:bg-slate-100'
                       }`}
                     >
                       Range
@@ -425,7 +427,7 @@ export default function WhatsAppOpsOverview() {
                   <div className="flex items-center gap-2">
                   <button
                     type="button"
-                    className="p-1.5 rounded-md bg-white border border-gray-200 shadow-sm hover:bg-gray-50 text-gray-600"
+                    className="p-1.5 rounded-md bg-white border border-primary-blue-200 hover:bg-primary-blue-50 text-gray-600"
                     onClick={() => {
                       const d = new Date(`${monthCursor}-01T00:00:00Z`);
                       d.setUTCMonth(d.getUTCMonth() - 1);
@@ -437,10 +439,10 @@ export default function WhatsAppOpsOverview() {
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
                     </svg>
                   </button>
-                  <span className="text-sm font-bold text-gray-900 min-w-[100px] text-center">{monthStartLabel(monthCursor)}</span>
+                  <span className="text-sm font-semibold text-primary-navy min-w-[100px] text-center">{monthStartLabel(monthCursor)}</span>
                   <button
                     type="button"
-                    className="p-1.5 rounded-md bg-white border border-gray-200 shadow-sm hover:bg-gray-50 text-gray-600"
+                    className="p-1.5 rounded-md bg-white border border-primary-blue-200 hover:bg-primary-blue-50 text-gray-600"
                     onClick={() => {
                       const d = new Date(`${monthCursor}-01T00:00:00Z`);
                       d.setUTCMonth(d.getUTCMonth() + 1);
@@ -456,12 +458,12 @@ export default function WhatsAppOpsOverview() {
               </div>
               </div>
 
-              <div className="p-4">
+              <div className="p-4 bg-white">
               <table className="w-full border-collapse">
                 <thead>
                   <tr>
                     {['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'].map((w) => (
-                      <th key={w} className="text-center text-[10px] font-bold text-gray-400 uppercase py-2">
+                      <th key={w} className="text-center text-[10px] font-semibold text-slate-400 uppercase py-2">
                         {w}
                       </th>
                     ))}
@@ -485,9 +487,9 @@ export default function WhatsAppOpsOverview() {
                               }}
                               className={`w-full rounded-lg border px-2 py-1.5 text-left transition-all ${
                                 isSelected
-                                  ? 'bg-white text-gray-900 border-primary-blue-400 ring-1 ring-primary-blue-300'
-                                  : 'bg-white text-gray-700 border-gray-200 hover:bg-gray-50'
-                              } ${isToday ? 'ring-2 ring-primary-blue-300' : ''}`}
+                                  ? 'bg-primary-navy text-white border-primary-navy ring-1 ring-primary-blue-400'
+                                  : 'bg-white text-slate-700 border-primary-blue-200 hover:bg-primary-blue-50/40'
+                              } ${isToday ? 'ring-1 ring-primary-blue-300' : ''}`}
                             >
                               <div className="text-xs font-medium text-center py-2">{dayNum}</div>
                             </button>
@@ -498,21 +500,21 @@ export default function WhatsAppOpsOverview() {
                   ))}
                 </tbody>
               </table>
-              <div className="flex justify-end mt-3 pt-3 border-t border-gray-100">
-                <span className="text-xs text-gray-400">Select a date to filter</span>
+              <div className="flex justify-end mt-3 pt-3 border-t border-primary-blue-100">
+                <span className="text-xs text-slate-400">Select a date to filter</span>
               </div>
               </div>
             </div>
 
             <div className="lg:col-span-2 space-y-4">
-              <h2 className="text-sm font-semibold uppercase tracking-wide text-gray-500">
+              <h2 className="text-xs font-semibold uppercase tracking-[0.14em] text-primary-navy">
                 Selected day overview ({selectedDate}) {selectedTemplate ? `· ${selectedTemplate.label}` : '· all templates'}
               </h2>
-              <div className="rounded-xl border border-indigo-200 bg-indigo-50/60 px-4 py-3 text-xs text-indigo-900">
+              <div className="rounded-xl border border-primary-blue-200 bg-primary-blue-50/40 px-4 py-3 text-xs text-primary-navy">
                 Daily drilldown is IST-based and shows exact stored booking + WhatsApp pipeline metrics for the selected date.
               </div>
-              <div className="rounded-2xl border border-indigo-100 bg-gradient-to-br from-white to-indigo-50/40 p-4 shadow-sm">
-                <p className="mb-3 text-[11px] font-semibold uppercase tracking-wide text-indigo-700">
+              <div className="rounded-2xl border border-primary-blue-200 bg-white p-4 shadow-sm">
+                <p className="mb-3 text-[11px] font-semibold uppercase tracking-[0.14em] text-primary-navy">
                   {isAllTemplates ? 'Volume' : 'Selected template volume'}
                 </p>
                 <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-4">
@@ -528,8 +530,8 @@ export default function WhatsAppOpsOverview() {
                   ))}
                 </div>
               </div>
-              <div className="rounded-2xl border border-sky-100 bg-gradient-to-br from-white to-sky-50/40 p-4 shadow-sm">
-                <p className="mb-3 text-[11px] font-semibold uppercase tracking-wide text-sky-700">
+              <div className="rounded-2xl border border-primary-blue-200 bg-white p-4 shadow-sm">
+                <p className="mb-3 text-[11px] font-semibold uppercase tracking-[0.14em] text-primary-navy">
                   {isAllTemplates ? 'Pipeline & reliability' : 'Selected template pipeline & reliability'}
                 </p>
                 <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-4">
@@ -552,14 +554,14 @@ export default function WhatsAppOpsOverview() {
               <div style={{ width: '100%', height: 300 }}>
                 <ResponsiveContainer>
                   <LineChart data={monthTrend} margin={{ top: 12, left: 0, right: 16, bottom: 0 }}>
-                    <CartesianGrid strokeDasharray="3 3" stroke="#eef2ff" />
-                    <XAxis dataKey="date" tick={{ fill: '#6b7280', fontSize: 11 }} />
-                    <YAxis tick={{ fill: '#6b7280', fontSize: 11 }} />
+                    <CartesianGrid strokeDasharray="2 4" stroke="#dbe7f3" />
+                    <XAxis dataKey="date" tick={{ fill: '#64748b', fontSize: 11 }} axisLine={false} tickLine={false} />
+                    <YAxis tick={{ fill: '#64748b', fontSize: 11 }} axisLine={false} tickLine={false} />
                     <Tooltip />
                     <Legend />
-                    <Line type="monotone" dataKey="bookings" stroke="#1d4ed8" strokeWidth={2.5} dot={false} />
-                    <Line type="monotone" dataKey="attempts" stroke="#0f766e" strokeWidth={2.5} dot={false} />
-                    <Line type="monotone" dataKey="failed" stroke="#be123c" strokeWidth={2.5} dot={false} />
+                    <Line type="monotone" dataKey="bookings" stroke="#4d8ec7" strokeWidth={2} dot={false} />
+                    <Line type="monotone" dataKey="attempts" stroke="#003366" strokeWidth={2} dot={false} />
+                    <Line type="monotone" dataKey="failed" stroke="#dc2626" strokeWidth={2} dot={false} />
                   </LineChart>
                 </ResponsiveContainer>
               </div>
@@ -569,11 +571,11 @@ export default function WhatsAppOpsOverview() {
               <div style={{ width: '100%', height: 300 }}>
                 <ResponsiveContainer>
                   <BarChart data={byStatusChart} margin={{ top: 12, left: 0, right: 16, bottom: 0 }}>
-                    <CartesianGrid strokeDasharray="3 3" stroke="#eef2ff" />
-                    <XAxis dataKey="label" tick={{ fill: '#6b7280', fontSize: 11 }} />
-                    <YAxis tick={{ fill: '#6b7280', fontSize: 11 }} />
+                    <CartesianGrid strokeDasharray="2 4" stroke="#dbe7f3" />
+                    <XAxis dataKey="label" tick={{ fill: '#64748b', fontSize: 11 }} axisLine={false} tickLine={false} />
+                    <YAxis tick={{ fill: '#64748b', fontSize: 11 }} axisLine={false} tickLine={false} />
                     <Tooltip formatter={(value) => [value, 'events']} />
-                    <Bar dataKey="count" fill="#0f766e" radius={[6, 6, 0, 0]} />
+                    <Bar dataKey="count" fill="#003366" radius={[5, 5, 0, 0]} />
                   </BarChart>
                 </ResponsiveContainer>
               </div>
@@ -583,11 +585,11 @@ export default function WhatsAppOpsOverview() {
               <div style={{ width: '100%', height: 300 }}>
                 <ResponsiveContainer>
                   <BarChart data={byKindChart} margin={{ top: 12, left: 0, right: 16, bottom: 0 }}>
-                    <CartesianGrid strokeDasharray="3 3" stroke="#eef2ff" />
-                    <XAxis dataKey="label" tick={{ fill: '#6b7280', fontSize: 11 }} />
-                    <YAxis tick={{ fill: '#6b7280', fontSize: 11 }} />
+                    <CartesianGrid strokeDasharray="2 4" stroke="#dbe7f3" />
+                    <XAxis dataKey="label" tick={{ fill: '#64748b', fontSize: 11 }} axisLine={false} tickLine={false} />
+                    <YAxis tick={{ fill: '#64748b', fontSize: 11 }} axisLine={false} tickLine={false} />
                     <Tooltip formatter={(value) => [value, 'events']} />
-                    <Bar dataKey="count" fill="#1e40af" radius={[6, 6, 0, 0]} />
+                    <Bar dataKey="count" fill="#4d8ec7" radius={[5, 5, 0, 0]} />
                   </BarChart>
                 </ResponsiveContainer>
               </div>

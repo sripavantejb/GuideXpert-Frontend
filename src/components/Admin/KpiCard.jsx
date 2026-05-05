@@ -45,10 +45,9 @@ export default function KpiCard({
     <div
       {...interactiveProps}
       className={`
-        relative rounded-xl border border-gray-200 bg-white p-4 portal-card
+        relative rounded-xl border border-primary-blue-200/70 bg-white p-4 portal-card shadow-sm
         transition-all duration-200
-        hover:portal-card-hover hover:border-primary-blue-200
-        hover:-translate-y-0.5
+        hover:border-primary-blue-300 hover:shadow-md hover:-translate-y-0.5
         focus-visible:ring-2 focus-visible:ring-primary-navy focus-visible:ring-offset-2 focus-visible:outline-none
         ${showAccent ? 'group' : ''}
         ${interactive ? 'cursor-pointer' : ''}
@@ -67,7 +66,7 @@ export default function KpiCard({
       )}
       <div>
         <div className="flex items-start justify-between gap-2 mb-1">
-          <p className="text-xs font-semibold text-gray-500 uppercase tracking-wider truncate min-w-0">
+          <p className="text-[11px] font-semibold text-slate-500 uppercase tracking-[0.12em] truncate min-w-0">
             {label}
           </p>
           {Icon && (
@@ -76,11 +75,11 @@ export default function KpiCard({
             </span>
           )}
         </div>
-        <p className="text-2xl font-bold text-primary-navy tabular-nums truncate">
+        <p className="text-[1.75rem] leading-8 font-semibold text-primary-navy tabular-nums truncate">
           {typeof value === 'number' ? value.toLocaleString() : value}
         </p>
         {subtitle && (
-          <p className="mt-1 text-xs text-gray-500" role="status">
+          <p className="mt-1 text-[11px] text-slate-500" role="status">
             {subtitle}
           </p>
         )}
