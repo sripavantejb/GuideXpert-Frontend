@@ -46,6 +46,15 @@ import OsviCallsData from './pages/admin/OsviCallsData';
 import PosterDownloads from './pages/admin/PosterDownloads';
 import CertifiedCounsellors from './pages/admin/CertifiedCounsellors';
 import PosterAutomationAdminPage from './pages/admin/posters/PosterAutomationAdminPage';
+import WhatsAppOpsLayout from './pages/admin/whatsapp-ops/WhatsAppOpsLayout';
+import WhatsAppOpsOverview from './pages/admin/whatsapp-ops/WhatsAppOpsOverview';
+import WhatsAppOpsCron from './pages/admin/whatsapp-ops/WhatsAppOpsCron';
+import WhatsAppOpsMessages from './pages/admin/whatsapp-ops/WhatsAppOpsMessages';
+import WhatsAppOpsRetries from './pages/admin/whatsapp-ops/WhatsAppOpsRetries';
+import WhatsAppOpsWebhooks from './pages/admin/whatsapp-ops/WhatsAppOpsWebhooks';
+import WhatsAppOpsFailures from './pages/admin/whatsapp-ops/WhatsAppOpsFailures';
+import WhatsAppOpsLogs from './pages/admin/whatsapp-ops/WhatsAppOpsLogs';
+import WhatsAppOpsSettings from './pages/admin/whatsapp-ops/WhatsAppOpsSettings';
 import PosterPublicPage from './pages/PosterPublicPage';
 import CounsellorLogin from './pages/counsellor/CounsellorLogin';
 import WebinarLogin from './pages/webinar/WebinarLogin';
@@ -369,6 +378,17 @@ function App() {
             <Route path="blogs" element={<AdminBlog />} />
             <Route path="osvi-calls" element={<OsviCalls />} />
             <Route path="osvi-calls-data" element={<OsviCallsData />} />
+            <Route path="whatsapp-ops" element={<WhatsAppOpsLayout />}>
+              <Route index element={<Navigate to="overview" replace />} />
+              <Route path="overview" element={<WhatsAppOpsOverview />} />
+              <Route path="cron" element={<WhatsAppOpsCron />} />
+              <Route path="messages" element={<WhatsAppOpsMessages />} />
+              <Route path="retries" element={<WhatsAppOpsRetries />} />
+              <Route path="webhooks" element={<WhatsAppOpsWebhooks />} />
+              <Route path="failures" element={<WhatsAppOpsFailures />} />
+              <Route path="logs" element={<WhatsAppOpsLogs />} />
+              <Route path="settings" element={<WhatsAppOpsSettings />} />
+            </Route>
           </Route>
 
           {/* Counsellor Portal */}

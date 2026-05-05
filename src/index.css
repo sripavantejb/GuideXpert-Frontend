@@ -857,3 +857,24 @@
   cursor: pointer;
   border: 0;
 }
+
+@keyframes whatsappOpsOutletFade {
+  from {
+    opacity: 0;
+    transform: translateY(6px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.whatsapp-ops-outlet-fade {
+  animation: whatsappOpsOutletFade 0.22s ease-out both;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .whatsapp-ops-outlet-fade {
+    animation: none;
+  }
+}
