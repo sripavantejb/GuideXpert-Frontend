@@ -26,10 +26,12 @@ export default function WhatsAppOpsOverview() {
   const [lastSync, setLastSync] = useState(null);
   const [loading, setLoading] = useState(true);
   const [err, setErr] = useState(null);
+  const [errDetail, setErrDetail] = useState('');
   const [payload, setPayload] = useState(null);
 
   const load = useCallback(async () => {
     setErr(null);
+    setErrDetail('');
     setLoading(true);
     const res = await getWhatsappOpsSummary({ from, to, ...(selectedKind ? { messageKind: selectedKind } : {}) });
     setLoading(false);
@@ -42,6 +44,11 @@ export default function WhatsAppOpsOverview() {
       } else {
         clearWhatsappOpsApi404();
         setErr(res.message || 'Failed to load summary');
+        setErrDetail(
+          res.status >= 500
+            ? 'Server-side error while aggregating stats. Check backend logs for WhatsApp send/provider issues.'
+            : ''
+        );
         setPayload(null);
       }
       return;
@@ -94,6 +101,7 @@ export default function WhatsAppOpsOverview() {
   );
 
   const t = payload?.totals || {};
+  const hasAnyRows = (payload?.meta?.attemptedRows ?? t.whatsappAttempts ?? 0) > 0;
   const selectedTemplate = selectedKind
     ? templateKinds.find((k) => k.id === selectedKind) || FALLBACK_TEMPLATE_KINDS.find((k) => k.id === selectedKind)
     : null;
@@ -196,7 +204,10 @@ export default function WhatsAppOpsOverview() {
       </header>
 
       {err && (
-        <div className="rounded-lg border border-rose-200 bg-rose-50 px-4 py-3 text-sm text-rose-900">{err}</div>
+        <div className="rounded-lg border border-rose-200 bg-rose-50 px-4 py-3 text-sm text-rose-900">
+          <p className="font-semibold">{err}</p>
+          {errDetail && <p className="mt-1 text-xs text-rose-800">{errDetail}</p>}
+        </div>
       )}
       {loading && !payload && (
         <div className="flex items-center gap-2 text-gray-500 py-16 justify-center">
@@ -211,7 +222,7 @@ export default function WhatsAppOpsOverview() {
           </div>
           <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-4">
             <KpiCard label="Attempts" value={t.whatsappAttempts ?? 0} accent />
-            <KpiCard label="Success (approx.)" value={t.whatsappSuccessApprox ?? 0} />
+            <KpiCard label="Provider accepted" value={t.providerAcceptedCount ?? 0} />
             <KpiCard label="Failed" value={t.whatsappFailed ?? 0} />
             <KpiCard label="Messages read" value={t.readCount ?? 0} />
           </div>
@@ -225,11 +236,15 @@ export default function WhatsAppOpsOverview() {
           <div className={`grid gap-4 ${showGlobalOnly ? 'lg:grid-cols-3' : 'lg:grid-cols-2'}`}>
             <KpiCard
               accent="hero"
-              label="Delivery rate (approx.)"
+              label="Delivery rate"
               value={`${payload.rates?.deliveryRatePct ?? '—'}%`}
               subtitle="Submitted + delivered + read / attempts"
             />
-            <KpiCard label="Retry rate" value={`${payload.rates?.retryRatePct ?? '—'}%`} subtitle="Events with retries" />
+            <KpiCard
+              label="Accepted → delivered"
+              value={`${payload.rates?.acceptedToDeliveredPct ?? '—'}%`}
+              subtitle="Delivered / provider accepted"
+            />
             {showGlobalOnly && (
               <KpiCard
                 label="Cron failures"
@@ -238,6 +253,12 @@ export default function WhatsAppOpsOverview() {
               />
             )}
           </div>
+          {(t.providerAcceptedCount ?? 0) > (t.deliveredCount ?? 0) && (
+            <div className="rounded-lg border border-amber-200 bg-amber-50 px-4 py-3 text-xs text-amber-900">
+              Delivery pipeline note: provider accepted messages are higher than delivered updates. This usually means
+              webhook delivery/read callbacks are still pending or not fully reconciled yet.
+            </div>
+          )}
 
           <div className="flex items-center justify-between">
             <h2 className="text-sm font-semibold uppercase tracking-wide text-gray-500">Trends</h2>
@@ -276,6 +297,15 @@ export default function WhatsAppOpsOverview() {
               </div>
             </ChartContainer>
           </div>
+
+          {!hasAnyRows && (
+            <div className="rounded-xl border border-dashed border-gray-300 bg-white p-8 text-center">
+              <p className="text-base font-semibold text-gray-700">No events in this selection</p>
+              <p className="mt-1 text-sm text-gray-500">
+                No WhatsApp attempts found for {selectedTemplate ? selectedTemplate.label : 'the selected date range'}.
+              </p>
+            </div>
+          )}
         </>
       )}
     </div>
