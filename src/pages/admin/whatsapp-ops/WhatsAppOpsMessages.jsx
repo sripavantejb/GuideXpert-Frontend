@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from 'react';
-import { FiAlertCircle, FiCheckCircle2, FiClock3, FiLoader } from 'react-icons/fi';
+import { FiAlertCircle, FiCheckCircle, FiClock, FiLoader } from 'react-icons/fi';
 import { useAuth } from '../../../hooks/useAuth';
 import {
   listWhatsappOpsMessages,
@@ -112,7 +112,7 @@ export default function WhatsAppOpsMessages() {
           <div className="rounded-xl border border-emerald-200 bg-emerald-50 px-4 py-3">
             <p className="text-xs font-semibold uppercase text-emerald-700">Received/delivered (page)</p>
             <p className="mt-1 flex items-center gap-2 text-xl font-bold text-emerald-900">
-              <FiCheckCircle2 /> {auditSummary.delivered}
+              <FiCheckCircle /> {auditSummary.delivered}
             </p>
           </div>
           <div className="rounded-xl border border-rose-200 bg-rose-50 px-4 py-3">
@@ -124,7 +124,7 @@ export default function WhatsAppOpsMessages() {
           <div className="rounded-xl border border-amber-200 bg-amber-50 px-4 py-3">
             <p className="text-xs font-semibold uppercase text-amber-700">Pending/submitted (page)</p>
             <p className="mt-1 flex items-center gap-2 text-xl font-bold text-amber-900">
-              <FiClock3 /> {auditSummary.pending}
+              <FiClock /> {auditSummary.pending}
             </p>
           </div>
         </div>

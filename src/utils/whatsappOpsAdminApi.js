@@ -38,6 +38,12 @@ export function buildWhatsappOpsQuery(params = {}) {
 export const getWhatsappOpsSummary = (params, token) =>
   whatsappOpsRequest(`/summary${buildWhatsappOpsQuery(params)}`, { method: 'GET' }, token);
 
+export const getWhatsappOpsCalendarMonth = (params, token) =>
+  whatsappOpsRequest(`/calendar/month${buildWhatsappOpsQuery(params)}`, { method: 'GET' }, token);
+
+export const getWhatsappOpsCalendarDay = (params, token) =>
+  whatsappOpsRequest(`/calendar/day${buildWhatsappOpsQuery(params)}`, { method: 'GET' }, token);
+
 export const getWhatsappOpsMeta = (token) => whatsappOpsRequest('/meta', { method: 'GET' }, token);
 
 export const listWhatsappOpsCronRuns = (params, token) =>
