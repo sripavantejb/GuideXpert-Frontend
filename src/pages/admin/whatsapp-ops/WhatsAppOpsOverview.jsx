@@ -15,6 +15,11 @@ const FALLBACK_TEMPLATE_KINDS = [
   { id: '30min', label: '30 min reminder', description: 'Final reminder sent around 30 minutes before slot' }
 ];
 
+function asNumber(value, fallback = 0) {
+  const n = Number(value);
+  return Number.isFinite(n) ? n : fallback;
+}
+
 export default function WhatsAppOpsOverview() {
   const { notifyWhatsappOpsApi404, clearWhatsappOpsApi404 } = useWhatsappOpsHost();
   const [{ from, to }, setRange] = useState(defaultRangeIsoDates);
@@ -90,18 +95,31 @@ export default function WhatsAppOpsOverview() {
     };
   }, []);
 
-  const byKindChart = useMemo(
-    () => (payload?.byKind || []).map((x) => ({ label: x.kind || '—', count: x.count || 0 })),
-    [payload]
-  );
+  const byKindChart = useMemo(() => {
+    const src = Array.isArray(payload?.byKind) ? payload.byKind : [];
+    return src.map((x) => ({ label: x?.kind || '—', count: asNumber(x?.count) }));
+  }, [payload]);
 
-  const byStatusChart = useMemo(
-    () => (payload?.byStatus || []).map((x) => ({ label: x.status || '—', count: x.count || 0 })),
-    [payload]
-  );
+  const byStatusChart = useMemo(() => {
+    const src = Array.isArray(payload?.byStatus) ? payload.byStatus : [];
+    return src.map((x) => ({ label: x?.status || '—', count: asNumber(x?.count) }));
+  }, [payload]);
 
-  const t = payload?.totals || {};
-  const hasAnyRows = (payload?.meta?.attemptedRows ?? t.whatsappAttempts ?? 0) > 0;
+  const t = useMemo(() => {
+    const raw = payload?.totals || {};
+    return {
+      whatsappAttempts: asNumber(raw.whatsappAttempts),
+      providerAcceptedCount: asNumber(raw.providerAcceptedCount),
+      whatsappFailed: asNumber(raw.whatsappFailed),
+      readCount: asNumber(raw.readCount),
+      deliveredCount: asNumber(raw.deliveredCount),
+      retried: asNumber(raw.retried),
+      permanentlyFailedApprox: asNumber(raw.permanentlyFailedApprox),
+      webhookEvents: asNumber(raw.webhookEvents)
+    };
+  }, [payload]);
+  const attemptedRows = asNumber(payload?.meta?.attemptedRows, t.whatsappAttempts);
+  const hasAnyRows = attemptedRows > 0;
   const selectedTemplate = selectedKind
     ? templateKinds.find((k) => k.id === selectedKind) || FALLBACK_TEMPLATE_KINDS.find((k) => k.id === selectedKind)
     : null;
@@ -201,6 +219,9 @@ export default function WhatsAppOpsOverview() {
         />
         Last sync: {lastSync ? lastSync.toLocaleString('en-IN') : '—'}
         </div>
+        <div className="mt-2 text-xs text-gray-500">
+          Data source: persisted `WhatsAppMessageEvent` records only (no synthetic rows).
+        </div>
       </header>
 
       {err && (
@@ -228,6 +249,7 @@ export default function WhatsAppOpsOverview() {
           </div>
           <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-4">
             <KpiCard label="Delivered" value={t.deliveredCount ?? 0} />
+            <KpiCard label="Pending/submitted" value={Math.max(0, (t.providerAcceptedCount ?? 0) - (t.deliveredCount ?? 0) - (t.whatsappFailed ?? 0))} />
             <KpiCard label="Retried events" value={t.retried ?? 0} />
             <KpiCard label="Retry exhausted (approx.)" value={t.permanentlyFailedApprox ?? 0} />
             {showGlobalOnly ? <KpiCard label="Webhook events" value={t.webhookEvents ?? 0} /> : <div className="hidden xl:block" />}

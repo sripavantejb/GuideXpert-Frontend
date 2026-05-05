@@ -1,5 +1,5 @@
-import { useEffect, useState } from 'react';
-import { FiLoader } from 'react-icons/fi';
+import { useEffect, useMemo, useState } from 'react';
+import { FiAlertCircle, FiCheckCircle2, FiClock3, FiLoader } from 'react-icons/fi';
 import { useAuth } from '../../../hooks/useAuth';
 import {
   listWhatsappOpsMessages,
@@ -27,6 +27,13 @@ export default function WhatsAppOpsMessages() {
   const [resendBusy, setResendBusy] = useState(null);
 
   const isSuper = user?.isSuperAdmin === true;
+
+  const statusPillClass = (status) => {
+    const s = String(status || '').toLowerCase();
+    if (s === 'read' || s === 'delivered') return 'bg-emerald-50 text-emerald-800 border-emerald-200';
+    if (s === 'failed' || s === 'retry_exhausted') return 'bg-rose-50 text-rose-800 border-rose-200';
+    return 'bg-amber-50 text-amber-800 border-amber-200';
+  };
 
   useEffect(() => {
     let cancelled = false;
@@ -82,14 +89,48 @@ export default function WhatsAppOpsMessages() {
     else setReloadKey((k) => k + 1);
   }
 
+  const auditSummary = useMemo(() => {
+    const counts = { delivered: 0, failed: 0, pending: 0 };
+    rows.forEach((r) => {
+      const s = String(r.deliveryStatus || r.status || '').toLowerCase();
+      if (s === 'read' || s === 'delivered') counts.delivered += 1;
+      else if (s === 'failed' || s === 'retry_exhausted') counts.failed += 1;
+      else counts.pending += 1;
+    });
+    return counts;
+  }, [rows]);
+
   return (
     <div className="space-y-6 relative">
-      <header className="border-b border-gray-100 pb-4">
-        <h1 className="text-xl font-bold text-gray-900">Message events</h1>
-        <p className="text-sm text-gray-600 mt-1">Every recorded send attempt (from safeSendWhatsApp + webhooks).</p>
+      <header className="rounded-2xl border border-slate-200 bg-gradient-to-br from-white via-slate-50 to-slate-100/60 p-5 sm:p-6 shadow-sm">
+        <h1 className="text-2xl font-bold tracking-tight text-gray-900">Delivery audit</h1>
+        <p className="text-sm text-gray-600 mt-1">
+          Real recipient-level WhatsApp delivery records from backend events and webhooks.
+        </p>
+
+        <div className="mt-4 grid grid-cols-1 gap-3 sm:grid-cols-3">
+          <div className="rounded-xl border border-emerald-200 bg-emerald-50 px-4 py-3">
+            <p className="text-xs font-semibold uppercase text-emerald-700">Received/delivered (page)</p>
+            <p className="mt-1 flex items-center gap-2 text-xl font-bold text-emerald-900">
+              <FiCheckCircle2 /> {auditSummary.delivered}
+            </p>
+          </div>
+          <div className="rounded-xl border border-rose-200 bg-rose-50 px-4 py-3">
+            <p className="text-xs font-semibold uppercase text-rose-700">Failed (page)</p>
+            <p className="mt-1 flex items-center gap-2 text-xl font-bold text-rose-900">
+              <FiAlertCircle /> {auditSummary.failed}
+            </p>
+          </div>
+          <div className="rounded-xl border border-amber-200 bg-amber-50 px-4 py-3">
+            <p className="text-xs font-semibold uppercase text-amber-700">Pending/submitted (page)</p>
+            <p className="mt-1 flex items-center gap-2 text-xl font-bold text-amber-900">
+              <FiClock3 /> {auditSummary.pending}
+            </p>
+          </div>
+        </div>
       </header>
 
-      <div className="flex flex-wrap gap-3 items-end bg-white border border-gray-200 rounded-xl p-4">
+      <div className="flex flex-wrap gap-3 items-end bg-white border border-gray-200 rounded-xl p-4 shadow-sm">
         <label className="text-xs text-gray-600">
           From
           <input type="date" value={from} onChange={(e) => setRange((r) => ({ ...r, from: e.target.value }))} className="block mt-1 rounded border px-2 py-1" />
@@ -118,7 +159,14 @@ export default function WhatsAppOpsMessages() {
         </label>
         <label className="text-xs text-gray-600">
           Status
-          <input value={status} onChange={(e) => setStatus(e.target.value)} placeholder="e.g. submitted" className="block mt-1 rounded border px-2 py-1 w-32" />
+          <select value={status} onChange={(e) => setStatus(e.target.value)} className="block mt-1 rounded border px-2 py-1 w-44">
+            <option value="">All</option>
+            <option value="submitted">submitted</option>
+            <option value="delivered">delivered</option>
+            <option value="read">read</option>
+            <option value="failed">failed</option>
+            <option value="retry_exhausted">retry_exhausted</option>
+          </select>
         </label>
         <button
           type="button"
@@ -139,13 +187,13 @@ export default function WhatsAppOpsMessages() {
           <table className="min-w-full text-sm">
             <thead className="sticky top-0 bg-gray-100 text-xs uppercase text-gray-700 z-10">
               <tr>
-                <th className="text-left px-3 py-2">When</th>
-                <th className="text-left px-3 py-2">User</th>
-                <th className="text-left px-3 py-2">Phone</th>
-                <th className="text-left px-3 py-2">Kind</th>
-                <th className="text-left px-3 py-2">Template</th>
-                <th className="text-left px-3 py-2">Status</th>
-                <th className="text-left px-3 py-2">Cron</th>
+                <th className="text-left px-3 py-2">Sent time</th>
+                <th className="text-left px-3 py-2">Name</th>
+                <th className="text-left px-3 py-2">Phone number</th>
+                <th className="text-left px-3 py-2">Message type</th>
+                <th className="text-left px-3 py-2">Delivery status</th>
+                <th className="text-left px-3 py-2">Failure reason</th>
+                <th className="text-left px-3 py-2">Retry count</th>
                 <th className="text-left px-3 py-2">Actions</th>
               </tr>
             </thead>
@@ -166,15 +214,23 @@ export default function WhatsAppOpsMessages() {
               )}
               {rows.map((r) => (
                 <tr key={r._id} className="hover:bg-gray-50">
-                  <td className="px-3 py-2 whitespace-nowrap">{formatDt(r.createdAt)}</td>
-                  <td className="px-3 py-2">{r.userName || '—'}</td>
-                  <td className="px-3 py-2 font-mono">***{String(r.phone).slice(-4)}</td>
-                  <td className="px-3 py-2">{r.messageKind}</td>
-                  <td className="px-3 py-2 font-mono text-xs max-w-[120px] truncate" title={r.templateId}>{r.templateId || r.templateIdEnvKey || '—'}</td>
+                  <td className="px-3 py-2 whitespace-nowrap">{formatDt(r.sentAt || r.createdAt)}</td>
+                  <td className="px-3 py-2">{r.userName || 'Not available'}</td>
+                  <td className="px-3 py-2 font-mono">{r.phone || 'Not available'}</td>
+                  <td className="px-3 py-2">{r.messageKind || 'Not available'}</td>
                   <td className="px-3 py-2">
-                    <WaStatusBadge status={r.status} />
+                    <span className={`inline-flex items-center rounded-full border px-2 py-0.5 text-xs font-semibold ${statusPillClass(r.deliveryStatus || r.status)}`}>
+                      {r.deliveryStatus || r.status || 'Not available'}
+                    </span>
                   </td>
-                  <td className="px-3 py-2 text-xs">{r.cronJobKey || r.source}</td>
+                  <td className="px-3 py-2 max-w-[280px]">
+                    {r.failureReason ? (
+                      <span className="line-clamp-2 text-xs text-rose-800" title={r.failureReason}>{r.failureReason}</span>
+                    ) : (
+                      <span className="text-xs text-gray-500">None</span>
+                    )}
+                  </td>
+                  <td className="px-3 py-2 text-center">{r.retryCount ?? r.retryCountSnapshot ?? 0}</td>
                   <td className="px-3 py-2 space-x-2 whitespace-nowrap">
                     <button type="button" className="text-primary-navy font-semibold hover:underline" onClick={() => openTimeline(r._id)}>
                       Timeline
