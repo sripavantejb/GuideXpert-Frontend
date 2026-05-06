@@ -53,6 +53,12 @@ function monthGrid(monthIso) {
   return rows;
 }
 
+const RETRY_STAGE_META = {
+  1: { title: 'Initial Attempt', subtitle: 'Primary send wave' },
+  2: { title: 'Retry 1', subtitle: 'First recovery wave' },
+  3: { title: 'Retry 2', subtitle: 'Final recovery wave' }
+};
+
 export default function WhatsAppOpsOverview() {
   const { notifyWhatsappOpsApi404, clearWhatsappOpsApi404 } = useWhatsappOpsHost();
   const [{ from, to }, setRange] = useState(defaultRangeIsoDates);
@@ -188,6 +194,51 @@ export default function WhatsAppOpsOverview() {
   }, [selectedDate, selectedKind]);
 
   const byAttempt = dayData?.byAttempt || {};
+  const retryLifecycle = useMemo(() => {
+    const stageBuckets = [1, 2, 3].map((n) => {
+      const bucket = byAttempt[n] || byAttempt[String(n)] || {};
+      const targeted = asNumber(bucket.targeted);
+      const submitted = asNumber(bucket.submitted);
+      const sent = asNumber(bucket.sent);
+      const delivered = asNumber(bucket.delivered);
+      const read = asNumber(bucket.read);
+      const failed = asNumber(bucket.failed);
+      const inFlight = asNumber(bucket.inFlight);
+      const started = targeted > 0 || submitted > 0 || sent > 0 || delivered > 0 || read > 0 || failed > 0 || inFlight > 0;
+      return {
+        stage: n,
+        bucket,
+        targeted,
+        submitted,
+        sent,
+        delivered,
+        read,
+        failed,
+        inFlight,
+        started,
+        hasInFlight: inFlight > 0
+      };
+    });
+
+    const s1 = stageBuckets[0];
+    const s2 = stageBuckets[1];
+    const s3 = stageBuckets[2];
+    let activeStage = null;
+    if (s1.started && !s2.started && s1.hasInFlight) activeStage = 1;
+    else if (s2.started && !s3.started && s2.hasInFlight) activeStage = 2;
+    else if (s3.started && s3.hasInFlight) activeStage = 3;
+
+    const states = stageBuckets.map((s) => {
+      if (!s.started) return { ...s, state: 'pending' };
+      if (activeStage === s.stage) return { ...s, state: 'active' };
+      return { ...s, state: 'completed' };
+    });
+
+    const lifecycleCompleted =
+      activeStage == null && states.some((s) => s.started) && states.filter((s) => s.started).every((s) => !s.hasInFlight);
+
+    return { states, activeStage, lifecycleCompleted };
+  }, [byAttempt]);
 
   const scopeLabel = isAllTemplates ? 'All templates' : (selectedTemplate?.label || 'Selected template');
 
@@ -654,6 +705,11 @@ export default function WhatsAppOpsOverview() {
                   <p className="text-sm text-slate-600 mt-1">
                     Progression overview for retry-enabled templates: Attempt 1 → Retry 1 → Retry 2.
                   </p>
+                  {retryLifecycle.lifecycleCompleted && (
+                    <div className="mt-2 inline-flex items-center rounded-full border border-emerald-200 bg-emerald-50 px-2.5 py-1 text-xs font-semibold text-emerald-800">
+                      Retry lifecycle completed
+                    </div>
+                  )}
                 </div>
                 <Link
                   to={messagesDrillHref}
@@ -663,27 +719,64 @@ export default function WhatsAppOpsOverview() {
                 </Link>
               </div>
 
+              <div className="hidden xl:grid grid-cols-3 gap-3 text-xs text-slate-500">
+                {[1, 2, 3].map((n) => (
+                  <div key={`connector-${n}`} className="flex items-center gap-2">
+                    <span className="rounded-full border border-slate-200 bg-slate-50 px-2 py-0.5 font-semibold">Stage {n}</span>
+                    {n < 3 && <span aria-hidden="true" className="text-slate-400">→</span>}
+                  </div>
+                ))}
+              </div>
+
               <div className="grid grid-cols-1 xl:grid-cols-3 gap-4">
-                {[1, 2, 3].map((n) => {
-                  const bucket = byAttempt[n] || byAttempt[String(n)] || {};
-                  const targeted = asNumber(bucket.targeted);
-                  const delivered = asNumber(bucket.delivered);
-                  const sent = asNumber(bucket.sent);
+                {retryLifecycle.states.map((stageData) => {
+                  const n = stageData.stage;
+                  const targeted = stageData.targeted;
+                  const delivered = stageData.delivered;
+                  const sent = stageData.sent;
                   const successRate = targeted ? Math.round((delivered / targeted) * 1000) / 10 : 0;
-                  const title = n === 1 ? 'Initial Attempt' : n === 2 ? 'Retry 1' : 'Retry 2';
-                  const subtitle = n === 1 ? 'Primary send wave' : n === 2 ? 'First recovery wave' : 'Final recovery wave';
+                  const stageMeta = RETRY_STAGE_META[n];
+                  const stageState = stageData.state;
+                  const stageBadge =
+                    stageState === 'active' ? 'Running' : stageState === 'completed' ? 'Completed' : 'Pending';
+                  const cardClassName =
+                    stageState === 'active'
+                      ? 'border-primary-blue-300 bg-primary-blue-50/50 ring-1 ring-primary-blue-200 shadow-sm'
+                      : stageState === 'completed'
+                        ? 'border-emerald-200 bg-emerald-50/30'
+                        : 'border-slate-200 bg-slate-50/40 opacity-90';
+                  const badgeClassName =
+                    stageState === 'active'
+                      ? 'border-primary-blue-300 bg-primary-blue-100 text-primary-navy'
+                      : stageState === 'completed'
+                        ? 'border-emerald-300 bg-emerald-100 text-emerald-900'
+                        : 'border-slate-300 bg-white text-slate-600';
+                  const indicatorClassName =
+                    stageState === 'active'
+                      ? 'bg-primary-blue-500 animate-pulse'
+                      : stageState === 'completed'
+                        ? 'bg-emerald-500'
+                        : 'bg-slate-300';
                   return (
-                    <div key={n} className="rounded-xl border border-slate-200 bg-slate-50/50 p-4">
+                    <div key={n} className={`rounded-xl border p-4 transition-colors ${cardClassName}`}>
                       <div className="flex items-center justify-between gap-2">
                         <div>
-                          <p className="text-sm font-semibold text-slate-900">{title}</p>
-                          <p className="text-xs text-slate-500">{subtitle}</p>
+                          <div className="flex items-center gap-2">
+                            <span className={`inline-block h-2.5 w-2.5 rounded-full ${indicatorClassName}`} />
+                            <p className="text-sm font-semibold text-slate-900">{stageMeta.title}</p>
+                          </div>
+                          <p className="text-xs text-slate-500">{stageMeta.subtitle}</p>
                         </div>
                         <span className="inline-flex items-center rounded-full border border-primary-blue-200 bg-white px-2 py-0.5 text-[11px] font-semibold text-primary-navy">
                           Stage {n}
                         </span>
                       </div>
-                      {n < 3 && <div className="mt-2 text-[11px] font-semibold text-slate-400">Next stage →</div>}
+                      <div className="mt-2 flex items-center justify-between">
+                        <span className={`inline-flex items-center rounded-full border px-2 py-0.5 text-[11px] font-semibold ${badgeClassName}`}>
+                          {stageBadge}
+                        </span>
+                        {n < 3 && <div className="text-[11px] font-semibold text-slate-400">Next stage →</div>}
+                      </div>
                       <div className="mt-3 grid grid-cols-2 gap-2 text-xs">
                         <div className="rounded-lg bg-white border border-slate-200 px-2 py-1.5">
                           <p className="text-slate-500">Targeted</p>
@@ -691,7 +784,7 @@ export default function WhatsAppOpsOverview() {
                         </div>
                         <div className="rounded-lg bg-white border border-slate-200 px-2 py-1.5">
                           <p className="text-slate-500">Accepted/Sent</p>
-                          <p className="font-semibold text-slate-900">{asNumber(bucket.submitted)} / {sent}</p>
+                          <p className="font-semibold text-slate-900">{stageData.submitted} / {sent}</p>
                         </div>
                         <div className="rounded-lg bg-white border border-slate-200 px-2 py-1.5">
                           <p className="text-slate-500">Delivered</p>
@@ -699,15 +792,15 @@ export default function WhatsAppOpsOverview() {
                         </div>
                         <div className="rounded-lg bg-white border border-slate-200 px-2 py-1.5">
                           <p className="text-slate-500">Read</p>
-                          <p className="font-semibold text-violet-700">{asNumber(bucket.read)}</p>
+                          <p className="font-semibold text-violet-700">{stageData.read}</p>
                         </div>
                         <div className="rounded-lg bg-white border border-slate-200 px-2 py-1.5">
                           <p className="text-slate-500">Failed</p>
-                          <p className="font-semibold text-rose-700">{asNumber(bucket.failed)}</p>
+                          <p className="font-semibold text-rose-700">{stageData.failed}</p>
                         </div>
                         <div className="rounded-lg bg-white border border-slate-200 px-2 py-1.5">
                           <p className="text-slate-500">In-flight</p>
-                          <p className="font-semibold text-amber-700">{asNumber(bucket.inFlight)}</p>
+                          <p className="font-semibold text-amber-700">{stageData.inFlight}</p>
                         </div>
                       </div>
                       <div className="mt-3 flex items-center justify-between border-t border-slate-200 pt-2">
