@@ -194,6 +194,7 @@ export default function WhatsAppOpsOverview() {
   }, [selectedDate, selectedKind]);
 
   const byAttempt = dayData?.byAttempt || {};
+  const retry2Exclusions = dayData?.retry2Exclusions || { totalExcluded: 0, byReason: {} };
   const retryLifecycle = useMemo(() => {
     const stageBuckets = [1, 2, 3].map((n) => {
       const bucket = byAttempt[n] || byAttempt[String(n)] || {};
@@ -817,6 +818,25 @@ export default function WhatsAppOpsOverview() {
                   );
                 })}
               </div>
+
+              {asNumber(retry2Exclusions.totalExcluded) > 0 && (
+                <div className="rounded-xl border border-amber-200 bg-amber-50/40 p-4">
+                  <p className="text-xs font-semibold uppercase tracking-[0.14em] text-amber-900">
+                    Retry2 eligibility reconciliation
+                  </p>
+                  <p className="mt-1 text-sm text-amber-900/90">
+                    Retry1 failed: <span className="font-semibold">{asNumber(retry2Exclusions.retry1Failed)}</span> · Retry2 targeted: <span className="font-semibold">{asNumber(retry2Exclusions.retry2Targeted)}</span> · Excluded: <span className="font-semibold">{asNumber(retry2Exclusions.totalExcluded)}</span>
+                  </p>
+                  <div className="mt-3 grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-2 text-xs">
+                    {Object.entries(retry2Exclusions.byReason || {}).map(([reason, count]) => (
+                      <div key={reason} className="rounded-lg border border-amber-200 bg-white px-2.5 py-2">
+                        <p className="font-semibold text-amber-900">{asNumber(count)}</p>
+                        <p className="text-amber-800/90">{String(reason).replace(/_/g, ' ')}</p>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
             </section>
           )}
 
