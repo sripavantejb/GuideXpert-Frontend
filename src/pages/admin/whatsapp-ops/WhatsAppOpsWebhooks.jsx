@@ -29,7 +29,7 @@ export default function WhatsAppOpsWebhooks() {
         <div>
           <h1 className="text-xl font-bold text-gray-900">Inbound webhooks</h1>
           <p className="text-sm text-gray-600 mt-1">
-            Stored callbacks from POST <code className="text-xs bg-gray-100 px-1 rounded">/webhook/gupshup</code> (payload shapes vary — parser is defensive).
+            Stored callbacks from POST <code className="text-xs bg-gray-100 px-1 rounded">/webhook/gupshup</code> (set this full URL on the Gupshup app). Payload shapes vary — parser is defensive; duplicates dedupe by hash.
           </p>
         </div>
         <div className="flex gap-2 items-end">

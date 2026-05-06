@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
+import { Link } from 'react-router-dom';
 import KpiCard from '../../../components/Admin/KpiCard';
 import ChartContainer from '../../../components/Admin/ChartContainer';
 import { ResponsiveContainer, BarChart, Bar, XAxis, YAxis, Tooltip, CartesianGrid, Legend, LineChart, Line } from 'recharts';
@@ -158,6 +159,7 @@ export default function WhatsAppOpsOverview() {
 
   const calendarCells = useMemo(() => monthGrid(monthCursor), [monthCursor]);
 
+  /** IST day bucket uses message row `createdAt` (see backend getCalendarDayOverview). */
   const dailyOverall = dayData?.overall || {};
   const dailySelected = dayData?.selectedKindMetrics || {};
 
@@ -175,6 +177,17 @@ export default function WhatsAppOpsOverview() {
     ? templateKinds.find((k) => k.id === selectedKind) || FALLBACK_TEMPLATE_KINDS.find((k) => k.id === selectedKind)
     : null;
   const isAllTemplates = !selectedKind;
+  const selectedStrategy = selectedTemplate?.retryPolicy?.strategy || (selectedKind === 'slot_booked' ? 'immediate_only' : 'multi_stage');
+
+  const messagesDrillHref = useMemo(() => {
+    const p = new URLSearchParams();
+    p.set('date', selectedDate);
+    if (selectedKind) p.set('messageKind', selectedKind);
+    p.set('status', 'failed,retry_exhausted');
+    return `/admin/whatsapp-ops/messages?${p.toString()}`;
+  }, [selectedDate, selectedKind]);
+
+  const byAttempt = dayData?.byAttempt || {};
 
   const scopeLabel = isAllTemplates ? 'All templates' : (selectedTemplate?.label || 'Selected template');
 
@@ -240,8 +253,14 @@ export default function WhatsAppOpsOverview() {
     {
       label: `${pipelinePrefix}Submitted`,
       value: asNumber(pipelineSource.providerAcceptedCount),
-      subtitle: isAllTemplates ? `${scopeLabel} • submitted` : `${scopeLabel} • submitted`,
+      subtitle: isAllTemplates ? `${scopeLabel} • accepted (Gupshup)` : `${scopeLabel} • accepted (Gupshup)`,
       className: 'border-blue-100 bg-blue-50/30'
+    },
+    {
+      label: `${pipelinePrefix}Sent`,
+      value: asNumber(pipelineSource.sentCount),
+      subtitle: isAllTemplates ? `${scopeLabel} • sent+ (DLR)` : `${scopeLabel} • sent+ (DLR)`,
+      className: 'border-sky-100 bg-sky-50/30'
     },
     {
       label: `${pipelinePrefix}Delivered`,
@@ -546,8 +565,167 @@ export default function WhatsAppOpsOverview() {
                   ))}
                 </div>
               </div>
+
+              {selectedKind && selectedStrategy === 'immediate_only' && (
+                <div className="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm space-y-4">
+                  <div className="flex flex-wrap items-start justify-between gap-3">
+                    <div>
+                      <p className="text-[11px] font-semibold uppercase tracking-[0.14em] text-primary-navy">
+                        Transactional immediate retry summary (IST day · {selectedDate})
+                      </p>
+                      <p className="text-xs text-slate-600 mt-1">
+                        Lightweight `slot_booked` flow: initial attempt + one short-delay retry only.
+                      </p>
+                    </div>
+                    <Link
+                      to={`${messagesDrillHref}&messageKind=slot_booked`}
+                      className="text-sm font-semibold text-primary-navy hover:underline"
+                    >
+                      Open transactional failures →
+                    </Link>
+                  </div>
+                  <div className="grid grid-cols-1 md:grid-cols-4 gap-3">
+                    <KpiCard
+                      label="Total targeted"
+                      value={asNumber((byAttempt[1] || {}).targeted)}
+                      subtitle="Attempt 1 recipients"
+                      className="border-indigo-100 bg-indigo-50/30"
+                    />
+                    <KpiCard
+                      label="Initial success / failed"
+                      value={`${asNumber((byAttempt[1] || {}).delivered)} / ${asNumber((byAttempt[1] || {}).failed)}`}
+                      subtitle="Attempt 1 delivered+ / failed"
+                      className="border-blue-100 bg-blue-50/30"
+                    />
+                    <KpiCard
+                      label="Immediate retry attempted"
+                      value={asNumber((byAttempt[2] || {}).targeted)}
+                      subtitle="Attempt 2 rows"
+                      className="border-amber-100 bg-amber-50/30"
+                    />
+                    <KpiCard
+                      label="Recovered after retry"
+                      value={asNumber((byAttempt[2] || {}).delivered)}
+                      subtitle="Attempt 2 delivered+"
+                      className="border-emerald-100 bg-emerald-50/30"
+                    />
+                    <KpiCard
+                      label="Delivered total"
+                      value={asNumber((byAttempt[1] || {}).delivered) + asNumber((byAttempt[2] || {}).delivered)}
+                      subtitle="Attempt1+2 delivered+"
+                      className="border-emerald-100 bg-emerald-50/30"
+                    />
+                    <KpiCard
+                      label="Read total"
+                      value={asNumber((byAttempt[1] || {}).read) + asNumber((byAttempt[2] || {}).read)}
+                      subtitle="Attempt1+2 read"
+                      className="border-violet-100 bg-violet-50/30"
+                    />
+                    <KpiCard
+                      label="Final failed"
+                      value={
+                        asNumber((byAttempt[2] || {}).targeted) > 0
+                          ? asNumber((byAttempt[2] || {}).failed)
+                          : asNumber((byAttempt[1] || {}).failed)
+                      }
+                      subtitle="Exhausted / unrecovered"
+                      className="border-rose-100 bg-rose-50/30"
+                    />
+                    <KpiCard
+                      label="Retry2 rows"
+                      value={asNumber((byAttempt[3] || {}).targeted)}
+                      subtitle="Expected: 0 for slot_booked"
+                      className="border-slate-100 bg-slate-50/30"
+                    />
+                  </div>
+                </div>
+              )}
+
             </div>
           </div>
+
+          {selectedKind && selectedStrategy !== 'immediate_only' && (
+            <section className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm space-y-4">
+              <div className="flex flex-wrap items-start justify-between gap-3 border-b border-slate-200 pb-3">
+                <div>
+                  <p className="text-xs font-semibold uppercase tracking-[0.14em] text-primary-navy">
+                    Retry lifecycle analytics (IST day · {selectedDate})
+                  </p>
+                  <p className="text-sm text-slate-600 mt-1">
+                    Progression overview for retry-enabled templates: Attempt 1 → Retry 1 → Retry 2.
+                  </p>
+                </div>
+                <Link
+                  to={messagesDrillHref}
+                  className="text-sm font-semibold text-primary-navy hover:underline"
+                >
+                  Open failed drilldown →
+                </Link>
+              </div>
+
+              <div className="grid grid-cols-1 xl:grid-cols-3 gap-4">
+                {[1, 2, 3].map((n) => {
+                  const bucket = byAttempt[n] || byAttempt[String(n)] || {};
+                  const targeted = asNumber(bucket.targeted);
+                  const delivered = asNumber(bucket.delivered);
+                  const sent = asNumber(bucket.sent);
+                  const successRate = targeted ? Math.round((delivered / targeted) * 1000) / 10 : 0;
+                  const title = n === 1 ? 'Initial Attempt' : n === 2 ? 'Retry 1' : 'Retry 2';
+                  const subtitle = n === 1 ? 'Primary send wave' : n === 2 ? 'First recovery wave' : 'Final recovery wave';
+                  return (
+                    <div key={n} className="rounded-xl border border-slate-200 bg-slate-50/50 p-4">
+                      <div className="flex items-center justify-between gap-2">
+                        <div>
+                          <p className="text-sm font-semibold text-slate-900">{title}</p>
+                          <p className="text-xs text-slate-500">{subtitle}</p>
+                        </div>
+                        <span className="inline-flex items-center rounded-full border border-primary-blue-200 bg-white px-2 py-0.5 text-[11px] font-semibold text-primary-navy">
+                          Stage {n}
+                        </span>
+                      </div>
+                      {n < 3 && <div className="mt-2 text-[11px] font-semibold text-slate-400">Next stage →</div>}
+                      <div className="mt-3 grid grid-cols-2 gap-2 text-xs">
+                        <div className="rounded-lg bg-white border border-slate-200 px-2 py-1.5">
+                          <p className="text-slate-500">Targeted</p>
+                          <p className="font-semibold text-slate-900">{targeted}</p>
+                        </div>
+                        <div className="rounded-lg bg-white border border-slate-200 px-2 py-1.5">
+                          <p className="text-slate-500">Accepted/Sent</p>
+                          <p className="font-semibold text-slate-900">{asNumber(bucket.submitted)} / {sent}</p>
+                        </div>
+                        <div className="rounded-lg bg-white border border-slate-200 px-2 py-1.5">
+                          <p className="text-slate-500">Delivered</p>
+                          <p className="font-semibold text-emerald-700">{delivered}</p>
+                        </div>
+                        <div className="rounded-lg bg-white border border-slate-200 px-2 py-1.5">
+                          <p className="text-slate-500">Read</p>
+                          <p className="font-semibold text-violet-700">{asNumber(bucket.read)}</p>
+                        </div>
+                        <div className="rounded-lg bg-white border border-slate-200 px-2 py-1.5">
+                          <p className="text-slate-500">Failed</p>
+                          <p className="font-semibold text-rose-700">{asNumber(bucket.failed)}</p>
+                        </div>
+                        <div className="rounded-lg bg-white border border-slate-200 px-2 py-1.5">
+                          <p className="text-slate-500">In-flight</p>
+                          <p className="font-semibold text-amber-700">{asNumber(bucket.inFlight)}</p>
+                        </div>
+                      </div>
+                      <div className="mt-3 flex items-center justify-between border-t border-slate-200 pt-2">
+                        <p className="text-xs text-slate-500">Success rate</p>
+                        <p className="text-sm font-semibold text-primary-navy">{successRate}%</p>
+                      </div>
+                      <Link
+                        to={`${messagesDrillHref}&attemptNumber=${n}`}
+                        className="mt-3 inline-block text-xs font-semibold text-sky-800 hover:underline"
+                      >
+                        Messages for attempt {n} →
+                      </Link>
+                    </div>
+                  );
+                })}
+              </div>
+            </section>
+          )}
 
           <div className="grid gap-6 lg:grid-cols-3">
             <ChartContainer title="Month trend (IST)" subtitle="Bookings vs attempts vs failed by day">

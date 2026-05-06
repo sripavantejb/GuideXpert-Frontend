@@ -1,5 +1,6 @@
 const tone = {
   submitted: 'bg-sky-100 text-sky-900 border-sky-200',
+  sent: 'bg-cyan-100 text-cyan-950 border-cyan-200',
   delivered: 'bg-emerald-100 text-emerald-900 border-emerald-200',
   read: 'bg-indigo-100 text-indigo-900 border-indigo-200',
   failed: 'bg-rose-100 text-rose-900 border-rose-200',

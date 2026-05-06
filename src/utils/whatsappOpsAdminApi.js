@@ -61,6 +61,12 @@ export const getWhatsappOpsMessageTimeline = (id, token) =>
 export const getWhatsappOpsRetriesAnalytics = (params, token) =>
   whatsappOpsRequest(`/retries/analytics${buildWhatsappOpsQuery(params)}`, { method: 'GET' }, token);
 
+export const getWhatsappRetryGroupDetail = (id, token) =>
+  whatsappOpsRequest(`/retry-groups/${encodeURIComponent(id)}`, { method: 'GET' }, token);
+
+export const getWhatsappAttemptAnalytics = (params, token) =>
+  whatsappOpsRequest(`/attempt-analytics${buildWhatsappOpsQuery(params)}`, { method: 'GET' }, token);
+
 export const listWhatsappOpsWebhooks = (params, token) =>
   whatsappOpsRequest(`/webhooks${buildWhatsappOpsQuery(params)}`, { method: 'GET' }, token);
 

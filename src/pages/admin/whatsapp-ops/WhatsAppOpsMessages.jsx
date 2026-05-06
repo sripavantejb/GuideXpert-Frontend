@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useState } from 'react';
+import { useSearchParams } from 'react-router-dom';
 import { FiAlertCircle, FiCheckCircle, FiClock, FiLoader } from 'react-icons/fi';
 import { useAuth } from '../../../hooks/useAuth';
 import {
@@ -10,12 +11,15 @@ import { defaultRangeIsoDates, formatDt } from './whatsappOpsShared';
 import WaStatusBadge from '../../../components/Admin/whatsapp-ops/WaStatusBadge';
 
 export default function WhatsAppOpsMessages() {
+  const [searchParams] = useSearchParams();
   const { user } = useAuth();
   const [{ from, to }, setRange] = useState(defaultRangeIsoDates);
   const [phone, setPhone] = useState('');
   const [name, setName] = useState('');
   const [messageKind, setMessageKind] = useState('');
   const [status, setStatus] = useState('');
+  const [attemptNumber, setAttemptNumber] = useState('');
+  const [retryGroupId, setRetryGroupId] = useState('');
   const [loading, setLoading] = useState(false);
   const [err, setErr] = useState(null);
   const [rows, setRows] = useState([]);
@@ -28,9 +32,36 @@ export default function WhatsAppOpsMessages() {
 
   const isSuper = user?.isSuperAdmin === true;
 
+  useEffect(() => {
+    const date = searchParams.get('date');
+    if (date && /^\d{4}-\d{2}-\d{2}$/.test(date)) {
+      setRange({ from: date, to: date });
+    } else {
+      const fromQ = searchParams.get('from');
+      const toQ = searchParams.get('to');
+      if (fromQ && /^\d{4}-\d{2}-\d{2}$/.test(fromQ)) {
+        setRange((r) => ({
+          from: fromQ,
+          to: toQ && /^\d{4}-\d{2}-\d{2}$/.test(toQ) ? toQ : r.to
+        }));
+      } else if (toQ && /^\d{4}-\d{2}-\d{2}$/.test(toQ)) {
+        setRange((r) => ({ ...r, to: toQ }));
+      }
+    }
+    const k = searchParams.get('messageKind');
+    if (k) setMessageKind(k);
+    const st = searchParams.get('status');
+    if (st) setStatus(st);
+    const an = searchParams.get('attemptNumber');
+    if (an) setAttemptNumber(an);
+    const rg = searchParams.get('retryGroupId');
+    if (rg) setRetryGroupId(rg);
+  }, [searchParams]);
+
   const statusPillClass = (status) => {
     const s = String(status || '').toLowerCase();
     if (s === 'read' || s === 'delivered') return 'bg-emerald-50 text-emerald-800 border-emerald-200';
+    if (s === 'sent') return 'bg-sky-50 text-sky-900 border-sky-200';
     if (s === 'failed' || s === 'retry_exhausted') return 'bg-rose-50 text-rose-800 border-rose-200';
     return 'bg-amber-50 text-amber-800 border-amber-200';
   };
@@ -49,6 +80,8 @@ export default function WhatsAppOpsMessages() {
         ...(name ? { name } : {}),
         ...(messageKind ? { messageKind } : {}),
         ...(status ? { status } : {}),
+        ...(attemptNumber ? { attemptNumber } : {}),
+        ...(retryGroupId ? { retryGroupId } : {}),
       };
       const res = await listWhatsappOpsMessages(params);
       if (cancelled) return;
@@ -64,7 +97,7 @@ export default function WhatsAppOpsMessages() {
     return () => {
       cancelled = true;
     };
-  }, [from, to, phone, name, messageKind, status, page, reloadKey]);
+  }, [from, to, phone, name, messageKind, status, attemptNumber, retryGroupId, page, reloadKey]);
 
   async function openTimeline(id) {
     setDrawer(null);
@@ -162,11 +195,35 @@ export default function WhatsAppOpsMessages() {
           <select value={status} onChange={(e) => setStatus(e.target.value)} className="block mt-1 rounded border px-2 py-1 w-44">
             <option value="">All</option>
             <option value="submitted">submitted</option>
+            <option value="sent">sent</option>
             <option value="delivered">delivered</option>
             <option value="read">read</option>
-            <option value="failed">failed</option>
+            <option value="failed">failed (+ retry_exhausted via multi)</option>
+            <option value="failed,retry_exhausted">failed,retry_exhausted</option>
             <option value="retry_exhausted">retry_exhausted</option>
           </select>
+        </label>
+        <label className="text-xs text-gray-600">
+          Attempt #
+          <select
+            value={attemptNumber}
+            onChange={(e) => setAttemptNumber(e.target.value)}
+            className="block mt-1 rounded border px-2 py-1 w-28"
+          >
+            <option value="">All</option>
+            <option value="1">1</option>
+            <option value="2">2</option>
+            <option value="3">3</option>
+          </select>
+        </label>
+        <label className="text-xs text-gray-600">
+          Retry group id
+          <input
+            value={retryGroupId}
+            onChange={(e) => setRetryGroupId(e.target.value)}
+            placeholder="Mongo ObjectId"
+            className="block mt-1 rounded border px-2 py-1 w-52 font-mono text-xs"
+          />
         </label>
         <button
           type="button"
@@ -191,6 +248,8 @@ export default function WhatsAppOpsMessages() {
                 <th className="text-left px-3 py-2">Name</th>
                 <th className="text-left px-3 py-2">Phone number</th>
                 <th className="text-left px-3 py-2">Message type</th>
+                <th className="text-left px-3 py-2">Attempt</th>
+                <th className="text-left px-3 py-2">Retry group</th>
                 <th className="text-left px-3 py-2">Delivery status</th>
                 <th className="text-left px-3 py-2">Failure reason</th>
                 <th className="text-left px-3 py-2">Retry count</th>
@@ -200,14 +259,14 @@ export default function WhatsAppOpsMessages() {
             <tbody className="divide-y divide-gray-100">
               {loading && rows.length === 0 && (
                 <tr>
-                  <td colSpan={8} className="px-3 py-8 text-center text-gray-500">
+                  <td colSpan={10} className="px-3 py-8 text-center text-gray-500">
                     <FiLoader className="inline animate-spin mr-2" /> Loading…
                   </td>
                 </tr>
               )}
               {!loading && rows.length === 0 && (
                 <tr>
-                  <td colSpan={8} className="px-3 py-10 text-center text-gray-600">
+                  <td colSpan={10} className="px-3 py-10 text-center text-gray-600">
                     No message events yet.
                   </td>
                 </tr>
@@ -218,6 +277,10 @@ export default function WhatsAppOpsMessages() {
                   <td className="px-3 py-2">{r.userName || 'Not available'}</td>
                   <td className="px-3 py-2 font-mono">{r.phone || 'Not available'}</td>
                   <td className="px-3 py-2">{r.messageKind || 'Not available'}</td>
+                  <td className="px-3 py-2 text-center">{r.attemptNumber ?? '—'}</td>
+                  <td className="px-3 py-2 font-mono text-xs max-w-[120px] truncate" title={r.retryGroupId ? String(r.retryGroupId) : ''}>
+                    {r.retryGroupId ? String(r.retryGroupId).slice(-8) : '—'}
+                  </td>
                   <td className="px-3 py-2">
                     <span className={`inline-flex items-center rounded-full border px-2 py-0.5 text-xs font-semibold ${statusPillClass(r.deliveryStatus || r.status)}`}>
                       {r.deliveryStatus || r.status || 'Not available'}
