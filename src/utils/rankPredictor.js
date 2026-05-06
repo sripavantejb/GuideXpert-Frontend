@@ -5,7 +5,7 @@ const EXAM_DEFINITIONS = [
     description: 'Predict AP EAMCET rank range from marks.',
     scoreLabel: 'Marks',
     min: 0,
-    max: 100,
+    max: 160,
     type: 'marks',
   },
   {
