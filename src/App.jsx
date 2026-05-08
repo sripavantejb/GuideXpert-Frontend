@@ -49,7 +49,7 @@ import PosterAutomationAdminPage from './pages/admin/posters/PosterAutomationAdm
 import WhatsAppOpsLayout from './pages/admin/whatsapp-ops/WhatsAppOpsLayout';
 import WhatsAppOpsOverview from './pages/admin/whatsapp-ops/WhatsAppOpsOverview';
 import WhatsAppOpsCron from './pages/admin/whatsapp-ops/WhatsAppOpsCron';
-import WhatsAppOpsMessages from './pages/admin/whatsapp-ops/WhatsAppOpsMessages';
+import WhatsAppOpsRecovery from './pages/admin/whatsapp-ops/WhatsAppOpsRecovery';
 import WhatsAppOpsRetries from './pages/admin/whatsapp-ops/WhatsAppOpsRetries';
 import WhatsAppOpsWebhooks from './pages/admin/whatsapp-ops/WhatsAppOpsWebhooks';
 import WhatsAppOpsFailures from './pages/admin/whatsapp-ops/WhatsAppOpsFailures';
@@ -382,7 +382,7 @@ function App() {
               <Route index element={<Navigate to="overview" replace />} />
               <Route path="overview" element={<WhatsAppOpsOverview />} />
               <Route path="cron" element={<WhatsAppOpsCron />} />
-              <Route path="messages" element={<WhatsAppOpsMessages />} />
+              <Route path="messages" element={<WhatsAppOpsRecovery />} />
               <Route path="retries" element={<WhatsAppOpsRetries />} />
               <Route path="webhooks" element={<WhatsAppOpsWebhooks />} />
               <Route path="failures" element={<WhatsAppOpsFailures />} />

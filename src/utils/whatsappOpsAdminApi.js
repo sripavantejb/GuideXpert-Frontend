@@ -82,6 +82,65 @@ export const triggerWhatsappOpsRetryBatch = (token) =>
     headers: { 'x-whatsapp-ops-confirm': 'RETRY' }
   }, token);
 
+export const captureWhatsappOpsSnapshot = (body, token) =>
+  whatsappOpsRequest('/snapshots/capture', {
+    method: 'POST',
+    body: JSON.stringify(body || {})
+  }, token);
+
+export const getLatestWhatsappOpsSnapshot = (params, token) =>
+  whatsappOpsRequest(`/snapshots/latest${buildWhatsappOpsQuery(params)}`, { method: 'GET' }, token);
+
+export const getOperationalHealth = (params, token) =>
+  whatsappOpsRequest(`/operational-health${buildWhatsappOpsQuery(params)}`, { method: 'GET' }, token);
+
+export const getUnresolvedRecipients = (params, token) =>
+  whatsappOpsRequest(`/unresolved${buildWhatsappOpsQuery(params)}`, { method: 'GET' }, token);
+
+export async function downloadUnresolvedCsv(params = {}, token = getStoredToken()) {
+  const url = `${getApiBaseUrl()}/admin/whatsapp-ops/unresolved/export${buildWhatsappOpsQuery(params)}`;
+  const headers = {};
+  if (token) headers.Authorization = `Bearer ${token}`;
+  const res = await fetch(url, { method: 'GET', headers });
+  if (!res.ok) {
+    if (res.status === 401) notifyAdminUnauthorized({ endpoint: 'unresolved-export', status: 401 });
+    const errText = await res.text();
+    throw new Error(errText || `Export failed (${res.status})`);
+  }
+  const blob = await res.blob();
+  const dispo = res.headers.get('Content-Disposition') || '';
+  const m = dispo.match(/filename="([^"]+)"/);
+  const filename = m ? m[1] : `unresolved-${Date.now()}.csv`;
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(blob);
+  a.download = filename;
+  document.body.appendChild(a);
+  a.click();
+  a.remove();
+  URL.revokeObjectURL(a.href);
+}
+
+export const previewWhatsappOpsManualRecovery = (body, token) =>
+  whatsappOpsRequest('/manual-recovery/preview', {
+    method: 'POST',
+    body: JSON.stringify(body || {})
+  }, token);
+
+export const startWhatsappOpsManualRecovery = (body, token) =>
+  whatsappOpsRequest('/manual-recovery/start', {
+    method: 'POST',
+    body: JSON.stringify(body || {})
+  }, token);
+
+export const getWhatsappOpsManualRecoveryJob = (id, token) =>
+  whatsappOpsRequest(`/manual-recovery/${encodeURIComponent(id)}`, { method: 'GET' }, token);
+
+export const cancelWhatsappOpsManualRecoveryJob = (id, token) =>
+  whatsappOpsRequest(`/manual-recovery/${encodeURIComponent(id)}/cancel`, { method: 'POST' }, token);
+
+export const listWhatsappOpsManualRecoveryJobs = (params, token) =>
+  whatsappOpsRequest(`/manual-recovery${buildWhatsappOpsQuery(params)}`, { method: 'GET' }, token);
+
 export async function downloadWhatsappOpsCsv(type = 'messages', token = getStoredToken()) {
   const url = `${getApiBaseUrl()}/admin/whatsapp-ops/export?type=${encodeURIComponent(type)}`;
   const headers = {};
