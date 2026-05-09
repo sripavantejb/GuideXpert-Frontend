@@ -12,6 +12,7 @@ import MeetingRegistration from './pages/MeetingRegistration';
 import IitCounsellingMeet from './pages/IitCounsellingMeet';
 import IitCounsellingMeetHindi from './pages/IitCounsellingMeetHindi';
 import IitFirstForm from './pages/IitFirstForm';
+import IitSecondForm from './pages/IitSecondForm';
 import TrainingMeeting from './pages/TrainingMeeting';
 import FeedbackForm from './pages/FeedbackForm';
 import TrainingForm from './pages/TrainingForm';
@@ -198,6 +199,8 @@ function App() {
           <Route path="/iitcounsellingmeethindi" element={<IitCounsellingMeetHindi />} />
           <Route path="/iitfirstform" element={<IitFirstForm />} />
           <Route path="/Iitfirstform" element={<IitFirstForm />} />
+          <Route path="/iitsecondform" element={<IitSecondForm />} />
+          <Route path="/Iitsecondform" element={<IitSecondForm />} />
           <Route path="/training" element={<TrainingMeeting />} />
           <Route path="/counsellor-poster" element={<Suspense fallback={<div className="min-h-screen"><PageSkeleton /></div>}><CounsellorCertificate /></Suspense>} />
           <Route path="/holiposter" element={<HoliPosterPage />} />

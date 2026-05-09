@@ -491,6 +491,19 @@ export const submitIitFirstForm = async (name, mobileNumber, interestedInAiLearn
 };
 
 /**
+ * IIT second form: after OTP, submit name, mobile, and career guidance support text.
+ * @param {string} name
+ * @param {string} mobileNumber - 10 digits
+ * @param {string} careerGuidanceSupport - trimmed, 1–2000 chars
+ */
+export const submitIitSecondForm = async (name, mobileNumber, careerGuidanceSupport) => {
+  return apiRequest('/iit-second-form/submit', {
+    method: 'POST',
+    body: JSON.stringify({ name, mobileNumber, careerGuidanceSupport }),
+  });
+};
+
+/**
  * Register for training meeting (saves name and mobile to training attendance, then redirect to training Meet link)
  * @param {string} name - User's full name
  * @param {string} mobileNumber - 10-digit mobile number

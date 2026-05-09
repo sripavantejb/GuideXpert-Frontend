@@ -1,7 +1,7 @@
 import { useState, useRef } from 'react';
-import { sendOtp, verifyOtp, submitIitFirstForm } from '../utils/api';
+import { sendOtp, verifyOtp, submitIitSecondForm } from '../utils/api';
 
-const OTP_OCCUPATION = 'IIT First Form';
+const OTP_OCCUPATION = 'IIT Second Form';
 
 function validateName(value) {
   const trimmed = typeof value === 'string' ? value.trim() : '';
@@ -19,10 +19,10 @@ function validateMobile(value) {
 }
 
 /**
- * Public flow: name + mobile → OTP → question about interest in learning more about AI.
- * Routes: /iitfirstform and /Iitfirstform
+ * Same flow as IIT first form: name + mobile → OTP → career guidance question.
+ * Routes: /iitsecondform and /Iitsecondform
  */
-export default function IitFirstForm() {
+export default function IitSecondForm() {
   const [step, setStep] = useState(1);
   const [name, setName] = useState('');
   const [mobileNumber, setMobileNumber] = useState('');
@@ -33,8 +33,8 @@ export default function IitFirstForm() {
   const [successMessage, setSuccessMessage] = useState('');
   const [loading, setLoading] = useState(false);
   const [verifying, setVerifying] = useState(false);
-  const [aiResponseText, setAiResponseText] = useState('');
-  const [submittingInterest, setSubmittingInterest] = useState(false);
+  const [supportText, setSupportText] = useState('');
+  const [submitting, setSubmitting] = useState(false);
   const [done, setDone] = useState(false);
 
   const otpInputRefs = useRef([]);
@@ -192,10 +192,10 @@ export default function IitFirstForm() {
     setSuccessMessage('');
   };
 
-  const handleSubmitInterest = async (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
     setSubmitError('');
-    const answer = aiResponseText.trim();
+    const answer = supportText.trim();
     if (!answer) {
       setSubmitError('Please type your answer in the text field.');
       return;
@@ -205,21 +205,21 @@ export default function IitFirstForm() {
       return;
     }
 
-    setSubmittingInterest(true);
+    setSubmitting(true);
     const phone = normalizedPhone();
 
     try {
-      const res = await submitIitFirstForm(name.trim(), phone, answer);
+      const res = await submitIitSecondForm(name.trim(), phone, answer);
       if (!res.success) {
         setSubmitError(res.message || 'Could not save your answer. Please try again.');
-        setSubmittingInterest(false);
+        setSubmitting(false);
         return;
       }
       setDone(true);
     } catch {
       setSubmitError('Network error. Please try again.');
     } finally {
-      setSubmittingInterest(false);
+      setSubmitting(false);
     }
   };
 
@@ -228,7 +228,7 @@ export default function IitFirstForm() {
       <div className="bg-white rounded-xl shadow-lg max-w-md w-full p-6 sm:p-8">
         <div className="text-center mb-6">
           <h1 className="text-2xl font-bold text-gray-900">GuideXpert</h1>
-          <p className="text-gray-600 mt-1">IIT first form</p>
+          <p className="text-gray-600 mt-1">IIT second form</p>
         </div>
 
         {step === 2 && (
@@ -247,7 +247,7 @@ export default function IitFirstForm() {
           <div className="mb-4">
             <div className="flex items-center justify-between text-xs text-gray-500 mb-1">
               <span>Step 3 of 3</span>
-              <span>Your interest</span>
+              <span>Your needs</span>
             </div>
             <div className="w-full bg-gray-200 rounded-full h-1.5">
               <div className="bg-blue-700 h-1.5 rounded-full transition-all" style={{ width: '100%' }} />
@@ -288,7 +288,7 @@ export default function IitFirstForm() {
               <>
                 <p className="text-xs font-semibold text-gray-500 uppercase tracking-wide mb-3">One quick question</p>
                 <h2 className="text-xl sm:text-2xl font-bold text-gray-900 leading-snug mb-6 border-l-4 border-blue-600 pl-4 py-0.5">
-                  Are you interested to learn more about AI?
+                  Which Career Guidance Support Do You Need?
                 </h2>
               </>
             )}
@@ -308,12 +308,12 @@ export default function IitFirstForm() {
             {step === 1 && (
               <form onSubmit={handleSendOtp} className="space-y-4">
                 <div>
-                  <label htmlFor="iit-first-name" className="block text-sm font-medium text-gray-700 mb-1">
+                  <label htmlFor="iit-second-name" className="block text-sm font-medium text-gray-700 mb-1">
                     Name <span className="text-red-500">*</span>
                   </label>
                   <input
                     type="text"
-                    id="iit-first-name"
+                    id="iit-second-name"
                     value={name}
                     onChange={handleNameChange}
                     placeholder="Full name"
@@ -331,12 +331,12 @@ export default function IitFirstForm() {
                 </div>
 
                 <div>
-                  <label htmlFor="iit-first-mobile" className="block text-sm font-medium text-gray-700 mb-1">
+                  <label htmlFor="iit-second-mobile" className="block text-sm font-medium text-gray-700 mb-1">
                     Mobile number <span className="text-red-500">*</span>
                   </label>
                   <input
                     type="tel"
-                    id="iit-first-mobile"
+                    id="iit-second-mobile"
                     value={mobileNumber}
                     onChange={handleMobileChange}
                     placeholder="10-digit mobile number"
@@ -427,36 +427,36 @@ export default function IitFirstForm() {
             )}
 
             {step === 3 && (
-              <form onSubmit={handleSubmitInterest} className="space-y-4">
+              <form onSubmit={handleSubmit} className="space-y-4">
                 <div>
-                  <label htmlFor="iit-first-ai-response" className="block text-sm font-medium text-gray-700 mb-1">
+                  <label htmlFor="iit-second-support" className="block text-sm font-medium text-gray-700 mb-1">
                     Your answer <span className="text-red-500">*</span>
                   </label>
                   <textarea
-                    id="iit-first-ai-response"
-                    value={aiResponseText}
+                    id="iit-second-support"
+                    value={supportText}
                     onChange={(e) => {
-                      setAiResponseText(e.target.value);
+                      setSupportText(e.target.value);
                       setSubmitError('');
                     }}
                     rows={4}
                     maxLength={2000}
-                    placeholder="Type your response here…"
+                    placeholder="Describe the career guidance support you need…"
                     className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition text-sm text-gray-900 resize-y min-h-[100px]"
-                    disabled={submittingInterest}
-                    aria-describedby="iit-first-ai-response-hint"
+                    disabled={submitting}
+                    aria-describedby="iit-second-support-hint"
                   />
-                  <p id="iit-first-ai-response-hint" className="mt-1 text-xs text-gray-500">
-                    {aiResponseText.length}/2000 characters
+                  <p id="iit-second-support-hint" className="mt-1 text-xs text-gray-500">
+                    {supportText.length}/2000 characters
                   </p>
                 </div>
 
                 <button
                   type="submit"
-                  disabled={submittingInterest || !aiResponseText.trim()}
+                  disabled={submitting || !supportText.trim()}
                   className="w-full py-3 px-4 bg-blue-700 hover:bg-blue-800 text-white font-medium rounded-lg transition disabled:opacity-60 disabled:cursor-not-allowed"
                 >
-                  {submittingInterest ? 'Submitting…' : 'Submit'}
+                  {submitting ? 'Submitting…' : 'Submit'}
                 </button>
               </form>
             )}
