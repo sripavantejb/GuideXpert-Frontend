@@ -57,11 +57,13 @@ export default function CopyToSheetsModal({
 }) {
   const [copySelectedFields, setCopySelectedFields] = useState(() => fields.map((f) => f.key));
   const [copyFeedback, setCopyFeedback] = useState(false);
+  const [copyFailedMessage, setCopyFailedMessage] = useState('');
 
   useEffect(() => {
     if (open) {
       setCopySelectedFields(fields.map((f) => f.key));
       setCopyFeedback(false);
+      setCopyFailedMessage('');
     }
   }, [open, fields]);
 
@@ -82,13 +84,19 @@ export default function CopyToSheetsModal({
 
   const handleCopy = () => {
     const tsv = buildTsv(toCopy, fields, getCellValue, copySelectedFields);
-    copyTextToClipboard(tsv).then(() => {
-      setCopyFeedback(true);
-      setTimeout(() => {
-        onClose();
-        setCopyFeedback(false);
-      }, 1500);
-    });
+    setCopyFailedMessage('');
+    copyTextToClipboard(tsv).then(
+      () => {
+        setCopyFeedback(true);
+        setTimeout(() => {
+          onClose();
+          setCopyFeedback(false);
+        }, 1500);
+      },
+      (err) => {
+        setCopyFailedMessage(err?.message || 'Could not copy to clipboard. Try again or use a secure (HTTPS) origin.');
+      }
+    );
   };
 
   return (
@@ -156,6 +164,9 @@ export default function CopyToSheetsModal({
           {copySelectedFields.length === 0 && toCopy.length > 0 && (
             <p className="text-sm text-amber-600 mt-2">Select at least one column to copy.</p>
           )}
+          {copyFailedMessage ? (
+            <p className="text-sm text-red-600 mt-2" role="alert">{copyFailedMessage}</p>
+          ) : null}
         </div>
         <div className="px-4 py-3 border-t border-gray-200 flex items-center justify-end gap-2">
           <button

@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { Link } from 'react-router-dom';
-import { FiEye, FiUsers, FiBarChart2, FiCheckCircle } from 'react-icons/fi';
+import { FiEye, FiUsers, FiBarChart2, FiCheckCircle, FiClipboard, FiCalendar, FiClock, FiSearch } from 'react-icons/fi';
 import {
   getAllIitCounsellingSubmissionsPaginated,
   getIitCounsellingSubmissions,
@@ -8,6 +8,14 @@ import {
   getIitCounsellingVisitAnalytics,
   getStoredToken
 } from '../../utils/adminApi';
+import CopyToSheetsModal from '../../components/Admin/CopyToSheetsModal';
+import {
+  encodeSlotFilterOption,
+  normalizeIitSlotValue,
+  parseSlotFilterOption,
+  rowMatchesDemoDateRange,
+  rowMatchesSlotFilter,
+} from '../../utils/iitCounsellingSlots';
 import { deriveSlotDemoDateKeyIST, getAvailableSlots } from '../../utils/weekendSlots';
 
 function formatDateTime(value) {
@@ -87,12 +95,12 @@ function applySubmissionViewFilters(mappedRows, viewFilters) {
   const mediumQ = viewFilters.utmMedium.trim().toLowerCase();
   const campaignQ = viewFilters.utmCampaign.trim().toLowerCase();
   const contentQ = viewFilters.utmContent.trim().toLowerCase();
-  const slotExact = viewFilters.slot.trim();
+  const slotEnc = viewFilters.slot.trim();
   const updatedFromMs = viewFilters.updatedFrom ? new Date(viewFilters.updatedFrom).getTime() : null;
   const updatedToMs = viewFilters.updatedTo ? new Date(viewFilters.updatedTo).getTime() : null;
 
   return mappedRows.filter((row) => {
-    if (slotExact && String(row.slot || '') !== slotExact) return false;
+    if (!rowMatchesSlotFilter(row, slotEnc)) return false;
     if (sourceQ && !String(row.utmSource || '').toLowerCase().includes(sourceQ)) return false;
     if (mediumQ && !String(row.utmMedium || '').toLowerCase().includes(mediumQ)) return false;
     if (campaignQ && !String(row.utmCampaign || '').toLowerCase().includes(campaignQ)) return false;
@@ -101,22 +109,6 @@ function applySubmissionViewFilters(mappedRows, viewFilters) {
     if (updatedToMs != null && Number.isFinite(updatedToMs) && (!Number.isFinite(row.updatedEpoch) || row.updatedEpoch > updatedToMs)) return false;
     return true;
   });
-}
-
-function tsvEscapeCell(value) {
-  const text = String(value ?? '');
-  if (/[\t\n\r"]/.test(text)) {
-    return `"${text.replace(/"/g, '""')}"`;
-  }
-  return text;
-}
-
-function serializeRowsToTsv(columns, rows) {
-  const header = columns.map((c) => tsvEscapeCell(c.label)).join('\t');
-  const body = rows
-    .map((row) => columns.map((c) => tsvEscapeCell(row[c.key] ?? '')).join('\t'))
-    .join('\n');
-  return body ? `${header}\n${body}` : header;
 }
 
 function SectionBlock({ title, data }) {
@@ -273,10 +265,10 @@ function TrendChart({ points = [], granularity = 'daily', filters = {} }) {
     <div className="w-full">
       <div className="overflow-x-auto">
         <svg viewBox={`0 0 ${width} ${height}`} className="min-w-[760px] w-full">
-          {yTicks.map((tick) => {
+          {yTicks.map((tick, tickIdx) => {
             const y = getY(tick);
             return (
-              <g key={tick}>
+              <g key={`y-grid-${tickIdx}`}>
                 <line
                   x1={margin.left}
                   y1={y}
@@ -301,7 +293,7 @@ function TrendChart({ points = [], granularity = 'daily', filters = {} }) {
               <path
                 d={totalPath}
                 fill="none"
-                stroke="#0f3d75"
+                stroke="#003366"
                 strokeWidth="3"
                 strokeLinecap="round"
                 strokeLinejoin="round"
@@ -309,7 +301,7 @@ function TrendChart({ points = [], granularity = 'daily', filters = {} }) {
               <path
                 d={uniquePath}
                 fill="none"
-                stroke="#6366f1"
+                stroke="#4d8ec7"
                 strokeWidth="3"
                 strokeLinecap="round"
                 strokeLinejoin="round"
@@ -318,36 +310,36 @@ function TrendChart({ points = [], granularity = 'daily', filters = {} }) {
             </>
           ) : null}
 
-          {totalSeries.map((point) => (
-            <g key={`total-${point.label}`}>
-              <circle cx={point.x} cy={point.y} r={isSinglePoint ? 5 : 4} fill="#ffffff" stroke="#0f3d75" strokeWidth="2.5" />
+          {totalSeries.map((point, pi) => (
+            <g key={`total-${pi}-${point.label}`}>
+              <circle cx={point.x} cy={point.y} r={isSinglePoint ? 5 : 4} fill="#ffffff" stroke="#003366" strokeWidth="2.5" />
               <title>{`${point.label} · Total Visits: ${point.value}`}</title>
             </g>
           ))}
-          {uniqueSeries.map((point) => (
-            <g key={`unique-${point.label}`}>
-              <circle cx={point.x} cy={point.y} r={isSinglePoint ? 5 : 4} fill="#ffffff" stroke="#6366f1" strokeWidth="2.5" />
+          {uniqueSeries.map((point, pi) => (
+            <g key={`unique-${pi}-${point.label}`}>
+              <circle cx={point.x} cy={point.y} r={isSinglePoint ? 5 : 4} fill="#ffffff" stroke="#4d8ec7" strokeWidth="2.5" />
               <title>{`${point.label} · Unique Visitors: ${point.value}`}</title>
             </g>
           ))}
 
           {!isSinglePoint && totalLast && uniqueLast ? (
             <>
-              <text x={endLabelX} y={totalLast.y + 4} fontSize="10" fontWeight="600" fill="#0f3d75">
+              <text x={endLabelX} y={totalLast.y + 4} fontSize="10" fontWeight="600" fill="#003366">
                 Total
               </text>
-              <text x={endLabelX} y={uniqueLast.y + 4} fontSize="10" fontWeight="600" fill="#6366f1">
+              <text x={endLabelX} y={uniqueLast.y + 4} fontSize="10" fontWeight="600" fill="#4d8ec7">
                 Unique
               </text>
             </>
           ) : null}
 
-          {axisTicks.map((point) => {
+          {axisTicks.map((point, xi) => {
             const index = series.findIndex((item) => item.bucket === point.bucket);
             const x = getX(index);
             return (
               <text
-                key={`x-${point.bucket}`}
+                key={`x-axis-${xi}-${point.bucket}`}
                 x={x}
                 y={height - margin.bottom + 18}
                 textAnchor="middle"
@@ -366,11 +358,11 @@ function TrendChart({ points = [], granularity = 'daily', filters = {} }) {
         </span>
         <span className="flex items-center gap-4">
           <span className="flex items-center gap-1">
-            <svg width="18" height="6" viewBox="0 0 18 6"><line x1="0" y1="3" x2="18" y2="3" stroke="#0f3d75" strokeWidth="3" strokeLinecap="round" /></svg>
+            <svg width="18" height="6" viewBox="0 0 18 6"><line x1="0" y1="3" x2="18" y2="3" stroke="#003366" strokeWidth="3" strokeLinecap="round" /></svg>
             <span className="text-gray-700">Total Visits (solid)</span>
           </span>
           <span className="flex items-center gap-1">
-            <svg width="18" height="6" viewBox="0 0 18 6"><line x1="0" y1="3" x2="18" y2="3" stroke="#6366f1" strokeWidth="3" strokeLinecap="round" strokeDasharray="4 3" /></svg>
+            <svg width="18" height="6" viewBox="0 0 18 6"><line x1="0" y1="3" x2="18" y2="3" stroke="#4d8ec7" strokeWidth="3" strokeLinecap="round" strokeDasharray="4 3" /></svg>
             <span className="text-gray-700">Unique Visitors (dashed)</span>
           </span>
         </span>
@@ -378,6 +370,42 @@ function TrendChart({ points = [], granularity = 'daily', filters = {} }) {
     </div>
   );
 }
+
+const WEEKDAY_HEADER_CAL = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
+const MONTH_NAMES_CAL = ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December'];
+
+function toYYYYMMDDLocal(date) {
+  const d = new Date(date);
+  const year = d.getFullYear();
+  const month = String(d.getMonth() + 1).padStart(2, '0');
+  const day = String(d.getDate()).padStart(2, '0');
+  return `${year}-${month}-${day}`;
+}
+
+function buildMonthGridCounsel(year, month) {
+  const first = new Date(year, month, 1);
+  const last = new Date(year, month + 1, 0);
+  const startBlank = first.getDay();
+  const daysInMonth = last.getDate();
+  const cells = [];
+  for (let i = 0; i < startBlank; i++) cells.push(null);
+  for (let d = 1; d <= daysInMonth; d++) cells.push(d);
+  const total = 42;
+  while (cells.length < total) cells.push(null);
+  const rowsOut = [];
+  for (let r = 0; r < 6; r++) rowsOut.push(cells.slice(r * 7, (r + 1) * 7));
+  return rowsOut;
+}
+
+const EMPTY_VIEW_FILTERS = {
+  slot: '',
+  utmSource: '',
+  utmMedium: '',
+  utmCampaign: '',
+  utmContent: '',
+  updatedFrom: '',
+  updatedTo: '',
+};
 
 export default function IitCounselling() {
   const [rows, setRows] = useState([]);
@@ -387,8 +415,12 @@ export default function IitCounselling() {
   const [pagination, setPagination] = useState({ total: 0, totalPages: 1 });
   const [search, setSearch] = useState('');
   const [slotFilter, setSlotFilter] = useState('');
+  /** Visit analytics range (top KPIs & charts only). */
   const [fromDate, setFromDate] = useState('');
   const [toDate, setToDate] = useState('');
+  /** Demo slot calendar / submissions table (independent of visit analytics). */
+  const [demoFromDate, setDemoFromDate] = useState('');
+  const [demoToDate, setDemoToDate] = useState('');
   const [fromTime, setFromTime] = useState('00:00');
   const [toTime, setToTime] = useState('23:59');
   const [granularity, setGranularity] = useState('daily');
@@ -397,23 +429,15 @@ export default function IitCounselling() {
   const [detail, setDetail] = useState(null);
   const [detailLoading, setDetailLoading] = useState(false);
   const [submissionsViewAllOpen, setSubmissionsViewAllOpen] = useState(false);
-  const [submissionsCopied, setSubmissionsCopied] = useState(false);
-  const [copyingAll, setCopyingAll] = useState(false);
-  const [copyError, setCopyError] = useState('');
-  const [allSubmissionRows, setAllSubmissionRows] = useState([]);
-  const [allSubmissionRowsLoading, setAllSubmissionRowsLoading] = useState(false);
-  const [allSubmissionRowsError, setAllSubmissionRowsError] = useState('');
-  /** Mapped rows when From+To date filters demo slot calendar range (client-paginated). */
-  const [dateRangeMappedAll, setDateRangeMappedAll] = useState([]);
-  const [viewFilters, setViewFilters] = useState({
-    slot: '',
-    utmSource: '',
-    utmMedium: '',
-    utmCampaign: '',
-    utmContent: '',
-    updatedFrom: '',
-    updatedTo: '',
-  });
+  const [submissionAggRows, setSubmissionAggRows] = useState([]);
+  const [aggLoading, setAggLoading] = useState(false);
+  const [aggError, setAggError] = useState('');
+  const [copyModalOpen, setCopyModalOpen] = useState(false);
+  const [copyModalRecords, setCopyModalRecords] = useState([]);
+  const [copyPrepareError, setCopyPrepareError] = useState('');
+  const [viewYear, setViewYear] = useState(() => new Date().getFullYear());
+  const [viewMonth, setViewMonth] = useState(() => new Date().getMonth());
+  const [viewFilters, setViewFilters] = useState({ ...EMPTY_VIEW_FILTERS });
 
   const sharedFilters = useMemo(() => ({
     fromDate,
@@ -423,8 +447,41 @@ export default function IitCounselling() {
     granularity,
   }), [fromDate, toDate, fromTime, toTime, granularity]);
 
-  /** Fetch all pages and filter in-browser (demo date and/or slot) — avoids unsupported IIT list query params. */
-  const heavyClientFilter = Boolean((fromDate && toDate) || String(slotFilter).trim());
+  /** Full mapped list for calendar + client-side demo/slot filters (search via API `q` only). */
+  useEffect(() => {
+    let cancelled = false;
+    setAggLoading(true);
+    setAggError('');
+    getAllIitCounsellingSubmissionsPaginated({ q: search, limit: 200 }, getStoredToken()).then((res) => {
+      if (cancelled) return;
+      setAggLoading(false);
+      if (!res.success) {
+        setAggError(res.message || 'Failed to load submissions for calendar');
+        setSubmissionAggRows([]);
+        return;
+      }
+      const rowsData = Array.isArray(res.data?.data) ? res.data.data : [];
+      setSubmissionAggRows(rowsData.map(mapIitSubmissionRecord));
+    });
+    return () => { cancelled = true; };
+  }, [search]);
+
+  const demoFilteredBaseRows = useMemo(
+    () => submissionAggRows.filter((row) => rowMatchesDemoDateRange(row, demoFromDate, demoToDate)),
+    [submissionAggRows, demoFromDate, demoToDate]
+  );
+
+  const toolbarSlotFilteredRows = useMemo(
+    () => demoFilteredBaseRows.filter((row) => rowMatchesSlotFilter(row, slotFilter)),
+    [demoFilteredBaseRows, slotFilter]
+  );
+
+  /** Client-side table mode when demo date and/or slot toolbar filters are active. */
+  const heavyClientFilter = Boolean(
+    String(demoFromDate || '').trim()
+    || String(demoToDate || '').trim()
+    || String(slotFilter || '').trim()
+  );
 
   useEffect(() => {
     if (heavyClientFilter) return;
@@ -445,45 +502,17 @@ export default function IitCounselling() {
   }, [page, search, heavyClientFilter]);
 
   useEffect(() => {
-    if (!heavyClientFilter) {
-      setDateRangeMappedAll([]);
-      return;
-    }
-    let cancelled = false;
-    setLoading(true);
-    setError('');
-    getAllIitCounsellingSubmissionsPaginated({ q: search, limit: 200 }, getStoredToken()).then((res) => {
-      if (cancelled) return;
-      setLoading(false);
-      if (!res.success) {
-        setError(res.message || 'Failed to load IIT counselling submissions');
-        setDateRangeMappedAll([]);
-        return;
-      }
-      const rowsData = Array.isArray(res.data?.data) ? res.data.data : [];
-      let filtered = rowsData.map(mapIitSubmissionRecord);
-      if (fromDate && toDate) {
-        filtered = filtered.filter(
-          (row) =>
-            row.demoDateKey &&
-            row.demoDateKey >= fromDate &&
-            row.demoDateKey <= toDate
-        );
-      }
-      const slotTrim = String(slotFilter).trim();
-      if (slotTrim) {
-        filtered = filtered.filter((row) => String(row.slot) === slotTrim);
-      }
-      setDateRangeMappedAll(filtered);
-    });
-    return () => { cancelled = true; };
-  }, [heavyClientFilter, search, fromDate, toDate, slotFilter]);
+    if (!heavyClientFilter) return;
+    setLoading(aggLoading);
+    if (aggError) setError(aggError);
+    else setError('');
+  }, [heavyClientFilter, aggLoading, aggError]);
 
   useEffect(() => {
-    if (!heavyClientFilter || dateRangeMappedAll.length === 0) return;
-    const totalPages = Math.max(1, Math.ceil(dateRangeMappedAll.length / 25));
+    if (!heavyClientFilter || toolbarSlotFilteredRows.length === 0) return;
+    const totalPages = Math.max(1, Math.ceil(toolbarSlotFilteredRows.length / 25));
     if (page > totalPages) setPage(totalPages);
-  }, [heavyClientFilter, dateRangeMappedAll, page]);
+  }, [heavyClientFilter, toolbarSlotFilteredRows, page]);
 
   useEffect(() => {
     let cancelled = false;
@@ -512,21 +541,9 @@ export default function IitCounselling() {
   const totalSubmissions = analytics?.totalSubmissions || pagination.total || 0;
   const conversionRate = analytics?.conversionRate || 0;
 
-  const copyTextFallback = (text) => {
-    const ta = document.createElement('textarea');
-    ta.value = text;
-    ta.setAttribute('readonly', 'readonly');
-    ta.style.position = 'fixed';
-    ta.style.left = '-9999px';
-    document.body.appendChild(ta);
-    ta.select();
-    document.execCommand('copy');
-    document.body.removeChild(ta);
-  };
-
   const submissionPagination = useMemo(() => {
     if (heavyClientFilter) {
-      const total = dateRangeMappedAll.length;
+      const total = toolbarSlotFilteredRows.length;
       const totalPages = Math.max(1, Math.ceil(total / 25));
       return { total, totalPages };
     }
@@ -534,31 +551,48 @@ export default function IitCounselling() {
       total: pagination.total || 0,
       totalPages: pagination.totalPages || 1,
     };
-  }, [heavyClientFilter, dateRangeMappedAll, pagination]);
+  }, [heavyClientFilter, toolbarSlotFilteredRows, pagination]);
 
   const pageMappedRows = useMemo(() => {
     if (heavyClientFilter) {
       const start = (page - 1) * 25;
-      return dateRangeMappedAll.slice(start, start + 25);
+      return toolbarSlotFilteredRows.slice(start, start + 25);
     }
     return rows.map(mapIitSubmissionRecord);
-  }, [heavyClientFilter, dateRangeMappedAll, page, rows]);
+  }, [heavyClientFilter, toolbarSlotFilteredRows, page, rows]);
 
   const slotToolbarOptions = useMemo(() => {
-    const fromForm = getAvailableSlots().map((o) => ({ value: o.value, label: o.label }));
-    const seen = new Set(fromForm.map((o) => o.value));
-    const sourceRows = heavyClientFilter ? dateRangeMappedAll : pageMappedRows;
-    sourceRows.forEach((row) => {
-      const s = row.slot;
-      if (s && s !== '—' && !seen.has(s)) {
-        seen.add(s);
-        fromForm.push({ value: s, label: s });
-      }
+    const seen = new Set();
+    const opts = [];
+    const pushOpt = (value, label) => {
+      if (!value || seen.has(value)) return;
+      seen.add(value);
+      opts.push({ value, label });
+    };
+    getAvailableSlots().forEach((o) => {
+      const norm = normalizeIitSlotValue(o.value);
+      pushOpt(encodeSlotFilterOption('', norm), o.label);
     });
-    return fromForm;
-  }, [heavyClientFilter, dateRangeMappedAll, pageMappedRows]);
+    const slotSource = demoFilteredBaseRows.length ? demoFilteredBaseRows : pageMappedRows;
+    slotSource.forEach((row) => {
+      const raw = row.slot === '—' ? '' : row.slot;
+      const norm = normalizeIitSlotValue(raw);
+      if (!norm) return;
+      const key = encodeSlotFilterOption(row.demoDateKey, norm);
+      const label =
+        row.demoDateKey && /^\d{4}-\d{2}-\d{2}$/.test(row.demoDateKey)
+          ? `${norm} · ${formatDemoDateDisplay(row.demoDateKey)}`
+          : norm;
+      pushOpt(key, label);
+    });
+    opts.sort((a, b) => a.label.localeCompare(b.label, 'en', { sensitivity: 'base' }));
+    return opts;
+  }, [demoFilteredBaseRows, pageMappedRows]);
 
-  const viewSourceRows = useMemo(() => (allSubmissionRows.length ? allSubmissionRows : pageMappedRows), [allSubmissionRows, pageMappedRows]);
+  const viewSourceRows = useMemo(
+    () => (submissionsViewAllOpen ? toolbarSlotFilteredRows : pageMappedRows),
+    [submissionsViewAllOpen, toolbarSlotFilteredRows, pageMappedRows]
+  );
   const filteredSubmissionRows = useMemo(
     () => applySubmissionViewFilters(viewSourceRows, viewFilters),
     [viewSourceRows, viewFilters]
@@ -577,7 +611,11 @@ export default function IitCounselling() {
     const updatedSet = new Set();
 
     viewSourceRows.forEach((row) => {
-      addUnique(slotSet, row.slot);
+      const raw = row.slot === '—' ? '' : row.slot;
+      const norm = normalizeIitSlotValue(raw);
+      if (norm) {
+        addUnique(slotSet, encodeSlotFilterOption(row.demoDateKey, norm));
+      }
       addUnique(sourceSet, row.utmSource);
       addUnique(mediumSet, row.utmMedium);
       addUnique(campaignSet, row.utmCampaign);
@@ -604,119 +642,148 @@ export default function IitCounselling() {
     const seen = new Set();
     const out = [];
     getAvailableSlots().forEach((o) => {
-      if (!seen.has(o.value)) {
-        seen.add(o.value);
-        out.push({ value: o.value, label: o.label });
+      const norm = normalizeIitSlotValue(o.value);
+      const enc = encodeSlotFilterOption('', norm);
+      if (!seen.has(enc)) {
+        seen.add(enc);
+        out.push({ value: enc, label: o.label });
       }
     });
     viewFilterOptions.slots.forEach((v) => {
       if (!seen.has(v)) {
         seen.add(v);
-        out.push({ value: v, label: v });
+        const { demoDateKey: dk, slotNorm } = parseSlotFilterOption(v);
+        const label =
+          dk && slotNorm ? `${slotNorm} · ${formatDemoDateDisplay(dk)}` : (slotNorm || v);
+        out.push({ value: v, label });
       }
     });
     out.sort((a, b) => a.label.localeCompare(b.label, 'en', { sensitivity: 'base' }));
     return out;
   }, [viewFilterOptions.slots]);
 
-  useEffect(() => {
-    setAllSubmissionRows([]);
-    setAllSubmissionRowsError('');
-  }, [search, slotFilter, fromDate, toDate]);
+  const getCopyCellValue = useCallback((record, key) => {
+    if (key === 'topColleges') return record.topCollegesDisplay ?? record.topColleges ?? '';
+    const v = record[key];
+    if (v == null || v === '') return '';
+    return String(v);
+  }, []);
 
-  const fetchAllMatchingSubmissions = useCallback(async () => {
-    setAllSubmissionRowsLoading(true);
-    setAllSubmissionRowsError('');
-    try {
-      const token = getStoredToken();
-      const res = await getAllIitCounsellingSubmissionsPaginated({ q: search, limit: 200 }, token);
-      if (!res.success) throw new Error(res.message || 'Failed to load all submissions');
-      const rowsData = Array.isArray(res.data?.data) ? res.data.data : [];
-      let aggregated = rowsData.map(mapIitSubmissionRecord);
-      if (fromDate && toDate) {
-        aggregated = aggregated.filter(
-          (row) =>
-            row.demoDateKey &&
-            row.demoDateKey >= fromDate &&
-            row.demoDateKey <= toDate
-        );
-      }
-      const slotTrim = String(slotFilter).trim();
-      if (slotTrim) {
-        aggregated = aggregated.filter((row) => String(row.slot) === slotTrim);
-      }
-
-      setAllSubmissionRows(aggregated);
-      return aggregated;
-    } catch (err) {
-      const message = err?.message || 'Failed to fetch all submissions.';
-      setAllSubmissionRowsError(message);
-      return [];
-    } finally {
-      setAllSubmissionRowsLoading(false);
-    }
-  }, [search, slotFilter, fromDate, toDate]);
-
-  useEffect(() => {
-    if (!submissionsViewAllOpen) return;
-    fetchAllMatchingSubmissions();
-  }, [submissionsViewAllOpen, fetchAllMatchingSubmissions]);
-
-  const copyAllSubmissions = async () => {
-    setCopyError('');
-    setCopyingAll(true);
-    const fetchedRows = await fetchAllMatchingSubmissions();
-    const copyRows = applySubmissionViewFilters(
-      fetchedRows.length ? fetchedRows : viewSourceRows,
-      viewFilters
-    ).map((row) => ({
-      name: row.name,
-      phone: row.phone,
-      currentStep: row.currentStep,
-      completed: row.completed,
-      topColleges: row.topColleges,
-      slot: row.slot,
-      demoDate: row.demoDate,
-      utmSource: row.utmSource,
-      utmMedium: row.utmMedium,
-      utmCampaign: row.utmCampaign,
-      utmContent: row.utmContent,
-      updated: row.updated,
-    }));
-    if (!copyRows.length) {
-      setCopyingAll(false);
-      setCopyError('No rows available to copy for current filters.');
+  const prepareCopySubmissions = useCallback(() => {
+    setCopyPrepareError('');
+    if (aggLoading) {
+      setCopyPrepareError('Still loading submissions; try again in a moment.');
       return;
     }
-    const text = serializeRowsToTsv(IIT_SUBMISSION_COLUMNS, copyRows);
     try {
-      if (typeof navigator !== 'undefined' && navigator.clipboard?.writeText) {
-        await navigator.clipboard.writeText(text);
-      } else {
-        copyTextFallback(text);
+      if (aggError && submissionAggRows.length === 0) {
+        throw new Error(aggError);
       }
-    } catch {
-      copyTextFallback(text);
+      const base = toolbarSlotFilteredRows;
+      const vf = submissionsViewAllOpen ? viewFilters : EMPTY_VIEW_FILTERS;
+      const filtered = applySubmissionViewFilters(base, vf);
+      setCopyModalRecords(filtered);
+      setCopyModalOpen(true);
+    } catch (err) {
+      setCopyPrepareError(err?.message || 'Failed to prepare copy.');
+      setCopyModalRecords([]);
     }
-    setCopyingAll(false);
-    setSubmissionsCopied(true);
-    window.setTimeout(() => setSubmissionsCopied(false), 1400);
+  }, [
+    aggLoading,
+    aggError,
+    submissionAggRows.length,
+    toolbarSlotFilteredRows,
+    submissionsViewAllOpen,
+    viewFilters,
+  ]);
+
+  const demoCountsByDay = useMemo(() => {
+    const map = new Map();
+    submissionAggRows.forEach((row) => {
+      const k = row.demoDateKey;
+      if (!k) return;
+      map.set(k, (map.get(k) || 0) + 1);
+    });
+    return map;
+  }, [submissionAggRows]);
+
+  /** Submission KPIs for current toolbar filters (aligned with table totals). */
+  const submissionFilteredOverview = useMemo(() => {
+    const list = toolbarSlotFilteredRows;
+    const total = list.length;
+    const completed = list.filter((r) => r.completed === 'Yes').length;
+    const completedPct = total ? Math.round((completed / total) * 1000) / 10 : 0;
+    const demoDateKeys = new Set();
+    list.forEach((r) => {
+      if (r.demoDateKey) demoDateKeys.add(r.demoDateKey);
+    });
+    const slotCounts = new Map();
+    list.forEach((r) => {
+      const norm = normalizeIitSlotValue(r.slot === '—' ? '' : r.slot);
+      if (!norm) return;
+      slotCounts.set(norm, (slotCounts.get(norm) || 0) + 1);
+    });
+    let topSlot = '';
+    let topSlotCount = 0;
+    slotCounts.forEach((count, slot) => {
+      if (count > topSlotCount) {
+        topSlotCount = count;
+        topSlot = slot;
+      }
+    });
+    return {
+      total,
+      completed,
+      completedPct,
+      demoDatesCount: demoDateKeys.size,
+      topSlot: topSlot || '—',
+      topSlotCount,
+    };
+  }, [toolbarSlotFilteredRows]);
+
+  const todayStrLocal = toYYYYMMDDLocal(new Date());
+  const monthGridCounsel = useMemo(
+    () => buildMonthGridCounsel(viewYear, viewMonth),
+    [viewYear, viewMonth]
+  );
+
+  const handleDemoCalendarDayClick = (dateStr) => {
+    setDemoFromDate(dateStr);
+    setDemoToDate(dateStr);
+    setPage(1);
+  };
+
+  const clearDemoDateFilters = () => {
+    setDemoFromDate('');
+    setDemoToDate('');
+    setPage(1);
   };
 
   return (
-    <div className="max-w-[1400px] mx-auto px-1 space-y-4">
-      <div className="flex flex-wrap items-end justify-between gap-3">
-        <div>
-          <h2 className="text-2xl font-semibold text-gray-900 tracking-tight">IIT Counselling Analytics</h2>
-          <p className="text-sm text-gray-500 mt-1">Page visits, conversion insights, and submission details in one place.</p>
-          <Link
-            to="/admin/iit-counselling-utm#iit-utm-generator"
-            className="inline-flex mt-2 text-sm font-medium text-primary-navy hover:underline"
-          >
-            Generate UTM link for campaigns
-          </Link>
+    <div className="max-w-[1400px] mx-auto px-1 space-y-5">
+      <div className="flex flex-wrap items-start justify-between gap-4">
+        <div className="flex items-start gap-3 min-w-0">
+          <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-xl bg-linear-to-br from-[#003366] to-[#004080] text-white shadow-lg ring-2 ring-[#003366]/10">
+            <FiBarChart2 className="h-6 w-6" aria-hidden />
+          </div>
+          <div className="min-w-0">
+            <h1 className="text-2xl font-bold text-gray-900 tracking-tight">IIT Counselling Analytics</h1>
+            <p className="text-sm text-gray-500 mt-0.5">Page visits, conversion insights, and submission details in one place.</p>
+            <Link
+              to="/admin/iit-counselling-utm#iit-utm-generator"
+              className="inline-flex mt-2 text-sm font-semibold text-primary-navy hover:underline underline-offset-2"
+            >
+              Generate UTM link for campaigns
+            </Link>
+          </div>
         </div>
-        <div className="flex flex-wrap items-end gap-2 rounded-xl border border-gray-200 bg-white px-3 py-2 shadow-sm">
+
+        <div className="w-full min-w-0 lg:max-w-none lg:w-auto rounded-2xl border border-gray-200 bg-white shadow-lg overflow-hidden">
+          <div className="h-px w-full bg-linear-to-r from-[#003366] to-[#004080]" aria-hidden />
+          <div className="bg-linear-to-r from-gray-50 to-[#f0f5fa] px-3 py-2 border-b border-gray-200">
+            <span className="text-[11px] font-semibold uppercase tracking-wide text-gray-600">Visit analytics range</span>
+          </div>
+          <div className="flex flex-wrap items-end gap-2 px-3 py-3">
           <div>
             <label className="block text-[11px] text-gray-500 mb-1">From Date</label>
             <input
@@ -724,7 +791,6 @@ export default function IitCounselling() {
               value={fromDate}
               onChange={(e) => {
                 setAnalyticsLoading(true);
-                setLoading(true);
                 setFromDate(e.target.value);
                 setPage(1);
               }}
@@ -738,7 +804,6 @@ export default function IitCounselling() {
               value={toDate}
               onChange={(e) => {
                 setAnalyticsLoading(true);
-                setLoading(true);
                 setToDate(e.target.value);
                 setPage(1);
               }}
@@ -752,7 +817,6 @@ export default function IitCounselling() {
               value={fromTime}
               onChange={(e) => {
                 setAnalyticsLoading(true);
-                setLoading(true);
                 setFromTime(e.target.value);
                 setPage(1);
               }}
@@ -766,7 +830,6 @@ export default function IitCounselling() {
               value={toTime}
               onChange={(e) => {
                 setAnalyticsLoading(true);
-                setLoading(true);
                 setToTime(e.target.value);
                 setPage(1);
               }}
@@ -780,7 +843,6 @@ export default function IitCounselling() {
                 type="button"
                 onClick={() => {
                   setAnalyticsLoading(true);
-                  setLoading(true);
                   setGranularity('daily');
                   setPage(1);
                 }}
@@ -792,7 +854,6 @@ export default function IitCounselling() {
                 type="button"
                 onClick={() => {
                   setAnalyticsLoading(true);
-                  setLoading(true);
                   setGranularity('hourly');
                   setPage(1);
                 }}
@@ -806,7 +867,6 @@ export default function IitCounselling() {
             type="button"
             onClick={() => {
               setAnalyticsLoading(true);
-              setLoading(true);
               setFromDate('');
               setToDate('');
               setFromTime('00:00');
@@ -818,18 +878,21 @@ export default function IitCounselling() {
           >
             Reset
           </button>
+          </div>
         </div>
       </div>
 
       <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-3">
-        <StatCard title="Total Visits" value={totalVisits} icon={<FiBarChart2 className="w-4 h-4" />} accent="bg-blue-50 text-blue-700" loading={analyticsLoading} />
-        <StatCard title="Unique Visitors" value={uniqueVisitors} icon={<FiUsers className="w-4 h-4" />} accent="bg-indigo-50 text-indigo-700" loading={analyticsLoading} />
+        <StatCard title="Total Visits" value={totalVisits} icon={<FiBarChart2 className="w-4 h-4" />} accent="bg-primary-blue-50 text-primary-navy" loading={analyticsLoading} />
+        <StatCard title="Unique Visitors" value={uniqueVisitors} icon={<FiUsers className="w-4 h-4" />} accent="bg-[#f0f5fa] text-[#004080]" loading={analyticsLoading} />
         <StatCard title="Total Submissions" value={totalSubmissions} icon={<FiCheckCircle className="w-4 h-4" />} accent="bg-emerald-50 text-emerald-700" loading={analyticsLoading} />
         <StatCard title="Conversion Rate" value={`${conversionRate}%`} icon={<FiBarChart2 className="w-4 h-4" />} accent="bg-amber-50 text-amber-700" loading={analyticsLoading} />
       </div>
 
       <div className="grid grid-cols-1 xl:grid-cols-3 gap-4">
-        <div className="xl:col-span-2 bg-white border border-gray-200 rounded-xl shadow-sm p-4">
+        <div className="xl:col-span-2 overflow-hidden rounded-2xl border border-gray-200 bg-white shadow-md">
+          <div className="h-0.5 w-full bg-linear-to-r from-[#003366] to-[#004080]" aria-hidden />
+          <div className="p-4">
           <div className="flex items-center justify-between gap-3 mb-3">
             <h3 className="text-sm font-semibold text-gray-800">
               {granularity === 'hourly' ? 'Hourly Visit Trend' : 'Daily Visit Trend'}
@@ -840,12 +903,13 @@ export default function IitCounselling() {
                 Total Visits
               </span>
               <span className="inline-flex items-center gap-1 text-gray-600">
-                <span className="w-2 h-2 rounded-full bg-indigo-500" />
+                <span className="w-2 h-2 rounded-full bg-primary-blue-400" />
                 Unique Visitors
               </span>
             </div>
           </div>
           <TrendChart points={analytics?.trend || []} granularity={granularity} filters={sharedFilters} />
+          </div>
         </div>
         <div className="space-y-4">
           <ListCard
@@ -866,36 +930,218 @@ export default function IitCounselling() {
         </div>
       </div>
 
-      <div className="bg-white border border-gray-200 rounded-xl shadow-sm p-4 space-y-4">
-        <div className="flex flex-wrap items-center justify-between gap-2">
+      <div className="relative overflow-hidden rounded-2xl border border-gray-200/90 bg-white shadow-md p-5 sm:p-6 space-y-5">
+        <div className="pointer-events-none absolute inset-x-0 top-0 h-1 bg-linear-to-r from-[#003366] to-[#004080]" aria-hidden />
+        <div className="flex flex-wrap items-center justify-between gap-3 pt-0.5">
           <div className="min-w-0 flex-1">
-            <h3 className="text-base font-semibold text-gray-900">
-              IIT Counselling Submissions <span className="text-gray-500">({submissionPagination.total || 0})</span>
-            </h3>
-            <p className="text-xs text-gray-500 mt-1 max-w-3xl leading-relaxed">
-              <strong>Total Submissions</strong> in the cards above uses visit/conversion analytics for the selected date and time range.
-              This table lists stored submissions; when you set a demo date range and/or a slot, rows are filtered in the browser to match saved demo date and slot values.
+            <div className="flex flex-wrap items-baseline gap-2">
+              <h3 className="text-lg font-bold tracking-tight text-gray-900">
+                IIT Counselling Submissions
+              </h3>
+              <span className="inline-flex items-center rounded-full bg-gray-100 px-2.5 py-0.5 text-sm font-semibold tabular-nums text-gray-700 ring-1 ring-gray-200/80">
+                {submissionPagination.total || 0}
+              </span>
+            </div>
+            <p className="text-xs text-gray-500 mt-2 max-w-3xl leading-relaxed">
+              <strong className="font-semibold text-gray-600">Visit KPIs</strong> use the analytics range above.
+              <span className="mx-1.5 text-gray-300">·</span>
+              <strong className="font-semibold text-gray-600">This table</strong> uses demo booking dates and slots only.
               {heavyClientFilter ? (
-                <span className="text-gray-600"> Showing {submissionPagination.total} row(s) after those filters.</span>
+                <span className="block sm:inline sm:ml-1 mt-1 sm:mt-0 text-primary-navy font-medium"> {submissionPagination.total} row(s) after demo filters.</span>
               ) : null}
             </p>
           </div>
-          <div className="flex w-full flex-wrap items-center justify-end gap-2 sm:w-auto">
+        </div>
+
+        <div className="grid grid-cols-1 lg:grid-cols-[minmax(0,308px)_1fr] gap-5 pb-5 border-b border-gray-100">
+          <div className="rounded-2xl border border-gray-200/80 bg-linear-to-b from-gray-50 to-white p-4 shadow-sm ring-1 ring-black/[0.02]">
+            <div className="flex items-center justify-between gap-2 mb-3">
+              <span className="text-xs font-bold uppercase tracking-wider text-gray-600">Demo calendar</span>
+              <div className="flex items-center gap-0.5 rounded-full bg-white/90 p-0.5 shadow-sm ring-1 ring-gray-200/80">
+                <button
+                  type="button"
+                  className="rounded-full p-1.5 text-gray-600 hover:bg-gray-100 transition-colors"
+                  aria-label="Previous month"
+                  onClick={() => {
+                    if (viewMonth === 0) {
+                      setViewMonth(11);
+                      setViewYear((y) => y - 1);
+                    } else setViewMonth((m) => m - 1);
+                  }}
+                >
+                  <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" /></svg>
+                </button>
+                <span className="text-xs font-bold text-gray-800 min-w-[100px] text-center tabular-nums">
+                  {MONTH_NAMES_CAL[viewMonth].slice(0, 3)} {viewYear}
+                </span>
+                <button
+                  type="button"
+                  className="rounded-full p-1.5 text-gray-600 hover:bg-gray-100 transition-colors"
+                  aria-label="Next month"
+                  onClick={() => {
+                    if (viewMonth === 11) {
+                      setViewMonth(0);
+                      setViewYear((y) => y + 1);
+                    } else setViewMonth((m) => m + 1);
+                  }}
+                >
+                  <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" /></svg>
+                </button>
+              </div>
+            </div>
+            <p className="text-[11px] text-gray-500 mb-3 leading-snug">Submission counts per demo day (respects search). Click a day to filter.</p>
+            <table className="w-full border-collapse">
+              <thead>
+                <tr>
+                  {WEEKDAY_HEADER_CAL.map((day) => (
+                    <th key={day} className="text-center text-[10px] font-bold text-gray-400 uppercase tracking-widest py-1.5">{day}</th>
+                  ))}
+                </tr>
+              </thead>
+              <tbody>
+                {monthGridCounsel.map((gridRow, ri) => (
+                  <tr key={ri}>
+                    {gridRow.map((dayNum, ci) => {
+                      if (dayNum === null) {
+                        return <td key={`${ri}-${ci}`} className="p-0.5" />;
+                      }
+                      const dateStr = toYYYYMMDDLocal(new Date(viewYear, viewMonth, dayNum));
+                      const count = demoCountsByDay.get(dateStr) || 0;
+                      const isToday = dateStr === todayStrLocal;
+                      const singleSelected = demoFromDate && demoToDate && demoFromDate === demoToDate && demoFromDate === dateStr;
+                      const inRange =
+                        demoFromDate
+                        && demoToDate
+                        && demoFromDate !== demoToDate
+                        && dateStr >= demoFromDate
+                        && dateStr <= demoToDate;
+                      let cellClass = 'text-gray-700 hover:bg-white border border-transparent hover:shadow-sm';
+                      if (singleSelected) {
+                        cellClass = 'bg-linear-to-br from-primary-navy to-[#004080] text-white border-primary-navy shadow-md';
+                      } else if (inRange) {
+                        cellClass = 'bg-primary-blue-50 text-primary-navy border-primary-blue-200/80';
+                      }
+                      return (
+                        <td key={`${ri}-${ci}`} className="p-0.5 align-top">
+                          <button
+                            type="button"
+                            onClick={() => handleDemoCalendarDayClick(dateStr)}
+                            className={`w-full min-h-[2.35rem] rounded-lg text-[10px] font-bold flex flex-col items-center justify-center gap-0 leading-tight transition-all ${cellClass} ${isToday && !singleSelected ? 'ring-2 ring-primary-blue-400/80 ring-offset-1' : ''} ${isToday && singleSelected ? 'ring-2 ring-white/40 ring-offset-1' : ''}`}
+                          >
+                            <span>{dayNum}</span>
+                            {count > 0 ? (
+                              <span className={`text-[9px] font-extrabold tabular-nums ${singleSelected ? 'text-white/95' : 'text-primary-navy'}`}>{count}</span>
+                            ) : null}
+                          </button>
+                        </td>
+                      );
+                    })}
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+            <button
+              type="button"
+              onClick={clearDemoDateFilters}
+              className="mt-3 w-full text-xs font-semibold text-gray-600 hover:text-primary-navy py-2.5 rounded-xl border border-gray-200/90 bg-white shadow-sm hover:bg-gray-50 hover:border-gray-300 transition-colors"
+            >
+              Clear demo date filter
+            </button>
+          </div>
+
+          <div className="flex flex-col gap-4 min-w-0">
+            <div className="grid grid-cols-2 gap-3 sm:gap-4">
+              <SubmissionOverviewTile
+                title="Submissions"
+                value={submissionFilteredOverview.total}
+                subtitle="Matching current filters"
+                icon={<FiClipboard className="w-[18px] h-[18px]" />}
+              />
+              <SubmissionOverviewTile
+                title="Completed"
+                value={
+                  submissionFilteredOverview.total
+                    ? `${submissionFilteredOverview.completed} (${submissionFilteredOverview.completedPct}%)`
+                    : '0'
+                }
+                subtitle="Finished intake"
+                icon={<FiCheckCircle className="w-[18px] h-[18px]" />}
+              />
+              <SubmissionOverviewTile
+                title="Demo dates"
+                value={submissionFilteredOverview.demoDatesCount}
+                subtitle="Distinct booking days"
+                icon={<FiCalendar className="w-[18px] h-[18px]" />}
+              />
+              <SubmissionOverviewTile
+                title="Top slot"
+                value={submissionFilteredOverview.topSlotCount ? submissionFilteredOverview.topSlot : '—'}
+                subtitle={
+                  submissionFilteredOverview.topSlotCount
+                    ? `${submissionFilteredOverview.topSlotCount} in filtered set`
+                    : 'No slot data'
+                }
+                icon={<FiClock className="w-[18px] h-[18px]" />}
+              />
+            </div>
+
+            <div className="rounded-2xl border border-gray-200/80 bg-linear-to-br from-gray-50/90 via-white to-white px-4 py-4 shadow-sm ring-1 ring-black/[0.02]">
+              <span className="text-xs font-bold uppercase tracking-wider text-gray-600">Demo date range</span>
+              <p className="text-[11px] text-gray-500 mt-1.5 mb-3.5">Filter by scheduled demo day (IST). Works with the calendar.</p>
+              <div className="flex flex-wrap gap-3 items-end">
+                <div className="min-w-0">
+                  <label className="block text-[11px] font-medium text-gray-500 mb-1.5">Demo from</label>
+                  <input
+                    type="date"
+                    value={demoFromDate}
+                    onChange={(e) => {
+                      setLoading(true);
+                      setError('');
+                      setDemoFromDate(e.target.value);
+                      setPage(1);
+                    }}
+                    className="h-10 w-full min-w-[140px] px-3 rounded-xl border border-gray-200 bg-white text-sm text-gray-800 shadow-sm outline-none focus:ring-2 focus:ring-primary-blue-500/25 focus:border-primary-blue-500"
+                  />
+                </div>
+                <div className="min-w-0">
+                  <label className="block text-[11px] font-medium text-gray-500 mb-1.5">Demo to</label>
+                  <input
+                    type="date"
+                    value={demoToDate}
+                    onChange={(e) => {
+                      setLoading(true);
+                      setError('');
+                      setDemoToDate(e.target.value);
+                      setPage(1);
+                    }}
+                    className="h-10 w-full min-w-[140px] px-3 rounded-xl border border-gray-200 bg-white text-sm text-gray-800 shadow-sm outline-none focus:ring-2 focus:ring-primary-blue-500/25 focus:border-primary-blue-500"
+                  />
+                </div>
+              </div>
+              {aggLoading ? <p className="text-[11px] text-gray-500 mt-3 flex items-center gap-2"><span className="inline-block h-3.5 w-3.5 animate-pulse rounded-full bg-gray-300" aria-hidden />Updating list…</p> : null}
+              {aggError ? <p className="text-[11px] text-red-600 mt-3 font-medium">{aggError}</p> : null}
+            </div>
+          </div>
+        </div>
+
+        <div className="rounded-2xl border border-gray-200/80 bg-gray-50/50 p-3 sm:p-4 ring-1 ring-black/[0.02]">
+          <div className="flex w-full flex-col gap-3 sm:flex-row sm:flex-wrap sm:items-center sm:justify-end">
+            <div className="flex flex-wrap items-center gap-2 sm:ml-auto">
             <button
               type="button"
               onClick={() => setSubmissionsViewAllOpen(true)}
-              disabled={pageMappedRows.length === 0}
-              className="h-9 rounded-lg border border-gray-300 px-3 text-sm text-gray-700 hover:bg-gray-50 disabled:opacity-50"
+              disabled={toolbarSlotFilteredRows.length === 0 || aggLoading}
+              className="h-10 rounded-xl border border-gray-200 bg-white px-4 text-sm font-semibold text-gray-700 shadow-sm hover:bg-gray-50 hover:border-gray-300 disabled:opacity-50 transition-colors"
             >
               View all
             </button>
             <button
               type="button"
-              onClick={copyAllSubmissions}
-              disabled={pageMappedRows.length === 0 || copyingAll}
-              className="h-9 rounded-lg border border-gray-300 px-3 text-sm text-gray-700 hover:bg-gray-50 disabled:opacity-50"
+              onClick={prepareCopySubmissions}
+              disabled={toolbarSlotFilteredRows.length === 0 || aggLoading}
+              className="h-10 rounded-xl bg-primary-navy px-4 text-sm font-semibold text-white shadow-md shadow-primary-navy/20 hover:opacity-95 disabled:opacity-50 transition-opacity"
             >
-              {copyingAll ? 'Copying...' : (submissionsCopied ? 'Copied' : 'Copy all')}
+              Copy all
             </button>
             <select
               value={slotFilter}
@@ -905,7 +1151,7 @@ export default function IitCounselling() {
                 setSlotFilter(e.target.value);
                 setPage(1);
               }}
-              className="h-9 min-w-[10rem] rounded-lg border border-gray-300 px-2 text-sm outline-none focus:ring-2 focus:ring-primary-blue-500 bg-white"
+              className="h-10 min-w-[12rem] max-w-[20rem] rounded-xl border border-gray-200 bg-white px-3 text-sm font-medium text-gray-800 shadow-sm outline-none focus:ring-2 focus:ring-primary-blue-500/25 focus:border-primary-blue-500"
               aria-label="Filter by demo slot"
             >
               <option value="">All slots</option>
@@ -913,46 +1159,51 @@ export default function IitCounselling() {
                 <option key={o.value} value={o.value}>{o.label}</option>
               ))}
             </select>
-            <input
-              type="search"
-              placeholder="Search by name or phone..."
-              value={search}
-              onChange={(e) => {
-                setLoading(true);
-                setError('');
-                setSearch(e.target.value);
-                setPage(1);
-              }}
-              className="w-full sm:w-72 h-9 px-3 rounded-lg border border-gray-300 focus:ring-2 focus:ring-primary-blue-500 focus:border-primary-blue-500 outline-none text-sm"
-            />
+            <div className="relative w-full sm:w-72">
+              <FiSearch className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -trangray-y-1/2 text-gray-400" aria-hidden />
+              <input
+                type="search"
+                placeholder="Search by name or phone..."
+                value={search}
+                onChange={(e) => {
+                  setLoading(true);
+                  setError('');
+                  setSearch(e.target.value);
+                  setPage(1);
+                }}
+                className="h-10 w-full pl-10 pr-3 rounded-xl border border-gray-200 bg-white text-sm text-gray-800 shadow-sm placeholder:text-gray-400 outline-none focus:ring-2 focus:ring-primary-blue-500/25 focus:border-primary-blue-500"
+              />
+            </div>
+            </div>
           </div>
         </div>
         {error ? <p className="text-red-600 text-sm">{error}</p> : null}
-        {copyError ? <p className="text-red-600 text-sm">{copyError}</p> : null}
-        <div className="overflow-x-auto rounded-lg border border-gray-200">
-        <table className="min-w-[1380px] w-full text-left text-sm">
-          <thead>
-            <tr className="bg-gray-50 border-b border-gray-200">
-              <th className="px-3 py-2 text-xs uppercase tracking-wider">Name</th>
-              <th className="px-3 py-2 text-xs uppercase tracking-wider">Phone</th>
-              <th className="px-3 py-2 text-xs uppercase tracking-wider">Current Step</th>
-              <th className="px-3 py-2 text-xs uppercase tracking-wider">Completed</th>
-              <th className="px-3 py-2 text-xs uppercase tracking-wider">Top Colleges</th>
-              <th className="px-3 py-2 text-xs uppercase tracking-wider">Slot</th>
-              <th className="px-3 py-2 text-xs uppercase tracking-wider">Demo date</th>
-              <th className="px-3 py-2 text-xs uppercase tracking-wider">UTM Source</th>
-              <th className="px-3 py-2 text-xs uppercase tracking-wider">UTM Medium</th>
-              <th className="px-3 py-2 text-xs uppercase tracking-wider">UTM Campaign</th>
-              <th className="px-3 py-2 text-xs uppercase tracking-wider">UTM Content</th>
-              <th className="px-3 py-2 text-xs uppercase tracking-wider">Updated</th>
-              <th className="px-3 py-2 text-xs uppercase tracking-wider text-center">Action</th>
+        {copyPrepareError ? <p className="text-red-600 text-sm">{copyPrepareError}</p> : null}
+        <div className="overflow-hidden rounded-2xl border border-gray-200/90 bg-white shadow-md ring-1 ring-black/[0.03]">
+        <div className="overflow-x-auto max-h-[min(70vh,720px)]">
+        <table className="min-w-[1380px] w-full text-left text-sm border-collapse">
+          <thead className="sticky top-0 z-10">
+            <tr className="bg-primary-blue-50/90 backdrop-blur-sm border-b border-primary-blue-100/70 shadow-[0_1px_0_0_rgba(0,51,102,0.06)]">
+              <th className="px-4 py-3.5 text-[10px] font-bold uppercase tracking-[0.12em] text-gray-500">Name</th>
+              <th className="px-4 py-3.5 text-[10px] font-bold uppercase tracking-[0.12em] text-gray-500">Phone</th>
+              <th className="px-4 py-3.5 text-[10px] font-bold uppercase tracking-[0.12em] text-gray-500">Step</th>
+              <th className="px-4 py-3.5 text-[10px] font-bold uppercase tracking-[0.12em] text-gray-500">Done</th>
+              <th className="px-4 py-3.5 text-[10px] font-bold uppercase tracking-[0.12em] text-gray-500">Top Colleges</th>
+              <th className="px-4 py-3.5 text-[10px] font-bold uppercase tracking-[0.12em] text-gray-500">Slot</th>
+              <th className="px-4 py-3.5 text-[10px] font-bold uppercase tracking-[0.12em] text-gray-500">Demo</th>
+              <th className="px-4 py-3.5 text-[10px] font-bold uppercase tracking-[0.12em] text-gray-500">UTM Src</th>
+              <th className="px-4 py-3.5 text-[10px] font-bold uppercase tracking-[0.12em] text-gray-500">Medium</th>
+              <th className="px-4 py-3.5 text-[10px] font-bold uppercase tracking-[0.12em] text-gray-500">Campaign</th>
+              <th className="px-4 py-3.5 text-[10px] font-bold uppercase tracking-[0.12em] text-gray-500">Content</th>
+              <th className="px-4 py-3.5 text-[10px] font-bold uppercase tracking-[0.12em] text-gray-500">Updated</th>
+              <th className="px-4 py-3.5 text-[10px] font-bold uppercase tracking-[0.12em] text-gray-500 text-center">Action</th>
             </tr>
           </thead>
           <tbody className="divide-y divide-gray-100">
             {loading ? (
-              <tr><td colSpan={13} className="px-3 py-6 text-center text-gray-500">Loading...</td></tr>
+              <tr><td colSpan={13} className="px-4 py-14 text-center text-sm font-medium text-gray-500 bg-gray-50/60">Loading submissions…</td></tr>
             ) : pageMappedRows.length === 0 ? (
-              <tr><td colSpan={13} className="px-3 py-6 text-center text-gray-500">No submissions found</td></tr>
+              <tr><td colSpan={13} className="px-4 py-14 text-center text-sm font-medium text-gray-500 bg-gray-50/50">No submissions match the current filters.</td></tr>
             ) : pageMappedRows.map((row) => {
               const utmCell = (value) => (
                 <span
@@ -962,23 +1213,44 @@ export default function IitCounselling() {
                   {value || '—'}
                 </span>
               );
+              const completedBadge =
+                row.completed === 'Yes' ? (
+                  <span className="inline-flex rounded-full bg-emerald-50 px-2 py-0.5 text-xs font-semibold text-emerald-800 ring-1 ring-emerald-200/80">
+                    Yes
+                  </span>
+                ) : (
+                  <span className="inline-flex rounded-full bg-gray-100 px-2 py-0.5 text-xs font-medium text-gray-600 ring-1 ring-gray-200/90">
+                    {row.completed}
+                  </span>
+                );
               return (
-                <tr key={row.id}>
-                  <td className="px-3 py-2">{row.name}</td>
-                  <td className="px-3 py-2">{row.phone}</td>
-                  <td className="px-3 py-2">{row.currentStep}</td>
-                  <td className="px-3 py-2">{row.completed}</td>
-                  <td className="px-3 py-2 max-w-[300px] truncate" title={row.topColleges}>{row.topCollegesDisplay}</td>
-                  <td className="px-3 py-2 max-w-[200px] truncate" title={row.slot}>{row.slot}</td>
-                  <td className="px-3 py-2 whitespace-nowrap text-gray-800">{row.demoDate}</td>
-                  <td className="px-3 py-2 max-w-[180px] truncate">{utmCell(row.utmSource)}</td>
-                  <td className="px-3 py-2 max-w-[180px] truncate">{utmCell(row.utmMedium)}</td>
-                  <td className="px-3 py-2 max-w-[200px] truncate">{utmCell(row.utmCampaign)}</td>
-                  <td className="px-3 py-2 max-w-[200px] truncate">{utmCell(row.utmContent)}</td>
-                  <td className="px-3 py-2">{row.updated}</td>
-                  <td className="px-3 py-2 text-center">
-                    <button type="button" onClick={() => openDetail(row.raw?.id || row.id)} className="inline-flex items-center gap-1 text-primary-navy hover:underline">
-                      <FiEye className="w-4 h-4" /> View
+                <tr
+                  key={row.id}
+                  className="group transition-colors odd:bg-white even:bg-gray-50/40 hover:bg-primary-blue-50/80 border-l-2 border-l-transparent hover:border-l-primary-blue-500"
+                >
+                  <td className="px-4 py-3 font-semibold text-gray-900">{row.name}</td>
+                  <td className="px-4 py-3 tabular-nums font-mono text-[13px] text-gray-700">{row.phone}</td>
+                  <td className="px-4 py-3">
+                    <span className="inline-flex min-w-[1.5rem] justify-center rounded-md bg-gray-100 px-1.5 py-0.5 text-xs font-bold text-gray-700 tabular-nums">
+                      {row.currentStep}
+                    </span>
+                  </td>
+                  <td className="px-4 py-3">{completedBadge}</td>
+                  <td className="px-4 py-3 max-w-[300px] truncate text-gray-700 text-[13px]" title={row.topColleges}>{row.topCollegesDisplay}</td>
+                  <td className="px-4 py-3 max-w-[200px] truncate text-gray-800 text-[13px] font-medium" title={row.slot}>{row.slot}</td>
+                  <td className="px-4 py-3 whitespace-nowrap text-gray-800 text-[13px] font-semibold">{row.demoDate}</td>
+                  <td className="px-4 py-3 max-w-[180px] truncate text-[13px]">{utmCell(row.utmSource)}</td>
+                  <td className="px-4 py-3 max-w-[180px] truncate text-[13px]">{utmCell(row.utmMedium)}</td>
+                  <td className="px-4 py-3 max-w-[200px] truncate text-[13px]">{utmCell(row.utmCampaign)}</td>
+                  <td className="px-4 py-3 max-w-[200px] truncate text-[13px]">{utmCell(row.utmContent)}</td>
+                  <td className="px-4 py-3 text-gray-500 text-[12px] whitespace-nowrap">{row.updated}</td>
+                  <td className="px-4 py-3 text-center">
+                    <button
+                      type="button"
+                      onClick={() => openDetail(row.raw?.id || row.id)}
+                      className="inline-flex items-center gap-1.5 rounded-lg border border-gray-200 bg-white px-2.5 py-1.5 text-xs font-semibold text-primary-navy shadow-sm hover:bg-gray-50 hover:border-gray-300 transition-colors"
+                    >
+                      <FiEye className="w-3.5 h-3.5" /> View
                     </button>
                   </td>
                 </tr>
@@ -987,6 +1259,8 @@ export default function IitCounselling() {
           </tbody>
         </table>
         </div>
+        </div>
+
       </div>
 
       {submissionsViewAllOpen ? (
@@ -999,11 +1273,11 @@ export default function IitCounselling() {
               <div className="flex items-center gap-2">
                 <button
                   type="button"
-                  onClick={copyAllSubmissions}
-                  disabled={copyingAll || allSubmissionRowsLoading}
-                  className="rounded border border-gray-300 px-2 py-1 text-[11px] font-medium text-gray-700 hover:bg-gray-50"
+                  onClick={prepareCopySubmissions}
+                  disabled={toolbarSlotFilteredRows.length === 0 || aggLoading}
+                  className="rounded border border-gray-300 px-2 py-1 text-[11px] font-medium text-gray-700 hover:bg-gray-50 disabled:opacity-50"
                 >
-                  {copyingAll ? 'Copying...' : (submissionsCopied ? 'Copied' : 'Copy all')}
+                  Copy all
                 </button>
                 <button
                   type="button"
@@ -1015,12 +1289,6 @@ export default function IitCounselling() {
               </div>
             </div>
             <div className="max-h-[70vh] overflow-auto p-4">
-              {allSubmissionRowsLoading ? (
-                <p className="mb-3 text-sm text-gray-500">Loading all matching rows...</p>
-              ) : null}
-              {allSubmissionRowsError ? (
-                <p className="mb-3 text-sm text-red-600">{allSubmissionRowsError}</p>
-              ) : null}
               <div className="mb-4 grid grid-cols-1 gap-2 md:grid-cols-3">
                 <select
                   value={viewFilters.slot}
@@ -1097,15 +1365,7 @@ export default function IitCounselling() {
                   </select>
                   <button
                     type="button"
-                    onClick={() => setViewFilters({
-                      slot: '',
-                      utmSource: '',
-                      utmMedium: '',
-                      utmCampaign: '',
-                      utmContent: '',
-                      updatedFrom: '',
-                      updatedTo: '',
-                    })}
+                    onClick={() => setViewFilters({ ...EMPTY_VIEW_FILTERS })}
                     className="h-9 shrink-0 rounded border border-gray-300 px-3 text-xs text-gray-700 hover:bg-gray-50"
                   >
                     Reset
@@ -1160,13 +1420,41 @@ export default function IitCounselling() {
         </div>
       ) : null}
 
-      <div className="flex items-center justify-between text-sm text-gray-600">
-        <span>Page {page} of {submissionPagination.totalPages || 1}</span>
-        <div className="flex gap-2">
-          <button type="button" onClick={() => { setLoading(true); setPage((p) => Math.max(1, p - 1)); }} disabled={page <= 1} className="px-3 py-1 rounded border border-gray-300 disabled:opacity-40">Previous</button>
-          <button type="button" onClick={() => { setLoading(true); setPage((p) => Math.min(submissionPagination.totalPages || 1, p + 1)); }} disabled={page >= (submissionPagination.totalPages || 1)} className="px-3 py-1 rounded border border-gray-300 disabled:opacity-40">Next</button>
+      <div className="flex flex-wrap items-center justify-between gap-3 rounded-2xl border border-gray-200/80 bg-white px-4 py-3 text-sm text-gray-600 shadow-sm">
+        <span className="font-medium tabular-nums text-gray-700">
+          Page <span className="text-gray-900 font-semibold">{page}</span>
+          <span className="text-gray-400 mx-1">/</span>
+          {submissionPagination.totalPages || 1}
+        </span>
+        <div className="flex items-center gap-2">
+          <button
+            type="button"
+            onClick={() => { setLoading(true); setPage((p) => Math.max(1, p - 1)); }}
+            disabled={page <= 1}
+            className="rounded-xl border border-gray-200 bg-white px-4 py-2 text-sm font-semibold text-gray-700 shadow-sm hover:bg-gray-50 disabled:opacity-40 disabled:pointer-events-none transition-colors"
+          >
+            Previous
+          </button>
+          <button
+            type="button"
+            onClick={() => { setLoading(true); setPage((p) => Math.min(submissionPagination.totalPages || 1, p + 1)); }}
+            disabled={page >= (submissionPagination.totalPages || 1)}
+            className="rounded-xl border border-gray-200 bg-white px-4 py-2 text-sm font-semibold text-gray-700 shadow-sm hover:bg-gray-50 disabled:opacity-40 disabled:pointer-events-none transition-colors"
+          >
+            Next
+          </button>
         </div>
       </div>
+
+      <CopyToSheetsModal
+        fields={IIT_SUBMISSION_COLUMNS}
+        records={copyModalRecords}
+        getCellValue={getCopyCellValue}
+        open={copyModalOpen}
+        onClose={() => setCopyModalOpen(false)}
+        recordLabel="submissions"
+        loading={false}
+      />
 
       {(detailLoading || detail) ? (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50" aria-modal="true" role="dialog">
@@ -1200,6 +1488,40 @@ export default function IitCounselling() {
           </div>
         </div>
       ) : null}
+    </div>
+  );
+}
+
+/** Shared enterprise navy styling for IIT submissions overview tiles */
+const SUBMISSION_OVERVIEW_TILE_THEME = {
+  iconWrap:
+    'bg-linear-to-br from-primary-navy to-[#004080] text-white shadow-md shadow-primary-navy/28 ring-1 ring-white/25',
+  glow: 'from-primary-blue-400/18',
+  border: 'border-primary-blue-200/80',
+  ring: 'ring-primary-blue-500/[0.07]',
+};
+
+function SubmissionOverviewTile({ title, value, subtitle, icon }) {
+  const valueStr = value == null ? '' : String(value);
+  const v = SUBMISSION_OVERVIEW_TILE_THEME;
+  return (
+    <div
+      className={`group relative overflow-hidden rounded-2xl border bg-linear-to-br from-white via-white to-primary-blue-50/50 p-3.5 shadow-md transition-shadow duration-200 hover:shadow-lg hover:border-primary-blue-200 min-h-[100px] flex flex-col ${v.border} ring-1 ${v.ring}`}
+    >
+      <div className="pointer-events-none absolute inset-x-0 top-0 h-0.5 bg-linear-to-r from-primary-navy to-[#004080]" aria-hidden />
+      <div className={`pointer-events-none absolute -right-8 -top-10 h-24 w-24 rounded-full bg-linear-to-br ${v.glow} to-transparent blur-2xl opacity-90`} aria-hidden />
+      <div className="relative flex gap-3 min-h-full pt-0.5">
+        <div className={`flex h-11 w-11 shrink-0 items-center justify-center rounded-xl ${v.iconWrap}`}>
+          {icon}
+        </div>
+        <div className="min-w-0 flex flex-1 flex-col">
+          <p className="text-[10px] font-bold uppercase tracking-[0.14em] text-gray-500">{title}</p>
+          <p className="mt-1.5 text-lg font-bold leading-tight tracking-tight text-gray-900 tabular-nums line-clamp-2" title={valueStr}>
+            {valueStr}
+          </p>
+          <p className="mt-auto pt-2 text-[10px] font-medium leading-snug text-gray-500">{subtitle}</p>
+        </div>
+      </div>
     </div>
   );
 }
