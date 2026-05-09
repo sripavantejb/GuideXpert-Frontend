@@ -4,9 +4,13 @@ import { FiSend, FiPhone, FiDollarSign, FiAward, FiHome, FiUsers, FiArrowLeft, F
 import ShinyText from '../UI/ShinyText';
 import SuccessPopup from '../UI/SuccessPopup';
 import Loader from '../UI/Loader';
-import { sendOtp, verifyOtp, getDemoSlots, submitApplication, saveStep1, saveStep2, saveStep3, savePostRegistrationData } from '../../utils/api';
+import { sendOtp, verifyOtp, getDemoSlots, submitApplication, saveStep1, saveStep2, saveStep3 } from '../../utils/api';
 import { captureUtmFirstTouch, getStoredUtm } from '../../utils/utm';
 import './ApplySection.css';
+
+const WHATSAPP_NUMBER = '919009000914';
+const WHATSAPP_MESSAGE = 'hi can you provide me the link';
+const WHATSAPP_URL = `https://wa.me/${WHATSAPP_NUMBER}?text=${encodeURIComponent(WHATSAPP_MESSAGE)}`;
 
 const ApplySection = () => {
   const [currentStep, setCurrentStep] = useState(1);
@@ -30,12 +34,6 @@ const ApplySection = () => {
   const [isRegistered, setIsRegistered] = useState(false);
   const [registeredPhone, setRegisteredPhone] = useState('');
   const [registeredSlotInfo, setRegisteredSlotInfo] = useState(null);
-  const [postRegistrationCompleted, setPostRegistrationCompleted] = useState(false);
-  const [showPostRegistrationSuccessPopup, setShowPostRegistrationSuccessPopup] = useState(false);
-  const [postRegistrationData, setPostRegistrationData] = useState({
-    interestLevel: 1,
-    email: ''
-  });
   const [slots, setSlots] = useState([]);
   const [slotsLoading, setSlotsLoading] = useState(false);
   const otpInputRefs = useRef([]);
@@ -521,8 +519,8 @@ const ApplySection = () => {
     // Save to localStorage
     saveRegistrationToLocalStorage(cleanPhone);
     
-    // Go to post-registration step (interest + email questions)
-    setCurrentStep(4);
+    // Reset back to Step 1 (Step 4 has been removed from the flow)
+    setCurrentStep(1);
     setBookedSlotInfo(null);
     setSuccessMessage('');
     // Reset form fields so they see a fresh form
@@ -536,16 +534,16 @@ const ApplySection = () => {
     });
     setIsPhoneVerified(false);
     setVerifiedPhone('');
-  };
 
-  const handlePostRegistrationSuccessPopupClose = () => {
-    setShowPostRegistrationSuccessPopup(false);
-    setCurrentStep(1);
-    setPostRegistrationData({ interestLevel: 1, email: '' });
+    // Redirect to WhatsApp with prefilled message; fall back to same-tab nav if popup blocked
+    const opened = window.open(WHATSAPP_URL, '_blank', 'noopener,noreferrer');
+    if (!opened) {
+      window.location.href = WHATSAPP_URL;
+    }
   };
 
   const handleBack = () => {
-    if (currentStep > 1 && currentStep !== 4) {
+    if (currentStep > 1) {
       setError('');
       setSuccessMessage('');
       setOtpError('');
@@ -554,74 +552,13 @@ const ApplySection = () => {
     }
   };
 
-  const handlePostRegistrationChange = (e) => {
-    const { name, value } = e.target;
-    setPostRegistrationData({ ...postRegistrationData, [name]: value });
-    if (error) setError('');
-  };
-
-  const handleInterestSliderChange = (e) => {
-    const value = parseInt(e.target.value, 10);
-    setPostRegistrationData({ ...postRegistrationData, interestLevel: value });
-    if (error) setError('');
-  };
-
-  const handlePostRegistrationSubmit = async (e) => {
-    e.preventDefault();
-    setError('');
-    setSuccessMessage('');
-
-    const interestValue = postRegistrationData.interestLevel;
-    if (!interestValue || interestValue < 1 || interestValue > 5) {
-      setError('Please rate your interest level (drag the slider)');
-      return;
-    }
-
-    if (!postRegistrationData.email || !postRegistrationData.email.trim()) {
-      setError('Please provide your email address');
-      return;
-    }
-
-    // Basic email validation
-    const emailRegex = /^\S+@\S+\.\S+$/;
-    if (!emailRegex.test(postRegistrationData.email.trim())) {
-      setError('Please enter a valid email address');
-      return;
-    }
-
-    setIsLoading(true);
-
-    try {
-      const result = await savePostRegistrationData(
-        registeredPhone,
-        interestValue,
-        postRegistrationData.email.trim(),
-        getStoredUtm() ?? undefined
-      );
-
-      if (result.success) {
-        setPostRegistrationCompleted(true);
-        setShowPostRegistrationSuccessPopup(true);
-      } else {
-        const errorMessage = result.message || result.data?.message || 'Failed to save information. Please try again.';
-        setError(errorMessage);
-      }
-    } catch (err) {
-      console.error('[Post Registration] Exception:', err);
-      setError('Network error. Please check your connection and try again.');
-    } finally {
-      setIsLoading(false);
-    }
-  };
-
   const stepLabels = {
     1: '',
     2: 'OTP Verification',
     3: 'Slot Booking',
-    4: 'Additional Information',
   };
 
-  const progressPercentage = (currentStep / 4) * 100;
+  const progressPercentage = (currentStep / 3) * 100;
 
   return (
     <section id="home" className="apply-section">
@@ -687,7 +624,7 @@ const ApplySection = () => {
             {currentStep >= 2 && (
               <div className="apply-progress">
                 <div className="apply-progress-top">
-                  <span className="apply-progress-step">Step {currentStep} of 4</span>
+                  <span className="apply-progress-step">Step {currentStep} of 3</span>
                   <span className="apply-progress-label">{stepLabels[currentStep]}</span>
                 </div>
                 <div className="apply-progress-bar">
@@ -927,89 +864,16 @@ const ApplySection = () => {
               </form>
             )}
 
-            {/* Step 4: Post-Registration Questions */}
-            {currentStep === 4 && (
-              <form className="apply-form" onSubmit={handlePostRegistrationSubmit}>
-                <div className="apply-field">
-                  <label className="apply-question-label" htmlFor="interest-slider">
-                    How interested are you in becoming a counselor?
-                  </label>
-                  <div className="apply-slider-container">
-                    <input
-                      type="range"
-                      id="interest-slider"
-                      name="interestLevel"
-                      min="1"
-                      max="5"
-                      step="1"
-                      value={postRegistrationData.interestLevel}
-                      onChange={handleInterestSliderChange}
-                      className="apply-slider-track"
-                      style={{
-                        '--slider-progress': `${(postRegistrationData.interestLevel / 5) * 100}%`,
-                      }}
-                      aria-valuemin={1}
-                      aria-valuemax={5}
-                      aria-valuenow={postRegistrationData.interestLevel}
-                      aria-label="Rate your interest in becoming a counselor from 1 to 5"
-                    />
-                    <div className="apply-slider-labels">
-                      {[1, 2, 3, 4, 5].map((n) => (
-                        <span key={n} className="apply-slider-label">
-                          {n}
-                        </span>
-                      ))}
-                    </div>
-                  </div>
-                </div>
-
-                <div className="apply-field">
-                  <label htmlFor="email">
-                    Provide your email so we can send the meeting link directly and updates <span>*</span>
-                  </label>
-                  <input
-                    type="email"
-                    id="email"
-                    name="email"
-                    value={postRegistrationData.email}
-                    onChange={handlePostRegistrationChange}
-                    placeholder="your.email@example.com"
-                    required
-                  />
-                </div>
-
-                <div className="apply-step-nav">
-                  <button
-                    type="button"
-                    onClick={() => {
-                      if (isRegistered) {
-                        setCurrentStep(1);
-                      } else {
-                        handleBack();
-                      }
-                    }}
-                    className="apply-back-btn"
-                  >
-                    <FiArrowLeft aria-hidden />
-                    Back
-                  </button>
-                  <button type="submit" className="apply-otp-btn" disabled={isLoading}>
-                    {isLoading ? <Loader size="small" aria-hidden /> : null}
-                    {isLoading ? 'Saving...' : 'Complete Registration'}
-                  </button>
-                </div>
-              </form>
-            )}
           </div>
         </div>
       </div>
       
       {/* Success Popup */}
       <SuccessPopup
-        isOpen={showSuccessPopup || showPostRegistrationSuccessPopup}
-        onClose={showPostRegistrationSuccessPopup ? handlePostRegistrationSuccessPopupClose : handleSuccessPopupClose}
-        slotInfo={showSuccessPopup ? bookedSlotInfo : null}
-        variant={showPostRegistrationSuccessPopup ? 'postRegistration' : 'slot'}
+        isOpen={showSuccessPopup}
+        onClose={handleSuccessPopupClose}
+        slotInfo={bookedSlotInfo}
+        variant="slot"
       />
       
       <div className="apply-feature-cards">

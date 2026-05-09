@@ -77,7 +77,7 @@ const SuccessPopup = ({ isOpen, onClose, slotInfo, variant = 'slot', score, maxS
           </div>
           
           <h2 className={`success-popup-title ${isNeo ? 'success-popup-title--neo' : ''}`}>
-            {isPostRegistration ? 'Registration Complete!' : isAssessment ? 'Assessment submitted successfully!' : 'Slot Booked Successfully!'}
+            {isPostRegistration ? 'Registration Complete!' : isAssessment ? 'Assessment submitted successfully!' : 'Registration Successful!'}
           </h2>
           
           {isAssessment && (
