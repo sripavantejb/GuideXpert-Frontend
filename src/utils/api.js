@@ -478,6 +478,19 @@ export const registerForIitMeetHindi = async (name, mobileNumber) => {
 };
 
 /**
+ * IIT first form: after OTP on the client, submit name, mobile, and free-text AI question answer.
+ * @param {string} name
+ * @param {string} mobileNumber - 10 digits
+ * @param {string} interestedInAiLearning - trimmed, 1–2000 chars
+ */
+export const submitIitFirstForm = async (name, mobileNumber, interestedInAiLearning) => {
+  return apiRequest('/iit-first-form/submit', {
+    method: 'POST',
+    body: JSON.stringify({ name, mobileNumber, interestedInAiLearning }),
+  });
+};
+
+/**
  * Register for training meeting (saves name and mobile to training attendance, then redirect to training Meet link)
  * @param {string} name - User's full name
  * @param {string} mobileNumber - 10-digit mobile number

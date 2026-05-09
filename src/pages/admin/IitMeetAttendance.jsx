@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef } from 'react';
 import { FiCopy } from 'react-icons/fi';
-import { getIitMeetAttendance, getIitMeetHindiAttendance, getStoredToken } from '../../utils/adminApi';
+import { getIitMeetAttendance, getIitMeetHindiAttendance, getIitFirstFormSubmissions, getStoredToken } from '../../utils/adminApi';
 import { useAuth } from '../../hooks/useAuth';
 import TableSkeleton from '../../components/UI/TableSkeleton';
 import CopyToSheetsModal from '../../components/Admin/CopyToSheetsModal';
@@ -51,18 +51,35 @@ function getEmptyMessage({ mode, selectedDate, rangeFrom, rangeTo, query, meetVa
   const hasFilter = Boolean(query)
     || (mode === 'single' && selectedDate)
     || (mode === 'range' && (rangeFrom || rangeTo));
-  const label = meetVariant === 'hindi' ? 'IIT meet Hindi attendance' : 'IIT meet attendance';
+  const label =
+    meetVariant === 'hindi'
+      ? 'IIT meet Hindi attendance'
+      : meetVariant === 'firstForm'
+        ? 'IIT first form submissions'
+        : 'IIT meet attendance';
   return hasFilter ? `No ${label} found for the selected filters` : `No ${label} records yet`;
 }
 
-const COPY_FIELDS = [
+const COPY_FIELDS_MEET = [
   { key: 'name', label: 'Name' },
   { key: 'mobileNumber', label: 'Mobile Number' },
   { key: 'timestamp', label: 'Join Time' },
   { key: 'attendanceStatus', label: 'Status' },
 ];
 
+const COPY_FIELDS_FIRST_FORM = [
+  { key: 'name', label: 'Name' },
+  { key: 'mobileNumber', label: 'Mobile Number' },
+  { key: 'timestamp', label: 'Submitted' },
+  { key: 'interestedInAiLearning', label: 'Response (AI question)' },
+];
+
 function getAttendanceCellValue(row, key) {
+  if (key === 'interestedInAiLearning') {
+    const v = row.interestedInAiLearning;
+    if (v == null || v === '') return '';
+    return String(v);
+  }
   const v = row[key];
   if (key === 'timestamp') return v ? formatDate(v) : '';
   if (v == null || v === '') return '';
@@ -92,8 +109,17 @@ export default function IitMeetAttendance() {
   const requestIdRef = useRef(0);
   const filtersRef = useRef('');
 
-  const fetchIitMeetList = (params, token) =>
-    meetVariant === 'hindi' ? getIitMeetHindiAttendance(params, token) : getIitMeetAttendance(params, token);
+  const fetchIitMeetList = (params, token) => {
+    if (meetVariant === 'hindi') return getIitMeetHindiAttendance(params, token);
+    if (meetVariant === 'firstForm') return getIitFirstFormSubmissions(params, token);
+    return getIitMeetAttendance(params, token);
+  };
+
+  const variantLabel = () => {
+    if (meetVariant === 'hindi') return 'IIT meet Hindi';
+    if (meetVariant === 'firstForm') return 'IIT first form';
+    return 'IIT meet';
+  };
 
   const fetchAttendance = () => {
     cancelledRef.current = false;
@@ -130,7 +156,7 @@ export default function IitMeetAttendance() {
           window.location.href = '/admin/login';
           return;
         }
-        setError(result.message || `Failed to load ${meetVariant === 'hindi' ? 'IIT meet Hindi' : 'IIT meet'} attendance`);
+        setError(result.message || `Failed to load ${variantLabel()} data`);
         return;
       }
       const dataList = result.data.data || [];
@@ -260,7 +286,7 @@ export default function IitMeetAttendance() {
         window.location.href = '/admin/login';
         return;
       }
-      setError(r?.message || `Failed to load ${meetVariant === 'hindi' ? 'IIT meet Hindi' : 'IIT meet'} attendance for copy`);
+      setError(r?.message || `Failed to load ${variantLabel()} data for copy`);
       return;
     }
     setCopyRecords(result.rows || []);
@@ -305,14 +331,38 @@ export default function IitMeetAttendance() {
                 >
                   IIT Meet Hindi
                 </button>
+                <button
+                  type="button"
+                  onClick={() => {
+                    if (meetVariant === 'firstForm') return;
+                    setMeetVariant('firstForm');
+                    setPagination((prev) => ({ ...prev, page: 1 }));
+                  }}
+                  className={`px-3 py-1.5 rounded-md text-xs font-semibold transition-all ${
+                    meetVariant === 'firstForm'
+                      ? 'bg-primary-blue-600 text-white shadow-sm'
+                      : 'text-gray-600 hover:bg-gray-200'
+                  }`}
+                >
+                  First form
+                </button>
               </div>
             </div>
             <p className="mt-1 text-sm text-gray-500">
-              Attendees from{' '}
-              <span className="font-mono">
-                {meetVariant === 'hindi' ? '/iitcounsellingmeethindi' : '/iitcounsellingmeet'}
-              </span>
-              , deduped by mobile.
+              {meetVariant === 'firstForm' ? (
+                <>
+                  First form submissions from <span className="font-mono">/iitfirstform</span> (also{' '}
+                  <span className="font-mono">/Iitfirstform</span>), deduped by mobile.
+                </>
+              ) : (
+                <>
+                  Attendees from{' '}
+                  <span className="font-mono">
+                    {meetVariant === 'hindi' ? '/iitcounsellingmeethindi' : '/iitcounsellingmeet'}
+                  </span>
+                  , deduped by mobile.
+                </>
+              )}
             </p>
           </div>
           <button
@@ -482,7 +532,9 @@ export default function IitMeetAttendance() {
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
                 </svg>
               </div>
-              <h3 className="text-base font-semibold text-gray-900">Search Attendees</h3>
+              <h3 className="text-base font-semibold text-gray-900">
+                {meetVariant === 'firstForm' ? 'Search submissions' : 'Search Attendees'}
+              </h3>
             </div>
             <div className="relative">
               <input
@@ -579,8 +631,12 @@ export default function IitMeetAttendance() {
                   <tr className="bg-gradient-to-r from-gray-50 to-gray-100 border-b border-gray-200">
                     <th className="px-5 py-4 text-xs font-bold text-gray-600 uppercase tracking-wider">Name</th>
                     <th className="px-5 py-4 text-xs font-bold text-gray-600 uppercase tracking-wider">Mobile Number</th>
-                    <th className="px-5 py-4 text-xs font-bold text-gray-600 uppercase tracking-wider">Join Time</th>
-                    <th className="px-5 py-4 text-xs font-bold text-gray-600 uppercase tracking-wider">Status</th>
+                    <th className="px-5 py-4 text-xs font-bold text-gray-600 uppercase tracking-wider">
+                      {meetVariant === 'firstForm' ? 'Submitted' : 'Join Time'}
+                    </th>
+                    <th className="px-5 py-4 text-xs font-bold text-gray-600 uppercase tracking-wider">
+                      {meetVariant === 'firstForm' ? 'Response' : 'Status'}
+                    </th>
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-gray-100">
@@ -611,10 +667,19 @@ export default function IitMeetAttendance() {
                           <span className="text-sm text-gray-600">{formatDate(row.timestamp)}</span>
                         </td>
                         <td className="px-5 py-4">
-                          <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-semibold bg-green-100 text-green-700">
-                            <span className="w-1.5 h-1.5 rounded-full bg-green-500" />
-                            {row.attendanceStatus || 'Joined'}
-                          </span>
+                          {meetVariant === 'firstForm' ? (
+                            <span
+                              className="text-sm text-gray-700 line-clamp-3 max-w-[280px] sm:max-w-md"
+                              title={row.interestedInAiLearning ? String(row.interestedInAiLearning) : undefined}
+                            >
+                              {row.interestedInAiLearning ? String(row.interestedInAiLearning) : '—'}
+                            </span>
+                          ) : (
+                            <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-semibold bg-green-100 text-green-700">
+                              <span className="w-1.5 h-1.5 rounded-full bg-green-500" />
+                              {row.attendanceStatus || 'Joined'}
+                            </span>
+                          )}
                         </td>
                       </tr>
                     ))
@@ -668,7 +733,7 @@ export default function IitMeetAttendance() {
           </div>
 
           <CopyToSheetsModal
-            fields={COPY_FIELDS}
+            fields={meetVariant === 'firstForm' ? COPY_FIELDS_FIRST_FORM : COPY_FIELDS_MEET}
             records={copyRecords}
             getCellValue={getAttendanceCellValue}
             open={copyModalOpen}
