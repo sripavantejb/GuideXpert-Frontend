@@ -466,6 +466,18 @@ export const registerForIitMeet = async (name, mobileNumber) => {
 };
 
 /**
+ * Register for the /iitcounsellingmeethindi attendance flow (separate collection on server).
+ * @param {string} name - 2-100 char name
+ * @param {string} mobileNumber - 10-digit mobile number
+ */
+export const registerForIitMeetHindi = async (name, mobileNumber) => {
+  return apiRequest('/iit-meet-hindi/register', {
+    method: 'POST',
+    body: JSON.stringify({ name, mobileNumber }),
+  });
+};
+
+/**
  * Register for training meeting (saves name and mobile to training attendance, then redirect to training Meet link)
  * @param {string} name - User's full name
  * @param {string} mobileNumber - 10-digit mobile number

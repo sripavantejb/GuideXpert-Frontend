@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef } from 'react';
 import { FiCopy } from 'react-icons/fi';
-import { getIitMeetAttendance, getStoredToken } from '../../utils/adminApi';
+import { getIitMeetAttendance, getIitMeetHindiAttendance, getStoredToken } from '../../utils/adminApi';
 import { useAuth } from '../../hooks/useAuth';
 import TableSkeleton from '../../components/UI/TableSkeleton';
 import CopyToSheetsModal from '../../components/Admin/CopyToSheetsModal';
@@ -47,11 +47,12 @@ function buildMonthGrid(year, month) {
   return rows;
 }
 
-function getEmptyMessage({ mode, selectedDate, rangeFrom, rangeTo, query }) {
+function getEmptyMessage({ mode, selectedDate, rangeFrom, rangeTo, query, meetVariant }) {
   const hasFilter = Boolean(query)
     || (mode === 'single' && selectedDate)
     || (mode === 'range' && (rangeFrom || rangeTo));
-  return hasFilter ? 'No IIT meet attendance found for the selected filters' : 'No IIT meet attendance records yet';
+  const label = meetVariant === 'hindi' ? 'IIT meet Hindi attendance' : 'IIT meet attendance';
+  return hasFilter ? `No ${label} found for the selected filters` : `No ${label} records yet`;
 }
 
 const COPY_FIELDS = [
@@ -70,6 +71,7 @@ function getAttendanceCellValue(row, key) {
 
 export default function IitMeetAttendance() {
   const { logout } = useAuth();
+  const [meetVariant, setMeetVariant] = useState('english');
   const [records, setRecords] = useState([]);
   const [pagination, setPagination] = useState({ page: 1, limit: 50, total: 0, totalPages: 1 });
   const [loading, setLoading] = useState(true);
@@ -89,6 +91,9 @@ export default function IitMeetAttendance() {
   const cancelledRef = useRef(false);
   const requestIdRef = useRef(0);
   const filtersRef = useRef('');
+
+  const fetchIitMeetList = (params, token) =>
+    meetVariant === 'hindi' ? getIitMeetHindiAttendance(params, token) : getIitMeetAttendance(params, token);
 
   const fetchAttendance = () => {
     cancelledRef.current = false;
@@ -115,7 +120,7 @@ export default function IitMeetAttendance() {
     setLoading(true);
     setError('');
 
-    getIitMeetAttendance(params, getStoredToken()).then((result) => {
+    fetchIitMeetList(params, getStoredToken()).then((result) => {
       if (cancelledRef.current) return;
       if (thisRequestId !== requestIdRef.current) return;
       setLoading(false);
@@ -125,7 +130,7 @@ export default function IitMeetAttendance() {
           window.location.href = '/admin/login';
           return;
         }
-        setError(result.message || 'Failed to load IIT meet attendance');
+        setError(result.message || `Failed to load ${meetVariant === 'hindi' ? 'IIT meet Hindi' : 'IIT meet'} attendance`);
         return;
       }
       const dataList = result.data.data || [];
@@ -188,7 +193,7 @@ export default function IitMeetAttendance() {
     return () => {
       cancelledRef.current = true;
     };
-  }, [viewAll, pagination.page, mode, selectedDate, rangeFrom, rangeTo, query]);
+  }, [viewAll, pagination.page, mode, selectedDate, rangeFrom, rangeTo, query, meetVariant]);
 
   const goToPage = (p) => {
     const next = Math.max(1, Math.min(p, pagination.totalPages));
@@ -200,7 +205,7 @@ export default function IitMeetAttendance() {
     if (!e.target.checked) setPagination((prev) => ({ ...prev, page: 1 }));
   };
 
-  const emptyMessage = getEmptyMessage({ mode, selectedDate, rangeFrom, rangeTo, query });
+  const emptyMessage = getEmptyMessage({ mode, selectedDate, rangeFrom, rangeTo, query, meetVariant });
   const shownFrom = pagination.total === 0 ? 0 : (pagination.page - 1) * pagination.limit + 1;
   const shownTo = pagination.total === 0 ? 0 : Math.min(pagination.page * pagination.limit, pagination.total);
   const todayStr = getTodayInputValue();
@@ -245,7 +250,7 @@ export default function IitMeetAttendance() {
     }
     const result = await fetchAllPaginatedRows((page, limit) => {
       const params = { ...baseParams, page, limit };
-      return getIitMeetAttendance(params, getStoredToken());
+      return fetchIitMeetList(params, getStoredToken());
     });
     setCopyLoading(false);
     if (!result.success) {
@@ -255,7 +260,7 @@ export default function IitMeetAttendance() {
         window.location.href = '/admin/login';
         return;
       }
-      setError(r?.message || 'Failed to load IIT meet attendance for copy');
+      setError(r?.message || `Failed to load ${meetVariant === 'hindi' ? 'IIT meet Hindi' : 'IIT meet'} attendance for copy`);
       return;
     }
     setCopyRecords(result.rows || []);
@@ -267,9 +272,47 @@ export default function IitMeetAttendance() {
       <div className="mb-8">
         <div className="flex flex-wrap items-center justify-between gap-4">
           <div>
-            <h1 className="text-2xl font-bold text-gray-900 tracking-tight">IIT Meet Attendance</h1>
+            <div className="flex flex-wrap items-center gap-3 mb-2">
+              <h1 className="text-2xl font-bold text-gray-900 tracking-tight">IIT Meet Attendance</h1>
+              <div className="flex items-center gap-0.5 p-0.5 bg-gray-100 rounded-lg border border-gray-200">
+                <button
+                  type="button"
+                  onClick={() => {
+                    if (meetVariant === 'english') return;
+                    setMeetVariant('english');
+                    setPagination((prev) => ({ ...prev, page: 1 }));
+                  }}
+                  className={`px-3 py-1.5 rounded-md text-xs font-semibold transition-all ${
+                    meetVariant === 'english'
+                      ? 'bg-primary-blue-600 text-white shadow-sm'
+                      : 'text-gray-600 hover:bg-gray-200'
+                  }`}
+                >
+                  IIT Meet
+                </button>
+                <button
+                  type="button"
+                  onClick={() => {
+                    if (meetVariant === 'hindi') return;
+                    setMeetVariant('hindi');
+                    setPagination((prev) => ({ ...prev, page: 1 }));
+                  }}
+                  className={`px-3 py-1.5 rounded-md text-xs font-semibold transition-all ${
+                    meetVariant === 'hindi'
+                      ? 'bg-primary-blue-600 text-white shadow-sm'
+                      : 'text-gray-600 hover:bg-gray-200'
+                  }`}
+                >
+                  IIT Meet Hindi
+                </button>
+              </div>
+            </div>
             <p className="mt-1 text-sm text-gray-500">
-              Attendees from <span className="font-mono">/iitcounsellingmeet</span>, deduped by mobile.
+              Attendees from{' '}
+              <span className="font-mono">
+                {meetVariant === 'hindi' ? '/iitcounsellingmeethindi' : '/iitcounsellingmeet'}
+              </span>
+              , deduped by mobile.
             </p>
           </div>
           <button

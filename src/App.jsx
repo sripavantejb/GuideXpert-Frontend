@@ -10,6 +10,7 @@ import LandingPage from './pages/LandingPage';
 import AdminLogin from './pages/AdminLogin';
 import MeetingRegistration from './pages/MeetingRegistration';
 import IitCounsellingMeet from './pages/IitCounsellingMeet';
+import IitCounsellingMeetHindi from './pages/IitCounsellingMeetHindi';
 import TrainingMeeting from './pages/TrainingMeeting';
 import FeedbackForm from './pages/FeedbackForm';
 import TrainingForm from './pages/TrainingForm';
@@ -193,6 +194,7 @@ function App() {
           <Route path="/meet1" element={<MeetingRegistration redirectMeetUrl="https://meet.google.com/ryt-wtjh-gep" />} />
           <Route path="/meet2" element={<MeetingRegistration redirectMeetUrl="https://meet.google.com/izo-wyts-sas" />} />
           <Route path="/iitcounsellingmeet" element={<IitCounsellingMeet />} />
+          <Route path="/iitcounsellingmeethindi" element={<IitCounsellingMeetHindi />} />
           <Route path="/training" element={<TrainingMeeting />} />
           <Route path="/counsellor-poster" element={<Suspense fallback={<div className="min-h-screen"><PageSkeleton /></div>}><CounsellorCertificate /></Suspense>} />
           <Route path="/holiposter" element={<HoliPosterPage />} />
