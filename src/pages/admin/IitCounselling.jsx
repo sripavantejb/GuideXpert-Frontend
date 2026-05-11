@@ -974,7 +974,9 @@ export default function IitCounselling() {
             <p className="text-xs text-gray-500 mt-2 max-w-3xl leading-relaxed">
               <strong className="font-semibold text-gray-600">Visit KPIs</strong> use the analytics range above.
               <span className="mx-1.5 text-gray-300">·</span>
-              <strong className="font-semibold text-gray-600">This table</strong> uses demo booking dates and slots only.
+              <strong className="font-semibold text-gray-600">This table</strong> shows one row per phone (latest demo date, then most recently updated). Totals match that unique-lead view.
+              <span className="mx-1.5 text-gray-300">·</span>
+              Demo filters use booking dates and slots.
               {heavyClientFilter ? (
                 <span className="block sm:inline sm:ml-1 mt-1 sm:mt-0 text-primary-navy font-medium"> {submissionPagination.total} row(s) after demo filters.</span>
               ) : null}
