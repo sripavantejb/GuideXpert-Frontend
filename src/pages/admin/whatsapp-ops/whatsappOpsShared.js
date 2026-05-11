@@ -36,6 +36,16 @@ export function formatIndianMobile91(raw) {
   return `91${d.slice(-10)}`;
 }
 
+/** RFC-style CSV cell (matches admin unresolved export). */
+export function escapeCsvCell(v) {
+  if (v == null) return '';
+  const s = String(v);
+  const inner = s.replace(/"/g, '""');
+  const trimmed = s.trimStart();
+  const mustQuote = /[",\r\n\t]/.test(s) || /^[=+\-@]/.test(trimmed);
+  return mustQuote ? `"${inner}"` : inner;
+}
+
 export function formatDt(isoOrDate) {
   if (!isoOrDate) return '—';
   const d = new Date(isoOrDate);

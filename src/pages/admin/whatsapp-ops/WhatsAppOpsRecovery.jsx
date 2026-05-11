@@ -36,7 +36,13 @@ import {
   previewWhatsappOpsManualRecovery,
   startWhatsappOpsManualRecovery
 } from '../../../utils/whatsappOpsAdminApi';
-import { dateInputsToApiRange, defaultRangeIsoDates, formatDt, formatIndianMobile91 } from './whatsappOpsShared';
+import {
+  dateInputsToApiRange,
+  defaultRangeIsoDates,
+  escapeCsvCell,
+  formatDt,
+  formatIndianMobile91
+} from './whatsappOpsShared';
 import WhatsAppOpsMessages from './WhatsAppOpsMessages';
 
 const TEMPLATE_OPTIONS = [
@@ -852,20 +858,20 @@ function UnresolvedTableCard({
 
   const headerRight = (
     <>
-      <button type="button" onClick={onCopyPhones} title="Copy filtered numbers with 91 prefix (one per line)" className={btnSecondary}>
+      <button type="button" onClick={onCopyPhones} title="Copy phone (91…) and name for rows on this page (CSV)" className={btnSecondary}>
         <FiCopy size={14} /> Copy phones
       </button>
       <button
         type="button"
         onClick={onCopyCsv}
         disabled={csvBusy}
-        title="Copy filtered numbers with 91 prefix (one per line, up to 5000)"
+        title="Copy filtered phone (91…) and name as CSV (up to 5000 rows)"
         className={btnSecondary}
       >
         {csvBusy ? <FiLoader className="animate-spin" size={14} /> : <FiCopy size={14} />}
         Copy CSV
       </button>
-      <button type="button" onClick={onDownloadCsv} disabled={csvBusy} title="Download numbers with 91 prefix (one per line, .csv)" className={btnPrimary}>
+      <button type="button" onClick={onDownloadCsv} disabled={csvBusy} title="Download phone (91…) and name as CSV" className={btnPrimary}>
         {csvBusy ? <FiLoader className="animate-spin" size={14} /> : <FiDownload size={14} />}
         Download CSV
       </button>
@@ -1411,15 +1417,15 @@ function RecoveryTab() {
   /* ---------------------- Export actions ---------------------------------- */
   const handleCopyPhones = async () => {
     const seen = new Set();
-    const lines = [];
+    const body = [];
     for (const r of tableRows) {
-      const line = formatIndianMobile91(r.phone);
-      if (line && !seen.has(line)) {
-        seen.add(line);
-        lines.push(line);
-      }
+      const phone = formatIndianMobile91(r.phone);
+      if (!phone || seen.has(phone)) continue;
+      seen.add(phone);
+      const name = r.name != null ? String(r.name) : '';
+      body.push(`${escapeCsvCell(phone)},${escapeCsvCell(name)}`);
     }
-    await copyToClipboard(lines.join('\n'));
+    await copyToClipboard(['phone,name', ...body].join('\n'));
   };
   const handleCopyCsv = async () => {
     setCsvBusy(true);
