@@ -859,13 +859,13 @@ function UnresolvedTableCard({
         type="button"
         onClick={onCopyCsv}
         disabled={csvBusy}
-        title="Copy full filtered export to clipboard (same columns as Download CSV, up to 5000 rows)"
+        title="Copy filtered phone numbers to clipboard (one 10-digit number per line, up to 5000)"
         className={btnSecondary}
       >
         {csvBusy ? <FiLoader className="animate-spin" size={14} /> : <FiCopy size={14} />}
         Copy CSV
       </button>
-      <button type="button" onClick={onDownloadCsv} disabled={csvBusy} title="Download grouped CSV" className={btnPrimary}>
+      <button type="button" onClick={onDownloadCsv} disabled={csvBusy} title="Download phone numbers only (one per line, .csv)" className={btnPrimary}>
         {csvBusy ? <FiLoader className="animate-spin" size={14} /> : <FiDownload size={14} />}
         Download CSV
       </button>
