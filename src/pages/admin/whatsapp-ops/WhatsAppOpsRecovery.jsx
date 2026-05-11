@@ -29,6 +29,7 @@ import { useAuth } from '../../../hooks/useAuth';
 import {
   cancelWhatsappOpsManualRecoveryJob,
   downloadUnresolvedCsv,
+  fetchUnresolvedCsvText,
   getUnresolvedRecipients,
   getWhatsappOpsManualRecoveryJob,
   listWhatsappOpsManualRecoveryJobs,
@@ -103,28 +104,6 @@ function copyToClipboard(text) {
   document.execCommand('copy');
   document.body.removeChild(ta);
   return Promise.resolve();
-}
-
-function buildClipboardCsv(rows) {
-  const header = 'phone,name,template,reason,exclusionCategory,lastStatus,lastEventId';
-  const lines = (rows || []).map((r) => {
-    const cells = [
-      r.phone || '',
-      r.name || '',
-      r.messageKind || '',
-      r.reason || '',
-      r.exclusionCategory || '',
-      r.lifecycleState || '',
-      r.lastEventId ? String(r.lastEventId) : ''
-    ];
-    return cells
-      .map((v) => {
-        const s = String(v).replace(/"/g, '""').replace(/[\r\n]+/g, ' ');
-        return /[",]/.test(s) ? `"${s}"` : s;
-      })
-      .join(',');
-  });
-  return [header, ...lines].join('\n');
 }
 
 /* ============================================================================
@@ -876,8 +855,15 @@ function UnresolvedTableCard({
       <button type="button" onClick={onCopyPhones} title="Copy filtered phones to clipboard" className={btnSecondary}>
         <FiCopy size={14} /> Copy phones
       </button>
-      <button type="button" onClick={onCopyCsv} title="Copy filtered rows as CSV" className={btnSecondary}>
-        <FiCopy size={14} /> Copy CSV
+      <button
+        type="button"
+        onClick={onCopyCsv}
+        disabled={csvBusy}
+        title="Copy full filtered export to clipboard (same columns as Download CSV, up to 5000 rows)"
+        className={btnSecondary}
+      >
+        {csvBusy ? <FiLoader className="animate-spin" size={14} /> : <FiCopy size={14} />}
+        Copy CSV
       </button>
       <button type="button" onClick={onDownloadCsv} disabled={csvBusy} title="Download grouped CSV" className={btnPrimary}>
         {csvBusy ? <FiLoader className="animate-spin" size={14} /> : <FiDownload size={14} />}
@@ -1428,10 +1414,23 @@ function RecoveryTab() {
     await copyToClipboard(phones);
   };
   const handleCopyCsv = async () => {
-    await copyToClipboard(buildClipboardCsv(tableRows));
+    setCsvBusy(true);
+    setErr(null);
+    try {
+      const params = { ...apiDateRange, group };
+      if (messageKind) params.messageKind = messageKind;
+      if (debouncedSearch) params.q = debouncedSearch;
+      const text = await fetchUnresolvedCsvText(params);
+      const forClipboard = text.replace(/^\uFEFF/, '');
+      await copyToClipboard(forClipboard);
+    } catch (e) {
+      setErr(e?.message || 'CSV copy failed');
+    }
+    setCsvBusy(false);
   };
   const handleDownloadCsv = async () => {
     setCsvBusy(true);
+    setErr(null);
     try {
       const params = { ...apiDateRange, group };
       if (messageKind) params.messageKind = messageKind;

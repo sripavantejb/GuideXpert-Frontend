@@ -97,9 +97,11 @@ export const getOperationalHealth = (params, token) =>
 export const getUnresolvedRecipients = (params, token) =>
   whatsappOpsRequest(`/unresolved${buildWhatsappOpsQuery(params)}`, { method: 'GET' }, token);
 
-export async function downloadUnresolvedCsv(params = {}, token = getStoredToken()) {
+const CSV_BOM = '\uFEFF';
+
+async function fetchUnresolvedExport(params = {}, token = getStoredToken()) {
   const url = `${getApiBaseUrl()}/admin/whatsapp-ops/unresolved/export${buildWhatsappOpsQuery(params)}`;
-  const headers = {};
+  const headers = { Accept: 'text/csv;charset=utf-8' };
   if (token) headers.Authorization = `Bearer ${token}`;
   const res = await fetch(url, { method: 'GET', headers });
   if (!res.ok) {
@@ -107,10 +109,24 @@ export async function downloadUnresolvedCsv(params = {}, token = getStoredToken(
     const errText = await res.text();
     throw new Error(errText || `Export failed (${res.status})`);
   }
-  const blob = await res.blob();
   const dispo = res.headers.get('Content-Disposition') || '';
   const m = dispo.match(/filename="([^"]+)"/);
   const filename = m ? m[1] : `unresolved-${Date.now()}.csv`;
+  const buf = await res.arrayBuffer();
+  const text = new TextDecoder('utf-8').decode(buf);
+  return { text, filename };
+}
+
+/** Same payload as file download — use for clipboard so Copy matches Download. */
+export async function fetchUnresolvedCsvText(params = {}, token = getStoredToken()) {
+  const { text } = await fetchUnresolvedExport(params, token);
+  return text;
+}
+
+export async function downloadUnresolvedCsv(params = {}, token = getStoredToken()) {
+  const { text, filename } = await fetchUnresolvedExport(params, token);
+  const forBlob = text.startsWith(CSV_BOM) ? text : `${CSV_BOM}${text}`;
+  const blob = new Blob([forBlob], { type: 'text/csv;charset=utf-8' });
   const a = document.createElement('a');
   a.href = URL.createObjectURL(blob);
   a.download = filename;
