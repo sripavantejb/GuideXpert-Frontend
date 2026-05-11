@@ -451,6 +451,27 @@ export const registerForMeeting = async (name, mobileNumber) => {
 };
 
 /**
+ * Orientation meet: eligibility is activation (TrainingFeedback) only — no demo slot / live window.
+ * @param {string} mobileNumber
+ */
+export const checkOrientationMeetEligibility = async (mobileNumber) => {
+  return apiRequest('/meeting/orientation-eligibility', {
+    method: 'POST',
+    body: JSON.stringify({ mobileNumber }),
+  });
+};
+
+/**
+ * Register orientation meet attendance (after OTP + eligibility).
+ */
+export const registerForOrientationMeeting = async (name, mobileNumber) => {
+  return apiRequest('/meeting/orientation-register', {
+    method: 'POST',
+    body: JSON.stringify({ name, mobileNumber }),
+  });
+};
+
+/**
  * Register for the /iitcounsellingmeet attendance flow.
  * Has NO booking / time-window check on the server: the IIT counselling meet
  * is open to anyone who can verify their phone via OTP.

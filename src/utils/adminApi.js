@@ -301,6 +301,19 @@ export const getSlotConfigs = async (token = getStoredToken()) => {
   return adminRequest('/slots', { method: 'GET' }, token);
 };
 
+/** GET /admin/demo-meet-schedule — global IST windows for /meet join gate. */
+export const getDemoMeetSchedule = async (token = getStoredToken()) => {
+  return adminRequest('/demo-meet-schedule', { method: 'GET' }, token);
+};
+
+/** PUT /admin/demo-meet-schedule — body: { recurringWindows, joinEarlyMinutes } */
+export const putDemoMeetSchedule = async (payload, token = getStoredToken()) => {
+  return adminRequest('/demo-meet-schedule', {
+    method: 'PUT',
+    body: JSON.stringify(payload),
+  }, token);
+};
+
 /** GET /admin/slots/for-date?date=YYYY-MM-DD — slots available on that date. Returns data.slots or []. */
 export const getSlotsForDate = async (date, token = getStoredToken()) => {
   if (!date || typeof date !== 'string' || !/^\d{4}-\d{2}-\d{2}$/.test(date.trim())) {
@@ -348,6 +361,9 @@ export const getMeetingAttendance = async (params = {}, token = getStoredToken()
   if (params.q) search.set('q', params.q);
   if (params.uniqueByMobile !== undefined) search.set('uniqueByMobile', String(params.uniqueByMobile));
   if (params.dedupeMode) search.set('dedupeMode', params.dedupeMode);
+  if (params.meetType === 'demo' || params.meetType === 'orientation') {
+    search.set('meetType', params.meetType);
+  }
   const query = search.toString();
   return adminRequest(`/meeting-attendance${query ? `?${query}` : ''}`, { method: 'GET' }, token);
 };

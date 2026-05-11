@@ -1,5 +1,12 @@
 import { useState, useRef, useEffect, useCallback } from 'react';
-import { registerForMeeting, sendOtp, verifyOtp, checkMeetingDemoEligibility } from '../utils/api';
+import {
+  registerForMeeting,
+  registerForOrientationMeeting,
+  sendOtp,
+  verifyOtp,
+  checkMeetingDemoEligibility,
+  checkOrientationMeetEligibility,
+} from '../utils/api';
 
 const DEFAULT_GOOGLE_MEET_LINK = 'https://meet.google.com/rgk-pwrg-jze';
 
@@ -27,7 +34,11 @@ function eligibilityFromResponse(apiResult) {
   return body.data && typeof body.data === 'object' ? body.data : body;
 }
 
-export default function MeetingRegistration({ redirectMeetUrl = DEFAULT_GOOGLE_MEET_LINK }) {
+export default function MeetingRegistration({
+  redirectMeetUrl = DEFAULT_GOOGLE_MEET_LINK,
+  variant = 'demo',
+}) {
+  const isDemo = variant === 'demo';
   const [step, setStep] = useState(1);
 
   const [name, setName] = useState('');
@@ -52,36 +63,43 @@ export default function MeetingRegistration({ redirectMeetUrl = DEFAULT_GOOGLE_M
     return cleanPhone.length >= 10 ? cleanPhone.slice(-10) : cleanPhone;
   };
 
-  const attemptJoinMeet = useCallback(async (phone, displayName) => {
-    if (joiningRef.current) return;
-    joiningRef.current = true;
-    try {
-      const reg = await registerForMeeting(displayName, phone);
-      if (!reg.success) {
-        joiningRef.current = false;
-        if (reg.status === 403) {
-          const nested = reg.data?.data;
-          if (nested?.status) {
-            setMeetGateModal({
-              status: nested.status,
-              message: reg.message || 'You cannot join the meet at this time.',
-              slotStartLabel: nested.slotStartLabel,
-              joinOpensAtLabel: nested.joinOpensAtLabel
-            });
-            return;
+  const attemptJoinMeet = useCallback(
+    async (phone, displayName) => {
+      if (joiningRef.current) return;
+      joiningRef.current = true;
+      try {
+        const reg = isDemo
+          ? await registerForMeeting(displayName, phone)
+          : await registerForOrientationMeeting(displayName, phone);
+        if (!reg.success) {
+          joiningRef.current = false;
+          if (reg.status === 403 && isDemo) {
+            const nested = reg.data?.data;
+            if (nested?.status) {
+              setMeetGateModal({
+                status: nested.status,
+                message: reg.message || 'You cannot join the meet at this time.',
+                slotStartLabel: nested.slotStartLabel,
+                joinOpensAtLabel: nested.joinOpensAtLabel,
+                slotEndLabel: nested.slotEndLabel,
+              });
+              return;
+            }
           }
+          setSubmitError(reg.message || 'Could not complete meeting registration. Please try again.');
+          return;
         }
-        setSubmitError(reg.message || 'Could not complete meeting registration. Please try again.');
-        return;
+        window.location.href = redirectMeetUrl;
+      } catch {
+        joiningRef.current = false;
+        setSubmitError('Network error. Please try again.');
       }
-      window.location.href = redirectMeetUrl;
-    } catch {
-      joiningRef.current = false;
-      setSubmitError('Network error. Please try again.');
-    }
-  }, [redirectMeetUrl]);
+    },
+    [redirectMeetUrl, isDemo]
+  );
 
   const recheckEligibilityAndJoin = useCallback(async () => {
+    if (!isDemo) return;
     const phone = normalizedPhone();
     if (phone.length !== 10) return;
     setEligibilityRechecking(true);
@@ -103,7 +121,8 @@ export default function MeetingRegistration({ redirectMeetUrl = DEFAULT_GOOGLE_M
           status: elig.status,
           message: elig.message || 'You cannot join the meet yet.',
           slotStartLabel: elig.slotStartLabel,
-          joinOpensAtLabel: elig.joinOpensAtLabel
+          joinOpensAtLabel: elig.joinOpensAtLabel,
+          slotEndLabel: elig.slotEndLabel,
         });
       }
     } catch {
@@ -111,17 +130,17 @@ export default function MeetingRegistration({ redirectMeetUrl = DEFAULT_GOOGLE_M
     } finally {
       setEligibilityRechecking(false);
     }
-  }, [attemptJoinMeet, mobileNumber, name]);
+  }, [attemptJoinMeet, mobileNumber, name, isDemo]);
 
   useEffect(() => {
-    if (!meetGateModal || meetGateModal.status !== 'too_early') return;
+    if (!isDemo || !meetGateModal || meetGateModal.status !== 'too_early') return;
     const phone = normalizedPhone();
     if (phone.length !== 10) return;
     const id = setInterval(() => {
       recheckEligibilityAndJoin();
     }, POLL_MS);
     return () => clearInterval(id);
-  }, [meetGateModal, mobileNumber, recheckEligibilityAndJoin]);
+  }, [isDemo, meetGateModal, mobileNumber, recheckEligibilityAndJoin]);
 
   useEffect(() => {
     if (!meetGateModal) {
@@ -175,7 +194,7 @@ export default function MeetingRegistration({ redirectMeetUrl = DEFAULT_GOOGLE_M
     const cleanPhone = mobileNumber.replace(/\D/g, '');
 
     try {
-      const result = await sendOtp(name.trim(), cleanPhone, 'Meeting Attendee');
+      const result = await sendOtp(name.trim(), cleanPhone, isDemo ? 'Meeting Attendee' : 'Orientation Attendee');
 
       if (result.success) {
         setSuccessMessage('OTP sent successfully to your mobile number');
@@ -244,14 +263,21 @@ export default function MeetingRegistration({ redirectMeetUrl = DEFAULT_GOOGLE_M
       const result = await verifyOtp(phone, otpString);
 
       if (result.success && result.data?.verified === true) {
-        setSuccessMessage('OTP verified. Checking your demo slot...');
+        setSuccessMessage(
+          isDemo ? 'OTP verified. Checking your demo slot...' : 'OTP verified. Checking activation…'
+        );
 
-        const eligResult = await checkMeetingDemoEligibility(phone);
+        const eligResult = isDemo
+          ? await checkMeetingDemoEligibility(phone)
+          : await checkOrientationMeetEligibility(phone);
         const elig = eligibilityFromResponse(eligResult);
 
         if (!eligResult.success || !elig) {
           setSuccessMessage('');
-          setOtpError(eligResult.message || 'Could not verify your demo slot. Please try again.');
+          setOtpError(
+            eligResult.message ||
+              (isDemo ? 'Could not verify your demo slot. Please try again.' : 'Could not verify activation. Please try again.')
+          );
           setVerifying(false);
           return;
         }
@@ -264,12 +290,17 @@ export default function MeetingRegistration({ redirectMeetUrl = DEFAULT_GOOGLE_M
         }
 
         setSuccessMessage('');
-        setMeetGateModal({
-          status: elig.status,
-          message: elig.message || 'You cannot join the meet at this time.',
-          slotStartLabel: elig.slotStartLabel,
-          joinOpensAtLabel: elig.joinOpensAtLabel
-        });
+        if (isDemo) {
+          setMeetGateModal({
+            status: elig.status,
+            message: elig.message || 'You cannot join the meet at this time.',
+            slotStartLabel: elig.slotStartLabel,
+            joinOpensAtLabel: elig.joinOpensAtLabel,
+            slotEndLabel: elig.slotEndLabel,
+          });
+        } else {
+          setOtpError(elig.message || 'You are not eligible to join this meet. Complete the activation form first.');
+        }
       } else {
         const errorMessage = result.message || 'Invalid or expired OTP. Please try again.';
         setOtpError(errorMessage);
@@ -293,7 +324,7 @@ export default function MeetingRegistration({ redirectMeetUrl = DEFAULT_GOOGLE_M
     const phone = normalizedPhone();
 
     try {
-      const result = await sendOtp(name.trim(), phone, 'Meeting Attendee');
+      const result = await sendOtp(name.trim(), phone, isDemo ? 'Meeting Attendee' : 'Orientation Attendee');
 
       if (result.success) {
         setSuccessMessage('OTP resent successfully');
@@ -333,7 +364,7 @@ export default function MeetingRegistration({ redirectMeetUrl = DEFAULT_GOOGLE_M
 
   const modalTitle =
     meetGateModal?.status === 'too_early'
-      ? 'Not time to join yet'
+      ? 'Live session not open yet'
       : meetGateModal?.status === 'too_late'
         ? 'Session window ended'
         : 'Demo booking required';
@@ -347,7 +378,7 @@ export default function MeetingRegistration({ redirectMeetUrl = DEFAULT_GOOGLE_M
 
   return (
     <div className="min-h-screen bg-gray-50 flex flex-col items-center justify-center p-4">
-      {meetGateModal && (
+      {isDemo && meetGateModal && (
         <div className="fixed inset-0 z-50 flex flex-col justify-end md:items-center md:justify-center md:p-6" role="presentation">
           <button
             type="button"
@@ -406,7 +437,7 @@ export default function MeetingRegistration({ redirectMeetUrl = DEFAULT_GOOGLE_M
                   {meetGateModal.status === 'too_early' && (
                     <p className="mt-3 text-[0.8125rem] leading-snug text-gray-500">
                       We&apos;ll check automatically every 30 seconds, or tap <span className="font-medium text-gray-700">Check again</span>{' '}
-                      once your join window opens (5 minutes before your session).
+                      once the live demo join window opens (see times above; doors may open a few minutes early per schedule).
                     </p>
                   )}
                 </div>
@@ -438,7 +469,9 @@ export default function MeetingRegistration({ redirectMeetUrl = DEFAULT_GOOGLE_M
       <div className="bg-white rounded-xl shadow-lg max-w-md w-full p-6 sm:p-8">
         <div className="text-center mb-6">
           <h1 className="text-2xl font-bold text-gray-900">GuideXpert</h1>
-          <p className="text-gray-600 mt-1">Join Google Meet Session</p>
+          <p className="text-gray-600 mt-1">
+            {isDemo ? 'Join Google Meet Session' : 'Orientation Google Meet'}
+          </p>
         </div>
 
         {step === 2 && (
@@ -455,8 +488,14 @@ export default function MeetingRegistration({ redirectMeetUrl = DEFAULT_GOOGLE_M
 
         {step === 1 && (
           <>
-            <h2 className="text-lg font-semibold text-gray-900 mb-1">Register for Meet</h2>
-            <p className="text-sm text-gray-600 mb-6">Enter your details to receive an OTP.</p>
+            <h2 className="text-lg font-semibold text-gray-900 mb-1">
+              {isDemo ? 'Register for Meet' : 'Register for orientation meet'}
+            </h2>
+            <p className="text-sm text-gray-600 mb-6">
+              {isDemo
+                ? 'Enter your details to receive an OTP.'
+                : 'Use the same mobile number as on your activation form. We will send an OTP to verify.'}
+            </p>
           </>
         )}
 

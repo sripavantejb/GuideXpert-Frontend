@@ -54,6 +54,11 @@ function getEmptyMessage({ mode, selectedDate, rangeFrom, rangeTo, query, attend
   if (attendanceType === 'training') {
     return hasFilter ? 'No training attendance found for the selected filters' : 'Training attendance data will appear here once configured.';
   }
+  if (attendanceType === 'orientation') {
+    return hasFilter
+      ? 'No orientation meet attendance found for the selected filters'
+      : 'No orientation meet attendance yet — records appear when users complete /orientation.';
+  }
   return hasFilter ? 'No attendance found for the selected filters' : 'No attendance records yet';
 }
 
@@ -119,9 +124,14 @@ export default function MeetingAttendance() {
     setLoading(true);
     setError('');
 
-    const apiCall = attendanceType === 'training'
-      ? getTrainingAttendance(params, getStoredToken())
-      : getMeetingAttendance(params, getStoredToken());
+    const meetingParams =
+      attendanceType === 'orientation'
+        ? { ...params, meetType: 'orientation' }
+        : { ...params, meetType: 'demo' };
+    const apiCall =
+      attendanceType === 'training'
+        ? getTrainingAttendance(params, getStoredToken())
+        : getMeetingAttendance(meetingParams, getStoredToken());
 
     apiCall.then((result) => {
       if (cancelledRef.current) return;
@@ -133,7 +143,14 @@ export default function MeetingAttendance() {
           window.location.href = '/admin/login';
           return;
         }
-        setError(result.message || (attendanceType === 'training' ? 'Failed to load training attendance' : 'Failed to load meeting attendance'));
+        setError(
+          result.message
+            || (attendanceType === 'training'
+              ? 'Failed to load training attendance'
+              : attendanceType === 'orientation'
+                ? 'Failed to load orientation meet attendance'
+                : 'Failed to load meeting attendance')
+        );
         return;
       }
       const dataList = result.data.data || [];
@@ -253,9 +270,14 @@ export default function MeetingAttendance() {
     }
     const result = await fetchAllPaginatedRows((page, limit) => {
       const params = { ...baseParams, page, limit };
-      return attendanceType === 'training'
-        ? getTrainingAttendance(params, getStoredToken())
-        : getMeetingAttendance(params, getStoredToken());
+      if (attendanceType === 'training') {
+        return getTrainingAttendance(params, getStoredToken());
+      }
+      const meetingParams =
+        attendanceType === 'orientation'
+          ? { ...params, meetType: 'orientation' }
+          : { ...params, meetType: 'demo' };
+      return getMeetingAttendance(meetingParams, getStoredToken());
     });
     setCopyLoading(false);
     if (!result.success) {
@@ -265,7 +287,14 @@ export default function MeetingAttendance() {
         window.location.href = '/admin/login';
         return;
       }
-      setError(r?.message || (attendanceType === 'training' ? 'Failed to load training attendance for copy' : 'Failed to load meeting attendance for copy'));
+      setError(
+        r?.message
+          || (attendanceType === 'training'
+            ? 'Failed to load training attendance for copy'
+            : attendanceType === 'orientation'
+              ? 'Failed to load orientation meet attendance for copy'
+              : 'Failed to load meeting attendance for copy')
+      );
       return;
     }
     setCopyRecords(result.rows || []);
@@ -280,9 +309,15 @@ export default function MeetingAttendance() {
           <div>
             <h1 className="text-2xl font-bold text-gray-900 tracking-tight">Meeting Attendance</h1>
             <p className="mt-1 text-sm text-gray-500">
-              Track and analyze {attendanceType === 'demo' ? 'demo' : 'training'} meeting attendance with smart deduplication
+              Track and analyze{' '}
+              {attendanceType === 'demo'
+                ? 'demo'
+                : attendanceType === 'orientation'
+                  ? 'orientation'
+                  : 'training'}{' '}
+              meeting attendance with smart deduplication
             </p>
-            <div className="mt-3 flex items-center gap-1 p-0.5 bg-gray-100 rounded-lg shadow-sm w-fit">
+            <div className="mt-3 flex flex-wrap items-center gap-1 p-0.5 bg-gray-100 rounded-lg shadow-sm w-fit max-w-full">
               <button
                 type="button"
                 onClick={() => setAttendanceType('demo')}
@@ -293,6 +328,17 @@ export default function MeetingAttendance() {
                 }`}
               >
                 Demo
+              </button>
+              <button
+                type="button"
+                onClick={() => setAttendanceType('orientation')}
+                className={`px-3 py-1.5 rounded-md text-xs font-semibold transition-all ${
+                  attendanceType === 'orientation'
+                    ? 'bg-primary-blue-600 text-white shadow-md'
+                    : 'text-gray-600 hover:bg-gray-200'
+                }`}
+              >
+                Orientation
               </button>
               <button
                 type="button"
@@ -327,6 +373,17 @@ export default function MeetingAttendance() {
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
           </svg>
           <p className="text-sm text-primary-blue-800">Training attendance data will appear here once users register via the training page.</p>
+        </div>
+      )}
+
+      {attendanceType === 'orientation' && !loading && records.length === 0 && !query && !(mode === 'single' && selectedDate) && !(mode === 'range' && (rangeFrom || rangeTo)) && (
+        <div className="mb-6 p-4 rounded-xl bg-primary-blue-50 border border-primary-blue-200 flex items-center gap-3">
+          <svg className="w-5 h-5 text-primary-blue-600 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+          </svg>
+          <p className="text-sm text-primary-blue-800">
+            Orientation meet attendance appears when users complete the flow at <code className="text-xs bg-white/80 px-1 rounded">/orientation</code> after submitting the activation form.
+          </p>
         </div>
       )}
 

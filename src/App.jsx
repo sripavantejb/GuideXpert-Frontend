@@ -31,6 +31,7 @@ import IitCounselling from './pages/admin/IitCounselling';
 import IitCounsellingUtm from './pages/admin/IitCounsellingUtm';
 import Analytics from './pages/admin/Analytics';
 import Slots from './pages/admin/Slots';
+import DemoMeetSchedule from './pages/admin/DemoMeetSchedule';
 import Export from './pages/admin/Export';
 import Settings from './pages/admin/Settings';
 import MeetingAttendance from './pages/admin/MeetingAttendance';
@@ -195,6 +196,15 @@ function App() {
           <Route path="/meet" element={<MeetingRegistration />} />
           <Route path="/meet1" element={<MeetingRegistration redirectMeetUrl="https://meet.google.com/ryt-wtjh-gep" />} />
           <Route path="/meet2" element={<MeetingRegistration redirectMeetUrl="https://meet.google.com/izo-wyts-sas" />} />
+          <Route
+            path="/orientation"
+            element={
+              <MeetingRegistration
+                variant="orientation"
+                redirectMeetUrl="https://meet.google.com/nbe-nsfu-pns"
+              />
+            }
+          />
           <Route path="/iitcounsellingmeet" element={<IitCounsellingMeet />} />
           <Route path="/iitcounsellingmeethindi" element={<IitCounsellingMeetHindi />} />
           <Route path="/iitfirstform" element={<IitFirstForm />} />
@@ -367,6 +377,7 @@ function App() {
             <Route path="lead-status" element={<LeadStatus />} />
             <Route path="analytics" element={<Analytics />} />
             <Route path="slots" element={<Slots />} />
+            <Route path="demo-meet-schedule" element={<DemoMeetSchedule />} />
             <Route path="export" element={<Export />} />
             <Route path="settings" element={<Settings />} />
             <Route path="meeting-attendance" element={<MeetingAttendance />} />
