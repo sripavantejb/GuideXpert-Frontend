@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { FiEye, FiUsers, FiBarChart2, FiCheckCircle, FiClipboard, FiCalendar, FiClock, FiSearch } from 'react-icons/fi';
 import {
@@ -439,6 +439,9 @@ export default function IitCounselling() {
   const [viewMonth, setViewMonth] = useState(() => new Date().getMonth());
   const [viewFilters, setViewFilters] = useState({ ...EMPTY_VIEW_FILTERS });
 
+  const aggFetchGen = useRef(0);
+  const listFetchGen = useRef(0);
+
   const sharedFilters = useMemo(() => ({
     fromDate,
     toDate,
@@ -449,21 +452,27 @@ export default function IitCounselling() {
 
   /** Full mapped list for calendar + client-side demo/slot filters (search via API `q` only). */
   useEffect(() => {
-    let cancelled = false;
+    const gen = ++aggFetchGen.current;
     setAggLoading(true);
     setAggError('');
-    getAllIitCounsellingSubmissionsPaginated({ q: search, limit: 200 }, getStoredToken()).then((res) => {
-      if (cancelled) return;
-      setAggLoading(false);
-      if (!res.success) {
-        setAggError(res.message || 'Failed to load submissions for calendar');
+    getAllIitCounsellingSubmissionsPaginated({ q: search, limit: 200 }, getStoredToken())
+      .then((res) => {
+        if (gen !== aggFetchGen.current) return;
+        setAggLoading(false);
+        if (!res?.success) {
+          setAggError(res?.message || 'Failed to load submissions for calendar');
+          setSubmissionAggRows([]);
+          return;
+        }
+        const rowsData = Array.isArray(res.data?.data) ? res.data.data : [];
+        setSubmissionAggRows(rowsData.map(mapIitSubmissionRecord));
+      })
+      .catch((err) => {
+        if (gen !== aggFetchGen.current) return;
+        setAggLoading(false);
+        setAggError(err?.message || 'Failed to load submissions for calendar');
         setSubmissionAggRows([]);
-        return;
-      }
-      const rowsData = Array.isArray(res.data?.data) ? res.data.data : [];
-      setSubmissionAggRows(rowsData.map(mapIitSubmissionRecord));
-    });
-    return () => { cancelled = true; };
+      });
   }, [search]);
 
   /** Client-side table mode when demo date and/or slot toolbar filters are active. */
@@ -494,21 +503,29 @@ export default function IitCounselling() {
   );
 
   useEffect(() => {
-    if (heavyClientFilter) return;
-    let cancelled = false;
+    if (heavyClientFilter) {
+      setLoading(false);
+      return;
+    }
+    const gen = ++listFetchGen.current;
     setLoading(true);
     setError('');
-    getIitCounsellingSubmissions({ page, limit: 25, q: search }, getStoredToken()).then((res) => {
-      if (cancelled) return;
-      setLoading(false);
-      if (!res.success) {
-        setError(res.message || 'Failed to load IIT counselling submissions');
-        return;
-      }
-      setRows(res.data?.data || []);
-      setPagination(res.data?.pagination || { total: 0, totalPages: 1 });
-    });
-    return () => { cancelled = true; };
+    getIitCounsellingSubmissions({ page, limit: 25, q: search }, getStoredToken())
+      .then((res) => {
+        if (gen !== listFetchGen.current) return;
+        setLoading(false);
+        if (!res?.success) {
+          setError(res.message || 'Failed to load IIT counselling submissions');
+          return;
+        }
+        setRows(res.data?.data || []);
+        setPagination(res.data?.pagination || { total: 0, totalPages: 1 });
+      })
+      .catch((err) => {
+        if (gen !== listFetchGen.current) return;
+        setLoading(false);
+        setError(err?.message || 'Failed to load IIT counselling submissions');
+      });
   }, [page, search, heavyClientFilter]);
 
   useEffect(() => {

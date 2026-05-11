@@ -169,8 +169,19 @@ export const getAllIitCounsellingSubmissionsPaginated = async (params = {}, toke
   let page = 1;
   let totalPages = 1;
   const allRows = [];
+  /** Guard against bad pagination metadata hanging the admin UI. */
+  const maxIterations = Math.min(1000, Math.max(1, Number(params.maxPages) || 1000));
+  let iterations = 0;
 
   while (page <= totalPages) {
+    iterations += 1;
+    if (iterations > maxIterations) {
+      return {
+        success: false,
+        message: `Stopped loading IIT submissions after ${maxIterations} pages (pagination may be inconsistent). Try narrowing search.`,
+        data: { data: allRows, pagination: { total: allRows.length, page: 1, totalPages: 1, limit } },
+      };
+    }
     const res = await getIitCounsellingSubmissions({ ...params, page, limit }, token);
     if (!res.success) return res;
     const rows = Array.isArray(res.data?.data) ? res.data.data : [];
