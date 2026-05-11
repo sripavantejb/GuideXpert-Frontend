@@ -145,7 +145,7 @@ function WhatsAppOpsLayoutChrome() {
         </div>
       )}
 
-      <div className="relative min-h-[min(60vh,720px)] bg-gradient-to-b from-slate-50/90 via-slate-50 to-slate-100/60 px-5 py-7 sm:px-10 sm:py-10">
+      <div className="relative min-h-0 bg-gradient-to-b from-slate-50/90 via-slate-50 to-slate-100/60 px-4 py-4 sm:px-8 sm:py-6">
         <div
           className="pointer-events-none absolute inset-0 opacity-[0.35]"
           style={{
