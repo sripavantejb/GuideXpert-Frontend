@@ -187,10 +187,20 @@ function legacyWeekendSlotPairForDerive(anchor) {
   ];
 }
 
+function deriveDemoDateFromRotationAnchors(row, slotVal) {
+  const anchors = [row?.section1Data?.submittedAt, row?.createdAt, row?.updatedAt].filter(Boolean);
+  for (const anchor of anchors) {
+    const slots = getAvailableSlots(new Date(anchor));
+    const match = slots.find((s) => s.value === slotVal);
+    if (match?.date) return formatDateISTYYYYMMDD(match.date);
+  }
+  return '';
+}
+
 /**
  * Demo slot calendar day (IST) for admin rows: prefer stored section1Data.slotBookingDate,
  * else derive from booking time + slot value (legacy Sat/Sun without date; else rotation).
- * @param {{ section1Data?: { slotBooking?: string, slotBookingDate?: string }, createdAt?: string, updatedAt?: string }} row
+ * @param {{ section1Data?: { slotBooking?: string, slotBookingDate?: string, submittedAt?: string }, createdAt?: string, updatedAt?: string }} row
  * @returns {string} YYYY-MM-DD or ''
  */
 export function deriveSlotDemoDateKeyIST(row) {
@@ -198,7 +208,7 @@ export function deriveSlotDemoDateKeyIST(row) {
   if (/^\d{4}-\d{2}-\d{2}$/.test(stored)) return stored;
   const slotVal = String(row?.section1Data?.slotBooking ?? '').trim();
   if (!slotVal) return '';
-  const anchor = row?.createdAt || row?.updatedAt;
+  const anchor = row?.section1Data?.submittedAt || row?.createdAt || row?.updatedAt;
   if (!anchor) return '';
 
   if (slotVal === 'Saturday 6PM' || slotVal === 'Sunday 11AM') {
@@ -208,8 +218,5 @@ export function deriveSlotDemoDateKeyIST(row) {
     return formatDateISTYYYYMMDD(match.date);
   }
 
-  const slots = getAvailableSlots(new Date(anchor));
-  const match = slots.find((s) => s.value === slotVal);
-  if (!match?.date) return '';
-  return formatDateISTYYYYMMDD(match.date);
+  return deriveDemoDateFromRotationAnchors(row, slotVal);
 }
