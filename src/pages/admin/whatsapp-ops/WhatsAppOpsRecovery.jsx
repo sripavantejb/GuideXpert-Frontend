@@ -146,30 +146,34 @@ function SectionCard({
   const stickyCls = sticky ? `sticky ${stickyTop} z-30` : '';
   return (
     <section
-      className={`overflow-hidden rounded-2xl border border-primary-blue-200 bg-white shadow-sm ${stickyCls} ${className || ''}`}
+      className={`overflow-hidden rounded-2xl border border-slate-200/90 bg-white shadow-[0_4px_24px_-12px_rgba(15,23,42,0.08)] ring-1 ring-slate-900/[0.04] ${stickyCls} ${className || ''}`}
     >
       {!noHeader && (
-        <div className="flex flex-wrap items-center justify-between gap-3 border-b border-primary-blue-200 bg-gradient-to-r from-primary-blue-50 to-white px-4 py-2.5">
-          <div className="flex min-w-0 items-center gap-3">
-            {Icon && (
-              <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-white text-primary-navy ring-1 ring-primary-blue-200">
-                <Icon size={15} />
-              </span>
-            )}
-            <div className="min-w-0">
-              {kicker && (
-                <p className="text-[10px] font-bold uppercase tracking-[0.14em] text-primary-navy">
-                  {kicker}
-                </p>
+        <div className="border-b border-slate-200/80 bg-slate-50/90 px-4 py-4 sm:px-5">
+          <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
+            <div className="flex min-w-0 items-start gap-3">
+              {Icon && (
+                <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-white text-primary-navy shadow-sm ring-1 ring-slate-200/80">
+                  <Icon size={18} />
+                </span>
               )}
-              {title && <h3 className="truncate text-sm font-semibold text-slate-900">{title}</h3>}
-              {subtitle && <p className="mt-0.5 text-[11px] text-slate-500">{subtitle}</p>}
+              <div className="min-w-0">
+                {kicker && (
+                  <p className="text-xs font-bold uppercase tracking-[0.08em] text-slate-500">
+                    {kicker}
+                  </p>
+                )}
+                {title && <h3 className="mt-0.5 truncate text-base font-semibold text-slate-900">{title}</h3>}
+                {subtitle && <p className="mt-1 text-sm leading-snug text-slate-600">{subtitle}</p>}
+              </div>
             </div>
+            {headerRight && (
+              <div className="flex shrink-0 flex-wrap items-center gap-2 sm:justify-end">{headerRight}</div>
+            )}
           </div>
-          {headerRight && <div className="flex flex-wrap items-center gap-2">{headerRight}</div>}
         </div>
       )}
-      <div className={bodyClassName ?? 'p-4'}>{children}</div>
+      <div className={bodyClassName ?? 'p-4 sm:p-5'}>{children}</div>
     </section>
   );
 }
@@ -202,11 +206,11 @@ function StatusPill({ status, size = 'sm' }) {
     Icon = FiPauseCircle;
   }
   const sizeCls = size === 'lg'
-    ? 'px-2.5 py-1 text-xs'
-    : 'px-2 py-0.5 text-[11px]';
+    ? 'px-2.5 py-1 text-sm'
+    : 'px-2.5 py-0.5 text-xs';
   return (
     <span className={`inline-flex items-center gap-1 rounded-full border font-semibold ${cls} ${sizeCls}`}>
-      <Icon size={size === 'lg' ? 12 : 11} />
+      <Icon size={size === 'lg' ? 14 : 12} />
       {s || '—'}
     </span>
   );
@@ -214,9 +218,9 @@ function StatusPill({ status, size = 'sm' }) {
 
 function CounterTile({ label, value, accent }) {
   return (
-    <div className="rounded-md border border-slate-200 bg-white px-2.5 py-1.5">
-      <p className="text-[10px] uppercase tracking-wider text-slate-500">{label}</p>
-      <p className={`text-base font-semibold ${accent || 'text-slate-800'}`}>
+    <div className="rounded-lg border border-slate-200/90 bg-white px-3 py-2 shadow-sm">
+      <p className="text-xs font-medium uppercase tracking-wide text-slate-500">{label}</p>
+      <p className={`mt-0.5 text-lg font-semibold tabular-nums ${accent || 'text-slate-800'}`}>
         {Number.isFinite(value) ? value.toLocaleString() : (value || 0)}
       </p>
     </div>
@@ -225,12 +229,12 @@ function CounterTile({ label, value, accent }) {
 
 function KpiTile({ label, value, accent, icon: Icon }) {
   return (
-    <div className="rounded-lg border border-slate-200 bg-white px-3 py-2.5 shadow-[inset_0_1px_0_rgba(255,255,255,0.7)]">
+    <div className="rounded-xl border border-slate-200/90 bg-white px-3 py-3 shadow-sm">
       <div className="flex items-center gap-1.5">
-        {Icon && <Icon className="text-slate-400" size={11} />}
-        <p className="text-[10px] font-bold uppercase tracking-wider text-slate-500">{label}</p>
+        {Icon && <Icon className="text-slate-400" size={14} />}
+        <p className="text-xs font-semibold uppercase tracking-wide text-slate-500">{label}</p>
       </div>
-      <p className={`mt-0.5 text-2xl font-bold leading-tight ${accent || 'text-slate-900'}`}>
+      <p className={`mt-1 text-2xl font-bold leading-tight tabular-nums ${accent || 'text-slate-900'}`}>
         {Number.isFinite(value) ? value.toLocaleString() : (value || 0)}
       </p>
     </div>
@@ -239,9 +243,10 @@ function KpiTile({ label, value, accent, icon: Icon }) {
 
 function SummaryTile({ label, value, accent }) {
   return (
-    <div className="rounded-lg border border-primary-blue-200 bg-white px-3 py-2 shadow-sm">
-      <p className="text-[10px] font-bold uppercase tracking-wider text-primary-navy">{label}</p>
-      <p className={`mt-0.5 text-xl font-bold leading-tight ${accent || 'text-slate-900'}`}>
+    <div className="relative overflow-hidden rounded-xl border border-slate-200/90 bg-white px-4 py-3 shadow-sm ring-1 ring-slate-900/[0.03]">
+      <span className="absolute inset-y-2 left-0 w-1 rounded-full bg-primary-navy/80" aria-hidden />
+      <p className="pl-2 text-xs font-semibold uppercase tracking-wide text-slate-500">{label}</p>
+      <p className={`mt-1 pl-2 text-2xl font-bold leading-tight tabular-nums ${accent || 'text-slate-900'}`}>
         {Number.isFinite(value) ? value.toLocaleString() : (value || 0)}
       </p>
     </div>
@@ -270,51 +275,51 @@ function PageHeader({
   messageKind
 }) {
   return (
-    <section className="overflow-hidden rounded-2xl border border-primary-blue-200 bg-white shadow-sm">
+    <section className="overflow-hidden rounded-2xl border border-slate-200/90 bg-white shadow-[0_4px_24px_-12px_rgba(15,23,42,0.08)] ring-1 ring-slate-900/[0.04]">
       <div className="h-1 w-full bg-gradient-to-r from-primary-navy via-violet-600 to-sky-500" aria-hidden />
-      <div className="flex flex-col gap-4 p-5 lg:flex-row lg:items-end lg:justify-between">
+      <div className="flex flex-col gap-6 p-5 sm:p-6 lg:flex-row lg:items-end lg:justify-between">
         <div className="min-w-0">
           <div className="flex flex-wrap items-center gap-2">
-            <span className="inline-flex items-center rounded-full border border-primary-blue-200 bg-primary-blue-50 px-2.5 py-0.5 text-[10px] font-bold uppercase tracking-[0.14em] text-primary-navy">
+            <span className="inline-flex items-center rounded-full border border-slate-200 bg-slate-50 px-3 py-1 text-xs font-bold uppercase tracking-wide text-slate-600">
               Recovery operations
             </span>
             <span
-              className={`inline-flex h-1.5 w-1.5 rounded-full shadow-[0_0_0_3px_rgba(16,185,129,0.25)] ${
+              className={`inline-flex h-2 w-2 rounded-full shadow-[0_0_0_3px_rgba(16,185,129,0.2)] ${
                 jobActive ? 'bg-amber-500 animate-pulse' : 'bg-emerald-500'
               }`}
               aria-hidden
             />
-            <span className="text-[10px] font-semibold uppercase tracking-wider text-slate-500">
+            <span className="text-xs font-medium text-slate-500">
               {messageKind ? `Scope · ${messageKind}` : 'Scope · all templates'}
             </span>
           </div>
-          <h2 className="mt-2 text-2xl font-bold tracking-tight text-slate-900 sm:text-[1.65rem]">
+          <h2 className="mt-3 text-2xl font-bold tracking-tight text-slate-900 sm:text-3xl">
             Recovery console
           </h2>
-          <p className="mt-1 max-w-2xl text-sm text-slate-600">
+          <p className="mt-2 max-w-2xl text-sm leading-relaxed text-slate-600">
             Inspect unresolved recipients across templates, trigger manual recovery and export operator
             follow-up lists. Automated retry lineage is preserved.
           </p>
         </div>
-        <div className="flex flex-col items-stretch gap-3 lg:items-end">
-          <div className="grid grid-cols-2 gap-2 sm:grid-cols-4">
+        <div className="flex w-full flex-col gap-4 lg:max-w-xl lg:items-end">
+          <div className="grid w-full grid-cols-2 gap-3 sm:grid-cols-4">
             <SummaryTile label="All unresolved" value={totalRows} accent="text-primary-navy" />
             <SummaryTile label="Failed" value={totals.failed || 0} accent="text-rose-700" />
             <SummaryTile label="Excluded" value={totals.excluded || 0} accent="text-violet-700" />
             <SummaryTile label="Exhausted" value={totals.exhausted || 0} accent="text-amber-700" />
           </div>
-          <div className="flex items-center justify-end gap-2">
+          <div className="flex w-full flex-wrap items-center justify-between gap-3 sm:justify-end">
             {lastSyncAt && (
-              <span className="text-[10px] text-slate-500">Last sync · {formatDt(lastSyncAt)}</span>
+              <span className="text-xs text-slate-500">Last sync · {formatDt(lastSyncAt)}</span>
             )}
             <button
               type="button"
               onClick={onRefresh}
               disabled={loading}
               title="Refresh data"
-              className="inline-flex items-center gap-1.5 rounded-md border border-primary-blue-200 bg-white px-3 py-1.5 text-xs font-semibold text-primary-navy shadow-sm transition hover:bg-primary-blue-50 disabled:opacity-60"
+              className="inline-flex h-10 items-center gap-2 rounded-lg border border-slate-200 bg-white px-4 text-sm font-semibold text-primary-navy shadow-sm transition hover:bg-slate-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary-navy/25 disabled:opacity-60"
             >
-              {loading ? <FiLoader className="animate-spin" size={13} /> : <FiRefreshCw size={13} />}
+              {loading ? <FiLoader className="animate-spin" size={16} /> : <FiRefreshCw size={16} />}
               Refresh
             </button>
           </div>
@@ -339,6 +344,9 @@ function FiltersToolbar({
     </span>
   ) : null;
 
+  const fieldClass =
+    'mt-1.5 block h-10 w-full rounded-lg border border-slate-200 bg-white px-3 text-sm text-slate-900 shadow-sm transition placeholder:text-slate-400 focus:border-primary-navy/40 focus:outline-none focus:ring-2 focus:ring-primary-navy/15';
+
   return (
     <SectionCard
       icon={FiSliders}
@@ -348,79 +356,75 @@ function FiltersToolbar({
       headerRight={headerRight}
       sticky
       stickyTop="top-3"
-      bodyClassName="space-y-3 p-4"
+      bodyClassName="space-y-5 p-4 sm:p-5"
     >
-      <div className="flex flex-wrap items-end gap-3">
-        <label className="text-[11px] font-semibold text-slate-600">
+      <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-12 lg:items-end">
+        <label className="text-sm font-medium text-slate-700 sm:col-span-1 lg:col-span-2">
           From
-          <input
-            type="date"
-            value={from}
-            onChange={(e) => onFromChange(e.target.value)}
-            className="mt-0.5 block rounded-md border border-primary-blue-200 bg-white px-2 py-1.5 text-sm shadow-sm focus:border-primary-blue-400 focus:outline-none focus:ring-2 focus:ring-primary-blue-100"
-          />
+          <input type="date" value={from} onChange={(e) => onFromChange(e.target.value)} className={fieldClass} />
         </label>
-        <label className="text-[11px] font-semibold text-slate-600">
+        <label className="text-sm font-medium text-slate-700 sm:col-span-1 lg:col-span-2">
           To
-          <input
-            type="date"
-            value={to}
-            onChange={(e) => onToChange(e.target.value)}
-            className="mt-0.5 block rounded-md border border-primary-blue-200 bg-white px-2 py-1.5 text-sm shadow-sm focus:border-primary-blue-400 focus:outline-none focus:ring-2 focus:ring-primary-blue-100"
-          />
+          <input type="date" value={to} onChange={(e) => onToChange(e.target.value)} className={fieldClass} />
         </label>
-        <label className="text-[11px] font-semibold text-slate-600">
+        <label className="text-sm font-medium text-slate-700 sm:col-span-2 lg:col-span-4">
           Template
-          <select
-            value={messageKind}
-            onChange={(e) => onTemplateChange(e.target.value)}
-            className="mt-0.5 block rounded-md border border-primary-blue-200 bg-white px-2 py-1.5 text-sm shadow-sm focus:border-primary-blue-400 focus:outline-none focus:ring-2 focus:ring-primary-blue-100"
-          >
+          <select value={messageKind} onChange={(e) => onTemplateChange(e.target.value)} className={fieldClass}>
             {TEMPLATE_OPTIONS.map((o) => (
               <option key={o.value} value={o.value}>{o.label}</option>
             ))}
           </select>
         </label>
-        <label className="ml-auto text-[11px] font-semibold text-slate-600">
-          Search (name/phone/reason)
+        <label className="text-sm font-medium text-slate-700 sm:col-span-2 lg:col-span-4">
+          Search (name / phone / reason)
           <input
             value={search}
             onChange={(e) => onSearchChange(e.target.value)}
-            placeholder="9876…  rate limit  expired"
-            className="mt-0.5 block w-64 rounded-md border border-primary-blue-200 bg-white px-2 py-1.5 text-sm shadow-sm focus:border-primary-blue-400 focus:outline-none focus:ring-2 focus:ring-primary-blue-100"
+            placeholder="e.g. 98765… or rate limit"
+            className={fieldClass}
           />
         </label>
       </div>
 
-      <div className="flex flex-wrap items-center gap-1.5 border-t border-primary-blue-100 pt-3">
-        <span className="text-[10px] font-bold uppercase tracking-[0.12em] text-slate-500">Group</span>
-        {GROUP_OPTIONS.map((g) => (
-          <button
-            key={g.id}
-            type="button"
-            onClick={() => onGroupChange(g.id)}
-            className={`inline-flex items-center gap-1.5 rounded-md border px-2.5 py-1 text-xs font-semibold transition ${
-              group === g.id
-                ? 'border-primary-navy bg-primary-navy text-white shadow-sm'
-                : 'border-slate-200 bg-white text-slate-700 hover:bg-primary-blue-50'
-            }`}
-          >
-            {g.label}
-            <span className={`rounded-full px-1.5 py-0.5 text-[10px] font-mono ${group === g.id ? 'bg-white/20' : 'bg-slate-100 text-slate-700'}`}>
-              {(totals[g.id] ?? 0).toLocaleString()}
-            </span>
-          </button>
-        ))}
+      <div className="border-t border-slate-200/80 pt-4">
+        <p className="text-xs font-bold uppercase tracking-wide text-slate-500">Group</p>
+        <div className="scrollbar-hide mt-2 flex gap-2 overflow-x-auto pb-1 -mx-1 px-1">
+          {GROUP_OPTIONS.map((g) => (
+            <button
+              key={g.id}
+              type="button"
+              onClick={() => onGroupChange(g.id)}
+              className={`inline-flex min-h-[2.25rem] shrink-0 items-center gap-2 rounded-lg border px-3 py-2 text-sm font-semibold transition ${
+                group === g.id
+                  ? 'border-primary-navy bg-primary-navy text-white shadow-md'
+                  : 'border-slate-200 bg-white text-slate-700 hover:border-slate-300 hover:bg-slate-50'
+              }`}
+            >
+              {g.label}
+              <span
+                className={`rounded-full px-2 py-0.5 text-xs font-mono tabular-nums ${
+                  group === g.id ? 'bg-white/20 text-white' : 'bg-slate-100 text-slate-700'
+                }`}
+              >
+                {(totals[g.id] ?? 0).toLocaleString()}
+              </span>
+            </button>
+          ))}
+        </div>
       </div>
 
       {Object.keys(totalsByCategory).length > 0 && (
-        <div className="flex flex-wrap items-center gap-1 border-t border-primary-blue-100 pt-3 text-[11px]">
-          <span className="text-[10px] font-bold uppercase tracking-[0.12em] text-slate-500">By exclusion category</span>
+        <div className="flex flex-wrap items-center gap-2 border-t border-slate-200/80 pt-4 text-sm">
+          <span className="w-full text-xs font-bold uppercase tracking-wide text-slate-500 sm:w-auto">By exclusion category</span>
           {Object.entries(totalsByCategory).map(([cat, count]) => (
-            <span key={cat} className={`rounded-full border px-2 py-0.5 ${
-              EXCLUSION_CATEGORY_COLORS[cat] || 'border-slate-200 bg-slate-50'
-            }`}>
-              <strong className="font-mono">{count}</strong> {EXCLUSION_CATEGORY_LABELS[cat] || cat}
+            <span
+              key={cat}
+              className={`inline-flex items-center gap-1.5 rounded-full border px-3 py-1 text-sm ${
+                EXCLUSION_CATEGORY_COLORS[cat] || 'border-slate-200 bg-slate-50'
+              }`}
+            >
+              <strong className="font-mono tabular-nums">{count}</strong>
+              <span className="text-slate-700">{EXCLUSION_CATEGORY_LABELS[cat] || cat}</span>
             </span>
           ))}
         </div>
@@ -498,33 +502,33 @@ function RecoveryBatchHero({ job, isSuper, onCancel, onDismiss, dismissed }) {
 
   return (
     <section className={`overflow-hidden rounded-2xl border bg-white shadow-sm ${cardClassName}`}>
-      <div className={`flex flex-wrap items-center justify-between gap-3 border-b px-4 py-2.5 ${headerClassName}`}>
+      <div className={`flex flex-wrap items-center justify-between gap-3 border-b px-4 py-3 sm:px-5 ${headerClassName}`}>
         <div className="flex min-w-0 items-center gap-3">
-          <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-white text-primary-navy ring-1 ring-primary-blue-200">
-            <FiActivity size={15} />
+          <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-white text-primary-navy shadow-sm ring-1 ring-slate-200/80">
+            <FiActivity size={18} />
           </span>
           <div className="min-w-0">
-            <p className="text-[10px] font-bold uppercase tracking-[0.14em] text-primary-navy">Live operation</p>
-            <h3 className="truncate text-sm font-semibold text-slate-900">
+            <p className="text-xs font-bold uppercase tracking-wide text-slate-600">Live operation</p>
+            <h3 className="mt-0.5 truncate text-base font-semibold text-slate-900">
               Recovery batch
-              <span className="ml-2 font-mono text-[11px] font-normal text-slate-500">· {messageKindLabel}</span>
+              <span className="ml-2 font-mono text-sm font-normal text-slate-500">· {messageKindLabel}</span>
             </h3>
           </div>
         </div>
         <div className="flex flex-wrap items-center gap-2">
-          <span className={`inline-flex items-center gap-1.5 rounded-full border px-2.5 py-0.5 text-[11px] font-semibold ${badgeClassName}`}>
-            <span className={`h-1.5 w-1.5 rounded-full ${dotClassName}`} aria-hidden />
+          <span className={`inline-flex items-center gap-1.5 rounded-full border px-3 py-1 text-xs font-semibold ${badgeClassName}`}>
+            <span className={`h-2 w-2 rounded-full ${dotClassName}`} aria-hidden />
             {stageBadge}
           </span>
-          <span className="font-mono text-[11px] text-slate-500">Batch · {batchSuffix}</span>
+          <span className="font-mono text-xs text-slate-500">Batch · {batchSuffix}</span>
           {isSuper && isRunning && (
             <button
               type="button"
               onClick={onCancel}
               title="Cancel this recovery batch"
-              className="inline-flex items-center gap-1 rounded-md border border-rose-300 bg-white px-2.5 py-1 text-[11px] font-semibold text-rose-700 shadow-sm transition hover:bg-rose-50"
+              className="inline-flex h-9 items-center gap-1.5 rounded-lg border border-rose-300 bg-white px-3 text-xs font-semibold text-rose-700 shadow-sm transition hover:bg-rose-50"
             >
-              <FiSlash size={11} /> Cancel batch
+              <FiSlash size={14} /> Cancel batch
             </button>
           )}
           {!isRunning && typeof onDismiss === 'function' && (
@@ -532,62 +536,80 @@ function RecoveryBatchHero({ job, isSuper, onCancel, onDismiss, dismissed }) {
               type="button"
               onClick={onDismiss}
               title="Dismiss completed batch banner"
-              className="inline-flex items-center gap-1 rounded-md border border-slate-200 bg-white px-2 py-1 text-[11px] font-semibold text-slate-600 hover:bg-slate-50"
+              className="inline-flex h-9 items-center gap-1.5 rounded-lg border border-slate-200 bg-white px-3 text-xs font-semibold text-slate-600 hover:bg-slate-50"
             >
-              <FiX size={11} /> Dismiss
+              <FiX size={14} /> Dismiss
             </button>
           )}
         </div>
       </div>
 
-      <div className="space-y-4 p-4">
-        <div className="relative h-3 w-full overflow-hidden rounded-full bg-slate-100">
+      <div className="space-y-5 p-4 sm:p-5">
+        <div>
+          <div className="mb-1.5 flex items-center justify-between text-xs font-medium text-slate-600">
+            <span>Batch progress</span>
+            <span className="font-mono tabular-nums text-slate-800">{percent}%</span>
+          </div>
           <div
-            className={`h-3 rounded-full transition-all ${progressFillClassName}`}
-            style={{ width: `${percent}%` }}
-          />
-          <span className="pointer-events-none absolute inset-0 flex items-center justify-end pr-2 font-mono text-[11px] font-bold text-slate-700 mix-blend-luminosity">
-            {percent}%
-          </span>
+            className="relative h-3.5 w-full overflow-hidden rounded-full bg-slate-100"
+            role="progressbar"
+            aria-valuemin={0}
+            aria-valuemax={100}
+            aria-valuenow={percent}
+            aria-label={`Recovery progress ${percent} percent`}
+          >
+            <div
+              className={`h-full rounded-full transition-all duration-300 ${progressFillClassName}`}
+              style={{ width: `${percent}%` }}
+            />
+          </div>
         </div>
 
-        <div className="grid grid-cols-2 gap-2 sm:grid-cols-3 lg:grid-cols-6">
-          <KpiTile label="Targeted" value={targeted} icon={FiTarget} />
-          <KpiTile label="Attempted" value={counters.attempted || 0} icon={FiArrowRight} />
-          <KpiTile label="Accepted" value={counters.apiAccepted || 0} icon={FiActivity} accent="text-primary-navy" />
-          <KpiTile label="Recovered" value={recovered} icon={FiCheckCircle} accent="text-emerald-700" />
-          <KpiTile label="Failed" value={counters.sendFailed || 0} icon={FiAlertTriangle} accent="text-rose-700" />
-          <KpiTile label="In-flight" value={counters.inFlight || 0} icon={FiClock} accent="text-amber-700" />
+        <div className="space-y-4">
+          <div>
+            <p className="text-xs font-semibold uppercase tracking-wide text-slate-500">Progress</p>
+            <div className="mt-2 grid grid-cols-2 gap-3 sm:grid-cols-3">
+              <KpiTile label="Targeted" value={targeted} icon={FiTarget} />
+              <KpiTile label="Attempted" value={counters.attempted || 0} icon={FiArrowRight} />
+              <KpiTile label="Accepted" value={counters.apiAccepted || 0} icon={FiActivity} accent="text-primary-navy" />
+            </div>
+          </div>
+          <div>
+            <p className="text-xs font-semibold uppercase tracking-wide text-slate-500">Outcomes</p>
+            <div className="mt-2 grid grid-cols-2 gap-3 sm:grid-cols-3">
+              <KpiTile label="Recovered" value={recovered} icon={FiCheckCircle} accent="text-emerald-700" />
+              <KpiTile label="Failed" value={counters.sendFailed || 0} icon={FiAlertTriangle} accent="text-rose-700" />
+              <KpiTile label="In-flight" value={counters.inFlight || 0} icon={FiClock} accent="text-amber-700" />
+            </div>
+          </div>
         </div>
 
         {job.errorSummary && (
-          <p className="rounded-md border border-rose-200 bg-rose-50 px-3 py-1.5 text-xs text-rose-800">
+          <p className="rounded-lg border border-rose-200 bg-rose-50 px-4 py-2 text-sm text-rose-800">
             {job.errorSummary}
           </p>
         )}
 
-        <div className="flex flex-wrap items-center justify-between gap-3 rounded-xl border border-primary-blue-200 bg-primary-blue-50/40 px-3 py-2">
-          <div className="flex flex-wrap items-center gap-5">
+        <div className="flex flex-wrap items-center justify-between gap-4 rounded-xl border border-slate-200/90 bg-slate-50/80 px-4 py-3">
+          <div className="flex flex-wrap items-center gap-6">
             <div>
-              <p className="text-[10px] font-bold uppercase tracking-wider text-primary-navy">Recovery rate</p>
-              <p className="font-mono text-lg font-bold text-primary-navy">{recoveryRate}%</p>
+              <p className="text-xs font-semibold uppercase tracking-wide text-slate-500">Recovery rate</p>
+              <p className="font-mono text-xl font-bold text-primary-navy tabular-nums">{recoveryRate}%</p>
             </div>
             <div>
-              <p className="text-[10px] font-bold uppercase tracking-wider text-primary-navy">Elapsed</p>
-              <p className="font-mono text-lg font-bold text-slate-800">{formatElapsed(elapsedMs)}</p>
+              <p className="text-xs font-semibold uppercase tracking-wide text-slate-500">Elapsed</p>
+              <p className="font-mono text-xl font-bold text-slate-800 tabular-nums">{formatElapsed(elapsedMs)}</p>
             </div>
           </div>
-          <div className="flex flex-col items-end gap-1 text-right">
+          <div className="flex flex-col items-end gap-1 text-right text-sm text-slate-600">
             {isRunning ? (
-              <span className="inline-flex items-center gap-1 rounded-full border border-primary-blue-200 bg-white px-2 py-0.5 text-[11px] font-semibold text-primary-navy">
-                <FiRotateCw className="animate-spin" size={11} /> auto-refreshing every 2s
+              <span className="inline-flex items-center gap-1.5 rounded-full border border-primary-navy/20 bg-white px-3 py-1 text-xs font-semibold text-primary-navy shadow-sm">
+                <FiRotateCw className="animate-spin" size={12} /> Auto-refresh every 2s
               </span>
             ) : (
-              <span className="text-[11px] text-slate-500">Started {formatDt(job.startedAt)}</span>
+              <span>Started {formatDt(job.startedAt)}</span>
             )}
-            {!isRunning && job.finishedAt && (
-              <span className="text-[11px] text-slate-500">Finished {formatDt(job.finishedAt)}</span>
-            )}
+            {!isRunning && job.finishedAt && <span>Finished {formatDt(job.finishedAt)}</span>}
           </div>
         </div>
       </div>
@@ -831,33 +853,22 @@ function UnresolvedTableCard({
   const allOnPageSelected = rows.length > 0 && rows.every((r) => selected.has(r.phone));
   const showBulkBar = selected.size > 0;
 
+  const btnSecondary =
+    'inline-flex h-9 items-center gap-1.5 rounded-lg border border-slate-200 bg-white px-3 text-xs font-semibold text-slate-700 shadow-sm transition hover:bg-slate-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary-navy/20';
+  const btnPrimary =
+    'inline-flex h-9 items-center gap-1.5 rounded-lg border border-primary-navy bg-primary-navy px-3.5 text-xs font-semibold text-white shadow-sm transition hover:bg-primary-navy/90 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary-navy/30 disabled:opacity-60';
+
   const headerRight = (
     <>
-      <button
-        type="button"
-        onClick={onCopyPhones}
-        title="Copy filtered phones to clipboard"
-        className="inline-flex items-center gap-1 rounded-md border border-primary-blue-200 bg-white px-2 py-1 text-[11px] font-semibold text-primary-navy shadow-sm hover:bg-primary-blue-50"
-      >
-        <FiCopy size={11} /> Copy phones
+      <button type="button" onClick={onCopyPhones} title="Copy filtered phones to clipboard" className={btnSecondary}>
+        <FiCopy size={14} /> Copy phones
       </button>
-      <button
-        type="button"
-        onClick={onCopyCsv}
-        title="Copy filtered rows as CSV"
-        className="inline-flex items-center gap-1 rounded-md border border-primary-blue-200 bg-white px-2 py-1 text-[11px] font-semibold text-primary-navy shadow-sm hover:bg-primary-blue-50"
-      >
-        <FiCopy size={11} /> Copy CSV
+      <button type="button" onClick={onCopyCsv} title="Copy filtered rows as CSV" className={btnSecondary}>
+        <FiCopy size={14} /> Copy CSV
       </button>
-      <button
-        type="button"
-        onClick={onDownloadCsv}
-        disabled={csvBusy}
-        title="Download grouped CSV"
-        className="inline-flex items-center gap-1 rounded-md border border-primary-navy bg-primary-navy px-2.5 py-1 text-[11px] font-semibold text-white shadow-sm transition hover:bg-primary-navy/90 disabled:opacity-60"
-      >
-        {csvBusy ? <FiLoader className="animate-spin" size={11} /> : <FiDownload size={11} />}
-        Download grouped CSV
+      <button type="button" onClick={onDownloadCsv} disabled={csvBusy} title="Download grouped CSV" className={btnPrimary}>
+        {csvBusy ? <FiLoader className="animate-spin" size={14} /> : <FiDownload size={14} />}
+        Download CSV
       </button>
     </>
   );
@@ -872,77 +883,76 @@ function UnresolvedTableCard({
       bodyClassName="p-0"
     >
       {showBulkBar && (
-        <div className="sticky top-0 z-20 flex flex-wrap items-center gap-2 border-b border-amber-200 bg-amber-50/95 px-4 py-2 text-xs backdrop-blur">
-          <span className="inline-flex items-center gap-1 rounded-full bg-amber-600 px-2 py-0.5 text-[11px] font-bold uppercase tracking-wide text-white">
-            <FiTarget size={11} /> {selected.size} selected
+        <div className="sticky top-0 z-20 flex flex-wrap items-center gap-2 border-b border-slate-200 bg-white/95 px-4 py-3 text-sm shadow-sm backdrop-blur-md">
+          <span className="inline-flex items-center gap-1.5 rounded-full bg-primary-navy px-3 py-1 text-xs font-bold uppercase tracking-wide text-white">
+            <FiTarget size={12} /> {selected.size} selected
           </span>
           {isSuper && (
             <button
               type="button"
               onClick={onBulkRecover}
-              className="inline-flex items-center gap-1.5 rounded-md border border-rose-700 bg-rose-600 px-3 py-1 text-[11px] font-bold text-white shadow-sm transition hover:bg-rose-700"
+              className="inline-flex h-9 items-center gap-1.5 rounded-lg border border-rose-600 bg-rose-600 px-3 text-xs font-bold text-white shadow-sm transition hover:bg-rose-700"
             >
-              <FiPlay size={11} /> Recover selected
+              <FiPlay size={14} /> Recover selected
             </button>
           )}
           <button
             type="button"
             onClick={onCopyPhones}
             title="Copy selected phones"
-            className="inline-flex items-center gap-1 rounded-md border border-slate-200 bg-white px-2 py-1 font-semibold text-slate-700 hover:bg-slate-50"
+            className="inline-flex h-9 items-center gap-1.5 rounded-lg border border-slate-200 bg-white px-3 text-xs font-semibold text-slate-700 hover:bg-slate-50"
           >
-            <FiCopy size={11} /> Copy
+            <FiCopy size={14} /> Copy
           </button>
-          <span className="ml-2 hidden text-[10px] text-slate-500 sm:inline">
-            Esc to clear selection
-          </span>
+          <span className="hidden text-xs text-slate-500 sm:inline">Esc clears selection</span>
           <button
             type="button"
             onClick={onClearSelection}
             title="Clear selection"
-            className="ml-auto inline-flex items-center gap-1 rounded-md border border-slate-200 bg-white px-2 py-1 font-semibold text-slate-600 hover:bg-slate-50"
+            className="ml-auto inline-flex h-9 items-center gap-1 rounded-lg border border-slate-200 bg-white px-3 text-xs font-semibold text-slate-600 hover:bg-slate-50"
           >
-            <FiX size={11} /> Clear
+            <FiX size={14} /> Clear
           </button>
         </div>
       )}
 
-      <div className="max-h-[60vh] overflow-auto">
-        <table className="min-w-full text-sm">
-          <thead className="sticky top-0 z-10 bg-gradient-to-r from-primary-blue-50/80 to-white text-[10px] font-bold uppercase tracking-[0.12em] text-primary-navy backdrop-blur">
+      <div className="max-h-[min(70vh,720px)] overflow-auto">
+        <table className="min-w-[960px] w-full border-collapse text-sm">
+          <thead className="sticky top-0 z-10 border-b border-slate-200 bg-white/95 text-xs font-bold uppercase tracking-wide text-slate-500 shadow-sm backdrop-blur-md">
             <tr>
-              <th className="w-10 px-2 py-3 text-left">
+              <th className="w-12 px-3 py-3.5 text-left">
                 <input
                   type="checkbox"
                   checked={allOnPageSelected}
                   onChange={onTogglePage}
                   aria-label="Select page"
+                  className="rounded border-slate-300"
                 />
               </th>
-              <th className="px-3 py-3 text-left">Recipient</th>
-              <th className="px-3 py-3 text-left">Template / stage</th>
-              <th className="px-3 py-3 text-left">State</th>
-              <th className="px-3 py-3 text-left">Reason / error</th>
-              <th className="px-3 py-3 text-left">Ever delivered</th>
-              <th className="px-3 py-3 text-right">Retries</th>
-              <th className="px-3 py-3 text-left">Last attempt</th>
+              <th className="px-4 py-3.5 text-left">Recipient</th>
+              <th className="px-4 py-3.5 text-left">Template / stage</th>
+              <th className="px-4 py-3.5 text-left">State</th>
+              <th className="min-w-[200px] max-w-md px-4 py-3.5 text-left">Reason / error</th>
+              <th className="px-4 py-3.5 text-left">Ever delivered</th>
+              <th className="px-4 py-3.5 text-right">Retries</th>
+              <th className="px-4 py-3.5 text-left">Last attempt</th>
             </tr>
           </thead>
-          <tbody className="divide-y divide-primary-blue-100">
+          <tbody className="divide-y divide-slate-100">
             {loading && rows.length === 0 && (
               <tr>
-                <td colSpan={8} className="px-3 py-12 text-center text-slate-500">
+                <td colSpan={8} className="px-4 py-14 text-center text-sm text-slate-500">
                   <FiLoader className="mr-2 inline animate-spin" /> Loading unresolved recipients…
                 </td>
               </tr>
             )}
             {!loading && rows.length === 0 && (
               <tr>
-                <td colSpan={8} className="px-3 py-14 text-center">
-                  <div className="mx-auto flex max-w-sm flex-col items-center gap-1.5 text-slate-500">
-                    <FiCheckCircle className="text-emerald-500" size={28} />
-                    <p className="text-sm font-semibold text-slate-700">No unresolved recipients in this slice.</p>
-                    <p className="text-xs">Adjust filters, widen the date range, or check the Overview page for stable trends.</p>
+                <td colSpan={8} className="px-4 py-16 text-center">
+                  <div className="mx-auto flex max-w-md flex-col items-center gap-2 text-slate-500">
+                    <FiCheckCircle className="text-emerald-500" size={32} />
+                    <p className="text-base font-semibold text-slate-800">No unresolved recipients in this slice.</p>
+                    <p className="text-sm text-slate-600">Adjust filters or widen the date range. Use Overview for trends.</p>
                   </div>
                 </td>
               </tr>
@@ -952,62 +962,68 @@ function UnresolvedTableCard({
               return (
                 <tr
                   key={`${r.phone}-${r.messageKind}-${r.lastEventId}`}
-                  className={`relative ${isSel ? 'bg-amber-50/50' : 'hover:bg-primary-blue-50/40'}`}
+                  className={`relative transition-colors ${
+                    isSel
+                      ? 'bg-slate-50 ring-2 ring-inset ring-primary-navy/20'
+                      : 'odd:bg-white even:bg-slate-50/40 hover:bg-slate-100/80'
+                  }`}
                 >
-                  <td className="relative w-10 px-2 py-3">
-                    <span className={`absolute left-0 top-0 h-full w-1 ${severityStripeClass(r)}`} aria-hidden />
+                  <td className="relative w-12 px-3 py-3.5 align-top">
+                    <span className={`absolute left-0 top-2 bottom-2 w-0.5 rounded-full ${severityStripeClass(r)}`} aria-hidden />
                     <input
                       type="checkbox"
                       checked={isSel}
                       onChange={() => onToggleRow(r.phone)}
                       aria-label={`Select ${r.phone}`}
-                      className="ml-1"
+                      className="ml-1 rounded border-slate-300"
                     />
                   </td>
-                  <td className="px-3 py-3">
-                    <p className="font-mono text-[13px] font-semibold text-slate-900">{r.phone}</p>
-                    <p className="mt-0.5 truncate text-[11px] text-slate-500">{r.name || '—'}</p>
+                  <td className="px-4 py-3.5 align-top">
+                    <p className="font-mono text-sm font-semibold text-slate-900">{r.phone}</p>
+                    <p className="mt-0.5 truncate text-sm text-slate-600">{r.name || '—'}</p>
                   </td>
-                  <td className="px-3 py-3">
-                    <span className="rounded-md bg-primary-blue-50 px-1.5 py-0.5 font-mono text-[11px] font-semibold text-primary-navy ring-1 ring-primary-blue-200">{r.messageKind}</span>
-                    <p className="mt-1 text-[11px] text-slate-500">
+                  <td className="px-4 py-3.5 align-top">
+                    <span className="inline-flex rounded-lg bg-primary-blue-50 px-2 py-1 font-mono text-xs font-semibold text-primary-navy ring-1 ring-primary-blue-200/80">
+                      {r.messageKind}
+                    </span>
+                    <p className="mt-1.5 text-sm text-slate-600">
                       {r.attemptStage || '—'}
-                      <span className="ml-1 text-slate-400">attempt #{r.lastAttemptNumber || '—'}</span>
+                      <span className="ml-1 text-slate-400">· attempt #{r.lastAttemptNumber || '—'}</span>
                     </p>
                   </td>
-                  <td className="px-3 py-3">
-                    <div className="flex flex-wrap items-center gap-1">
+                  <td className="px-4 py-3.5 align-top">
+                    <div className="flex flex-wrap items-center gap-1.5">
                       <StatusPill status={r.lifecycleState} size="sm" />
                       {r.retryExhausted && (
-                        <span className="inline-flex items-center gap-0.5 rounded-full border border-amber-300 bg-amber-50 px-1.5 py-0.5 text-[10px] font-bold text-amber-800">
-                          <FiAlertOctagon size={10} /> exhausted
+                        <span className="inline-flex items-center gap-0.5 rounded-full border border-amber-200 bg-amber-50 px-2 py-0.5 text-xs font-semibold text-amber-900">
+                          <FiAlertOctagon size={12} /> Exhausted
                         </span>
                       )}
                     </div>
                   </td>
-                  <td className="max-w-[280px] px-3 py-3">
-                    <p className="text-[12px] font-semibold text-slate-800">
+                  <td className="max-w-md px-4 py-3.5 align-top">
+                    <p className="text-sm font-medium text-slate-800">
                       {r.exclusionReason || r.reason || '—'}
                     </p>
                     {r.errorMessage ? (
-                      <p className="mt-0.5 line-clamp-2 text-[11px] text-rose-700" title={r.errorMessage}>
+                      <p className="mt-1 line-clamp-2 text-sm text-rose-700" title={r.errorMessage}>
                         {r.errorMessage}
                       </p>
                     ) : (
-                      <p className="mt-0.5 text-[11px] text-slate-400">no error message recorded</p>
+                      <p className="mt-1 text-sm text-slate-400">No error message recorded</p>
                     )}
                   </td>
-                  <td className="px-3 py-3 text-[11px]">
+                  <td className="px-4 py-3.5 align-top text-sm">
                     {r.everDeliveredAt ? (
-                      <span className="inline-flex items-center gap-1 rounded-full bg-emerald-50 px-2 py-0.5 font-semibold text-emerald-800 ring-1 ring-emerald-100">
-                        <FiCheckCircle size={10} /> {formatDt(r.everDeliveredAt)}
+                      <span className="inline-flex items-center gap-1 rounded-full border border-emerald-200 bg-emerald-50 px-2.5 py-1 text-xs font-semibold text-emerald-900">
+                        <FiCheckCircle size={12} /> {formatDt(r.everDeliveredAt)}
                       </span>
                     ) : (
-                      <span className="text-slate-400">never</span>
+                      <span className="text-slate-400">Never</span>
                     )}
                   </td>
-                  <td className="px-3 py-3 text-right font-mono text-xs">{r.retryHistoryCount || 0}</td>
-                  <td className="px-3 py-3 text-[11px] text-slate-600">{formatDt(r.lastAttemptAt)}</td>
+                  <td className="px-4 py-3.5 text-right font-mono text-sm tabular-nums text-slate-800">{r.retryHistoryCount || 0}</td>
+                  <td className="px-4 py-3.5 text-sm text-slate-600 whitespace-nowrap">{formatDt(r.lastAttemptAt)}</td>
                 </tr>
               );
             })}
@@ -1015,25 +1031,27 @@ function UnresolvedTableCard({
         </table>
       </div>
 
-      <div className="flex items-center justify-between border-t border-primary-blue-100 bg-primary-blue-50/30 px-4 py-2 text-[11px] text-slate-600">
-        <span>
+      <div className="flex flex-wrap items-center justify-between gap-3 border-t border-slate-200 bg-slate-50/80 px-4 py-3 text-sm text-slate-600">
+        <span className="tabular-nums">
           Showing {(rows.length ? (page - 1) * 50 + 1 : 0)}–{(page - 1) * 50 + rows.length} of {totalRows.toLocaleString()}
         </span>
-        <div className="flex items-center gap-1.5">
+        <div className="flex items-center gap-2">
           <button
             type="button"
             disabled={page <= 1 || loading}
             onClick={onPrev}
-            className="rounded-md border border-primary-blue-200 bg-white px-2 py-0.5 text-[11px] font-semibold text-primary-navy hover:bg-primary-blue-50 disabled:opacity-50"
+            className="inline-flex h-9 items-center rounded-lg border border-slate-200 bg-white px-3 text-sm font-semibold text-primary-navy shadow-sm hover:bg-white disabled:opacity-50"
           >
             Prev
           </button>
-          <span>Page <strong className="text-primary-navy">{page}</strong> / {totalPages || 1}</span>
+          <span className="text-sm">
+            Page <strong className="text-primary-navy tabular-nums">{page}</strong> / {totalPages || 1}
+          </span>
           <button
             type="button"
             disabled={page >= totalPages || loading}
             onClick={onNext}
-            className="rounded-md border border-primary-blue-200 bg-white px-2 py-0.5 text-[11px] font-semibold text-primary-navy hover:bg-primary-blue-50 disabled:opacity-50"
+            className="inline-flex h-9 items-center rounded-lg border border-slate-200 bg-white px-3 text-sm font-semibold text-primary-navy shadow-sm hover:bg-white disabled:opacity-50"
           >
             Next
           </button>
@@ -1055,33 +1073,22 @@ function FinalExportCard({
     .filter(([, count]) => count > 0)
     .sort((a, b) => (b[1] || 0) - (a[1] || 0));
 
+  const expSecondary =
+    'inline-flex h-9 items-center gap-1.5 rounded-lg border border-slate-200 bg-white px-3 text-xs font-semibold text-slate-700 shadow-sm hover:bg-slate-50';
+  const expPrimary =
+    'inline-flex h-9 items-center gap-1.5 rounded-lg border border-primary-navy bg-primary-navy px-3.5 text-xs font-semibold text-white shadow-sm hover:bg-primary-navy/90 disabled:opacity-60';
+
   const headerRight = (
     <>
-      <button
-        type="button"
-        onClick={onCopyPhones}
-        title="Copy phones"
-        className="inline-flex items-center gap-1 rounded-md border border-primary-blue-200 bg-white px-2.5 py-1.5 text-[11px] font-semibold text-primary-navy shadow-sm hover:bg-primary-blue-50"
-      >
-        <FiCopy size={12} /> Copy phones
+      <button type="button" onClick={onCopyPhones} title="Copy phones" className={expSecondary}>
+        <FiCopy size={14} /> Copy phones
       </button>
-      <button
-        type="button"
-        onClick={onCopyCsv}
-        title="Copy CSV"
-        className="inline-flex items-center gap-1 rounded-md border border-primary-blue-200 bg-white px-2.5 py-1.5 text-[11px] font-semibold text-primary-navy shadow-sm hover:bg-primary-blue-50"
-      >
-        <FiCopy size={12} /> Copy CSV
+      <button type="button" onClick={onCopyCsv} title="Copy CSV" className={expSecondary}>
+        <FiCopy size={14} /> Copy CSV
       </button>
-      <button
-        type="button"
-        onClick={onDownloadCsv}
-        disabled={csvBusy}
-        title="Download grouped CSV"
-        className="inline-flex items-center gap-1.5 rounded-md border border-primary-navy bg-primary-navy px-3 py-1.5 text-xs font-bold text-white shadow-sm transition hover:bg-primary-navy/90 disabled:opacity-60"
-      >
-        {csvBusy ? <FiLoader className="animate-spin" size={13} /> : <FiDownload size={13} />}
-        Download grouped CSV
+      <button type="button" onClick={onDownloadCsv} disabled={csvBusy} title="Download grouped CSV" className={expPrimary}>
+        {csvBusy ? <FiLoader className="animate-spin" size={14} /> : <FiDownload size={14} />}
+        Download CSV
       </button>
     </>
   );
@@ -1093,28 +1100,28 @@ function FinalExportCard({
       title={`${totalRows.toLocaleString()} unresolved recipient${totalRows === 1 ? '' : 's'} in this slice`}
       subtitle="Use this for downstream resolution: invalid number cleanup, manual outreach via call/SMS, or escalations."
       headerRight={headerRight}
-      bodyClassName="p-4"
+      bodyClassName="p-4 sm:p-5"
     >
       {entries.length === 0 ? (
-        <p className="rounded-xl border border-dashed border-emerald-200 bg-emerald-50/40 p-3 text-xs text-emerald-800">
-          <FiCheckCircle className="mr-1 inline" /> No unresolved recipients to export. The current slice is fully resolved.
+        <p className="rounded-xl border border-dashed border-emerald-200 bg-emerald-50/50 p-4 text-sm text-emerald-900">
+          <FiCheckCircle className="mr-1.5 inline align-text-bottom" /> No unresolved recipients to export. The current slice is fully resolved.
         </p>
       ) : (
-        <div className="grid grid-cols-2 gap-2 sm:grid-cols-3 lg:grid-cols-4">
+        <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-4">
           {entries.map(([cat, count]) => (
             <div
               key={cat}
-              className={`flex items-center justify-between rounded-xl border px-3 py-2 ring-1 ring-primary-blue-100 ${
+              className={`flex items-center justify-between rounded-xl border px-4 py-3 shadow-sm ${
                 EXCLUSION_CATEGORY_COLORS[cat] || 'border-slate-200 bg-slate-50 text-slate-700'
               }`}
             >
-              <div>
-                <p className="text-[10px] font-bold uppercase tracking-wider opacity-80">
+              <div className="min-w-0 pr-2">
+                <p className="text-sm font-semibold leading-snug text-slate-800">
                   {EXCLUSION_CATEGORY_LABELS[cat] || cat}
                 </p>
-                <p className="mt-0.5 text-2xl font-bold leading-tight text-primary-navy">{Number(count).toLocaleString()}</p>
+                <p className="mt-1 text-2xl font-bold tabular-nums text-primary-navy">{Number(count).toLocaleString()}</p>
               </div>
-              <FiArrowDown className="text-primary-navy/60" />
+              <FiArrowDown className="shrink-0 text-primary-navy/50" aria-hidden />
             </div>
           ))}
         </div>
@@ -1418,7 +1425,7 @@ function RecoveryTab() {
 
   /* ---------------------- Render ----------------------------------------- */
   return (
-    <div className="space-y-3">
+    <div className="space-y-6">
       <PageHeader
         totalRows={totalRows}
         totals={totals}
@@ -1430,7 +1437,7 @@ function RecoveryTab() {
       />
 
       {err && (
-        <div className="rounded-md border border-rose-200 bg-rose-50 px-3 py-1.5 text-xs text-rose-800">{err}</div>
+        <div className="rounded-lg border border-rose-200 bg-rose-50 px-4 py-3 text-sm text-rose-900">{err}</div>
       )}
 
       <FiltersToolbar
@@ -1508,37 +1515,37 @@ function RecoveryTab() {
 export default function WhatsAppOpsRecovery() {
   const [tab, setTab] = useState('recovery');
   return (
-    <div className="space-y-3">
+    <div className="space-y-6">
       <nav
         role="tablist"
         aria-label="Recovery console sections"
-        className="inline-flex items-center gap-1 rounded-xl border border-primary-blue-200 bg-white p-1 shadow-sm"
+        className="inline-flex w-full max-w-xl items-center gap-1 rounded-xl border border-slate-200/90 bg-slate-50/80 p-1 shadow-sm ring-1 ring-slate-900/[0.04] sm:w-auto"
       >
         <button
           type="button"
           role="tab"
           aria-selected={tab === 'recovery'}
           onClick={() => setTab('recovery')}
-          className={`inline-flex items-center gap-1.5 rounded-lg px-3 py-1.5 text-sm font-semibold transition ${
+          className={`inline-flex h-10 flex-1 items-center justify-center gap-2 rounded-lg px-4 text-sm font-semibold transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary-navy/25 sm:flex-initial ${
             tab === 'recovery'
-              ? 'bg-primary-navy text-white shadow-sm'
-              : 'text-slate-700 hover:bg-primary-blue-50'
+              ? 'bg-primary-navy text-white shadow-md'
+              : 'text-slate-700 hover:bg-white'
           }`}
         >
-          <FiZap size={14} /> Recovery
+          <FiZap size={16} /> Recovery
         </button>
         <button
           type="button"
           role="tab"
           aria-selected={tab === 'audit'}
           onClick={() => setTab('audit')}
-          className={`inline-flex items-center gap-1.5 rounded-lg px-3 py-1.5 text-sm font-semibold transition ${
+          className={`inline-flex h-10 flex-1 items-center justify-center gap-2 rounded-lg px-4 text-sm font-semibold transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary-navy/25 sm:flex-initial ${
             tab === 'audit'
-              ? 'bg-primary-navy text-white shadow-sm'
-              : 'text-slate-700 hover:bg-primary-blue-50'
+              ? 'bg-primary-navy text-white shadow-md'
+              : 'text-slate-700 hover:bg-white'
           }`}
         >
-          <FiEye size={14} /> Audit (raw events)
+          <FiEye size={16} /> Audit (raw events)
         </button>
       </nav>
       <div role="tabpanel">

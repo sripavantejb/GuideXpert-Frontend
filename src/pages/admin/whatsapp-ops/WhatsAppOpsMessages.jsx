@@ -452,11 +452,14 @@ export default function WhatsAppOpsMessages() {
     return counts;
   }, [rows]);
 
+  const auditField =
+    'mt-1.5 block h-10 w-full rounded-lg border border-slate-200 bg-white px-3 text-sm text-slate-900 shadow-sm focus:border-primary-navy/40 focus:outline-none focus:ring-2 focus:ring-primary-navy/15';
+
   return (
-    <div className="space-y-6 relative">
-      <header className="rounded-2xl border border-slate-200 bg-gradient-to-br from-white via-slate-50 to-slate-100/60 p-5 sm:p-6 shadow-sm">
-        <h1 className="text-2xl font-bold tracking-tight text-gray-900">Delivery audit</h1>
-        <p className="text-sm text-gray-600 mt-1">
+    <div className="relative space-y-6">
+      <header className="rounded-2xl border border-slate-200/90 bg-gradient-to-br from-white via-slate-50 to-slate-100/80 p-5 shadow-[0_4px_24px_-12px_rgba(15,23,42,0.08)] ring-1 ring-slate-900/[0.04] sm:p-6">
+        <h1 className="text-2xl font-bold tracking-tight text-slate-900 sm:text-3xl">Delivery audit</h1>
+        <p className="mt-2 text-sm leading-relaxed text-slate-600">
           Real recipient-level WhatsApp delivery records from backend events and webhooks.
         </p>
 
@@ -473,168 +476,168 @@ export default function WhatsAppOpsMessages() {
           </div>
         )}
 
-        <div className="mt-4 grid grid-cols-1 gap-3 sm:grid-cols-3">
-          <div className="rounded-xl border border-emerald-200 bg-emerald-50 px-4 py-3">
-            <p className="text-xs font-semibold uppercase text-emerald-700">Received/delivered (page)</p>
-            <p className="mt-1 flex items-center gap-2 text-xl font-bold text-emerald-900">
-              <FiCheckCircle /> {auditSummary.delivered}
+        <div className="mt-5 grid grid-cols-1 gap-3 sm:grid-cols-3">
+          <div className="rounded-xl border border-emerald-200/90 bg-emerald-50/90 px-4 py-4 shadow-sm">
+            <p className="text-xs font-semibold uppercase tracking-wide text-emerald-800">Received / delivered (page)</p>
+            <p className="mt-2 flex items-center gap-2 text-2xl font-bold tabular-nums text-emerald-950">
+              <FiCheckCircle className="shrink-0" /> {auditSummary.delivered}
             </p>
           </div>
-          <div className="rounded-xl border border-rose-200 bg-rose-50 px-4 py-3">
-            <p className="text-xs font-semibold uppercase text-rose-700">Failed (page)</p>
-            <p className="mt-1 flex items-center gap-2 text-xl font-bold text-rose-900">
-              <FiAlertCircle /> {auditSummary.failed}
+          <div className="rounded-xl border border-rose-200/90 bg-rose-50/90 px-4 py-4 shadow-sm">
+            <p className="text-xs font-semibold uppercase tracking-wide text-rose-800">Failed (page)</p>
+            <p className="mt-2 flex items-center gap-2 text-2xl font-bold tabular-nums text-rose-950">
+              <FiAlertCircle className="shrink-0" /> {auditSummary.failed}
             </p>
           </div>
-          <div className="rounded-xl border border-amber-200 bg-amber-50 px-4 py-3">
-            <p className="text-xs font-semibold uppercase text-amber-700">Pending/submitted (page)</p>
-            <p className="mt-1 flex items-center gap-2 text-xl font-bold text-amber-900">
-              <FiClock /> {auditSummary.pending}
+          <div className="rounded-xl border border-amber-200/90 bg-amber-50/90 px-4 py-4 shadow-sm">
+            <p className="text-xs font-semibold uppercase tracking-wide text-amber-900">Pending / submitted (page)</p>
+            <p className="mt-2 flex items-center gap-2 text-2xl font-bold tabular-nums text-amber-950">
+              <FiClock className="shrink-0" /> {auditSummary.pending}
             </p>
           </div>
         </div>
       </header>
 
-      <div className="flex flex-wrap gap-3 items-end bg-white border border-gray-200 rounded-xl p-4 shadow-sm">
-        <label className="text-xs text-gray-600">
-          From
-          <input type="date" value={from} onChange={(e) => setRange((r) => ({ ...r, from: e.target.value }))} className="block mt-1 rounded border px-2 py-1" />
-        </label>
-        <label className="text-xs text-gray-600">
-          To
-          <input type="date" value={to} onChange={(e) => setRange((r) => ({ ...r, to: e.target.value }))} className="block mt-1 rounded border px-2 py-1" />
-        </label>
-        <label className="text-xs text-gray-600">
-          Phone
-          <input value={phone} onChange={(e) => setPhone(e.target.value)} placeholder="10-digit" className="block mt-1 rounded border px-2 py-1 w-36" />
-        </label>
-        <label className="text-xs text-gray-600">
-          Name contains
-          <input value={name} onChange={(e) => setName(e.target.value)} className="block mt-1 rounded border px-2 py-1 w-40" />
-        </label>
-        <label className="text-xs text-gray-600">
-          Kind
-          <select value={messageKind} onChange={(e) => setMessageKind(e.target.value)} className="block mt-1 rounded border px-2 py-1">
-            <option value="">All</option>
-            <option value="slot_booked">slot_booked</option>
-            <option value="pre4hr">pre4hr</option>
-            <option value="meet">meet</option>
-            <option value="30min">30min</option>
-          </select>
-        </label>
-        <label className="text-xs text-gray-600">
-          Status
-          <select value={status} onChange={(e) => setStatus(e.target.value)} className="block mt-1 rounded border px-2 py-1 w-44">
-            <option value="">All</option>
-            <option value="submitted">submitted</option>
-            <option value="sent">sent</option>
-            <option value="delivered">delivered</option>
-            <option value="read">read</option>
-            <option value="failed">failed (+ retry_exhausted via multi)</option>
-            <option value="failed,retry_exhausted">failed,retry_exhausted</option>
-            <option value="retry_exhausted">retry_exhausted</option>
-          </select>
-        </label>
-        <label className="text-xs text-gray-600">
-          Attempt #
-          <select
-            value={attemptNumber}
-            onChange={(e) => setAttemptNumber(e.target.value)}
-            className="block mt-1 rounded border px-2 py-1 w-28"
-          >
-            <option value="">All</option>
-            <option value="1">1</option>
-            <option value="2">2</option>
-            <option value="3">3</option>
-          </select>
-        </label>
-        <label className="text-xs text-gray-600">
-          Retry group id
-          <input
-            value={retryGroupId}
-            onChange={(e) => setRetryGroupId(e.target.value)}
-            placeholder="Mongo ObjectId"
-            className="block mt-1 rounded border px-2 py-1 w-52 font-mono text-xs"
-          />
-        </label>
-        <button
-          type="button"
-          className="px-3 py-2 rounded-lg border bg-gray-900 text-white font-semibold text-sm"
-          onClick={() => {
-            setPage(1);
-            setReloadKey((k) => k + 1);
-          }}
-        >
-          Search
-        </button>
+      <div className="rounded-2xl border border-slate-200/90 bg-white p-4 shadow-[0_4px_24px_-12px_rgba(15,23,42,0.08)] ring-1 ring-slate-900/[0.04] sm:p-5">
+        <div className="grid grid-cols-1 gap-4 md:grid-cols-2 lg:grid-cols-12 lg:items-end">
+          <label className="text-sm font-medium text-slate-700 lg:col-span-2">
+            From
+            <input type="date" value={from} onChange={(e) => setRange((r) => ({ ...r, from: e.target.value }))} className={auditField} />
+          </label>
+          <label className="text-sm font-medium text-slate-700 lg:col-span-2">
+            To
+            <input type="date" value={to} onChange={(e) => setRange((r) => ({ ...r, to: e.target.value }))} className={auditField} />
+          </label>
+          <label className="text-sm font-medium text-slate-700 lg:col-span-2">
+            Phone
+            <input value={phone} onChange={(e) => setPhone(e.target.value)} placeholder="10-digit" className={auditField} />
+          </label>
+          <label className="text-sm font-medium text-slate-700 lg:col-span-3">
+            Name contains
+            <input value={name} onChange={(e) => setName(e.target.value)} className={auditField} />
+          </label>
+          <label className="text-sm font-medium text-slate-700 lg:col-span-3">
+            Kind
+            <select value={messageKind} onChange={(e) => setMessageKind(e.target.value)} className={auditField}>
+              <option value="">All</option>
+              <option value="slot_booked">slot_booked</option>
+              <option value="pre4hr">pre4hr</option>
+              <option value="meet">meet</option>
+              <option value="30min">30min</option>
+            </select>
+          </label>
+          <label className="text-sm font-medium text-slate-700 lg:col-span-3">
+            Status
+            <select value={status} onChange={(e) => setStatus(e.target.value)} className={auditField}>
+              <option value="">All</option>
+              <option value="submitted">submitted</option>
+              <option value="sent">sent</option>
+              <option value="delivered">delivered</option>
+              <option value="read">read</option>
+              <option value="failed">failed (+ retry_exhausted via multi)</option>
+              <option value="failed,retry_exhausted">failed,retry_exhausted</option>
+              <option value="retry_exhausted">retry_exhausted</option>
+            </select>
+          </label>
+          <label className="text-sm font-medium text-slate-700 lg:col-span-2">
+            Attempt #
+            <select value={attemptNumber} onChange={(e) => setAttemptNumber(e.target.value)} className={auditField}>
+              <option value="">All</option>
+              <option value="1">1</option>
+              <option value="2">2</option>
+              <option value="3">3</option>
+            </select>
+          </label>
+          <label className="text-sm font-medium text-slate-700 lg:col-span-4">
+            Retry group id
+            <input
+              value={retryGroupId}
+              onChange={(e) => setRetryGroupId(e.target.value)}
+              placeholder="Mongo ObjectId"
+              className={`${auditField} font-mono text-xs`}
+            />
+          </label>
+          <div className="flex items-end lg:col-span-2">
+            <button
+              type="button"
+              className="inline-flex h-10 w-full items-center justify-center rounded-lg bg-primary-navy px-4 text-sm font-semibold text-white shadow-sm transition hover:bg-primary-navy/90 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary-navy/30"
+              onClick={() => {
+                setPage(1);
+                setReloadKey((k) => k + 1);
+              }}
+            >
+              Search
+            </button>
+          </div>
+        </div>
       </div>
 
-      {err && <div className="text-sm text-rose-800 bg-rose-50 border border-rose-200 px-4 py-2 rounded-lg">{err}</div>}
+      {err && <div className="rounded-lg border border-rose-200 bg-rose-50 px-4 py-3 text-sm text-rose-900">{err}</div>}
 
-      <div className="rounded-xl border border-gray-200 bg-white overflow-hidden">
-        <div className="max-h-[70vh] overflow-auto">
-          <table className="min-w-full text-sm">
-            <thead className="sticky top-0 bg-gray-100 text-xs uppercase text-gray-700 z-10">
+      <div className="overflow-hidden rounded-2xl border border-slate-200/90 bg-white shadow-[0_4px_24px_-12px_rgba(15,23,42,0.08)] ring-1 ring-slate-900/[0.04]">
+        <div className="max-h-[min(70vh,720px)] overflow-auto">
+          <table className="min-w-[1100px] w-full border-collapse text-sm">
+            <thead className="sticky top-0 z-10 border-b border-slate-200 bg-white/95 text-xs font-bold uppercase tracking-wide text-slate-500 shadow-sm backdrop-blur-md">
               <tr>
-                <th className="text-left px-3 py-2">Sent time</th>
-                <th className="text-left px-3 py-2">Name</th>
-                <th className="text-left px-3 py-2">Phone number</th>
-                <th className="text-left px-3 py-2">Message type</th>
-                <th className="text-left px-3 py-2">Attempt</th>
-                <th className="text-left px-3 py-2">Retry group</th>
-                <th className="text-left px-3 py-2">Delivery status</th>
-                <th className="text-left px-3 py-2">Failure reason</th>
-                <th className="text-left px-3 py-2">Retry count</th>
-                <th className="text-left px-3 py-2">Actions</th>
+                <th className="px-4 py-3.5 text-left">Sent time</th>
+                <th className="px-4 py-3.5 text-left">Name</th>
+                <th className="px-4 py-3.5 text-left">Phone number</th>
+                <th className="px-4 py-3.5 text-left">Message type</th>
+                <th className="px-4 py-3.5 text-left">Attempt</th>
+                <th className="px-4 py-3.5 text-left">Retry group</th>
+                <th className="px-4 py-3.5 text-left">Delivery status</th>
+                <th className="min-w-[180px] px-4 py-3.5 text-left">Failure reason</th>
+                <th className="px-4 py-3.5 text-right">Retry count</th>
+                <th className="px-4 py-3.5 text-left">Actions</th>
               </tr>
             </thead>
-            <tbody className="divide-y divide-gray-100">
+            <tbody className="divide-y divide-slate-100">
               {loading && rows.length === 0 && (
                 <tr>
-                  <td colSpan={10} className="px-3 py-8 text-center text-gray-500">
-                    <FiLoader className="inline animate-spin mr-2" /> Loading…
+                  <td colSpan={10} className="px-4 py-14 text-center text-sm text-slate-500">
+                    <FiLoader className="mr-2 inline animate-spin" /> Loading…
                   </td>
                 </tr>
               )}
               {!loading && rows.length === 0 && (
                 <tr>
-                  <td colSpan={10} className="px-3 py-10 text-center text-gray-600">
+                  <td colSpan={10} className="px-4 py-16 text-center text-sm text-slate-600">
                     No message events yet.
                   </td>
                 </tr>
               )}
               {rows.map((r) => (
-                <tr key={r._id} className="hover:bg-gray-50">
-                  <td className="px-3 py-2 whitespace-nowrap">{formatDt(r.sentAt || r.createdAt)}</td>
-                  <td className="px-3 py-2">{r.userName || 'Not available'}</td>
-                  <td className="px-3 py-2 font-mono">{r.phone || 'Not available'}</td>
-                  <td className="px-3 py-2">{r.messageKind || 'Not available'}</td>
-                  <td className="px-3 py-2 text-center">{r.attemptNumber ?? '—'}</td>
-                  <td className="px-3 py-2 font-mono text-xs max-w-[120px] truncate" title={r.retryGroupId ? String(r.retryGroupId) : ''}>
+                <tr key={r._id} className="odd:bg-white even:bg-slate-50/50 hover:bg-slate-100/80">
+                  <td className="whitespace-nowrap px-4 py-3.5 text-sm text-slate-700">{formatDt(r.sentAt || r.createdAt)}</td>
+                  <td className="px-4 py-3.5 text-sm text-slate-800">{r.userName || 'Not available'}</td>
+                  <td className="px-4 py-3.5 font-mono text-sm font-medium text-slate-900">{r.phone || 'Not available'}</td>
+                  <td className="px-4 py-3.5 text-sm text-slate-800">{r.messageKind || 'Not available'}</td>
+                  <td className="px-4 py-3.5 text-center text-sm tabular-nums text-slate-800">{r.attemptNumber ?? '—'}</td>
+                  <td className="max-w-[140px] truncate px-4 py-3.5 font-mono text-xs text-slate-600" title={r.retryGroupId ? String(r.retryGroupId) : ''}>
                     {r.retryGroupId ? String(r.retryGroupId).slice(-8) : '—'}
                   </td>
-                  <td className="px-3 py-2">
-                    <span className={`inline-flex items-center rounded-full border px-2 py-0.5 text-xs font-semibold ${statusPillClass(r.deliveryStatus || r.status)}`}>
+                  <td className="px-4 py-3.5">
+                    <span className={`inline-flex items-center rounded-full border px-2.5 py-1 text-xs font-semibold ${statusPillClass(r.deliveryStatus || r.status)}`}>
                       {r.deliveryStatus || r.status || 'Not available'}
                     </span>
                   </td>
-                  <td className="px-3 py-2 max-w-[280px]">
+                  <td className="max-w-md px-4 py-3.5">
                     {r.failureReason ? (
-                      <span className="line-clamp-2 text-xs text-rose-800" title={r.failureReason}>{r.failureReason}</span>
+                      <span className="line-clamp-2 text-sm text-rose-800" title={r.failureReason}>{r.failureReason}</span>
                     ) : (
-                      <span className="text-xs text-gray-500">None</span>
+                      <span className="text-sm text-slate-400">None</span>
                     )}
                   </td>
-                  <td className="px-3 py-2 text-center">{r.retryCount ?? r.retryCountSnapshot ?? 0}</td>
-                  <td className="px-3 py-2 space-x-2 whitespace-nowrap">
-                    <button type="button" className="text-primary-navy font-semibold hover:underline" onClick={() => openTimeline(r._id)}>
+                  <td className="px-4 py-3.5 text-right font-mono text-sm tabular-nums text-slate-800">{r.retryCount ?? r.retryCountSnapshot ?? 0}</td>
+                  <td className="space-x-3 whitespace-nowrap px-4 py-3.5">
+                    <button type="button" className="text-sm font-semibold text-primary-navy hover:underline" onClick={() => openTimeline(r._id)}>
                       Timeline
                     </button>
                     {isSuper && r.formSubmissionId && (
                       <button
                         type="button"
                         disabled={resendBusy === r._id}
-                        className="text-rose-700 font-semibold hover:underline disabled:opacity-40"
+                        className="text-sm font-semibold text-rose-700 hover:underline disabled:opacity-40"
                         onClick={() => resend(r)}
                       >
                         Resend kind
@@ -648,18 +651,23 @@ export default function WhatsAppOpsMessages() {
         </div>
       </div>
 
-      <div className="flex items-center gap-3 text-sm">
-        <button type="button" disabled={page <= 1 || loading} onClick={() => setPage((p) => Math.max(1, p - 1))} className="px-3 py-1 border rounded-lg disabled:opacity-40">
+      <div className="flex flex-wrap items-center gap-3 text-sm text-slate-700">
+        <button
+          type="button"
+          disabled={page <= 1 || loading}
+          onClick={() => setPage((p) => Math.max(1, p - 1))}
+          className="inline-flex h-9 items-center rounded-lg border border-slate-200 bg-white px-3 font-semibold text-primary-navy shadow-sm hover:bg-slate-50 disabled:opacity-40"
+        >
           Prev
         </button>
-        <span className="text-gray-700">
-          Page {page} &middot; {meta.total} rows
+        <span className="tabular-nums">
+          Page {page} · {meta.total} rows
         </span>
         <button
           type="button"
           disabled={loading || page * 40 >= meta.total}
           onClick={() => setPage((p) => p + 1)}
-          className="px-3 py-1 border rounded-lg disabled:opacity-40"
+          className="inline-flex h-9 items-center rounded-lg border border-slate-200 bg-white px-3 font-semibold text-primary-navy shadow-sm hover:bg-slate-50 disabled:opacity-40"
         >
           Next
         </button>
