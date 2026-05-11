@@ -29,6 +29,13 @@ export function dateInputsToApiRange(fromStr, toStr) {
   return out;
 }
 
+/** `91` + last 10 digits (India mobile) for exports and clipboard. */
+export function formatIndianMobile91(raw) {
+  const d = String(raw ?? '').replace(/\D/g, '');
+  if (d.length < 10) return '';
+  return `91${d.slice(-10)}`;
+}
+
 export function formatDt(isoOrDate) {
   if (!isoOrDate) return '—';
   const d = new Date(isoOrDate);
