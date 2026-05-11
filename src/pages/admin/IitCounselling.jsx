@@ -466,21 +466,31 @@ export default function IitCounselling() {
     return () => { cancelled = true; };
   }, [search]);
 
-  const demoFilteredBaseRows = useMemo(
-    () => submissionAggRows.filter((row) => rowMatchesDemoDateRange(row, demoFromDate, demoToDate)),
-    [submissionAggRows, demoFromDate, demoToDate]
-  );
-
-  const toolbarSlotFilteredRows = useMemo(
-    () => demoFilteredBaseRows.filter((row) => rowMatchesSlotFilter(row, slotFilter)),
-    [demoFilteredBaseRows, slotFilter]
-  );
-
   /** Client-side table mode when demo date and/or slot toolbar filters are active. */
   const heavyClientFilter = Boolean(
     String(demoFromDate || '').trim()
     || String(demoToDate || '').trim()
     || String(slotFilter || '').trim()
+  );
+
+  /** Canonical range for comparisons when only one bound is set or user picks to before from. */
+  const effectiveDemoRange = useMemo(() => {
+    const rawFrom = String(demoFromDate || '').trim();
+    const rawTo = String(demoToDate || '').trim();
+    if (rawFrom && rawTo && rawFrom > rawTo) {
+      return { from: rawTo, to: rawFrom };
+    }
+    return { from: rawFrom, to: rawTo };
+  }, [demoFromDate, demoToDate]);
+
+  const demoFilteredBaseRows = useMemo(
+    () => submissionAggRows.filter((row) => rowMatchesDemoDateRange(row, effectiveDemoRange.from, effectiveDemoRange.to)),
+    [submissionAggRows, effectiveDemoRange.from, effectiveDemoRange.to]
+  );
+
+  const toolbarSlotFilteredRows = useMemo(
+    () => demoFilteredBaseRows.filter((row) => rowMatchesSlotFilter(row, slotFilter)),
+    [demoFilteredBaseRows, slotFilter]
   );
 
   useEffect(() => {
@@ -503,10 +513,12 @@ export default function IitCounselling() {
 
   useEffect(() => {
     if (!heavyClientFilter) return;
-    setLoading(aggLoading);
     if (aggError) setError(aggError);
     else setError('');
-  }, [heavyClientFilter, aggLoading, aggError]);
+  }, [heavyClientFilter, aggError]);
+
+  /** Server-paged path uses `loading`; demo/slot client path uses `aggLoading` only (avoids stuck spinner when demo dates or page change without a new agg request). */
+  const submissionsListLoading = heavyClientFilter ? aggLoading : loading;
 
   useEffect(() => {
     if (!heavyClientFilter || toolbarSlotFilteredRows.length === 0) return;
@@ -1008,13 +1020,14 @@ export default function IitCounselling() {
                       const dateStr = toYYYYMMDDLocal(new Date(viewYear, viewMonth, dayNum));
                       const count = demoCountsByDay.get(dateStr) || 0;
                       const isToday = dateStr === todayStrLocal;
-                      const singleSelected = demoFromDate && demoToDate && demoFromDate === demoToDate && demoFromDate === dateStr;
+                      const { from: rFrom, to: rTo } = effectiveDemoRange;
+                      const singleSelected = rFrom && rTo && rFrom === rTo && rFrom === dateStr;
                       const inRange =
-                        demoFromDate
-                        && demoToDate
-                        && demoFromDate !== demoToDate
-                        && dateStr >= demoFromDate
-                        && dateStr <= demoToDate;
+                        rFrom
+                        && rTo
+                        && rFrom !== rTo
+                        && dateStr >= rFrom
+                        && dateStr <= rTo;
                       let cellClass = 'text-gray-700 hover:bg-white border border-transparent hover:shadow-sm';
                       if (singleSelected) {
                         cellClass = 'bg-linear-to-br from-primary-navy to-[#004080] text-white border-primary-navy shadow-md';
@@ -1200,7 +1213,7 @@ export default function IitCounselling() {
             </tr>
           </thead>
           <tbody className="divide-y divide-gray-100">
-            {loading ? (
+            {submissionsListLoading ? (
               <tr><td colSpan={13} className="px-4 py-14 text-center text-sm font-medium text-gray-500 bg-gray-50/60">Loading submissions…</td></tr>
             ) : pageMappedRows.length === 0 ? (
               <tr><td colSpan={13} className="px-4 py-14 text-center text-sm font-medium text-gray-500 bg-gray-50/50">No submissions match the current filters.</td></tr>
@@ -1429,7 +1442,10 @@ export default function IitCounselling() {
         <div className="flex items-center gap-2">
           <button
             type="button"
-            onClick={() => { setLoading(true); setPage((p) => Math.max(1, p - 1)); }}
+            onClick={() => {
+              if (!heavyClientFilter) setLoading(true);
+              setPage((p) => Math.max(1, p - 1));
+            }}
             disabled={page <= 1}
             className="rounded-xl border border-gray-200 bg-white px-4 py-2 text-sm font-semibold text-gray-700 shadow-sm hover:bg-gray-50 disabled:opacity-40 disabled:pointer-events-none transition-colors"
           >
@@ -1437,7 +1453,10 @@ export default function IitCounselling() {
           </button>
           <button
             type="button"
-            onClick={() => { setLoading(true); setPage((p) => Math.min(submissionPagination.totalPages || 1, p + 1)); }}
+            onClick={() => {
+              if (!heavyClientFilter) setLoading(true);
+              setPage((p) => Math.min(submissionPagination.totalPages || 1, p + 1));
+            }}
             disabled={page >= (submissionPagination.totalPages || 1)}
             className="rounded-xl border border-gray-200 bg-white px-4 py-2 text-sm font-semibold text-gray-700 shadow-sm hover:bg-gray-50 disabled:opacity-40 disabled:pointer-events-none transition-colors"
           >
