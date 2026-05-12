@@ -32,9 +32,11 @@ const TEMPLATE_LABELS = {
 };
 
 function buildUnresolvedCsv(candidates) {
-  const header = 'phone,reason,status,attemptNumber,retryGroupId,errorMessage,createdAt';
+  const header = 'phone,lineageId,maxAttemptAtStart,reason,status,attemptNumber,retryGroupId,errorMessage,createdAt';
   const lines = (candidates || []).map((c) => [
     c.phone || '',
+    c.lineageId ? String(c.lineageId) : '',
+    c.maxAttemptAtStart ?? '',
     c.reason || '',
     c.status || '',
     c.attemptNumber ?? '',
@@ -294,7 +296,7 @@ function ManualRecoveryPanel({ messageKind, from, to, isSuper, onJobComplete }) 
                   {job.startedAt && <span className="text-slate-400">started {formatDt(job.startedAt)}</span>}
                   {job.finishedAt && <span className="text-slate-400">finished {formatDt(job.finishedAt)}</span>}
                 </div>
-                <div className="grid grid-cols-2 gap-2 sm:grid-cols-4">
+                <div className="grid grid-cols-2 gap-2 sm:grid-cols-4 lg:grid-cols-6">
                   <Counter label="Targeted" value={counters.targeted} />
                   <Counter label="Attempted" value={counters.attempted} />
                   <Counter label="API accepted" value={counters.apiAccepted} accent="text-emerald-700" />
@@ -303,6 +305,10 @@ function ManualRecoveryPanel({ messageKind, from, to, isSuper, onJobComplete }) 
                   <Counter label="Skipped recent" value={counters.skippedGlobalRecentSuccess} />
                   <Counter label="Skipped in-flight" value={counters.skippedInFlightDuplicate} />
                   <Counter label="Remaining" value={counters.remaining} accent="text-amber-800" />
+                  <Counter label="Recovered" value={counters.recovered} accent="text-emerald-800" />
+                  <Counter label="Delivered (post)" value={counters.delivered} accent="text-teal-700" />
+                  <Counter label="Excluded (post)" value={counters.excluded} />
+                  <Counter label="Failed (post)" value={counters.failed} accent="text-rose-800" />
                 </div>
                 {job.errorSummary && (
                   <p className="rounded-md border border-rose-200 bg-rose-50 px-2 py-1 text-rose-800">{job.errorSummary}</p>

@@ -34,7 +34,10 @@ export default function WhatsAppOpsRetries() {
       <header className="border-b border-gray-100 pb-4 flex flex-wrap justify-between gap-4">
         <div>
           <h1 className="text-xl font-bold text-gray-900">Retry analytics</h1>
-          <p className="text-sm text-gray-600 mt-1">Exhausted sends, retry volume, and eventual success by prior failure count.</p>
+          <p className="text-sm text-gray-600 mt-1">
+            Exhausted sends, retry volume, and eventual success by prior failure count. For recipient-based recovery
+            efficiency (slot-day IST lineage), use the Overview tab and manual recovery job counters.
+          </p>
         </div>
         <div className="flex gap-2 items-end">
           <input type="date" value={from} onChange={(e) => setRange((r) => ({ ...r, from: e.target.value }))} className="rounded border px-2 py-1 text-sm" />

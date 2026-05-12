@@ -8,7 +8,8 @@ import {
   getWhatsappOpsMeta,
   getWhatsappOpsSummary,
   getWhatsappOpsCalendarMonth,
-  getWhatsappOpsCalendarDay
+  getWhatsappOpsCalendarDay,
+  getLatestWhatsappOpsSnapshot
 } from '../../../utils/whatsappOpsAdminApi';
 import { defaultRangeIsoDates } from './whatsappOpsShared';
 import { useWhatsappOpsHost } from './whatsappOpsHostContext';
@@ -29,6 +30,17 @@ function asNumber(value, fallback = 0) {
 function localIsoDate(d = new Date()) {
   const local = new Date(d.getTime() - d.getTimezoneOffset() * 60000);
   return local.toISOString().slice(0, 10);
+}
+
+function formatPromotionCountdown(iso) {
+  if (!iso) return null;
+  const t = new Date(iso).getTime() - Date.now();
+  if (Number.isNaN(t)) return null;
+  if (t <= 0) return 'Due now';
+  const m = Math.floor(t / 60000);
+  const h = Math.floor(m / 60);
+  if (h > 0) return `${h}h ${m % 60}m`;
+  return `${Math.max(1, m)}m`;
 }
 
 function monthStartLabel(monthIso) {
@@ -77,6 +89,7 @@ export default function WhatsAppOpsOverview() {
   const [payload, setPayload] = useState(null);
   const [monthData, setMonthData] = useState(null);
   const [dayData, setDayData] = useState(null);
+  const [daySnapshotDoc, setDaySnapshotDoc] = useState(null);
 
   const loadSummary = useCallback(async () => {
     setErr(null);
@@ -112,8 +125,21 @@ export default function WhatsAppOpsOverview() {
   }, [monthCursor, selectedKind]);
 
   const loadDay = useCallback(async () => {
-    const res = await getWhatsappOpsCalendarDay({ date: selectedDate, ...(selectedKind ? { messageKind: selectedKind } : {}) });
-    if (res.success) setDayData(res.data?.data ?? res.data);
+    const params = { date: selectedDate, ...(selectedKind ? { messageKind: selectedKind } : {}) };
+    const isPastSlotDay = selectedDate < localIsoDate();
+    const [dayRes, snapRes] = await Promise.all([
+      getWhatsappOpsCalendarDay(params),
+      isPastSlotDay ? getLatestWhatsappOpsSnapshot({ scope: 'day', ...params }) : Promise.resolve({ success: false })
+    ]);
+    if (dayRes.success) setDayData(dayRes.data?.data ?? dayRes.data);
+    else setDayData(null);
+    if (isPastSlotDay && snapRes.success) {
+      const body = snapRes.data;
+      const doc = body?.data != null ? body.data : body;
+      setDaySnapshotDoc(doc && doc.payload ? doc : null);
+    } else {
+      setDaySnapshotDoc(null);
+    }
   }, [selectedDate, selectedKind]);
 
   const loadAll = useCallback(async () => {
@@ -153,31 +179,63 @@ export default function WhatsAppOpsOverview() {
     };
   }, []);
 
+  const dayView = useMemo(() => {
+    if (!dayData) return null;
+    const past = selectedDate < localIsoDate();
+    if (dayData.schemaVersion === 2 && past && daySnapshotDoc?.payload) {
+      return {
+        ...daySnapshotDoc.payload,
+        _meta: { source: 'snapshot', capturedAt: daySnapshotDoc.capturedAt }
+      };
+    }
+    return { ...dayData, _meta: { source: 'live' } };
+  }, [dayData, daySnapshotDoc, selectedDate]);
+
+  const legacyDay = dayView?.legacyAttemptMetrics || {};
+  const isRecipientDay = dayView?.schemaVersion === 2;
+  const rt = dayView?.recipientTotals;
+  const retryFunnelRecipient = dayView?.retryFunnelByAttempt || {};
+  const exclusionBreakdown = dayView?.exclusionBreakdown || {};
+  const retryQueue = dayView?.retryQueue || {};
+
   const byKindChart = useMemo(() => {
-    const src = Array.isArray(dayData?.byKind) ? dayData.byKind : [];
+    const src = Array.isArray(legacyDay.byKind) ? legacyDay.byKind : [];
     return src.map((x) => ({ label: x?.kind || '—', count: asNumber(x?.count) }));
-  }, [dayData]);
+  }, [legacyDay]);
 
   const byStatusChart = useMemo(() => {
-    const src = Array.isArray(dayData?.byStatus) ? dayData.byStatus : [];
+    const src = Array.isArray(legacyDay.byStatus) ? legacyDay.byStatus : [];
     return src.map((x) => ({ label: x?.status || '—', count: asNumber(x?.count) }));
-  }, [dayData]);
+  }, [legacyDay]);
+
+  const failureReasonChart = useMemo(() => {
+    const src = Array.isArray(dayView?.charts?.failureReasons) ? dayView.charts.failureReasons : [];
+    return src.map((x) => ({ label: x?._id || '—', count: asNumber(x?.count) }));
+  }, [dayView]);
 
   const calendarCells = useMemo(() => monthGrid(monthCursor), [monthCursor]);
 
-  /** IST day bucket uses message row `createdAt` (see backend getCalendarDayOverview). */
-  const dailyOverall = dayData?.overall || {};
-  const dailySelected = dayData?.selectedKindMetrics || {};
+  /** Legacy attempt-row bucket (IST createdAt day). Recipient cohort lives in `recipientTotals` when schema v2. */
+  const dailyOverall = legacyDay.overall || {};
+  const dailySelected = legacyDay.selectedKindMetrics || {};
 
-  const monthTrend = useMemo(
-    () => (monthData?.days || []).map((d) => ({
-      date: d.date?.slice(-2),
-      attempts: asNumber(d.attempts),
-      bookings: asNumber(d.bookedSlotsCount),
-      failed: asNumber(d.failed)
-    })),
-    [monthData]
-  );
+  const monthTrend = useMemo(() => {
+    const days = monthData?.days || [];
+    const recList = Array.isArray(monthData?.recipientTrendDays) ? monthData.recipientTrendDays : [];
+    const recByDay = new Map(recList.map((d) => [d._id, d]));
+    return days.map((d) => {
+      const r = recByDay.get(d.date);
+      return {
+        date: d.date?.slice(-2),
+        attempts: asNumber(d.attempts),
+        bookings: asNumber(d.bookedSlotsCount),
+        failed: asNumber(d.failed),
+        recDelivered: asNumber(r?.delivered),
+        recUnresolved: asNumber(r?.unresolved),
+        recPermanent: asNumber(r?.permanentFailed)
+      };
+    });
+  }, [monthData]);
 
   const selectedTemplate = selectedKind
     ? templateKinds.find((k) => k.id === selectedKind) || FALLBACK_TEMPLATE_KINDS.find((k) => k.id === selectedKind)
@@ -193,8 +251,8 @@ export default function WhatsAppOpsOverview() {
     return `/admin/whatsapp-ops/messages?${p.toString()}`;
   }, [selectedDate, selectedKind]);
 
-  const byAttempt = dayData?.byAttempt || {};
-  const retry2Exclusions = dayData?.retry2Exclusions || { totalExcluded: 0, byReason: {} };
+  const byAttempt = legacyDay.byAttempt || {};
+  const retry2Exclusions = legacyDay.retry2Exclusions || { totalExcluded: 0, byReason: {} };
   const retryLifecycle = useMemo(() => {
     const stageBuckets = [1, 2, 3].map((n) => {
       const bucket = byAttempt[n] || byAttempt[String(n)] || {};
@@ -241,13 +299,127 @@ export default function WhatsAppOpsOverview() {
     return { states, activeStage, lifecycleCompleted };
   }, [byAttempt]);
 
+  const recipientRetryLifecycle = useMemo(() => {
+    const stageBuckets = [1, 2, 3].map((n) => {
+      const bucket = retryFunnelRecipient[n] || retryFunnelRecipient[String(n)] || {};
+      const targeted = asNumber(bucket.targetedRecipients);
+      const submitted = asNumber(bucket.accepted);
+      const sent = asNumber(bucket.sent);
+      const delivered = asNumber(bucket.delivered);
+      const read = asNumber(bucket.read);
+      const failed = asNumber(bucket.failed);
+      const inFlight = asNumber(bucket.inFlight);
+      const excluded = asNumber(bucket.excluded);
+      const started = targeted > 0 || submitted > 0 || sent > 0 || delivered > 0 || read > 0 || failed > 0 || inFlight > 0 || excluded > 0;
+      return {
+        stage: n,
+        bucket,
+        targeted,
+        submitted,
+        sent,
+        delivered,
+        read,
+        failed,
+        inFlight,
+        excluded,
+        started,
+        hasInFlight: inFlight > 0
+      };
+    });
+
+    const s1 = stageBuckets[0];
+    const s2 = stageBuckets[1];
+    const s3 = stageBuckets[2];
+    let activeStage = null;
+    if (s1.started && !s2.started && s1.hasInFlight) activeStage = 1;
+    else if (s2.started && !s3.started && s2.hasInFlight) activeStage = 2;
+    else if (s3.started && s3.hasInFlight) activeStage = 3;
+
+    const states = stageBuckets.map((s) => {
+      if (!s.started) return { ...s, state: 'pending' };
+      if (activeStage === s.stage) return { ...s, state: 'active' };
+      return { ...s, state: 'completed' };
+    });
+
+    const lifecycleCompleted =
+      activeStage == null && states.some((s) => s.started) && states.filter((s) => s.started).every((s) => !s.hasInFlight);
+
+    return { states, activeStage, lifecycleCompleted };
+  }, [retryFunnelRecipient]);
+
   const scopeLabel = isAllTemplates ? 'All templates' : (selectedTemplate?.label || 'Selected template');
 
-  const volumeCards = isAllTemplates
-    ? [
+  const volumeCards = useMemo(() => {
+    if (isRecipientDay && rt) {
+      const cohortNote = `IST slot-day cohort • ${selectedDate}`;
+      if (isAllTemplates) {
+        return [
+          {
+            label: 'Recipients (lineage)',
+            value: asNumber(rt.totalRecipients),
+            accent: true,
+            subtitle: `${scopeLabel} · ${cohortNote}`,
+            className: 'border-indigo-100 bg-indigo-50/30'
+          },
+          {
+            label: 'Delivered',
+            value: asNumber(rt.delivered),
+            subtitle: `${scopeLabel} · ever delivered`,
+            className: 'border-emerald-100 bg-emerald-50/30'
+          },
+          {
+            label: 'Read',
+            value: asNumber(rt.read),
+            subtitle: `${scopeLabel} · ever read`,
+            className: 'border-violet-100 bg-violet-50/30'
+          },
+          {
+            label: 'Unresolved',
+            value: asNumber(rt.finalUnresolved),
+            subtitle: `${scopeLabel} · still active / retryable`,
+            className: 'border-amber-100 bg-amber-50/30'
+          },
+          {
+            label: 'Permanent failed',
+            value: asNumber(rt.finalPermanentFailed),
+            subtitle: `${scopeLabel} · exhausted / non-retryable`,
+            className: 'border-rose-100 bg-rose-50/30'
+          }
+        ];
+      }
+      return [
+        {
+          label: 'Recipients',
+          value: asNumber(rt.totalRecipients),
+          accent: true,
+          subtitle: `${scopeLabel} · ${cohortNote}`,
+          className: 'border-indigo-100 bg-indigo-50/30'
+        },
+        {
+          label: 'Delivered',
+          value: asNumber(rt.delivered),
+          subtitle: `${scopeLabel} · ever delivered`,
+          className: 'border-emerald-100 bg-emerald-50/30'
+        },
+        {
+          label: 'Read',
+          value: asNumber(rt.read),
+          subtitle: `${scopeLabel} · ever read`,
+          className: 'border-violet-100 bg-violet-50/30'
+        },
+        {
+          label: 'Unresolved',
+          value: asNumber(rt.finalUnresolved),
+          subtitle: `${scopeLabel} · still active`,
+          className: 'border-amber-100 bg-amber-50/30'
+        }
+      ];
+    }
+    if (isAllTemplates) {
+      return [
         {
           label: 'Slots booked',
-          value: asNumber(dayData?.bookedSlotsCount),
+          value: asNumber(dayView?.bookedSlotsCount),
           accent: true,
           subtitle: `${scopeLabel} • ${selectedDate}`,
           className: 'border-indigo-100 bg-indigo-50/30'
@@ -270,69 +442,120 @@ export default function WhatsAppOpsOverview() {
           subtitle: `${scopeLabel} • failures`,
           className: 'border-rose-100 bg-rose-50/30'
         }
-      ]
-    : [
+      ];
+    }
+    return [
+      {
+        label: `${selectedTemplate?.label || 'Template'} attempts`,
+        value: asNumber(dailySelected.whatsappAttempts),
+        accent: true,
+        subtitle: `${scopeLabel} • attempts`,
+        className: 'border-indigo-100 bg-indigo-50/30'
+      },
+      {
+        label: `${selectedTemplate?.label || 'Template'} failed`,
+        value: asNumber(dailySelected.whatsappFailed),
+        subtitle: `${scopeLabel} • failures`,
+        className: 'border-rose-100 bg-rose-50/30'
+      },
+      {
+        label: `${selectedTemplate?.label || 'Template'} delivered`,
+        value: asNumber(dailySelected.deliveredCount),
+        subtitle: `${scopeLabel} • delivered`,
+        className: 'border-emerald-100 bg-emerald-50/30'
+      },
+      {
+        label: `${selectedTemplate?.label || 'Template'} retries`,
+        value: asNumber(dailySelected.retried),
+        subtitle: `${scopeLabel} • retries`,
+        className: 'border-amber-100 bg-amber-50/30'
+      }
+    ];
+  }, [
+    isRecipientDay,
+    rt,
+    isAllTemplates,
+    selectedDate,
+    scopeLabel,
+    dayView,
+    dailyOverall,
+    dailySelected,
+    selectedTemplate
+  ]);
+
+  const pipelineCards = useMemo(() => {
+    if (isRecipientDay && rt) {
+      const prefix = isAllTemplates ? 'All · ' : `${selectedTemplate?.label || 'Template'} · `;
+      return [
         {
-          label: `${selectedTemplate?.label || 'Template'} attempts`,
-          value: asNumber(dailySelected.whatsappAttempts),
-          accent: true,
-          subtitle: `${scopeLabel} • attempts`,
-          className: 'border-indigo-100 bg-indigo-50/30'
+          label: `${prefix}Accepted (ever)`,
+          value: asNumber(rt.accepted),
+          subtitle: `${scopeLabel} · provider accepted`,
+          className: 'border-blue-100 bg-blue-50/30'
         },
         {
-          label: `${selectedTemplate?.label || 'Template'} failed`,
-          value: asNumber(dailySelected.whatsappFailed),
-          subtitle: `${scopeLabel} • failures`,
-          className: 'border-rose-100 bg-rose-50/30'
-        },
-        {
-          label: `${selectedTemplate?.label || 'Template'} delivered`,
-          value: asNumber(dailySelected.deliveredCount),
-          subtitle: `${scopeLabel} • delivered`,
+          label: `${prefix}Delivered`,
+          value: asNumber(rt.delivered),
+          subtitle: `${scopeLabel} · recipients`,
           className: 'border-emerald-100 bg-emerald-50/30'
         },
         {
-          label: `${selectedTemplate?.label || 'Template'} retries`,
-          value: asNumber(dailySelected.retried),
-          subtitle: `${scopeLabel} • retries`,
+          label: `${prefix}Read`,
+          value: asNumber(rt.read),
+          subtitle: `${scopeLabel} · recipients`,
+          className: 'border-violet-100 bg-violet-50/30'
+        },
+        {
+          label: `${prefix}Unresolved`,
+          value: asNumber(rt.finalUnresolved),
+          subtitle: `${scopeLabel} · in-flight or retryable`,
           className: 'border-amber-100 bg-amber-50/30'
+        },
+        {
+          label: `${prefix}Permanent / exhausted`,
+          value: asNumber(rt.finalPermanentFailed),
+          subtitle: `${scopeLabel} · terminal`,
+          className: 'border-rose-100 bg-rose-50/30'
         }
       ];
-
-  const pipelineSource = isAllTemplates ? dailyOverall : dailySelected;
-  const pipelinePrefix = isAllTemplates ? '' : `${selectedTemplate?.label || 'Template'} `;
-  const pipelineCards = [
-    {
-      label: `${pipelinePrefix}Submitted`,
-      value: asNumber(pipelineSource.providerAcceptedCount),
-      subtitle: isAllTemplates ? `${scopeLabel} • accepted (Gupshup)` : `${scopeLabel} • accepted (Gupshup)`,
-      className: 'border-blue-100 bg-blue-50/30'
-    },
-    {
-      label: `${pipelinePrefix}Sent`,
-      value: asNumber(pipelineSource.sentCount),
-      subtitle: isAllTemplates ? `${scopeLabel} • sent+ (DLR)` : `${scopeLabel} • sent+ (DLR)`,
-      className: 'border-sky-100 bg-sky-50/30'
-    },
-    {
-      label: `${pipelinePrefix}Delivered`,
-      value: asNumber(pipelineSource.deliveredCount),
-      subtitle: isAllTemplates ? `${scopeLabel} • delivered` : `${scopeLabel} • delivered`,
-      className: 'border-emerald-100 bg-emerald-50/30'
-    },
-    {
-      label: `${pipelinePrefix}Read`,
-      value: asNumber(pipelineSource.readCount),
-      subtitle: isAllTemplates ? `${scopeLabel} • read` : `${scopeLabel} • read`,
-      className: 'border-violet-100 bg-violet-50/30'
-    },
-    {
-      label: `${pipelinePrefix}Retried / Exhausted`,
-      value: `${asNumber(pipelineSource.retried)} / ${asNumber(pipelineSource.retryExhausted)}`,
-      subtitle: isAllTemplates ? `${scopeLabel} • reliability` : `${scopeLabel} • reliability`,
-      className: 'border-amber-100 bg-amber-50/30'
     }
-  ];
+    const pipelineSource = isAllTemplates ? dailyOverall : dailySelected;
+    const pipelinePrefix = isAllTemplates ? '' : `${selectedTemplate?.label || 'Template'} `;
+    return [
+      {
+        label: `${pipelinePrefix}Submitted`,
+        value: asNumber(pipelineSource.providerAcceptedCount),
+        subtitle: isAllTemplates ? `${scopeLabel} • accepted (Gupshup)` : `${scopeLabel} • accepted (Gupshup)`,
+        className: 'border-blue-100 bg-blue-50/30'
+      },
+      {
+        label: `${pipelinePrefix}Sent`,
+        value: asNumber(pipelineSource.sentCount),
+        subtitle: isAllTemplates ? `${scopeLabel} • sent+ (DLR)` : `${scopeLabel} • sent+ (DLR)`,
+        className: 'border-sky-100 bg-sky-50/30'
+      },
+      {
+        label: `${pipelinePrefix}Delivered`,
+        value: asNumber(pipelineSource.deliveredCount),
+        subtitle: isAllTemplates ? `${scopeLabel} • delivered` : `${scopeLabel} • delivered`,
+        className: 'border-emerald-100 bg-emerald-50/30'
+      },
+      {
+        label: `${pipelinePrefix}Read`,
+        value: asNumber(pipelineSource.readCount),
+        subtitle: isAllTemplates ? `${scopeLabel} • read` : `${scopeLabel} • read`,
+        className: 'border-violet-100 bg-violet-50/30'
+      },
+      {
+        label: `${pipelinePrefix}Retried / Exhausted`,
+        value: `${asNumber(pipelineSource.retried)} / ${asNumber(pipelineSource.retryExhausted)}`,
+        subtitle: isAllTemplates ? `${scopeLabel} • reliability` : `${scopeLabel} • reliability`,
+        className: 'border-amber-100 bg-amber-50/30'
+      }
+    ];
+  }, [isRecipientDay, rt, isAllTemplates, scopeLabel, dailyOverall, dailySelected, selectedTemplate]);
+
+  const campaignFunnel = isRecipientDay ? recipientRetryLifecycle : retryLifecycle;
 
   return (
     <div className="space-y-6">
@@ -581,14 +804,31 @@ export default function WhatsAppOpsOverview() {
               <h2 className="text-xs font-semibold uppercase tracking-[0.14em] text-primary-navy">
                 Selected day overview ({selectedDate}) {selectedTemplate ? `· ${selectedTemplate.label}` : '· all templates'}
               </h2>
-              <div className="rounded-xl border border-primary-blue-200 bg-primary-blue-50/40 px-4 py-3 text-xs text-primary-navy">
-                Daily drilldown is IST-based and shows exact stored booking + WhatsApp pipeline metrics for the selected date.
+              <div className="rounded-xl border border-primary-blue-200 bg-primary-blue-50/40 px-4 py-3 text-xs text-primary-navy space-y-2">
+                <p>
+                  {isRecipientDay
+                    ? 'Primary metrics use the IST slot-day cohort (FormSubmission.step3Data.slotDate). Legacy attempt-row charts still appear below for raw event debugging.'
+                    : 'Daily drilldown is IST-based and shows exact stored booking + WhatsApp pipeline metrics for the selected date.'}
+                </p>
+                {isRecipientDay && dayView?._meta?.source === 'snapshot' && dayView?._meta?.capturedAt && (
+                  <p className="font-semibold text-slate-800">
+                    Frozen snapshot · captured {new Date(dayView._meta.capturedAt).toLocaleString('en-IN')}
+                  </p>
+                )}
+                {isRecipientDay && dayView?._meta?.source === 'live' && (
+                  <p className="font-semibold text-emerald-800">Live recipient metrics (slot-day cohort)</p>
+                )}
+                {isRecipientDay && asNumber(rt?.cohortFallbackCount) > 0 && (
+                  <p className="text-amber-900">
+                    {asNumber(rt.cohortFallbackCount)} recipient(s) used createdAt fallback for slot day (missing submission link).
+                  </p>
+                )}
               </div>
               <div className="rounded-2xl border border-primary-blue-200 bg-white p-4 shadow-sm">
                 <p className="mb-3 text-[11px] font-semibold uppercase tracking-[0.14em] text-primary-navy">
                   {isAllTemplates ? 'Volume' : 'Selected template volume'}
                 </p>
-                <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-4">
+                <div className={`grid grid-cols-1 sm:grid-cols-2 gap-4 ${volumeCards.length > 4 ? 'xl:grid-cols-5' : 'xl:grid-cols-4'}`}>
                   {volumeCards.map((card) => (
                     <KpiCard
                       key={card.label}
@@ -701,12 +941,21 @@ export default function WhatsAppOpsOverview() {
               <div className="flex flex-wrap items-start justify-between gap-3 border-b border-slate-200 pb-3">
                 <div>
                   <p className="text-xs font-semibold uppercase tracking-[0.14em] text-primary-navy">
-                    Retry lifecycle analytics (IST day · {selectedDate})
+                    {isRecipientDay ? 'Recipient retry funnel (slot-day IST)' : 'Retry lifecycle analytics (IST day)'} · {selectedDate}
                   </p>
                   <p className="text-sm text-slate-600 mt-1">
-                    Progression overview for retry-enabled templates: Attempt 1 → Retry 1 → Retry 2.
+                    {isRecipientDay
+                      ? 'Distinct recipients by lineage (canonicalRetryGroupId || retryGroupId). Per-stage counts use only rows at that attempt number.'
+                      : 'Progression overview for retry-enabled templates: Attempt 1 → Retry 1 → Retry 2.'}
                   </p>
-                  {retryLifecycle.lifecycleCompleted && (
+                  {isRecipientDay && retryQueue?.nextPromotionDueAt && (
+                    <p className="mt-2 text-xs font-semibold text-primary-navy">
+                      Next promotion window:{' '}
+                      {formatPromotionCountdown(retryQueue.nextPromotionDueAt) || '—'} ·{' '}
+                      {new Date(retryQueue.nextPromotionDueAt).toLocaleString('en-IN')}
+                    </p>
+                  )}
+                  {campaignFunnel.lifecycleCompleted && (
                     <div className="mt-2 inline-flex items-center rounded-full border border-emerald-200 bg-emerald-50 px-2.5 py-1 text-xs font-semibold text-emerald-800">
                       Retry lifecycle completed
                     </div>
@@ -730,7 +979,7 @@ export default function WhatsAppOpsOverview() {
               </div>
 
               <div className="grid grid-cols-1 xl:grid-cols-3 gap-4">
-                {retryLifecycle.states.map((stageData) => {
+                {campaignFunnel.states.map((stageData) => {
                   const n = stageData.stage;
                   const targeted = stageData.targeted;
                   const delivered = stageData.delivered;
@@ -803,6 +1052,12 @@ export default function WhatsAppOpsOverview() {
                           <p className="text-slate-500">In-flight</p>
                           <p className="font-semibold text-amber-700">{stageData.inFlight}</p>
                         </div>
+                        {isRecipientDay && (
+                          <div className="rounded-lg bg-white border border-slate-200 px-2 py-1.5 col-span-2">
+                            <p className="text-slate-500">Excluded (rows)</p>
+                            <p className="font-semibold text-slate-800">{asNumber(stageData.excluded)}</p>
+                          </div>
+                        )}
                       </div>
                       <div className="mt-3 flex items-center justify-between border-t border-slate-200 pt-2">
                         <p className="text-xs text-slate-500">Success rate</p>
@@ -819,7 +1074,32 @@ export default function WhatsAppOpsOverview() {
                 })}
               </div>
 
-              {asNumber(retry2Exclusions.totalExcluded) > 0 && (
+              {isRecipientDay && Object.keys(exclusionBreakdown).length > 0 && (
+                <div className="rounded-xl border border-slate-200 bg-slate-50/50 p-4">
+                  <p className="text-xs font-semibold uppercase tracking-[0.14em] text-slate-800">
+                    Exclusion breakdown (event rows, slot-day cohort)
+                  </p>
+                  <p className="mt-1 text-xs text-slate-600">
+                    Total exclusion rows: <span className="font-semibold">{asNumber(rt?.excludedTotal)}</span>
+                  </p>
+                  <div className="mt-3 grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-2 text-xs">
+                    {Object.entries(exclusionBreakdown).map(([reason, count]) => (
+                      <div key={reason} className="rounded-lg border border-slate-200 bg-white px-2.5 py-2">
+                        <p className="font-semibold text-slate-900">{asNumber(count)}</p>
+                        <p className="text-slate-600">{String(reason).replace(/_/g, ' ')}</p>
+                      </div>
+                    ))}
+                  </div>
+                  <Link
+                    to={`/admin/whatsapp-ops/messages?date=${selectedDate}${selectedKind ? `&messageKind=${selectedKind}` : ''}`}
+                    className="mt-3 inline-block text-xs font-semibold text-primary-navy hover:underline"
+                  >
+                    Open messages (filter) →
+                  </Link>
+                </div>
+              )}
+
+              {!isRecipientDay && asNumber(retry2Exclusions.totalExcluded) > 0 && (
                 <div className="rounded-xl border border-amber-200 bg-amber-50/40 p-4">
                   <p className="text-xs font-semibold uppercase tracking-[0.14em] text-amber-900">
                     Retry2 eligibility reconciliation
@@ -840,8 +1120,11 @@ export default function WhatsAppOpsOverview() {
             </section>
           )}
 
-          <div className="grid gap-6 lg:grid-cols-3">
-            <ChartContainer title="Month trend (IST)" subtitle="Bookings vs attempts vs failed by day">
+          <div className="grid gap-6 lg:grid-cols-2 xl:grid-cols-4">
+            <ChartContainer
+              title="Month trend (IST)"
+              subtitle={monthData?.schemaVersion === 2 ? 'Bookings vs attempts + recipient slot-day signals' : 'Bookings vs attempts vs failed by day'}
+            >
               <div style={{ width: '100%', height: 300 }}>
                 <ResponsiveContainer>
                   <LineChart data={monthTrend} margin={{ top: 12, left: 0, right: 16, bottom: 0 }}>
@@ -853,12 +1136,19 @@ export default function WhatsAppOpsOverview() {
                     <Line type="monotone" dataKey="bookings" stroke="#4d8ec7" strokeWidth={2} dot={false} />
                     <Line type="monotone" dataKey="attempts" stroke="#003366" strokeWidth={2} dot={false} />
                     <Line type="monotone" dataKey="failed" stroke="#dc2626" strokeWidth={2} dot={false} />
+                    {monthData?.schemaVersion === 2 && (
+                      <>
+                        <Line type="monotone" dataKey="recDelivered" name="Recipients delivered" stroke="#059669" strokeWidth={2} dot={false} />
+                        <Line type="monotone" dataKey="recUnresolved" name="Recipients unresolved" stroke="#d97706" strokeWidth={2} dot={false} />
+                        <Line type="monotone" dataKey="recPermanent" name="Recipients permanent" stroke="#b91c1c" strokeWidth={2} dot={false} />
+                      </>
+                    )}
                   </LineChart>
                 </ResponsiveContainer>
               </div>
             </ChartContainer>
 
-            <ChartContainer title="Day status composition" subtitle={`Message statuses on ${selectedDate}`}>
+            <ChartContainer title="Day status composition" subtitle={`Message events (legacy) on ${selectedDate}`}>
               <div style={{ width: '100%', height: 300 }}>
                 <ResponsiveContainer>
                   <BarChart data={byStatusChart} margin={{ top: 12, left: 0, right: 16, bottom: 0 }}>
@@ -881,6 +1171,23 @@ export default function WhatsAppOpsOverview() {
                     <YAxis tick={{ fill: '#64748b', fontSize: 11 }} axisLine={false} tickLine={false} />
                     <Tooltip formatter={(value) => [value, 'events']} />
                     <Bar dataKey="count" fill="#4d8ec7" radius={[5, 5, 0, 0]} />
+                  </BarChart>
+                </ResponsiveContainer>
+              </div>
+            </ChartContainer>
+
+            <ChartContainer
+              title={isRecipientDay ? 'Failure reason buckets' : 'Failure reasons (day range)'}
+              subtitle={isRecipientDay ? 'Terminal failures in cohort day window' : 'Same taxonomy when recipient day view active'}
+            >
+              <div style={{ width: '100%', height: 300 }}>
+                <ResponsiveContainer>
+                  <BarChart data={failureReasonChart} margin={{ top: 12, left: 0, right: 16, bottom: 0 }}>
+                    <CartesianGrid strokeDasharray="2 4" stroke="#dbe7f3" />
+                    <XAxis dataKey="label" tick={{ fill: '#64748b', fontSize: 11 }} axisLine={false} tickLine={false} />
+                    <YAxis tick={{ fill: '#64748b', fontSize: 11 }} axisLine={false} tickLine={false} />
+                    <Tooltip formatter={(value) => [value, 'events']} />
+                    <Bar dataKey="count" fill="#7c3aed" radius={[5, 5, 0, 0]} />
                   </BarChart>
                 </ResponsiveContainer>
               </div>

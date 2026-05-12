@@ -17,7 +17,17 @@ export async function whatsappOpsRequest(path, options = {}, token = getStoredTo
   if (!isForm) headers['Content-Type'] = 'application/json; charset=utf-8';
   if (token) headers.Authorization = `Bearer ${token}`;
 
-  const res = await fetch(url, { ...options, headers });
+  let res;
+  try {
+    res = await fetch(url, { ...options, headers });
+  } catch (err) {
+    const isFetchFailure =
+      err?.name === 'TypeError' && String(err?.message || '').includes('fetch');
+    const message = isFetchFailure
+      ? 'Cannot reach the API. Start the backend and align VITE_PROXY_TARGET with its port, or check the network.'
+      : err?.message || 'Network error';
+    return { success: false, message, status: 0, data: {} };
+  }
   const data = await parseJsonSafe(res);
   if (!res.ok) {
     if (res.status === 401) notifyAdminUnauthorized({ endpoint: path, status: 401 });

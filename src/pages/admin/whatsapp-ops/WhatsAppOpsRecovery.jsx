@@ -70,6 +70,8 @@ const EXCLUSION_CATEGORY_LABELS = {
   duplicate_protected: 'Duplicate protected',
   manually_disabled: 'Manually disabled',
   already_resolved: 'Already resolved',
+  in_flight_timeout: 'In-flight timeout (promotion)',
+  promotion_superseded: 'Superseded by retry',
   unresolved_other: 'Other'
 };
 
@@ -81,6 +83,8 @@ const EXCLUSION_CATEGORY_COLORS = {
   duplicate_protected: 'border-violet-200 bg-violet-50 text-violet-800',
   manually_disabled: 'border-slate-300 bg-slate-50 text-slate-700',
   already_resolved: 'border-emerald-200 bg-emerald-50 text-emerald-800',
+  in_flight_timeout: 'border-orange-200 bg-orange-50 text-orange-900',
+  promotion_superseded: 'border-slate-200 bg-slate-50 text-slate-700',
   unresolved_other: 'border-slate-200 bg-slate-50 text-slate-700'
 };
 
@@ -454,7 +458,10 @@ function RecoveryBatchHero({ job, isSuper, onCancel, onDismiss, dismissed }) {
     ? job.progressPercent
     : (targeted ? Math.min(100, Math.round((completedSteps / targeted) * 100)) : 0);
   const recovered = counters.recovered || 0;
-  const recoveryRate = targeted ? Math.round((recovered / targeted) * 1000) / 10 : 0;
+  const recoveryRate =
+    typeof counters.recoveryRatePct === 'number' && Number.isFinite(counters.recoveryRatePct)
+      ? counters.recoveryRatePct
+      : (targeted ? Math.round((recovered / targeted) * 1000) / 10 : 0);
 
   const startedAt = job.startedAt ? new Date(job.startedAt).getTime() : null;
   const finishedAt = job.finishedAt ? new Date(job.finishedAt).getTime() : null;
@@ -572,10 +579,13 @@ function RecoveryBatchHero({ job, isSuper, onCancel, onDismiss, dismissed }) {
           </div>
           <div>
             <p className="text-xs font-semibold uppercase tracking-wide text-slate-500">Outcomes</p>
-            <div className="mt-2 grid grid-cols-2 gap-3 sm:grid-cols-3">
+            <div className="mt-2 grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-6">
               <KpiTile label="Recovered" value={recovered} icon={FiCheckCircle} accent="text-emerald-700" />
+              <KpiTile label="Delivered (post)" value={counters.delivered || 0} icon={FiCheckCircle} accent="text-teal-700" />
+              <KpiTile label="Excluded (post)" value={counters.excluded || 0} icon={FiSlash} accent="text-slate-700" />
               <KpiTile label="Failed" value={counters.sendFailed || 0} icon={FiAlertTriangle} accent="text-rose-700" />
               <KpiTile label="In-flight" value={counters.inFlight || 0} icon={FiClock} accent="text-amber-700" />
+              <KpiTile label="Failed (post)" value={counters.failed || 0} icon={FiAlertOctagon} accent="text-rose-800" />
             </div>
           </div>
         </div>
