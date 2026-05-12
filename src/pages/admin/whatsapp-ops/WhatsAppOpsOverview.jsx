@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { Link } from 'react-router-dom';
 import KpiCard from '../../../components/Admin/KpiCard';
 import ChartContainer from '../../../components/Admin/ChartContainer';
@@ -11,7 +11,7 @@ import {
   getWhatsappOpsCalendarDay,
   getLatestWhatsappOpsSnapshot
 } from '../../../utils/whatsappOpsAdminApi';
-import { defaultRangeIsoDates } from './whatsappOpsShared';
+import { defaultRangeIsoDates, istCalendarIsoToday } from './whatsappOpsShared';
 import { useWhatsappOpsHost } from './whatsappOpsHostContext';
 
 const POLL_KEY = 'guidexpert_whatsapp_ops_poll';
@@ -71,12 +71,26 @@ const RETRY_STAGE_META = {
   3: { title: 'Retry 2', subtitle: 'Final recovery wave' }
 };
 
+/** Must match backend `ALLOWED_SLOT_TIME_SUFFIXES` + `all`. */
+const SLOT_TIME_OPTIONS = [
+  { id: 'all', label: 'All slot times' },
+  { id: '11AM', label: '11 AM' },
+  { id: '3PM', label: '3 PM' },
+  { id: '6PM', label: '6 PM' },
+  { id: '7PM', label: '7 PM' }
+];
+
+function slotTimeFilterLabel(id) {
+  return SLOT_TIME_OPTIONS.find((o) => o.id === id)?.label || id;
+}
+
 export default function WhatsAppOpsOverview() {
   const { notifyWhatsappOpsApi404, clearWhatsappOpsApi404 } = useWhatsappOpsHost();
   const [{ from, to }, setRange] = useState(defaultRangeIsoDates);
   const [selectedDate, setSelectedDate] = useState(() => localIsoDate());
   const [monthCursor, setMonthCursor] = useState(() => localIsoDate().slice(0, 7));
   const [selectedKind, setSelectedKind] = useState(null);
+  const [selectedSlotTime, setSelectedSlotTime] = useState('all');
   const [calendarMode, setCalendarMode] = useState('day');
   const [templateKinds, setTemplateKinds] = useState(FALLBACK_TEMPLATE_KINDS);
   const [live, setLive] = useState(
@@ -91,11 +105,17 @@ export default function WhatsAppOpsOverview() {
   const [dayData, setDayData] = useState(null);
   const [daySnapshotDoc, setDaySnapshotDoc] = useState(null);
 
+  const summaryLoadGen = useRef(0);
+  const monthLoadGen = useRef(0);
+  const dayLoadGen = useRef(0);
+
   const loadSummary = useCallback(async () => {
+    const gen = ++summaryLoadGen.current;
     setErr(null);
     setErrDetail('');
     setLoading(true);
     const res = await getWhatsappOpsSummary({ from, to, ...(selectedKind ? { messageKind: selectedKind } : {}) });
+    if (gen !== summaryLoadGen.current) return;
     setLoading(false);
     setLastSync(new Date());
     if (!res.success) {
@@ -120,17 +140,25 @@ export default function WhatsAppOpsOverview() {
   }, [from, to, selectedKind, notifyWhatsappOpsApi404, clearWhatsappOpsApi404]);
 
   const loadMonth = useCallback(async () => {
+    const gen = ++monthLoadGen.current;
     const res = await getWhatsappOpsCalendarMonth({ month: monthCursor, ...(selectedKind ? { messageKind: selectedKind } : {}) });
+    if (gen !== monthLoadGen.current) return;
     if (res.success) setMonthData(res.data?.data ?? res.data);
   }, [monthCursor, selectedKind]);
 
   const loadDay = useCallback(async () => {
-    const params = { date: selectedDate, ...(selectedKind ? { messageKind: selectedKind } : {}) };
-    const isPastSlotDay = selectedDate < localIsoDate();
+    const gen = ++dayLoadGen.current;
+    const params = {
+      date: selectedDate,
+      slotTime: selectedSlotTime,
+      ...(selectedKind ? { messageKind: selectedKind } : {})
+    };
+    const isPastSlotDay = selectedDate < istCalendarIsoToday();
     const [dayRes, snapRes] = await Promise.all([
       getWhatsappOpsCalendarDay(params),
       isPastSlotDay ? getLatestWhatsappOpsSnapshot({ scope: 'day', ...params }) : Promise.resolve({ success: false })
     ]);
+    if (gen !== dayLoadGen.current) return;
     if (dayRes.success) setDayData(dayRes.data?.data ?? dayRes.data);
     else setDayData(null);
     if (isPastSlotDay && snapRes.success) {
@@ -140,7 +168,7 @@ export default function WhatsAppOpsOverview() {
     } else {
       setDaySnapshotDoc(null);
     }
-  }, [selectedDate, selectedKind]);
+  }, [selectedDate, selectedKind, selectedSlotTime]);
 
   const loadAll = useCallback(async () => {
     await Promise.all([loadSummary(), loadMonth(), loadDay()]);
@@ -181,15 +209,27 @@ export default function WhatsAppOpsOverview() {
 
   const dayView = useMemo(() => {
     if (!dayData) return null;
-    const past = selectedDate < localIsoDate();
-    if (dayData.schemaVersion === 2 && past && daySnapshotDoc?.payload) {
+    const past = selectedDate < istCalendarIsoToday();
+    const snapshotKind = daySnapshotDoc?.messageKind || null;
+    const selectedKindNorm = selectedKind || null;
+    const snapshotSlotTime =
+      daySnapshotDoc?.range?.slotTime ??
+      daySnapshotDoc?.payload?.filter?.slotTime ??
+      daySnapshotDoc?.filter?.slotTime ??
+      'all';
+    const snapshotMatchesSelection =
+      Boolean(daySnapshotDoc?.payload) &&
+      daySnapshotDoc.range?.dateIso === selectedDate &&
+      snapshotKind === selectedKindNorm &&
+      String(snapshotSlotTime || 'all') === String(selectedSlotTime || 'all');
+    if (dayData.schemaVersion === 2 && past && snapshotMatchesSelection) {
       return {
         ...daySnapshotDoc.payload,
         _meta: { source: 'snapshot', capturedAt: daySnapshotDoc.capturedAt }
       };
     }
     return { ...dayData, _meta: { source: 'live' } };
-  }, [dayData, daySnapshotDoc, selectedDate]);
+  }, [dayData, daySnapshotDoc, selectedDate, selectedKind, selectedSlotTime]);
 
   const legacyDay = dayView?.legacyAttemptMetrics || {};
   const isRecipientDay = dayView?.schemaVersion === 2;
@@ -350,39 +390,58 @@ export default function WhatsAppOpsOverview() {
   const scopeLabel = isAllTemplates ? 'All templates' : (selectedTemplate?.label || 'Selected template');
 
   const volumeCards = useMemo(() => {
+    const filt = dayView?.filter || {};
+    const slotPart =
+      filt.slotTime && filt.slotTime !== 'all'
+        ? ` · ${slotTimeFilterLabel(filt.slotTime)} booking cohort`
+        : ' · all slot times on this IST date';
+    const cohortDate = `IST ${selectedDate}${slotPart}`;
+    const cohortScope = cohortDate;
+
     if (isRecipientDay && rt) {
-      const cohortNote = `IST slot-day cohort • ${selectedDate}`;
       if (isAllTemplates) {
         return [
           {
-            label: 'Recipients (lineage)',
-            value: asNumber(rt.totalRecipients),
+            label: 'Booked (cohort)',
+            value: asNumber(dayView?.bookedSlotsCount),
             accent: true,
-            subtitle: `${scopeLabel} · ${cohortNote}`,
+            subtitle: `FormSubmission · registered · ${cohortDate}`,
+            className: 'border-slate-100 bg-slate-50/30'
+          },
+          {
+            label: 'Booked · no WA row yet',
+            value: asNumber(rt.bookedWithoutAnyWaEvent),
+            subtitle: 'No WhatsAppMessageEvent linked to this submission yet',
+            className: 'border-gray-100 bg-gray-50/40'
+          },
+          {
+            label: 'People (≥1 WA row)',
+            value: asNumber(rt.totalRecipients),
+            subtitle: `${scopeLabel} · unique phone · rolled up across template kinds · ${cohortDate}`,
             className: 'border-indigo-100 bg-indigo-50/30'
           },
           {
             label: 'Delivered',
             value: asNumber(rt.delivered),
-            subtitle: `${scopeLabel} · ever delivered`,
+            subtitle: `${scopeLabel} · reached delivered+ on any kind · ${cohortScope}`,
             className: 'border-emerald-100 bg-emerald-50/30'
           },
           {
             label: 'Read',
             value: asNumber(rt.read),
-            subtitle: `${scopeLabel} · ever read`,
+            subtitle: `${scopeLabel} · reached read on any kind · ${cohortScope}`,
             className: 'border-violet-100 bg-violet-50/30'
           },
           {
             label: 'Unresolved',
             value: asNumber(rt.finalUnresolved),
-            subtitle: `${scopeLabel} · still active / retryable`,
+            subtitle: `${scopeLabel} · in-flight or retryable · ${cohortScope}`,
             className: 'border-amber-100 bg-amber-50/30'
           },
           {
             label: 'Permanent failed',
             value: asNumber(rt.finalPermanentFailed),
-            subtitle: `${scopeLabel} · exhausted / non-retryable`,
+            subtitle: `${scopeLabel} · exhausted or non-retryable terminal · ${cohortScope}`,
             className: 'border-rose-100 bg-rose-50/30'
           }
         ];
@@ -392,25 +451,25 @@ export default function WhatsAppOpsOverview() {
           label: 'Recipients',
           value: asNumber(rt.totalRecipients),
           accent: true,
-          subtitle: `${scopeLabel} · ${cohortNote}`,
+          subtitle: `${scopeLabel} · per lineage + phone + template · ${cohortDate}`,
           className: 'border-indigo-100 bg-indigo-50/30'
         },
         {
           label: 'Delivered',
           value: asNumber(rt.delivered),
-          subtitle: `${scopeLabel} · ever delivered`,
+          subtitle: `${scopeLabel} · reached delivered+ at least once · ${cohortScope}`,
           className: 'border-emerald-100 bg-emerald-50/30'
         },
         {
           label: 'Read',
           value: asNumber(rt.read),
-          subtitle: `${scopeLabel} · ever read`,
+          subtitle: `${scopeLabel} · reached read at least once · ${cohortScope}`,
           className: 'border-violet-100 bg-violet-50/30'
         },
         {
           label: 'Unresolved',
           value: asNumber(rt.finalUnresolved),
-          subtitle: `${scopeLabel} · still active`,
+          subtitle: `${scopeLabel} · still active · ${cohortScope}`,
           className: 'border-amber-100 bg-amber-50/30'
         }
       ];
@@ -484,37 +543,78 @@ export default function WhatsAppOpsOverview() {
   ]);
 
   const pipelineCards = useMemo(() => {
+    const filt = dayView?.filter || {};
+    const slotPart =
+      filt.slotTime && filt.slotTime !== 'all'
+        ? ` · ${slotTimeFilterLabel(filt.slotTime)} booking cohort`
+        : ' · all slot times on this IST date';
+    const cohortScope = `IST ${selectedDate}${slotPart}`;
+
     if (isRecipientDay && rt) {
       const prefix = isAllTemplates ? 'All · ' : `${selectedTemplate?.label || 'Template'} · `;
+      if (isAllTemplates) {
+        return [
+          {
+            label: `${prefix}Accepted (any kind)`,
+            value: asNumber(rt.accepted),
+            subtitle: `${scopeLabel} · provider accepted · rolled up per phone · ${cohortScope}`,
+            className: 'border-blue-100 bg-blue-50/30'
+          },
+          {
+            label: `${prefix}Delivered`,
+            value: asNumber(rt.delivered),
+            subtitle: `${scopeLabel} · delivered+ on at least one kind · ${cohortScope}`,
+            className: 'border-emerald-100 bg-emerald-50/30'
+          },
+          {
+            label: `${prefix}Read`,
+            value: asNumber(rt.read),
+            subtitle: `${scopeLabel} · read on at least one kind · ${cohortScope}`,
+            className: 'border-violet-100 bg-violet-50/30'
+          },
+          {
+            label: `${prefix}Unresolved`,
+            value: asNumber(rt.finalUnresolved),
+            subtitle: `${scopeLabel} · in-flight or retryable · ${cohortScope}`,
+            className: 'border-amber-100 bg-amber-50/30'
+          },
+          {
+            label: `${prefix}Permanent / exhausted`,
+            value: asNumber(rt.finalPermanentFailed),
+            subtitle: `${scopeLabel} · terminal · ${cohortScope}`,
+            className: 'border-rose-100 bg-rose-50/30'
+          }
+        ];
+      }
       return [
         {
-          label: `${prefix}Accepted (ever)`,
+          label: `${prefix}Accepted`,
           value: asNumber(rt.accepted),
-          subtitle: `${scopeLabel} · provider accepted`,
+          subtitle: `${scopeLabel} · provider accepted · ${cohortScope}`,
           className: 'border-blue-100 bg-blue-50/30'
         },
         {
           label: `${prefix}Delivered`,
           value: asNumber(rt.delivered),
-          subtitle: `${scopeLabel} · recipients`,
+          subtitle: `${scopeLabel} · delivered+ · ${cohortScope}`,
           className: 'border-emerald-100 bg-emerald-50/30'
         },
         {
           label: `${prefix}Read`,
           value: asNumber(rt.read),
-          subtitle: `${scopeLabel} · recipients`,
+          subtitle: `${scopeLabel} · read · ${cohortScope}`,
           className: 'border-violet-100 bg-violet-50/30'
         },
         {
           label: `${prefix}Unresolved`,
           value: asNumber(rt.finalUnresolved),
-          subtitle: `${scopeLabel} · in-flight or retryable`,
+          subtitle: `${scopeLabel} · in-flight or retryable · ${cohortScope}`,
           className: 'border-amber-100 bg-amber-50/30'
         },
         {
           label: `${prefix}Permanent / exhausted`,
           value: asNumber(rt.finalPermanentFailed),
-          subtitle: `${scopeLabel} · terminal`,
+          subtitle: `${scopeLabel} · terminal · ${cohortScope}`,
           className: 'border-rose-100 bg-rose-50/30'
         }
       ];
@@ -553,7 +653,7 @@ export default function WhatsAppOpsOverview() {
         className: 'border-amber-100 bg-amber-50/30'
       }
     ];
-  }, [isRecipientDay, rt, isAllTemplates, scopeLabel, dailyOverall, dailySelected, selectedTemplate]);
+  }, [isRecipientDay, rt, isAllTemplates, scopeLabel, selectedDate, dayView, dailyOverall, dailySelected, selectedTemplate]);
 
   const campaignFunnel = isRecipientDay ? recipientRetryLifecycle : retryLifecycle;
 
@@ -599,6 +699,20 @@ export default function WhatsAppOpsOverview() {
                 }}
                 className="mt-1 block rounded-lg border border-gray-200 bg-white px-2 py-1.5 text-sm shadow-sm transition focus:border-primary-blue-400 focus:outline-none focus:ring-2 focus:ring-primary-blue-100"
               />
+            </label>
+            <label className="text-xs font-medium text-gray-600">
+              Slot time (booking cohort)
+              <select
+                value={selectedSlotTime}
+                onChange={(e) => setSelectedSlotTime(e.target.value)}
+                className="mt-1 block rounded-lg border border-gray-200 bg-white px-2 py-1.5 text-sm shadow-sm transition focus:border-primary-blue-400 focus:outline-none focus:ring-2 focus:ring-primary-blue-100 min-w-[140px]"
+              >
+                {SLOT_TIME_OPTIONS.map((o) => (
+                  <option key={o.id} value={o.id}>
+                    {o.label}
+                  </option>
+                ))}
+              </select>
             </label>
             <label className="flex items-center gap-2 text-xs text-gray-600 cursor-pointer mt-6">
               <input
@@ -658,6 +772,7 @@ export default function WhatsAppOpsOverview() {
               onClick={() => {
                 const today = localIsoDate();
                 setSelectedKind(null);
+                setSelectedSlotTime('all');
                 setSelectedDate(today);
                 setMonthCursor(today.slice(0, 7));
                 setRange(defaultRangeIsoDates());
@@ -802,12 +917,13 @@ export default function WhatsAppOpsOverview() {
 
             <div className="lg:col-span-2 space-y-4">
               <h2 className="text-xs font-semibold uppercase tracking-[0.14em] text-primary-navy">
-                Selected day overview ({selectedDate}) {selectedTemplate ? `· ${selectedTemplate.label}` : '· all templates'}
+                Selected day overview ({selectedDate}) · {slotTimeFilterLabel(selectedSlotTime)}{' '}
+                {selectedTemplate ? `· ${selectedTemplate.label}` : '· all templates'}
               </h2>
               <div className="rounded-xl border border-primary-blue-200 bg-primary-blue-50/40 px-4 py-3 text-xs text-primary-navy space-y-2">
                 <p>
                   {isRecipientDay
-                    ? 'Primary metrics use the IST slot-day cohort (FormSubmission.step3Data.slotDate). Legacy attempt-row charts still appear below for raw event debugging.'
+                    ? 'Primary metrics use registered FormSubmission bookings for the selected IST date and slot-time filter. WhatsApp rows are restricted to those submissions; all-templates view rolls up by unique phone across template kinds. Legacy attempt-row charts below still use message createdAt for that IST day (debugging).'
                     : 'Daily drilldown is IST-based and shows exact stored booking + WhatsApp pipeline metrics for the selected date.'}
                 </p>
                 {isRecipientDay && dayView?._meta?.source === 'snapshot' && dayView?._meta?.capturedAt && (
@@ -828,7 +944,11 @@ export default function WhatsAppOpsOverview() {
                 <p className="mb-3 text-[11px] font-semibold uppercase tracking-[0.14em] text-primary-navy">
                   {isAllTemplates ? 'Volume' : 'Selected template volume'}
                 </p>
-                <div className={`grid grid-cols-1 sm:grid-cols-2 gap-4 ${volumeCards.length > 4 ? 'xl:grid-cols-5' : 'xl:grid-cols-4'}`}>
+                <div
+                  className={`grid grid-cols-1 sm:grid-cols-2 gap-4 ${
+                    volumeCards.length > 6 ? 'xl:grid-cols-7' : volumeCards.length > 4 ? 'xl:grid-cols-5' : 'xl:grid-cols-4'
+                  }`}
+                >
                   {volumeCards.map((card) => (
                     <KpiCard
                       key={card.label}

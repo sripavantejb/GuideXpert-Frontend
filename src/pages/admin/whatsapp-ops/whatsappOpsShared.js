@@ -1,3 +1,13 @@
+/** Calendar YYYY-MM-DD in Asia/Kolkata (matches recipient slot-day cohort semantics). */
+export function istCalendarIsoToday(d = new Date()) {
+  return new Intl.DateTimeFormat('en-CA', {
+    timeZone: 'Asia/Kolkata',
+    year: 'numeric',
+    month: '2-digit',
+    day: '2-digit'
+  }).format(d);
+}
+
 export function defaultRangeIsoDates() {
   const to = new Date();
   const from = new Date(to.getTime() - 14 * 86400000);
