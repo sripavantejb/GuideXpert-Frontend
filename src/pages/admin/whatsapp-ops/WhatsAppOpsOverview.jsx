@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import { Link } from 'react-router-dom';
+import { Link, useSearchParams } from 'react-router-dom';
 import KpiCard from '../../../components/Admin/KpiCard';
 import ChartContainer from '../../../components/Admin/ChartContainer';
 import { ResponsiveContainer, BarChart, Bar, XAxis, YAxis, Tooltip, CartesianGrid, Legend, LineChart, Line } from 'recharts';
@@ -28,6 +28,18 @@ function asNumber(value, fallback = 0) {
 }
 
 const ISO_DATE_RE = /^\d{4}-\d{2}-\d{2}$/;
+const OPS_PRODUCT_GUIDEXPERT = 'guidexpert';
+const OPS_PRODUCT_IIT = 'iit_counselling';
+
+/** @param {URLSearchParams} searchParams */
+function parseOpsProductFromSearch(searchParams) {
+  const raw = (searchParams.get('opsProduct') || searchParams.get('tenant') || '')
+    .trim()
+    .toLowerCase()
+    .replace(/-/g, '_');
+  if (raw === 'iit_counselling' || raw === 'iitcounselling') return OPS_PRODUCT_IIT;
+  return OPS_PRODUCT_GUIDEXPERT;
+}
 
 /** Inclusive list of YYYY-MM months between two ISO dates (by string order). */
 function distinctMonthsBetweenIsoDates(fromIso, toIso) {
@@ -162,6 +174,25 @@ function slotTimeFilterLabel(id) {
 
 export default function WhatsAppOpsOverview() {
   const { notifyWhatsappOpsApi404, clearWhatsappOpsApi404 } = useWhatsappOpsHost();
+  const [searchParams, setSearchParams] = useSearchParams();
+  const opsProduct = parseOpsProductFromSearch(searchParams);
+  const isIitProduct = opsProduct === OPS_PRODUCT_IIT;
+
+  const persistOpsProductToUrl = useCallback(
+    (next) => {
+      const sp = new URLSearchParams(searchParams.toString());
+      if (next === OPS_PRODUCT_GUIDEXPERT) {
+        sp.delete('opsProduct');
+        sp.delete('tenant');
+      } else {
+        sp.set('opsProduct', OPS_PRODUCT_IIT);
+        sp.delete('tenant');
+      }
+      setSearchParams(sp, { replace: true });
+    },
+    [searchParams, setSearchParams]
+  );
+
   const [{ from, to }, setRange] = useState(defaultRangeIsoDates);
   const [selectedDate, setSelectedDate] = useState(() => istCalendarIsoToday());
   const [monthCursor, setMonthCursor] = useState(() => istCalendarIsoToday().slice(0, 7));
@@ -191,7 +222,12 @@ export default function WhatsAppOpsOverview() {
     setErr(null);
     setErrDetail('');
     setLoading(true);
-    const res = await getWhatsappOpsSummary({ from, to, ...(selectedKind ? { messageKind: selectedKind } : {}) });
+    const res = await getWhatsappOpsSummary({
+      from,
+      to,
+      opsProduct,
+      ...(selectedKind ? { messageKind: selectedKind } : {})
+    });
     if (gen !== summaryLoadGen.current) return;
     setLoading(false);
     setLastSync(new Date());
@@ -214,7 +250,7 @@ export default function WhatsAppOpsOverview() {
     }
     clearWhatsappOpsApi404();
     setPayload(res.data?.data ?? res.data);
-  }, [from, to, selectedKind, notifyWhatsappOpsApi404, clearWhatsappOpsApi404]);
+  }, [from, to, selectedKind, opsProduct, notifyWhatsappOpsApi404, clearWhatsappOpsApi404]);
 
   const loadMonth = useCallback(async () => {
     const gen = ++monthLoadGen.current;
@@ -224,7 +260,11 @@ export default function WhatsAppOpsOverview() {
     const months = union.slice(0, 24);
     const results = await Promise.all(
       months.map((m) =>
-        getWhatsappOpsCalendarMonth({ month: m, ...(selectedKind ? { messageKind: selectedKind } : {}) })
+        getWhatsappOpsCalendarMonth({
+          month: m,
+          opsProduct,
+          ...(selectedKind ? { messageKind: selectedKind } : {})
+        })
       )
     );
     if (gen !== monthLoadGen.current) return;
@@ -234,13 +274,14 @@ export default function WhatsAppOpsOverview() {
       return;
     }
     setMonthData(mergeWhatsappMonthPayloads(okParts));
-  }, [from, to, monthCursor, selectedKind]);
+  }, [from, to, monthCursor, selectedKind, opsProduct]);
 
   const loadDay = useCallback(async () => {
     const gen = ++dayLoadGen.current;
     const params = {
       date: selectedDate,
       slotTime: selectedSlotTime,
+      opsProduct,
       ...(selectedKind ? { messageKind: selectedKind } : {}),
       ...(waDiagnostics ? { debug: '1' } : {})
     };
@@ -259,7 +300,7 @@ export default function WhatsAppOpsOverview() {
     } else {
       setDaySnapshotDoc(null);
     }
-  }, [selectedDate, selectedKind, selectedSlotTime, waDiagnostics]);
+  }, [selectedDate, selectedKind, selectedSlotTime, waDiagnostics, opsProduct]);
 
   const loadAll = useCallback(async () => {
     await Promise.all([loadSummary(), loadMonth(), loadDay()]);
@@ -277,6 +318,12 @@ export default function WhatsAppOpsOverview() {
       return d;
     });
   }, [from, to]);
+
+  useEffect(() => {
+    if (isIitProduct && selectedKind !== 'slot_booked') {
+      setSelectedKind('slot_booked');
+    }
+  }, [isIitProduct, selectedKind]);
 
   useEffect(() => {
     if (!live) return undefined;
@@ -317,11 +364,16 @@ export default function WhatsAppOpsOverview() {
       daySnapshotDoc?.payload?.filter?.slotTime ??
       daySnapshotDoc?.filter?.slotTime ??
       'all';
+    const snapshotOps =
+      daySnapshotDoc?.payload?.filter?.opsProduct ??
+      daySnapshotDoc?.filter?.opsProduct ??
+      OPS_PRODUCT_GUIDEXPERT;
     const snapshotMatchesSelection =
       Boolean(daySnapshotDoc?.payload) &&
       daySnapshotDoc.range?.dateIso === selectedDate &&
       snapshotKind === selectedKindNorm &&
-      String(snapshotSlotTime || 'all') === String(selectedSlotTime || 'all');
+      String(snapshotSlotTime || 'all') === String(selectedSlotTime || 'all') &&
+      snapshotOps === opsProduct;
     if (dayData.schemaVersion === 2 && past && snapshotMatchesSelection) {
       return {
         ...daySnapshotDoc.payload,
@@ -329,7 +381,7 @@ export default function WhatsAppOpsOverview() {
       };
     }
     return { ...dayData, _meta: { source: 'live' } };
-  }, [dayData, daySnapshotDoc, selectedDate, selectedKind, selectedSlotTime]);
+  }, [dayData, daySnapshotDoc, selectedDate, selectedKind, selectedSlotTime, opsProduct]);
 
   const legacyDay = dayView?.slotCohortAttemptMetrics || dayView?.legacyAttemptMetrics || {};
   const isRecipientDay = dayView?.schemaVersion === 2;
@@ -508,6 +560,9 @@ export default function WhatsAppOpsOverview() {
         : ' · all slot times on this IST date';
     const cohortDate = `IST ${selectedDate}${slotPart}`;
     const cohortScope = cohortDate;
+    const bookedCohortSubtitle = isIitProduct
+      ? `IIT counselling · registrations · ${cohortDate}`
+      : `FormSubmission · registered · ${cohortDate}`;
 
     if (isRecipientDay && rt) {
       if (isAllTemplates) {
@@ -516,7 +571,7 @@ export default function WhatsAppOpsOverview() {
             label: 'Booked (cohort)',
             value: asNumber(dayView?.bookedSlotsCount),
             accent: true,
-            subtitle: `FormSubmission · registered · ${cohortDate}`,
+            subtitle: bookedCohortSubtitle,
             className: 'border-slate-200/90 bg-white'
           },
           {
@@ -556,7 +611,7 @@ export default function WhatsAppOpsOverview() {
           label: 'Booked (cohort)',
           value: asNumber(dayView?.bookedSlotsCount),
           accent: true,
-          subtitle: `FormSubmission · registered · ${cohortDate}`,
+          subtitle: bookedCohortSubtitle,
           className: 'border-slate-200/90 bg-white'
         },
         {
@@ -591,7 +646,7 @@ export default function WhatsAppOpsOverview() {
           label: 'Booked (cohort)',
           value: asNumber(dayView?.bookedSlotsCount),
           accent: true,
-          subtitle: `FormSubmission · registered · ${cohortDate}`,
+          subtitle: bookedCohortSubtitle,
           className: 'border-slate-200/90 bg-white'
         },
         {
@@ -619,7 +674,7 @@ export default function WhatsAppOpsOverview() {
         label: 'Booked (cohort)',
         value: asNumber(dayView?.bookedSlotsCount),
         accent: true,
-        subtitle: `FormSubmission · registered · ${cohortDate}`,
+        subtitle: bookedCohortSubtitle,
         className: 'border-slate-200/90 bg-white'
       },
       {
@@ -656,7 +711,8 @@ export default function WhatsAppOpsOverview() {
     dayView,
     dailyOverall,
     dailySelected,
-    selectedTemplate
+    selectedTemplate,
+    isIitProduct
   ]);
 
   const pipelineCards = useMemo(() => {
@@ -781,7 +837,9 @@ export default function WhatsAppOpsOverview() {
           <div>
             <h1 className="text-2xl font-semibold tracking-tight text-primary-navy">Overview</h1>
             <p className="text-sm text-slate-600 mt-1 max-w-3xl">
-              Daily IST drill-down for slot bookings and WhatsApp delivery pipeline. Calendar and month grids use slot-day IST cohorts (step3Data.slotDate). The date-range summary strip above the calendar uses event-time (message createdAt) from the API for quick volume checks.
+              Daily IST drill-down for slot bookings and WhatsApp delivery pipeline. Calendar and month grids use slot-day IST cohorts
+              ({isIitProduct ? 'IIT counselling registrations with counsellingSlotInstantUtc' : 'GuideXpert FormSubmission.step3Data.slotDate'}).
+              The date-range summary strip above the calendar uses event-time (message createdAt) from the API for quick volume checks.
             </p>
           </div>
           <div className="flex flex-wrap items-end gap-3">
@@ -854,36 +912,104 @@ export default function WhatsAppOpsOverview() {
           </div>
         </div>
 
+        <section className="mt-4 rounded-xl border border-slate-200 bg-slate-50/80 p-3 sm:p-4 shadow-sm">
+          <p className="text-xs font-semibold uppercase tracking-[0.14em] text-slate-700 mb-2">Product</p>
+          <div className="inline-flex rounded-lg border border-gray-200 bg-white p-0.5 shadow-sm">
+            <button
+              type="button"
+              onClick={() => persistOpsProductToUrl(OPS_PRODUCT_GUIDEXPERT)}
+              aria-pressed={opsProduct === OPS_PRODUCT_GUIDEXPERT}
+              className={`rounded-md px-3 py-1.5 text-sm font-semibold transition-colors ${
+                opsProduct === OPS_PRODUCT_GUIDEXPERT
+                  ? 'bg-primary-navy text-white shadow-sm'
+                  : 'text-gray-700 hover:bg-gray-50'
+              }`}
+            >
+              GuideXpert
+            </button>
+            <button
+              type="button"
+              onClick={() => persistOpsProductToUrl(OPS_PRODUCT_IIT)}
+              aria-pressed={opsProduct === OPS_PRODUCT_IIT}
+              className={`rounded-md px-3 py-1.5 text-sm font-semibold transition-colors ${
+                opsProduct === OPS_PRODUCT_IIT
+                  ? 'bg-primary-navy text-white shadow-sm'
+                  : 'text-gray-700 hover:bg-gray-50'
+              }`}
+            >
+              IIT Counselling
+            </button>
+          </div>
+          {isIitProduct ? (
+            <p className="text-xs text-slate-600 mt-2 max-w-3xl">
+              IIT mode shows only WhatsApp tagged for IIT Counselling bookings. Template breakdown is locked to Slot booked until more IIT templates go live.
+            </p>
+          ) : null}
+        </section>
+
         <section className="mt-4 rounded-xl border border-primary-blue-200 bg-white/95 p-3 sm:p-4 shadow-sm">
           <p className="text-xs font-semibold uppercase tracking-[0.14em] text-primary-navy mb-3">Template message type</p>
           <div className="flex flex-wrap gap-2">
-            <button
-              type="button"
-              onClick={() => setSelectedKind(null)}
-              aria-pressed={selectedKind === null}
-              className={`rounded-lg px-3 py-1.5 text-sm font-semibold border transition-colors ${
-                selectedKind === null
-                  ? 'bg-primary-navy text-white border-primary-navy shadow-sm'
-                  : 'bg-white text-gray-700 border-gray-200 hover:bg-gray-50'
-              }`}
-            >
-              All
-            </button>
-            {templateKinds.map((kind) => (
-              <button
-                key={kind.id}
-                type="button"
-                onClick={() => setSelectedKind(kind.id)}
-                aria-pressed={selectedKind === kind.id}
-                className={`rounded-lg px-3 py-1.5 text-sm font-semibold border transition-colors ${
-                  selectedKind === kind.id
-                    ? 'bg-primary-navy text-white border-primary-navy shadow-sm'
-                    : 'bg-white text-gray-700 border-gray-200 hover:bg-gray-50'
-                }`}
-              >
-                {kind.label}
-              </button>
-            ))}
+            {!isIitProduct ? (
+              <>
+                <button
+                  type="button"
+                  onClick={() => setSelectedKind(null)}
+                  aria-pressed={selectedKind === null}
+                  className={`rounded-lg px-3 py-1.5 text-sm font-semibold border transition-colors ${
+                    selectedKind === null
+                      ? 'bg-primary-navy text-white border-primary-navy shadow-sm'
+                      : 'bg-white text-gray-700 border-gray-200 hover:bg-gray-50'
+                  }`}
+                >
+                  All
+                </button>
+                {templateKinds.map((kind) => (
+                  <button
+                    key={kind.id}
+                    type="button"
+                    onClick={() => setSelectedKind(kind.id)}
+                    aria-pressed={selectedKind === kind.id}
+                    className={`rounded-lg px-3 py-1.5 text-sm font-semibold border transition-colors ${
+                      selectedKind === kind.id
+                        ? 'bg-primary-navy text-white border-primary-navy shadow-sm'
+                        : 'bg-white text-gray-700 border-gray-200 hover:bg-gray-50'
+                    }`}
+                  >
+                    {kind.label}
+                  </button>
+                ))}
+              </>
+            ) : (
+              <>
+                {templateKinds
+                  .filter((k) => k.id === 'slot_booked')
+                  .map((kind) => (
+                    <button
+                      key={kind.id}
+                      type="button"
+                      disabled
+                      aria-pressed
+                      className="rounded-lg px-3 py-1.5 text-sm font-semibold border bg-primary-navy text-white border-primary-navy shadow-sm cursor-default"
+                    >
+                      {kind.label}
+                    </button>
+                  ))}
+                {templateKinds
+                  .filter((k) => k.id !== 'slot_booked')
+                  .map((kind) => (
+                    <button
+                      key={kind.id}
+                      type="button"
+                      disabled
+                      title="More templates coming later"
+                      className="rounded-lg px-3 py-1.5 text-sm font-semibold border border-gray-200 bg-gray-100 text-gray-400 cursor-not-allowed"
+                    >
+                      {kind.label}
+                    </button>
+                  ))}
+              </>
+            )}
             <button
               type="button"
               onClick={() => {
@@ -893,12 +1019,16 @@ export default function WhatsAppOpsOverview() {
                 setSelectedDate(today);
                 setMonthCursor(today.slice(0, 7));
                 setRange(defaultRangeIsoDates());
+                persistOpsProductToUrl(OPS_PRODUCT_GUIDEXPERT);
               }}
               className="rounded-lg px-3 py-1.5 text-sm font-semibold border border-gray-300 text-gray-700 bg-white hover:bg-gray-50"
             >
               Reset filters
             </button>
           </div>
+          {isIitProduct ? (
+            <p className="text-xs text-slate-500 mt-2">4-hour, meet-link, and 30-minute IIT WhatsApp reminders are not wired yet.</p>
+          ) : null}
         </section>
 
         <div className="mt-4 flex items-center gap-2 text-xs text-gray-600">
@@ -1040,7 +1170,9 @@ export default function WhatsAppOpsOverview() {
               <div className="rounded-xl border border-primary-blue-200 bg-primary-blue-50/40 px-4 py-3 text-xs text-primary-navy space-y-2">
                 <p>
                   {isRecipientDay
-                    ? 'Primary metrics use registered FormSubmission bookings for the selected IST date and slot-time filter. WhatsApp rows are restricted to those submissions; all-templates view rolls up by unique phone across template kinds. Legacy attempt-row charts below still use message createdAt for that IST day (debugging).'
+                    ? isIitProduct
+                      ? 'Primary metrics use IIT Counselling registrations (counsellingSlotInstantUtc in the IST slot-day window). WhatsApp rows are restricted to IIT-tagged sends for this cohort.'
+                      : 'Primary metrics use registered FormSubmission bookings for the selected IST date and slot-time filter. WhatsApp rows are restricted to those submissions; all-templates view rolls up by unique phone across template kinds. Legacy attempt-row charts below still use message createdAt for that IST day (debugging).'
                     : 'Daily drilldown is IST-based and shows exact stored booking + WhatsApp pipeline metrics for the selected date.'}
                 </p>
                 {isRecipientDay && dayView?._meta?.source === 'snapshot' && dayView?._meta?.capturedAt && (
@@ -1063,8 +1195,9 @@ export default function WhatsAppOpsOverview() {
                 </p>
                 {isRecipientDay && (
                   <p className="mb-3 text-xs text-slate-600 leading-relaxed">
-                    <span className="font-semibold text-slate-700">Booked slots</span> ({asNumber(dayView?.bookedSlotsCount)}): registered
-                    FormSubmission rows for this IST slot day
+                    <span className="font-semibold text-slate-700">Booked slots</span> ({asNumber(dayView?.bookedSlotsCount)}):{' '}
+                    {isIitProduct ? 'IIT counselling registrations with a confirmed slot datetime' : 'registered FormSubmission rows'} for this
+                    IST slot day
                     {selectedSlotTime !== 'all' ? ` and ${slotTimeFilterLabel(selectedSlotTime)} cohort` : ''}.{' '}
                     <span className="font-semibold text-slate-700">Recipients</span> ({asNumber(rt?.totalRecipients)}): distinct
                     {selectedKind ? ` lineage + phone + this template` : ' lineage + phone'} with at least one WhatsApp event row in this cohort (not the same count as bookings). Cohort anchor: booking IST slot day (

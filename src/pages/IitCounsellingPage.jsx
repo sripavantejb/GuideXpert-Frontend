@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { getApiBaseUrl } from '../utils/apiBaseUrl';
-import { formatDateISTYYYYMMDD, getAvailableSlots } from '../utils/weekendSlots';
+import { formatDateISTYYYYMMDD, getAvailableSlots, resolveSlotBookingDateForIitPayload } from '../utils/weekendSlots';
 
 const STUDENT_PARENT_OPTIONS = ['Student', 'Parent'];
 const CLASS_OPTIONS = ['12th Appearing', '12th Passed'];
@@ -44,6 +44,7 @@ export default function IitCounsellingPage() {
   const [errors, setErrors] = useState({});
   const [submitting, setSubmitting] = useState(false);
   const [submitState, setSubmitState] = useState({ ok: false, message: '' });
+  const [waSection1Notice, setWaSection1Notice] = useState('');
 
   const [otp, setOtp] = useState('');
   const [otpSent, setOtpSent] = useState(false);
@@ -309,6 +310,12 @@ export default function IitCounsellingPage() {
     if (step === 1 && !otpVerified) {
       nextErrors.mobileNumber = 'Please verify your mobile number with OTP first.';
     }
+    if (step === 1 && String(formData.slotBooking ?? '').trim()) {
+      const ymd = resolveSlotBookingDateForIitPayload(formData.slotBooking);
+      if (!ymd) {
+        nextErrors.slotBooking = 'Could not resolve your session date. Please choose a slot from the list again.';
+      }
+    }
     return nextErrors;
   };
 
@@ -327,7 +334,8 @@ export default function IitCounsellingPage() {
       ? slotBookingOptions.find((o) => o.value === formData.slotBooking)
       : null;
     const slotBookingDate =
-      selectedSlotOption?.date ? formatDateISTYYYYMMDD(selectedSlotOption.date) : '';
+      resolveSlotBookingDateForIitPayload(formData.slotBooking) ||
+      (selectedSlotOption?.date ? formatDateISTYYYYMMDD(selectedSlotOption.date) : '');
 
     const payload = currentStep === 1
       ? {
@@ -376,6 +384,14 @@ export default function IitCounsellingPage() {
       if (result?.data?.submissionId) {
         setSubmissionId(result.data.submissionId);
       }
+      if (currentStep === 1 && result?.data?.whatsappSlotBooked) {
+        const w = result.data.whatsappSlotBooked;
+        if (w.attempted && w.success) {
+          setWaSection1Notice('Check WhatsApp for your slot confirmation.');
+        } else {
+          setWaSection1Notice('');
+        }
+      }
       return true;
     } catch (error) {
       setSubmitState({
@@ -391,6 +407,7 @@ export default function IitCounsellingPage() {
   const handleSubmit = async (e) => {
     e.preventDefault();
     setSubmitState({ ok: false, message: '' });
+    if (currentStep === 1) setWaSection1Notice('');
 
     const saved = await saveCurrentStep();
     if (!saved) return;
@@ -408,6 +425,7 @@ export default function IitCounsellingPage() {
     if (currentStep > 1) {
       setErrors({});
       setSubmitState({ ok: false, message: '' });
+      if (currentStep === 2) setWaSection1Notice('');
       setCurrentStep((prev) => prev - 1);
     }
   };
@@ -425,6 +443,11 @@ export default function IitCounsellingPage() {
           <p className="mt-2 text-sm font-medium text-slate-300">
             Step {currentStep} of 3 - {stepTitle}
           </p>
+          {currentStep >= 2 && waSection1Notice ? (
+            <p className="mt-3 rounded-lg border-2 border-emerald-900/40 bg-emerald-950/50 px-3 py-2 text-xs font-semibold text-emerald-100">
+              {waSection1Notice}
+            </p>
+          ) : null}
         </div>
 
         <form

@@ -220,3 +220,20 @@ export function deriveSlotDemoDateKeyIST(row) {
 
   return deriveDemoDateFromRotationAnchors(row, slotVal);
 }
+
+/**
+ * IST session date YYYY-MM-DD for IIT section1: derived from slot label using the same demo rotation as the UI.
+ * Use when resolving the date independently of dropdown option objects (e.g. if options rotated before submit).
+ *
+ * @param {string|null|undefined} slotBookingValue e.g. "Wednesday 6PM"
+ * @param {Date} [now]
+ * @returns {string} '' if unknown label
+ */
+export function resolveSlotBookingDateForIitPayload(slotBookingValue, now = new Date()) {
+  const v = String(slotBookingValue ?? '').trim();
+  if (!v) return '';
+  const slots = getAvailableSlots(now);
+  const opt = slots.find((s) => s.value === v);
+  if (opt?.date) return formatDateISTYYYYMMDD(opt.date);
+  return '';
+}

@@ -36,6 +36,16 @@ export async function whatsappOpsRequest(path, options = {}, token = getStoredTo
   return { success: true, data, status: res.status };
 }
 
+/**
+ * Builds `?foo=bar&baz=…` query strings for whatsapp ops admin endpoints.
+ *
+ * Typical keys include: `from`, `to`, `month`, `date`, `messageKind`, `slotTime`,
+ * diagnostics `debug`, and product scoping via `opsProduct` (aliases: `tenant` on the backend).
+ *
+ * Values that are null, undefined, or empty string are skipped.
+ *
+ * @param {Record<string, string|number|boolean|null|undefined>} params
+ */
 export function buildWhatsappOpsQuery(params = {}) {
   const s = new URLSearchParams();
   Object.entries(params).forEach(([k, v]) => {
