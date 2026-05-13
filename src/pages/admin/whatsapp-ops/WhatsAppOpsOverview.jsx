@@ -27,9 +27,85 @@ function asNumber(value, fallback = 0) {
   return Number.isFinite(n) ? n : fallback;
 }
 
-function localIsoDate(d = new Date()) {
-  const local = new Date(d.getTime() - d.getTimezoneOffset() * 60000);
-  return local.toISOString().slice(0, 10);
+const ISO_DATE_RE = /^\d{4}-\d{2}-\d{2}$/;
+
+/** Inclusive list of YYYY-MM months between two ISO dates (by string order). */
+function distinctMonthsBetweenIsoDates(fromIso, toIso) {
+  if (!ISO_DATE_RE.test(fromIso) || !ISO_DATE_RE.test(toIso)) return [];
+  const a = fromIso <= toIso ? fromIso : toIso;
+  const b = fromIso <= toIso ? toIso : fromIso;
+  let y = parseInt(a.slice(0, 4), 10);
+  let m = parseInt(a.slice(5, 7), 10);
+  const endY = parseInt(b.slice(0, 4), 10);
+  const endM = parseInt(b.slice(5, 7), 10);
+  const out = [];
+  while (y < endY || (y === endY && m <= endM)) {
+    out.push(`${y}-${String(m).padStart(2, '0')}`);
+    m += 1;
+    if (m > 12) {
+      m = 1;
+      y += 1;
+    }
+  }
+  return out;
+}
+
+function mergeWhatsappMonthPayloads(parts) {
+  if (!Array.isArray(parts) || parts.length === 0) return null;
+  const dayByDate = new Map();
+  const recById = new Map();
+  let messageKind = null;
+  for (const data of parts) {
+    if (!data || typeof data !== 'object') continue;
+    if (data.filter?.messageKind != null) messageKind = data.filter.messageKind;
+    for (const row of data.days || []) {
+      if (row?.date) dayByDate.set(row.date, row);
+    }
+    for (const row of data.recipientTrendDays || []) {
+      if (row?._id) recById.set(row._id, row);
+    }
+  }
+  const days = [...dayByDate.values()].sort((x, y) => String(x.date).localeCompare(String(y.date)));
+  const recipientTrendDays = [...recById.values()].sort((a, b) => String(a._id).localeCompare(String(b._id)));
+  const monthTotals = days.reduce(
+    (acc, d) => ({
+      bookedSlotsCount: acc.bookedSlotsCount + asNumber(d.bookedSlotsCount),
+      attempts: acc.attempts + asNumber(d.attempts),
+      accepted: acc.accepted + asNumber(d.accepted),
+      sent: acc.sent + asNumber(d.sent),
+      delivered: acc.delivered + asNumber(d.delivered),
+      read: acc.read + asNumber(d.read),
+      failed: acc.failed + asNumber(d.failed),
+      retried: acc.retried + asNumber(d.retried)
+    }),
+    {
+      bookedSlotsCount: 0,
+      attempts: 0,
+      accepted: 0,
+      sent: 0,
+      delivered: 0,
+      read: 0,
+      failed: 0,
+      retried: 0
+    }
+  );
+  return {
+    ...parts[0],
+    schemaVersion: parts[0]?.schemaVersion ?? 2,
+    filter: { ...(parts[0]?.filter || {}), mergedMonths: true, messageKind },
+    monthTotals,
+    days,
+    recipientTrendDays
+  };
+}
+
+function normalizeIsoRange(prev, patch) {
+  const next = { ...prev, ...patch };
+  let { from: nf, to: nt } = next;
+  if (ISO_DATE_RE.test(nf) && ISO_DATE_RE.test(nt) && nf > nt) {
+    return { from: nt, to: nf };
+  }
+  return next;
 }
 
 function formatPromotionCountdown(iso) {
@@ -87,12 +163,13 @@ function slotTimeFilterLabel(id) {
 export default function WhatsAppOpsOverview() {
   const { notifyWhatsappOpsApi404, clearWhatsappOpsApi404 } = useWhatsappOpsHost();
   const [{ from, to }, setRange] = useState(defaultRangeIsoDates);
-  const [selectedDate, setSelectedDate] = useState(() => localIsoDate());
-  const [monthCursor, setMonthCursor] = useState(() => localIsoDate().slice(0, 7));
+  const [selectedDate, setSelectedDate] = useState(() => istCalendarIsoToday());
+  const [monthCursor, setMonthCursor] = useState(() => istCalendarIsoToday().slice(0, 7));
   const [selectedKind, setSelectedKind] = useState(null);
   const [selectedSlotTime, setSelectedSlotTime] = useState('all');
   const [calendarMode, setCalendarMode] = useState('day');
   const [templateKinds, setTemplateKinds] = useState(FALLBACK_TEMPLATE_KINDS);
+  const [waDiagnostics, setWaDiagnostics] = useState(false);
   const [live, setLive] = useState(
     () => typeof localStorage === 'undefined' || localStorage.getItem(POLL_KEY) !== 'off'
   );
@@ -141,17 +218,31 @@ export default function WhatsAppOpsOverview() {
 
   const loadMonth = useCallback(async () => {
     const gen = ++monthLoadGen.current;
-    const res = await getWhatsappOpsCalendarMonth({ month: monthCursor, ...(selectedKind ? { messageKind: selectedKind } : {}) });
+    const rangeMonths =
+      ISO_DATE_RE.test(from) && ISO_DATE_RE.test(to) ? distinctMonthsBetweenIsoDates(from, to) : [];
+    const union = [...new Set([...rangeMonths, monthCursor])].sort((a, b) => a.localeCompare(b));
+    const months = union.slice(0, 24);
+    const results = await Promise.all(
+      months.map((m) =>
+        getWhatsappOpsCalendarMonth({ month: m, ...(selectedKind ? { messageKind: selectedKind } : {}) })
+      )
+    );
     if (gen !== monthLoadGen.current) return;
-    if (res.success) setMonthData(res.data?.data ?? res.data);
-  }, [monthCursor, selectedKind]);
+    const okParts = results.filter((r) => r.success).map((r) => r.data?.data ?? r.data);
+    if (!okParts.length) {
+      setMonthData(null);
+      return;
+    }
+    setMonthData(mergeWhatsappMonthPayloads(okParts));
+  }, [from, to, monthCursor, selectedKind]);
 
   const loadDay = useCallback(async () => {
     const gen = ++dayLoadGen.current;
     const params = {
       date: selectedDate,
       slotTime: selectedSlotTime,
-      ...(selectedKind ? { messageKind: selectedKind } : {})
+      ...(selectedKind ? { messageKind: selectedKind } : {}),
+      ...(waDiagnostics ? { debug: '1' } : {})
     };
     const isPastSlotDay = selectedDate < istCalendarIsoToday();
     const [dayRes, snapRes] = await Promise.all([
@@ -168,7 +259,7 @@ export default function WhatsAppOpsOverview() {
     } else {
       setDaySnapshotDoc(null);
     }
-  }, [selectedDate, selectedKind, selectedSlotTime]);
+  }, [selectedDate, selectedKind, selectedSlotTime, waDiagnostics]);
 
   const loadAll = useCallback(async () => {
     await Promise.all([loadSummary(), loadMonth(), loadDay()]);
@@ -177,6 +268,15 @@ export default function WhatsAppOpsOverview() {
   useEffect(() => {
     Promise.resolve().then(() => loadAll());
   }, [loadAll]);
+
+  useEffect(() => {
+    if (!ISO_DATE_RE.test(from) || !ISO_DATE_RE.test(to)) return;
+    setSelectedDate((d) => {
+      if (d < from) return from;
+      if (d > to) return to;
+      return d;
+    });
+  }, [from, to]);
 
   useEffect(() => {
     if (!live) return undefined;
@@ -231,7 +331,7 @@ export default function WhatsAppOpsOverview() {
     return { ...dayData, _meta: { source: 'live' } };
   }, [dayData, daySnapshotDoc, selectedDate, selectedKind, selectedSlotTime]);
 
-  const legacyDay = dayView?.legacyAttemptMetrics || {};
+  const legacyDay = dayView?.slotCohortAttemptMetrics || dayView?.legacyAttemptMetrics || {};
   const isRecipientDay = dayView?.schemaVersion === 2;
   const rt = dayView?.recipientTotals;
   const retryFunnelRecipient = dayView?.retryFunnelByAttempt || {};
@@ -255,7 +355,7 @@ export default function WhatsAppOpsOverview() {
 
   const calendarCells = useMemo(() => monthGrid(monthCursor), [monthCursor]);
 
-  /** Legacy attempt-row bucket (IST createdAt day). Recipient cohort lives in `recipientTotals` when schema v2. */
+  /** Slot-day IST cohort: attempt rows joined via submission slotDate (same as recipient cohort). */
   const dailyOverall = legacyDay.overall || {};
   const dailySelected = legacyDay.selectedKindMetrics || {};
 
@@ -263,19 +363,30 @@ export default function WhatsAppOpsOverview() {
     const days = monthData?.days || [];
     const recList = Array.isArray(monthData?.recipientTrendDays) ? monthData.recipientTrendDays : [];
     const recByDay = new Map(recList.map((d) => [d._id, d]));
-    return days.map((d) => {
-      const r = recByDay.get(d.date);
-      return {
-        date: d.date?.slice(-2),
-        attempts: asNumber(d.attempts),
-        bookings: asNumber(d.bookedSlotsCount),
-        failed: asNumber(d.failed),
-        recDelivered: asNumber(r?.delivered),
-        recUnresolved: asNumber(r?.unresolved),
-        recPermanent: asNumber(r?.permanentFailed)
-      };
-    });
-  }, [monthData]);
+    const fromF = ISO_DATE_RE.test(from) ? from : '';
+    const toF = ISO_DATE_RE.test(to) ? to : '';
+    const multiMonth = Boolean(fromF && toF && fromF.slice(0, 7) !== toF.slice(0, 7));
+    return days
+      .filter((d) => {
+        const dateStr = d.date;
+        if (!dateStr) return false;
+        if (fromF && dateStr < fromF) return false;
+        if (toF && dateStr > toF) return false;
+        return true;
+      })
+      .map((d) => {
+        const r = recByDay.get(d.date);
+        return {
+          date: multiMonth ? d.date?.slice(5) || d.date : d.date?.slice(-2),
+          attempts: asNumber(d.attempts),
+          bookings: asNumber(d.bookedSlotsCount),
+          failed: asNumber(d.failed),
+          recDelivered: asNumber(r?.delivered),
+          recUnresolved: asNumber(r?.unresolved),
+          recPermanent: asNumber(r?.permanentFailed)
+        };
+      });
+  }, [monthData, from, to]);
 
   const selectedTemplate = selectedKind
     ? templateKinds.find((k) => k.id === selectedKind) || FALLBACK_TEMPLATE_KINDS.find((k) => k.id === selectedKind)
@@ -407,12 +518,6 @@ export default function WhatsAppOpsOverview() {
             accent: true,
             subtitle: `FormSubmission · registered · ${cohortDate}`,
             className: 'border-slate-100 bg-slate-50/30'
-          },
-          {
-            label: 'Booked · no WA row yet',
-            value: asNumber(rt.bookedWithoutAnyWaEvent),
-            subtitle: 'No WhatsAppMessageEvent linked to this submission yet',
-            className: 'border-gray-100 bg-gray-50/40'
           },
           {
             label: 'People (≥1 WA row)',
@@ -673,7 +778,7 @@ export default function WhatsAppOpsOverview() {
               <input
                 type="date"
                 value={from}
-                onChange={(e) => setRange((r) => ({ ...r, from: e.target.value }))}
+                onChange={(e) => setRange((r) => normalizeIsoRange(r, { from: e.target.value }))}
                 className="mt-1 block rounded-lg border border-gray-200 bg-white px-2 py-1.5 text-sm shadow-sm transition focus:border-primary-blue-400 focus:outline-none focus:ring-2 focus:ring-primary-blue-100"
               />
             </label>
@@ -682,7 +787,7 @@ export default function WhatsAppOpsOverview() {
               <input
                 type="date"
                 value={to}
-                onChange={(e) => setRange((r) => ({ ...r, to: e.target.value }))}
+                onChange={(e) => setRange((r) => normalizeIsoRange(r, { to: e.target.value }))}
                 className="mt-1 block rounded-lg border border-gray-200 bg-white px-2 py-1.5 text-sm shadow-sm transition focus:border-primary-blue-400 focus:outline-none focus:ring-2 focus:ring-primary-blue-100"
               />
             </label>
@@ -695,7 +800,7 @@ export default function WhatsAppOpsOverview() {
                   const v = e.target.value;
                   setSelectedDate(v);
                   setMonthCursor(v.slice(0, 7));
-                  setRange({ from: v, to: v });
+                  setRange((r) => normalizeIsoRange(r, { from: v, to: v }));
                 }}
                 className="mt-1 block rounded-lg border border-gray-200 bg-white px-2 py-1.5 text-sm shadow-sm transition focus:border-primary-blue-400 focus:outline-none focus:ring-2 focus:ring-primary-blue-100"
               />
@@ -770,7 +875,7 @@ export default function WhatsAppOpsOverview() {
             <button
               type="button"
               onClick={() => {
-                const today = localIsoDate();
+                const today = istCalendarIsoToday();
                 setSelectedKind(null);
                 setSelectedSlotTime('all');
                 setSelectedDate(today);
@@ -885,14 +990,14 @@ export default function WhatsAppOpsOverview() {
                         if (dayNum == null) return <td key={`${ri}-${ci}`} className="p-1" />;
                         const dateKey = `${monthCursor}-${String(dayNum).padStart(2, '0')}`;
                         const isSelected = dateKey === selectedDate;
-                        const isToday = dateKey === localIsoDate();
+                        const isToday = dateKey === istCalendarIsoToday();
                         return (
                           <td key={`${ri}-${ci}`} className="p-1">
                             <button
                               type="button"
                               onClick={() => {
                                 setSelectedDate(dateKey);
-                                setRange({ from: dateKey, to: dateKey });
+                                setRange((r) => normalizeIsoRange(r, { from: dateKey, to: dateKey }));
                               }}
                               className={`w-full rounded-lg border px-2 py-1.5 text-left transition-all ${
                                 isSelected
@@ -944,11 +1049,17 @@ export default function WhatsAppOpsOverview() {
                 <p className="mb-3 text-[11px] font-semibold uppercase tracking-[0.14em] text-primary-navy">
                   {isAllTemplates ? 'Volume' : 'Selected template volume'}
                 </p>
-                <div
-                  className={`grid grid-cols-1 sm:grid-cols-2 gap-4 ${
-                    volumeCards.length > 6 ? 'xl:grid-cols-7' : volumeCards.length > 4 ? 'xl:grid-cols-5' : 'xl:grid-cols-4'
-                  }`}
-                >
+                {isRecipientDay && (
+                  <p className="mb-3 text-xs text-slate-600 leading-relaxed">
+                    <span className="font-semibold text-slate-700">Booked slots</span> ({asNumber(dayView?.bookedSlotsCount)}): registered
+                    FormSubmission rows for this IST slot day
+                    {selectedSlotTime !== 'all' ? ` and ${slotTimeFilterLabel(selectedSlotTime)} cohort` : ''}.{' '}
+                    <span className="font-semibold text-slate-700">Recipients</span> ({asNumber(rt?.totalRecipients)}): distinct
+                    {selectedKind ? ` lineage + phone + this template` : ' lineage + phone'} with at least one WhatsApp event row in this cohort (not the same count as bookings). Cohort anchor: booking IST slot day (
+                    {dayView?.cohortAnchor || 'booking_ist_slot_day'}).
+                  </p>
+                )}
+                <div className="grid gap-4 [grid-template-columns:repeat(auto-fill,minmax(12rem,1fr))]">
                   {volumeCards.map((card) => (
                     <KpiCard
                       key={card.label}
@@ -956,7 +1067,7 @@ export default function WhatsAppOpsOverview() {
                       value={card.value}
                       subtitle={card.subtitle}
                       accent={card.accent}
-                      className={card.className}
+                      className={`min-w-0 ${card.className || ''}`}
                     />
                   ))}
                 </div>
@@ -965,14 +1076,14 @@ export default function WhatsAppOpsOverview() {
                 <p className="mb-3 text-[11px] font-semibold uppercase tracking-[0.14em] text-primary-navy">
                   {isAllTemplates ? 'Pipeline & reliability' : 'Selected template pipeline & reliability'}
                 </p>
-                <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-4">
+                <div className="grid gap-4 [grid-template-columns:repeat(auto-fill,minmax(12rem,1fr))]">
                   {pipelineCards.map((card) => (
                     <KpiCard
                       key={card.label}
                       label={card.label}
                       value={card.value}
                       subtitle={card.subtitle}
-                      className={card.className}
+                      className={`min-w-0 ${card.className || ''}`}
                     />
                   ))}
                 </div>
@@ -1240,10 +1351,37 @@ export default function WhatsAppOpsOverview() {
             </section>
           )}
 
+          <div className="mb-4 flex flex-wrap items-center gap-3">
+            {isRecipientDay && (
+              <label className="flex cursor-pointer items-center gap-2 text-sm text-slate-700">
+                <input
+                  type="checkbox"
+                  checked={waDiagnostics}
+                  onChange={(e) => setWaDiagnostics(e.target.checked)}
+                  className="rounded border-slate-300"
+                />
+                Load data-quality diagnostics
+              </label>
+            )}
+          </div>
+          {dayView?.diagnostics && (
+            <div className="mb-6 rounded-xl border border-slate-200 bg-slate-50 p-4 text-xs text-slate-800">
+              <p className="font-semibold text-slate-900">Diagnostics (slot-day cohort)</p>
+              <dl className="mt-2 grid gap-2 sm:grid-cols-2 lg:grid-cols-3">
+                {Object.entries(dayView.diagnostics).map(([k, v]) => (
+                  <div key={k}>
+                    <dt className="text-slate-500">{k}</dt>
+                    <dd className="font-mono font-semibold">{typeof v === 'object' ? JSON.stringify(v) : String(v)}</dd>
+                  </div>
+                ))}
+              </dl>
+            </div>
+          )}
+
           <div className="grid gap-6 lg:grid-cols-2 xl:grid-cols-4">
             <ChartContainer
               title="Month trend (IST)"
-              subtitle={monthData?.schemaVersion === 2 ? 'Bookings vs attempts + recipient slot-day signals' : 'Bookings vs attempts vs failed by day'}
+              subtitle={monthData?.schemaVersion === 2 ? 'Bookings vs attempts + recipient metrics (all IST slot-day cohort)' : 'Bookings vs attempts vs failed by day'}
             >
               <div style={{ width: '100%', height: 300 }}>
                 <ResponsiveContainer>
@@ -1268,7 +1406,7 @@ export default function WhatsAppOpsOverview() {
               </div>
             </ChartContainer>
 
-            <ChartContainer title="Day status composition" subtitle={`Message events (legacy) on ${selectedDate}`}>
+            <ChartContainer title="Day status composition" subtitle={`Message attempts (IST slot-day cohort) on ${selectedDate}`}>
               <div style={{ width: '100%', height: 300 }}>
                 <ResponsiveContainer>
                   <BarChart data={byStatusChart} margin={{ top: 12, left: 0, right: 16, bottom: 0 }}>

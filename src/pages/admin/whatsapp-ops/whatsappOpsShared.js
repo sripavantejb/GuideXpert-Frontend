@@ -9,13 +9,16 @@ export function istCalendarIsoToday(d = new Date()) {
 }
 
 export function defaultRangeIsoDates() {
-  const to = new Date();
-  const from = new Date(to.getTime() - 14 * 86400000);
-  const f = (d) => {
-    const local = new Date(d.getTime() - d.getTimezoneOffset() * 60000);
-    return local.toISOString().slice(0, 10);
-  };
-  return { from: f(from), to: f(to) };
+  const to = istCalendarIsoToday();
+  const anchor = new Date(`${to}T12:00:00+05:30`);
+  const fromMs = anchor.getTime() - 14 * 86400000;
+  const from = new Intl.DateTimeFormat('en-CA', {
+    timeZone: 'Asia/Kolkata',
+    year: 'numeric',
+    month: '2-digit',
+    day: '2-digit'
+  }).format(new Date(fromMs));
+  return { from, to };
 }
 
 /** Map `<input type="date">` values (local calendar day) to UTC ISO bounds for API query params. */

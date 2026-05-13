@@ -66,7 +66,7 @@ export default function KpiCard({
       )}
       <div>
         <div className="flex items-start justify-between gap-2 mb-1">
-          <p className="text-[11px] font-semibold text-slate-500 uppercase tracking-[0.12em] truncate min-w-0">
+          <p className="text-[11px] font-semibold text-slate-500 uppercase tracking-[0.12em] min-w-0 break-words leading-snug">
             {label}
           </p>
           {Icon && (
