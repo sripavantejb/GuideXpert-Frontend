@@ -28,6 +28,9 @@ export default function WhatsAppOpsFailures() {
         <div>
           <h1 className="text-xl font-bold text-gray-900">Failure fingerprints</h1>
           <p className="text-sm text-gray-600 mt-1">Grouped trimmed error strings from WhatsApp message events.</p>
+          <p className="text-xs text-gray-500 mt-2 max-w-3xl">
+            Cohort: event-time (message createdAt in the selected range). Slot-day IST KPIs are on the Overview calendar and month rollup.
+          </p>
         </div>
         <div className="flex gap-2 items-end">
           <input type="date" value={from} onChange={(e) => setRange((r) => ({ ...r, from: e.target.value }))} className="rounded border px-2 py-1 text-sm" />

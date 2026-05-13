@@ -14,6 +14,7 @@ import {
   FiEye,
   FiInfo,
   FiLoader,
+  FiMoreHorizontal,
   FiPauseCircle,
   FiPlay,
   FiRefreshCw,
@@ -31,6 +32,7 @@ import {
   downloadUnresolvedCsv,
   fetchUnresolvedCsvText,
   getUnresolvedRecipients,
+  getWhatsappOpsCalendarDay,
   getWhatsappOpsManualRecoveryJob,
   listWhatsappOpsManualRecoveryJobs,
   previewWhatsappOpsManualRecovery,
@@ -144,8 +146,8 @@ function SectionCard({
     >
       {!noHeader && (
         <div className={`border-b border-slate-200/80 bg-slate-50/90 ${headerPad}`}>
-          <div className={`flex flex-col ${compact ? 'gap-2' : 'gap-3'} sm:flex-row sm:items-center sm:justify-between`}>
-            <div className="flex min-w-0 items-center gap-3">
+          <div className={`flex min-w-0 flex-col ${compact ? 'gap-2' : 'gap-3'} sm:flex-row sm:items-center sm:justify-between`}>
+            <div className="flex min-w-0 flex-1 items-center gap-3">
               {Icon && (
                 <span className={`flex ${iconWrap} shrink-0 items-center justify-center rounded-xl bg-white text-primary-navy shadow-sm ring-1 ring-slate-200/80`}>
                   <Icon size={iconSz} />
@@ -181,7 +183,8 @@ function SectionCard({
  * ========================================================================= */
 
 function StatusPill({ status, size = 'sm' }) {
-  const s = String(status || '').toLowerCase();
+  const raw = String(status || '');
+  const s = raw.toLowerCase();
   let cls = 'border-slate-200 bg-slate-100 text-slate-700';
   let Icon = FiClock;
   if (s === 'delivered' || s === 'read') {
@@ -206,10 +209,11 @@ function StatusPill({ status, size = 'sm' }) {
   const sizeCls = size === 'lg'
     ? 'px-2.5 py-1 text-sm'
     : 'px-2.5 py-0.5 text-xs';
+  const label = s || '—';
   return (
-    <span className={`inline-flex items-center gap-1 rounded-full border font-semibold ${cls} ${sizeCls}`}>
-      <Icon size={size === 'lg' ? 14 : 12} />
-      {s || '—'}
+    <span title={raw || label} className={`inline-flex max-w-[9rem] min-w-0 items-center gap-1 rounded-full border font-semibold ${cls} ${sizeCls}`}>
+      <Icon className="shrink-0" size={size === 'lg' ? 14 : 12} aria-hidden />
+      <span className="min-w-0 truncate">{label}</span>
     </span>
   );
 }
@@ -225,28 +229,136 @@ function CounterTile({ label, value, accent }) {
   );
 }
 
-function KpiTile({ label, value, accent, icon: Icon }) {
+const RECOVERY_INTENTS = {
+  default: {
+    stripe: 'from-slate-600 via-slate-500 to-slate-400',
+    barAccent: 'from-slate-600 to-slate-400',
+    value: 'text-slate-900',
+    iconWrap: 'bg-gradient-to-br from-slate-100 to-slate-50 text-slate-600 ring-slate-200/80 shadow-inner'
+  },
+  primary: {
+    stripe: 'from-primary-navy via-[#0a4f8f] to-primary-blue-400',
+    barAccent: 'from-primary-navy to-primary-blue-400',
+    value: 'text-primary-navy',
+    iconWrap: 'bg-gradient-to-br from-primary-blue-100 to-primary-blue-50 text-primary-navy ring-primary-blue-200/70 shadow-sm'
+  },
+  success: {
+    stripe: 'from-emerald-600 via-emerald-500 to-teal-400',
+    barAccent: 'from-emerald-600 to-teal-500',
+    value: 'text-emerald-700',
+    iconWrap: 'bg-gradient-to-br from-emerald-100 to-emerald-50 text-emerald-700 ring-emerald-200/80 shadow-sm'
+  },
+  successAlt: {
+    stripe: 'from-teal-600 via-teal-500 to-cyan-400',
+    barAccent: 'from-teal-600 to-cyan-500',
+    value: 'text-teal-700',
+    iconWrap: 'bg-gradient-to-br from-teal-100 to-teal-50 text-teal-700 ring-teal-200/80 shadow-sm'
+  },
+  muted: {
+    stripe: 'from-slate-500 to-slate-400',
+    barAccent: 'from-slate-500 to-slate-400',
+    value: 'text-slate-800',
+    iconWrap: 'bg-gradient-to-br from-slate-100 to-white text-slate-600 ring-slate-200/80 shadow-inner'
+  },
+  warning: {
+    stripe: 'from-amber-600 via-amber-500 to-orange-400',
+    barAccent: 'from-amber-600 to-orange-400',
+    value: 'text-amber-800',
+    iconWrap: 'bg-gradient-to-br from-amber-100 to-amber-50 text-amber-700 ring-amber-200/80 shadow-sm'
+  },
+  danger: {
+    stripe: 'from-rose-600 via-rose-500 to-orange-400',
+    barAccent: 'from-rose-600 to-rose-400',
+    value: 'text-rose-700',
+    iconWrap: 'bg-gradient-to-br from-rose-100 to-rose-50 text-rose-700 ring-rose-200/80 shadow-sm'
+  },
+  dangerStrong: {
+    stripe: 'from-rose-800 via-rose-600 to-rose-500',
+    barAccent: 'from-rose-800 to-rose-500',
+    value: 'text-rose-800',
+    iconWrap: 'bg-gradient-to-br from-rose-100 to-rose-50 text-rose-800 ring-rose-200/80 shadow-sm'
+  }
+};
+
+function RecoveryThroughputMetric({ label, value, intent = 'default', icon: Glyph, dense = false }) {
+  const s = RECOVERY_INTENTS[intent] || RECOVERY_INTENTS.default;
   return (
-    <div className="rounded-xl border border-slate-200/90 bg-white px-3 py-3 shadow-sm">
-      <div className="flex items-center gap-1.5">
-        {Icon && <Icon className="text-slate-400" size={14} />}
-        <p className="text-xs font-semibold uppercase tracking-wide text-slate-500">{label}</p>
+    <div
+      className={`group relative overflow-hidden rounded-xl border border-white/90 bg-white shadow-sm ring-1 ring-slate-900/[0.04] transition duration-200 hover:border-slate-300/90 hover:shadow ${
+        dense ? 'p-3.5 sm:p-4' : 'p-5 hover:-translate-y-0.5 hover:shadow-md'
+      }`}
+    >
+      <div className={`absolute inset-x-0 top-0 bg-gradient-to-r ${dense ? 'h-0.5' : 'h-[3px]'} ${s.stripe}`} aria-hidden />
+      <div className={`flex items-start justify-between gap-3 ${dense ? 'pt-1' : 'pt-2'}`}>
+        <p className="min-w-0 text-[10px] font-bold uppercase leading-snug tracking-[0.14em] text-slate-500">{label}</p>
+        <span className={`inline-flex h-9 w-9 shrink-0 items-center justify-center rounded-lg ring-1 ring-inset sm:h-10 sm:w-10 ${s.iconWrap}`}>
+          {Glyph ? <Glyph className={dense ? 'h-4 w-4 sm:h-[18px] sm:w-[18px]' : 'h-5 w-5'} strokeWidth={2} /> : null}
+        </span>
       </div>
-      <p className={`mt-1 text-2xl font-bold leading-tight tabular-nums ${accent || 'text-slate-900'}`}>
+      <p
+        className={`font-bold leading-none tracking-tight tabular-nums ${dense ? 'mt-2 text-[1.4rem] sm:text-[1.55rem]' : 'mt-5 text-[1.75rem] sm:text-[2rem]'} ${s.value}`}
+      >
         {Number.isFinite(value) ? value.toLocaleString() : (value || 0)}
       </p>
     </div>
   );
 }
 
-function SummaryTile({ label, value, accent }) {
+function RecoveryOutcomeMetric({ label, value, intent = 'muted', icon: Glyph }) {
+  const s = RECOVERY_INTENTS[intent] || RECOVERY_INTENTS.muted;
   return (
-    <div className="relative flex min-h-[4.25rem] flex-col justify-center overflow-hidden rounded-xl border border-slate-200/90 bg-white px-3 py-2.5 shadow-sm ring-1 ring-slate-900/[0.03] sm:min-h-[4.5rem] sm:px-4 sm:py-3">
-      <span className="absolute inset-y-2 left-0 w-1 rounded-full bg-primary-navy/80" aria-hidden />
-      <p className="pl-2.5 text-[10px] font-semibold uppercase tracking-wide text-slate-500 sm:text-xs">{label}</p>
-      <p className={`mt-0.5 pl-2.5 text-xl font-bold leading-none tabular-nums sm:text-2xl ${accent || 'text-slate-900'}`}>
+    <div className="relative min-h-[5.75rem] bg-white/[0.55] p-3.5 pl-5 transition-colors hover:bg-white/90 sm:min-h-[6.25rem] sm:p-4 sm:pl-6">
+      <span
+        className={`absolute bottom-4 left-0 top-4 w-[3px] rounded-full bg-gradient-to-b opacity-95 ${s.barAccent}`}
+        aria-hidden
+      />
+      <div className="flex items-start justify-between gap-2">
+        <p className="min-w-0 text-[9px] font-bold uppercase leading-snug tracking-[0.12em] text-slate-500 sm:text-[10px]">
+          {label}
+        </p>
+        <span className={`inline-flex shrink-0 rounded-lg p-1.5 ring-1 ${s.iconWrap}`}>
+          {Glyph ? <Glyph className="h-3.5 w-3.5 sm:h-4 sm:w-4" strokeWidth={2} /> : null}
+        </span>
+      </div>
+      <p className={`mt-3 text-xl font-bold tabular-nums sm:text-[1.4rem] ${s.value}`}>
         {Number.isFinite(value) ? value.toLocaleString() : (value || 0)}
       </p>
+    </div>
+  );
+}
+
+function SummaryTile({ label, value, accent, dense = false }) {
+  return (
+    <div
+      className={`relative flex flex-col justify-center overflow-hidden rounded-xl border border-slate-200/90 bg-white shadow-sm ring-1 ring-slate-900/[0.03] ${
+        dense
+          ? 'min-h-0 px-2.5 py-2 sm:px-3 sm:py-2.5'
+          : 'min-h-[4.25rem] px-3 py-2.5 sm:min-h-[4.5rem] sm:px-4 sm:py-3'
+      }`}
+    >
+      <span className={`absolute left-0 w-1 rounded-full bg-primary-navy/80 ${dense ? 'inset-y-1.5' : 'inset-y-2'}`} aria-hidden />
+      <p className={`pl-2 font-semibold uppercase tracking-wide text-slate-500 ${dense ? 'text-[9px] tracking-wider sm:text-[10px]' : 'text-[10px] sm:text-xs'}`}>
+        {label}
+      </p>
+      <p className={`mt-0.5 pl-2 font-bold leading-none tabular-nums ${dense ? 'text-base sm:text-lg' : 'text-xl sm:text-2xl'} ${accent || 'text-slate-900'}`}>
+        {Number.isFinite(value) ? value.toLocaleString() : (value || 0)}
+      </p>
+    </div>
+  );
+}
+
+/** Booked cohort reference (Overview parity) when single IST day + template selected */
+function CohortSummaryTile({ label, value, subtitle, loading }) {
+  return (
+    <div className="relative flex flex-col justify-center overflow-hidden rounded-xl border border-slate-200/90 bg-white px-2.5 py-2 shadow-sm ring-1 ring-slate-900/[0.03] sm:px-3 sm:py-2.5">
+      <span className="absolute left-0 inset-y-1.5 w-1 rounded-full bg-primary-navy/80 sm:inset-y-2" aria-hidden />
+      <p className="pl-2 text-[9px] font-bold uppercase tracking-wider text-slate-500 sm:text-[10px]">{label}</p>
+      <p className="mt-0.5 pl-2 text-base font-bold leading-none tabular-nums text-primary-navy sm:text-lg">
+        {loading ? <FiLoader className="inline animate-spin text-primary-navy" size={18} aria-label="Loading" /> : Number.isFinite(value) ? value.toLocaleString() : '—'}
+      </p>
+      {subtitle ? (
+        <p className="mt-1 pl-2 text-[10px] leading-snug text-slate-500 line-clamp-2">{subtitle}</p>
+      ) : null}
     </div>
   );
 }
@@ -270,57 +382,76 @@ function PageHeader({
   onRefresh,
   loading,
   lastSyncAt,
-  messageKind
+  messageKind,
+  cohortLoading,
+  cohortBookedSlots,
+  cohortSubtitle,
+  cohortHint
 }) {
+  const showCohort = cohortSubtitle != null;
+  const gridTiles = showCohort
+    ? 'grid-cols-2 sm:grid-cols-3 lg:grid-cols-5'
+    : 'grid-cols-2 sm:grid-cols-4';
   return (
-    <section className="overflow-hidden rounded-2xl border border-slate-200/90 bg-white shadow-[0_4px_24px_-12px_rgba(15,23,42,0.08)] ring-1 ring-slate-900/[0.04]">
-      <div className="h-1 w-full bg-gradient-to-r from-primary-navy via-violet-600 to-sky-500" aria-hidden />
-      <div className="flex flex-col gap-4 p-4 sm:p-5">
-        <div className="flex flex-col gap-3 border-b border-slate-100 pb-4 sm:flex-row sm:items-start sm:justify-between sm:gap-6">
-          <div className="min-w-0 flex-1">
-            <div className="flex flex-wrap items-center gap-2">
-              <span className="inline-flex items-center rounded-full border border-slate-200 bg-slate-50 px-2.5 py-0.5 text-[10px] font-bold uppercase tracking-wide text-slate-600 sm:px-3 sm:py-1 sm:text-xs">
-                Recovery operations
+    <section className="overflow-hidden rounded-2xl border border-slate-200/90 bg-white shadow-sm ring-1 ring-slate-900/[0.04]">
+      <div className="flex flex-col gap-3 p-3 sm:flex-row sm:items-center sm:justify-between sm:gap-4 sm:p-4">
+        <div className="flex min-w-0 flex-1 flex-col gap-2 sm:flex-row sm:items-center sm:gap-4">
+          <div className="min-w-0 border-l-[3px] border-primary-navy pl-3">
+            <div className="flex flex-wrap items-center gap-x-2 gap-y-1">
+              <span className="rounded-full border border-slate-200 bg-slate-50 px-2 py-0.5 text-[10px] font-bold uppercase tracking-wide text-slate-600">
+                Recovery
               </span>
               <span
-                className={`inline-flex h-2 w-2 rounded-full shadow-[0_0_0_3px_rgba(16,185,129,0.2)] ${
-                  jobActive ? 'bg-amber-500 animate-pulse' : 'bg-emerald-500'
+                className={`inline-flex h-1.5 w-1.5 rounded-full ${
+                  jobActive ? 'bg-amber-500 motion-safe:animate-pulse' : 'bg-emerald-500'
                 }`}
                 aria-hidden
               />
-              <span className="text-xs font-medium text-slate-500">
-                {messageKind ? `Scope · ${messageKind}` : 'Scope · all templates'}
+              <span className="text-[11px] font-medium text-slate-500">
+                {messageKind || 'All templates'}
               </span>
             </div>
-            <h2 className="mt-2 text-xl font-bold tracking-tight text-slate-900 sm:text-2xl">
-              Recovery console
-            </h2>
-            <p className="mt-1.5 max-w-3xl text-xs leading-relaxed text-slate-600 sm:text-sm">
-              Inspect unresolved recipients, run manual recovery, and export lists. Retry lineage is preserved.
+            <h2 className="mt-1 text-lg font-bold tracking-tight text-slate-900 sm:text-xl">Recovery console</h2>
+            <p className="mt-0.5 hidden max-w-xl text-xs text-slate-600 md:block">
+              Unresolved recipients, manual recovery batches, CSV export. Lineage preserved.
             </p>
-          </div>
-          <div className="flex shrink-0 items-center gap-3 sm:flex-col sm:items-end sm:gap-2">
-            {lastSyncAt && (
-              <span className="whitespace-nowrap text-[11px] text-slate-500 sm:text-right">Last sync · {formatDt(lastSyncAt)}</span>
-            )}
-            <button
-              type="button"
-              onClick={onRefresh}
-              disabled={loading}
-              title="Refresh data"
-              className="inline-flex h-9 w-full items-center justify-center gap-2 rounded-lg border border-slate-200 bg-white px-4 text-xs font-semibold text-primary-navy shadow-sm transition hover:bg-slate-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary-navy/25 disabled:opacity-60 sm:w-auto sm:text-sm"
-            >
-              {loading ? <FiLoader className="animate-spin" size={16} /> : <FiRefreshCw size={16} />}
-              Refresh
-            </button>
+            {cohortHint ? (
+              <p className="mt-2 flex max-w-xl items-start gap-1.5 rounded-lg border border-slate-200/90 bg-slate-50/90 px-2.5 py-2 text-[11px] leading-snug text-slate-600">
+                <FiInfo className="mt-0.5 shrink-0 text-primary-navy" size={13} aria-hidden />
+                <span>{cohortHint}</span>
+              </p>
+            ) : null}
           </div>
         </div>
-        <div className="grid w-full grid-cols-2 gap-3 sm:grid-cols-4">
-          <SummaryTile label="All unresolved" value={totalRows} accent="text-primary-navy" />
-          <SummaryTile label="Failed" value={totals.failed || 0} accent="text-rose-700" />
-          <SummaryTile label="Excluded" value={totals.excluded || 0} accent="text-violet-700" />
-          <SummaryTile label="Exhausted" value={totals.exhausted || 0} accent="text-amber-700" />
+        <div className="flex shrink-0 flex-wrap items-center gap-2 sm:flex-col sm:items-end md:flex-row md:items-center">
+          {lastSyncAt && (
+            <span className="whitespace-nowrap text-[11px] text-slate-500">Synced {formatDt(lastSyncAt)}</span>
+          )}
+          <button
+            type="button"
+            onClick={onRefresh}
+            disabled={loading}
+            title="Refresh data"
+            className="inline-flex h-9 items-center justify-center gap-2 rounded-lg border border-slate-200 bg-white px-3 text-xs font-semibold text-primary-navy shadow-sm transition hover:bg-slate-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary-navy/25 disabled:opacity-60"
+          >
+            {loading ? <FiLoader className="animate-spin" size={14} /> : <FiRefreshCw size={14} />}
+            Refresh
+          </button>
         </div>
+      </div>
+      <div className={`grid gap-2 border-t border-slate-100 px-3 pb-3 pt-3 sm:gap-3 sm:px-4 ${gridTiles}`}>
+        {showCohort ? (
+          <CohortSummaryTile
+            label="Booked (cohort)"
+            value={typeof cohortBookedSlots === 'number' ? cohortBookedSlots : 0}
+            subtitle={cohortSubtitle}
+            loading={!!cohortLoading}
+          />
+        ) : null}
+        <SummaryTile label="All unresolved" value={totalRows} accent="text-primary-navy" dense />
+        <SummaryTile label="Failed" value={totals.failed || 0} accent="text-rose-700" dense />
+        <SummaryTile label="Excluded" value={totals.excluded || 0} accent="text-violet-700" dense />
+        <SummaryTile label="Exhausted" value={totals.exhausted || 0} accent="text-amber-700" dense />
       </div>
     </section>
   );
@@ -344,37 +475,40 @@ function FiltersToolbar({
   const fieldClass =
     'mt-1.5 block h-10 w-full rounded-lg border border-slate-200 bg-white px-3 text-sm text-slate-900 shadow-sm transition placeholder:text-slate-400 focus:border-primary-navy/40 focus:outline-none focus:ring-2 focus:ring-primary-navy/15';
 
+  const categoryEntries = Object.entries(totalsByCategory || {});
+  const categoryCount = categoryEntries.length;
+
   return (
     <SectionCard
       icon={FiSliders}
       kicker="Filters & scope"
       title="Inspection filters"
-      subtitle="Restrict the unresolved list by date, template, group, or free-text search."
+      subtitle="Date, template, group, search."
       headerRight={headerRight}
-      sticky
-      stickyTop="top-2"
       compact
       bodyClassName="space-y-3 p-3 sm:p-4"
     >
       <div className="rounded-xl border border-slate-200/90 bg-slate-50/70 p-3 ring-1 ring-slate-900/[0.03] sm:p-3.5">
-        <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-12 lg:items-end">
-          <label className="text-sm font-medium text-slate-700 sm:col-span-1 lg:col-span-2">
-            From
-            <input type="date" value={from} onChange={(e) => onFromChange(e.target.value)} className={fieldClass} />
-          </label>
-          <label className="text-sm font-medium text-slate-700 sm:col-span-1 lg:col-span-2">
-            To
-            <input type="date" value={to} onChange={(e) => onToChange(e.target.value)} className={fieldClass} />
-          </label>
-          <label className="text-sm font-medium text-slate-700 sm:col-span-2 lg:col-span-4">
-            Template
-            <select value={messageKind} onChange={(e) => onTemplateChange(e.target.value)} className={fieldClass}>
-              {TEMPLATE_OPTIONS.map((o) => (
-                <option key={o.value} value={o.value}>{o.label}</option>
-              ))}
-            </select>
-          </label>
-          <label className="text-sm font-medium text-slate-700 sm:col-span-2 lg:col-span-4">
+        <div className="flex flex-col gap-3">
+          <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-12 lg:items-end">
+            <label className="text-sm font-medium text-slate-700 sm:col-span-1 lg:col-span-3">
+              From
+              <input type="date" value={from} onChange={(e) => onFromChange(e.target.value)} className={fieldClass} />
+            </label>
+            <label className="text-sm font-medium text-slate-700 sm:col-span-1 lg:col-span-3">
+              To
+              <input type="date" value={to} onChange={(e) => onToChange(e.target.value)} className={fieldClass} />
+            </label>
+            <label className="text-sm font-medium text-slate-700 sm:col-span-2 lg:col-span-6">
+              Template
+              <select value={messageKind} onChange={(e) => onTemplateChange(e.target.value)} className={fieldClass}>
+                {TEMPLATE_OPTIONS.map((o) => (
+                  <option key={o.value} value={o.value}>{o.label}</option>
+                ))}
+              </select>
+            </label>
+          </div>
+          <label className="text-sm font-medium text-slate-700">
             Search (name / phone / reason)
             <input
               value={search}
@@ -413,10 +547,10 @@ function FiltersToolbar({
         </div>
       </div>
 
-      {Object.keys(totalsByCategory).length > 0 && (
+      {categoryCount > 0 && categoryCount <= 4 && (
         <div className="flex flex-wrap items-center gap-2 border-t border-slate-200/80 pt-3 text-sm">
           <span className="w-full text-xs font-bold uppercase tracking-wide text-slate-500 sm:w-auto">By exclusion category</span>
-          {Object.entries(totalsByCategory).map(([cat, count]) => (
+          {categoryEntries.map(([cat, count]) => (
             <span
               key={cat}
               className={`inline-flex items-center gap-1.5 rounded-full border px-3 py-1 text-sm ${
@@ -429,6 +563,30 @@ function FiltersToolbar({
           ))}
         </div>
       )}
+
+      {categoryCount > 4 && (
+        <details className="group rounded-lg border border-slate-200/80 bg-slate-50/50">
+          <summary className="cursor-pointer list-none px-3 py-2 text-xs font-bold uppercase tracking-wide text-slate-500 [&::-webkit-details-marker]:hidden">
+            <span className="inline-flex w-full items-center justify-between gap-2">
+              Exclusion categories ({categoryCount})
+              <FiChevronDown className="h-4 w-4 shrink-0 text-slate-400 transition-transform group-open:rotate-180" aria-hidden />
+            </span>
+          </summary>
+          <div className="flex flex-wrap gap-2 border-t border-slate-200/80 px-3 py-3">
+            {categoryEntries.map(([cat, count]) => (
+              <span
+                key={cat}
+                className={`inline-flex items-center gap-1.5 rounded-full border px-3 py-1 text-sm ${
+                  EXCLUSION_CATEGORY_COLORS[cat] || 'border-slate-200 bg-slate-50'
+                }`}
+              >
+                <strong className="font-mono tabular-nums">{count}</strong>
+                <span className="text-slate-700">{EXCLUSION_CATEGORY_LABELS[cat] || cat}</span>
+              </span>
+            ))}
+          </div>
+        </details>
+      )}
     </SectionCard>
   );
 }
@@ -436,6 +594,168 @@ function FiltersToolbar({
 /* ============================================================================
  * RecoveryBatchHero — themed live execution card with 3+3 KPI grid + footer
  * ========================================================================= */
+
+function recoveryHeroChrome(status) {
+  const active = {
+    spectrum: 'from-primary-navy via-violet-600 to-sky-500',
+    ringVariant: 'active',
+    cardRing: 'ring-primary-blue-200/50',
+    header:
+      'border-b border-white/10 bg-gradient-to-br from-[#001f3d] via-primary-navy to-[#074a82] text-white shadow-[inset_0_1px_0_rgba(255,255,255,0.08)]',
+    kicker: 'text-sky-200/70',
+    title: 'text-white',
+    templateMono: 'font-mono text-sky-100/90 font-medium',
+    dotSep: 'text-sky-400/55',
+    iconShell:
+      'bg-gradient-to-br from-white/25 to-white/5 text-white ring-white/35 shadow-xl shadow-black/25 backdrop-blur-sm',
+    statusBadge:
+      'border-white/20 bg-white/10 text-white shadow-inner shadow-black/20 backdrop-blur-md',
+    dot: 'bg-sky-300 shadow-[0_0_14px_rgba(125,211,252,0.75)]',
+    batchChip: 'border-white/15 bg-black/22 font-mono text-sky-100/95 shadow-inner backdrop-blur-sm',
+    bodyBgClass:
+      'bg-[radial-gradient(ellipse_90%_50%_at_12%_-20%,rgba(77,142,199,0.11),transparent_50%),rgb(248,250,252)]',
+    gridPatternClass:
+      '[background-image:radial-gradient(circle_at_1px_1px,rgba(100,116,139,0.11)_1px,transparent_0)] bg-[length:24px_24px]',
+    progressShell: 'border-slate-200/80 bg-white/90 shadow-[0_2px_24px_-14px_rgba(15,23,42,0.12)] ring-slate-900/[0.04]',
+    progressTrack: 'bg-slate-200/90 shadow-[inset_0_2px_4px_rgba(15,23,42,0.06)]',
+    progressPercent: 'text-primary-navy',
+    ringPctLabel: 'text-primary-navy',
+    progressFillClassName: 'bg-gradient-to-r from-primary-navy via-[#084a82] to-primary-blue-400',
+    cancelBtn:
+      'border-rose-300/55 bg-white/10 text-rose-100 shadow-lg shadow-black/15 backdrop-blur-sm hover:bg-rose-500/20 hover:border-rose-200/80',
+    dismissBtn:
+      'border-white/18 bg-white/10 text-white/90 backdrop-blur-sm hover:bg-white/14',
+    footerBar:
+      'border-slate-200/85 bg-gradient-to-r from-white via-primary-blue-50/40 to-sky-50/30 shadow-[0_4px_30px_-18px_rgba(0,51,102,0.35)] ring-slate-900/[0.04]',
+    footerRateBorder: 'border-primary-navy',
+    footerElapsedBorder: 'border-slate-300',
+    rateValue: 'text-primary-navy',
+    elapsedValue: 'text-slate-800',
+    refreshPill:
+      'border-sky-300/55 bg-white/70 text-primary-navy shadow-md shadow-primary-navy/10 backdrop-blur-md',
+    metaMuted: 'text-slate-600'
+  };
+
+  switch (status) {
+    case 'completed':
+      return {
+        spectrum: 'from-emerald-500 via-teal-500 to-cyan-400',
+        ringVariant: 'completed',
+        cardRing: 'ring-emerald-200/55',
+        header:
+          'border-b border-emerald-400/25 bg-gradient-to-r from-emerald-950 via-emerald-900 to-teal-900 text-white shadow-[inset_0_1px_0_rgba(255,255,255,0.06)]',
+        kicker: 'text-emerald-200/75',
+        title: 'text-white',
+        templateMono: 'font-mono text-emerald-100/95 font-medium',
+        dotSep: 'text-emerald-400/50',
+        iconShell:
+          'bg-white/15 text-white ring-emerald-200/35 shadow-xl shadow-emerald-950/35 backdrop-blur-sm',
+        statusBadge:
+          'border-emerald-300/40 bg-emerald-500/12 text-emerald-50 backdrop-blur-md shadow-inner',
+        dot: 'bg-emerald-400 shadow-[0_0_12px_rgba(52,211,153,0.75)]',
+        batchChip: 'border-white/12 bg-black/28 font-mono text-emerald-100/95 backdrop-blur-sm',
+        bodyBgClass:
+          'bg-[radial-gradient(ellipse_100%_55%_at_8%_-25%,rgba(16,185,129,0.09),transparent_52%),rgb(248,250,252)]',
+        gridPatternClass:
+          '[background-image:radial-gradient(circle_at_1px_1px,rgba(100,116,139,0.1)_1px,transparent_0)] bg-[length:24px_24px]',
+        progressShell: 'border-emerald-200/60 bg-white/95 shadow-[0_2px_28px_-14px_rgba(6,78,59,0.12)] ring-emerald-900/[0.05]',
+        progressTrack: 'bg-emerald-100/80 shadow-[inset_0_2px_4px_rgba(6,78,59,0.07)]',
+        progressPercent: 'text-emerald-950',
+        ringPctLabel: 'text-emerald-900',
+        progressFillClassName: 'bg-gradient-to-r from-emerald-600 via-teal-500 to-cyan-400',
+        cancelBtn: active.cancelBtn,
+        dismissBtn:
+          'border-white/20 bg-white/10 text-emerald-50 backdrop-blur-sm hover:bg-white/16',
+        footerBar:
+          'border-emerald-200/70 bg-gradient-to-r from-emerald-50/95 via-white to-teal-50/45 ring-emerald-900/[0.04]',
+        footerRateBorder: 'border-emerald-600',
+        footerElapsedBorder: 'border-slate-300',
+        rateValue: 'text-emerald-800',
+        elapsedValue: 'text-slate-800',
+        refreshPill:
+          'border-emerald-300/50 bg-emerald-50/90 text-emerald-900 shadow-sm backdrop-blur-sm',
+        metaMuted: 'text-slate-600'
+      };
+    case 'failed':
+      return {
+        spectrum: 'from-rose-600 via-rose-500 to-amber-500',
+        ringVariant: 'failed',
+        cardRing: 'ring-rose-200/55',
+        header:
+          'border-b border-rose-500/30 bg-gradient-to-r from-rose-950 via-rose-900 to-slate-950 text-white shadow-[inset_0_1px_0_rgba(255,255,255,0.05)]',
+        kicker: 'text-rose-200/75',
+        title: 'text-white',
+        templateMono: 'font-mono text-rose-100/95 font-medium',
+        dotSep: 'text-rose-400/45',
+        iconShell:
+          'bg-white/12 text-white ring-rose-300/35 shadow-xl shadow-rose-950/40 backdrop-blur-sm',
+        statusBadge: 'border-rose-300/45 bg-rose-500/15 text-rose-50 backdrop-blur-md shadow-inner',
+        dot: 'bg-rose-400 shadow-[0_0_12px_rgba(251,113,133,0.65)]',
+        batchChip: 'border-white/12 bg-black/30 font-mono text-rose-100/95 backdrop-blur-sm',
+        bodyBgClass:
+          'bg-[radial-gradient(ellipse_100%_55%_at_8%_-25%,rgba(244,63,94,0.07),transparent_52%),rgb(248,250,252)]',
+        gridPatternClass:
+          '[background-image:radial-gradient(circle_at_1px_1px,rgba(100,116,139,0.1)_1px,transparent_0)] bg-[length:24px_24px]',
+        progressShell: 'border-rose-200/55 bg-white/95 shadow-[0_2px_28px_-14px_rgba(136,19,55,0.12)] ring-rose-900/[0.05]',
+        progressTrack: 'bg-rose-100/70 shadow-[inset_0_2px_4px_rgba(136,19,55,0.08)]',
+        progressPercent: 'text-rose-950',
+        ringPctLabel: 'text-rose-950',
+        progressFillClassName: 'bg-gradient-to-r from-rose-600 via-rose-500 to-amber-400',
+        cancelBtn: active.cancelBtn,
+        dismissBtn:
+          'border-white/20 bg-white/10 text-rose-50 backdrop-blur-sm hover:bg-white/14',
+        footerBar:
+          'border-rose-200/65 bg-gradient-to-r from-rose-50/90 via-white to-orange-50/35 ring-rose-900/[0.04]',
+        footerRateBorder: 'border-rose-600',
+        footerElapsedBorder: 'border-slate-300',
+        rateValue: 'text-rose-800',
+        elapsedValue: 'text-slate-800',
+        refreshPill:
+          'border-rose-200/60 bg-rose-50/90 text-rose-900 shadow-sm backdrop-blur-sm',
+        metaMuted: 'text-slate-600'
+      };
+    case 'cancelled':
+      return {
+        spectrum: 'from-slate-600 via-slate-500 to-slate-400',
+        ringVariant: 'cancelled',
+        cardRing: 'ring-slate-200/70',
+        header:
+          'border-b border-slate-600/35 bg-gradient-to-r from-slate-900 via-slate-800 to-slate-700 text-white shadow-[inset_0_1px_0_rgba(255,255,255,0.05)]',
+        kicker: 'text-slate-300/80',
+        title: 'text-white',
+        templateMono: 'font-mono text-slate-200/95 font-medium',
+        dotSep: 'text-slate-500/60',
+        iconShell:
+          'bg-white/12 text-white ring-slate-400/30 shadow-lg shadow-black/25 backdrop-blur-sm',
+        statusBadge: 'border-slate-400/35 bg-slate-500/15 text-slate-100 backdrop-blur-md',
+        dot: 'bg-slate-300 shadow-[0_0_8px_rgba(203,213,225,0.5)]',
+        batchChip: 'border-white/10 bg-black/25 font-mono text-slate-200/95 backdrop-blur-sm',
+        bodyBgClass:
+          'bg-[radial-gradient(ellipse_100%_55%_at_8%_-25%,rgba(100,116,139,0.08),transparent_52%),rgb(248,250,252)]',
+        gridPatternClass:
+          '[background-image:radial-gradient(circle_at_1px_1px,rgba(100,116,139,0.1)_1px,transparent_0)] bg-[length:24px_24px]',
+        progressShell: 'border-slate-200/80 bg-white/95 shadow-[0_2px_24px_-14px_rgba(15,23,42,0.1)]',
+        progressTrack: 'bg-slate-200/90 shadow-[inset_0_2px_4px_rgba(15,23,42,0.06)]',
+        progressPercent: 'text-slate-900',
+        ringPctLabel: 'text-slate-800',
+        progressFillClassName: 'bg-gradient-to-r from-slate-600 to-slate-400',
+        cancelBtn: active.cancelBtn,
+        dismissBtn:
+          'border-white/18 bg-white/10 text-slate-100 backdrop-blur-sm hover:bg-white/14',
+        footerBar:
+          'border-slate-200/85 bg-gradient-to-r from-slate-50/95 via-white to-slate-100/40 ring-slate-900/[0.04]',
+        footerRateBorder: 'border-slate-600',
+        footerElapsedBorder: 'border-slate-300',
+        rateValue: 'text-slate-800',
+        elapsedValue: 'text-slate-800',
+        refreshPill:
+          'border-slate-300/70 bg-slate-100/90 text-slate-800 shadow-sm backdrop-blur-sm',
+        metaMuted: 'text-slate-600'
+      };
+    default:
+      return active;
+  }
+}
 
 function RecoveryBatchHero({ job, isSuper, onCancel, onDismiss, dismissed }) {
   const [now, setNow] = useState(() => Date.now());
@@ -468,154 +788,209 @@ function RecoveryBatchHero({ job, isSuper, onCancel, onDismiss, dismissed }) {
   const elapsedMs = startedAt ? (finishedAt || now) - startedAt : 0;
 
   const isRunning = !isTerminal(job.status);
+  const chrome = recoveryHeroChrome(job.status);
 
-  /** Theme tokens by job state. Running uses primary-navy gradient progress, terminal states use intent colours. */
-  let cardClassName = 'border-primary-blue-300 ring-1 ring-primary-blue-200/60';
-  let headerClassName = 'border-primary-blue-200 bg-gradient-to-r from-primary-blue-100/70 to-primary-blue-50/40';
-  let badgeClassName = 'border-primary-blue-300 bg-primary-blue-100 text-primary-navy';
-  let progressFillClassName = 'bg-gradient-to-r from-primary-navy to-primary-blue-400';
-  let dotClassName = 'bg-primary-blue-500 animate-pulse';
   let stageBadge = 'Running';
-
-  if (job.status === 'completed') {
-    cardClassName = 'border-emerald-200';
-    headerClassName = 'border-emerald-200 bg-gradient-to-r from-emerald-50 to-white';
-    badgeClassName = 'border-emerald-300 bg-emerald-100 text-emerald-900';
-    progressFillClassName = 'bg-gradient-to-r from-emerald-500 to-emerald-400';
-    dotClassName = 'bg-emerald-500';
-    stageBadge = 'Completed';
-  } else if (job.status === 'failed') {
-    cardClassName = 'border-rose-200';
-    headerClassName = 'border-rose-200 bg-gradient-to-r from-rose-50 to-white';
-    badgeClassName = 'border-rose-300 bg-rose-100 text-rose-900';
-    progressFillClassName = 'bg-gradient-to-r from-rose-500 to-rose-400';
-    dotClassName = 'bg-rose-500';
-    stageBadge = 'Failed';
-  } else if (job.status === 'cancelled') {
-    cardClassName = 'border-slate-200';
-    headerClassName = 'border-slate-200 bg-gradient-to-r from-slate-50 to-white';
-    badgeClassName = 'border-slate-300 bg-white text-slate-700';
-    progressFillClassName = 'bg-slate-400';
-    dotClassName = 'bg-slate-400';
-    stageBadge = 'Cancelled';
-  }
+  if (job.status === 'completed') stageBadge = 'Completed';
+  else if (job.status === 'failed') stageBadge = 'Failed';
+  else if (job.status === 'cancelled') stageBadge = 'Cancelled';
+  else if (job.status === 'queued') stageBadge = 'Queued';
 
   const batchSuffix = String(job._id || '').slice(-8);
   const messageKindLabel = job.messageKind || job.template || '—';
 
+  const dotPulse = isRunning && (job.status === 'running' || job.status === 'queued');
+
   return (
-    <section className={`overflow-hidden rounded-2xl border bg-white shadow-sm ${cardClassName}`}>
-      <div className={`flex flex-wrap items-center justify-between gap-3 border-b px-4 py-3 sm:px-5 ${headerClassName}`}>
-        <div className="flex min-w-0 items-center gap-3">
-          <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-white text-primary-navy shadow-sm ring-1 ring-slate-200/80">
-            <FiActivity size={18} />
-          </span>
-          <div className="min-w-0">
-            <p className="text-xs font-bold uppercase tracking-wide text-slate-600">Live operation</p>
-            <h3 className="mt-0.5 truncate text-base font-semibold text-slate-900">
-              Recovery batch
-              <span className="ml-2 font-mono text-sm font-normal text-slate-500">· {messageKindLabel}</span>
-            </h3>
+    <section
+      className={`relative overflow-hidden rounded-2xl border border-slate-200/85 bg-white shadow-md ring-1 ring-slate-900/[0.04] xl:ring-inset ${chrome.cardRing}`}
+    >
+      <div className={`relative px-4 py-3.5 sm:px-5 sm:py-4 ${chrome.header}`}>
+        <div
+          className="pointer-events-none absolute inset-0 bg-[linear-gradient(120deg,rgba(255,255,255,0.06)_0%,transparent_42%,transparent_100%)] mix-blend-overlay"
+          aria-hidden
+        />
+        <div className="relative flex flex-wrap items-center justify-between gap-3">
+          <div className="flex min-w-0 flex-1 items-center gap-3">
+            <span
+              className={`flex h-11 w-11 shrink-0 items-center justify-center rounded-xl ring-2 ring-inset ${chrome.iconShell}`}
+            >
+              <FiActivity size={20} strokeWidth={2} />
+            </span>
+            <div className="min-w-0">
+              <p className={`text-[10px] font-bold uppercase tracking-[0.16em] ${chrome.kicker}`}>Live operation</p>
+              <h3 className="mt-1 truncate text-base font-semibold tracking-tight sm:text-[1.05rem]">
+                <span className={chrome.title}>Recovery batch</span>
+                <span className={`mx-1.5 text-sm font-normal ${chrome.dotSep}`} aria-hidden>
+                  ·
+                </span>
+                <span className={`text-[0.875rem] ${chrome.templateMono}`}>{messageKindLabel}</span>
+              </h3>
+            </div>
           </div>
-        </div>
-        <div className="flex flex-wrap items-center gap-2">
-          <span className={`inline-flex items-center gap-1.5 rounded-full border px-3 py-1 text-xs font-semibold ${badgeClassName}`}>
-            <span className={`h-2 w-2 rounded-full ${dotClassName}`} aria-hidden />
-            {stageBadge}
-          </span>
-          <span className="font-mono text-xs text-slate-500">Batch · {batchSuffix}</span>
-          {isSuper && isRunning && (
-            <button
-              type="button"
-              onClick={onCancel}
-              title="Cancel this recovery batch"
-              className="inline-flex h-9 items-center gap-1.5 rounded-lg border border-rose-300 bg-white px-3 text-xs font-semibold text-rose-700 shadow-sm transition hover:bg-rose-50"
+          <div className="flex flex-wrap items-center gap-2 sm:justify-end">
+            <span
+              className={`inline-flex items-center gap-2 rounded-full border px-3 py-1.5 text-[11px] font-bold uppercase tracking-wide ${chrome.statusBadge}`}
             >
-              <FiSlash size={14} /> Cancel batch
-            </button>
-          )}
-          {!isRunning && typeof onDismiss === 'function' && (
-            <button
-              type="button"
-              onClick={onDismiss}
-              title="Dismiss completed batch banner"
-              className="inline-flex h-9 items-center gap-1.5 rounded-lg border border-slate-200 bg-white px-3 text-xs font-semibold text-slate-600 hover:bg-slate-50"
+              <span
+                className={`relative flex h-2 w-2 shrink-0 rounded-full ${chrome.dot}${dotPulse ? ' motion-safe:animate-pulse' : ''}`}
+                aria-hidden
+              />
+              {stageBadge}
+            </span>
+            <span
+              className={`rounded-lg border px-2 py-1 font-mono text-[10px] font-semibold tabular-nums tracking-normal sm:text-[11px] ${chrome.batchChip}`}
             >
-              <FiX size={14} /> Dismiss
-            </button>
-          )}
+              Batch · {batchSuffix}
+            </span>
+            {isSuper && isRunning && (
+              <button
+                type="button"
+                onClick={onCancel}
+                title="Cancel this recovery batch"
+                className={`inline-flex h-8 items-center gap-1 rounded-lg border px-3 text-[11px] font-bold uppercase tracking-wide transition sm:h-9 sm:rounded-xl ${chrome.cancelBtn}`}
+              >
+                <FiSlash size={13} strokeWidth={2.5} /> Cancel
+              </button>
+            )}
+            {!isRunning && typeof onDismiss === 'function' && (
+              <button
+                type="button"
+                onClick={onDismiss}
+                title="Dismiss completed batch banner"
+                className={`inline-flex h-8 items-center gap-1 rounded-lg border px-3 text-[11px] font-semibold transition sm:h-9 sm:rounded-xl ${chrome.dismissBtn}`}
+              >
+                <FiX size={13} strokeWidth={2.5} /> Dismiss
+              </button>
+            )}
+          </div>
         </div>
       </div>
 
-      <div className="space-y-5 p-4 sm:p-5">
-        <div>
-          <div className="mb-1.5 flex items-center justify-between text-xs font-medium text-slate-600">
-            <span>Batch progress</span>
-            <span className="font-mono tabular-nums text-slate-800">{percent}%</span>
+      <div className={`relative ${chrome.bodyBgClass}`}>
+        <div className="relative space-y-4 px-4 py-4 sm:px-5 sm:py-5">
+          <div className={`rounded-xl border p-4 ring-1 ring-inset sm:p-4 ${chrome.progressShell}`}>
+            <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:gap-5">
+              <div
+                className={`flex shrink-0 flex-col justify-center rounded-lg border border-slate-100 bg-slate-50/80 px-4 py-2 text-center tabular-nums sm:min-w-[5.25rem]`}
+              >
+                <span className={`text-[1.85rem] font-bold leading-none sm:text-[2rem] ${chrome.ringPctLabel}`}>{percent}%</span>
+                <span className="mt-1 text-[9px] font-semibold uppercase tracking-[0.12em] text-slate-500">Progress</span>
+              </div>
+              <div className="min-w-0 flex-1 space-y-2">
+                <div className="flex flex-wrap items-center justify-between gap-2">
+                  <span className="text-[10px] font-bold uppercase tracking-[0.12em] text-slate-500">Batch progress</span>
+                  <span className={`font-mono text-xs font-bold tabular-nums ${chrome.progressPercent}`}>
+                    {completedSteps.toLocaleString()} / {targeted.toLocaleString()} steps
+                  </span>
+                </div>
+                <div
+                  className={`relative h-2.5 w-full overflow-hidden rounded-full ${chrome.progressTrack}`}
+                  role="progressbar"
+                  aria-valuemin={0}
+                  aria-valuemax={100}
+                  aria-valuenow={percent}
+                  aria-label={`Recovery progress ${percent} percent`}
+                >
+                  <div
+                    className={`relative h-full overflow-hidden rounded-full shadow-sm transition-[width] duration-700 ease-out ${chrome.progressFillClassName}`}
+                    style={{ width: `${percent}%` }}
+                  >
+                    <span
+                      className="pointer-events-none absolute inset-y-0 left-0 w-full bg-[linear-gradient(90deg,transparent,rgba(255,255,255,0.28),transparent)]"
+                      aria-hidden
+                    />
+                  </div>
+                </div>
+              </div>
+            </div>
           </div>
-          <div
-            className="relative h-3.5 w-full overflow-hidden rounded-full bg-slate-100"
-            role="progressbar"
-            aria-valuemin={0}
-            aria-valuemax={100}
-            aria-valuenow={percent}
-            aria-label={`Recovery progress ${percent} percent`}
+
+          <div>
+            <div className="mb-3 flex flex-wrap items-end justify-between gap-2 border-b border-slate-200/80 pb-2">
+              <h4 className="text-[10px] font-bold uppercase tracking-[0.14em] text-slate-500">Throughput</h4>
+            </div>
+            <div className="grid grid-cols-1 gap-3 sm:grid-cols-3">
+              <RecoveryThroughputMetric label="Targeted" value={targeted} icon={FiTarget} intent="default" dense />
+              <RecoveryThroughputMetric
+                label="Attempted"
+                value={counters.attempted || 0}
+                icon={FiArrowRight}
+                intent="default"
+                dense
+              />
+              <RecoveryThroughputMetric
+                label="Accepted"
+                value={counters.apiAccepted || 0}
+                icon={FiActivity}
+                intent="primary"
+                dense
+              />
+            </div>
+          </div>
+
+          <details
+            className="group overflow-hidden rounded-xl border border-slate-200/85 bg-white ring-1 ring-slate-900/[0.04] open:bg-white"
+            open={!isRunning}
           >
-            <div
-              className={`h-full rounded-full transition-all duration-300 ${progressFillClassName}`}
-              style={{ width: `${percent}%` }}
-            />
-          </div>
-        </div>
-
-        <div className="space-y-4">
-          <div>
-            <p className="text-xs font-semibold uppercase tracking-wide text-slate-500">Progress</p>
-            <div className="mt-2 grid grid-cols-2 gap-3 sm:grid-cols-3">
-              <KpiTile label="Targeted" value={targeted} icon={FiTarget} />
-              <KpiTile label="Attempted" value={counters.attempted || 0} icon={FiArrowRight} />
-              <KpiTile label="Accepted" value={counters.apiAccepted || 0} icon={FiActivity} accent="text-primary-navy" />
-            </div>
-          </div>
-          <div>
-            <p className="text-xs font-semibold uppercase tracking-wide text-slate-500">Outcomes</p>
-            <div className="mt-2 grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-6">
-              <KpiTile label="Recovered" value={recovered} icon={FiCheckCircle} accent="text-emerald-700" />
-              <KpiTile label="Delivered (post)" value={counters.delivered || 0} icon={FiCheckCircle} accent="text-teal-700" />
-              <KpiTile label="Excluded (post)" value={counters.excluded || 0} icon={FiSlash} accent="text-slate-700" />
-              <KpiTile label="Failed" value={counters.sendFailed || 0} icon={FiAlertTriangle} accent="text-rose-700" />
-              <KpiTile label="In-flight" value={counters.inFlight || 0} icon={FiClock} accent="text-amber-700" />
-              <KpiTile label="Failed (post)" value={counters.failed || 0} icon={FiAlertOctagon} accent="text-rose-800" />
-            </div>
-          </div>
-        </div>
-
-        {job.errorSummary && (
-          <p className="rounded-lg border border-rose-200 bg-rose-50 px-4 py-2 text-sm text-rose-800">
-            {job.errorSummary}
-          </p>
-        )}
-
-        <div className="flex flex-wrap items-center justify-between gap-4 rounded-xl border border-slate-200/90 bg-slate-50/80 px-4 py-3">
-          <div className="flex flex-wrap items-center gap-6">
-            <div>
-              <p className="text-xs font-semibold uppercase tracking-wide text-slate-500">Recovery rate</p>
-              <p className="font-mono text-xl font-bold text-primary-navy tabular-nums">{recoveryRate}%</p>
-            </div>
-            <div>
-              <p className="text-xs font-semibold uppercase tracking-wide text-slate-500">Elapsed</p>
-              <p className="font-mono text-xl font-bold text-slate-800 tabular-nums">{formatElapsed(elapsedMs)}</p>
-            </div>
-          </div>
-          <div className="flex flex-col items-end gap-1 text-right text-sm text-slate-600">
-            {isRunning ? (
-              <span className="inline-flex items-center gap-1.5 rounded-full border border-primary-navy/20 bg-white px-3 py-1 text-xs font-semibold text-primary-navy shadow-sm">
-                <FiRotateCw className="animate-spin" size={12} /> Auto-refresh every 2s
+            <summary className="cursor-pointer list-none px-4 py-3 [&::-webkit-details-marker]:hidden">
+              <span className="flex w-full flex-wrap items-center justify-between gap-2">
+                <span>
+                  <span className="text-[10px] font-bold uppercase tracking-[0.14em] text-slate-500">Outcomes</span>
+                  <span className="ml-2 text-xs font-medium text-slate-400">
+                    Recovered · delivered · exclusions · failures
+                  </span>
+                </span>
+                <span className="inline-flex items-center gap-1 text-xs font-semibold text-primary-navy">
+                  <span className="sm:hidden">{isRunning ? 'Tap to expand' : 'Details'}</span>
+                  <span className="hidden sm:inline">{isRunning ? 'Expand while running' : 'Toggle'}</span>
+                  <FiChevronDown className="h-4 w-4 shrink-0 text-slate-400 transition-transform group-open:rotate-180" aria-hidden />
+                </span>
               </span>
-            ) : (
-              <span>Started {formatDt(job.startedAt)}</span>
-            )}
-            {!isRunning && job.finishedAt && <span>Finished {formatDt(job.finishedAt)}</span>}
+            </summary>
+            <div className="border-t border-slate-100">
+              <div className="grid grid-cols-2 divide-x divide-y divide-slate-200/85 sm:grid-cols-3 lg:grid-cols-6">
+                <RecoveryOutcomeMetric label="Recovered" value={recovered} icon={FiCheckCircle} intent="success" />
+                <RecoveryOutcomeMetric label="Delivered (post)" value={counters.delivered || 0} icon={FiCheckCircle} intent="successAlt" />
+                <RecoveryOutcomeMetric label="Excluded (post)" value={counters.excluded || 0} icon={FiSlash} intent="muted" />
+                <RecoveryOutcomeMetric label="Failed" value={counters.sendFailed || 0} icon={FiAlertTriangle} intent="danger" />
+                <RecoveryOutcomeMetric label="In-flight" value={counters.inFlight || 0} icon={FiClock} intent="warning" />
+                <RecoveryOutcomeMetric label="Failed (post)" value={counters.failed || 0} icon={FiAlertOctagon} intent="dangerStrong" />
+              </div>
+            </div>
+          </details>
+
+          {job.errorSummary && (
+            <div className="rounded-xl border border-rose-300/55 bg-gradient-to-br from-rose-50 to-white p-3.5 text-sm leading-relaxed text-rose-900 shadow-sm ring-1 ring-rose-900/[0.05]">
+              <p className="text-[10px] font-bold uppercase tracking-[0.12em] text-rose-700">Batch error</p>
+              <p className="mt-1.5">{job.errorSummary}</p>
+            </div>
+          )}
+
+          <div
+            className={`flex flex-wrap items-center justify-between gap-4 rounded-xl border px-4 py-4 ring-1 sm:gap-6 ${chrome.footerBar}`}
+          >
+            <div className="flex flex-wrap items-stretch gap-5 sm:gap-8">
+              <div className={`min-w-[5.5rem] border-l-[3px] pl-3 ${chrome.footerRateBorder}`}>
+                <p className="text-[9px] font-bold uppercase tracking-[0.12em] text-slate-500">Recovery rate</p>
+                <p className={`mt-1.5 font-mono text-xl font-bold tabular-nums sm:text-2xl ${chrome.rateValue}`}>{recoveryRate}%</p>
+              </div>
+              <div className={`min-w-[5.5rem] border-l-[3px] pl-3 ${chrome.footerElapsedBorder}`}>
+                <p className="text-[9px] font-bold uppercase tracking-[0.12em] text-slate-500">Elapsed</p>
+                <p className={`mt-1.5 font-mono text-xl font-bold tabular-nums sm:text-2xl ${chrome.elapsedValue}`}>{formatElapsed(elapsedMs)}</p>
+              </div>
+            </div>
+            <div className={`flex min-w-[11rem] flex-col items-start gap-1 sm:items-end sm:text-right ${chrome.metaMuted} text-[11px] sm:text-xs`}>
+              {isRunning ? (
+                <span className={`inline-flex items-center gap-2 rounded-full border px-3 py-1.5 text-[10px] font-bold uppercase tracking-wide ${chrome.refreshPill}`}>
+                  <FiRotateCw className="shrink-0 motion-safe:animate-spin" size={12} strokeWidth={2.5} />
+                  Auto-refresh 2s
+                </span>
+              ) : (
+                <span>Started {formatDt(job.startedAt)}</span>
+              )}
+              {!isRunning && job.finishedAt && <span className="text-slate-500">Finished {formatDt(job.finishedAt)}</span>}
+            </div>
           </div>
         </div>
       </div>
@@ -638,16 +1013,16 @@ function RecoveryActionsCard({
   if (!messageKind) {
     return (
       <SectionCard
+        compact
         icon={FiPlay}
         kicker="Recovery actions"
-        title="Pick a template to enable manual recovery"
-        subtitle="Manual recovery is template-scoped; select a template above to preview and trigger a batch."
-        bodyClassName="p-3"
+        title="Select a template first"
+        subtitle="Manual recovery is template-scoped. Choose a template in filters, then preview and start a batch."
+        bodyClassName="p-0"
       >
-        <div className="rounded-lg border border-dashed border-primary-blue-200 bg-primary-blue-50/30 p-2.5 text-xs text-slate-600">
-          <FiInfo className="mr-1 inline text-primary-navy" />
-          No template selected. Choose a template in the filter above to unlock the preview and start CTAs.
-        </div>
+        <p className="border-t border-slate-100 px-3 py-2 text-[11px] leading-snug text-slate-600 sm:px-4">
+          Filters above must list a specific template (not “All templates”) to unlock preview and recovery.
+        </p>
       </SectionCard>
     );
   }
@@ -665,7 +1040,7 @@ function RecoveryActionsCard({
           <span className="inline-flex items-center gap-1 rounded-full border border-primary-blue-200 bg-primary-blue-50 px-2.5 py-1 text-[11px] font-bold uppercase tracking-wide text-primary-navy">
             <FiActivity size={11} /> Operation in progress
           </span>
-          <span>See the live batch above for live counters and the cancel control.</span>
+          <span>Use the batch card in the main column for counters and cancel.</span>
           <span className="ml-auto text-[11px] text-slate-500">Started {formatDt(job.startedAt)}</span>
         </div>
       </SectionCard>
@@ -805,15 +1180,14 @@ function RecentBatchesCard({ recentJobs, messageKind }) {
           : 'Pick a template to see recent batches'
       }
       subtitle="Latest manual jobs for this template."
-      bodyClassName={top3.length ? 'p-0' : 'p-3'}
+      bodyClassName={top3.length ? 'p-0' : 'p-0'}
     >
       {top3.length === 0 ? (
-        <div className="rounded-lg border border-dashed border-primary-blue-200 bg-primary-blue-50/30 p-2.5 text-xs leading-snug text-slate-600">
-          <FiInfo className="mr-1 inline text-primary-navy" />
+        <p className="border-t border-slate-100 px-3 py-2 text-[11px] leading-snug text-slate-600 sm:px-4">
           {messageKind
             ? 'No recent recovery batches for this template.'
-            : 'Pick a template above to load its recent batches.'}
-        </div>
+            : 'Choose a template in filters to load recent batches.'}
+        </p>
       ) : (
         <ul className="divide-y divide-primary-blue-100">
           {top3.map((j) => {
@@ -848,6 +1222,90 @@ function RecentBatchesCard({ recentJobs, messageKind }) {
 }
 
 /* ============================================================================
+ * UnresolvedExportToolbar — primary download + overflow menu for copy actions
+ * ========================================================================= */
+
+function UnresolvedExportToolbar({ onCopyPhones, onCopyCsv, onDownloadCsv, csvBusy }) {
+  const [menuOpen, setMenuOpen] = useState(false);
+  const wrapRef = useRef(null);
+
+  useEffect(() => {
+    if (!menuOpen) return undefined;
+    const onDocDown = (e) => {
+      if (wrapRef.current && !wrapRef.current.contains(e.target)) setMenuOpen(false);
+    };
+    document.addEventListener('mousedown', onDocDown);
+    return () => document.removeEventListener('mousedown', onDocDown);
+  }, [menuOpen]);
+
+  const btnSecondary =
+    'inline-flex h-9 shrink-0 items-center gap-1.5 rounded-lg border border-slate-200 bg-white px-3 text-xs font-semibold text-slate-700 shadow-sm transition hover:bg-slate-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary-navy/20';
+  const btnPrimary =
+    'inline-flex h-9 shrink-0 items-center gap-1.5 rounded-lg border border-primary-navy bg-primary-navy px-3.5 text-xs font-semibold text-white shadow-sm transition hover:bg-primary-navy/90 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary-navy/30 disabled:opacity-60';
+  const menuBtn =
+    'flex w-full items-center gap-2 px-3 py-2 text-left text-xs font-semibold text-slate-700 transition hover:bg-slate-50 disabled:opacity-50';
+
+  return (
+    <div ref={wrapRef} className="flex min-w-0 shrink-0 flex-wrap items-center justify-end gap-2">
+      <div className="relative">
+        <button
+          type="button"
+          className={`${btnSecondary} min-w-0`}
+          aria-expanded={menuOpen}
+          aria-haspopup="menu"
+          title="More export options"
+          onClick={() => setMenuOpen((o) => !o)}
+        >
+          <FiMoreHorizontal size={18} className="shrink-0" aria-hidden />
+          <span className="truncate">More</span>
+        </button>
+        {menuOpen ? (
+          <div
+            role="menu"
+            className="absolute right-0 top-full z-50 mt-1 min-w-[12.5rem] rounded-lg border border-slate-200 bg-white py-1 shadow-lg ring-1 ring-slate-900/5"
+          >
+            <button
+              type="button"
+              role="menuitem"
+              className={menuBtn}
+              onClick={() => {
+                onCopyPhones();
+                setMenuOpen(false);
+              }}
+            >
+              <FiCopy size={14} aria-hidden /> Copy phones (this page)
+            </button>
+            <button
+              type="button"
+              role="menuitem"
+              className={menuBtn}
+              disabled={csvBusy}
+              onClick={() => {
+                onCopyCsv();
+                setMenuOpen(false);
+              }}
+            >
+              {csvBusy ? <FiLoader className="animate-spin" size={14} /> : <FiCopy size={14} aria-hidden />}
+              Copy filtered CSV
+            </button>
+          </div>
+        ) : null}
+      </div>
+      <button
+        type="button"
+        onClick={onDownloadCsv}
+        disabled={csvBusy}
+        title="Download phone (91…) and name as CSV"
+        className={btnPrimary}
+      >
+        {csvBusy ? <FiLoader className="animate-spin" size={14} /> : <FiDownload size={14} />}
+        Download CSV
+      </button>
+    </div>
+  );
+}
+
+/* ============================================================================
  * UnresolvedTableCard — themed table with sticky thead + bulk-actions
  * ========================================================================= */
 
@@ -861,31 +1319,13 @@ function UnresolvedTableCard({
   const allOnPageSelected = rows.length > 0 && rows.every((r) => selected.has(r.phone));
   const showBulkBar = selected.size > 0;
 
-  const btnSecondary =
-    'inline-flex h-9 items-center gap-1.5 rounded-lg border border-slate-200 bg-white px-3 text-xs font-semibold text-slate-700 shadow-sm transition hover:bg-slate-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary-navy/20';
-  const btnPrimary =
-    'inline-flex h-9 items-center gap-1.5 rounded-lg border border-primary-navy bg-primary-navy px-3.5 text-xs font-semibold text-white shadow-sm transition hover:bg-primary-navy/90 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary-navy/30 disabled:opacity-60';
-
   const headerRight = (
-    <>
-      <button type="button" onClick={onCopyPhones} title="Copy phone (91…) and name for rows on this page (CSV)" className={btnSecondary}>
-        <FiCopy size={14} /> Copy phones
-      </button>
-      <button
-        type="button"
-        onClick={onCopyCsv}
-        disabled={csvBusy}
-        title="Copy filtered phone (91…) and name as CSV (up to 5000 rows)"
-        className={btnSecondary}
-      >
-        {csvBusy ? <FiLoader className="animate-spin" size={14} /> : <FiCopy size={14} />}
-        Copy CSV
-      </button>
-      <button type="button" onClick={onDownloadCsv} disabled={csvBusy} title="Download phone (91…) and name as CSV" className={btnPrimary}>
-        {csvBusy ? <FiLoader className="animate-spin" size={14} /> : <FiDownload size={14} />}
-        Download CSV
-      </button>
-    </>
+    <UnresolvedExportToolbar
+      onCopyPhones={onCopyPhones}
+      onCopyCsv={onCopyCsv}
+      onDownloadCsv={onDownloadCsv}
+      csvBusy={csvBusy}
+    />
   );
 
   return (
@@ -899,7 +1339,7 @@ function UnresolvedTableCard({
       bodyClassName="p-0"
     >
       {showBulkBar && (
-        <div className="sticky top-0 z-20 flex flex-wrap items-center gap-2 border-b border-slate-200 bg-white/95 px-4 py-3 text-sm shadow-sm backdrop-blur-md">
+        <div className="sticky top-0 z-20 flex flex-wrap items-center gap-2 border-b border-slate-200 bg-white/95 px-4 py-2.5 text-sm shadow-sm backdrop-blur-md sm:py-3">
           <span className="inline-flex items-center gap-1.5 rounded-full bg-primary-navy px-3 py-1 text-xs font-bold uppercase tracking-wide text-white">
             <FiTarget size={12} /> {selected.size} selected
           </span>
@@ -932,11 +1372,21 @@ function UnresolvedTableCard({
         </div>
       )}
 
-      <div className="max-h-[min(70vh,720px)] overflow-auto">
-        <table className="min-w-[960px] w-full border-collapse text-sm">
+      <div className="max-h-[min(70vh,720px)] min-w-0 overflow-x-auto">
+        <table className="w-full min-w-0 table-fixed border-collapse text-sm">
+          <colgroup>
+            <col className="w-10" />
+            <col className="w-[17%]" />
+            <col className="w-[15%]" />
+            <col className="hidden lg:table-column lg:w-[7.75rem]" />
+            <col className="w-[42%] 2xl:w-[24%]" />
+            <col className="hidden 2xl:table-column 2xl:w-[10%]" />
+            <col className="hidden 2xl:table-column 2xl:w-14" />
+            <col className="hidden 2xl:table-column 2xl:w-[10%]" />
+          </colgroup>
           <thead className="sticky top-0 z-10 border-b border-slate-200 bg-white/95 text-xs font-bold uppercase tracking-wide text-slate-500 shadow-sm backdrop-blur-md">
             <tr>
-              <th className="w-11 px-2 py-2.5 text-left align-middle sm:w-12 sm:px-3">
+              <th className="w-10 px-2 py-2 text-left align-middle sm:px-2.5">
                 <input
                   type="checkbox"
                   checked={allOnPageSelected}
@@ -945,13 +1395,23 @@ function UnresolvedTableCard({
                   className="rounded border-slate-300"
                 />
               </th>
-              <th className="px-2 py-2.5 text-left align-middle sm:px-3">Recipient</th>
-              <th className="px-2 py-2.5 text-left align-middle sm:px-3">Template / stage</th>
-              <th className="whitespace-nowrap px-2 py-2.5 text-left align-middle sm:px-3">State</th>
-              <th className="min-w-[180px] max-w-[min(28rem,40vw)] px-2 py-2.5 text-left align-middle sm:px-3">Reason / error</th>
-              <th className="px-2 py-2.5 text-left align-middle sm:px-3">Ever delivered</th>
-              <th className="whitespace-nowrap px-2 py-2.5 text-right align-middle sm:px-3">Retries</th>
-              <th className="whitespace-nowrap px-2 py-2.5 text-left align-middle sm:px-3">Last attempt</th>
+              <th className="min-w-0 w-[17%] px-2 py-2 text-left align-middle sm:px-2.5">Recipient</th>
+              <th className="min-w-0 w-[15%] px-2 py-2 text-left align-middle sm:px-2.5">Template / stage</th>
+              <th className="hidden min-w-0 w-[7.75rem] px-2 py-2 text-left align-middle lg:table-cell sm:px-2.5">
+                State
+              </th>
+              <th className="min-w-0 w-[42%] px-2 py-2 text-left align-middle sm:px-2.5 2xl:w-[24%]">
+                Reason / error
+              </th>
+              <th className="hidden min-w-0 px-2 py-2 text-left align-middle 2xl:table-cell sm:px-2.5 2xl:w-[10%]">
+                Delivered
+              </th>
+              <th className="hidden w-14 px-2 py-2 text-right align-middle 2xl:table-cell sm:px-2.5">
+                Retries
+              </th>
+              <th className="hidden min-w-0 px-2 py-2 text-left align-middle 2xl:table-cell sm:px-2.5 2xl:w-[10%]">
+                Last
+              </th>
             </tr>
           </thead>
           <tbody className="divide-y divide-slate-100">
@@ -975,6 +1435,7 @@ function UnresolvedTableCard({
             )}
             {rows.map((r) => {
               const isSel = selected.has(r.phone);
+              const reasonTitle = [r.exclusionReason, r.reason, r.errorMessage].filter(Boolean).join(' · ') || '';
               return (
                 <tr
                   key={`${r.phone}-${r.messageKind}-${r.lastEventId}`}
@@ -984,64 +1445,90 @@ function UnresolvedTableCard({
                       : 'odd:bg-white even:bg-slate-50/40 hover:bg-slate-100/80'
                   }`}
                 >
-                  <td className="relative w-11 px-2 py-2 align-middle sm:w-12 sm:px-3 sm:py-2.5">
-                    <span className={`absolute left-0 top-1.5 bottom-1.5 w-0.5 rounded-full sm:top-2 sm:bottom-2 ${severityStripeClass(r)}`} aria-hidden />
+                  <td className="relative w-10 px-2 py-1.5 align-middle sm:py-2">
+                    <span className={`absolute bottom-1.5 left-0 top-1.5 w-0.5 rounded-full sm:bottom-2 sm:top-2 ${severityStripeClass(r)}`} aria-hidden />
                     <input
                       type="checkbox"
                       checked={isSel}
                       onChange={() => onToggleRow(r.phone)}
                       aria-label={`Select ${r.phone}`}
-                      className="ml-1 rounded border-slate-300"
+                      className="ml-0.5 rounded border-slate-300 sm:ml-1"
                     />
                   </td>
-                  <td className="px-2 py-2 align-middle sm:px-3 sm:py-2.5">
-                    <p className="font-mono text-xs font-semibold text-slate-900 sm:text-sm">{r.phone}</p>
-                    <p className="mt-0.5 max-w-[14rem] truncate text-xs text-slate-600 sm:text-sm">{r.name || '—'}</p>
+                  <td className="min-w-0 px-2 py-1.5 align-middle sm:py-2">
+                    <p className="truncate font-mono text-xs font-semibold text-slate-900">{r.phone}</p>
+                    <p className="mt-0.5 truncate text-xs text-slate-600" title={r.name ? String(r.name) : ''}>
+                      {r.name || '—'}
+                    </p>
                   </td>
-                  <td className="px-2 py-2 align-middle sm:px-3 sm:py-2.5">
-                    <div className="flex flex-col gap-1">
-                      <span className="inline-flex w-fit max-w-full items-center rounded-md bg-primary-blue-50 px-1.5 py-0.5 font-mono text-[11px] font-semibold text-primary-navy ring-1 ring-primary-blue-200/80 sm:px-2 sm:text-xs">
+                  <td className="min-w-0 px-2 py-1.5 align-middle sm:py-2">
+                    <div className="flex min-w-0 flex-col gap-0.5">
+                      <span
+                        className="inline-flex max-w-full items-center truncate rounded-md bg-primary-blue-50 px-1.5 py-0.5 font-mono text-[10px] font-semibold uppercase text-primary-navy ring-1 ring-primary-blue-200/80 sm:px-2 sm:text-xs"
+                        title={r.messageKind}
+                      >
                         {r.messageKind}
                       </span>
-                      <p className="line-clamp-1 text-xs text-slate-600 sm:text-sm" title={`${r.attemptStage || '—'} · #${r.lastAttemptNumber || '—'}`}>
+                      <p
+                        className="line-clamp-1 min-w-0 text-xs text-slate-600"
+                        title={`${r.attemptStage || '—'} · #${r.lastAttemptNumber || '—'}`}
+                      >
                         {r.attemptStage || '—'}
                         <span className="text-slate-400"> · #{r.lastAttemptNumber || '—'}</span>
                       </p>
+                      <div className="flex flex-wrap items-start gap-x-1 gap-y-0.5 lg:hidden">
+                        <StatusPill status={r.lifecycleState} size="sm" />
+                        {r.retryExhausted ? (
+                          <span className="inline-flex items-center gap-0.5 rounded-full border border-amber-200 bg-amber-50 px-1.5 py-0.5 text-[9px] font-semibold leading-tight text-amber-900 sm:text-[10px]">
+                            <FiAlertOctagon size={11} aria-hidden /> Exhausted
+                          </span>
+                        ) : null}
+                      </div>
+                      <p className="mt-0.5 line-clamp-1 text-[10px] tabular-nums text-slate-500 2xl:hidden">
+                        {typeof r.retryHistoryCount === 'number' ? `${r.retryHistoryCount} retr.` : ''}
+                        {r.lastAttemptAt ? ` · ${formatDt(r.lastAttemptAt)}` : ''}
+                      </p>
                     </div>
                   </td>
-                  <td className="whitespace-nowrap px-2 py-2 align-middle sm:px-3 sm:py-2.5">
-                    <div className="inline-flex max-w-[11rem] flex-nowrap items-center gap-1 overflow-x-auto sm:max-w-none sm:overflow-visible">
+                  <td className="hidden min-w-0 px-2 py-1.5 align-middle lg:table-cell sm:py-2">
+                    <div className="flex flex-col items-start gap-1">
                       <StatusPill status={r.lifecycleState} size="sm" />
-                      {r.retryExhausted && (
-                        <span className="inline-flex shrink-0 items-center gap-0.5 rounded-full border border-amber-200 bg-amber-50 px-1.5 py-0.5 text-[10px] font-semibold text-amber-900 sm:px-2 sm:text-xs">
-                          <FiAlertOctagon size={11} /> Exhausted
+                      {r.retryExhausted ? (
+                        <span className="inline-flex items-center gap-0.5 rounded-full border border-amber-200 bg-amber-50 px-1.5 py-0.5 text-[10px] font-semibold text-amber-900 sm:text-xs">
+                          <FiAlertOctagon size={11} aria-hidden /> Exhausted
                         </span>
-                      )}
+                      ) : null}
                     </div>
                   </td>
-                  <td className="max-w-[min(28rem,40vw)] px-2 py-2 align-middle sm:px-3 sm:py-2.5">
-                    <p className="line-clamp-2 text-xs font-medium text-slate-800 sm:text-sm" title={r.exclusionReason || r.reason || ''}>
+                  <td className="min-w-0 px-2 py-1.5 align-middle sm:py-2" title={reasonTitle}>
+                    <p className="line-clamp-2 break-words text-xs font-medium text-slate-800">
                       {r.exclusionReason || r.reason || '—'}
                     </p>
                     {r.errorMessage ? (
-                      <p className="mt-0.5 line-clamp-1 text-xs text-rose-700 sm:text-sm" title={r.errorMessage}>
-                        {r.errorMessage}
-                      </p>
+                      <p className="mt-0.5 line-clamp-1 break-words text-xs text-rose-700">{r.errorMessage}</p>
                     ) : (
-                      <p className="mt-0.5 text-[11px] leading-tight text-slate-400">No error detail</p>
+                      <p className="mt-0.5 text-[10px] leading-tight text-slate-400">No error detail</p>
                     )}
                   </td>
-                  <td className="px-2 py-2 align-middle text-xs sm:px-3 sm:py-2.5 sm:text-sm">
+                  <td className="hidden min-w-0 px-2 py-1.5 align-middle text-xs 2xl:table-cell sm:py-2">
                     {r.everDeliveredAt ? (
-                      <span className="inline-flex max-w-full items-center gap-1 rounded-full border border-emerald-200 bg-emerald-50 px-2 py-0.5 text-[10px] font-semibold text-emerald-900 sm:text-xs sm:px-2.5 sm:py-1">
-                        <FiCheckCircle className="shrink-0" size={12} /> <span className="truncate">{formatDt(r.everDeliveredAt)}</span>
+                      <span
+                        className="inline-flex max-w-full items-center gap-1 rounded-full border border-emerald-200 bg-emerald-50 px-2 py-0.5 text-[10px] font-semibold text-emerald-900"
+                        title={formatDt(r.everDeliveredAt)}
+                      >
+                        <FiCheckCircle className="shrink-0" size={12} aria-hidden />
+                        <span className="min-w-0 truncate">{formatDt(r.everDeliveredAt)}</span>
                       </span>
                     ) : (
                       <span className="text-slate-400">Never</span>
                     )}
                   </td>
-                  <td className="whitespace-nowrap px-2 py-2 text-right align-middle font-mono text-xs tabular-nums text-slate-800 sm:px-3 sm:py-2.5 sm:text-sm">{r.retryHistoryCount || 0}</td>
-                  <td className="whitespace-nowrap px-2 py-2 align-middle text-xs text-slate-600 sm:px-3 sm:py-2.5 sm:text-sm">{formatDt(r.lastAttemptAt)}</td>
+                  <td className="hidden whitespace-nowrap px-2 py-1.5 text-right align-middle font-mono text-xs tabular-nums text-slate-800 2xl:table-cell sm:py-2">
+                    {r.retryHistoryCount ?? 0}
+                  </td>
+                  <td className="hidden min-w-0 whitespace-nowrap px-2 py-1.5 align-middle text-xs text-slate-600 2xl:table-cell sm:py-2">
+                    {formatDt(r.lastAttemptAt)}
+                  </td>
                 </tr>
               );
             })}
@@ -1223,6 +1710,72 @@ function RecoveryTab() {
 
   /** Same instant bounds the API uses (local calendar day → UTC ISO). */
   const apiDateRange = useMemo(() => dateInputsToApiRange(from, to), [from, to]);
+
+  /*
+   * Booked (cohort) KPI: shown only when From === To (valid YYYY-MM-DD), a specific template is
+   * selected (not “All templates”), and GET /calendar/day succeeds. Multi-day ranges or all-templates
+   * hide the cohort tile by design. After pulling changes, restart dev / hard-refresh if UI looks stale.
+   */
+  const cohortEligible = useMemo(
+    () => Boolean(messageKind) && from === to && /^\d{4}-\d{2}-\d{2}$/.test(String(from)),
+    [from, to, messageKind]
+  );
+
+  const [cohortFetch, setCohortFetch] = useState(() => ({ status: 'idle', bookedSlots: null }));
+
+  useEffect(() => {
+    if (!cohortEligible) {
+      setCohortFetch({ status: 'idle', bookedSlots: null });
+      return undefined;
+    }
+    let cancelled = false;
+    setCohortFetch({ status: 'loading', bookedSlots: null });
+    getWhatsappOpsCalendarDay({
+      date: from,
+      slotTime: 'all',
+      messageKind
+    })
+      .then((res) => {
+        if (cancelled) return;
+        if (!res.success) {
+          setCohortFetch({ status: 'error', bookedSlots: null });
+          return;
+        }
+        const doc = res.data?.data ?? res.data;
+        const raw = doc?.bookedSlotsCount;
+        let booked = 0;
+        if (typeof raw === 'number' && Number.isFinite(raw)) booked = raw;
+        else if (raw != null) {
+          const n = Number(raw);
+          booked = Number.isFinite(n) ? n : 0;
+        }
+        setCohortFetch({ status: 'ok', bookedSlots: booked });
+      })
+      .catch(() => {
+        if (!cancelled) setCohortFetch({ status: 'error', bookedSlots: null });
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [cohortEligible, from, messageKind]);
+
+  const cohortSubtitle =
+    cohortEligible && cohortFetch.status !== 'error'
+      ? `FormSubmission · registered · IST ${from} · all slot times on this IST date`
+      : null;
+  const cohortLoading = cohortFetch.status === 'loading';
+  const cohortBookedSlots = cohortFetch.status === 'ok' ? cohortFetch.bookedSlots ?? 0 : null;
+
+  const cohortHint = useMemo(() => {
+    if (cohortSubtitle != null) return null;
+    if (!cohortEligible) {
+      return 'Booked (cohort) shows when From = To (one IST calendar day) and you pick a template—not “All templates”.';
+    }
+    if (cohortFetch.status === 'error') {
+      return 'Could not load Booked (cohort) for this day (calendar API). Other KPIs still match the unresolved slice.';
+    }
+    return null;
+  }, [cohortSubtitle, cohortEligible, cohortFetch.status]);
 
   /** Reset action/preview state when scope changes (template/range). */
   const scopeKey = `${messageKind || 'none'}|${from}|${to}`;
@@ -1477,6 +2030,10 @@ function RecoveryTab() {
         loading={loading}
         lastSyncAt={lastSyncAt}
         messageKind={messageKind}
+        cohortLoading={cohortLoading}
+        cohortBookedSlots={cohortBookedSlots}
+        cohortSubtitle={cohortSubtitle}
+        cohortHint={cohortHint}
       />
 
       <FiltersToolbar
@@ -1495,55 +2052,60 @@ function RecoveryTab() {
         onSearchChange={(v) => setSearch(v)}
       />
 
-      {err && (
-        <div className="rounded-lg border border-rose-200 bg-rose-50 px-3 py-2.5 text-sm text-rose-900">{err}</div>
-      )}
+      <div className="flex flex-col gap-4 xl:grid xl:grid-cols-[minmax(17rem,22rem)_1fr] xl:items-start xl:gap-6">
+        <aside className="flex min-w-0 flex-col gap-4 xl:sticky xl:top-2 xl:self-start xl:max-h-[calc(100vh-6rem)] xl:overflow-y-auto">
+          <RecoveryActionsCard
+            messageKind={messageKind}
+            isSuper={isSuper}
+            selectedPhones={selectedArr}
+            job={job}
+            preview={preview}
+            previewLoading={previewLoading}
+            previewErr={previewErr}
+            starting={starting}
+            actionErr={actionErr}
+            onPreview={handlePreview}
+            onStart={handleStart}
+          />
+          <RecentBatchesCard recentJobs={recentJobs} messageKind={messageKind} />
+        </aside>
 
-      <RecoveryBatchHero
-        job={job}
-        isSuper={isSuper}
-        onCancel={handleCancel}
-        onDismiss={() => setBannerDismissed(true)}
-        dismissed={bannerDismissed}
-      />
+        <div className="min-w-0 space-y-4">
+          {err && (
+            <div className="rounded-lg border border-rose-200 bg-rose-50 px-3 py-2.5 text-sm text-rose-900">{err}</div>
+          )}
 
-      <RecoveryActionsCard
-        messageKind={messageKind}
-        isSuper={isSuper}
-        selectedPhones={selectedArr}
-        job={job}
-        preview={preview}
-        previewLoading={previewLoading}
-        previewErr={previewErr}
-        starting={starting}
-        actionErr={actionErr}
-        onPreview={handlePreview}
-        onStart={handleStart}
-      />
+          <RecoveryBatchHero
+            job={job}
+            isSuper={isSuper}
+            onCancel={handleCancel}
+            onDismiss={() => setBannerDismissed(true)}
+            dismissed={bannerDismissed}
+          />
 
-      <RecentBatchesCard recentJobs={recentJobs} messageKind={messageKind} />
+          <UnresolvedTableCard
+            rows={tableRows}
+            loading={loading}
+            page={page}
+            totalPages={totalPages}
+            totalRows={totalRows}
+            selected={selected}
+            onToggleRow={toggleRow}
+            onTogglePage={togglePage}
+            onClearSelection={clearSelection}
+            onPrev={() => setPage((p) => Math.max(1, p - 1))}
+            onNext={() => setPage((p) => p + 1)}
+            onCopyPhones={handleCopyPhones}
+            onCopyCsv={handleCopyCsv}
+            onDownloadCsv={handleDownloadCsv}
+            csvBusy={csvBusy}
+            isSuper={isSuper}
+            onBulkRecover={handleBulkRecover}
+          />
 
-      <UnresolvedTableCard
-        rows={tableRows}
-        loading={loading}
-        page={page}
-        totalPages={totalPages}
-        totalRows={totalRows}
-        selected={selected}
-        onToggleRow={toggleRow}
-        onTogglePage={togglePage}
-        onClearSelection={clearSelection}
-        onPrev={() => setPage((p) => Math.max(1, p - 1))}
-        onNext={() => setPage((p) => p + 1)}
-        onCopyPhones={handleCopyPhones}
-        onCopyCsv={handleCopyCsv}
-        onDownloadCsv={handleDownloadCsv}
-        csvBusy={csvBusy}
-        isSuper={isSuper}
-        onBulkRecover={handleBulkRecover}
-      />
-
-      <FinalExportCard totalsByCategory={totalsByCategory} totalRows={totalRows} />
+          <FinalExportCard totalsByCategory={totalsByCategory} totalRows={totalRows} />
+        </div>
+      </div>
     </div>
   );
 }

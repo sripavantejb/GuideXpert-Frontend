@@ -168,29 +168,29 @@ function ManualRecoveryPanel({ messageKind, from, to, isSuper, onJobComplete }) 
   const counters = job?.counters || {};
 
   return (
-    <section className="rounded-2xl border border-amber-200 bg-amber-50/40 p-4 sm:p-5 shadow-sm">
-      <div className="flex flex-wrap items-start justify-between gap-3 border-b border-amber-200 pb-3">
-        <div>
-          <p className="text-xs font-semibold uppercase tracking-[0.14em] text-amber-900">Manual recovery</p>
-          <h2 className="mt-1 text-base font-semibold text-amber-950">
-            {TEMPLATE_LABELS[messageKind] || messageKind} · unresolved recipients
-          </h2>
-          <p className="mt-1 text-xs text-amber-900/80">
-            Targets recipients still failed, excluded, or stuck after automated retries. Skips phones that have
-            recently been delivered/read globally to prevent duplicate messages.
-          </p>
-          {isSlotBooked && (
-            <p className="mt-2 inline-flex items-center gap-1 rounded-full border border-amber-300 bg-white px-2 py-0.5 text-[11px] font-semibold text-amber-900">
-              Transactional template · immediate-only retry policy preserved
+    <section className="overflow-hidden rounded-2xl border border-slate-200/90 bg-white shadow-[0_4px_24px_-12px_rgba(15,23,42,0.08)] ring-1 ring-slate-900/[0.04]">
+      <div className="border-b border-slate-200/80 bg-slate-50/90 px-4 py-3 sm:px-5 sm:py-4">
+        <div className="flex flex-wrap items-start justify-between gap-3">
+          <div className="min-w-0">
+            <p className="text-xs font-bold uppercase tracking-[0.1em] text-slate-500">Manual recovery (audit)</p>
+            <h2 className="mt-1 text-base font-semibold text-primary-navy">
+              {TEMPLATE_LABELS[messageKind] || messageKind} · unresolved
+            </h2>
+            <p className="mt-1 text-xs leading-relaxed text-slate-600">
+              Uses the same safeguards as Recovery: skips globally recent delivered/read to avoid duplicates.
             </p>
-          )}
-        </div>
-        <div className="flex flex-wrap gap-2">
+            {isSlotBooked && (
+              <p className="mt-2 inline-flex items-center gap-1 rounded-full border border-slate-200 bg-white px-2 py-0.5 text-[11px] font-semibold text-slate-700">
+                Transactional template · immediate-only retry preserved
+              </p>
+            )}
+          </div>
+          <div className="flex flex-wrap gap-2">
           <button
             type="button"
             onClick={handlePreview}
             disabled={previewLoading}
-            className="inline-flex items-center gap-1.5 rounded-lg border border-amber-300 bg-white px-3 py-1.5 text-xs font-semibold text-amber-900 shadow-sm transition hover:bg-amber-50 disabled:cursor-not-allowed disabled:opacity-60"
+            className="inline-flex items-center gap-1.5 rounded-lg border border-primary-blue-300 bg-white px-3 py-2 text-xs font-semibold text-primary-navy shadow-sm transition hover:bg-primary-blue-50 disabled:cursor-not-allowed disabled:opacity-60"
           >
             {previewLoading ? <FiLoader className="animate-spin" size={14} /> : <FiSearch size={14} />}
             Preview unresolved
@@ -232,8 +232,10 @@ function ManualRecoveryPanel({ messageKind, from, to, isSuper, onJobComplete }) 
             </button>
           )}
         </div>
+        </div>
       </div>
 
+      <div className="space-y-3 px-4 py-4 sm:px-5 sm:py-5">
       {previewErr && (
         <div className="mt-3 rounded-lg border border-rose-200 bg-rose-50 px-3 py-2 text-xs text-rose-800">{previewErr}</div>
       )}
@@ -243,12 +245,12 @@ function ManualRecoveryPanel({ messageKind, from, to, isSuper, onJobComplete }) 
 
       {preview && (
         <div className="mt-3 grid grid-cols-1 gap-3 lg:grid-cols-2">
-          <div className="rounded-xl border border-amber-200 bg-white p-3">
-            <p className="text-xs font-semibold uppercase tracking-[0.14em] text-amber-900">Unresolved breakdown</p>
+          <div className="rounded-xl border border-slate-200/90 bg-slate-50/40 p-3">
+            <p className="text-xs font-bold uppercase tracking-[0.1em] text-slate-500">Unresolved breakdown</p>
             <div className="mt-2 grid grid-cols-2 gap-2 text-xs">
-              <div className="rounded-lg border border-amber-200 bg-amber-50/60 px-2.5 py-2">
-                <p className="text-[11px] uppercase text-amber-800">Targeted</p>
-                <p className="text-base font-semibold text-amber-950">{preview.targeted || 0}</p>
+              <div className="rounded-lg border border-slate-200 bg-white px-2.5 py-2">
+                <p className="text-[11px] uppercase text-slate-600">Targeted</p>
+                <p className="text-base font-semibold text-primary-navy">{preview.targeted || 0}</p>
               </div>
               <div className="rounded-lg border border-emerald-200 bg-emerald-50/60 px-2.5 py-2">
                 <p className="text-[11px] uppercase text-emerald-800">Skipped (already delivered)</p>
@@ -270,17 +272,17 @@ function ManualRecoveryPanel({ messageKind, from, to, isSuper, onJobComplete }) 
             {Object.keys(counts).length > 0 && (
               <div className="mt-3 grid grid-cols-1 gap-1 text-xs sm:grid-cols-2">
                 {Object.entries(counts).map(([reason, count]) => (
-                  <div key={reason} className="flex items-center justify-between rounded-md border border-amber-200 bg-amber-50/40 px-2 py-1">
-                    <span className="text-amber-900">{reason.replace(/_/g, ' ')}</span>
-                    <span className="font-semibold text-amber-950">{count}</span>
+              <div key={reason} className="flex items-center justify-between rounded-md border border-slate-200 bg-white px-2 py-1">
+                    <span className="text-slate-700">{reason.replace(/_/g, ' ')}</span>
+                    <span className="font-semibold text-slate-900">{count}</span>
                   </div>
                 ))}
               </div>
             )}
           </div>
 
-          <div className="rounded-xl border border-amber-200 bg-white p-3">
-            <p className="text-xs font-semibold uppercase tracking-[0.14em] text-amber-900">
+          <div className="rounded-xl border border-slate-200/90 bg-white p-3 shadow-sm">
+            <p className="text-xs font-bold uppercase tracking-[0.1em] text-slate-500">
               {job ? 'Recovery job progress' : 'No active job'}
             </p>
             {job ? (
@@ -290,7 +292,7 @@ function ManualRecoveryPanel({ messageKind, from, to, isSuper, onJobComplete }) 
                     job.status === 'completed' ? 'border-emerald-300 bg-emerald-50 text-emerald-900'
                     : job.status === 'failed' ? 'border-rose-300 bg-rose-50 text-rose-900'
                     : job.status === 'cancelled' ? 'border-slate-300 bg-slate-50 text-slate-700'
-                    : 'border-amber-300 bg-amber-50 text-amber-900'
+                    : 'border-primary-blue-200 bg-primary-blue-50 text-primary-navy'
                   }`}>{job.status}</span>
                   <span className="text-slate-500 font-mono text-[11px]">{job._id}</span>
                   {job.startedAt && <span className="text-slate-400">started {formatDt(job.startedAt)}</span>}
@@ -322,6 +324,7 @@ function ManualRecoveryPanel({ messageKind, from, to, isSuper, onJobComplete }) 
           </div>
         </div>
       )}
+      </div>
     </section>
   );
 }
@@ -462,50 +465,45 @@ export default function WhatsAppOpsMessages() {
     'mt-1.5 block h-10 w-full rounded-lg border border-slate-200 bg-white px-3 text-sm text-slate-900 shadow-sm focus:border-primary-navy/40 focus:outline-none focus:ring-2 focus:ring-primary-navy/15';
 
   return (
-    <div className="relative space-y-6">
-      <header className="rounded-2xl border border-slate-200/90 bg-gradient-to-br from-white via-slate-50 to-slate-100/80 p-5 shadow-[0_4px_24px_-12px_rgba(15,23,42,0.08)] ring-1 ring-slate-900/[0.04] sm:p-6">
-        <h1 className="text-2xl font-bold tracking-tight text-slate-900 sm:text-3xl">Delivery audit</h1>
-        <p className="mt-2 text-sm leading-relaxed text-slate-600">
-          Real recipient-level WhatsApp delivery records from backend events and webhooks.
-        </p>
-
-        {messageKind && (
-          <div className="mt-5">
-            <ManualRecoveryPanel
-              key={`${messageKind}|${from}|${to}`}
-              messageKind={messageKind}
-              from={from}
-              to={to}
-              isSuper={isSuper}
-              onJobComplete={() => setReloadKey((k) => k + 1)}
-            />
-          </div>
-        )}
-
-        <div className="mt-5 grid grid-cols-1 gap-3 sm:grid-cols-3">
-          <div className="rounded-xl border border-emerald-200/90 bg-emerald-50/90 px-4 py-4 shadow-sm">
-            <p className="text-xs font-semibold uppercase tracking-wide text-emerald-800">Received / delivered (page)</p>
-            <p className="mt-2 flex items-center gap-2 text-2xl font-bold tabular-nums text-emerald-950">
-              <FiCheckCircle className="shrink-0" /> {auditSummary.delivered}
+    <div className="relative space-y-4 sm:space-y-5">
+      <header className="overflow-hidden rounded-2xl border border-slate-200/90 bg-white shadow-sm ring-1 ring-slate-900/[0.04]">
+        <div className="border-b border-slate-100 px-4 py-4 sm:px-5">
+          <div className="border-l-[3px] border-primary-navy pl-3">
+            <p className="text-[11px] font-bold uppercase tracking-[0.14em] text-slate-500">Audit</p>
+            <h1 className="mt-1 text-xl font-bold tracking-tight text-slate-900 sm:text-2xl">Delivery audit</h1>
+            <p className="mt-1 max-w-3xl text-sm leading-relaxed text-slate-600">
+              Recipient-level delivery events and webhooks. Page counts below reflect the current query only.
             </p>
           </div>
-          <div className="rounded-xl border border-rose-200/90 bg-rose-50/90 px-4 py-4 shadow-sm">
-            <p className="text-xs font-semibold uppercase tracking-wide text-rose-800">Failed (page)</p>
-            <p className="mt-2 flex items-center gap-2 text-2xl font-bold tabular-nums text-rose-950">
-              <FiAlertCircle className="shrink-0" /> {auditSummary.failed}
+        </div>
+        <div className="grid grid-cols-1 gap-2 p-3 sm:grid-cols-3 sm:gap-3 sm:p-4">
+          <div className="relative overflow-hidden rounded-xl border border-slate-200/90 bg-white px-3 py-3 shadow-sm ring-1 ring-slate-900/[0.03] sm:px-4 sm:py-3.5">
+            <span className="absolute inset-y-2 left-0 w-1 rounded-full bg-emerald-500/90" aria-hidden />
+            <p className="pl-2 text-[10px] font-semibold uppercase tracking-wide text-slate-500">Delivered (page)</p>
+            <p className="mt-1 flex items-center gap-2 pl-2 text-xl font-bold tabular-nums text-emerald-800">
+              <FiCheckCircle className="shrink-0 text-emerald-600" size={18} /> {auditSummary.delivered}
             </p>
           </div>
-          <div className="rounded-xl border border-amber-200/90 bg-amber-50/90 px-4 py-4 shadow-sm">
-            <p className="text-xs font-semibold uppercase tracking-wide text-amber-900">Pending / submitted (page)</p>
-            <p className="mt-2 flex items-center gap-2 text-2xl font-bold tabular-nums text-amber-950">
-              <FiClock className="shrink-0" /> {auditSummary.pending}
+          <div className="relative overflow-hidden rounded-xl border border-slate-200/90 bg-white px-3 py-3 shadow-sm ring-1 ring-slate-900/[0.03] sm:px-4 sm:py-3.5">
+            <span className="absolute inset-y-2 left-0 w-1 rounded-full bg-rose-500/90" aria-hidden />
+            <p className="pl-2 text-[10px] font-semibold uppercase tracking-wide text-slate-500">Failed (page)</p>
+            <p className="mt-1 flex items-center gap-2 pl-2 text-xl font-bold tabular-nums text-rose-800">
+              <FiAlertCircle className="shrink-0 text-rose-600" size={18} /> {auditSummary.failed}
+            </p>
+          </div>
+          <div className="relative overflow-hidden rounded-xl border border-slate-200/90 bg-white px-3 py-3 shadow-sm ring-1 ring-slate-900/[0.03] sm:px-4 sm:py-3.5">
+            <span className="absolute inset-y-2 left-0 w-1 rounded-full bg-amber-500/90" aria-hidden />
+            <p className="pl-2 text-[10px] font-semibold uppercase tracking-wide text-slate-500">Pending (page)</p>
+            <p className="mt-1 flex items-center gap-2 pl-2 text-xl font-bold tabular-nums text-amber-900">
+              <FiClock className="shrink-0 text-amber-600" size={18} /> {auditSummary.pending}
             </p>
           </div>
         </div>
       </header>
 
-      <div className="rounded-2xl border border-slate-200/90 bg-white p-4 shadow-[0_4px_24px_-12px_rgba(15,23,42,0.08)] ring-1 ring-slate-900/[0.04] sm:p-5">
-        <div className="grid grid-cols-1 gap-4 md:grid-cols-2 lg:grid-cols-12 lg:items-end">
+      <div className="rounded-2xl border border-slate-200/90 bg-white p-4 shadow-sm ring-1 ring-slate-900/[0.04] sm:p-5">
+        <p className="text-xs font-bold uppercase tracking-[0.1em] text-slate-500">Query filters</p>
+        <div className="mt-3 grid grid-cols-1 gap-4 md:grid-cols-2 lg:grid-cols-12 lg:items-end">
           <label className="text-sm font-medium text-slate-700 lg:col-span-2">
             From
             <input type="date" value={from} onChange={(e) => setRange((r) => ({ ...r, from: e.target.value }))} className={auditField} />
@@ -577,6 +575,17 @@ export default function WhatsAppOpsMessages() {
           </div>
         </div>
       </div>
+
+      {messageKind && (
+        <ManualRecoveryPanel
+          key={`${messageKind}|${from}|${to}`}
+          messageKind={messageKind}
+          from={from}
+          to={to}
+          isSuper={isSuper}
+          onJobComplete={() => setReloadKey((k) => k + 1)}
+        />
+      )}
 
       {err && <div className="rounded-lg border border-rose-200 bg-rose-50 px-4 py-3 text-sm text-rose-900">{err}</div>}
 

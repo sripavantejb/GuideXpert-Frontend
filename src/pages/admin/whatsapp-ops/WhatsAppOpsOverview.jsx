@@ -517,7 +517,7 @@ export default function WhatsAppOpsOverview() {
             value: asNumber(dayView?.bookedSlotsCount),
             accent: true,
             subtitle: `FormSubmission · registered · ${cohortDate}`,
-            className: 'border-slate-100 bg-slate-50/30'
+            className: 'border-slate-200/90 bg-white'
           },
           {
             label: 'People (≥1 WA row)',
@@ -553,10 +553,16 @@ export default function WhatsAppOpsOverview() {
       }
       return [
         {
+          label: 'Booked (cohort)',
+          value: asNumber(dayView?.bookedSlotsCount),
+          accent: true,
+          subtitle: `FormSubmission · registered · ${cohortDate}`,
+          className: 'border-slate-200/90 bg-white'
+        },
+        {
           label: 'Recipients',
           value: asNumber(rt.totalRecipients),
-          accent: true,
-          subtitle: `${scopeLabel} · per lineage + phone + template · ${cohortDate}`,
+          subtitle: `${scopeLabel} · per lineage + phone + template · people with ≥1 WhatsApp row in cohort · ${cohortDate}`,
           className: 'border-indigo-100 bg-indigo-50/30'
         },
         {
@@ -582,11 +588,11 @@ export default function WhatsAppOpsOverview() {
     if (isAllTemplates) {
       return [
         {
-          label: 'Slots booked',
+          label: 'Booked (cohort)',
           value: asNumber(dayView?.bookedSlotsCount),
           accent: true,
-          subtitle: `${scopeLabel} • ${selectedDate}`,
-          className: 'border-indigo-100 bg-indigo-50/30'
+          subtitle: `FormSubmission · registered · ${cohortDate}`,
+          className: 'border-slate-200/90 bg-white'
         },
         {
           label: 'WhatsApp attempts',
@@ -610,10 +616,16 @@ export default function WhatsAppOpsOverview() {
     }
     return [
       {
+        label: 'Booked (cohort)',
+        value: asNumber(dayView?.bookedSlotsCount),
+        accent: true,
+        subtitle: `FormSubmission · registered · ${cohortDate}`,
+        className: 'border-slate-200/90 bg-white'
+      },
+      {
         label: `${selectedTemplate?.label || 'Template'} attempts`,
         value: asNumber(dailySelected.whatsappAttempts),
-        accent: true,
-        subtitle: `${scopeLabel} • attempts`,
+        subtitle: `${scopeLabel} • attempts (${cohortDate})`,
         className: 'border-indigo-100 bg-indigo-50/30'
       },
       {
@@ -769,7 +781,7 @@ export default function WhatsAppOpsOverview() {
           <div>
             <h1 className="text-2xl font-semibold tracking-tight text-primary-navy">Overview</h1>
             <p className="text-sm text-slate-600 mt-1 max-w-3xl">
-              Daily IST drill-down for slot bookings and WhatsApp delivery pipeline. Click any date to inspect exact metrics.
+              Daily IST drill-down for slot bookings and WhatsApp delivery pipeline. Calendar and month grids use slot-day IST cohorts (step3Data.slotDate). The date-range summary strip above the calendar uses event-time (message createdAt) from the API for quick volume checks.
             </p>
           </div>
           <div className="flex flex-wrap items-end gap-3">

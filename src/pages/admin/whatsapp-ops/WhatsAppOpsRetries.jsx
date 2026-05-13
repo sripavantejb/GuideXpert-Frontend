@@ -35,8 +35,7 @@ export default function WhatsAppOpsRetries() {
         <div>
           <h1 className="text-xl font-bold text-gray-900">Retry analytics</h1>
           <p className="text-sm text-gray-600 mt-1">
-            Exhausted sends, retry volume, and eventual success by prior failure count. For recipient-based recovery
-            efficiency (slot-day IST lineage), use the Overview tab and manual recovery job counters.
+            Exhausted sends, retry volume, and eventual success by prior failure count. Counts use event-time (message createdAt in range). Recipient and slot-day IST views live on Overview and manual recovery.
           </p>
         </div>
         <div className="flex gap-2 items-end">

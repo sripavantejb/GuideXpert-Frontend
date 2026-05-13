@@ -7,6 +7,7 @@ import {
   FiAlertOctagon,
   FiRadio,
   FiMessageSquare,
+  FiChevronDown,
   FiRefreshCw,
   FiSettings,
   FiKey,
@@ -117,39 +118,48 @@ function WhatsAppOpsLayoutChrome() {
       )}
 
       {envHints && envHints.length > 0 && !showMissingApisBanner && (
-        <div className="mx-5 mt-5 sm:mx-10">
-          <div className="overflow-hidden rounded-xl border border-slate-200/90 bg-white shadow-[0_2px_12px_-4px_rgba(15,23,42,0.06)] ring-1 ring-slate-900/[0.03]">
-            <div className="flex flex-col gap-4 border-l-[3px] border-primary-navy p-4 sm:flex-row sm:items-start sm:gap-5 sm:p-5">
-              <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-gradient-to-br from-primary-navy/12 to-violet-500/10 text-primary-navy shadow-sm ring-1 ring-primary-navy/10">
-                <FiKey className="h-5 w-5" aria-hidden />
-              </div>
-              <div className="min-w-0 flex-1">
-                <h2 className="text-xs font-bold uppercase tracking-[0.14em] text-slate-500">Configuration reference</h2>
-                <p className="mt-1 text-sm text-slate-600">
-                  Related environment keys (names only). Values are never shown in the browser.
-                </p>
-                <div className="mt-4 flex flex-wrap gap-2">
-                  {envHints.map((key) => (
-                    <code
-                      key={key}
-                      className="rounded-lg border border-slate-200/90 bg-slate-50 px-2.5 py-1.5 text-[0.6875rem] font-mono font-medium text-slate-700 shadow-[inset_0_1px_0_rgba(255,255,255,0.6)] transition-colors hover:border-slate-300 hover:bg-white"
-                      title={key}
-                    >
-                      {key}
-                    </code>
-                  ))}
-                </div>
+        <div className="mx-5 mt-4 sm:mx-10">
+          <details className="group rounded-xl border border-slate-200/90 bg-white shadow-sm ring-1 ring-slate-900/[0.03]">
+            <summary className="flex cursor-pointer list-none items-center gap-3 px-4 py-3 text-left transition-colors hover:bg-slate-50/90 sm:px-5 sm:py-3.5 [&::-webkit-details-marker]:hidden">
+              <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-gradient-to-br from-primary-navy/10 to-violet-500/10 text-primary-navy ring-1 ring-primary-navy/12">
+                <FiKey className="h-[18px] w-[18px]" aria-hidden />
+              </span>
+              <span className="min-w-0 flex-1">
+                <span className="text-xs font-bold uppercase tracking-[0.14em] text-slate-500">Environment keys</span>
+                <span className="mt-0.5 block text-sm text-slate-600">
+                  {envHints.length} related variable name{envHints.length === 1 ? '' : 's'} (expand to view)
+                </span>
+              </span>
+              <FiChevronDown
+                className="h-5 w-5 shrink-0 text-slate-400 transition-transform group-open:rotate-180"
+                aria-hidden
+              />
+            </summary>
+            <div className="border-t border-slate-100 px-4 pb-4 pt-1 sm:px-5">
+              <p className="text-xs text-slate-500">
+                Names only — values are never shown in the browser.
+              </p>
+              <div className="mt-3 flex flex-wrap gap-2">
+                {envHints.map((key) => (
+                  <code
+                    key={key}
+                    className="rounded-lg border border-slate-200/90 bg-slate-50 px-2.5 py-1.5 text-[0.6875rem] font-mono font-medium text-slate-700 shadow-[inset_0_1px_0_rgba(255,255,255,0.6)]"
+                    title={key}
+                  >
+                    {key}
+                  </code>
+                ))}
               </div>
             </div>
-          </div>
+          </details>
         </div>
       )}
 
-      <div className="relative min-h-0 bg-gradient-to-b from-slate-50/90 via-slate-50 to-slate-100/60 px-4 py-4 sm:px-8 sm:py-6">
+      <div className="relative min-h-0 bg-gradient-to-b from-slate-50/95 via-slate-50/90 to-slate-100/50 px-4 py-4 sm:px-8 sm:py-6">
         <div
-          className="pointer-events-none absolute inset-0 opacity-[0.35]"
+          className="pointer-events-none absolute inset-0 opacity-[0.14] sm:opacity-[0.18]"
           style={{
-            backgroundImage: `radial-gradient(circle at 1px 1px, rgb(148 163 184 / 0.22) 1px, transparent 0)`,
+            backgroundImage: `radial-gradient(circle at 1px 1px, rgb(148 163 184 / 0.16) 1px, transparent 0)`,
             backgroundSize: '24px 24px',
           }}
           aria-hidden
