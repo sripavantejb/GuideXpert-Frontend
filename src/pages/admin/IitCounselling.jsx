@@ -26,7 +26,9 @@ function formatDateTime(value) {
 }
 
 function formatLabel(raw) {
-  return String(raw || '')
+  const key = String(raw || '');
+  if (key === 'classStatus') return 'Current studying';
+  return key
     .replace(/([a-z])([A-Z])/g, '$1 $2')
     .replace(/_/g, ' ')
     .replace(/\b\w/g, (ch) => ch.toUpperCase());
@@ -48,6 +50,7 @@ function formatDemoDateDisplay(dateKey) {
 const IIT_SUBMISSION_COLUMNS = [
   { key: 'name', label: 'Name' },
   { key: 'phone', label: 'Phone' },
+  { key: 'classStatus', label: 'Current studying' },
   { key: 'currentStep', label: 'Current Step' },
   { key: 'completed', label: 'Completed' },
   { key: 'topColleges', label: 'Top Colleges' },
@@ -64,6 +67,7 @@ function mapIitSubmissionRecord(row) {
   const utm = row?.utm || {};
   const topColleges = formatTopColleges(row?.section1Data?.top5Colleges);
   const slotRaw = String(row?.section1Data?.slotBooking ?? '').trim();
+  const classStatusRaw = String(row?.section1Data?.classStatus ?? '').trim();
   const demoDateKey = deriveSlotDemoDateKeyIST(row);
   const updatedDate = row?.updatedAt ? new Date(row.updatedAt) : null;
   const updatedEpoch = updatedDate && !Number.isNaN(updatedDate.getTime()) ? updatedDate.getTime() : null;
@@ -72,6 +76,7 @@ function mapIitSubmissionRecord(row) {
     id: row?.id || '',
     name: row?.fullName || '—',
     phone: row?.phone || '—',
+    classStatus: classStatusRaw,
     currentStep: row?.currentStep || 1,
     completed: row?.isCompleted ? 'Yes' : 'No',
     topColleges,
@@ -1213,11 +1218,12 @@ export default function IitCounselling() {
         {copyPrepareError ? <p className="text-red-600 text-sm">{copyPrepareError}</p> : null}
         <div className="overflow-hidden rounded-2xl border border-gray-200/90 bg-white shadow-md ring-1 ring-black/[0.03]">
         <div className="overflow-x-auto max-h-[min(70vh,720px)]">
-        <table className="min-w-[1380px] w-full text-left text-sm border-collapse">
+        <table className="min-w-[1520px] w-full text-left text-sm border-collapse">
           <thead className="sticky top-0 z-10">
             <tr className="bg-primary-blue-50/90 backdrop-blur-sm border-b border-primary-blue-100/70 shadow-[0_1px_0_0_rgba(0,51,102,0.06)]">
               <th className="px-4 py-3.5 text-[10px] font-bold uppercase tracking-[0.12em] text-gray-500">Name</th>
               <th className="px-4 py-3.5 text-[10px] font-bold uppercase tracking-[0.12em] text-gray-500">Phone</th>
+              <th className="px-4 py-3.5 text-[10px] font-bold uppercase tracking-[0.12em] text-gray-500">Current studying</th>
               <th className="px-4 py-3.5 text-[10px] font-bold uppercase tracking-[0.12em] text-gray-500">Step</th>
               <th className="px-4 py-3.5 text-[10px] font-bold uppercase tracking-[0.12em] text-gray-500">Done</th>
               <th className="px-4 py-3.5 text-[10px] font-bold uppercase tracking-[0.12em] text-gray-500">Top Colleges</th>
@@ -1233,9 +1239,9 @@ export default function IitCounselling() {
           </thead>
           <tbody className="divide-y divide-gray-100">
             {submissionsListLoading ? (
-              <tr><td colSpan={13} className="px-4 py-14 text-center text-sm font-medium text-gray-500 bg-gray-50/60">Loading submissions…</td></tr>
+              <tr><td colSpan={14} className="px-4 py-14 text-center text-sm font-medium text-gray-500 bg-gray-50/60">Loading submissions…</td></tr>
             ) : pageMappedRows.length === 0 ? (
-              <tr><td colSpan={13} className="px-4 py-14 text-center text-sm font-medium text-gray-500 bg-gray-50/50">No submissions match the current filters.</td></tr>
+              <tr><td colSpan={14} className="px-4 py-14 text-center text-sm font-medium text-gray-500 bg-gray-50/50">No submissions match the current filters.</td></tr>
             ) : pageMappedRows.map((row) => {
               const utmCell = (value) => (
                 <span
@@ -1262,6 +1268,7 @@ export default function IitCounselling() {
                 >
                   <td className="px-4 py-3 font-semibold text-gray-900">{row.name}</td>
                   <td className="px-4 py-3 tabular-nums font-mono text-[13px] text-gray-700">{row.phone}</td>
+                  <td className="px-4 py-3 max-w-[220px] truncate text-gray-700 text-[13px]" title={row.classStatus || undefined}>{row.classStatus || '—'}</td>
                   <td className="px-4 py-3">
                     <span className="inline-flex min-w-[1.5rem] justify-center rounded-md bg-gray-100 px-1.5 py-0.5 text-xs font-bold text-gray-700 tabular-nums">
                       {row.currentStep}
@@ -1404,11 +1411,12 @@ export default function IitCounselling() {
                   </button>
                 </div>
               </div>
-              <table className="min-w-[1380px] w-full text-left text-sm">
+              <table className="min-w-[1520px] w-full text-left text-sm">
                 <thead>
                   <tr className="bg-gray-50 border-b border-gray-200">
                     <th className="px-3 py-2 text-xs uppercase tracking-wider">Name</th>
                     <th className="px-3 py-2 text-xs uppercase tracking-wider">Phone</th>
+                    <th className="px-3 py-2 text-xs uppercase tracking-wider">Current studying</th>
                     <th className="px-3 py-2 text-xs uppercase tracking-wider">Current Step</th>
                     <th className="px-3 py-2 text-xs uppercase tracking-wider">Completed</th>
                     <th className="px-3 py-2 text-xs uppercase tracking-wider">Top Colleges</th>
@@ -1427,6 +1435,7 @@ export default function IitCounselling() {
                       <tr key={`viewall-${row.id}`}>
                         <td className="px-3 py-2 break-all">{row.name}</td>
                         <td className="px-3 py-2">{row.phone}</td>
+                        <td className="px-3 py-2 break-all max-w-[240px]">{row.classStatus || '—'}</td>
                         <td className="px-3 py-2">{row.currentStep}</td>
                         <td className="px-3 py-2">{row.completed}</td>
                         <td className="px-3 py-2 break-all whitespace-pre-wrap">{row.topColleges}</td>
@@ -1442,7 +1451,7 @@ export default function IitCounselling() {
                   })}
                   {filteredSubmissionRows.length === 0 ? (
                     <tr>
-                      <td colSpan={12} className="px-3 py-6 text-center text-gray-500">No rows match current filters.</td>
+                      <td colSpan={13} className="px-3 py-6 text-center text-gray-500">No rows match current filters.</td>
                     </tr>
                   ) : null}
                 </tbody>

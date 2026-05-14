@@ -3,7 +3,17 @@ import { getApiBaseUrl } from '../utils/apiBaseUrl';
 import { formatDateISTYYYYMMDD, getAvailableSlots, resolveSlotBookingDateForIitPayload } from '../utils/weekendSlots';
 
 const STUDENT_PARENT_OPTIONS = ['Student', 'Parent'];
-const CLASS_OPTIONS = ['12th Appearing', '12th Passed'];
+/** Keep in sync with GuideXpert-Backend/controllers/formController.js IIT_ALLOWED_VALUES.classStatus and IitCounsellingSubmission schema. */
+const CURRENT_STUDYING_OPTIONS = [
+  'Completed 12th/Intermediate 2nd Year',
+  'Studying 12th/Intermediate 2nd Year',
+  'Studying 11th/Intermediate 1st Year',
+  'Degree Completed',
+  'Degree Studying',
+  'Engineering Completed',
+  'Engineering Studying',
+  'Diploma',
+];
 const STREAM_OPTIONS = ['MPC', 'BiPC', 'Commerce', 'Others'];
 const CAREER_DECISION_OPTIONS = ['Very clear', 'Somewhat clear', 'Completely confused'];
 const COLLEGE_DECISION_OPTIONS = ['Self', 'Parents', 'Both'];
@@ -549,7 +559,22 @@ export default function IitCounsellingPage() {
                 ) : null}
               </div>
               <ChoiceGroup label="3. Student or Parent?" options={STUDENT_PARENT_OPTIONS} value={formData.studentOrParent} onChange={(value) => handleInputChange('studentOrParent', value)} error={errors.studentOrParent} />
-              <ChoiceGroup label="4. Class" options={CLASS_OPTIONS} value={formData.classStatus} onChange={(value) => handleInputChange('classStatus', value)} error={errors.classStatus} />
+              <Field label="4. Current studying" error={errors.classStatus}>
+                <select
+                  className={neoInputClass}
+                  value={formData.classStatus}
+                  onChange={(e) => handleInputChange('classStatus', e.target.value)}
+                >
+                  <option value="" disabled>
+                    Select…
+                  </option>
+                  {CURRENT_STUDYING_OPTIONS.map((opt) => (
+                    <option key={opt} value={opt}>
+                      {opt}
+                    </option>
+                  ))}
+                </select>
+              </Field>
               <ChoiceGroup label="5. Stream" options={STREAM_OPTIONS} value={formData.stream} onChange={(value) => handleInputChange('stream', value)} error={errors.stream} />
               <Field label="6. City" error={errors.city}>
                 <input className={neoInputClass} value={formData.city} onChange={(e) => handleInputChange('city', e.target.value)} />
