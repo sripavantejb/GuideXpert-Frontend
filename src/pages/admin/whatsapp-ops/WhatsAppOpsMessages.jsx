@@ -31,6 +31,20 @@ const TEMPLATE_LABELS = {
   '30min': '30 min reminder'
 };
 
+/** Compact eligibility audit for campaign templates (messages drill-down). */
+function eligibilityTimingSummary(r) {
+  const kinds = new Set(['pre4hr', 'meet', '30min']);
+  if (!r.messageKind || !kinds.has(r.messageKind)) return '—';
+  const t = r.eligibilityTiming;
+  if (!t || typeof t !== 'object') return '—';
+  const bits = [];
+  if (t.sentTooEarly === true) bits.push('early');
+  if (t.sentAfterExpiry === true) bits.push('after_slot');
+  if (typeof t.eligibilityViolationDeltaMs === 'number')
+    bits.push(`Δ${t.eligibilityViolationDeltaMs}`);
+  return bits.length ? bits.join(' · ') : 'ok';
+}
+
 function buildUnresolvedCsv(candidates) {
   const header = 'phone,lineageId,maxAttemptAtStart,reason,status,attemptNumber,retryGroupId,errorMessage,createdAt';
   const lines = (candidates || []).map((c) => [
@@ -591,7 +605,7 @@ export default function WhatsAppOpsMessages() {
 
       <div className="overflow-hidden rounded-2xl border border-slate-200/90 bg-white shadow-[0_4px_24px_-12px_rgba(15,23,42,0.08)] ring-1 ring-slate-900/[0.04]">
         <div className="max-h-[min(70vh,720px)] overflow-auto">
-          <table className="min-w-[1100px] w-full border-collapse text-sm">
+          <table className="min-w-[1240px] w-full border-collapse text-sm">
             <thead className="sticky top-0 z-10 border-b border-slate-200 bg-white/95 text-xs font-bold uppercase tracking-wide text-slate-500 shadow-sm backdrop-blur-md">
               <tr>
                 <th className="px-4 py-3.5 text-left">Sent time</th>
@@ -599,6 +613,7 @@ export default function WhatsAppOpsMessages() {
                 <th className="px-4 py-3.5 text-left">Phone number</th>
                 <th className="px-4 py-3.5 text-left">Message type</th>
                 <th className="px-4 py-3.5 text-left">Attempt</th>
+                <th className="max-w-[140px] px-4 py-3.5 text-left">Timing audit</th>
                 <th className="px-4 py-3.5 text-left">Retry group</th>
                 <th className="px-4 py-3.5 text-left">Delivery status</th>
                 <th className="min-w-[180px] px-4 py-3.5 text-left">Failure reason</th>
@@ -609,14 +624,14 @@ export default function WhatsAppOpsMessages() {
             <tbody className="divide-y divide-slate-100">
               {loading && rows.length === 0 && (
                 <tr>
-                  <td colSpan={10} className="px-4 py-14 text-center text-sm text-slate-500">
+                  <td colSpan={11} className="px-4 py-14 text-center text-sm text-slate-500">
                     <FiLoader className="mr-2 inline animate-spin" /> Loading…
                   </td>
                 </tr>
               )}
               {!loading && rows.length === 0 && (
                 <tr>
-                  <td colSpan={10} className="px-4 py-16 text-center text-sm text-slate-600">
+                  <td colSpan={11} className="px-4 py-16 text-center text-sm text-slate-600">
                     No message events yet.
                   </td>
                 </tr>
@@ -628,6 +643,16 @@ export default function WhatsAppOpsMessages() {
                   <td className="px-4 py-3.5 font-mono text-sm font-medium text-slate-900">{r.phone || 'Not available'}</td>
                   <td className="px-4 py-3.5 text-sm text-slate-800">{r.messageKind || 'Not available'}</td>
                   <td className="px-4 py-3.5 text-center text-sm tabular-nums text-slate-800">{r.attemptNumber ?? '—'}</td>
+                  <td
+                    className="max-w-[140px] px-4 py-3.5 text-xs leading-snug text-slate-700"
+                    title={
+                      r.eligibilityTiming?.firstEligibleAt
+                        ? `firstEligibleAt: ${formatDt(r.eligibilityTiming.firstEligibleAt)}`
+                        : undefined
+                    }
+                  >
+                    {eligibilityTimingSummary(r)}
+                  </td>
                   <td className="max-w-[140px] truncate px-4 py-3.5 font-mono text-xs text-slate-600" title={r.retryGroupId ? String(r.retryGroupId) : ''}>
                     {r.retryGroupId ? String(r.retryGroupId).slice(-8) : '—'}
                   </td>

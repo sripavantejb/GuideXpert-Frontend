@@ -9,7 +9,8 @@ import {
   getWhatsappOpsSummary,
   getWhatsappOpsCalendarMonth,
   getWhatsappOpsCalendarDay,
-  getLatestWhatsappOpsSnapshot
+  getLatestWhatsappOpsSnapshot,
+  getOperationalHealth
 } from '../../../utils/whatsappOpsAdminApi';
 import { defaultRangeIsoDates, istCalendarIsoToday } from './whatsappOpsShared';
 import { useWhatsappOpsHost } from './whatsappOpsHostContext';
@@ -103,7 +104,7 @@ function mergeWhatsappMonthPayloads(parts) {
   );
   return {
     ...parts[0],
-    schemaVersion: parts[0]?.schemaVersion ?? 2,
+    schemaVersion: Math.max(...parts.map((p) => Number(p?.schemaVersion) || 2)),
     filter: { ...(parts[0]?.filter || {}), mergedMonths: true, messageKind },
     monthTotals,
     days,
@@ -197,7 +198,7 @@ export default function WhatsAppOpsOverview() {
   const [selectedDate, setSelectedDate] = useState(() => istCalendarIsoToday());
   const [monthCursor, setMonthCursor] = useState(() => istCalendarIsoToday().slice(0, 7));
   const [selectedKind, setSelectedKind] = useState(null);
-  const [selectedSlotTime, setSelectedSlotTime] = useState('all');
+  const [selectedSlotTime, setSelectedSlotTime] = useState('6PM');
   const [calendarMode, setCalendarMode] = useState('day');
   const [templateKinds, setTemplateKinds] = useState(FALLBACK_TEMPLATE_KINDS);
   const [waDiagnostics, setWaDiagnostics] = useState(false);
@@ -212,6 +213,8 @@ export default function WhatsAppOpsOverview() {
   const [monthData, setMonthData] = useState(null);
   const [dayData, setDayData] = useState(null);
   const [daySnapshotDoc, setDaySnapshotDoc] = useState(null);
+  const [showAttemptDiagnostics, setShowAttemptDiagnostics] = useState(false);
+  const [reconcileHealth, setReconcileHealth] = useState(null);
 
   const summaryLoadGen = useRef(0);
   const monthLoadGen = useRef(0);
@@ -222,12 +225,18 @@ export default function WhatsAppOpsOverview() {
     setErr(null);
     setErrDetail('');
     setLoading(true);
-    const res = await getWhatsappOpsSummary({
-      from,
-      to,
-      opsProduct,
-      ...(selectedKind ? { messageKind: selectedKind } : {})
-    });
+    const [res, healthRes] = await Promise.all([
+      getWhatsappOpsSummary({
+        from,
+        to,
+        opsProduct,
+        ...(selectedKind ? { messageKind: selectedKind } : {})
+      }),
+      getOperationalHealth({})
+    ]);
+    if (gen === summaryLoadGen.current && healthRes.success) {
+      setReconcileHealth(healthRes.data?.data?.reconciliationHealth || null);
+    }
     if (gen !== summaryLoadGen.current) return;
     setLoading(false);
     setLastSync(new Date());
@@ -383,10 +392,15 @@ export default function WhatsAppOpsOverview() {
     return { ...dayData, _meta: { source: 'live' } };
   }, [dayData, daySnapshotDoc, selectedDate, selectedKind, selectedSlotTime, opsProduct]);
 
-  const legacyDay = dayView?.slotCohortAttemptMetrics || dayView?.legacyAttemptMetrics || {};
-  const isRecipientDay = dayView?.schemaVersion === 2;
+  const legacyDay =
+    dayView?.attemptLevelMetrics || dayView?.slotCohortAttemptMetrics || dayView?.legacyAttemptMetrics || {};
+  const isRecipientDay = Number(dayView?.schemaVersion) >= 2;
   const rt = dayView?.recipientTotals;
+  const rangeRt = payload?.recipientTotals;
+  const metricDefinitions = dayView?.metricDefinitions || payload?.metricDefinitions || null;
+  const cohortFlow = dayView?.cohortFlow;
   const retryFunnelRecipient = dayView?.retryFunnelByAttempt || {};
+  const retryFunnelReconciliation = dayView?.retryFunnelReconciliation || [];
   const exclusionBreakdown = dayView?.exclusionBreakdown || {};
   const retryQueue = dayView?.retryQueue || {};
 
@@ -434,7 +448,8 @@ export default function WhatsAppOpsOverview() {
           bookings: asNumber(d.bookedSlotsCount),
           failed: asNumber(d.failed),
           recDelivered: asNumber(r?.delivered),
-          recUnresolved: asNumber(r?.unresolved),
+          recTransient: asNumber(r?.transientUnresolved ?? r?.unresolved),
+          recReconcile: asNumber(r?.reconcilePending),
           recPermanent: asNumber(r?.permanentFailed)
         };
       });
@@ -565,47 +580,8 @@ export default function WhatsAppOpsOverview() {
       : `FormSubmission · registered · ${cohortDate}`;
 
     if (isRecipientDay && rt) {
-      if (isAllTemplates) {
-        return [
-          {
-            label: 'Booked (cohort)',
-            value: asNumber(dayView?.bookedSlotsCount),
-            accent: true,
-            subtitle: bookedCohortSubtitle,
-            className: 'border-slate-200/90 bg-white'
-          },
-          {
-            label: 'People (≥1 WA row)',
-            value: asNumber(rt.totalRecipients),
-            subtitle: `${scopeLabel} · unique phone · rolled up across template kinds · ${cohortDate}`,
-            className: 'border-indigo-100 bg-indigo-50/30'
-          },
-          {
-            label: 'Delivered',
-            value: asNumber(rt.delivered),
-            subtitle: `${scopeLabel} · reached delivered+ on any kind · ${cohortScope}`,
-            className: 'border-emerald-100 bg-emerald-50/30'
-          },
-          {
-            label: 'Read',
-            value: asNumber(rt.read),
-            subtitle: `${scopeLabel} · reached read on any kind · ${cohortScope}`,
-            className: 'border-violet-100 bg-violet-50/30'
-          },
-          {
-            label: 'Unresolved',
-            value: asNumber(rt.finalUnresolved),
-            subtitle: `${scopeLabel} · in-flight or retryable · ${cohortScope}`,
-            className: 'border-amber-100 bg-amber-50/30'
-          },
-          {
-            label: 'Permanent failed',
-            value: asNumber(rt.finalPermanentFailed),
-            subtitle: `${scopeLabel} · exhausted or non-retryable terminal · ${cohortScope}`,
-            className: 'border-rose-100 bg-rose-50/30'
-          }
-        ];
-      }
+      const recNote = 'unique recipients — retries not double-counted';
+      const prefix = isAllTemplates ? 'All · ' : `${selectedTemplate?.label || 'Template'} · `;
       return [
         {
           label: 'Booked (cohort)',
@@ -615,28 +591,60 @@ export default function WhatsAppOpsOverview() {
           className: 'border-slate-200/90 bg-white'
         },
         {
-          label: 'Recipients',
+          label: `${prefix}recipients`,
           value: asNumber(rt.totalRecipients),
-          subtitle: `${scopeLabel} · per lineage + phone + template · people with ≥1 WhatsApp row in cohort · ${cohortDate}`,
+          subtitle: `${scopeLabel} · ${recNote} · ${cohortDate}`,
           className: 'border-indigo-100 bg-indigo-50/30'
+        },
+        {
+          label: 'Accepted',
+          value: asNumber(rt.accepted),
+          subtitle: `${scopeLabel} · provider accepted · ${recNote}`,
+          className: 'border-blue-100 bg-blue-50/30'
         },
         {
           label: 'Delivered',
           value: asNumber(rt.delivered),
-          subtitle: `${scopeLabel} · reached delivered+ at least once · ${cohortScope}`,
+          subtitle: `${scopeLabel} · delivered+ · ${recNote}`,
           className: 'border-emerald-100 bg-emerald-50/30'
         },
         {
           label: 'Read',
           value: asNumber(rt.read),
-          subtitle: `${scopeLabel} · reached read at least once · ${cohortScope}`,
+          subtitle: `${scopeLabel} · read · ${recNote}`,
           className: 'border-violet-100 bg-violet-50/30'
         },
         {
-          label: 'Unresolved',
-          value: asNumber(rt.finalUnresolved),
-          subtitle: `${scopeLabel} · still active · ${cohortScope}`,
-          className: 'border-amber-100 bg-amber-50/30'
+          label: 'Permanent failed',
+          value: asNumber(rt.finalPermanentFailed ?? rt.finalFailed),
+          subtitle: `${scopeLabel} · permanent terminal failure (final) · ${recNote}`,
+          className: 'border-rose-100 bg-rose-50/30'
+        },
+        ...(asNumber(rt.transientUnresolved) > 0
+          ? [
+              {
+                label: 'Transient unresolved',
+                value: asNumber(rt.transientUnresolved),
+                subtitle: `${scopeLabel} · retryable / in-flight, not reconcile grace · ${recNote}`,
+                className: 'border-amber-100 bg-amber-50/30'
+              }
+            ]
+          : []),
+        ...(asNumber(rt.reconcilePending) > 0
+          ? [
+              {
+                label: 'Reconciliation pending',
+                value: asNumber(rt.reconcilePending),
+                subtitle: `${scopeLabel} · awaiting late DLR (not final failed) · ${recNote}`,
+                className: 'border-cyan-100 bg-cyan-50/30'
+              }
+            ]
+          : []),
+        {
+          label: 'Excluded',
+          value: asNumber(rt.excluded ?? rt.excludedTotal),
+          subtitle: `${scopeLabel} · retry promotion excluded · ${recNote}`,
+          className: 'border-slate-200 bg-slate-50/50'
         }
       ];
     }
@@ -888,6 +896,9 @@ export default function WhatsAppOpsOverview() {
                   </option>
                 ))}
               </select>
+              <p className="mt-1 max-w-xs text-[11px] font-normal leading-snug text-slate-500">
+                &quot;All slot times&quot; merges every wall-clock cohort on this IST booking day — earlier slots legitimately get reminders earlier (different T−offset times).
+              </p>
             </label>
             <label className="flex items-center gap-2 text-xs text-gray-600 cursor-pointer mt-6">
               <input
@@ -1183,12 +1194,168 @@ export default function WhatsAppOpsOverview() {
                 {isRecipientDay && dayView?._meta?.source === 'live' && (
                   <p className="font-semibold text-emerald-800">Live recipient metrics (slot-day cohort)</p>
                 )}
+                {reconcileHealth && !reconcileHealth.healthy && (reconcileHealth.staleReconcileWarnings || []).length > 0 && (
+                  <div className="rounded-lg border border-amber-300 bg-amber-50 px-3 py-2 text-amber-950 space-y-1">
+                    <p className="font-semibold">Delayed-DLR reconciliation alert</p>
+                    <ul className="list-disc pl-4 space-y-0.5">
+                      {(reconcileHealth.staleReconcileWarnings || []).map((w) => (
+                        <li key={w}>{w}</li>
+                      ))}
+                    </ul>
+                    <p className="text-[11px] text-amber-800">
+                      Backlog: {reconcileHealth.awaitingCount ?? 0} awaiting · phase-1 {reconcileHealth.phase1Backlog ?? 0} ·
+                      phase-2 ready {reconcileHealth.phase2Backlog ?? 0}
+                      {reconcileHealth.oldestAwaitingAgeMs != null
+                        ? ` · oldest ${Math.round(reconcileHealth.oldestAwaitingAgeMs / 60000)}m`
+                        : ''}
+                    </p>
+                  </div>
+                )}
+                {isRecipientDay && asNumber(rt?.reconcilePending) > 0 && (
+                  <p className="text-cyan-900 font-medium">
+                    {asNumber(rt.reconcilePending)} recipient(s) in reconciliation grace (awaiting late DLR) — not counted as final
+                    failed; retries are blocked until grace expires or delivery arrives.
+                  </p>
+                )}
                 {isRecipientDay && asNumber(rt?.cohortFallbackCount) > 0 && (
                   <p className="text-amber-900">
                     {asNumber(rt.cohortFallbackCount)} recipient(s) used createdAt fallback for slot day (missing submission link).
                   </p>
                 )}
               </div>
+              {isRecipientDay && selectedKind && cohortFlow && (
+                <div className="rounded-xl border border-slate-200 bg-slate-50/80 px-4 py-3 text-xs text-slate-800 space-y-2">
+                  <div className="flex flex-wrap items-baseline justify-between gap-2">
+                    <p className="font-semibold uppercase tracking-[0.12em] text-slate-600">Cohort accounting</p>
+                    <span
+                      className="cursor-help text-slate-500 underline decoration-dotted decoration-slate-400"
+                      title={
+                        'Bookings = cohort registrations for this IST slot day (and slot-time filter). Recipients = rollup rows for this template (lineage + phone + messageKind) with at least one WhatsApp event in cohort. “No row for this template” means no audited WhatsAppMessageEvent for that template in the cohort — not necessarily that cron never ran, without deeper ops checks.'
+                      }
+                    >
+                      Definitions
+                    </span>
+                  </div>
+                  <p className="leading-relaxed">
+                    <span className="font-semibold text-slate-900">Bookings</span> ({asNumber(cohortFlow.booked)}) ·{' '}
+                    <span className="font-semibold text-indigo-800">Scheduled jobs</span> ({asNumber(cohortFlow.scheduledJobs)}) ·{' '}
+                    coverage gap {asNumber(cohortFlow.coverageGap)} (should be 0 after P3).
+                  </p>
+                  {cohortFlow.scheduledJobFunnel && (
+                    <p className="leading-relaxed text-indigo-900">
+                      Job funnel: pending {asNumber(cohortFlow.scheduledJobFunnel.pending)} · overdue{' '}
+                      {asNumber(cohortFlow.scheduledJobFunnel.overdue)} · dispatched{' '}
+                      {asNumber(cohortFlow.scheduledJobFunnel.dispatched)} · delivered{' '}
+                      {asNumber(cohortFlow.scheduledJobFunnel.delivered)} · skipped{' '}
+                      {asNumber(cohortFlow.scheduledJobFunnel.skipped)}
+                    </p>
+                  )}
+                  <p className="leading-relaxed text-slate-600">
+                    Event rows: {asNumber(cohortFlow.withTemplateEventBookings)} with ≥1{' '}
+                    <span className="font-medium">{selectedTemplate?.label || cohortFlow.effectiveMessageKind}</span> WhatsApp event ·{' '}
+                    {asNumber(cohortFlow.withoutTemplateEventBookings)} without event row (delivery may still be in flight).
+                  </p>
+                  {cohortFlow.recipientOutcomeBreakdown && (
+                    <>
+                      <p className="leading-relaxed">
+                        <span className="font-semibold text-slate-900">Recipients</span> (
+                        {asNumber(cohortFlow.recipientOutcomeBreakdown.total || rt?.totalRecipients)}) = delivered{' '}
+                        <span className="font-semibold text-emerald-800">
+                          {asNumber(cohortFlow.recipientOutcomeBreakdown.delivered)}
+                        </span>{' '}
+                        + permanent failed{' '}
+                        <span className="font-semibold text-rose-800">
+                          {asNumber(cohortFlow.recipientOutcomeBreakdown.permanentFailed)}
+                        </span>{' '}
+                        + reconcile pending{' '}
+                        <span className="font-semibold text-cyan-800">
+                          {asNumber(cohortFlow.recipientOutcomeBreakdown.reconcilePending)}
+                        </span>{' '}
+                        + transient unresolved{' '}
+                        <span className="font-semibold text-amber-800">
+                          {asNumber(
+                            cohortFlow.recipientOutcomeBreakdown.transientUnresolved ??
+                              cohortFlow.recipientOutcomeBreakdown.unresolved
+                          )}
+                        </span>{' '}
+                        + other{' '}
+                        <span className="font-semibold text-slate-600">
+                          {asNumber(cohortFlow.recipientOutcomeBreakdown.other)}
+                        </span>{' '}
+                        (accepted / in-flight edge states that are not unresolved by our rules).
+                      </p>
+                      <div className="overflow-x-auto pt-1">
+                        <table className="min-w-full text-[11px] border-collapse">
+                          <thead>
+                            <tr className="border-b border-slate-200 text-slate-500">
+                              <th className="py-1.5 pr-3 text-left font-medium">Cohort slice</th>
+                              <th className="py-1.5 pr-2 text-right font-medium">Total</th>
+                              <th className="py-1.5 pr-2 text-right font-medium text-emerald-800">W/ row</th>
+                              <th className="py-1.5 pr-2 text-right font-medium">No row</th>
+                              <th className="py-1.5 pr-2 text-right font-medium text-emerald-800">Deliv.</th>
+                              <th className="py-1.5 pr-2 text-right font-medium text-rose-800">Perm.</th>
+                              <th className="py-1.5 pr-2 text-right font-medium text-cyan-800">Recon.</th>
+                              <th className="py-1.5 pr-2 text-right font-medium text-amber-800">Trans.</th>
+                              <th className="py-1.5 text-right font-medium text-slate-600">Other</th>
+                            </tr>
+                          </thead>
+                          <tbody>
+                            <tr className="border-b border-slate-100">
+                              <td className="py-1.5 pr-3 font-medium text-slate-700">Bookings</td>
+                              <td className="py-1.5 pr-2 text-right tabular-nums">{asNumber(cohortFlow.booked)}</td>
+                              <td className="py-1.5 pr-2 text-right tabular-nums text-emerald-800">
+                                {asNumber(cohortFlow.withTemplateEventBookings)}
+                              </td>
+                              <td className="py-1.5 pr-2 text-right tabular-nums">
+                                {asNumber(cohortFlow.withoutTemplateEventBookings)}
+                              </td>
+                              <td className="py-1.5 pr-2 text-right tabular-nums text-slate-300">—</td>
+                              <td className="py-1.5 pr-2 text-right tabular-nums text-slate-300">—</td>
+                              <td className="py-1.5 pr-2 text-right tabular-nums text-slate-300">—</td>
+                              <td className="py-1.5 pr-2 text-right tabular-nums text-slate-300">—</td>
+                              <td className="py-1.5 text-right tabular-nums text-slate-300">—</td>
+                            </tr>
+                            <tr>
+                              <td className="py-1.5 pr-3 font-medium text-slate-700">Recipients</td>
+                              <td className="py-1.5 pr-2 text-right tabular-nums">
+                                {asNumber(cohortFlow.recipientOutcomeBreakdown.total)}
+                              </td>
+                              <td className="py-1.5 pr-2 text-right tabular-nums text-slate-300">—</td>
+                              <td className="py-1.5 pr-2 text-right tabular-nums text-slate-300">—</td>
+                              <td className="py-1.5 pr-2 text-right tabular-nums text-emerald-800">
+                                {asNumber(cohortFlow.recipientOutcomeBreakdown.delivered)}
+                              </td>
+                              <td className="py-1.5 pr-2 text-right tabular-nums text-rose-800">
+                                {asNumber(cohortFlow.recipientOutcomeBreakdown.permanentFailed)}
+                              </td>
+                              <td className="py-1.5 pr-2 text-right tabular-nums text-cyan-800">
+                                {asNumber(cohortFlow.recipientOutcomeBreakdown.reconcilePending)}
+                              </td>
+                              <td className="py-1.5 pr-2 text-right tabular-nums text-amber-800">
+                                {asNumber(
+                                  cohortFlow.recipientOutcomeBreakdown.transientUnresolved ??
+                                    cohortFlow.recipientOutcomeBreakdown.unresolved
+                                )}
+                              </td>
+                              <td className="py-1.5 text-right tabular-nums text-slate-600">
+                                {asNumber(cohortFlow.recipientOutcomeBreakdown.other)}
+                              </td>
+                            </tr>
+                          </tbody>
+                        </table>
+                      </div>
+                    </>
+                  )}
+                  {cohortFlow.pre4hrReminderSentCorrelate && (
+                    <p className="text-[11px] text-slate-600 leading-relaxed border-t border-slate-200 pt-2">
+                      <span className="font-semibold text-slate-700">pre4hr correlate (FormSubmission.reminderSent):</span>{' '}
+                      {asNumber(cohortFlow.pre4hrReminderSentCorrelate.reminderSentTrueBookings)} true,{' '}
+                      {asNumber(cohortFlow.pre4hrReminderSentCorrelate.reminderSentNotTrueBookings)} not true — can diverge from
+                      WhatsApp events when SMS/WA paths differ historically.
+                    </p>
+                  )}
+                </div>
+              )}
               <div className="rounded-2xl border border-primary-blue-200 bg-white p-4 shadow-sm">
                 <p className="mb-3 text-[11px] font-semibold uppercase tracking-[0.14em] text-primary-navy">
                   {isAllTemplates ? 'Volume' : 'Selected template volume'}
@@ -1216,6 +1383,11 @@ export default function WhatsAppOpsOverview() {
                     />
                   ))}
                 </div>
+                {isRecipientDay && (
+                  <p className="mt-3 text-xs text-emerald-900 bg-emerald-50 border border-emerald-200 rounded-lg px-3 py-2">
+                    KPIs above count <span className="font-semibold">unique recipients</span>; retries are not double-counted.
+                  </p>
+                )}
               </div>
               <div className="rounded-2xl border border-primary-blue-200 bg-white p-4 shadow-sm">
                 <p className="mb-3 text-[11px] font-semibold uppercase tracking-[0.14em] text-primary-navy">
@@ -1233,6 +1405,36 @@ export default function WhatsAppOpsOverview() {
                   ))}
                 </div>
               </div>
+              {isRecipientDay && (
+                <div className="rounded-2xl border border-dashed border-slate-300 bg-slate-50/80 p-4">
+                  <button
+                    type="button"
+                    onClick={() => setShowAttemptDiagnostics((v) => !v)}
+                    className="text-sm font-semibold text-primary-navy hover:underline"
+                  >
+                    {showAttemptDiagnostics ? 'Hide' : 'Show'} advanced: attempt-level rows (diagnostic)
+                  </button>
+                  {showAttemptDiagnostics && (
+                    <div className="mt-3 space-y-3 text-xs text-slate-700">
+                      <p>{dayView?.attemptMetricsNote || 'Per-row attempt metrics — do not use for success-rate KPIs.'}</p>
+                      <div className="grid gap-2 sm:grid-cols-3">
+                        <div className="rounded-lg border bg-white p-2">
+                          <p className="font-semibold">Attempt rows</p>
+                          <p>{asNumber(dailySelected.whatsappAttempts || dailyOverall.whatsappAttempts)}</p>
+                        </div>
+                        <div className="rounded-lg border bg-white p-2">
+                          <p className="font-semibold">Failed rows</p>
+                          <p>{asNumber(dailySelected.whatsappFailed || dailyOverall.whatsappFailed)}</p>
+                        </div>
+                        <div className="rounded-lg border bg-white p-2">
+                          <p className="font-semibold">Delivered rows</p>
+                          <p>{asNumber(dailySelected.deliveredCount || dailyOverall.deliveredCount)}</p>
+                        </div>
+                      </div>
+                    </div>
+                  )}
+                </div>
+              )}
 
               {selectedKind && selectedStrategy === 'immediate_only' && (
                 <div className="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm space-y-4">
@@ -1450,13 +1652,26 @@ export default function WhatsAppOpsOverview() {
                 })}
               </div>
 
+              {isRecipientDay && retryFunnelReconciliation.length > 0 && (
+                <div className="rounded-xl border border-indigo-100 bg-indigo-50/40 p-4 text-xs text-slate-800 space-y-2">
+                  <p className="font-semibold uppercase tracking-wide text-indigo-900">Retry stage reconciliation</p>
+                  {retryFunnelReconciliation.map((b) => (
+                    <p key={`${b.fromAttempt}-${b.toAttempt}`}>
+                      Attempt {b.fromAttempt} → {b.toAttempt}: carried {asNumber(b.carriedForward)} · recovered{' '}
+                      {asNumber(b.recoveredOnRetry)} · still unresolved {asNumber(b.stillUnresolved)} · excluded{' '}
+                      {asNumber(b.excluded)} · permanent {asNumber(b.permanentFailed)}
+                    </p>
+                  ))}
+                </div>
+              )}
+
               {isRecipientDay && Object.keys(exclusionBreakdown).length > 0 && (
                 <div className="rounded-xl border border-slate-200 bg-slate-50/50 p-4">
                   <p className="text-xs font-semibold uppercase tracking-[0.14em] text-slate-800">
-                    Exclusion breakdown (event rows, slot-day cohort)
+                    Exclusion breakdown (recipients, canonical taxonomy)
                   </p>
                   <p className="mt-1 text-xs text-slate-600">
-                    Total exclusion rows: <span className="font-semibold">{asNumber(rt?.excludedTotal)}</span>
+                    Recipients with exclusion: <span className="font-semibold">{asNumber(rt?.excludedTotal)}</span>
                   </p>
                   <div className="mt-3 grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-2 text-xs">
                     {Object.entries(exclusionBreakdown).map(([reason, count]) => (
@@ -1512,13 +1727,59 @@ export default function WhatsAppOpsOverview() {
           {dayView?.diagnostics && (
             <div className="mb-6 rounded-xl border border-slate-200 bg-slate-50 p-4 text-xs text-slate-800">
               <p className="font-semibold text-slate-900">Diagnostics (slot-day cohort)</p>
-              <dl className="mt-2 grid gap-2 sm:grid-cols-2 lg:grid-cols-3">
-                {Object.entries(dayView.diagnostics).map(([k, v]) => (
-                  <div key={k}>
-                    <dt className="text-slate-500">{k}</dt>
-                    <dd className="font-mono font-semibold">{typeof v === 'object' ? JSON.stringify(v) : String(v)}</dd>
+              {Array.isArray(dayView.diagnostics.violationSamples) &&
+                dayView.diagnostics.violationSamples.length > 0 && (
+                  <div className="mt-3 overflow-x-auto rounded-lg border border-slate-200 bg-white">
+                    <p className="border-b border-slate-100 px-3 py-2 font-semibold text-slate-800">
+                      Recent timing violations / blocks (sample)
+                    </p>
+                    <table className="min-w-full text-left">
+                      <thead>
+                        <tr className="border-b border-slate-100 text-slate-500">
+                          <th className="px-3 py-2">Phone</th>
+                          <th className="px-3 py-2">Kind</th>
+                          <th className="px-3 py-2">Att</th>
+                          <th className="px-3 py-2">Source</th>
+                          <th className="px-3 py-2">Status</th>
+                          <th className="px-3 py-2">Exclusion</th>
+                          <th className="px-3 py-2">Δ ms</th>
+                          <th className="px-3 py-2">Sent</th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {dayView.diagnostics.violationSamples.map((s, idx) => (
+                          <tr key={idx} className="border-b border-slate-50">
+                            <td className="px-3 py-2 font-mono">{s.phone}</td>
+                            <td className="px-3 py-2">{s.messageKind}</td>
+                            <td className="px-3 py-2">{s.attemptNumber}</td>
+                            <td className="px-3 py-2">{s.source}</td>
+                            <td className="px-3 py-2">{s.status}</td>
+                            <td className="px-3 py-2">{s.retryExclusionReason || '—'}</td>
+                            <td className="px-3 py-2 font-mono">
+                              {s.eligibilityTiming?.eligibilityViolationDeltaMs != null
+                                ? String(s.eligibilityTiming.eligibilityViolationDeltaMs)
+                                : '—'}
+                            </td>
+                            <td className="px-3 py-2 whitespace-nowrap">
+                              {s.createdAt ? formatDt(s.createdAt) : '—'}
+                            </td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
                   </div>
-                ))}
+                )}
+              <dl className="mt-2 grid gap-2 sm:grid-cols-2 lg:grid-cols-3">
+                {Object.entries(dayView.diagnostics)
+                  .filter(([k]) => k !== 'violationSamples')
+                  .map(([k, v]) => (
+                    <div key={k}>
+                      <dt className="text-slate-500">{k}</dt>
+                      <dd className="font-mono font-semibold break-all">
+                        {typeof v === 'object' ? JSON.stringify(v) : String(v)}
+                      </dd>
+                    </div>
+                  ))}
               </dl>
             </div>
           )}
@@ -1526,7 +1787,7 @@ export default function WhatsAppOpsOverview() {
           <div className="grid gap-6 lg:grid-cols-2 xl:grid-cols-4">
             <ChartContainer
               title="Month trend (IST)"
-              subtitle={monthData?.schemaVersion === 2 ? 'Bookings vs attempts + recipient metrics (all IST slot-day cohort)' : 'Bookings vs attempts vs failed by day'}
+              subtitle="Recipient-primary trends by IST slot-day (bookings + delivered / permanent / transient / reconcile)"
             >
               <div style={{ width: '100%', height: 300 }}>
                 <ResponsiveContainer>
@@ -1537,12 +1798,17 @@ export default function WhatsAppOpsOverview() {
                     <Tooltip />
                     <Legend />
                     <Line type="monotone" dataKey="bookings" stroke="#4d8ec7" strokeWidth={2} dot={false} />
-                    <Line type="monotone" dataKey="attempts" stroke="#003366" strokeWidth={2} dot={false} />
-                    <Line type="monotone" dataKey="failed" stroke="#dc2626" strokeWidth={2} dot={false} />
-                    {monthData?.schemaVersion === 2 && (
+                    {showAttemptDiagnostics && (
+                      <>
+                        <Line type="monotone" dataKey="attempts" name="Attempt rows" stroke="#003366" strokeWidth={2} dot={false} strokeDasharray="4 4" />
+                        <Line type="monotone" dataKey="failed" name="Failed rows" stroke="#dc2626" strokeWidth={2} dot={false} strokeDasharray="4 4" />
+                      </>
+                    )}
+                    {Number(monthData?.schemaVersion) >= 2 && (
                       <>
                         <Line type="monotone" dataKey="recDelivered" name="Recipients delivered" stroke="#059669" strokeWidth={2} dot={false} />
-                        <Line type="monotone" dataKey="recUnresolved" name="Recipients unresolved" stroke="#d97706" strokeWidth={2} dot={false} />
+                        <Line type="monotone" dataKey="recTransient" name="Recipients transient" stroke="#d97706" strokeWidth={2} dot={false} />
+                        <Line type="monotone" dataKey="recReconcile" name="Recipients reconcile pending" stroke="#0891b2" strokeWidth={2} dot={false} />
                         <Line type="monotone" dataKey="recPermanent" name="Recipients permanent" stroke="#b91c1c" strokeWidth={2} dot={false} />
                       </>
                     )}
@@ -1551,37 +1817,45 @@ export default function WhatsAppOpsOverview() {
               </div>
             </ChartContainer>
 
-            <ChartContainer title="Day status composition" subtitle={`Message attempts (IST slot-day cohort) on ${selectedDate}`}>
+            {showAttemptDiagnostics && (
+            <>
+            <ChartContainer title="Day status composition (diagnostic)" subtitle={`Attempt-level event rows on ${selectedDate} — not recipient KPIs`}>
               <div style={{ width: '100%', height: 300 }}>
                 <ResponsiveContainer>
                   <BarChart data={byStatusChart} margin={{ top: 12, left: 0, right: 16, bottom: 0 }}>
                     <CartesianGrid strokeDasharray="2 4" stroke="#dbe7f3" />
                     <XAxis dataKey="label" tick={{ fill: '#64748b', fontSize: 11 }} axisLine={false} tickLine={false} />
                     <YAxis tick={{ fill: '#64748b', fontSize: 11 }} axisLine={false} tickLine={false} />
-                    <Tooltip formatter={(value) => [value, 'events']} />
+                    <Tooltip formatter={(value) => [value, 'attempt rows']} />
                     <Bar dataKey="count" fill="#003366" radius={[5, 5, 0, 0]} />
                   </BarChart>
                 </ResponsiveContainer>
               </div>
             </ChartContainer>
 
-            <ChartContainer title="Per-template breakdown" subtitle={`All template events on ${selectedDate}`}>
+            <ChartContainer title="Per-template breakdown (diagnostic)" subtitle={`Attempt-level events on ${selectedDate}`}>
               <div style={{ width: '100%', height: 300 }}>
                 <ResponsiveContainer>
                   <BarChart data={byKindChart} margin={{ top: 12, left: 0, right: 16, bottom: 0 }}>
                     <CartesianGrid strokeDasharray="2 4" stroke="#dbe7f3" />
                     <XAxis dataKey="label" tick={{ fill: '#64748b', fontSize: 11 }} axisLine={false} tickLine={false} />
                     <YAxis tick={{ fill: '#64748b', fontSize: 11 }} axisLine={false} tickLine={false} />
-                    <Tooltip formatter={(value) => [value, 'events']} />
+                    <Tooltip formatter={(value) => [value, 'attempt rows']} />
                     <Bar dataKey="count" fill="#4d8ec7" radius={[5, 5, 0, 0]} />
                   </BarChart>
                 </ResponsiveContainer>
               </div>
             </ChartContainer>
+            </>
+            )}
 
             <ChartContainer
               title={isRecipientDay ? 'Failure reason buckets' : 'Failure reasons (day range)'}
-              subtitle={isRecipientDay ? 'Terminal failures in cohort day window' : 'Same taxonomy when recipient day view active'}
+              subtitle={
+                isRecipientDay
+                  ? 'One bucket per recipient (permanent failed or transient unresolved)'
+                  : 'Recipient-primary when day view active'
+              }
             >
               <div style={{ width: '100%', height: 300 }}>
                 <ResponsiveContainer>
@@ -1589,7 +1863,7 @@ export default function WhatsAppOpsOverview() {
                     <CartesianGrid strokeDasharray="2 4" stroke="#dbe7f3" />
                     <XAxis dataKey="label" tick={{ fill: '#64748b', fontSize: 11 }} axisLine={false} tickLine={false} />
                     <YAxis tick={{ fill: '#64748b', fontSize: 11 }} axisLine={false} tickLine={false} />
-                    <Tooltip formatter={(value) => [value, 'events']} />
+                    <Tooltip formatter={(value) => [value, isRecipientDay ? 'recipients' : 'events']} />
                     <Bar dataKey="count" fill="#7c3aed" radius={[5, 5, 0, 0]} />
                   </BarChart>
                 </ResponsiveContainer>
@@ -1597,13 +1871,38 @@ export default function WhatsAppOpsOverview() {
             </ChartContainer>
           </div>
 
-          {(!payload?.meta?.attemptedRows) && (
+          {!(rangeRt?.totalRecipients || payload?.meta?.attemptedRows || payload?.diagnostic?.eventTimeSummary?.attemptedRows) && (
             <div className="rounded-xl border border-dashed border-gray-300 bg-white p-8 text-center">
               <p className="text-base font-semibold text-gray-700">No events in this selection</p>
               <p className="mt-1 text-sm text-gray-500">
-                No WhatsApp attempts found for {selectedTemplate ? selectedTemplate.label : 'the selected date range'}.
+                No WhatsApp recipients found for {selectedTemplate ? selectedTemplate.label : 'the selected date range'}.
               </p>
             </div>
+          )}
+
+          {rangeRt && (
+            <div className="rounded-xl border border-slate-200 bg-slate-50/80 px-4 py-3 text-xs text-slate-800 space-y-2">
+              <p className="font-semibold uppercase tracking-wide text-slate-600">Range summary (recipient-primary)</p>
+              <p>
+                {from} → {to}: {asNumber(rangeRt.totalRecipients)} recipients · {asNumber(rangeRt.delivered)} delivered ·{' '}
+                {asNumber(rangeRt.finalPermanentFailed)} permanent failed · {asNumber(rangeRt.transientUnresolved)} transient ·{' '}
+                {asNumber(rangeRt.reconcilePending)} reconcile pending
+              </p>
+              {payload?.meta?.rangeNote && <p className="text-slate-600">{payload.meta.rangeNote}</p>}
+            </div>
+          )}
+
+          {metricDefinitions && (
+            <details className="rounded-xl border border-slate-200 bg-white px-4 py-3 text-xs text-slate-700">
+              <summary className="cursor-pointer font-semibold text-slate-800">Metrics glossary</summary>
+              <ul className="mt-2 space-y-1 list-disc pl-4">
+                {Object.entries(metricDefinitions).map(([k, v]) => (
+                  <li key={k}>
+                    <span className="font-medium">{k.replace(/([A-Z])/g, ' $1')}:</span> {v}
+                  </li>
+                ))}
+              </ul>
+            </details>
           )}
         </>
       )}

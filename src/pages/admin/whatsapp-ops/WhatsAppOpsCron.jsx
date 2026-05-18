@@ -3,6 +3,7 @@ import { FiChevronRight, FiLoader } from 'react-icons/fi';
 import {
   listWhatsappOpsCronRuns,
   getWhatsappOpsCronRunDetail,
+  getOperationalHealth
 } from '../../../utils/whatsappOpsAdminApi';
 import { defaultRangeIsoDates, formatDt } from './whatsappOpsShared';
 export default function WhatsAppOpsCron() {
@@ -13,11 +14,26 @@ export default function WhatsAppOpsCron() {
   const [meta, setMeta] = useState({ page: 1, total: 0 });
   const [detail, setDetail] = useState(null);
   const [detailLoading, setDetailLoading] = useState(false);
+  const [cronHealth, setCronHealth] = useState(null);
+  const [reconcileHealth, setReconcileHealth] = useState(null);
+  const [reminderJobHealth, setReminderJobHealth] = useState(null);
 
   const load = useCallback(async () => {
     setErr(null);
     setLoading(true);
-    const res = await listWhatsappOpsCronRuns({ from, to, limit: 50, page: 1 });
+    const [res, healthRes] = await Promise.all([
+      listWhatsappOpsCronRuns({ from, to, limit: 50, page: 1 }),
+      getOperationalHealth({})
+    ]);
+    if (healthRes.success) {
+      setCronHealth(healthRes.data?.data?.cronScheduleHealth || null);
+      setReconcileHealth(healthRes.data?.data?.reconciliationHealth || null);
+      setReminderJobHealth(healthRes.data?.data?.reminderJobHealth || null);
+    } else {
+      setCronHealth(null);
+      setReconcileHealth(null);
+      setReminderJobHealth(null);
+    }
     setLoading(false);
     if (!res.success) {
       setErr(res.message);
@@ -51,9 +67,8 @@ export default function WhatsAppOpsCron() {
           <p className="text-sm text-gray-600 mt-1">
             One row per HTTP cron invocation. Drill into linked WhatsApp attempts.
           </p>
-          <p className="text-xs text-amber-800 mt-2 bg-amber-50 inline-block px-2 py-1 rounded-lg border border-amber-200">
-            Scheduler cadence lives in Vercel / external cron — URLs:{' '}
-            <code>/api/cron/send-reminders</code>, meetlinks, send-30min-reminders, retry-whatsapp.
+          <p className="text-xs text-slate-600 mt-2">
+            Vercel schedules send-reminders, send-meetlinks, send-30min-reminders, and retry-whatsapp every minute.
           </p>
         </div>
         <div className="flex flex-wrap gap-3 items-end">
@@ -73,6 +88,135 @@ export default function WhatsAppOpsCron() {
 
       {err && (
         <div className="rounded-lg border border-rose-200 bg-rose-50 px-4 py-3 text-sm text-rose-900">{err}</div>
+      )}
+
+      {cronHealth && !cronHealth.healthy && (cronHealth.warnings || []).length > 0 && (
+        <div className="rounded-lg border border-amber-300 bg-amber-50 px-4 py-3 text-sm text-amber-950 space-y-2">
+          <p className="font-semibold">Cron schedule health warnings</p>
+          <ul className="list-disc pl-5 space-y-1">
+            {(cronHealth.warnings || []).map((w) => (
+              <li key={w}>{w}</li>
+            ))}
+          </ul>
+        </div>
+      )}
+
+      {reconcileHealth && (
+        <div className="rounded-xl border border-slate-200 bg-white p-4 space-y-3 text-sm">
+          <div className="flex flex-wrap items-center justify-between gap-2">
+            <p className="font-semibold text-slate-900">DLR reconciliation backlog</p>
+            <span
+              className={`inline-flex rounded-full px-2 py-0.5 text-xs font-semibold ${
+                reconcileHealth.healthy ? 'bg-emerald-100 text-emerald-800' : 'bg-amber-100 text-amber-900'
+              }`}
+            >
+              {reconcileHealth.healthy ? 'Healthy' : 'Attention'}
+            </span>
+          </div>
+          <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4 text-xs">
+            <div className="rounded-lg border border-cyan-200 bg-cyan-50/40 px-3 py-2">
+              <p className="text-slate-600">Awaiting final DLR</p>
+              <p className="text-lg font-bold text-slate-900 tabular-nums">{reconcileHealth.awaitingCount ?? 0}</p>
+            </div>
+            <div className="rounded-lg border border-slate-200 px-3 py-2">
+              <p className="text-slate-600">Oldest awaiting age</p>
+              <p className="text-lg font-bold text-slate-900 tabular-nums">
+                {reconcileHealth.oldestAwaitingAgeMs != null
+                  ? `${Math.round(reconcileHealth.oldestAwaitingAgeMs / 60000)}m`
+                  : '—'}
+              </p>
+            </div>
+            <div className="rounded-lg border border-slate-200 px-3 py-2">
+              <p className="text-slate-600">Phase-1 backlog</p>
+              <p className="text-lg font-bold text-slate-900 tabular-nums">{reconcileHealth.phase1Backlog ?? 0}</p>
+            </div>
+            <div className="rounded-lg border border-slate-200 px-3 py-2">
+              <p className="text-slate-600">Phase-2 ready</p>
+              <p className="text-lg font-bold text-slate-900 tabular-nums">{reconcileHealth.phase2Backlog ?? 0}</p>
+            </div>
+          </div>
+          {reconcileHealth.avgResolutionMs != null && (
+            <p className="text-xs text-slate-600">
+              Avg reconcile resolution (7d): {Math.round(reconcileHealth.avgResolutionMs / 60000)}m (
+              {reconcileHealth.resolutionSampleCount ?? 0} samples)
+            </p>
+          )}
+          {(reconcileHealth.staleReconcileWarnings || []).length > 0 && (
+            <ul className="list-disc pl-5 text-amber-900 space-y-1 text-xs">
+              {(reconcileHealth.staleReconcileWarnings || []).map((w) => (
+                <li key={w}>{w}</li>
+              ))}
+            </ul>
+          )}
+          {reconcileHealth.lastRetryCron?.reconcileStats && (
+            <p className="text-[11px] text-slate-500 font-mono">
+              Last retry_whatsapp reconcile: {JSON.stringify(reconcileHealth.lastRetryCron.reconcileStats)}
+            </p>
+          )}
+        </div>
+      )}
+
+      {reminderJobHealth && (
+        <div className="rounded-xl border border-indigo-200 bg-indigo-50/30 p-4 space-y-3 text-sm">
+          <div className="flex flex-wrap items-center justify-between gap-2">
+            <p className="font-semibold text-slate-900">Reminder job queue (P3)</p>
+            <span
+              className={`inline-flex rounded-full px-2 py-0.5 text-xs font-semibold ${
+                reminderJobHealth.healthy ? 'bg-emerald-100 text-emerald-800' : 'bg-amber-100 text-amber-900'
+              }`}
+            >
+              {reminderJobHealth.healthy ? 'Healthy' : 'Backlog / stuck'}
+            </span>
+          </div>
+          <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4 text-xs">
+            <div className="rounded-lg border border-slate-200 bg-white px-3 py-2">
+              <p className="text-slate-600">Pending</p>
+              <p className="text-lg font-bold tabular-nums">{reminderJobHealth.counts?.pending ?? 0}</p>
+            </div>
+            <div className="rounded-lg border border-amber-200 bg-amber-50 px-3 py-2">
+              <p className="text-slate-600">Overdue</p>
+              <p className="text-lg font-bold tabular-nums text-amber-900">{reminderJobHealth.counts?.overdue ?? 0}</p>
+            </div>
+            <div className="rounded-lg border border-slate-200 bg-white px-3 py-2">
+              <p className="text-slate-600">Expired</p>
+              <p className="text-lg font-bold tabular-nums">{reminderJobHealth.counts?.expired ?? 0}</p>
+            </div>
+            <div className="rounded-lg border border-slate-200 bg-white px-3 py-2">
+              <p className="text-slate-600">Stuck claimed</p>
+              <p className="text-lg font-bold tabular-nums">{reminderJobHealth.counts?.stuckClaimed ?? 0}</p>
+            </div>
+            <div className="rounded-lg border border-slate-200 bg-white px-3 py-2">
+              <p className="text-slate-600">Avg dispatch delay</p>
+              <p className="text-lg font-bold tabular-nums">
+                {reminderJobHealth.schedulingDelay?.avgMs != null
+                  ? `${Math.round(reminderJobHealth.schedulingDelay.avgMs / 1000)}s`
+                  : '—'}
+              </p>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {cronHealth?.jobs?.length > 0 && (
+        <div className="rounded-xl border border-slate-200 bg-white p-4 grid gap-3 sm:grid-cols-2 lg:grid-cols-4 text-xs">
+          {cronHealth.jobs.map((j) => (
+            <div
+              key={j.jobKey}
+              className={`rounded-lg border px-3 py-2 ${j.stale ? 'border-amber-300 bg-amber-50' : 'border-emerald-200 bg-emerald-50/40'}`}
+            >
+              <p className="font-semibold text-slate-900">{j.label}</p>
+              <p className="text-slate-600 font-mono text-[10px] mt-0.5">{j.path}</p>
+              <p className="mt-1 text-slate-700">
+                Last OK: {j.lastSuccessAt ? formatDt(j.lastSuccessAt) : 'never'}
+              </p>
+              {j.stats?.waAttempted != null && (
+                <p className="text-slate-600">
+                  WA ok: {j.stats.waSucceeded ?? 0} / {j.stats.waAttempted ?? 0}
+                </p>
+              )}
+            </div>
+          ))}
+        </div>
       )}
 
       {loading ? (
