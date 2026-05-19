@@ -32,6 +32,7 @@ function formatDateTime(value) {
 function formatLabel(raw) {
   const key = String(raw || '');
   if (key === 'classStatus') return 'Current studying';
+  if (key === 'preferredLanguage') return 'Language you prefer';
   return key
     .replace(/([a-z])([A-Z])/g, '$1 $2')
     .replace(/_/g, ' ')
@@ -54,6 +55,7 @@ function formatDemoDateDisplay(dateKey) {
 const IIT_SUBMISSION_COLUMNS = [
   { key: 'name', label: 'Name' },
   { key: 'phone', label: 'Phone' },
+  { key: 'preferredLanguage', label: 'Language you prefer' },
   { key: 'classStatus', label: 'Current studying' },
   { key: 'currentStep', label: 'Current Step' },
   { key: 'completed', label: 'Completed' },
@@ -72,6 +74,7 @@ function mapIitSubmissionRecord(row) {
   const topColleges = formatTopColleges(row?.section1Data?.top5Colleges);
   const slotRaw = String(row?.section1Data?.slotBooking ?? '').trim();
   const classStatusRaw = String(row?.section1Data?.classStatus ?? '').trim();
+  const preferredLanguageRaw = String(row?.section2Data?.preferredLanguage ?? '').trim();
   const demoDateKey = deriveSlotDemoDateKeyIST(row);
   const updatedDate = row?.updatedAt ? new Date(row.updatedAt) : null;
   const updatedEpoch = updatedDate && !Number.isNaN(updatedDate.getTime()) ? updatedDate.getTime() : null;
@@ -85,6 +88,7 @@ function mapIitSubmissionRecord(row) {
     completed: row?.isCompleted ? 'Yes' : 'No',
     topColleges,
     topCollegesDisplay: topColleges === '—' ? '—' : topColleges.replace(/\n+/g, ', '),
+    preferredLanguage: preferredLanguageRaw || '—',
     slot: slotRaw || '—',
     demoDate: formatDemoDateDisplay(demoDateKey),
     demoDateKey,
@@ -120,13 +124,16 @@ function applySubmissionViewFilters(mappedRows, viewFilters) {
   });
 }
 
-function SectionBlock({ title, data }) {
+function SectionBlock({ title, data, priorityKeys = [] }) {
   if (!data) return null;
   return (
     <div className="rounded-xl border border-gray-200 bg-white p-4">
       <h4 className="text-sm font-semibold text-gray-900 mb-3">{title}</h4>
       <dl className="grid grid-cols-1 gap-2 text-sm">
-        {Object.entries(data).map(([key, value]) => (
+        {[
+          ...priorityKeys.filter((key) => key in data).map((key) => [key, data[key]]),
+          ...Object.entries(data).filter(([key]) => !new Set(priorityKeys).has(key)),
+        ].map(([key, value]) => (
           <div key={key} className="grid grid-cols-1 gap-0.5">
             <dt className="text-gray-500">{formatLabel(key)}</dt>
             <dd className="text-gray-900 wrap-break-word">
@@ -136,6 +143,18 @@ function SectionBlock({ title, data }) {
         ))}
       </dl>
     </div>
+  );
+}
+
+function IitSection2Block({ data, currentStep = 1 }) {
+  if (!data && currentStep < 2) return null;
+  const merged = { preferredLanguage: data?.preferredLanguage ?? '', ...(data || {}) };
+  return (
+    <SectionBlock
+      title="Section 2"
+      data={merged}
+      priorityKeys={['preferredLanguage', 'careerDecisionClarity', 'collegeDecisionStakeholder', 'expectedBudget', 'topCollegePriority']}
+    />
   );
 }
 
@@ -424,6 +443,8 @@ export default function IitCounselling() {
   const [pagination, setPagination] = useState({ total: 0, totalPages: 1 });
   const [search, setSearch] = useState('');
   const [slotFilter, setSlotFilter] = useState('');
+  /** '' | 'Telugu' | 'Hindi' */
+  const [languageFilter, setLanguageFilter] = useState('');
   /** 'all' | 'relevant' | 'irrelevant' — filters by Current studying (classStatus). */
   const [leadRelevanceFilter, setLeadRelevanceFilter] = useState('all');
   /** Visit analytics range (top KPIs & charts only). */
@@ -491,6 +512,7 @@ export default function IitCounselling() {
     String(demoFromDate || '').trim()
     || String(demoToDate || '').trim()
     || String(slotFilter || '').trim()
+    || String(languageFilter || '').trim()
     || leadRelevanceFilter !== 'all'
   );
 
@@ -514,9 +536,15 @@ export default function IitCounselling() {
     [demoFilteredBaseRows, slotFilter]
   );
 
+  const languageFilteredRows = useMemo(() => {
+    const lang = String(languageFilter || '').trim();
+    if (!lang) return toolbarSlotFilteredRows;
+    return toolbarSlotFilteredRows.filter((row) => row.preferredLanguage === lang);
+  }, [toolbarSlotFilteredRows, languageFilter]);
+
   const relevanceFilteredRows = useMemo(
-    () => toolbarSlotFilteredRows.filter((row) => matchesIitLeadRelevance(row, leadRelevanceFilter)),
-    [toolbarSlotFilteredRows, leadRelevanceFilter]
+    () => languageFilteredRows.filter((row) => matchesIitLeadRelevance(row, leadRelevanceFilter)),
+    [languageFilteredRows, leadRelevanceFilter]
   );
 
   useEffect(() => {
@@ -1222,6 +1250,21 @@ export default function IitCounselling() {
               Copy all
             </button>
             <select
+              value={languageFilter}
+              onChange={(e) => {
+                setLoading(true);
+                setError('');
+                setLanguageFilter(e.target.value);
+                setPage(1);
+              }}
+              className="h-10 min-w-[10rem] max-w-[16rem] rounded-xl border border-gray-200 bg-white px-3 text-sm font-medium text-gray-800 shadow-sm outline-none focus:ring-2 focus:ring-primary-blue-500/25 focus:border-primary-blue-500"
+              aria-label="Filter by preferred language"
+            >
+              <option value="">All languages</option>
+              <option value="Telugu">Telugu</option>
+              <option value="Hindi">Hindi</option>
+            </select>
+            <select
               value={leadRelevanceFilter}
               onChange={(e) => {
                 setLoading(true);
@@ -1279,6 +1322,7 @@ export default function IitCounselling() {
             <tr className="bg-primary-blue-50/90 backdrop-blur-sm border-b border-primary-blue-100/70 shadow-[0_1px_0_0_rgba(0,51,102,0.06)]">
               <th className="px-4 py-3.5 text-[10px] font-bold uppercase tracking-[0.12em] text-gray-500">Name</th>
               <th className="px-4 py-3.5 text-[10px] font-bold uppercase tracking-[0.12em] text-gray-500">Phone</th>
+              <th className="px-4 py-3.5 text-[10px] font-bold uppercase tracking-[0.12em] text-gray-500">Language</th>
               <th className="px-4 py-3.5 text-[10px] font-bold uppercase tracking-[0.12em] text-gray-500">Current studying</th>
               <th className="px-4 py-3.5 text-[10px] font-bold uppercase tracking-[0.12em] text-gray-500">Step</th>
               <th className="px-4 py-3.5 text-[10px] font-bold uppercase tracking-[0.12em] text-gray-500">Done</th>
@@ -1295,9 +1339,9 @@ export default function IitCounselling() {
           </thead>
           <tbody className="divide-y divide-gray-100">
             {submissionsListLoading ? (
-              <tr><td colSpan={14} className="px-4 py-14 text-center text-sm font-medium text-gray-500 bg-gray-50/60">Loading submissions…</td></tr>
+              <tr><td colSpan={15} className="px-4 py-14 text-center text-sm font-medium text-gray-500 bg-gray-50/60">Loading submissions…</td></tr>
             ) : pageMappedRows.length === 0 ? (
-              <tr><td colSpan={14} className="px-4 py-14 text-center text-sm font-medium text-gray-500 bg-gray-50/50">No submissions match the current filters.</td></tr>
+              <tr><td colSpan={15} className="px-4 py-14 text-center text-sm font-medium text-gray-500 bg-gray-50/50">No submissions match the current filters.</td></tr>
             ) : pageMappedRows.map((row) => {
               const rowIsIrrelevant =
                 leadRelevanceFilter === 'all' && !isRelevantIitClassStatus(row.classStatus);
@@ -1326,6 +1370,7 @@ export default function IitCounselling() {
                 >
                   <td className="px-4 py-3 font-semibold text-gray-900">{row.name}</td>
                   <td className="px-4 py-3 tabular-nums font-mono text-[13px] text-gray-700">{row.phone}</td>
+                  <td className="px-4 py-3 text-[13px] font-semibold text-gray-800 whitespace-nowrap">{row.preferredLanguage}</td>
                   <td className={`px-4 py-3 max-w-[220px] truncate text-[13px]${rowIsIrrelevant ? ' text-gray-500' : ' text-gray-700'}`} title={row.classStatus || undefined}>{row.classStatus || '—'}</td>
                   <td className="px-4 py-3">
                     <span className="inline-flex min-w-[1.5rem] justify-center rounded-md bg-gray-100 px-1.5 py-0.5 text-xs font-bold text-gray-700 tabular-nums">
@@ -1474,6 +1519,7 @@ export default function IitCounselling() {
                   <tr className="bg-gray-50 border-b border-gray-200">
                     <th className="px-3 py-2 text-xs uppercase tracking-wider">Name</th>
                     <th className="px-3 py-2 text-xs uppercase tracking-wider">Phone</th>
+                    <th className="px-3 py-2 text-xs uppercase tracking-wider">Language</th>
                     <th className="px-3 py-2 text-xs uppercase tracking-wider">Current studying</th>
                     <th className="px-3 py-2 text-xs uppercase tracking-wider">Current Step</th>
                     <th className="px-3 py-2 text-xs uppercase tracking-wider">Completed</th>
@@ -1493,6 +1539,7 @@ export default function IitCounselling() {
                       <tr key={`viewall-${row.id}`}>
                         <td className="px-3 py-2 break-all">{row.name}</td>
                         <td className="px-3 py-2">{row.phone}</td>
+                        <td className="px-3 py-2 font-semibold">{row.preferredLanguage}</td>
                         <td className="px-3 py-2 break-all max-w-[240px]">{row.classStatus || '—'}</td>
                         <td className="px-3 py-2">{row.currentStep}</td>
                         <td className="px-3 py-2">{row.completed}</td>
@@ -1509,7 +1556,7 @@ export default function IitCounselling() {
                   })}
                   {filteredSubmissionRows.length === 0 ? (
                     <tr>
-                      <td colSpan={13} className="px-3 py-6 text-center text-gray-500">No rows match current filters.</td>
+                      <td colSpan={14} className="px-3 py-6 text-center text-gray-500">No rows match current filters.</td>
                     </tr>
                   ) : null}
                 </tbody>
@@ -1573,7 +1620,7 @@ export default function IitCounselling() {
               {detail ? (
                 <>
                   <SectionBlock title="Section 1: Basic Details" data={detail.section1Data} />
-                  <SectionBlock title="Section 2" data={detail.section2Data} />
+                  <IitSection2Block data={detail.section2Data} currentStep={detail.currentStep} />
                   <SectionBlock title="Section 3" data={detail.section3Data} />
                   {detail.utm ? (
                     <SectionBlock

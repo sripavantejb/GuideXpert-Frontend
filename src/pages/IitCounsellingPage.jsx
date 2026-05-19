@@ -19,6 +19,8 @@ const CAREER_DECISION_OPTIONS = ['Very clear', 'Somewhat clear', 'Completely con
 const COLLEGE_DECISION_OPTIONS = ['Self', 'Parents', 'Both'];
 const BUDGET_OPTIONS = ['<1L', '1-3L', '3-6L', '6L+'];
 const COLLEGE_PRIORITY_OPTIONS = ['Placements', 'Brand', 'Fees', 'Skills', 'Abroad opportunities', 'All the above'];
+/** Keep in sync with GuideXpert-Backend/controllers/formController.js IIT_ALLOWED_VALUES.preferredLanguage */
+const PREFERRED_LANGUAGE_OPTIONS = ['Telugu', 'Hindi'];
 const HELP_OPTIONS = ['Scholarship Test', 'Career Counseling with IITian', 'How to choose the right college', 'Not sure'];
 const ONE_TO_ONE_OPTIONS = ['Yes', 'Maybe', 'No'];
 const CONFUSION_OPTIONS = ['Course', 'College', 'Placements', 'Parent pressure', 'Not sure'];
@@ -36,6 +38,7 @@ const initialFormData = {
   collegeDecisionStakeholder: '',
   expectedBudget: '',
   topCollegePriority: '',
+  preferredLanguage: '',
   helpNeeded: '',
   wantsOneToOneSession: '',
   biggestConfusion: '',
@@ -89,7 +92,7 @@ export default function IitCounsellingPage() {
 
   const stepConfig = useMemo(() => ({
     1: ['fullName', 'mobileNumber', 'studentOrParent', 'classStatus', 'stream', 'city', 'slotBooking', 'top5Colleges'],
-    2: ['careerDecisionClarity', 'collegeDecisionStakeholder', 'expectedBudget', 'topCollegePriority'],
+    2: ['careerDecisionClarity', 'collegeDecisionStakeholder', 'expectedBudget', 'topCollegePriority', 'preferredLanguage'],
     3: ['helpNeeded', 'wantsOneToOneSession', 'biggestConfusion'],
   }), []);
 
@@ -400,6 +403,7 @@ export default function IitCounsellingPage() {
             collegeDecisionStakeholder: formData.collegeDecisionStakeholder,
             expectedBudget: formData.expectedBudget,
             topCollegePriority: formData.topCollegePriority,
+            preferredLanguage: formData.preferredLanguage,
           }
         : {
             submissionId,
@@ -657,6 +661,7 @@ export default function IitCounsellingPage() {
               <ChoiceGroup label="10. Who decides college?" options={COLLEGE_DECISION_OPTIONS} value={formData.collegeDecisionStakeholder} onChange={(value) => handleInputChange('collegeDecisionStakeholder', value)} error={errors.collegeDecisionStakeholder} />
               <ChoiceGroup label="11. Expected annual budget" options={BUDGET_OPTIONS} value={formData.expectedBudget} onChange={(value) => handleInputChange('expectedBudget', value)} error={errors.expectedBudget} />
               <ChoiceGroup label="12. What matters most?" options={COLLEGE_PRIORITY_OPTIONS} value={formData.topCollegePriority} onChange={(value) => handleInputChange('topCollegePriority', value)} error={errors.topCollegePriority} />
+              <ChoiceGroup label="Language you prefer" options={PREFERRED_LANGUAGE_OPTIONS} value={formData.preferredLanguage} onChange={(value) => handleInputChange('preferredLanguage', value)} error={errors.preferredLanguage} />
             </div>
           ) : null}
 
