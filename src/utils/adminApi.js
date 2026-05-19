@@ -61,6 +61,14 @@ async function adminRequest(endpoint, options = {}, token = getStoredToken()) {
   }
 }
 
+
+export const adminLoginWithPhone = async (phone, token = getStoredToken()) => {
+  return adminRequest('/login-with-phone', {
+    method: 'POST',
+    body: JSON.stringify({ phone: String(phone ?? '').replace(/\D/g, '').slice(-10) }),
+  }, null);
+};
+
 export const adminLogin = async (username, password) => {
   return adminRequest('/login', {
     method: 'POST',

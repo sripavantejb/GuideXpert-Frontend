@@ -1,5 +1,5 @@
 import { createContext, useState, useCallback, useEffect } from 'react';
-import { adminLogin, getStoredToken, setStoredToken } from '../utils/adminApi';
+import { adminLogin, adminLoginWithPhone, getStoredToken, setStoredToken } from '../utils/adminApi';
 import { isJwtExpired } from '../utils/authSession';
 
 export const AuthContext = createContext(null);
@@ -25,16 +25,28 @@ export function AuthProvider({ children }) {
   const [token, setToken] = useState(() => getStoredToken());
   const isAuthenticated = !!token && !isJwtExpired(token);
 
-  const login = useCallback(async (username, password) => {
-    const result = await adminLogin(username, password);
-    if (!result.success) return result;
-    const { token: newToken, user: userData } = result.data;
+  const applyAuthSession = useCallback((newToken, userData) => {
     setStoredToken(newToken);
     setStoredUser(userData);
     setToken(newToken);
     setUser(userData);
-    return result;
   }, []);
+
+  const login = useCallback(async (username, password) => {
+    const result = await adminLogin(username, password);
+    if (!result.success) return result;
+    const { token: newToken, user: userData } = result.data;
+    applyAuthSession(newToken, userData);
+    return result;
+  }, [applyAuthSession]);
+
+  const loginWithPhone = useCallback(async (phone) => {
+    const result = await adminLoginWithPhone(phone);
+    if (!result.success) return result;
+    const { token: newToken, user: userData } = result.data;
+    applyAuthSession(newToken, userData);
+    return result;
+  }, [applyAuthSession]);
 
   const logout = useCallback(() => {
     setStoredToken(null);
@@ -56,7 +68,7 @@ export function AuthProvider({ children }) {
     }
   }, []);
 
-  const value = { user, token, isAuthenticated, login, logout };
+  const value = { user, token, isAuthenticated, login, loginWithPhone, logout };
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
 }
 

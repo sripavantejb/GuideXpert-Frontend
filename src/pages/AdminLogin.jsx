@@ -1,16 +1,27 @@
 import { useState } from 'react';
 import { useNavigate, Navigate } from 'react-router-dom';
-import { FiUser, FiLock, FiEye, FiEyeOff } from 'react-icons/fi';
+import { FiUser, FiLock, FiEye, FiEyeOff, FiPhone } from 'react-icons/fi';
 import { useAuth } from '../hooks/useAuth';
 import { getAdminApiBaseUrl } from '../utils/adminApi';
+import { sendOtp, verifyOtp } from '../utils/api';
+
+function normalizePhone10(raw) {
+  const digits = String(raw ?? '').replace(/\D/g, '');
+  return digits.length >= 10 ? digits.slice(-10) : digits;
+}
 
 export default function AdminLogin() {
-  const { login, isAuthenticated } = useAuth();
+  const { login, loginWithPhone, isAuthenticated } = useAuth();
   const navigate = useNavigate();
+  const [mode, setMode] = useState('password');
   const [username, setUsername] = useState('');
   const [password, setPassword] = useState('');
+  const [phone, setPhone] = useState('');
+  const [otp, setOtp] = useState('');
+  const [otpSent, setOtpSent] = useState(false);
   const [error, setError] = useState('');
   const [loginHint, setLoginHint] = useState('');
+  const [info, setInfo] = useState('');
   const [loading, setLoading] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
   const [rememberMe, setRememberMe] = useState(false);
@@ -19,10 +30,20 @@ export default function AdminLogin() {
     return <Navigate to="/admin" replace />;
   }
 
-  const handleSubmit = async (e) => {
+  const switchMode = (next) => {
+    setMode(next);
+    setError('');
+    setLoginHint('');
+    setInfo('');
+    setOtpSent(false);
+    setOtp('');
+  };
+
+  const handlePasswordSubmit = async (e) => {
     e.preventDefault();
     setError('');
     setLoginHint('');
+    setInfo('');
     setLoading(true);
     const result = await login(username, password);
     setLoading(false);
@@ -31,6 +52,65 @@ export default function AdminLogin() {
     } else {
       setError(result.message || 'Login failed');
       if (result.data?.hint) setLoginHint(result.data.hint);
+    }
+  };
+
+  const handleSendOtp = async () => {
+    setError('');
+    setInfo('');
+    const p = normalizePhone10(phone);
+    if (!/^\d{10}$/.test(p)) {
+      setError('Enter a valid 10-digit mobile number.');
+      return;
+    }
+    setLoading(true);
+    try {
+      const result = await sendOtp('Admin', p, 'Admin Login');
+      if (!result.success) {
+        setError(result.message || 'Could not send OTP.');
+        return;
+      }
+      setOtpSent(true);
+      setOtp('');
+      setInfo('OTP sent. Enter the 6-digit code to continue.');
+    } catch {
+      setError('Network error. Please try again.');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handlePhoneSubmit = async (e) => {
+    e.preventDefault();
+    setError('');
+    setInfo('');
+    const p = normalizePhone10(phone);
+    const otpStr = String(otp ?? '').trim();
+    if (!/^\d{10}$/.test(p)) {
+      setError('Enter a valid 10-digit mobile number.');
+      return;
+    }
+    if (!/^\d{6}$/.test(otpStr)) {
+      setError('Enter the 6-digit OTP.');
+      return;
+    }
+    setLoading(true);
+    try {
+      const verifyResult = await verifyOtp(p, otpStr);
+      if (!verifyResult.success || verifyResult.data?.verified !== true) {
+        setError(verifyResult.message || verifyResult.data?.message || 'Invalid OTP.');
+        return;
+      }
+      const loginResult = await loginWithPhone(p);
+      if (loginResult.success) {
+        navigate('/admin', { replace: true });
+        return;
+      }
+      setError(loginResult.message || 'Admin login failed.');
+    } catch {
+      setError('Network error. Please try again.');
+    } finally {
+      setLoading(false);
     }
   };
 
@@ -58,9 +138,15 @@ export default function AdminLogin() {
             />
             <p className="text-sm font-medium text-gray-500 mt-0.5">Admin Portal</p>
             <p className="text-sm text-gray-400 mt-0.5">Sign in to access admin dashboard</p>
+
           </div>
 
-          <form onSubmit={handleSubmit} className="space-y-5">
+          <div className="flex rounded-xl border border-gray-200 p-1 mb-6 bg-gray-50">
+            <button type="button" onClick={() => switchMode('password')} className={`flex-1 h-10 rounded-lg text-sm font-semibold transition-colors ${mode === 'password' ? 'bg-white text-blue-700 shadow-sm' : 'text-gray-600 hover:text-gray-900'}`}>Password</button>
+            <button type="button" onClick={() => switchMode('phone')} className={`flex-1 h-10 rounded-lg text-sm font-semibold transition-colors ${mode === 'phone' ? 'bg-white text-blue-700 shadow-sm' : 'text-gray-600 hover:text-gray-900'}`}>Phone OTP</button>
+          </div>
+
+          {mode === 'password' ? <form onSubmit={handlePasswordSubmit} className="space-y-5">
             {/* Username */}
             <div>
               <label htmlFor="username" className="block text-sm font-medium text-gray-700 mb-1.5">
@@ -171,6 +257,54 @@ export default function AdminLogin() {
               </div>
             )}
           </form>
+          ) : (
+            <form onSubmit={handlePhoneSubmit} className="space-y-5">
+              <div>
+                <label htmlFor="admin-phone" className="block text-sm font-medium text-gray-700 mb-1.5">Mobile number</label>
+                <div className="relative">
+                  <FiPhone className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400 pointer-events-none" aria-hidden />
+                  <input
+                    id="admin-phone"
+                    type="tel"
+                    inputMode="numeric"
+                    value={phone}
+                    onChange={(e) => setPhone(e.target.value.replace(/\D/g, '').slice(0, 10))}
+                    placeholder="10-digit mobile"
+                    className="w-full h-12 pl-11 pr-4 rounded-xl border border-gray-200 bg-white text-gray-900 placeholder-gray-400 focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20 outline-none transition-all"
+                  />
+                </div>
+              </div>
+              {otpSent ? (
+                <div>
+                  <label htmlFor="admin-otp" className="block text-sm font-medium text-gray-700 mb-1.5">OTP</label>
+                  <input
+                    id="admin-otp"
+                    type="text"
+                    inputMode="numeric"
+                    maxLength={6}
+                    value={otp}
+                    onChange={(e) => setOtp(e.target.value.replace(/\D/g, '').slice(0, 6))}
+                    placeholder="6-digit OTP"
+                    className="w-full h-12 px-4 rounded-xl border border-gray-200 bg-white text-gray-900 placeholder-gray-400 focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20 outline-none transition-all"
+                  />
+                </div>
+              ) : null}
+              {info ? <p className="text-sm text-green-600">{info}</p> : null}
+              {error ? <p className="text-sm text-red-600" role="alert">{error}</p> : null}
+              <div className="flex gap-2">
+                {!otpSent ? (
+                  <button type="button" onClick={handleSendOtp} disabled={loading} className="flex-1 h-12 rounded-xl font-semibold text-white bg-gradient-to-r from-[#2563eb] to-[#1d4ed8] disabled:opacity-70">
+                    {loading ? 'Sending…' : 'Send OTP'}
+                  </button>
+                ) : (
+                  <button type="submit" disabled={loading} className="flex-1 h-12 rounded-xl font-semibold text-white bg-gradient-to-r from-[#2563eb] to-[#1d4ed8] disabled:opacity-70">
+                    {loading ? 'Signing in…' : 'Verify & sign in'}
+                  </button>
+                )}
+              </div>
+            </form>
+          )}
+
         </div>
 
         <p className="mt-6 text-xs text-gray-400">© 2026 GuideXpert</p>
