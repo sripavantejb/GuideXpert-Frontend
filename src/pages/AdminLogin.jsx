@@ -146,7 +146,8 @@ export default function AdminLogin() {
             <button type="button" onClick={() => switchMode('phone')} className={`flex-1 h-10 rounded-lg text-sm font-semibold transition-colors ${mode === 'phone' ? 'bg-white text-blue-700 shadow-sm' : 'text-gray-600 hover:text-gray-900'}`}>Phone OTP</button>
           </div>
 
-          {mode === 'password' ? <form onSubmit={handlePasswordSubmit} className="space-y-5">
+          {mode === 'password' ? (
+          <form onSubmit={handlePasswordSubmit} className="space-y-5">
             {/* Username */}
             <div>
               <label htmlFor="username" className="block text-sm font-medium text-gray-700 mb-1.5">
@@ -258,7 +259,7 @@ export default function AdminLogin() {
             )}
           </form>
           ) : (
-            <form onSubmit={handlePhoneSubmit} className="space-y-5">
+          <form onSubmit={handlePhoneSubmit} className="space-y-5">
               <div>
                 <label htmlFor="admin-phone" className="block text-sm font-medium text-gray-700 mb-1.5">Mobile number</label>
                 <div className="relative">
