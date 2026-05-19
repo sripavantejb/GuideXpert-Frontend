@@ -46,6 +46,9 @@ const neoInputClass =
 
 const neoLabelClass = 'mb-2 block text-sm font-black uppercase tracking-wide text-[#0F172A]';
 
+const IIT_COUNSELLING_WHATSAPP_URL = `https://wa.me/919009000914?text=${encodeURIComponent('Hi')}`;
+const WHATSAPP_REDIRECT_SECONDS = 4;
+
 export default function IitCounsellingPage() {
   const [formData, setFormData] = useState(initialFormData);
   const [currentStep, setCurrentStep] = useState(1);
@@ -55,6 +58,9 @@ export default function IitCounsellingPage() {
   const [submitting, setSubmitting] = useState(false);
   const [submitState, setSubmitState] = useState({ ok: false, message: '' });
   const [waSection1Notice, setWaSection1Notice] = useState('');
+  /** After section 3 saves: show thanks UI, then redirect to WhatsApp (not section 3 again). */
+  const [showThankYou, setShowThankYou] = useState(false);
+  const [redirectCountdown, setRedirectCountdown] = useState(WHATSAPP_REDIRECT_SECONDS);
 
   const [otp, setOtp] = useState('');
   const [otpSent, setOtpSent] = useState(false);
@@ -132,6 +138,28 @@ export default function IitCounsellingPage() {
     }
     return undefined;
   }, [otpSent, otpVerified]);
+
+  useEffect(() => {
+    if (!showThankYou) return undefined;
+
+    setRedirectCountdown(WHATSAPP_REDIRECT_SECONDS);
+    const tick = window.setInterval(() => {
+      setRedirectCountdown((prev) => (prev > 0 ? prev - 1 : 0));
+    }, 1000);
+
+    const redirectTimer = window.setTimeout(() => {
+      window.location.assign(IIT_COUNSELLING_WHATSAPP_URL);
+    }, WHATSAPP_REDIRECT_SECONDS * 1000);
+
+    return () => {
+      window.clearInterval(tick);
+      window.clearTimeout(redirectTimer);
+    };
+  }, [showThankYou]);
+
+  const openWhatsApp = () => {
+    window.location.assign(IIT_COUNSELLING_WHATSAPP_URL);
+  };
 
   const handleInputChange = (key, value) => {
     setFormData((prev) => ({ ...prev, [key]: value }));
@@ -427,8 +455,8 @@ export default function IitCounsellingPage() {
       return;
     }
 
-    const whatsappUrl = `https://wa.me/919009000914?text=${encodeURIComponent('Hi')}`;
-    window.location.assign(whatsappUrl);
+    setSubmitState({ ok: true, message: '' });
+    setShowThankYou(true);
   };
 
   const goBack = () => {
@@ -441,6 +469,37 @@ export default function IitCounsellingPage() {
   };
 
   const stepTitle = currentStep === 1 ? 'Section 1: Basic Details' : currentStep === 2 ? 'Section 2' : 'Section 3';
+
+  if (showThankYou) {
+    return (
+      <div className="min-h-screen bg-[#F8FAFC] px-4 py-10 selection:bg-[#c7f36b] selection:text-[#0F172A] sm:px-6">
+        <div className="mx-auto max-w-4xl">
+          <div className="rounded-[14px] border-2 border-[#0F172A] bg-white p-8 text-center shadow-[6px_6px_0px_#0F172A] sm:p-12">
+            <p className="mb-3 inline-flex rounded border-2 border-emerald-800 bg-emerald-100 px-3 py-1 text-[10px] font-black uppercase tracking-widest text-emerald-900">
+              Submission received
+            </p>
+            <h1 className="text-3xl font-black tracking-tight text-[#0F172A] sm:text-4xl">Thank you for submitting!</h1>
+            <p className="mx-auto mt-4 max-w-lg text-sm font-medium leading-relaxed text-slate-600">
+              Your IIT counselling form is complete. We&apos;ve saved all your answers.
+              {waSection1Notice ? ` ${waSection1Notice}` : ' Check WhatsApp for your slot confirmation if you booked in Section 1.'}
+            </p>
+            <p className="mt-6 text-xs font-bold uppercase tracking-wide text-slate-500">
+              {redirectCountdown > 0
+                ? `Opening WhatsApp in ${redirectCountdown} second${redirectCountdown === 1 ? '' : 's'}…`
+                : 'Opening WhatsApp…'}
+            </p>
+            <button
+              type="button"
+              onClick={openWhatsApp}
+              className="mt-8 rounded-[14px] border-2 border-[#0F172A] bg-[#c7f36b] px-8 py-4 text-sm font-black uppercase tracking-wide text-[#0F172A] shadow-[4px_4px_0px_#0F172A] transition-all hover:-translate-y-0.5 hover:bg-[#b0d95d]"
+            >
+              Continue on WhatsApp
+            </button>
+          </div>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen bg-[#F8FAFC] px-4 py-10 selection:bg-[#c7f36b] selection:text-[#0F172A] sm:px-6">
