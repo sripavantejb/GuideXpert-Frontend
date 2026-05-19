@@ -17,11 +17,19 @@ import { useWhatsappOpsHost } from './whatsappOpsHostContext';
 
 const POLL_KEY = 'guidexpert_whatsapp_ops_poll';
 const FALLBACK_TEMPLATE_KINDS = [
-  { id: 'slot_booked', label: 'Slot booked', description: 'Immediate confirmation after slot booking' },
-  { id: 'pre4hr', label: '4hr reminder', description: 'Reminder sent around 4 hours before slot' },
-  { id: 'meet', label: 'Meet link (~1hr)', description: 'Meeting link reminder sent around 1 hour before slot' },
-  { id: '30min', label: '30 min reminder', description: 'Final reminder sent around 30 minutes before slot' }
+  { id: 'slot_booked', label: 'Slot booked', description: 'Immediate confirmation after slot booking', opsProducts: ['guidexpert', 'iit_counselling'] },
+  { id: 'pre4hr', label: '4hr reminder', description: 'Reminder sent around 4 hours before slot', opsProducts: ['guidexpert'] },
+  { id: 'meet', label: 'Meet link (~1hr)', description: 'Meeting link reminder sent around 1 hour before slot', opsProducts: ['guidexpert'] },
+  { id: '30min', label: '30 min reminder', description: 'Final reminder sent around 30 minutes before slot', opsProducts: ['guidexpert'] },
+  { id: 'iit_pre2hr', label: '2 hours before', description: 'IIT demo reminder (Telugu/Hindi, Wed/Sat vs Sun)', opsProducts: ['iit_counselling'] },
+  { id: 'iit_pre45min', label: '45 min before', description: 'IIT demo reminder 45 minutes before slot', opsProducts: ['iit_counselling'] },
+  { id: 'iit_pre15min', label: '15 min before', description: 'IIT demo reminder 15 minutes before slot', opsProducts: ['iit_counselling'] },
 ];
+
+function templateKindAppliesToProduct(kind, opsProduct) {
+  if (!kind?.opsProducts || !Array.isArray(kind.opsProducts)) return true;
+  return kind.opsProducts.includes(opsProduct);
+}
 
 function asNumber(value, fallback = 0) {
   const n = Number(value);
@@ -345,11 +353,10 @@ export default function WhatsAppOpsOverview() {
     });
   }, [from, to]);
 
-  useEffect(() => {
-    if (isIitProduct && selectedKind !== 'slot_booked') {
-      setSelectedKind('slot_booked');
-    }
-  }, [isIitProduct, selectedKind]);
+  const visibleTemplateKinds = useMemo(
+    () => templateKinds.filter((k) => templateKindAppliesToProduct(k, opsProduct)),
+    [templateKinds, opsProduct]
+  );
 
   useEffect(() => {
     if (!live) return undefined;
@@ -420,6 +427,8 @@ export default function WhatsAppOpsOverview() {
   const retryFunnelReconciliation = dayView?.retryFunnelReconciliation || [];
   const exclusionBreakdown = dayView?.exclusionBreakdown || {};
   const retryQueue = dayView?.retryQueue || {};
+  const iitLanguageBreakdown = dayView?.recipientLanguageBreakdown;
+  const iitSlotBreakdown = dayView?.recipientSlotTimeBreakdown;
 
   const byKindChart = useMemo(() => {
     const src = Array.isArray(legacyDay.byKind) ? legacyDay.byKind : [];
@@ -973,7 +982,7 @@ export default function WhatsAppOpsOverview() {
           </div>
           {isIitProduct ? (
             <p className="text-xs text-slate-600 mt-2 max-w-3xl">
-              IIT mode shows only WhatsApp tagged for IIT Counselling bookings. Template breakdown is locked to Slot booked until more IIT templates go live.
+              IIT mode shows WhatsApp for IIT counselling bookings. Reminders are sent in Telugu or Hindi at 2 hours, 45 minutes, and 15 minutes before the demo slot (separate templates for Sunday vs Wed/Sat).
             </p>
           ) : null}
         </section>
@@ -981,66 +990,33 @@ export default function WhatsAppOpsOverview() {
         <section className="mt-4 rounded-xl border border-primary-blue-200 bg-white/95 p-3 sm:p-4 shadow-sm">
           <p className="text-xs font-semibold uppercase tracking-[0.14em] text-primary-navy mb-3">Template message type</p>
           <div className="flex flex-wrap gap-2">
-            {!isIitProduct ? (
-              <>
-                <button
-                  type="button"
-                  onClick={() => setSelectedKind(null)}
-                  aria-pressed={selectedKind === null}
-                  className={`rounded-lg px-3 py-1.5 text-sm font-semibold border transition-colors ${
-                    selectedKind === null
-                      ? 'bg-primary-navy text-white border-primary-navy shadow-sm'
-                      : 'bg-white text-gray-700 border-gray-200 hover:bg-gray-50'
-                  }`}
-                >
-                  All
-                </button>
-                {templateKinds.map((kind) => (
-                  <button
-                    key={kind.id}
-                    type="button"
-                    onClick={() => setSelectedKind(kind.id)}
-                    aria-pressed={selectedKind === kind.id}
-                    className={`rounded-lg px-3 py-1.5 text-sm font-semibold border transition-colors ${
-                      selectedKind === kind.id
-                        ? 'bg-primary-navy text-white border-primary-navy shadow-sm'
-                        : 'bg-white text-gray-700 border-gray-200 hover:bg-gray-50'
-                    }`}
-                  >
-                    {kind.label}
-                  </button>
-                ))}
-              </>
-            ) : (
-              <>
-                {templateKinds
-                  .filter((k) => k.id === 'slot_booked')
-                  .map((kind) => (
-                    <button
-                      key={kind.id}
-                      type="button"
-                      disabled
-                      aria-pressed
-                      className="rounded-lg px-3 py-1.5 text-sm font-semibold border bg-primary-navy text-white border-primary-navy shadow-sm cursor-default"
-                    >
-                      {kind.label}
-                    </button>
-                  ))}
-                {templateKinds
-                  .filter((k) => k.id !== 'slot_booked')
-                  .map((kind) => (
-                    <button
-                      key={kind.id}
-                      type="button"
-                      disabled
-                      title="More templates coming later"
-                      className="rounded-lg px-3 py-1.5 text-sm font-semibold border border-gray-200 bg-gray-100 text-gray-400 cursor-not-allowed"
-                    >
-                      {kind.label}
-                    </button>
-                  ))}
-              </>
-            )}
+            <button
+              type="button"
+              onClick={() => setSelectedKind(null)}
+              aria-pressed={selectedKind === null}
+              className={`rounded-lg px-3 py-1.5 text-sm font-semibold border transition-colors ${
+                selectedKind === null
+                  ? 'bg-primary-navy text-white border-primary-navy shadow-sm'
+                  : 'bg-white text-gray-700 border-gray-200 hover:bg-gray-50'
+              }`}
+            >
+              All templates
+            </button>
+            {visibleTemplateKinds.map((kind) => (
+              <button
+                key={kind.id}
+                type="button"
+                onClick={() => setSelectedKind(kind.id)}
+                aria-pressed={selectedKind === kind.id}
+                className={`rounded-lg px-3 py-1.5 text-sm font-semibold border transition-colors ${
+                  selectedKind === kind.id
+                    ? 'bg-primary-navy text-white border-primary-navy shadow-sm'
+                    : 'bg-white text-gray-700 border-gray-200 hover:bg-gray-50'
+                }`}
+              >
+                {kind.label}
+              </button>
+            ))}
             <button
               type="button"
               onClick={() => {
@@ -1057,8 +1033,10 @@ export default function WhatsAppOpsOverview() {
               Reset filters
             </button>
           </div>
-          {isIitProduct ? (
-            <p className="text-xs text-slate-500 mt-2">4-hour, meet-link, and 30-minute IIT WhatsApp reminders are not wired yet.</p>
+          {isIitProduct && !selectedKind ? (
+            <p className="text-xs text-slate-500 mt-2">
+              Pick a template chip to see recipient delivery KPIs for that reminder stage. Language breakdown below uses the selected template when filtered.
+            </p>
           ) : null}
         </section>
 
@@ -1425,6 +1403,90 @@ export default function WhatsAppOpsOverview() {
                   ))}
                 </div>
               </div>
+              {isIitProduct && isRecipientDay && iitLanguageBreakdown?.byLanguage && (
+                <div className="rounded-2xl border border-violet-200 bg-white p-4 shadow-sm">
+                  <p className="mb-1 text-[11px] font-semibold uppercase tracking-[0.14em] text-primary-navy">
+                    Language breakdown (IST slot day)
+                  </p>
+                  <p className="mb-3 text-xs text-slate-600">
+                    Bookings with preferred language from Section 2. Recipient counts apply when a template is selected above.
+                  </p>
+                  <div className="grid gap-3 sm:grid-cols-3">
+                    {[
+                      { key: 'Telugu', label: 'Telugu', className: 'border-amber-100 bg-amber-50/40' },
+                      { key: 'Hindi', label: 'Hindi', className: 'border-orange-100 bg-orange-50/40' },
+                      { key: 'unknown', label: 'No language', className: 'border-slate-200 bg-slate-50/60' },
+                    ].map(({ key, label, className }) => {
+                      const bucket = iitLanguageBreakdown.byLanguage[key] || {};
+                      const langRt = bucket.recipientTotals;
+                      return (
+                        <div key={key} className={`rounded-xl border p-3 ${className}`}>
+                          <p className="text-sm font-semibold text-slate-900">{label}</p>
+                          <p className="mt-2 text-2xl font-bold tabular-nums text-slate-900">{asNumber(bucket.booked)}</p>
+                          <p className="text-[11px] text-slate-500">Booked (cohort)</p>
+                          {selectedKind && langRt ? (
+                            <p className="mt-2 text-xs text-slate-700">
+                              Delivered:{' '}
+                              <span className="font-semibold text-emerald-800">{asNumber(langRt.delivered)}</span>
+                              {' · '}
+                              Recipients: <span className="font-semibold">{asNumber(langRt.totalRecipients)}</span>
+                            </p>
+                          ) : (
+                            <p className="mt-2 text-[11px] text-slate-500">Select a template for delivery counts</p>
+                          )}
+                        </div>
+                      );
+                    })}
+                  </div>
+                </div>
+              )}
+              {isIitProduct && isRecipientDay && iitSlotBreakdown?.bySlotTime && (
+                <div className="rounded-2xl border border-cyan-200 bg-white p-4 shadow-sm">
+                  <p className="mb-1 text-[11px] font-semibold uppercase tracking-[0.14em] text-primary-navy">
+                    Slot time comparison (Wed/Sat 6PM vs Sun 11AM)
+                  </p>
+                  <p className="mb-3 text-xs text-slate-600">
+                    Side-by-side cohort size and recipient delivery for the same IST booking day
+                    {selectedKind ? ` · ${selectedTemplate?.label || selectedKind}` : ''}.
+                  </p>
+                  <div className="grid gap-4 sm:grid-cols-2">
+                    {['6PM', '11AM'].map((suffix) => {
+                      const slice = iitSlotBreakdown.bySlotTime[suffix] || {};
+                      const sliceRt = slice.recipientTotals;
+                      return (
+                        <div key={suffix} className="rounded-xl border border-cyan-100 bg-cyan-50/30 p-4">
+                          <p className="text-sm font-semibold text-slate-900">{slotTimeFilterLabel(suffix)}</p>
+                          <p className="mt-1 text-xs text-slate-600">Wall-clock slot suffix on booking IST day</p>
+                          <p className="mt-3 text-2xl font-bold tabular-nums">{asNumber(slice.bookedSlotsCount)}</p>
+                          <p className="text-[11px] text-slate-500">Booked (cohort)</p>
+                          {sliceRt && (
+                            <div className="mt-3 grid grid-cols-2 gap-2 text-xs">
+                              <div>
+                                <span className="text-slate-500">Recipients</span>
+                                <p className="font-semibold tabular-nums">{asNumber(sliceRt.totalRecipients)}</p>
+                              </div>
+                              <div>
+                                <span className="text-slate-500">Delivered</span>
+                                <p className="font-semibold tabular-nums text-emerald-800">{asNumber(sliceRt.delivered)}</p>
+                              </div>
+                              <div>
+                                <span className="text-slate-500">Read</span>
+                                <p className="font-semibold tabular-nums text-violet-800">{asNumber(sliceRt.read)}</p>
+                              </div>
+                              <div>
+                                <span className="text-slate-500">Failed</span>
+                                <p className="font-semibold tabular-nums text-rose-800">
+                                  {asNumber(sliceRt.permanentFailed ?? sliceRt.failed)}
+                                </p>
+                              </div>
+                            </div>
+                          )}
+                        </div>
+                      );
+                    })}
+                  </div>
+                </div>
+              )}
               {isRecipientDay && (
                 <div className="rounded-2xl border border-dashed border-slate-300 bg-slate-50/80 p-4">
                   <button
