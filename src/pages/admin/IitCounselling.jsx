@@ -17,6 +17,10 @@ import {
   rowMatchesSlotFilter,
 } from '../../utils/iitCounsellingSlots';
 import { deriveSlotDemoDateKeyIST, getAvailableSlots } from '../../utils/weekendSlots';
+import {
+  isRelevantIitClassStatus,
+  matchesIitLeadRelevance,
+} from '../../utils/iitCounsellingClassStatus';
 
 function formatDateTime(value) {
   if (!value) return '—';
@@ -420,6 +424,8 @@ export default function IitCounselling() {
   const [pagination, setPagination] = useState({ total: 0, totalPages: 1 });
   const [search, setSearch] = useState('');
   const [slotFilter, setSlotFilter] = useState('');
+  /** 'all' | 'relevant' | 'irrelevant' — filters by Current studying (classStatus). */
+  const [leadRelevanceFilter, setLeadRelevanceFilter] = useState('all');
   /** Visit analytics range (top KPIs & charts only). */
   const [fromDate, setFromDate] = useState('');
   const [toDate, setToDate] = useState('');
@@ -480,11 +486,12 @@ export default function IitCounselling() {
       });
   }, [search]);
 
-  /** Client-side table mode when demo date and/or slot toolbar filters are active. */
+  /** Client-side table mode when demo date, slot, or relevance filters are active. */
   const heavyClientFilter = Boolean(
     String(demoFromDate || '').trim()
     || String(demoToDate || '').trim()
     || String(slotFilter || '').trim()
+    || leadRelevanceFilter !== 'all'
   );
 
   /** Canonical range for comparisons when only one bound is set or user picks to before from. */
@@ -505,6 +512,11 @@ export default function IitCounselling() {
   const toolbarSlotFilteredRows = useMemo(
     () => demoFilteredBaseRows.filter((row) => rowMatchesSlotFilter(row, slotFilter)),
     [demoFilteredBaseRows, slotFilter]
+  );
+
+  const relevanceFilteredRows = useMemo(
+    () => toolbarSlotFilteredRows.filter((row) => matchesIitLeadRelevance(row, leadRelevanceFilter)),
+    [toolbarSlotFilteredRows, leadRelevanceFilter]
   );
 
   useEffect(() => {
@@ -543,10 +555,10 @@ export default function IitCounselling() {
   const submissionsListLoading = heavyClientFilter ? aggLoading : loading;
 
   useEffect(() => {
-    if (!heavyClientFilter || toolbarSlotFilteredRows.length === 0) return;
-    const totalPages = Math.max(1, Math.ceil(toolbarSlotFilteredRows.length / 25));
+    if (!heavyClientFilter || relevanceFilteredRows.length === 0) return;
+    const totalPages = Math.max(1, Math.ceil(relevanceFilteredRows.length / 25));
     if (page > totalPages) setPage(totalPages);
-  }, [heavyClientFilter, toolbarSlotFilteredRows, page]);
+  }, [heavyClientFilter, relevanceFilteredRows, page]);
 
   useEffect(() => {
     let cancelled = false;
@@ -577,7 +589,7 @@ export default function IitCounselling() {
 
   const submissionPagination = useMemo(() => {
     if (heavyClientFilter) {
-      const total = toolbarSlotFilteredRows.length;
+      const total = relevanceFilteredRows.length;
       const totalPages = Math.max(1, Math.ceil(total / 25));
       return { total, totalPages };
     }
@@ -585,15 +597,15 @@ export default function IitCounselling() {
       total: pagination.total || 0,
       totalPages: pagination.totalPages || 1,
     };
-  }, [heavyClientFilter, toolbarSlotFilteredRows, pagination]);
+  }, [heavyClientFilter, relevanceFilteredRows, pagination]);
 
   const pageMappedRows = useMemo(() => {
     if (heavyClientFilter) {
       const start = (page - 1) * 25;
-      return toolbarSlotFilteredRows.slice(start, start + 25);
+      return relevanceFilteredRows.slice(start, start + 25);
     }
     return rows.map(mapIitSubmissionRecord);
-  }, [heavyClientFilter, toolbarSlotFilteredRows, page, rows]);
+  }, [heavyClientFilter, relevanceFilteredRows, page, rows]);
 
   const slotToolbarOptions = useMemo(() => {
     const seen = new Set();
@@ -624,8 +636,8 @@ export default function IitCounselling() {
   }, [demoFilteredBaseRows, pageMappedRows]);
 
   const viewSourceRows = useMemo(
-    () => (submissionsViewAllOpen ? toolbarSlotFilteredRows : pageMappedRows),
-    [submissionsViewAllOpen, toolbarSlotFilteredRows, pageMappedRows]
+    () => (submissionsViewAllOpen ? relevanceFilteredRows : pageMappedRows),
+    [submissionsViewAllOpen, relevanceFilteredRows, pageMappedRows]
   );
   const filteredSubmissionRows = useMemo(
     () => applySubmissionViewFilters(viewSourceRows, viewFilters),
@@ -713,7 +725,7 @@ export default function IitCounselling() {
       if (aggError && submissionAggRows.length === 0) {
         throw new Error(aggError);
       }
-      const base = toolbarSlotFilteredRows;
+      const base = relevanceFilteredRows;
       const vf = submissionsViewAllOpen ? viewFilters : EMPTY_VIEW_FILTERS;
       const filtered = applySubmissionViewFilters(base, vf);
       setCopyModalRecords(filtered);
@@ -726,24 +738,39 @@ export default function IitCounselling() {
     aggLoading,
     aggError,
     submissionAggRows.length,
-    toolbarSlotFilteredRows,
+    relevanceFilteredRows,
     submissionsViewAllOpen,
     viewFilters,
   ]);
 
   const demoCountsByDay = useMemo(() => {
     const map = new Map();
-    submissionAggRows.forEach((row) => {
+    const source =
+      leadRelevanceFilter === 'all'
+        ? submissionAggRows
+        : submissionAggRows.filter((row) => matchesIitLeadRelevance(row, leadRelevanceFilter));
+    source.forEach((row) => {
       const k = row.demoDateKey;
       if (!k) return;
       map.set(k, (map.get(k) || 0) + 1);
     });
     return map;
-  }, [submissionAggRows]);
+  }, [submissionAggRows, leadRelevanceFilter]);
+
+  /** Relevant vs irrelevant counts for current demo/slot filters (always shown). */
+  const submissionRelevanceSplit = useMemo(() => {
+    let relevant = 0;
+    let irrelevant = 0;
+    toolbarSlotFilteredRows.forEach((row) => {
+      if (isRelevantIitClassStatus(row.classStatus)) relevant += 1;
+      else irrelevant += 1;
+    });
+    return { relevant, irrelevant };
+  }, [toolbarSlotFilteredRows]);
 
   /** Submission KPIs for current toolbar filters (aligned with table totals). */
   const submissionFilteredOverview = useMemo(() => {
-    const list = toolbarSlotFilteredRows;
+    const list = relevanceFilteredRows;
     const total = list.length;
     const completed = list.filter((r) => r.completed === 'Yes').length;
     const completedPct = total ? Math.round((completed / total) * 1000) / 10 : 0;
@@ -773,7 +800,7 @@ export default function IitCounselling() {
       topSlot: topSlot || '—',
       topSlotCount,
     };
-  }, [toolbarSlotFilteredRows]);
+  }, [relevanceFilteredRows]);
 
   const todayStrLocal = toYYYYMMDDLocal(new Date());
   const monthGridCounsel = useMemo(
@@ -982,6 +1009,8 @@ export default function IitCounselling() {
               <strong className="font-semibold text-gray-600">This table</strong> shows one row per phone (latest demo date, then most recently updated). Totals match that unique-lead view.
               <span className="mx-1.5 text-gray-300">·</span>
               Demo filters use booking dates and slots.
+              <span className="mx-1.5 text-gray-300">·</span>
+              <strong className="font-semibold text-gray-600">Relevant leads</strong> are 11th/12th (Current studying); all other values count as irrelevant.
               {heavyClientFilter ? (
                 <span className="block sm:inline sm:ml-1 mt-1 sm:mt-0 text-primary-navy font-medium"> {submissionPagination.total} row(s) after demo filters.</span>
               ) : null}
@@ -1120,6 +1149,18 @@ export default function IitCounselling() {
                 }
                 icon={<FiClock className="w-[18px] h-[18px]" />}
               />
+              <SubmissionOverviewTile
+                title="Relevant"
+                value={submissionRelevanceSplit.relevant}
+                subtitle="11th/12th · current demo/slot filters"
+                icon={<FiUsers className="w-[18px] h-[18px]" />}
+              />
+              <SubmissionOverviewTile
+                title="Irrelevant"
+                value={submissionRelevanceSplit.irrelevant}
+                subtitle="Other or missing Current studying"
+                icon={<FiUsers className="w-[18px] h-[18px]" />}
+              />
             </div>
 
             <div className="rounded-2xl border border-gray-200/80 bg-linear-to-br from-gray-50/90 via-white to-white px-4 py-4 shadow-sm ring-1 ring-black/[0.02]">
@@ -1167,7 +1208,7 @@ export default function IitCounselling() {
             <button
               type="button"
               onClick={() => setSubmissionsViewAllOpen(true)}
-              disabled={toolbarSlotFilteredRows.length === 0 || aggLoading}
+              disabled={relevanceFilteredRows.length === 0 || aggLoading}
               className="h-10 rounded-xl border border-gray-200 bg-white px-4 text-sm font-semibold text-gray-700 shadow-sm hover:bg-gray-50 hover:border-gray-300 disabled:opacity-50 transition-colors"
             >
               View all
@@ -1175,11 +1216,26 @@ export default function IitCounselling() {
             <button
               type="button"
               onClick={prepareCopySubmissions}
-              disabled={toolbarSlotFilteredRows.length === 0 || aggLoading}
+              disabled={relevanceFilteredRows.length === 0 || aggLoading}
               className="h-10 rounded-xl bg-primary-navy px-4 text-sm font-semibold text-white shadow-md shadow-primary-navy/20 hover:opacity-95 disabled:opacity-50 transition-opacity"
             >
               Copy all
             </button>
+            <select
+              value={leadRelevanceFilter}
+              onChange={(e) => {
+                setLoading(true);
+                setError('');
+                setLeadRelevanceFilter(e.target.value);
+                setPage(1);
+              }}
+              className="h-10 min-w-[11rem] max-w-[18rem] rounded-xl border border-gray-200 bg-white px-3 text-sm font-medium text-gray-800 shadow-sm outline-none focus:ring-2 focus:ring-primary-blue-500/25 focus:border-primary-blue-500"
+              aria-label="Filter by lead relevance"
+            >
+              <option value="all">All leads</option>
+              <option value="relevant">Relevant leads (11th/12th)</option>
+              <option value="irrelevant">Irrelevant leads</option>
+            </select>
             <select
               value={slotFilter}
               onChange={(e) => {
@@ -1243,6 +1299,8 @@ export default function IitCounselling() {
             ) : pageMappedRows.length === 0 ? (
               <tr><td colSpan={14} className="px-4 py-14 text-center text-sm font-medium text-gray-500 bg-gray-50/50">No submissions match the current filters.</td></tr>
             ) : pageMappedRows.map((row) => {
+              const rowIsIrrelevant =
+                leadRelevanceFilter === 'all' && !isRelevantIitClassStatus(row.classStatus);
               const utmCell = (value) => (
                 <span
                   className={value ? 'text-gray-800' : 'text-gray-400'}
@@ -1264,11 +1322,11 @@ export default function IitCounselling() {
               return (
                 <tr
                   key={row.id}
-                  className="group transition-colors odd:bg-white even:bg-gray-50/40 hover:bg-primary-blue-50/80 border-l-2 border-l-transparent hover:border-l-primary-blue-500"
+                  className={`group transition-colors odd:bg-white even:bg-gray-50/40 hover:bg-primary-blue-50/80 border-l-2 border-l-transparent hover:border-l-primary-blue-500${rowIsIrrelevant ? ' opacity-70' : ''}`}
                 >
                   <td className="px-4 py-3 font-semibold text-gray-900">{row.name}</td>
                   <td className="px-4 py-3 tabular-nums font-mono text-[13px] text-gray-700">{row.phone}</td>
-                  <td className="px-4 py-3 max-w-[220px] truncate text-gray-700 text-[13px]" title={row.classStatus || undefined}>{row.classStatus || '—'}</td>
+                  <td className={`px-4 py-3 max-w-[220px] truncate text-[13px]${rowIsIrrelevant ? ' text-gray-500' : ' text-gray-700'}`} title={row.classStatus || undefined}>{row.classStatus || '—'}</td>
                   <td className="px-4 py-3">
                     <span className="inline-flex min-w-[1.5rem] justify-center rounded-md bg-gray-100 px-1.5 py-0.5 text-xs font-bold text-gray-700 tabular-nums">
                       {row.currentStep}
@@ -1313,7 +1371,7 @@ export default function IitCounselling() {
                 <button
                   type="button"
                   onClick={prepareCopySubmissions}
-                  disabled={toolbarSlotFilteredRows.length === 0 || aggLoading}
+                  disabled={relevanceFilteredRows.length === 0 || aggLoading}
                   className="rounded border border-gray-300 px-2 py-1 text-[11px] font-medium text-gray-700 hover:bg-gray-50 disabled:opacity-50"
                 >
                   Copy all
