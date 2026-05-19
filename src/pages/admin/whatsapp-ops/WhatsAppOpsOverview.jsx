@@ -28,6 +28,23 @@ function asNumber(value, fallback = 0) {
   return Number.isFinite(n) ? n : fallback;
 }
 
+/** Operator-facing failure bucket labels (API uses snake_case taxonomy ids). */
+function humanizeFailureBucketLabel(id) {
+  const key = id == null ? '' : String(id);
+  const labels = {
+    missing_phone: 'Missing phone',
+    missing_registration: 'Missing registration',
+    transient: 'No DLR / in-flight',
+    webhook_stale_unresolved: 'Webhook stale (unresolved)',
+    dlr_failed_after_accept: 'DLR failed after accept',
+    permanent_failure: 'Permanent failure',
+    invalid_whatsapp: 'Invalid WhatsApp',
+    user_blocked: 'User blocked',
+    other: 'Other'
+  };
+  return labels[key] || (key ? key.replace(/_/g, ' ') : '—');
+}
+
 const ISO_DATE_RE = /^\d{4}-\d{2}-\d{2}$/;
 const OPS_PRODUCT_GUIDEXPERT = 'guidexpert';
 const OPS_PRODUCT_IIT = 'iit_counselling';
@@ -416,7 +433,10 @@ export default function WhatsAppOpsOverview() {
 
   const failureReasonChart = useMemo(() => {
     const src = Array.isArray(dayView?.charts?.failureReasons) ? dayView.charts.failureReasons : [];
-    return src.map((x) => ({ label: x?._id || '—', count: asNumber(x?.count) }));
+    return src.map((x) => ({
+      label: humanizeFailureBucketLabel(x?._id),
+      count: asNumber(x?.count)
+    }));
   }, [dayView]);
 
   const calendarCells = useMemo(() => monthGrid(monthCursor), [monthCursor]);
@@ -1769,9 +1789,20 @@ export default function WhatsAppOpsOverview() {
                     </table>
                   </div>
                 )}
+              {dayView.diagnostics.lifecycleDiagnostics && (
+                <p className="mt-3 rounded-lg border border-amber-200 bg-amber-50/80 px-3 py-2 text-amber-950">
+                  {dayView.diagnostics.lifecycleDiagnostics.note ||
+                    'Check lifecycle diagnostics when delivered counts disagree with handset delivery.'}
+                  {' '}
+                  Events missing all provider IDs:{' '}
+                  <span className="font-semibold">
+                    {asNumber(dayView.diagnostics.lifecycleDiagnostics.eventsMissingAllProviderIds)}
+                  </span>
+                </p>
+              )}
               <dl className="mt-2 grid gap-2 sm:grid-cols-2 lg:grid-cols-3">
                 {Object.entries(dayView.diagnostics)
-                  .filter(([k]) => k !== 'violationSamples')
+                  .filter(([k]) => k !== 'violationSamples' && k !== 'lifecycleDiagnostics')
                   .map(([k, v]) => (
                     <div key={k}>
                       <dt className="text-slate-500">{k}</dt>
