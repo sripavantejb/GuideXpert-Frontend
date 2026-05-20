@@ -43,7 +43,7 @@ function getVisibleNavItems(user) {
   if (!user) return [];
   if (user.isSuperAdmin === true) return navItems;
   const access = user.sectionAccess;
-  if (!Array.isArray(access) || access.length === 0) return navItems;
+  if (!Array.isArray(access) || access.length === 0) return [];
   const set = new Set(access);
   return navItems.filter((item) => set.has(item.sectionKey));
 }
