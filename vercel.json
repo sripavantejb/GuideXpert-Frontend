@@ -22,7 +22,11 @@
   ],
   "rewrites": [
     {
-      "source": "/((?!assets/|favicon.ico|robots.txt|sitemap.xml).*)",
+      "source": "/api/:path*",
+      "destination": "https://guide-xpert-backend.vercel.app/api/:path*"
+    },
+    {
+      "source": "/((?!assets/|favicon.ico|robots.txt|sitemap.xml|api/).*)",
       "destination": "/index.html"
     }
   ]

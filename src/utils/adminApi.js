@@ -39,9 +39,13 @@ async function adminRequest(endpoint, options = {}, token = getStoredToken()) {
       if (response.status === 401) {
         notifyAdminUnauthorized({ endpoint, status: 401 });
       }
+      const fallbackMessage =
+        response.status === 405
+          ? 'API route blocked (405). Redeploy the frontend with /api proxy rules or set VITE_API_URL to the backend /api URL.'
+          : 'Request failed';
       return {
         success: false,
-        message: data.message || 'Request failed',
+        message: data.message || fallbackMessage,
         status: response.status,
         data,
       };
