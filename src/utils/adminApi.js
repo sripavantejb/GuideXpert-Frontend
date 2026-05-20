@@ -93,6 +93,14 @@ export const createAdmin = async (payload, token = getStoredToken()) => {
   }, token);
 };
 
+/** PATCH /admin/admins/:id — update role and section access (super admin only). */
+export const updateAdmin = async (id, payload, token = getStoredToken()) => {
+  return adminRequest(`/admins/${encodeURIComponent(id)}`, {
+    method: 'PATCH',
+    body: JSON.stringify(payload),
+  }, token);
+};
+
 /** DELETE /admin/admins/:id — remove admin (super admin only). Cannot delete self. */
 export const deleteAdmin = async (id, token = getStoredToken()) => {
   return adminRequest(`/admins/${encodeURIComponent(id)}`, { method: 'DELETE' }, token);

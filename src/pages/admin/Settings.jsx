@@ -1,6 +1,12 @@
 import { useState, useEffect } from 'react';
 import { useAuth } from '../../hooks/useAuth';
 import { createAdmin, listAdmins, deleteAdmin, resetAdminPassword, changeMyPassword, getOsviSetting, setOsviSetting } from '../../utils/adminApi';
+
+function refreshAdminsList(setAdmins) {
+  return listAdmins().then((res) => {
+    if (res.success && Array.isArray(res.data?.data)) setAdmins(res.data.data);
+  });
+}
 import ManageAdminsSection from '../../components/Admin/ManageAdminsSection';
 
 const EMPTY_FORM = {
@@ -368,6 +374,7 @@ export default function Settings() {
           resetPasswordError={resetPasswordError}
           resetPasswordSubmitting={resetPasswordSubmitting}
           onConfirmResetPassword={handleConfirmResetPassword}
+          onAdminsUpdated={() => refreshAdminsList(setAdmins)}
         />
       )}
     </div>

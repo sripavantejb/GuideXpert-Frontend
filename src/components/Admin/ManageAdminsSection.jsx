@@ -8,7 +8,9 @@ import {
   FiCheckCircle,
   FiAlertCircle,
   FiShield,
+  FiEdit2,
 } from 'react-icons/fi';
+import { updateAdmin } from '../../utils/adminApi';
 import {
   ADMIN_SECTION_OPTIONS,
   ADMIN_SECTION_GROUPS,
@@ -109,18 +111,20 @@ function AlertBanner({ type, message }) {
   );
 }
 
-function AdminModal({ title, children, onClose, disabled, footer }) {
+function AdminModal({ title, children, onClose, disabled, footer, wide = false }) {
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/40 backdrop-blur-sm">
       <div
         role="dialog"
         aria-modal="true"
-        className="bg-white rounded-2xl shadow-xl max-w-md w-full overflow-hidden border border-gray-200"
+        className={`bg-white rounded-2xl shadow-xl w-full overflow-hidden border border-gray-200 flex flex-col max-h-[90vh] ${
+          wide ? 'max-w-2xl' : 'max-w-md'
+        }`}
       >
         <div className="px-6 pt-6 pb-4 border-b border-gray-100">
           <h3 className="text-lg font-semibold text-gray-900">{title}</h3>
         </div>
-        <div className="px-6 py-4">{children}</div>
+        <div className="px-6 py-4 overflow-y-auto flex-1 min-h-0">{children}</div>
         <div className="px-6 py-4 bg-gray-50/80 border-t border-gray-100 flex justify-end gap-2">
           <button
             type="button"
@@ -165,10 +169,84 @@ export default function ManageAdminsSection({
   resetPasswordError,
   resetPasswordSubmitting,
   onConfirmResetPassword,
+  onAdminsUpdated,
 }) {
   const selectedCount = form.sectionAccess.length;
   const totalCount = ALL_SECTION_KEYS.length;
   const [expandedAccessId, setExpandedAccessId] = useState(null);
+  const [editAccessModal, setEditAccessModal] = useState(null);
+  const [editForm, setEditForm] = useState({
+    name: '',
+    isSuperAdmin: false,
+    sectionAccess: [],
+  });
+  const [editPermissionsError, setEditPermissionsError] = useState('');
+  const [editSaveError, setEditSaveError] = useState('');
+  const [editSaving, setEditSaving] = useState(false);
+
+  const openEditAccess = (admin) => {
+    setEditAccessModal(admin);
+    setEditForm({
+      name: admin.name || '',
+      isSuperAdmin: !!admin.isSuperAdmin,
+      sectionAccess: Array.isArray(admin.sectionAccess) ? [...admin.sectionAccess] : [],
+    });
+    setEditPermissionsError('');
+    setEditSaveError('');
+  };
+
+  const handleEditSectionToggle = (sectionKey) => {
+    setEditPermissionsError('');
+    setEditForm((prev) => ({
+      ...prev,
+      sectionAccess: prev.sectionAccess.includes(sectionKey)
+        ? prev.sectionAccess.filter((k) => k !== sectionKey)
+        : [...prev.sectionAccess, sectionKey],
+    }));
+  };
+
+  const handleEditSuperAdminChange = (checked) => {
+    setEditPermissionsError('');
+    setEditForm((prev) => ({
+      ...prev,
+      isSuperAdmin: checked,
+      sectionAccess: checked ? [] : prev.sectionAccess,
+    }));
+  };
+
+  const handleSaveEditAccess = async () => {
+    if (!editAccessModal) return;
+    setEditSaveError('');
+    setEditPermissionsError('');
+    if (!editForm.isSuperAdmin && editForm.sectionAccess.length === 0) {
+      setEditPermissionsError('Select at least one section for a non–super admin.');
+      return;
+    }
+    const id = editAccessModal.id != null ? String(editAccessModal.id) : '';
+    if (!id) {
+      setEditSaveError('Invalid admin.');
+      return;
+    }
+    setEditSaving(true);
+    const payload = {
+      name: editForm.name.trim(),
+      isSuperAdmin: editForm.isSuperAdmin,
+    };
+    if (!editForm.isSuperAdmin) {
+      payload.sectionAccess = editForm.sectionAccess;
+    }
+    const result = await updateAdmin(id, payload);
+    setEditSaving(false);
+    if (result.success) {
+      setEditAccessModal(null);
+      onAdminsUpdated?.();
+    } else {
+      setEditSaveError(result.message || 'Failed to update access.');
+    }
+  };
+
+  const editSelectedCount = editForm.sectionAccess.length;
+  const editIsSelf = editAccessModal && String(editAccessModal.id) === String(currentUserId);
 
   const usernameInvalid = submitStatus.type === 'error' && submitStatus.message?.includes('Username');
   const passwordInvalid =
@@ -221,7 +299,7 @@ export default function ManageAdminsSection({
           <div className="px-5 py-4 border-b border-gray-100 bg-gradient-to-r from-white to-gray-50/80">
             <h4 className="text-sm font-semibold text-gray-900">Team</h4>
             <p className="text-xs text-gray-500 mt-0.5">
-              Passwords are hidden. Use reset password to set a new login.
+              Passwords are hidden. Use <strong>Edit access</strong> to change sections, or reset password for login.
             </p>
           </div>
 
@@ -239,7 +317,7 @@ export default function ManageAdminsSection({
             </div>
           ) : (
             <div className="overflow-x-auto flex-1">
-              <table className="w-full min-w-[520px] text-sm">
+              <table className="w-full min-w-[600px] text-sm">
                 <thead className="sticky top-0 z-10 bg-gray-50 border-b border-gray-200">
                   <tr className="text-left text-xs font-semibold text-gray-500 uppercase tracking-wide">
                     <th className="px-4 py-3 font-semibold">User</th>
@@ -318,6 +396,14 @@ export default function ManageAdminsSection({
                         </td>
                         <td className="px-4 py-3 align-top">
                           <div className="flex justify-end gap-1.5 flex-wrap">
+                            <button
+                              type="button"
+                              onClick={() => openEditAccess(a)}
+                              className="inline-flex items-center gap-1 text-xs px-2.5 py-1.5 rounded-lg border border-primary-navy/20 bg-primary-navy/5 text-primary-navy hover:bg-primary-navy/10 font-medium transition"
+                            >
+                              <FiEdit2 className="w-3.5 h-3.5" aria-hidden />
+                              Edit
+                            </button>
                             <button
                               type="button"
                               onClick={() => setResetPasswordModal(a)}
@@ -554,6 +640,149 @@ export default function ManageAdminsSection({
           {removeError && (
             <p className="text-sm text-red-600 mt-3" role="alert">
               {removeError}
+            </p>
+          )}
+        </AdminModal>
+      )}
+
+      {editAccessModal && (
+        <AdminModal
+          wide
+          title="Edit access"
+          onClose={() => !editSaving && setEditAccessModal(null)}
+          disabled={editSaving}
+          footer={
+            <button
+              type="button"
+              onClick={handleSaveEditAccess}
+              disabled={editSaving}
+              className="px-4 py-2 rounded-lg bg-primary-navy text-white hover:bg-primary-navy/90 font-medium text-sm disabled:opacity-50"
+            >
+              {editSaving ? 'Saving…' : 'Save changes'}
+            </button>
+          }
+        >
+          <p className="text-sm text-gray-600 mb-4">
+            Update role and sections for <strong className="text-gray-900">{editAccessModal.username}</strong>.
+            They may need to log out and back in for the sidebar to refresh.
+          </p>
+          <div className="mb-4">
+            <label htmlFor="edit-admin-name" className="block text-sm font-medium text-gray-700 mb-1">
+              Display name
+            </label>
+            <input
+              id="edit-admin-name"
+              type="text"
+              value={editForm.name}
+              onChange={(e) => setEditForm((p) => ({ ...p, name: e.target.value }))}
+              className={INPUT_CLASS}
+              placeholder="Optional"
+            />
+          </div>
+          <div>
+            <p className="text-xs font-semibold text-gray-500 uppercase tracking-wide mb-2">Role</p>
+            <label
+              className={`flex cursor-pointer gap-3 rounded-xl border p-4 transition ${
+                editIsSelf ? 'opacity-60 cursor-not-allowed' : ''
+              } ${
+                editForm.isSuperAdmin
+                  ? 'border-primary-navy/40 bg-primary-navy/5 ring-2 ring-primary-navy/20'
+                  : 'border-gray-200 bg-white hover:border-gray-300'
+              }`}
+            >
+              <input
+                type="checkbox"
+                checked={editForm.isSuperAdmin}
+                disabled={editIsSelf}
+                onChange={(e) => handleEditSuperAdminChange(e.target.checked)}
+                className="mt-0.5 rounded border-gray-300 text-primary-navy focus:ring-primary-navy disabled:cursor-not-allowed"
+              />
+              <span>
+                <span className="block text-sm font-semibold text-gray-900">Super admin</span>
+                <span className="block text-xs text-gray-500 mt-0.5">
+                  Full access to all sections and ability to manage other admins.
+                </span>
+                {editIsSelf && (
+                  <span className="block text-xs text-amber-700 mt-1">
+                    You cannot remove your own super admin role here.
+                  </span>
+                )}
+              </span>
+            </label>
+          </div>
+          {editForm.isSuperAdmin ? (
+            <p className="text-sm text-gray-600 rounded-lg border border-gray-100 bg-gray-50 px-3 py-2.5 mt-4">
+              This user will have access to all admin sections.
+            </p>
+          ) : (
+            <div
+              className={`rounded-xl border p-4 mt-4 ${
+                editPermissionsError ? 'border-red-300 bg-red-50/30' : 'border-gray-200 bg-gray-50/50'
+              }`}
+            >
+              <div className="flex flex-wrap items-center justify-between gap-2 mb-3">
+                <div>
+                  <p className="text-sm font-semibold text-gray-800">Section access</p>
+                  <p className="text-xs text-gray-500">
+                    {editSelectedCount} of {totalCount} selected
+                  </p>
+                </div>
+                <div className="flex gap-3 text-xs font-medium">
+                  <button
+                    type="button"
+                    onClick={() => setEditForm((p) => ({ ...p, sectionAccess: [...ALL_SECTION_KEYS] }))}
+                    className="text-primary-navy hover:underline"
+                  >
+                    Select all
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setEditForm((p) => ({ ...p, sectionAccess: [] }))}
+                    className="text-gray-600 hover:underline"
+                  >
+                    Clear all
+                  </button>
+                </div>
+              </div>
+              <div className="space-y-4 max-h-64 overflow-y-auto pr-1">
+                {ADMIN_SECTION_GROUPS.map((group) => (
+                  <div key={group.id}>
+                    <p className="text-xs font-semibold text-gray-500 mb-2">{group.label}</p>
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-1.5">
+                      {group.sectionKeys.map((sectionKey) => {
+                        const label = optionLabelByKey[sectionKey] || sectionKey;
+                        const checked = editForm.sectionAccess.includes(sectionKey);
+                        return (
+                          <label
+                            key={sectionKey}
+                            className={`flex items-center gap-2 rounded-lg px-2.5 py-2 cursor-pointer transition ${
+                              checked ? 'bg-white shadow-sm border border-primary-navy/10' : 'hover:bg-white/80'
+                            }`}
+                          >
+                            <input
+                              type="checkbox"
+                              checked={checked}
+                              onChange={() => handleEditSectionToggle(sectionKey)}
+                              className="rounded border-gray-300 text-primary-navy focus:ring-primary-navy"
+                            />
+                            <span className="text-sm text-gray-700">{label}</span>
+                          </label>
+                        );
+                      })}
+                    </div>
+                  </div>
+                ))}
+              </div>
+              {editPermissionsError && (
+                <p className="mt-3 text-xs text-red-600 font-medium" role="alert">
+                  {editPermissionsError}
+                </p>
+              )}
+            </div>
+          )}
+          {editSaveError && (
+            <p className="text-sm text-red-600 mt-3" role="alert">
+              {editSaveError}
             </p>
           )}
         </AdminModal>
