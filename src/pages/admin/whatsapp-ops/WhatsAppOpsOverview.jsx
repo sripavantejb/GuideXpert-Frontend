@@ -26,6 +26,23 @@ const FALLBACK_TEMPLATE_KINDS = [
   { id: 'iit_pre15min', label: '15 min before', description: 'IIT demo reminder 15 minutes before slot', opsProducts: ['iit_counselling'] },
 ];
 
+const IIT_GENERIC_REMINDER_IDS = new Set(['iit_pre2hr', 'iit_pre45min', 'iit_pre15min']);
+
+/** IIT Counselling: one chip per reminder stage × language (replaces generic iit_pre* chips). */
+const IIT_REMINDER_LANGUAGE_CHIPS = [
+  { id: 'iit_pre2hr', preferredLanguage: 'Telugu', label: '2 hours before · Telugu', opsProducts: ['iit_counselling'] },
+  { id: 'iit_pre2hr', preferredLanguage: 'Hindi', label: '2 hours before · Hindi', opsProducts: ['iit_counselling'] },
+  { id: 'iit_pre45min', preferredLanguage: 'Telugu', label: '45 min before · Telugu', opsProducts: ['iit_counselling'] },
+  { id: 'iit_pre45min', preferredLanguage: 'Hindi', label: '45 min before · Hindi', opsProducts: ['iit_counselling'] },
+  { id: 'iit_pre15min', preferredLanguage: 'Telugu', label: '15 min before · Telugu', opsProducts: ['iit_counselling'] },
+  { id: 'iit_pre15min', preferredLanguage: 'Hindi', label: '15 min before · Hindi', opsProducts: ['iit_counselling'] },
+];
+
+function templateChipKey(kind) {
+  if (!kind?.id) return 'all';
+  return kind.preferredLanguage ? `${kind.id}:${kind.preferredLanguage}` : kind.id;
+}
+
 function templateKindAppliesToProduct(kind, opsProduct) {
   if (!kind?.opsProducts || !Array.isArray(kind.opsProducts)) return true;
   return kind.opsProducts.includes(opsProduct);
@@ -204,12 +221,19 @@ export default function WhatsAppOpsOverview() {
   const opsProduct = parseOpsProductFromSearch(searchParams);
   const isIitProduct = opsProduct === OPS_PRODUCT_IIT;
 
+  const [selectedKind, setSelectedKind] = useState(() => searchParams.get('messageKind') || null);
+  const [selectedLanguage, setSelectedLanguage] = useState(() => {
+    const pl = searchParams.get('preferredLanguage');
+    return pl === 'Telugu' || pl === 'Hindi' ? pl : null;
+  });
+
   const persistOpsProductToUrl = useCallback(
     (next) => {
       const sp = new URLSearchParams(searchParams.toString());
       if (next === OPS_PRODUCT_GUIDEXPERT) {
         sp.delete('opsProduct');
         sp.delete('tenant');
+        sp.delete('preferredLanguage');
       } else {
         sp.set('opsProduct', OPS_PRODUCT_IIT);
         sp.delete('tenant');
@@ -219,10 +243,52 @@ export default function WhatsAppOpsOverview() {
     [searchParams, setSearchParams]
   );
 
+  const persistTemplateFiltersToUrl = useCallback(
+    (kind, language) => {
+      const sp = new URLSearchParams(searchParams.toString());
+      if (!kind) {
+        sp.delete('messageKind');
+        sp.delete('preferredLanguage');
+      } else {
+        sp.set('messageKind', kind);
+        if (language) sp.set('preferredLanguage', language);
+        else sp.delete('preferredLanguage');
+      }
+      setSearchParams(sp, { replace: true });
+    },
+    [searchParams, setSearchParams]
+  );
+
+  const selectTemplateChip = useCallback(
+    (chip) => {
+      if (!chip) {
+        setSelectedKind(null);
+        setSelectedLanguage(null);
+        persistTemplateFiltersToUrl(null, null);
+        return;
+      }
+      setSelectedKind(chip.id);
+      setSelectedLanguage(chip.preferredLanguage || null);
+      persistTemplateFiltersToUrl(chip.id, chip.preferredLanguage || null);
+    },
+    [persistTemplateFiltersToUrl]
+  );
+
+  const iitLanguageQueryParams = useMemo(() => {
+    if (
+      !isIitProduct ||
+      !selectedKind ||
+      !IIT_GENERIC_REMINDER_IDS.has(selectedKind) ||
+      !selectedLanguage
+    ) {
+      return {};
+    }
+    return { preferredLanguage: selectedLanguage };
+  }, [isIitProduct, selectedKind, selectedLanguage]);
+
   const [{ from, to }, setRange] = useState(defaultRangeIsoDates);
   const [selectedDate, setSelectedDate] = useState(() => istCalendarIsoToday());
   const [monthCursor, setMonthCursor] = useState(() => istCalendarIsoToday().slice(0, 7));
-  const [selectedKind, setSelectedKind] = useState(null);
   const [selectedSlotTime, setSelectedSlotTime] = useState('6PM');
   const [calendarMode, setCalendarMode] = useState('day');
   const [templateKinds, setTemplateKinds] = useState(FALLBACK_TEMPLATE_KINDS);
@@ -255,7 +321,8 @@ export default function WhatsAppOpsOverview() {
         from,
         to,
         opsProduct,
-        ...(selectedKind ? { messageKind: selectedKind } : {})
+        ...(selectedKind ? { messageKind: selectedKind } : {}),
+        ...iitLanguageQueryParams
       }),
       getOperationalHealth({})
     ]);
@@ -284,7 +351,7 @@ export default function WhatsAppOpsOverview() {
     }
     clearWhatsappOpsApi404();
     setPayload(res.data?.data ?? res.data);
-  }, [from, to, selectedKind, opsProduct, notifyWhatsappOpsApi404, clearWhatsappOpsApi404]);
+  }, [from, to, selectedKind, iitLanguageQueryParams, opsProduct, notifyWhatsappOpsApi404, clearWhatsappOpsApi404]);
 
   const loadMonth = useCallback(async () => {
     const gen = ++monthLoadGen.current;
@@ -297,7 +364,8 @@ export default function WhatsAppOpsOverview() {
         getWhatsappOpsCalendarMonth({
           month: m,
           opsProduct,
-          ...(selectedKind ? { messageKind: selectedKind } : {})
+          ...(selectedKind ? { messageKind: selectedKind } : {}),
+          ...iitLanguageQueryParams
         })
       )
     );
@@ -308,7 +376,7 @@ export default function WhatsAppOpsOverview() {
       return;
     }
     setMonthData(mergeWhatsappMonthPayloads(okParts));
-  }, [from, to, monthCursor, selectedKind, opsProduct]);
+  }, [from, to, monthCursor, selectedKind, iitLanguageQueryParams, opsProduct]);
 
   const loadDay = useCallback(async () => {
     const gen = ++dayLoadGen.current;
@@ -317,6 +385,7 @@ export default function WhatsAppOpsOverview() {
       slotTime: selectedSlotTime,
       opsProduct,
       ...(selectedKind ? { messageKind: selectedKind } : {}),
+      ...iitLanguageQueryParams,
       ...(waDiagnostics ? { debug: '1' } : {})
     };
     const isPastSlotDay = selectedDate < istCalendarIsoToday();
@@ -334,7 +403,7 @@ export default function WhatsAppOpsOverview() {
     } else {
       setDaySnapshotDoc(null);
     }
-  }, [selectedDate, selectedKind, selectedSlotTime, waDiagnostics, opsProduct]);
+  }, [selectedDate, selectedKind, selectedLanguage, selectedSlotTime, iitLanguageQueryParams, waDiagnostics, opsProduct]);
 
   const loadAll = useCallback(async () => {
     await Promise.all([loadSummary(), loadMonth(), loadDay()]);
@@ -353,10 +422,12 @@ export default function WhatsAppOpsOverview() {
     });
   }, [from, to]);
 
-  const visibleTemplateKinds = useMemo(
-    () => templateKinds.filter((k) => templateKindAppliesToProduct(k, opsProduct)),
-    [templateKinds, opsProduct]
-  );
+  const visibleTemplateKinds = useMemo(() => {
+    const fromMeta = templateKinds.filter((k) => templateKindAppliesToProduct(k, opsProduct));
+    if (!isIitProduct) return fromMeta;
+    const nonGenericReminder = fromMeta.filter((k) => !IIT_GENERIC_REMINDER_IDS.has(k.id));
+    return [...nonGenericReminder, ...IIT_REMINDER_LANGUAGE_CHIPS];
+  }, [templateKinds, opsProduct, isIitProduct]);
 
   useEffect(() => {
     if (!live) return undefined;
@@ -372,6 +443,14 @@ export default function WhatsAppOpsOverview() {
     window.addEventListener('whatsapp-ops-poll', onPoll);
     return () => window.removeEventListener('whatsapp-ops-poll', onPoll);
   }, []);
+
+  useEffect(() => {
+    if (isIitProduct && selectedKind && IIT_GENERIC_REMINDER_IDS.has(selectedKind) && !selectedLanguage) {
+      setSelectedKind(null);
+      setSelectedLanguage(null);
+      persistTemplateFiltersToUrl(null, null);
+    }
+  }, [isIitProduct, selectedKind, selectedLanguage, persistTemplateFiltersToUrl]);
 
   useEffect(() => {
     let disposed = false;
@@ -391,7 +470,12 @@ export default function WhatsAppOpsOverview() {
     if (!dayData) return null;
     const past = selectedDate < istCalendarIsoToday();
     const snapshotKind = daySnapshotDoc?.messageKind || null;
+    const snapshotLanguage =
+      daySnapshotDoc?.payload?.filter?.preferredLanguage ??
+      daySnapshotDoc?.filter?.preferredLanguage ??
+      null;
     const selectedKindNorm = selectedKind || null;
+    const selectedLanguageNorm = selectedLanguage || null;
     const snapshotSlotTime =
       daySnapshotDoc?.range?.slotTime ??
       daySnapshotDoc?.payload?.filter?.slotTime ??
@@ -405,6 +489,7 @@ export default function WhatsAppOpsOverview() {
       Boolean(daySnapshotDoc?.payload) &&
       daySnapshotDoc.range?.dateIso === selectedDate &&
       snapshotKind === selectedKindNorm &&
+      (snapshotLanguage || null) === selectedLanguageNorm &&
       String(snapshotSlotTime || 'all') === String(selectedSlotTime || 'all') &&
       snapshotOps === opsProduct;
     if (dayData.schemaVersion === 2 && past && snapshotMatchesSelection) {
@@ -414,7 +499,7 @@ export default function WhatsAppOpsOverview() {
       };
     }
     return { ...dayData, _meta: { source: 'live' } };
-  }, [dayData, daySnapshotDoc, selectedDate, selectedKind, selectedSlotTime, opsProduct]);
+  }, [dayData, daySnapshotDoc, selectedDate, selectedKind, selectedLanguage, selectedSlotTime, opsProduct]);
 
   const legacyDay =
     dayView?.attemptLevelMetrics || dayView?.slotCohortAttemptMetrics || dayView?.legacyAttemptMetrics || {};
@@ -427,7 +512,6 @@ export default function WhatsAppOpsOverview() {
   const retryFunnelReconciliation = dayView?.retryFunnelReconciliation || [];
   const exclusionBreakdown = dayView?.exclusionBreakdown || {};
   const retryQueue = dayView?.retryQueue || {};
-  const iitLanguageBreakdown = dayView?.recipientLanguageBreakdown;
   const iitSlotBreakdown = dayView?.recipientSlotTimeBreakdown;
 
   const byKindChart = useMemo(() => {
@@ -484,19 +568,36 @@ export default function WhatsAppOpsOverview() {
       });
   }, [monthData, from, to]);
 
-  const selectedTemplate = selectedKind
-    ? templateKinds.find((k) => k.id === selectedKind) || FALLBACK_TEMPLATE_KINDS.find((k) => k.id === selectedKind)
-    : null;
+  const selectedTemplate = useMemo(() => {
+    if (!selectedKind) return null;
+    if (selectedLanguage) {
+      const langChip = IIT_REMINDER_LANGUAGE_CHIPS.find(
+        (k) => k.id === selectedKind && k.preferredLanguage === selectedLanguage
+      );
+      if (langChip) return langChip;
+    }
+    return (
+      visibleTemplateKinds.find((k) => k.id === selectedKind && !k.preferredLanguage) ||
+      templateKinds.find((k) => k.id === selectedKind) ||
+      FALLBACK_TEMPLATE_KINDS.find((k) => k.id === selectedKind)
+    );
+  }, [selectedKind, selectedLanguage, visibleTemplateKinds, templateKinds]);
   const isAllTemplates = !selectedKind;
-  const selectedStrategy = selectedTemplate?.retryPolicy?.strategy || (selectedKind === 'slot_booked' ? 'immediate_only' : 'multi_stage');
+  const selectedStrategy =
+    selectedTemplate?.retryPolicy?.strategy ||
+    (selectedKind === 'slot_booked' ? 'immediate_only' : 'multi_stage');
+  const showImmediateRetrySummary =
+    selectedKind === 'slot_booked' && selectedStrategy === 'immediate_only';
 
   const messagesDrillHref = useMemo(() => {
     const p = new URLSearchParams();
     p.set('date', selectedDate);
     if (selectedKind) p.set('messageKind', selectedKind);
+    if (selectedLanguage) p.set('preferredLanguage', selectedLanguage);
+    if (isIitProduct) p.set('opsProduct', OPS_PRODUCT_IIT);
     p.set('status', 'failed,retry_exhausted');
     return `/admin/whatsapp-ops/messages?${p.toString()}`;
-  }, [selectedDate, selectedKind]);
+  }, [selectedDate, selectedKind, selectedLanguage, isIitProduct]);
 
   const byAttempt = legacyDay.byAttempt || {};
   const retry2Exclusions = legacyDay.retry2Exclusions || { totalExcluded: 0, byReason: {} };
@@ -992,7 +1093,7 @@ export default function WhatsAppOpsOverview() {
           <div className="flex flex-wrap gap-2">
             <button
               type="button"
-              onClick={() => setSelectedKind(null)}
+              onClick={() => selectTemplateChip(null)}
               aria-pressed={selectedKind === null}
               className={`rounded-lg px-3 py-1.5 text-sm font-semibold border transition-colors ${
                 selectedKind === null
@@ -1004,12 +1105,14 @@ export default function WhatsAppOpsOverview() {
             </button>
             {visibleTemplateKinds.map((kind) => (
               <button
-                key={kind.id}
+                key={templateChipKey(kind)}
                 type="button"
-                onClick={() => setSelectedKind(kind.id)}
-                aria-pressed={selectedKind === kind.id}
+                onClick={() => selectTemplateChip(kind)}
+                aria-pressed={
+                  selectedKind === kind.id && (selectedLanguage || null) === (kind.preferredLanguage || null)
+                }
                 className={`rounded-lg px-3 py-1.5 text-sm font-semibold border transition-colors ${
-                  selectedKind === kind.id
+                  selectedKind === kind.id && (selectedLanguage || null) === (kind.preferredLanguage || null)
                     ? 'bg-primary-navy text-white border-primary-navy shadow-sm'
                     : 'bg-white text-gray-700 border-gray-200 hover:bg-gray-50'
                 }`}
@@ -1021,7 +1124,7 @@ export default function WhatsAppOpsOverview() {
               type="button"
               onClick={() => {
                 const today = istCalendarIsoToday();
-                setSelectedKind(null);
+                selectTemplateChip(null);
                 setSelectedSlotTime('all');
                 setSelectedDate(today);
                 setMonthCursor(today.slice(0, 7));
@@ -1033,9 +1136,9 @@ export default function WhatsAppOpsOverview() {
               Reset filters
             </button>
           </div>
-          {isIitProduct && !selectedKind ? (
+          {isIitProduct ? (
             <p className="text-xs text-slate-500 mt-2">
-              Pick a template chip to see recipient delivery KPIs for that reminder stage. Language breakdown below uses the selected template when filtered.
+              Reminder chips are split by language (Telugu / Hindi) for 2 hours, 45 minutes, and 15 minutes before the demo slot.
             </p>
           ) : null}
         </section>
@@ -1240,14 +1343,61 @@ export default function WhatsAppOpsOverview() {
                     coverage gap {asNumber(cohortFlow.coverageGap)} (should be 0 after P3).
                   </p>
                   {cohortFlow.scheduledJobFunnel && (
-                    <p className="leading-relaxed text-indigo-900">
-                      Job funnel: pending {asNumber(cohortFlow.scheduledJobFunnel.pending)} · overdue{' '}
-                      {asNumber(cohortFlow.scheduledJobFunnel.overdue)} · dispatched{' '}
-                      {asNumber(cohortFlow.scheduledJobFunnel.dispatched)} · delivered{' '}
-                      {asNumber(cohortFlow.scheduledJobFunnel.delivered)} · skipped{' '}
-                      {asNumber(cohortFlow.scheduledJobFunnel.skipped)}
-                    </p>
+                    <>
+                      <p className="leading-relaxed text-indigo-900 font-medium">
+                        Scheduled jobs funnel: pending {asNumber(cohortFlow.scheduledJobFunnel.pending)} · claimed{' '}
+                        {asNumber(cohortFlow.scheduledJobFunnel.claimed)} · dispatching{' '}
+                        {asNumber(cohortFlow.scheduledJobFunnel.dispatching)} · overdue{' '}
+                        {asNumber(cohortFlow.scheduledJobFunnel.overdue)} · dispatched{' '}
+                        {asNumber(cohortFlow.scheduledJobFunnel.dispatched)} · skipped{' '}
+                        {asNumber(cohortFlow.scheduledJobFunnel.skipped)}
+                        {asNumber(cohortFlow.scheduledJobFunnel.delivered) > 0
+                          ? ` · delivered ${asNumber(cohortFlow.scheduledJobFunnel.delivered)}`
+                          : ''}
+                      </p>
+                      {isIitProduct &&
+                        asNumber(cohortFlow.scheduledJobFunnel?.claimed) > 0 &&
+                        asNumber(cohortFlow.scheduledJobFunnel?.pending) === 0 && (
+                          <p className="rounded-lg border border-amber-300 bg-amber-50 px-3 py-2 text-amber-950 font-medium">
+                            {asNumber(cohortFlow.scheduledJobFunnel.claimed)} job(s) stuck in{' '}
+                            <code className="text-[11px]">claimed</code> — cron will recover after ~3 min, or run repair
+                            reminder jobs then hit <code className="text-[11px]">/api/cron/send-iit-reminders</code> again.
+                          </p>
+                        )}
+                    </>
                   )}
+                  {isIitProduct &&
+                    asNumber(cohortFlow.booked) > 0 &&
+                    asNumber(cohortFlow.scheduledJobs) === 0 && (
+                      <p className="rounded-lg border border-amber-300 bg-amber-50 px-3 py-2 text-amber-950 font-medium">
+                        No reminder jobs scheduled for this cohort — re-save Section 2 with preferred language or run{' '}
+                        <code className="text-[11px]">npm run backfill:iit-reminder-jobs -- --execute</code> on the API
+                        server after deploy.
+                      </p>
+                    )}
+                  {isIitProduct &&
+                    asNumber(cohortFlow.scheduledJobFunnel?.skipped) > 0 &&
+                    asNumber(cohortFlow.suppressionByReason?.iit_template_env_missing) > 0 && (
+                      <p className="rounded-lg border border-rose-200 bg-rose-50 px-3 py-2 text-rose-900">
+                        {asNumber(cohortFlow.suppressionByReason.iit_template_env_missing)} job(s) skipped — Gupshup
+                        template env missing (<code className="text-[11px]">iit_template_env_missing</code>). Check{' '}
+                        <code className="text-[11px]">DEPLOY_IIT_WHATSAPP_ENV.md</code> and fix template UUIDs (e.g. Hindi
+                        45m).
+                      </p>
+                    )}
+                  {isIitProduct &&
+                    asNumber(cohortFlow.booked) > 0 &&
+                    asNumber(cohortFlow.withTemplateEventBookings) === 0 &&
+                    asNumber(cohortFlow.scheduledJobs) > 0 &&
+                    asNumber(cohortFlow.scheduledJobFunnel?.pending) +
+                      asNumber(cohortFlow.scheduledJobFunnel?.overdue) >
+                      0 && (
+                      <p className="text-slate-600">
+                        Jobs exist but no WhatsApp events yet — confirm external cron hits{' '}
+                        <code className="text-[11px]">/api/cron/send-iit-reminders</code> every minute and{' '}
+                        <code className="text-[11px]">ENABLE_WHATSAPP=true</code>.
+                      </p>
+                    )}
                   <p className="leading-relaxed text-slate-600">
                     Event rows: {asNumber(cohortFlow.withTemplateEventBookings)} with ≥1{' '}
                     <span className="font-medium">{selectedTemplate?.label || cohortFlow.effectiveMessageKind}</span> WhatsApp event ·{' '}
@@ -1403,43 +1553,6 @@ export default function WhatsAppOpsOverview() {
                   ))}
                 </div>
               </div>
-              {isIitProduct && isRecipientDay && iitLanguageBreakdown?.byLanguage && (
-                <div className="rounded-2xl border border-violet-200 bg-white p-4 shadow-sm">
-                  <p className="mb-1 text-[11px] font-semibold uppercase tracking-[0.14em] text-primary-navy">
-                    Language breakdown (IST slot day)
-                  </p>
-                  <p className="mb-3 text-xs text-slate-600">
-                    Bookings with preferred language from Section 2. Recipient counts apply when a template is selected above.
-                  </p>
-                  <div className="grid gap-3 sm:grid-cols-3">
-                    {[
-                      { key: 'Telugu', label: 'Telugu', className: 'border-amber-100 bg-amber-50/40' },
-                      { key: 'Hindi', label: 'Hindi', className: 'border-orange-100 bg-orange-50/40' },
-                      { key: 'unknown', label: 'No language', className: 'border-slate-200 bg-slate-50/60' },
-                    ].map(({ key, label, className }) => {
-                      const bucket = iitLanguageBreakdown.byLanguage[key] || {};
-                      const langRt = bucket.recipientTotals;
-                      return (
-                        <div key={key} className={`rounded-xl border p-3 ${className}`}>
-                          <p className="text-sm font-semibold text-slate-900">{label}</p>
-                          <p className="mt-2 text-2xl font-bold tabular-nums text-slate-900">{asNumber(bucket.booked)}</p>
-                          <p className="text-[11px] text-slate-500">Booked (cohort)</p>
-                          {selectedKind && langRt ? (
-                            <p className="mt-2 text-xs text-slate-700">
-                              Delivered:{' '}
-                              <span className="font-semibold text-emerald-800">{asNumber(langRt.delivered)}</span>
-                              {' · '}
-                              Recipients: <span className="font-semibold">{asNumber(langRt.totalRecipients)}</span>
-                            </p>
-                          ) : (
-                            <p className="mt-2 text-[11px] text-slate-500">Select a template for delivery counts</p>
-                          )}
-                        </div>
-                      );
-                    })}
-                  </div>
-                </div>
-              )}
               {isIitProduct && isRecipientDay && iitSlotBreakdown?.bySlotTime && (
                 <div className="rounded-2xl border border-cyan-200 bg-white p-4 shadow-sm">
                   <p className="mb-1 text-[11px] font-semibold uppercase tracking-[0.14em] text-primary-navy">
@@ -1518,7 +1631,7 @@ export default function WhatsAppOpsOverview() {
                 </div>
               )}
 
-              {selectedKind && selectedStrategy === 'immediate_only' && (
+              {showImmediateRetrySummary && (
                 <div className="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm space-y-4">
                   <div className="flex flex-wrap items-start justify-between gap-3">
                     <div>
@@ -1764,7 +1877,7 @@ export default function WhatsAppOpsOverview() {
                     ))}
                   </div>
                   <Link
-                    to={`/admin/whatsapp-ops/messages?date=${selectedDate}${selectedKind ? `&messageKind=${selectedKind}` : ''}`}
+                    to={`/admin/whatsapp-ops/messages?date=${selectedDate}${selectedKind ? `&messageKind=${selectedKind}` : ''}${selectedLanguage ? `&preferredLanguage=${selectedLanguage}` : ''}${isIitProduct ? `&opsProduct=${OPS_PRODUCT_IIT}` : ''}`}
                     className="mt-3 inline-block text-xs font-semibold text-primary-navy hover:underline"
                   >
                     Open messages (filter) →
