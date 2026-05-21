@@ -1,6 +1,12 @@
-import { useState } from 'react';
+import { useRef, useState } from 'react';
 import { useNavigate, Navigate } from 'react-router-dom';
-import { FiUser, FiLock, FiEye, FiEyeOff, FiPhone } from 'react-icons/fi';
+import { FiEye, FiEyeOff } from 'react-icons/fi';
+import SplitLoginLayout, {
+  LoginAlert,
+  LoginPhoneField,
+  LoginPrimaryButton,
+  NAVY_BTN,
+} from '../components/auth/SplitLoginLayout';
 import { useAuth } from '../hooks/useAuth';
 import { getAdminApiBaseUrl } from '../utils/adminApi';
 import { sendOtp, verifyOtp } from '../utils/api';
@@ -17,14 +23,14 @@ export default function AdminLogin() {
   const [username, setUsername] = useState('');
   const [password, setPassword] = useState('');
   const [phone, setPhone] = useState('');
-  const [otp, setOtp] = useState('');
-  const [otpSent, setOtpSent] = useState(false);
+  const [otp, setOtp] = useState(['', '', '', '', '', '']);
+  const [phoneStep, setPhoneStep] = useState(1);
   const [error, setError] = useState('');
   const [loginHint, setLoginHint] = useState('');
   const [info, setInfo] = useState('');
   const [loading, setLoading] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
-  const [rememberMe, setRememberMe] = useState(false);
+  const otpInputRefs = useRef([]);
 
   if (isAuthenticated) {
     return <Navigate to="/admin" replace />;
@@ -35,9 +41,20 @@ export default function AdminLogin() {
     setError('');
     setLoginHint('');
     setInfo('');
-    setOtpSent(false);
-    setOtp('');
+    setPhoneStep(1);
+    setOtp(['', '', '', '', '', '']);
   };
+
+  const leftSteps =
+    mode === 'password'
+      ? [
+          { label: 'Enter your username and password', active: true },
+          { label: 'Access the Admin Dashboard', active: false },
+        ]
+      : [
+          { label: 'Enter your phone number and verify OTP', active: phoneStep === 1 },
+          { label: 'Access the Admin Dashboard', active: phoneStep === 2 },
+        ];
 
   const handlePasswordSubmit = async (e) => {
     e.preventDefault();
@@ -55,7 +72,8 @@ export default function AdminLogin() {
     }
   };
 
-  const handleSendOtp = async () => {
+  const handleSendOtp = async (e) => {
+    e?.preventDefault();
     setError('');
     setInfo('');
     const p = normalizePhone10(phone);
@@ -70,14 +88,15 @@ export default function AdminLogin() {
         const msg = result.message || 'Could not send OTP.';
         setError(
           result.status === 500 && import.meta.env.DEV
-            ? `${msg} Start the backend in a terminal: cd backend && npm run dev`
+            ? `${msg} Start the backend: cd backend && npm run dev`
             : msg
         );
         return;
       }
-      setOtpSent(true);
-      setOtp('');
-      setInfo('OTP sent. Enter the 6-digit code to continue.');
+      setPhoneStep(2);
+      setOtp(['', '', '', '', '', '']);
+      setInfo('OTP sent successfully to your mobile number');
+      setTimeout(() => otpInputRefs.current[0]?.focus(), 100);
     } catch {
       setError('Network error. Please try again.');
     } finally {
@@ -85,18 +104,43 @@ export default function AdminLogin() {
     }
   };
 
-  const handlePhoneSubmit = async (e) => {
+  const handleOtpChange = (index, value) => {
+    if (!/^\d*$/.test(value)) return;
+    const next = [...otp];
+    next[index] = value.slice(-1);
+    setOtp(next);
+    setError('');
+    if (value && index < 5) otpInputRefs.current[index + 1]?.focus();
+  };
+
+  const handleOtpKeyDown = (index, e) => {
+    if (e.key === 'Backspace' && !otp[index] && index > 0) {
+      otpInputRefs.current[index - 1]?.focus();
+    }
+  };
+
+  const handleOtpPaste = (e) => {
+    e.preventDefault();
+    const pasted = e.clipboardData.getData('text').slice(0, 6);
+    if (!/^\d+$/.test(pasted)) return;
+    const next = pasted.split('').concat(Array(6 - pasted.length).fill(''));
+    setOtp(next);
+    const last = Math.min(pasted.length - 1, 5);
+    otpInputRefs.current[last]?.focus();
+  };
+
+  const handlePhoneVerify = async (e) => {
     e.preventDefault();
     setError('');
     setInfo('');
     const p = normalizePhone10(phone);
-    const otpStr = String(otp ?? '').trim();
+    const otpStr = otp.join('');
     if (!/^\d{10}$/.test(p)) {
       setError('Enter a valid 10-digit mobile number.');
       return;
     }
-    if (!/^\d{6}$/.test(otpStr)) {
-      setError('Enter the 6-digit OTP.');
+    if (otpStr.length !== 6) {
+      setError('Please enter all 6 digits.');
       return;
     }
     setLoading(true);
@@ -104,6 +148,8 @@ export default function AdminLogin() {
       const verifyResult = await verifyOtp(p, otpStr);
       if (!verifyResult.success || verifyResult.data?.verified !== true) {
         setError(verifyResult.message || verifyResult.data?.message || 'Invalid OTP.');
+        setOtp(['', '', '', '', '', '']);
+        setTimeout(() => otpInputRefs.current[0]?.focus(), 100);
         return;
       }
       const loginResult = await loginWithPhone(p);
@@ -119,204 +165,182 @@ export default function AdminLogin() {
     }
   };
 
+  const handlePhoneBack = () => {
+    setPhoneStep(1);
+    setOtp(['', '', '', '', '', '']);
+    setError('');
+    setInfo('');
+  };
+
+  const rightTitle =
+    mode === 'password'
+      ? 'Admin access starts here'
+      : phoneStep === 1
+        ? 'Sign in with your mobile number'
+        : 'Verify OTP';
+
+  const rightSubtitle =
+    mode === 'password'
+      ? 'Use your admin username and password'
+      : phoneStep === 1
+        ? 'We will send a one-time code to your registered number'
+        : `Enter the 6-digit code sent to ****${normalizePhone10(phone).slice(-4)}`;
+
   return (
-    <div className="min-h-screen flex items-center justify-center px-4 bg-gradient-to-br from-blue-50 via-white to-slate-50 relative overflow-hidden">
-      {/* Radial glow behind card */}
-      <div
-        className="absolute inset-0 flex items-center justify-center pointer-events-none"
-        aria-hidden
-      >
-        <div className="w-[480px] h-[480px] rounded-full bg-blue-200/30 blur-3xl" />
-      </div>
-
-      <div className="w-full max-w-[420px] relative z-10 flex flex-col items-center">
-        <div
-          className="w-full bg-white rounded-2xl p-10 border border-gray-100 shadow-[0_20px_50px_rgba(0,0,0,0.08)] transition-all duration-300 hover:shadow-[0_24px_56px_rgba(0,0,0,0.12)]"
-          style={error ? { animation: 'loginShake 0.4s ease-in-out' } : undefined}
-        >
-          {/* Brand section */}
-          <div className="text-center mb-8">
-            <img
-              src="https://res.cloudinary.com/dfqdb1xws/image/upload/v1773394627/GuideXpert_Logo_2_icepsv.png"
-              alt="GuideXpert"
-              className="h-10 w-auto object-contain mx-auto mb-3"
-            />
-            <p className="text-sm font-medium text-gray-500 mt-0.5">Admin Portal</p>
-            <p className="text-sm text-gray-400 mt-0.5">Sign in to access admin dashboard</p>
-
-          </div>
-
-          <div className="flex rounded-xl border border-gray-200 p-1 mb-6 bg-gray-50">
-            <button type="button" onClick={() => switchMode('password')} className={`flex-1 h-10 rounded-lg text-sm font-semibold transition-colors ${mode === 'password' ? 'bg-white text-blue-700 shadow-sm' : 'text-gray-600 hover:text-gray-900'}`}>Password</button>
-            <button type="button" onClick={() => switchMode('phone')} className={`flex-1 h-10 rounded-lg text-sm font-semibold transition-colors ${mode === 'phone' ? 'bg-white text-blue-700 shadow-sm' : 'text-gray-600 hover:text-gray-900'}`}>Phone OTP</button>
-          </div>
-
-          {mode === 'password' ? (
-          <form onSubmit={handlePasswordSubmit} className="space-y-5">
-            {/* Username */}
-            <div>
-              <label htmlFor="username" className="block text-sm font-medium text-gray-700 mb-1.5">
-                Username
-              </label>
-              <div className="relative">
-                <FiUser className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400 pointer-events-none" aria-hidden />
-                <input
-                  id="username"
-                  type="text"
-                  value={username}
-                  onChange={(e) => setUsername(e.target.value)}
-                  required
-                  autoComplete="username"
-                  placeholder="Username"
-                  className="w-full h-12 pl-11 pr-4 rounded-xl border border-gray-200 bg-white text-gray-900 placeholder-gray-400 focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20 outline-none transition-all"
-                />
-              </div>
+    <SplitLoginLayout
+      badgeLabel="Admin Login"
+      headline="Manage your platform. Guide students and teams with clarity."
+      steps={leftSteps}
+      rightTitle={rightTitle}
+      rightSubtitle={rightSubtitle}
+      footer={
+        <>
+          {import.meta.env.DEV && mode === 'password' ? (
+            <div className="space-y-1 text-center text-xs text-gray-400 border-t border-gray-100 pt-4">
+              <p>
+                Dev: <kbd className="px-1.5 py-0.5 bg-gray-100 rounded">admin</kbd> /{' '}
+                <kbd className="px-1.5 py-0.5 bg-gray-100 rounded">admin123</kbd>
+              </p>
+              <p>API: {getAdminApiBaseUrl()}</p>
             </div>
-
-            {/* Password */}
-            <div>
-              <label htmlFor="password" className="block text-sm font-medium text-gray-700 mb-1.5">
-                Password
-              </label>
-              <div className="relative">
-                <FiLock className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400 pointer-events-none" aria-hidden />
-                <input
-                  id="password"
-                  type={showPassword ? 'text' : 'password'}
-                  value={password}
-                  onChange={(e) => setPassword(e.target.value)}
-                  required
-                  autoComplete="current-password"
-                  placeholder="Password"
-                  className="w-full h-12 pl-11 pr-11 rounded-xl border border-gray-200 bg-white text-gray-900 placeholder-gray-400 focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20 outline-none transition-all"
-                />
-                <button
-                  type="button"
-                  onClick={() => setShowPassword((p) => !p)}
-                  className="absolute right-3 top-1/2 -translate-y-1/2 p-1 text-gray-400 hover:text-gray-600 transition-colors"
-                  aria-label="Toggle password visibility"
-                >
-                  {showPassword ? <FiEyeOff className="w-5 h-5" /> : <FiEye className="w-5 h-5" />}
-                </button>
-              </div>
-            </div>
-
-            {/* Remember me + Forgot password */}
-            <div className="flex items-center justify-between">
-              <label className="flex items-center gap-2 cursor-pointer">
-                <input
-                  type="checkbox"
-                  checked={rememberMe}
-                  onChange={(e) => setRememberMe(e.target.checked)}
-                  className="w-4 h-4 rounded border-gray-300 text-blue-600 focus:ring-blue-500"
-                />
-                <span className="text-sm text-gray-600">Remember me</span>
-              </label>
-              <a
-                href="#"
-                className="text-sm text-blue-600 hover:text-blue-700 transition-colors"
-                onClick={(e) => e.preventDefault()}
-              >
-                Forgot password?
-              </a>
-            </div>
-
-            {/* Error / hint */}
-            {error && (
-              <div className="space-y-0.5" role="alert">
-                <p className="text-sm text-red-600">{error}</p>
-                {loginHint && <p className="text-xs text-gray-500">{loginHint}</p>}
-              </div>
-            )}
-
-            {/* Submit */}
-            <button
-              type="submit"
-              disabled={loading}
-              className="w-full h-12 rounded-xl font-semibold text-white bg-gradient-to-r from-[#2563eb] to-[#1d4ed8] hover:from-[#1d4ed8] hover:to-[#1e40af] focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 disabled:opacity-70 disabled:cursor-not-allowed disabled:transform-none transition-all duration-200 hover:shadow-lg hover:-translate-y-0.5 flex items-center justify-center gap-2"
-            >
-              {loading ? (
-                <>
-                  <svg
-                    className="animate-spin h-5 w-5 text-white"
-                    xmlns="http://www.w3.org/2000/svg"
-                    fill="none"
-                    viewBox="0 0 24 24"
-                    aria-hidden
-                  >
-                    <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
-                    <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z" />
-                  </svg>
-                  <span>Signing in…</span>
-                </>
-              ) : (
-                'Sign in'
-              )}
-            </button>
-
-            {import.meta.env.DEV && (
-              <div className="mt-4 space-y-1 text-center pt-4 border-t border-gray-100">
-                <p className="text-xs text-gray-400">
-                  Dev: use <kbd className="px-1.5 py-0.5 bg-gray-100 rounded text-gray-600">admin</kbd> / <kbd className="px-1.5 py-0.5 bg-gray-100 rounded text-gray-600">admin123</kbd>
-                </p>
-                <p className="text-xs text-gray-400">API: {getAdminApiBaseUrl()}</p>
-              </div>
-            )}
-          </form>
           ) : (
-          <form onSubmit={handlePhoneSubmit} className="space-y-5">
-              <div>
-                <label htmlFor="admin-phone" className="block text-sm font-medium text-gray-700 mb-1.5">Mobile number</label>
-                <div className="relative">
-                  <FiPhone className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400 pointer-events-none" aria-hidden />
-                  <input
-                    id="admin-phone"
-                    type="tel"
-                    inputMode="numeric"
-                    value={phone}
-                    onChange={(e) => setPhone(e.target.value.replace(/\D/g, '').slice(0, 10))}
-                    placeholder="10-digit mobile"
-                    className="w-full h-12 pl-11 pr-4 rounded-xl border border-gray-200 bg-white text-gray-900 placeholder-gray-400 focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20 outline-none transition-all"
-                  />
-                </div>
-              </div>
-              {otpSent ? (
-                <div>
-                  <label htmlFor="admin-otp" className="block text-sm font-medium text-gray-700 mb-1.5">OTP</label>
-                  <input
-                    id="admin-otp"
-                    type="text"
-                    inputMode="numeric"
-                    maxLength={6}
-                    value={otp}
-                    onChange={(e) => setOtp(e.target.value.replace(/\D/g, '').slice(0, 6))}
-                    placeholder="6-digit OTP"
-                    className="w-full h-12 px-4 rounded-xl border border-gray-200 bg-white text-gray-900 placeholder-gray-400 focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20 outline-none transition-all"
-                  />
-                </div>
-              ) : null}
-              {info ? <p className="text-sm text-green-600">{info}</p> : null}
-              {error ? <p className="text-sm text-red-600" role="alert">{error}</p> : null}
-              <div className="flex gap-2">
-                {!otpSent ? (
-                  <button type="button" onClick={handleSendOtp} disabled={loading} className="flex-1 h-12 rounded-xl font-semibold text-white bg-gradient-to-r from-[#2563eb] to-[#1d4ed8] disabled:opacity-70">
-                    {loading ? 'Sending…' : 'Send OTP'}
-                  </button>
-                ) : (
-                  <button type="submit" disabled={loading} className="flex-1 h-12 rounded-xl font-semibold text-white bg-gradient-to-r from-[#2563eb] to-[#1d4ed8] disabled:opacity-70">
-                    {loading ? 'Signing in…' : 'Verify & sign in'}
-                  </button>
-                )}
-              </div>
-            </form>
+            <p className="text-xs text-gray-400 text-center">© 2026 GuideXpert</p>
           )}
-
-        </div>
-
-        <p className="mt-6 text-xs text-gray-400">© 2026 GuideXpert</p>
+        </>
+      }
+    >
+      <div className="flex rounded-lg border border-gray-200 p-1 mb-6 bg-gray-50">
+        <button
+          type="button"
+          onClick={() => switchMode('password')}
+          className={`flex-1 h-10 rounded-md text-sm font-semibold transition-colors ${
+            mode === 'password' ? 'bg-white text-[#003366] shadow-sm' : 'text-gray-600 hover:text-gray-900'
+          }`}
+        >
+          Password
+        </button>
+        <button
+          type="button"
+          onClick={() => switchMode('phone')}
+          className={`flex-1 h-10 rounded-md text-sm font-semibold transition-colors ${
+            mode === 'phone' ? 'bg-white text-[#003366] shadow-sm' : 'text-gray-600 hover:text-gray-900'
+          }`}
+        >
+          Phone OTP
+        </button>
       </div>
 
-      <style>{`@keyframes loginShake { 0%, 100% { transform: translateX(0); } 20%, 60% { transform: translateX(-6px); } 40%, 80% { transform: translateX(6px); } }`}</style>
-    </div>
+      {info ? <LoginAlert variant="success" message={info} /> : null}
+      <LoginAlert message={error} />
+      {loginHint ? <p className="text-xs text-gray-500 mb-4">{loginHint}</p> : null}
+
+      {mode === 'password' ? (
+        <form onSubmit={handlePasswordSubmit} className="space-y-4">
+          <div>
+            <label htmlFor="username" className="block text-sm font-medium text-gray-900 mb-1">
+              Username
+            </label>
+            <input
+              id="username"
+              type="text"
+              value={username}
+              onChange={(e) => setUsername(e.target.value)}
+              required
+              autoComplete="username"
+              placeholder="Username"
+              disabled={loading}
+              className="w-full px-4 py-2.5 rounded-lg border border-gray-300 outline-none focus:ring-2 focus:ring-primary-blue-500 focus:border-primary-blue-500"
+            />
+          </div>
+          <div>
+            <label htmlFor="password" className="block text-sm font-medium text-gray-900 mb-1">
+              Password
+            </label>
+            <div className="relative">
+              <input
+                id="password"
+                type={showPassword ? 'text' : 'password'}
+                value={password}
+                onChange={(e) => setPassword(e.target.value)}
+                required
+                autoComplete="current-password"
+                placeholder="Password"
+                disabled={loading}
+                className="w-full px-4 py-2.5 pr-11 rounded-lg border border-gray-300 outline-none focus:ring-2 focus:ring-primary-blue-500 focus:border-primary-blue-500"
+              />
+              <button
+                type="button"
+                onClick={() => setShowPassword((p) => !p)}
+                className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600"
+                aria-label="Toggle password visibility"
+              >
+                {showPassword ? <FiEyeOff className="w-5 h-5" /> : <FiEye className="w-5 h-5" />}
+              </button>
+            </div>
+          </div>
+          <LoginPrimaryButton loading={loading}>
+            {loading ? 'Signing in…' : 'Sign in'}
+          </LoginPrimaryButton>
+        </form>
+      ) : phoneStep === 1 ? (
+        <form onSubmit={handleSendOtp} className="space-y-4">
+          <LoginPhoneField
+            id="admin-phone"
+            value={phone}
+            onChange={(e) => setPhone(e.target.value.replace(/\D/g, '').slice(0, 10))}
+            disabled={loading}
+          />
+          <LoginPrimaryButton loading={loading}>{loading ? 'Sending…' : 'Get OTP'}</LoginPrimaryButton>
+        </form>
+      ) : (
+        <form onSubmit={handlePhoneVerify} className="space-y-6">
+          <div className="flex justify-center gap-2 sm:gap-3" role="group" aria-label="OTP digits">
+            {otp.map((digit, index) => (
+              <input
+                key={index}
+                ref={(el) => {
+                  otpInputRefs.current[index] = el;
+                }}
+                type="text"
+                inputMode="numeric"
+                autoComplete="one-time-code"
+                maxLength={1}
+                value={digit}
+                onChange={(e) => handleOtpChange(index, e.target.value)}
+                onKeyDown={(e) => handleOtpKeyDown(index, e)}
+                onPaste={handleOtpPaste}
+                disabled={loading}
+                className="w-12 h-14 sm:w-14 sm:h-16 text-center text-2xl font-semibold tabular-nums rounded-xl border-2 border-gray-200 bg-gray-50/50 text-gray-900 outline-none focus:border-primary-navy focus:ring-2 focus:ring-primary-navy/20 focus:bg-white"
+                aria-label={`Digit ${index + 1} of 6`}
+              />
+            ))}
+          </div>
+          <div className="flex flex-col gap-3 sm:flex-row">
+            <button
+              type="button"
+              onClick={handlePhoneBack}
+              disabled={loading}
+              className="flex-1 py-3 px-4 rounded-lg border-2 border-gray-200 bg-white text-gray-700 font-semibold hover:bg-gray-50 disabled:opacity-60"
+            >
+              Back
+            </button>
+            <LoginPrimaryButton loading={loading} className="flex-[1.5] sm:uppercase">
+              {loading ? 'Verifying…' : 'Verify & sign in'}
+            </LoginPrimaryButton>
+          </div>
+          <p className="text-center text-sm text-gray-500">
+            <button
+              type="button"
+              onClick={handleSendOtp}
+              disabled={loading}
+              className="font-semibold underline underline-offset-2 hover:no-underline disabled:opacity-60"
+              style={{ color: NAVY_BTN }}
+            >
+              Resend OTP
+            </button>
+          </p>
+        </form>
+      )}
+    </SplitLoginLayout>
   );
 }

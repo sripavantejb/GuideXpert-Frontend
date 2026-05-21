@@ -1,5 +1,9 @@
 import { useState } from 'react';
 import { Navigate, useNavigate } from 'react-router-dom';
+import SplitLoginLayout, {
+  LoginAlert,
+  LoginPrimaryButton,
+} from '../../components/auth/SplitLoginLayout';
 import { useBdaAuth } from '../../contexts/BdaAuthContext';
 
 export default function BdaLogin() {
@@ -36,44 +40,50 @@ export default function BdaLogin() {
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-50 to-blue-50 flex items-center justify-center p-4">
-      <div className="w-full max-w-md bg-white rounded-2xl shadow-lg border border-gray-100 p-8">
-        <div className="text-center mb-8">
-          <h1 className="text-2xl font-bold text-gray-900">GuideXpert</h1>
-          <p className="text-sm text-gray-600 mt-1">BDA Portal — Sign in</p>
-        </div>
-        <form onSubmit={handleSubmit} className="space-y-4">
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">Email or phone</label>
-            <input
-              type="text"
-              autoComplete="username"
-              value={loginId}
-              onChange={(e) => setLoginId(e.target.value)}
-              className="w-full border border-gray-200 rounded-lg px-3 py-2.5 text-sm focus:ring-2 focus:ring-primary-blue/30 focus:border-primary-blue"
-              placeholder="you@email.com or 10-digit mobile"
-            />
-          </div>
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">Password</label>
-            <input
-              type="password"
-              autoComplete="current-password"
-              value={password}
-              onChange={(e) => setPassword(e.target.value)}
-              className="w-full border border-gray-200 rounded-lg px-3 py-2.5 text-sm focus:ring-2 focus:ring-primary-blue/30 focus:border-primary-blue"
-            />
-          </div>
-          {error && <p className="text-sm text-red-600">{error}</p>}
-          <button
-            type="submit"
+    <SplitLoginLayout
+      badgeLabel="BDA Login"
+      headline="Connect with students. Track leads and grow conversions every day."
+      steps={[
+        { label: 'Sign in with your BDA email or phone and password', active: true },
+        { label: 'Access your BDA Calling Dashboard', active: false },
+      ]}
+      rightTitle="Your BDA workspace starts here"
+      rightSubtitle="Sign in with credentials provided by your admin"
+      footer={<p className="text-xs text-gray-400 text-center">© 2026 GuideXpert</p>}
+    >
+      <LoginAlert message={error} />
+      <form onSubmit={handleSubmit} className="space-y-4">
+        <div>
+          <label htmlFor="bda-login-id" className="block text-sm font-medium text-gray-900 mb-1">
+            Email or phone
+          </label>
+          <input
+            id="bda-login-id"
+            type="text"
+            autoComplete="username"
+            value={loginId}
+            onChange={(e) => setLoginId(e.target.value)}
+            placeholder="you@email.com or 10-digit mobile"
             disabled={loading}
-            className="w-full py-2.5 rounded-lg bg-primary-blue text-white font-medium hover:opacity-90 disabled:opacity-50"
-          >
-            {loading ? 'Signing in…' : 'Sign in'}
-          </button>
-        </form>
-      </div>
-    </div>
+            className="w-full px-4 py-2.5 rounded-lg border border-gray-300 outline-none focus:ring-2 focus:ring-primary-blue-500 focus:border-primary-blue-500"
+          />
+        </div>
+        <div>
+          <label htmlFor="bda-password" className="block text-sm font-medium text-gray-900 mb-1">
+            Password
+          </label>
+          <input
+            id="bda-password"
+            type="password"
+            autoComplete="current-password"
+            value={password}
+            onChange={(e) => setPassword(e.target.value)}
+            disabled={loading}
+            className="w-full px-4 py-2.5 rounded-lg border border-gray-300 outline-none focus:ring-2 focus:ring-primary-blue-500 focus:border-primary-blue-500"
+          />
+        </div>
+        <LoginPrimaryButton loading={loading}>{loading ? 'Signing in…' : 'Sign in'}</LoginPrimaryButton>
+      </form>
+    </SplitLoginLayout>
   );
 }
