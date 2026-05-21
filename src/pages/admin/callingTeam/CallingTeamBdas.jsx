@@ -73,7 +73,6 @@ export default function CallingTeamBdas() {
       )}
 
       <BdaLanguageAutoAssignPanel
-        autoSplitOnLoad
         onAssigned={() => {
           load();
           setProfileRefresh((k) => k + 1);
@@ -98,7 +97,7 @@ export default function CallingTeamBdas() {
 
       <div className="bg-white rounded-xl border border-gray-200 shadow-sm overflow-hidden">
         <div className="px-4 py-3 border-b">
-          <h2 className="font-semibold text-gray-900">Performance stats</h2>
+          <h2 className="text-base font-semibold text-gray-900 m-0">Performance stats</h2>
           <p className="text-sm text-gray-600 mt-1">Metrics by date range (filters above)</p>
         </div>
         {loading ? (

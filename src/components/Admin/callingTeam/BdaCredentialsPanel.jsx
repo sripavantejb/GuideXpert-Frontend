@@ -120,10 +120,10 @@ export default function BdaCredentialsPanel({ onCreated }) {
   };
 
   return (
-    <section className="bg-white rounded-xl border border-primary-blue-200 shadow-sm overflow-hidden">
+    <div className="bg-white rounded-xl border border-primary-blue-200 shadow-sm overflow-hidden">
       <div className="px-4 py-3 border-b bg-primary-blue-50/80 flex flex-wrap items-start justify-between gap-3">
         <div>
-          <h2 className="font-semibold text-gray-900 flex items-center gap-2">
+          <h2 className="text-base font-semibold text-gray-900 flex items-center gap-2 m-0">
             <FiKey className="text-primary-blue" />
             Create BDA login credentials
           </h2>
@@ -286,6 +286,6 @@ export default function BdaCredentialsPanel({ onCreated }) {
           </button>
         </div>
       )}
-    </section>
+    </div>
   );
 }

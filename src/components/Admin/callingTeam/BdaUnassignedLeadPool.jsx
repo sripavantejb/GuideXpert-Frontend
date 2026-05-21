@@ -88,10 +88,10 @@ export default function BdaUnassignedLeadPool({ onAssigned }) {
   };
 
   return (
-    <section className="bg-white rounded-xl border border-gray-200 shadow-sm overflow-hidden">
+    <div className="bg-white rounded-xl border border-gray-200 shadow-sm overflow-hidden">
       <div className="px-4 py-3 border-b flex flex-wrap items-start justify-between gap-3">
         <div>
-          <h2 className="font-semibold text-gray-900">Unassigned leads pool</h2>
+          <h2 className="text-base font-semibold text-gray-900 m-0">Unassigned leads pool</h2>
           <p className="text-sm text-gray-600 mt-1">
             Browse leads not assigned to any BDA. Select rows and assign in bulk to a specific BDA (max{' '}
             {BULK_ASSIGN_MAX} per action).
@@ -293,6 +293,6 @@ export default function BdaUnassignedLeadPool({ onAssigned }) {
           handleAssignSuccess(data);
         }}
       />
-    </section>
+    </div>
   );
 }
