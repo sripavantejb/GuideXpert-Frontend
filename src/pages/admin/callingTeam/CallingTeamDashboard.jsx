@@ -2,6 +2,7 @@ import { useCallback, useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { FiPhone, FiUsers, FiTrendingUp } from 'react-icons/fi';
 import CallingTeamDateFilter from '../../../components/Admin/callingTeam/CallingTeamDateFilter';
+import QuickAddBdaForm from '../../../components/Admin/callingTeam/QuickAddBdaForm';
 import TableSkeleton from '../../../components/UI/TableSkeleton';
 import {
   buildStatsQuery,
@@ -36,9 +37,14 @@ export default function CallingTeamDashboard() {
     if (dashRes.success && dashRes.data?.data) {
       setTeam(dashRes.data.data);
     } else {
-      setError(dashRes.message || 'Failed to load dashboard');
+      const msg = dashRes.message || 'Failed to load dashboard';
+      setError(
+        dashRes.status === 404
+          ? `${msg}. Redeploy the backend with Calling Team routes, or set VITE_PROXY_TARGET to your local API.`
+          : msg
+      );
     }
-    if (lbRes.success && lbRes.data?.data?.table) {
+    if (lbRes.success && Array.isArray(lbRes.data?.data?.table)) {
       setLeaderboard(lbRes.data.data.table);
     }
     setLoading(false);
@@ -47,6 +53,8 @@ export default function CallingTeamDashboard() {
   useEffect(() => {
     load();
   }, [load]);
+
+  const noBdas = team && (team.totalBdas ?? 0) === 0;
 
   return (
     <div className="space-y-6">
@@ -58,13 +66,13 @@ export default function CallingTeamDashboard() {
         <div className="flex gap-2">
           <Link
             to="/admin/calling-team/leads"
-            className="px-3 py-2 text-sm font-medium rounded-lg border border-gray-200 bg-white hover:bg-gray-50"
+            className="px-3 py-2 text-sm font-medium rounded-lg border border-gray-200 bg-white hover:bg-gray-50 text-gray-800"
           >
             Leads CRM
           </Link>
           <Link
             to="/admin/calling-team/bdas"
-            className="px-3 py-2 text-sm font-medium rounded-lg bg-primary-blue text-white"
+            className="px-3 py-2 text-sm font-medium rounded-lg bg-primary-blue text-white hover:opacity-90"
           >
             BDA Management
           </Link>
@@ -73,7 +81,23 @@ export default function CallingTeamDashboard() {
 
       <CallingTeamDateFilter value={dateFilter} onChange={setDateFilter} />
 
-      {error && <p className="text-sm text-red-600">{error}</p>}
+      {error && (
+        <div className="rounded-lg border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-800">
+          {error}
+        </div>
+      )}
+
+      {!loading && noBdas && (
+        <div className="rounded-lg border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-900">
+          No BDAs yet. Add at least one active BDA below, then assign leads from{' '}
+          <Link to="/admin/calling-team/leads" className="font-medium text-primary-blue underline">
+            Leads CRM
+          </Link>
+          .
+        </div>
+      )}
+
+      <QuickAddBdaForm onCreated={load} />
 
       {loading ? (
         <div className="grid grid-cols-2 md:grid-cols-5 gap-3">
@@ -122,7 +146,9 @@ export default function CallingTeamDashboard() {
                 {leaderboard.length === 0 ? (
                   <tr>
                     <td colSpan={8} className="px-4 py-8 text-center text-gray-500">
-                      No BDA data for this period
+                      {noBdas
+                        ? 'Add a BDA above to see the leaderboard'
+                        : 'No BDA stats for this date range — try “All time”'}
                     </td>
                   </tr>
                 ) : (
@@ -132,7 +158,7 @@ export default function CallingTeamDashboard() {
                       <td className="px-4 py-3">
                         <Link
                           to={`/admin/calling-team/bdas/${row.bdaId}`}
-                          className="text-primary-blue hover:underline"
+                          className="text-primary-blue hover:underline font-medium"
                         >
                           {row.name}
                         </Link>
@@ -152,13 +178,19 @@ export default function CallingTeamDashboard() {
         )}
       </div>
 
-      <div className="flex gap-4 text-sm text-gray-600">
-        <span className="inline-flex items-center gap-1">
+      <div className="flex flex-wrap gap-4 text-sm">
+        <Link
+          to="/admin/calling-team/bdas"
+          className="inline-flex items-center gap-1 text-primary-blue font-medium hover:underline"
+        >
           <FiUsers /> Manage BDAs
-        </span>
-        <span className="inline-flex items-center gap-1">
-          <FiPhone /> Assign & track leads
-        </span>
+        </Link>
+        <Link
+          to="/admin/calling-team/leads"
+          className="inline-flex items-center gap-1 text-primary-blue font-medium hover:underline"
+        >
+          <FiPhone /> Assign &amp; track leads
+        </Link>
       </div>
     </div>
   );

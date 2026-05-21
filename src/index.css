@@ -4,6 +4,8 @@
 @theme {
   /* Enterprise Navy Blue Palette - #003366 */
   --color-primary-navy: #003366;
+  /* Alias used by Calling Team and admin CTAs */
+  --color-primary-blue: #003366;
   --color-primary-blue-900: #003366;
   --color-primary-blue-800: #003366;
   --color-primary-blue-700: #003366;

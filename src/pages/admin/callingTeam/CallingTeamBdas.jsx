@@ -1,9 +1,10 @@
 import { useCallback, useEffect, useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
-import { FiPlus, FiRefreshCw } from 'react-icons/fi';
+import { FiRefreshCw } from 'react-icons/fi';
 import CallingTeamDateFilter from '../../../components/Admin/callingTeam/CallingTeamDateFilter';
 import TableSkeleton from '../../../components/UI/TableSkeleton';
-import { buildStatsQuery, createBda, getBdaStats } from '../../../utils/callingTeamApi';
+import QuickAddBdaForm from '../../../components/Admin/callingTeam/QuickAddBdaForm';
+import { buildStatsQuery, getBdaStats } from '../../../utils/callingTeamApi';
 
 export default function CallingTeamBdas() {
   const navigate = useNavigate();
@@ -11,18 +12,20 @@ export default function CallingTeamBdas() {
   const [rows, setRows] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
-  const [showForm, setShowForm] = useState(false);
-  const [form, setForm] = useState({ name: '', phone: '', email: '', status: 'active' });
-  const [saving, setSaving] = useState(false);
 
   const load = useCallback(async () => {
     setLoading(true);
     setError('');
     const res = await getBdaStats(buildStatsQuery(dateFilter));
-    if (res.success && res.data?.data?.rows) {
+    if (res.success && Array.isArray(res.data?.data?.rows)) {
       setRows(res.data.data.rows);
     } else {
-      setError(res.message || 'Failed to load BDA stats');
+      const msg = res.message || 'Failed to load BDA stats';
+      setError(
+        res.status === 404
+          ? `${msg}. Redeploy the backend with Calling Team routes.`
+          : msg
+      );
     }
     setLoading(false);
   }, [dateFilter]);
@@ -30,20 +33,6 @@ export default function CallingTeamBdas() {
   useEffect(() => {
     load();
   }, [load]);
-
-  const handleCreate = async (e) => {
-    e.preventDefault();
-    setSaving(true);
-    const res = await createBda(form);
-    setSaving(false);
-    if (res.success) {
-      setShowForm(false);
-      setForm({ name: '', phone: '', email: '', status: 'active' });
-      load();
-    } else {
-      setError(res.message || 'Failed to create BDA');
-    }
-  };
 
   return (
     <div className="space-y-6">
@@ -56,13 +45,6 @@ export default function CallingTeamBdas() {
           <Link to="/admin/calling-team" className="px-3 py-2 text-sm border rounded-lg bg-white">
             Dashboard
           </Link>
-          <button
-            type="button"
-            onClick={() => setShowForm(true)}
-            className="inline-flex items-center gap-1 px-3 py-2 text-sm font-medium rounded-lg bg-primary-blue text-white"
-          >
-            <FiPlus /> Add BDA
-          </button>
           <button type="button" onClick={load} className="p-2 border rounded-lg bg-white">
             <FiRefreshCw />
           </button>
@@ -70,39 +52,13 @@ export default function CallingTeamBdas() {
       </div>
 
       <CallingTeamDateFilter value={dateFilter} onChange={setDateFilter} />
-      {error && <p className="text-sm text-red-600">{error}</p>}
-
-      {showForm && (
-        <form onSubmit={handleCreate} className="bg-white border rounded-xl p-4 grid md:grid-cols-4 gap-3">
-          <input
-            required
-            placeholder="Name"
-            value={form.name}
-            onChange={(e) => setForm((f) => ({ ...f, name: e.target.value }))}
-            className="border rounded-lg px-3 py-2 text-sm"
-          />
-          <input
-            placeholder="Phone (10 digits)"
-            value={form.phone}
-            onChange={(e) => setForm((f) => ({ ...f, phone: e.target.value }))}
-            className="border rounded-lg px-3 py-2 text-sm"
-          />
-          <input
-            placeholder="Email"
-            value={form.email}
-            onChange={(e) => setForm((f) => ({ ...f, email: e.target.value }))}
-            className="border rounded-lg px-3 py-2 text-sm"
-          />
-          <div className="flex gap-2">
-            <button type="submit" disabled={saving} className="px-4 py-2 text-sm bg-primary-blue text-white rounded-lg">
-              Save
-            </button>
-            <button type="button" onClick={() => setShowForm(false)} className="px-4 py-2 text-sm border rounded-lg">
-              Cancel
-            </button>
-          </div>
-        </form>
+      {error && (
+        <div className="rounded-lg border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-800">
+          {error}
+        </div>
       )}
+
+      <QuickAddBdaForm onCreated={load} />
 
       <div className="bg-white rounded-xl border overflow-hidden">
         {loading ? (
@@ -124,11 +80,18 @@ export default function CallingTeamBdas() {
                 </tr>
               </thead>
               <tbody>
-                {rows.map((row) => (
+                {rows.length === 0 ? (
+                  <tr>
+                    <td colSpan={9} className="px-4 py-8 text-center text-gray-500">
+                      No BDAs yet — use the form above to add your first BDA
+                    </td>
+                  </tr>
+                ) : (
+                rows.map((row) => (
                   <tr
-                    key={row.bdaId}
+                    key={row.bdaId || row.id}
                     className="border-t hover:bg-gray-50 cursor-pointer"
-                    onClick={() => navigate(`/admin/calling-team/bdas/${row.bdaId}`)}
+                    onClick={() => navigate(`/admin/calling-team/bdas/${row.bdaId || row.id}`)}
                   >
                     <td className="px-4 py-3 font-medium text-primary-blue">{row.name}</td>
                     <td className="px-4 py-3">{row.totalAssigned}</td>
@@ -140,7 +103,7 @@ export default function CallingTeamBdas() {
                     <td className="px-4 py-3">{row.callbackPending}</td>
                     <td className="px-4 py-3">{row.conversionPct}%</td>
                   </tr>
-                ))}
+                )))}
               </tbody>
             </table>
           </div>

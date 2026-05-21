@@ -8,15 +8,23 @@ export default function AssignToBdaModal({ open, leadIds, onClose, onSuccess }) 
   const [reason, setReason] = useState('');
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
+  const [loadingBdas, setLoadingBdas] = useState(false);
 
   useEffect(() => {
     if (!open) return;
     setBdaId('');
     setReason('');
     setError('');
+    setLoadingBdas(true);
     listBdas({ status: 'active' }).then((res) => {
+      setLoadingBdas(false);
       if (res.success && Array.isArray(res.data?.data)) {
         setBdas(res.data.data);
+        if (res.data.data.length === 0) {
+          setError('No active BDAs. Add a BDA from Calling Team dashboard first.');
+        }
+      } else {
+        setError(res.message || 'Could not load BDAs');
       }
     });
   }, [open]);
@@ -57,11 +65,14 @@ export default function AssignToBdaModal({ open, leadIds, onClose, onSuccess }) 
           <select
             value={bdaId}
             onChange={(e) => setBdaId(e.target.value)}
-            className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm"
+            disabled={loadingBdas || bdas.length === 0}
+            className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm disabled:bg-gray-50"
           >
-            <option value="">Select BDA…</option>
+            <option value="">
+              {loadingBdas ? 'Loading BDAs…' : bdas.length === 0 ? 'No active BDAs' : 'Select BDA…'}
+            </option>
             {bdas.map((b) => (
-              <option key={b.id} value={b.id}>
+              <option key={b.id || b.bdaId} value={b.id || b.bdaId}>
                 {b.name}
                 {b.phone ? ` (${b.phone})` : ''}
               </option>
@@ -83,9 +94,9 @@ export default function AssignToBdaModal({ open, leadIds, onClose, onSuccess }) 
           </button>
           <button
             type="button"
-            disabled={loading}
+            disabled={loading || loadingBdas || bdas.length === 0}
             onClick={handleAssign}
-            className="px-4 py-2 text-sm font-medium rounded-lg bg-primary-blue text-white disabled:opacity-50"
+            className="px-4 py-2 text-sm font-medium rounded-lg bg-primary-blue text-white hover:opacity-90 disabled:opacity-50"
           >
             {loading ? 'Assigning…' : 'Assign'}
           </button>
