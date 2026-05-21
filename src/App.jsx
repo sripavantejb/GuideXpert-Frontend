@@ -49,6 +49,10 @@ import OsviCalls from './pages/admin/OsviCalls';
 import OsviCallsData from './pages/admin/OsviCallsData';
 import PosterDownloads from './pages/admin/PosterDownloads';
 import CertifiedCounsellors from './pages/admin/CertifiedCounsellors';
+import CallingTeamDashboard from './pages/admin/callingTeam/CallingTeamDashboard';
+import CallingTeamLeads from './pages/admin/callingTeam/CallingTeamLeads';
+import CallingTeamBdas from './pages/admin/callingTeam/CallingTeamBdas';
+import CallingTeamBdaDetail from './pages/admin/callingTeam/CallingTeamBdaDetail';
 import PosterAutomationAdminPage from './pages/admin/posters/PosterAutomationAdminPage';
 import WhatsAppOpsLayout from './pages/admin/whatsapp-ops/WhatsAppOpsLayout';
 import WhatsAppOpsOverview from './pages/admin/whatsapp-ops/WhatsAppOpsOverview';
@@ -373,6 +377,10 @@ function App() {
             <Route path="leads" element={<Leads />} />
             <Route path="iit-counselling" element={<IitCounselling />} />
             <Route path="iit-counselling-utm" element={<IitCounsellingUtm />} />
+            <Route path="calling-team" element={<CallingTeamDashboard />} />
+            <Route path="calling-team/leads" element={<CallingTeamLeads />} />
+            <Route path="calling-team/bdas" element={<CallingTeamBdas />} />
+            <Route path="calling-team/bdas/:id" element={<CallingTeamBdaDetail />} />
             <Route path="organic-rank-leads" element={<Leads organicOnly />} />
             <Route path="lead-status" element={<LeadStatus />} />
             <Route path="analytics" element={<Analytics />} />

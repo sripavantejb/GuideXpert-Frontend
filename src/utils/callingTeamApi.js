@@ -1,0 +1,132 @@
+import { getStoredToken } from './adminApi';
+import { getApiBaseUrl } from './apiBaseUrl';
+
+async function callingTeamRequest(endpoint, options = {}) {
+  const url = `${getApiBaseUrl()}/admin${endpoint}`;
+  const token = getStoredToken();
+  const headers = {
+    'Content-Type': 'application/json; charset=utf-8',
+    ...options.headers,
+  };
+  if (token) headers.Authorization = `Bearer ${token}`;
+
+  try {
+    const response = await fetch(url, { ...options, headers });
+    let data;
+    try {
+      data = await response.json();
+    } catch {
+      data = { message: 'Invalid response' };
+    }
+    if (!response.ok) {
+      return {
+        success: false,
+        message: data.message || 'Request failed',
+        status: response.status,
+        data,
+      };
+    }
+    return { success: true, data, status: response.status };
+  } catch (error) {
+    return {
+      success: false,
+      message: error.message || 'Network error',
+      status: 0,
+    };
+  }
+}
+
+function toQuery(params = {}) {
+  const q = new URLSearchParams();
+  Object.entries(params).forEach(([k, v]) => {
+    if (v !== undefined && v !== null && v !== '') q.set(k, String(v));
+  });
+  const s = q.toString();
+  return s ? `?${s}` : '';
+}
+
+export function buildStatsQuery({ preset, fromDate, toDate } = {}) {
+  const params = {};
+  if (preset) params.preset = preset;
+  if (fromDate) params.fromDate = fromDate;
+  if (toDate) params.toDate = toDate;
+  return params;
+}
+
+export async function getCallingTeamLeads(params = {}) {
+  return callingTeamRequest(`/iit-counselling-leads${toQuery(params)}`);
+}
+
+export async function getCallingTeamLead(id) {
+  return callingTeamRequest(`/iit-counselling-leads/${id}`);
+}
+
+export async function patchCallingTeamLeadCrm(id, body) {
+  return callingTeamRequest(`/iit-counselling-leads/${id}/crm`, {
+    method: 'PATCH',
+    body: JSON.stringify(body),
+  });
+}
+
+export async function bulkAssignLeadsToBda({ leadIds, bdaId, reason }) {
+  return callingTeamRequest('/iit-counselling-leads/bulk-assign', {
+    method: 'PATCH',
+    body: JSON.stringify({ leadIds, bdaId, reason }),
+  });
+}
+
+export async function assignLeadToBda(id, { bdaId, reason }) {
+  return callingTeamRequest(`/iit-counselling-leads/${id}/assign-bda`, {
+    method: 'PATCH',
+    body: JSON.stringify({ bdaId, reason }),
+  });
+}
+
+export async function reassignLeadToBda(id, { bdaId, reason }) {
+  return callingTeamRequest(`/iit-counselling-leads/${id}/reassign-bda`, {
+    method: 'PATCH',
+    body: JSON.stringify({ bdaId, reason }),
+  });
+}
+
+export async function getLeadAssignmentHistory(id) {
+  return callingTeamRequest(`/iit-counselling-leads/${id}/assignment-history`);
+}
+
+export async function listBdas(params = {}) {
+  return callingTeamRequest(`/bdas${toQuery(params)}`);
+}
+
+export async function createBda(body) {
+  return callingTeamRequest('/bdas', {
+    method: 'POST',
+    body: JSON.stringify(body),
+  });
+}
+
+export async function updateBda(id, body) {
+  return callingTeamRequest(`/bdas/${id}`, {
+    method: 'PATCH',
+    body: JSON.stringify(body),
+  });
+}
+
+export async function getBdaStats(params = {}) {
+  return callingTeamRequest(`/bdas/stats${toQuery(params)}`);
+}
+
+export async function getBdaStatsById(id, params = {}) {
+  return callingTeamRequest(`/bdas/${id}/stats${toQuery(params)}`);
+}
+
+export async function getBdaLeaderboard(params = {}) {
+  return callingTeamRequest(`/bdas/leaderboard${toQuery(params)}`);
+}
+
+export async function getCallingTeamDashboard(params = {}) {
+  return callingTeamRequest(`/bdas/team-dashboard${toQuery(params)}`);
+}
+
+export async function getBdaAssignedLeads(id, params = {}) {
+  return callingTeamRequest(`/bdas/${id}/assigned-leads${toQuery(params)}`);
+}

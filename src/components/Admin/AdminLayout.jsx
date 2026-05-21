@@ -15,6 +15,9 @@ const navItems = [
   { to: '/admin/certified-counsellors', label: 'Certified Counsellors', icon: FiUsers, sectionKey: 'certified-counsellors' },
   { to: '/admin/leads', label: 'Lead Funnel', icon: FiUsers, sectionKey: 'leads' },
   { to: '/admin/iit-counselling', label: 'IIT Counselling', icon: FiClipboard, sectionKey: 'iit-counselling' },
+  { to: '/admin/calling-team', label: 'Calling Team', icon: FiPhone, sectionKey: 'calling-team' },
+  { to: '/admin/calling-team/leads', label: 'Calling Team Leads', icon: FiUsers, sectionKey: 'calling-team', hideInSidebar: true },
+  { to: '/admin/calling-team/bdas', label: 'BDA Management', icon: FiUsers, sectionKey: 'calling-team', hideInSidebar: true },
   { to: '/admin/iit-counselling-utm', label: 'IIT Counselling UTM', icon: FiLink, sectionKey: 'iit-counselling' },
   { to: '/admin/organic-rank-leads', label: 'Organic rank leads', icon: FiTarget, sectionKey: 'leads' },
   { to: '/admin/analytics', label: 'Analytics', icon: FiBarChart2, sectionKey: 'analytics' },
@@ -81,7 +84,8 @@ export default function AdminLayout() {
     currentPath === '/admin' ||
     currentPath === '/admin/' ||
     allowedPaths.has(currentPath) ||
-    currentPath.startsWith('/admin/whatsapp-ops');
+    currentPath.startsWith('/admin/whatsapp-ops') ||
+    currentPath.startsWith('/admin/calling-team');
   useEffect(() => {
     const firstAllowed = visibleNavItems[0];
     if (user && !user.isSuperAdmin && !isPathAllowed && firstAllowed) {

@@ -6,6 +6,7 @@ export const ADMIN_SECTION_OPTIONS = [
   { sectionKey: 'certified-counsellors', label: 'Certified Counsellors' },
   { sectionKey: 'leads', label: 'Lead Funnel' },
   { sectionKey: 'iit-counselling', label: 'IIT Counselling' },
+  { sectionKey: 'calling-team', label: 'Calling Team' },
   { sectionKey: 'analytics', label: 'Analytics' },
   { sectionKey: 'meeting-attendance', label: 'User Productivity' },
   { sectionKey: 'iit-meet-attendance', label: 'IIT Meet Attendance' },
@@ -36,7 +37,7 @@ export const ADMIN_SECTION_GROUPS = [
   {
     id: 'leads',
     label: 'Leads & counselling',
-    sectionKeys: ['leads', 'iit-counselling', 'certified-counsellors'],
+    sectionKeys: ['leads', 'iit-counselling', 'calling-team', 'certified-counsellors'],
   },
   {
     id: 'operations',
