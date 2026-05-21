@@ -3,8 +3,9 @@ import { Link, useNavigate } from 'react-router-dom';
 import { FiRefreshCw } from 'react-icons/fi';
 import CallingTeamDateFilter from '../../../components/Admin/callingTeam/CallingTeamDateFilter';
 import TableSkeleton from '../../../components/UI/TableSkeleton';
+import BdaCredentialsPanel from '../../../components/Admin/callingTeam/BdaCredentialsPanel';
+import BdaLanguageAutoAssignPanel from '../../../components/Admin/callingTeam/BdaLanguageAutoAssignPanel';
 import BdaProfilesPanel from '../../../components/Admin/callingTeam/BdaProfilesPanel';
-import QuickAddBdaForm from '../../../components/Admin/callingTeam/QuickAddBdaForm';
 import { buildStatsQuery, getBdaStats } from '../../../utils/callingTeamApi';
 
 export default function CallingTeamBdas() {
@@ -41,7 +42,9 @@ export default function CallingTeamBdas() {
       <div className="flex flex-wrap items-start justify-between gap-4">
         <div>
           <h1 className="text-2xl font-bold text-gray-900">BDA Management</h1>
-          <p className="text-sm text-gray-600 mt-1">Performance stats per BDA</p>
+          <p className="text-sm text-gray-600 mt-1">
+            Create BDA portal login credentials, manage profiles, and view performance
+          </p>
         </div>
         <div className="flex gap-2">
           <Link to="/admin/calling-team" className="px-3 py-2 text-sm border rounded-lg bg-white">
@@ -60,14 +63,21 @@ export default function CallingTeamBdas() {
         </div>
       )}
 
-      <QuickAddBdaForm
+      <BdaCredentialsPanel
         onCreated={() => {
           load();
           setProfileRefresh((k) => k + 1);
         }}
       />
 
-      <BdaProfilesPanel refreshKey={profileRefresh} />
+      <BdaLanguageAutoAssignPanel
+        onAssigned={() => {
+          load();
+          setProfileRefresh((k) => k + 1);
+        }}
+      />
+
+      <BdaProfilesPanel refreshKey={profileRefresh} showCredentialsHint />
 
       <div className="bg-white rounded-xl border overflow-hidden">
         <div className="px-4 py-3 border-b">

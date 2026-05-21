@@ -1,7 +1,8 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { Link } from 'react-router-dom';
-import { FiEdit2, FiRefreshCw, FiSearch, FiUser } from 'react-icons/fi';
+import { FiEdit2, FiKey, FiRefreshCw, FiSearch, FiUser } from 'react-icons/fi';
 import TableSkeleton from '../../UI/TableSkeleton';
+import { BDA_LANGUAGES, languageBadgeClass } from '../../../constants/bdaLanguage';
 import { listBdas, resetBdaPassword, updateBda } from '../../../utils/callingTeamApi';
 
 function formatDate(value) {
@@ -33,7 +34,7 @@ function StatusBadge({ status }) {
   );
 }
 
-export default function BdaProfilesPanel({ refreshKey = 0, showTitle = true }) {
+export default function BdaProfilesPanel({ refreshKey = 0, showTitle = true, showCredentialsHint = false }) {
   const [profiles, setProfiles] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
@@ -41,9 +42,18 @@ export default function BdaProfilesPanel({ refreshKey = 0, showTitle = true }) {
   const [searchDraft, setSearchDraft] = useState('');
   const [statusFilter, setStatusFilter] = useState('');
   const [editing, setEditing] = useState(null);
-  const [editForm, setEditForm] = useState({ name: '', phone: '', email: '', status: 'active', newPassword: '' });
+  const [editForm, setEditForm] = useState({
+    name: '',
+    phone: '',
+    email: '',
+    language: 'Hindi',
+    status: 'active',
+    newPassword: '',
+  });
   const [saving, setSaving] = useState(false);
   const [saveError, setSaveError] = useState('');
+  const [resettingId, setResettingId] = useState(null);
+  const [resetPassword, setResetPassword] = useState('');
 
   const load = useCallback(async () => {
     setLoading(true);
@@ -82,6 +92,7 @@ export default function BdaProfilesPanel({ refreshKey = 0, showTitle = true }) {
       name: profile.name || '',
       phone: profile.phone || '',
       email: profile.email || '',
+      language: profile.language || 'Hindi',
       status: profile.status || 'active',
       newPassword: '',
     });
@@ -98,10 +109,16 @@ export default function BdaProfilesPanel({ refreshKey = 0, showTitle = true }) {
     if (!editing) return;
     setSaving(true);
     setSaveError('');
+    if (!BDA_LANGUAGES.some((l) => l.value === editForm.language)) {
+      setSaving(false);
+      setSaveError('BDA language must be Hindi or Telugu');
+      return;
+    }
     const res = await updateBda(editing, {
       name: editForm.name.trim(),
       phone: editForm.phone.trim() || '',
       email: editForm.email.trim(),
+      language: editForm.language,
       status: editForm.status,
     });
     if (!res.success) {
@@ -122,6 +139,32 @@ export default function BdaProfilesPanel({ refreshKey = 0, showTitle = true }) {
     load();
   };
 
+  const openResetPassword = (profile) => {
+    const id = profile.id || profile.bdaId;
+    setResettingId(id);
+    setResetPassword('');
+    setSaveError('');
+  };
+
+  const handleResetPasswordOnly = async (e) => {
+    e.preventDefault();
+    if (!resettingId) return;
+    if (!resetPassword || resetPassword.length < 6) {
+      setSaveError('Password must be at least 6 characters');
+      return;
+    }
+    setSaving(true);
+    setSaveError('');
+    const res = await resetBdaPassword(resettingId, resetPassword);
+    setSaving(false);
+    if (res.success) {
+      setResettingId(null);
+      setResetPassword('');
+    } else {
+      setSaveError(res.message || 'Failed to reset password');
+    }
+  };
+
   const toggleStatus = async (profile) => {
     const id = profile.id || profile.bdaId;
     const next = profile.status === 'active' ? 'inactive' : 'active';
@@ -137,8 +180,12 @@ export default function BdaProfilesPanel({ refreshKey = 0, showTitle = true }) {
           <FiUser className="text-primary-blue" />
           {showTitle && (
             <div>
-              <h2 className="font-semibold text-gray-900">BDA access profiles</h2>
-              <p className="text-xs text-gray-500">All profiles created in the admin panel</p>
+              <h2 className="font-semibold text-gray-900">BDA profiles & login access</h2>
+              <p className="text-xs text-gray-500">
+                {showCredentialsHint
+                  ? 'Edit profile, reset portal password, or deactivate login'
+                  : 'All BDA profiles — use Edit or Reset password for portal access'}
+              </p>
             </div>
           )}
           {!showTitle && <h2 className="font-semibold text-gray-900">All created profiles</h2>}
@@ -193,7 +240,7 @@ export default function BdaProfilesPanel({ refreshKey = 0, showTitle = true }) {
       )}
 
       {loading ? (
-        <TableSkeleton rows={4} cols={7} />
+        <TableSkeleton rows={4} cols={8} />
       ) : filtered.length === 0 ? (
         <p className="px-4 py-10 text-center text-sm text-gray-500">
           {profiles.length === 0
@@ -208,6 +255,7 @@ export default function BdaProfilesPanel({ refreshKey = 0, showTitle = true }) {
                 <th className="px-4 py-3">Profile</th>
                 <th className="px-4 py-3">Phone</th>
                 <th className="px-4 py-3">Email</th>
+                <th className="px-4 py-3">Language</th>
                 <th className="px-4 py-3">Assigned leads</th>
                 <th className="px-4 py-3">Status</th>
                 <th className="px-4 py-3">Joined</th>
@@ -229,6 +277,15 @@ export default function BdaProfilesPanel({ refreshKey = 0, showTitle = true }) {
                     </td>
                     <td className="px-4 py-3 whitespace-nowrap">{profile.phone || '—'}</td>
                     <td className="px-4 py-3">{profile.email || '—'}</td>
+                    <td className="px-4 py-3">
+                      {profile.language ? (
+                        <span className={`inline-flex px-2 py-0.5 rounded-full text-xs font-medium ${languageBadgeClass(profile.language)}`}>
+                          {profile.language}
+                        </span>
+                      ) : (
+                        <span className="text-xs text-amber-700">Set in Edit</span>
+                      )}
+                    </td>
                     <td className="px-4 py-3">{profile.assignedLeadsCount ?? 0}</td>
                     <td className="px-4 py-3">
                       <StatusBadge status={profile.status} />
@@ -238,6 +295,13 @@ export default function BdaProfilesPanel({ refreshKey = 0, showTitle = true }) {
                     </td>
                     <td className="px-4 py-3">
                       <div className="flex justify-end gap-2 flex-wrap">
+                        <button
+                          type="button"
+                          onClick={() => openResetPassword(profile)}
+                          className="inline-flex items-center gap-1 px-2 py-1 text-xs font-medium border rounded-lg hover:bg-white text-primary-navy"
+                        >
+                          <FiKey /> Reset password
+                        </button>
                         <button
                           type="button"
                           onClick={() => openEdit(profile)}
@@ -268,13 +332,63 @@ export default function BdaProfilesPanel({ refreshKey = 0, showTitle = true }) {
         </div>
       )}
 
+      {resettingId && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/40">
+          <form
+            onSubmit={handleResetPasswordOnly}
+            className="bg-white rounded-xl shadow-xl w-full max-w-md border border-gray-200"
+          >
+            <div className="px-4 py-3 border-b font-semibold text-gray-900 flex items-center gap-2">
+              <FiKey className="text-primary-blue" />
+              Reset BDA portal password
+            </div>
+            <div className="p-4 space-y-3">
+              <p className="text-sm text-gray-600">
+                Sets a new password for <strong>/bda/login</strong>. The BDA can sign in with their email or phone
+                and this password.
+              </p>
+              <input
+                type="text"
+                required
+                minLength={6}
+                value={resetPassword}
+                onChange={(e) => setResetPassword(e.target.value)}
+                placeholder="New password (min 6 characters)"
+                className="w-full border rounded-lg px-3 py-2 text-sm"
+                autoComplete="new-password"
+              />
+              {saveError && <p className="text-sm text-red-600">{saveError}</p>}
+            </div>
+            <div className="flex justify-end gap-2 px-4 py-3 border-t">
+              <button
+                type="button"
+                onClick={() => {
+                  setResettingId(null);
+                  setSaveError('');
+                }}
+                className="px-4 py-2 text-sm text-gray-700"
+              >
+                Cancel
+              </button>
+              <button
+                type="submit"
+                disabled={saving}
+                className="px-4 py-2 text-sm font-medium rounded-lg bg-primary-blue text-white disabled:opacity-50"
+              >
+                {saving ? 'Saving…' : 'Update password'}
+              </button>
+            </div>
+          </form>
+        </div>
+      )}
+
       {editing && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/40">
           <form
             onSubmit={handleSaveEdit}
             className="bg-white rounded-xl shadow-xl w-full max-w-md border border-gray-200"
           >
-            <div className="px-4 py-3 border-b font-semibold text-gray-900">Edit BDA profile</div>
+            <div className="px-4 py-3 border-b font-semibold text-gray-900">Edit BDA profile & credentials</div>
             <div className="p-4 space-y-3">
               <div>
                 <label className="text-xs font-medium text-gray-500">Name</label>
@@ -306,6 +420,20 @@ export default function BdaProfilesPanel({ refreshKey = 0, showTitle = true }) {
                 />
               </div>
               <div>
+                <label className="text-xs font-medium text-gray-500">BDA language *</label>
+                <select
+                  value={editForm.language}
+                  onChange={(e) => setEditForm((f) => ({ ...f, language: e.target.value }))}
+                  className="mt-1 w-full border rounded-lg px-3 py-2 text-sm"
+                >
+                  {BDA_LANGUAGES.map((l) => (
+                    <option key={l.value} value={l.value}>
+                      {l.label}
+                    </option>
+                  ))}
+                </select>
+              </div>
+              <div>
                 <label className="text-xs font-medium text-gray-500">Status</label>
                 <select
                   value={editForm.status}
@@ -316,16 +444,21 @@ export default function BdaProfilesPanel({ refreshKey = 0, showTitle = true }) {
                   <option value="inactive">Inactive</option>
                 </select>
               </div>
-              <div>
-                <label className="text-xs font-medium text-gray-500">Reset password (optional)</label>
+              <div className="rounded-lg border border-amber-100 bg-amber-50/50 p-3">
+                <label className="text-xs font-medium text-gray-700 flex items-center gap-1">
+                  <FiKey className="text-primary-blue" />
+                  Portal login password (optional)
+                </label>
                 <input
-                  type="password"
+                  type="text"
                   minLength={6}
                   value={editForm.newPassword}
                   onChange={(e) => setEditForm((f) => ({ ...f, newPassword: e.target.value }))}
-                  className="mt-1 w-full border rounded-lg px-3 py-2 text-sm"
-                  placeholder="Min 6 characters"
+                  className="mt-1 w-full border rounded-lg px-3 py-2 text-sm bg-white"
+                  placeholder="Leave blank to keep current password"
+                  autoComplete="new-password"
                 />
+                <p className="text-xs text-gray-500 mt-1">Used at /bda/login with email or phone above</p>
               </div>
               {saveError && <p className="text-sm text-red-600">{saveError}</p>}
             </div>

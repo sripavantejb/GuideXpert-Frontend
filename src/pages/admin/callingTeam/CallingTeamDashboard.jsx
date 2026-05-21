@@ -2,8 +2,6 @@ import { useCallback, useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { FiPhone, FiUsers, FiTrendingUp } from 'react-icons/fi';
 import CallingTeamDateFilter from '../../../components/Admin/callingTeam/CallingTeamDateFilter';
-import BdaProfilesPanel from '../../../components/Admin/callingTeam/BdaProfilesPanel';
-import QuickAddBdaForm from '../../../components/Admin/callingTeam/QuickAddBdaForm';
 import TableSkeleton from '../../../components/UI/TableSkeleton';
 import {
   buildStatsQuery,
@@ -26,7 +24,6 @@ export default function CallingTeamDashboard() {
   const [leaderboard, setLeaderboard] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
-  const [profileRefresh, setProfileRefresh] = useState(0);
 
   const load = useCallback(async () => {
     setLoading(true);
@@ -99,14 +96,13 @@ export default function CallingTeamDashboard() {
         </div>
       )}
 
-      <QuickAddBdaForm
-        onCreated={() => {
-          load();
-          setProfileRefresh((k) => k + 1);
-        }}
-      />
-
-      <BdaProfilesPanel refreshKey={profileRefresh} />
+      <div className="rounded-xl border border-primary-blue-200 bg-primary-blue-50/60 px-4 py-3 text-sm text-gray-800">
+        Create or reset BDA portal logins (email, phone, password) in{' '}
+        <Link to="/admin/calling-team/bdas" className="font-semibold text-primary-blue hover:underline">
+          BDA Management
+        </Link>
+        . BDAs sign in at <code className="text-xs bg-white px-1 rounded">/bda/login</code>.
+      </div>
 
       {loading ? (
         <div className="grid grid-cols-2 md:grid-cols-5 gap-3">

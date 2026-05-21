@@ -74,6 +74,7 @@ export default function AssignToBdaModal({ open, leadIds, onClose, onSuccess }) 
             {bdas.map((b) => (
               <option key={b.id || b.bdaId} value={b.id || b.bdaId}>
                 {b.name}
+                {b.language ? ` · ${b.language}` : ''}
                 {b.phone ? ` (${b.phone})` : ''}
               </option>
             ))}

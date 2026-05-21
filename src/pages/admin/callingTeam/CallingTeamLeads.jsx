@@ -44,6 +44,7 @@ export default function CallingTeamLeads() {
   const [pagination, setPagination] = useState({ totalPages: 1, total: 0 });
   const [assignedBdaId, setAssignedBdaId] = useState('');
   const [unassignedOnly, setUnassignedOnly] = useState(false);
+  const [preferredLanguage, setPreferredLanguage] = useState('');
   const [bdas, setBdas] = useState([]);
   const [selected, setSelected] = useState(new Set());
   const [assignOpen, setAssignOpen] = useState(false);
@@ -67,6 +68,7 @@ export default function CallingTeamLeads() {
     const params = { page, limit: 25, q };
     if (assignedBdaId) params.assignedBdaId = assignedBdaId;
     if (unassignedOnly) params.unassignedOnly = 'true';
+    if (preferredLanguage) params.preferredLanguage = preferredLanguage;
     const res = await getCallingTeamLeads(params);
     if (res.success) {
       setRows(res.data?.data || []);
@@ -76,7 +78,7 @@ export default function CallingTeamLeads() {
       setError(res.message || 'Failed to load leads');
     }
     setLoading(false);
-  }, [page, q, assignedBdaId, unassignedOnly]);
+  }, [page, q, assignedBdaId, unassignedOnly, preferredLanguage]);
 
   useEffect(() => {
     load();
@@ -207,6 +209,19 @@ export default function CallingTeamLeads() {
         </form>
 
         <select
+          value={preferredLanguage}
+          onChange={(e) => {
+            setPreferredLanguage(e.target.value);
+            setPage(1);
+          }}
+          className="border rounded-lg px-3 py-2 text-sm"
+        >
+          <option value="">All languages</option>
+          <option value="Hindi">Hindi</option>
+          <option value="Telugu">Telugu</option>
+        </select>
+
+        <select
           value={assignedBdaId}
           onChange={(e) => {
             setAssignedBdaId(e.target.value);
@@ -219,6 +234,7 @@ export default function CallingTeamLeads() {
           {bdas.map((b) => (
             <option key={b.id} value={b.id}>
               {b.name}
+              {b.language ? ` (${b.language})` : ''}
             </option>
           ))}
         </select>
@@ -254,7 +270,7 @@ export default function CallingTeamLeads() {
 
       <div className="bg-white rounded-xl border overflow-hidden">
         {loading ? (
-          <TableSkeleton rows={10} cols={10} />
+          <TableSkeleton rows={10} cols={11} />
         ) : (
           <div className="overflow-x-auto">
             <table className="w-full text-sm">
@@ -265,6 +281,7 @@ export default function CallingTeamLeads() {
                   </th>
                   <th className="px-3 py-2">Student</th>
                   <th className="px-3 py-2">Phone</th>
+                  <th className="px-3 py-2">Language</th>
                   <th className="px-3 py-2">Assigned BDA</th>
                   <th className="px-3 py-2">Call</th>
                   <th className="px-3 py-2">Lead</th>
@@ -287,6 +304,7 @@ export default function CallingTeamLeads() {
                     </td>
                     <td className="px-3 py-2 font-medium">{row.fullName}</td>
                     <td className="px-3 py-2">{row.phone}</td>
+                    <td className="px-3 py-2">{row.preferredLanguage || '—'}</td>
                     <td className="px-3 py-2">{row.assignedBdaName || '—'}</td>
                     <td className="px-3 py-2">{labelForOption(CALL_STATUS_OPTIONS, row.callStatus)}</td>
                     <td className="px-3 py-2">{labelForOption(LEAD_STATUS_OPTIONS, row.leadStatus)}</td>

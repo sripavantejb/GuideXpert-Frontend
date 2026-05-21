@@ -18,7 +18,7 @@ const navItems = [
   { to: '/admin/calling-team', label: 'Calling Team', icon: FiPhone, sectionKey: 'calling-team' },
   { to: '/admin/calling-data', label: 'Calling Data', icon: FiDatabase, sectionKey: 'calling-data' },
   { to: '/admin/calling-team/leads', label: 'Calling Team Leads', icon: FiUsers, sectionKey: 'calling-team', hideInSidebar: true },
-  { to: '/admin/calling-team/bdas', label: 'BDA Management', icon: FiUsers, sectionKey: 'calling-team', hideInSidebar: true },
+  { to: '/admin/calling-team/bdas', label: 'BDA Management', icon: FiUserPlus, sectionKey: 'calling-team' },
   { to: '/admin/iit-counselling-utm', label: 'IIT Counselling UTM', icon: FiLink, sectionKey: 'iit-counselling' },
   { to: '/admin/organic-rank-leads', label: 'Organic rank leads', icon: FiTarget, sectionKey: 'leads' },
   { to: '/admin/analytics', label: 'Analytics', icon: FiBarChart2, sectionKey: 'analytics' },

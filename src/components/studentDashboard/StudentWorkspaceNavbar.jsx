@@ -60,8 +60,11 @@ export default function StudentWorkspaceNavbar() {
   const closeDropdown = useCallback(() => setOpenMenuId(null), []);
 
   useEffect(() => {
-    setMobileOpen(false);
-    setOpenMenuId(null);
+    const handle = requestAnimationFrame(() => {
+      setMobileOpen(false);
+      setOpenMenuId(null);
+    });
+    return () => cancelAnimationFrame(handle);
   }, [pathname]);
 
   useEffect(() => {
@@ -101,6 +104,18 @@ export default function StudentWorkspaceNavbar() {
   const predictorsActive = isPredictorsSectionActive(pathname);
   const fitTestsActive = isFitTestsSectionActive(pathname);
   const compareActive = isCompareSectionActive(pathname);
+
+  const handleNavLinkClick = useCallback((e, menuId) => {
+    if (window.innerWidth >= 640) {
+      if (openMenuId !== menuId) {
+        e.preventDefault();
+        setOpenMenuId(menuId);
+      } else {
+        e.preventDefault();
+        setOpenMenuId(null);
+      }
+    }
+  }, [openMenuId]);
 
   const navLinkBase =
     'sw-nav-link inline-flex items-center gap-0.5 rounded-md px-2.5 py-2.5 text-sm font-bold md:px-3';
@@ -146,6 +161,7 @@ export default function StudentWorkspaceNavbar() {
                 className={({ isActive }) =>
                   `${navLinkBase} text-[#0F172A] ${isActive ? navLinkActive : ''}`
                 }
+                onClick={(e) => handleNavLinkClick(e, DROPDOWN_IDS.predictors)}
                 aria-haspopup="menu"
                 aria-expanded={openMenuId === DROPDOWN_IDS.predictors}
               >
@@ -199,6 +215,7 @@ export default function StudentWorkspaceNavbar() {
                 className={({ isActive }) =>
                   `${navLinkBase} text-[#0F172A] ${isActive || fitTestsActive ? navLinkActive : ''}`
                 }
+                onClick={(e) => handleNavLinkClick(e, DROPDOWN_IDS.fitTests)}
                 aria-haspopup="menu"
                 aria-expanded={openMenuId === DROPDOWN_IDS.fitTests}
               >
@@ -252,6 +269,7 @@ export default function StudentWorkspaceNavbar() {
                 className={({ isActive }) =>
                   `${navLinkBase} text-[#0F172A] ${isActive || compareActive ? navLinkActive : ''}`
                 }
+                onClick={(e) => handleNavLinkClick(e, DROPDOWN_IDS.compare)}
                 aria-haspopup="menu"
                 aria-expanded={openMenuId === DROPDOWN_IDS.compare}
               >
@@ -286,6 +304,13 @@ export default function StudentWorkspaceNavbar() {
               </div>
             </div>
           </nav>
+
+          <Link
+            to="/students/rank-predictor"
+            className="shrink-0 font-bold rounded-[10px] px-4 py-2 border-2 border-black bg-[#c7f36b] text-[#0F172A] shadow-[2px_2px_0px_#000] hover:bg-[#b0d95d] active:shadow-[0px_0px_0px_#000] active:translate-y-[2px] active:translate-x-[2px] transition-all text-sm flex items-center justify-center gap-1.5"
+          >
+            Start Prediction
+          </Link>
         </div>
 
         {/* Mobile: menu toggle */}
@@ -319,6 +344,15 @@ export default function StudentWorkspaceNavbar() {
             aria-label="Student workspace"
           >
             <nav className="mx-auto max-w-[1600px] px-4 py-3">
+              <div className="mb-4">
+                <Link
+                  to="/students/rank-predictor"
+                  className="w-full font-bold rounded-[10px] px-4 py-3 border-2 border-black bg-[#c7f36b] text-[#0F172A] shadow-[3px_3px_0px_#000] hover:bg-[#b0d95d] active:translate-y-[3px] active:translate-x-[3px] active:shadow-[0px_0px_0px_#000] transition-all text-sm flex items-center justify-center gap-1.5"
+                  onClick={closeMenu}
+                >
+                  Start Prediction
+                </Link>
+              </div>
               <ul className="flex flex-col gap-1">
                 <li className="rounded-lg border-2 border-black/10 bg-slate-50/80 p-2">
                   <div className="px-1 pb-2 text-xs font-black uppercase tracking-wide text-slate-500">
