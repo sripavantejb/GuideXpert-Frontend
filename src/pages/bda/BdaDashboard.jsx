@@ -2,6 +2,8 @@ import { useCallback, useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { FiLogOut, FiRefreshCw, FiSearch } from 'react-icons/fi';
 import { useBdaAuth } from '../../contexts/BdaAuthContext';
+import BdaLeadCrmForm from '../../components/bda/BdaLeadCrmForm';
+import { languageBadgeClass } from '../../constants/bdaLanguage';
 import {
   CALL_STATUS_OPTIONS,
   DEMO_STATUS_OPTIONS,
@@ -187,7 +189,14 @@ export default function BdaDashboard() {
         <div className="max-w-7xl mx-auto px-4 py-3 flex items-center justify-between gap-4">
           <div>
             <h1 className="text-lg font-semibold text-gray-900">BDA Dashboard</h1>
-            <p className="text-sm text-gray-600">{user?.name || 'BDA'}</p>
+            <p className="text-sm text-gray-600 flex items-center gap-2 flex-wrap">
+              <span>{user?.name || 'BDA'}</span>
+              {user?.language && (
+                <span className={`text-xs px-2 py-0.5 rounded-full font-medium ${languageBadgeClass(user.language)}`}>
+                  {user.language} leads only
+                </span>
+              )}
+            </p>
           </div>
           <button
             type="button"
@@ -280,6 +289,8 @@ export default function BdaDashboard() {
               <tr>
                 <th className="px-3 py-2">Student</th>
                 <th className="px-3 py-2">Phone</th>
+                <th className="px-3 py-2">Language</th>
+                <th className="px-3 py-2">Last remark</th>
                 <th className="px-3 py-2">Call</th>
                 <th className="px-3 py-2">Lead</th>
                 <th className="px-3 py-2">Demo</th>
@@ -292,14 +303,24 @@ export default function BdaDashboard() {
             </thead>
             <tbody>
               {loading ? (
-                <tr><td colSpan={10} className="px-3 py-8 text-center text-gray-500">Loading…</td></tr>
+                <tr><td colSpan={12} className="px-3 py-8 text-center text-gray-500">Loading…</td></tr>
               ) : rows.length === 0 ? (
-                <tr><td colSpan={10} className="px-3 py-8 text-center text-gray-500">No assigned leads</td></tr>
+                <tr><td colSpan={12} className="px-3 py-8 text-center text-gray-500">
+                  No assigned leads yet. Ask admin to split leads by your language in BDA Management.
+                </td></tr>
               ) : (
                 rows.map((row) => (
-                  <tr key={row.id} className="border-t border-gray-100 hover:bg-gray-50/80">
+                  <tr
+                    key={row.id}
+                    className="border-t border-gray-100 hover:bg-gray-50/80 cursor-pointer"
+                    onClick={() => openDrawer(row.id)}
+                  >
                     <td className="px-3 py-2 font-medium">{row.fullName}</td>
                     <td className="px-3 py-2">{row.phone}</td>
+                    <td className="px-3 py-2">{row.preferredLanguage || '—'}</td>
+                    <td className="px-3 py-2 text-xs text-gray-600 max-w-[140px] truncate" title={row.latestRemark || row.lastRemark}>
+                      {row.latestRemark || row.lastRemark || '—'}
+                    </td>
                     <td className="px-3 py-2">
                       <span className={`px-2 py-0.5 rounded text-xs ${statusBadgeClass('call', row.callStatus)}`}>
                         {labelForOption(CALL_STATUS_OPTIONS, row.callStatus)}
@@ -316,7 +337,14 @@ export default function BdaDashboard() {
                     <td className="px-3 py-2">{row.callbackNeeded ? formatDt(row.callbackDateTime) : 'No'}</td>
                     <td className="px-3 py-2 text-xs text-gray-600">{formatDt(row.lastUpdatedAt)}</td>
                     <td className="px-3 py-2">
-                      <button type="button" onClick={() => openDrawer(row.id)} className="text-primary-blue text-sm font-medium">
+                      <button
+                        type="button"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          openDrawer(row.id);
+                        }}
+                        className="text-primary-blue text-sm font-medium"
+                      >
                         Update
                       </button>
                     </td>
@@ -346,47 +374,28 @@ export default function BdaDashboard() {
               <>
                 <h2 className="text-lg font-semibold">{drawerLead.fullName}</h2>
                 <p className="text-sm text-gray-600">{drawerLead.phone}</p>
-                <p className="text-xs text-gray-500 mt-1">Last remark: {drawerLead.latestRemark || drawerLead.lastRemark || '—'}</p>
-
-                <div className="mt-4 space-y-3">
-                  <label className="block text-sm font-medium">Call status</label>
-                  <select value={form.callStatus} onChange={(e) => setForm((f) => ({ ...f, callStatus: e.target.value }))} className="w-full border rounded-lg px-3 py-2 text-sm">
-                    {CALL_STATUS_OPTIONS.map((o) => <option key={o.value} value={o.value}>{o.label}</option>)}
-                  </select>
-                  <label className="block text-sm font-medium">Lead status</label>
-                  <select value={form.leadStatus} onChange={(e) => setForm((f) => ({ ...f, leadStatus: e.target.value }))} className="w-full border rounded-lg px-3 py-2 text-sm">
-                    {LEAD_STATUS_OPTIONS.map((o) => <option key={o.value} value={o.value}>{o.label}</option>)}
-                  </select>
-                  <label className="block text-sm font-medium">Demo status</label>
-                  <select value={form.demoStatus} onChange={(e) => setForm((f) => ({ ...f, demoStatus: e.target.value }))} className="w-full border rounded-lg px-3 py-2 text-sm">
-                    {DEMO_STATUS_OPTIONS.map((o) => <option key={o.value} value={o.value}>{o.label}</option>)}
-                  </select>
-                  <label className="block text-sm font-medium">NIAT registration</label>
-                  <select value={form.niatStatus} onChange={(e) => setForm((f) => ({ ...f, niatStatus: e.target.value }))} className="w-full border rounded-lg px-3 py-2 text-sm">
-                    {NIAT_STATUS_OPTIONS.map((o) => <option key={o.value} value={o.value}>{o.label}</option>)}
-                  </select>
-                  <label className="block text-sm font-medium">Payment status</label>
-                  <select value={form.paymentStatus} onChange={(e) => setForm((f) => ({ ...f, paymentStatus: e.target.value }))} className="w-full border rounded-lg px-3 py-2 text-sm">
-                    {PAYMENT_STATUS_OPTIONS.map((o) => <option key={o.value} value={o.value}>{o.label}</option>)}
-                  </select>
-                  <label className="flex items-center gap-2 text-sm">
-                    <input type="checkbox" checked={!!form.callbackNeeded} onChange={(e) => setForm((f) => ({ ...f, callbackNeeded: e.target.checked }))} />
-                    Callback needed
-                  </label>
-                  {form.callbackNeeded && (
-                    <>
-                      <input type="date" value={form.callbackDate} onChange={(e) => setForm((f) => ({ ...f, callbackDate: e.target.value }))} className="w-full border rounded-lg px-3 py-2 text-sm" />
-                      <input type="time" value={form.callbackTime} onChange={(e) => setForm((f) => ({ ...f, callbackTime: e.target.value }))} className="w-full border rounded-lg px-3 py-2 text-sm" />
-                      <input placeholder="Callback note" value={form.callbackNote} onChange={(e) => setForm((f) => ({ ...f, callbackNote: e.target.value }))} className="w-full border rounded-lg px-3 py-2 text-sm" />
-                    </>
+                <div className="mt-2 flex flex-wrap gap-2 text-xs">
+                  {drawerLead.preferredLanguage && (
+                    <span className={`px-2 py-0.5 rounded-full ${languageBadgeClass(drawerLead.preferredLanguage)}`}>
+                      {drawerLead.preferredLanguage}
+                    </span>
                   )}
-                  <label className="block text-sm font-medium">Remark *</label>
-                  <textarea value={form.remark} onChange={(e) => setForm((f) => ({ ...f, remark: e.target.value }))} rows={3} className="w-full border rounded-lg px-3 py-2 text-sm" placeholder="Required for every update" />
-                  {saveMsg && <p className={`text-sm ${saveMsg === 'Saved' ? 'text-green-700' : 'text-red-600'}`}>{saveMsg}</p>}
-                  <button type="button" disabled={saving} onClick={handleSave} className="w-full py-2 rounded-lg bg-primary-blue text-white font-medium disabled:opacity-50">
-                    {saving ? 'Saving…' : 'Save update'}
-                  </button>
+                  {drawerLead.city && <span className="text-gray-600">City: {drawerLead.city}</span>}
                 </div>
+                {drawerLead.latestRemark || drawerLead.lastRemark ? (
+                  <p className="mt-2 text-sm bg-gray-50 border rounded-lg p-2 text-gray-700">
+                    <span className="font-medium text-gray-900">Previous remark: </span>
+                    {drawerLead.latestRemark || drawerLead.lastRemark}
+                  </p>
+                ) : null}
+
+                <BdaLeadCrmForm
+                  form={form}
+                  setForm={setForm}
+                  onSave={handleSave}
+                  saving={saving}
+                  saveMsg={saveMsg}
+                />
 
                 <div className="mt-8 border-t pt-4">
                   <h3 className="text-sm font-semibold text-gray-900 mb-3">Activity timeline</h3>

@@ -63,15 +63,16 @@ export default function CallingTeamBdas() {
         </div>
       )}
 
-      <BdaCredentialsPanel
-        onCreated={() => {
+      <BdaLanguageAutoAssignPanel
+        autoSplitOnLoad
+        onAssigned={() => {
           load();
           setProfileRefresh((k) => k + 1);
         }}
       />
 
-      <BdaLanguageAutoAssignPanel
-        onAssigned={() => {
+      <BdaCredentialsPanel
+        onCreated={() => {
           load();
           setProfileRefresh((k) => k + 1);
         }}
