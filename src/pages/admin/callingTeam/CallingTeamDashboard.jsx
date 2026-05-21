@@ -2,6 +2,7 @@ import { useCallback, useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { FiPhone, FiUsers, FiTrendingUp } from 'react-icons/fi';
 import CallingTeamDateFilter from '../../../components/Admin/callingTeam/CallingTeamDateFilter';
+import BdaProfilesPanel from '../../../components/Admin/callingTeam/BdaProfilesPanel';
 import QuickAddBdaForm from '../../../components/Admin/callingTeam/QuickAddBdaForm';
 import TableSkeleton from '../../../components/UI/TableSkeleton';
 import {
@@ -25,6 +26,7 @@ export default function CallingTeamDashboard() {
   const [leaderboard, setLeaderboard] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
+  const [profileRefresh, setProfileRefresh] = useState(0);
 
   const load = useCallback(async () => {
     setLoading(true);
@@ -97,7 +99,14 @@ export default function CallingTeamDashboard() {
         </div>
       )}
 
-      <QuickAddBdaForm onCreated={load} />
+      <QuickAddBdaForm
+        onCreated={() => {
+          load();
+          setProfileRefresh((k) => k + 1);
+        }}
+      />
+
+      <BdaProfilesPanel refreshKey={profileRefresh} />
 
       {loading ? (
         <div className="grid grid-cols-2 md:grid-cols-5 gap-3">

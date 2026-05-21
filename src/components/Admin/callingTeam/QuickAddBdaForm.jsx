@@ -6,6 +6,7 @@ export default function QuickAddBdaForm({ onCreated, compact = false }) {
   const [name, setName] = useState('');
   const [phone, setPhone] = useState('');
   const [email, setEmail] = useState('');
+  const [password, setPassword] = useState('');
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState('');
   const [success, setSuccess] = useState('');
@@ -19,11 +20,21 @@ export default function QuickAddBdaForm({ onCreated, compact = false }) {
       setError('Enter BDA name (at least 2 characters)');
       return;
     }
+    const emailVal = email.trim().toLowerCase();
+    if (!emailVal || !emailVal.includes('@')) {
+      setError('Valid email is required for BDA login');
+      return;
+    }
+    if (!password || password.length < 6) {
+      setError('Password must be at least 6 characters');
+      return;
+    }
     setSaving(true);
     const res = await createBda({
       name: trimmed,
       phone: phone.trim() || undefined,
-      email: email.trim() || undefined,
+      email: emailVal,
+      password,
       status: 'active',
     });
     setSaving(false);
@@ -32,6 +43,7 @@ export default function QuickAddBdaForm({ onCreated, compact = false }) {
       setName('');
       setPhone('');
       setEmail('');
+      setPassword('');
       onCreated?.(res.data?.data);
     } else {
       const msg = res.message || 'Could not create BDA';
@@ -52,7 +64,7 @@ export default function QuickAddBdaForm({ onCreated, compact = false }) {
         <FiPlus className="text-primary-blue" />
         Add BDA
       </p>
-      <div className={`grid gap-3 ${compact ? 'grid-cols-1 sm:grid-cols-4' : 'grid-cols-1 md:grid-cols-4'}`}>
+      <div className={`grid gap-3 ${compact ? 'grid-cols-1 sm:grid-cols-2 lg:grid-cols-5' : 'grid-cols-1 md:grid-cols-5'}`}>
         <input
           required
           placeholder="Name *"
@@ -69,9 +81,19 @@ export default function QuickAddBdaForm({ onCreated, compact = false }) {
         />
         <input
           type="email"
-          placeholder="Email (optional)"
+          required
+          placeholder="Email *"
           value={email}
           onChange={(e) => setEmail(e.target.value)}
+          className="border border-gray-200 rounded-lg px-3 py-2 text-sm"
+        />
+        <input
+          type="password"
+          required
+          minLength={6}
+          placeholder="Password * (min 6)"
+          value={password}
+          onChange={(e) => setPassword(e.target.value)}
           className="border border-gray-200 rounded-lg px-3 py-2 text-sm"
         />
         <button

@@ -51,6 +51,7 @@ export default function CallingTeamLeads() {
   const [drawerLead, setDrawerLead] = useState(null);
   const [drawerLoading, setDrawerLoading] = useState(false);
   const [history, setHistory] = useState([]);
+  const [callHistory, setCallHistory] = useState([]);
   const [crmForm, setCrmForm] = useState({});
   const [saving, setSaving] = useState(false);
 
@@ -112,6 +113,7 @@ export default function CallingTeamLeads() {
     if (leadRes.success && leadRes.data?.data) {
       const lead = leadRes.data.data;
       setDrawerLead(lead);
+      setCallHistory(Array.isArray(lead.callHistory) ? lead.callHistory : []);
       setCrmForm({
         callStatus: lead.callStatus || 'not_called',
         leadStatus: lead.leadStatus || '',
@@ -132,6 +134,7 @@ export default function CallingTeamLeads() {
     setDrawerId('');
     setDrawerLead(null);
     setHistory([]);
+    setCallHistory([]);
   };
 
   const saveCrm = async () => {
@@ -492,6 +495,28 @@ export default function CallingTeamLeads() {
                 >
                   {saving ? 'Saving…' : 'Save CRM updates'}
                 </button>
+
+                <div>
+                  <h3 className="text-sm font-semibold mb-2">BDA call activity</h3>
+                  <ul className="text-sm space-y-2 mb-4">
+                    {callHistory.length === 0 ? (
+                      <li className="text-gray-500">No BDA updates yet</li>
+                    ) : (
+                      callHistory.map((h) => (
+                        <li key={h.id} className="border-b pb-2">
+                          <span className="text-gray-500">{formatDateTime(h.createdAt)}</span>
+                          <br />
+                          <span className="font-medium">{h.bdaName || 'BDA'}</span>
+                          <br />
+                          {[h.callStatus, h.leadStatus, h.demoStatus, h.niatRegistrationStatus, h.paymentStatus]
+                            .filter(Boolean)
+                            .join(' | ')}
+                          {h.remark && <p className="text-gray-600 mt-1">{h.remark}</p>}
+                        </li>
+                      ))
+                    )}
+                  </ul>
+                </div>
 
                 <div>
                   <h3 className="text-sm font-semibold mb-2">Assignment history</h3>

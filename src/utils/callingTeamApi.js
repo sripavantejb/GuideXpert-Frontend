@@ -111,6 +111,20 @@ export async function updateBda(id, body) {
   });
 }
 
+export async function patchBdaStatus(id, status) {
+  return callingTeamRequest(`/bdas/${id}/status`, {
+    method: 'PATCH',
+    body: JSON.stringify({ status }),
+  });
+}
+
+export async function resetBdaPassword(id, password) {
+  return callingTeamRequest(`/bdas/${id}/reset-password`, {
+    method: 'PATCH',
+    body: JSON.stringify({ password }),
+  });
+}
+
 export async function getBdaStats(params = {}) {
   return callingTeamRequest(`/bdas/stats${toQuery(params)}`);
 }
@@ -129,4 +143,9 @@ export async function getCallingTeamDashboard(params = {}) {
 
 export async function getBdaAssignedLeads(id, params = {}) {
   return callingTeamRequest(`/bdas/${id}/assigned-leads${toQuery(params)}`);
+}
+
+/** BDA profiles with assigned lead CRM rows (Calling Data section). */
+export async function getBdaCallingData(params = {}) {
+  return callingTeamRequest(`/bdas/calling-data${toQuery(params)}`);
 }

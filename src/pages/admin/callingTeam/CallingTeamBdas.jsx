@@ -3,6 +3,7 @@ import { Link, useNavigate } from 'react-router-dom';
 import { FiRefreshCw } from 'react-icons/fi';
 import CallingTeamDateFilter from '../../../components/Admin/callingTeam/CallingTeamDateFilter';
 import TableSkeleton from '../../../components/UI/TableSkeleton';
+import BdaProfilesPanel from '../../../components/Admin/callingTeam/BdaProfilesPanel';
 import QuickAddBdaForm from '../../../components/Admin/callingTeam/QuickAddBdaForm';
 import { buildStatsQuery, getBdaStats } from '../../../utils/callingTeamApi';
 
@@ -12,6 +13,7 @@ export default function CallingTeamBdas() {
   const [rows, setRows] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
+  const [profileRefresh, setProfileRefresh] = useState(0);
 
   const load = useCallback(async () => {
     setLoading(true);
@@ -58,9 +60,20 @@ export default function CallingTeamBdas() {
         </div>
       )}
 
-      <QuickAddBdaForm onCreated={load} />
+      <QuickAddBdaForm
+        onCreated={() => {
+          load();
+          setProfileRefresh((k) => k + 1);
+        }}
+      />
+
+      <BdaProfilesPanel refreshKey={profileRefresh} />
 
       <div className="bg-white rounded-xl border overflow-hidden">
+        <div className="px-4 py-3 border-b">
+          <h2 className="font-semibold text-gray-900">Performance stats</h2>
+          <p className="text-xs text-gray-500">Metrics by date range (below)</p>
+        </div>
         {loading ? (
           <TableSkeleton rows={8} cols={9} />
         ) : (

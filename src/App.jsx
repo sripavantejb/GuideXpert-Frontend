@@ -3,6 +3,9 @@ import { BrowserRouter, Routes, Route, Navigate, useLocation, useNavigate } from
 import { AuthProvider } from './contexts/AuthContext';
 import { useAuth } from './hooks/useAuth';
 import { CounsellorAuthProvider, useCounsellorAuth } from './contexts/CounsellorAuthContext';
+import { BdaAuthProvider, useBdaAuth } from './contexts/BdaAuthContext';
+import BdaLogin from './pages/bda/BdaLogin';
+import BdaDashboard from './pages/bda/BdaDashboard';
 import { WebinarAuthProvider, useWebinarAuth } from './contexts/WebinarAuthContext';
 import { CounsellorProfileProvider } from './contexts/CounsellorProfileContext';
 import { CounsellorTrainingProvider } from './contexts/CounsellorTrainingContext';
@@ -53,6 +56,7 @@ import CallingTeamDashboard from './pages/admin/callingTeam/CallingTeamDashboard
 import CallingTeamLeads from './pages/admin/callingTeam/CallingTeamLeads';
 import CallingTeamBdas from './pages/admin/callingTeam/CallingTeamBdas';
 import CallingTeamBdaDetail from './pages/admin/callingTeam/CallingTeamBdaDetail';
+import CallingData from './pages/admin/callingData/CallingData';
 import PosterAutomationAdminPage from './pages/admin/posters/PosterAutomationAdminPage';
 import WhatsAppOpsLayout from './pages/admin/whatsapp-ops/WhatsAppOpsLayout';
 import WhatsAppOpsOverview from './pages/admin/whatsapp-ops/WhatsAppOpsOverview';
@@ -125,7 +129,7 @@ import BlogDetails from './pages/BlogDetails';
 import BlogsPage from './pages/BlogsPage';
 import LegacyBlogRedirect from './pages/LegacyBlogRedirect';
 import AdminBlog from './pages/AdminBlog';
-import { onAdminUnauthorized, onCounsellorUnauthorized, onWebinarUnauthorized } from './utils/authSession';
+import { onAdminUnauthorized, onBdaUnauthorized, onCounsellorUnauthorized, onWebinarUnauthorized } from './utils/authSession';
 
 function ProtectedAdmin({ children }) {
   const { isAuthenticated } = useAuth();
@@ -139,6 +143,14 @@ function ProtectedCounsellor({ children }) {
   const { isAuthenticated } = useCounsellorAuth();
   if (!isAuthenticated) {
     return <Navigate to="/counsellor/login" replace />;
+  }
+  return children;
+}
+
+function ProtectedBda({ children }) {
+  const { isAuthenticated } = useBdaAuth();
+  if (!isAuthenticated) {
+    return <Navigate to="/bda/login" replace />;
   }
   return children;
 }
@@ -157,6 +169,7 @@ function SessionExpiryRedirects() {
   const { logout: adminLogout } = useAuth();
   const { logout: webinarLogout } = useWebinarAuth();
   const { logout: counsellorLogout } = useCounsellorAuth();
+  const { logout: bdaLogout } = useBdaAuth();
 
   useEffect(() => {
     const offAdmin = onAdminUnauthorized(() => {
@@ -177,12 +190,19 @@ function SessionExpiryRedirects() {
         navigate('/counsellor/login', { replace: true });
       }
     });
+    const offBda = onBdaUnauthorized(() => {
+      bdaLogout();
+      if (!location.pathname.startsWith('/bda/login')) {
+        navigate('/bda/login', { replace: true });
+      }
+    });
     return () => {
       offAdmin();
       offWebinar();
       offCounsellor();
+      offBda();
     };
-  }, [adminLogout, counsellorLogout, webinarLogout, location.pathname, navigate]);
+  }, [adminLogout, bdaLogout, counsellorLogout, webinarLogout, location.pathname, navigate]);
 
   return null;
 }
@@ -192,6 +212,7 @@ function App() {
     <BrowserRouter>
       <AuthProvider>
         <CounsellorAuthProvider>
+          <BdaAuthProvider>
           <WebinarAuthProvider>
             <SessionExpiryRedirects />
             <Routes>
@@ -381,6 +402,7 @@ function App() {
             <Route path="calling-team/leads" element={<CallingTeamLeads />} />
             <Route path="calling-team/bdas" element={<CallingTeamBdas />} />
             <Route path="calling-team/bdas/:id" element={<CallingTeamBdaDetail />} />
+            <Route path="calling-data" element={<CallingData />} />
             <Route path="organic-rank-leads" element={<Leads organicOnly />} />
             <Route path="lead-status" element={<LeadStatus />} />
             <Route path="analytics" element={<Analytics />} />
@@ -417,6 +439,11 @@ function App() {
               <Route path="settings" element={<WhatsAppOpsSettings />} />
             </Route>
           </Route>
+
+          {/* BDA Portal */}
+          <Route path="/bda/login" element={<BdaLogin />} />
+          <Route path="/bda/dashboard" element={<ProtectedBda><BdaDashboard /></ProtectedBda>} />
+          <Route path="/bda" element={<Navigate to="/bda/dashboard" replace />} />
 
           {/* Counsellor Portal */}
           <Route path="/counsellor/login" element={<CounsellorLogin />} />
@@ -457,6 +484,7 @@ function App() {
           <Route path="*" element={<Navigate to="/" replace />} />
             </Routes>
           </WebinarAuthProvider>
+          </BdaAuthProvider>
         </CounsellorAuthProvider>
       </AuthProvider>
     </BrowserRouter>
