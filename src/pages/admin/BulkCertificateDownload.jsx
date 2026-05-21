@@ -59,7 +59,7 @@ export default function BulkCertificateDownload() {
         setError(result.message || 'Download failed.');
         return;
       }
-      setSuccess(`Download started for ${valid.length} number(s). Check manifest.csv in the ZIP for not_found rows.`);
+      setSuccess(`Download started for ${valid.length} number(s). Open the PNG/PDF files in the certificates folder (manifest.csv is only a summary).`);
     } catch (e) {
       setError(e?.message || 'Download failed.');
     } finally {
@@ -74,7 +74,7 @@ export default function BulkCertificateDownload() {
         <h1 className="text-xl font-bold text-gray-900">Bulk certificate download</h1>
       </div>
       <p className="text-sm text-gray-600 mb-6">
-        Paste mobile numbers to download webinar certificates (PNG + PDF) with certificate IDs and a manifest CSV.
+        Paste mobile numbers to download certificates (PNG + PDF) with name, certificate ID, dates, and mobile printed on each file, plus a manifest CSV.
       </p>
 
       <div className="rounded-lg border border-blue-100 bg-blue-50/80 p-3 mb-4 flex gap-2 text-sm text-blue-900">
