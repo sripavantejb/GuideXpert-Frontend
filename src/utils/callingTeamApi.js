@@ -150,13 +150,16 @@ export async function getBdaCallingData(params = {}) {
   return callingTeamRequest(`/bdas/calling-data${toQuery(params)}`);
 }
 
-export async function getAutoAssignPreview() {
-  return callingTeamRequest('/iit-counselling-leads/auto-assign-preview');
+export async function getAutoAssignPreview(params = {}) {
+  return callingTeamRequest(`/iit-counselling-leads/auto-assign-preview${toQuery(params)}`);
 }
 
-export async function autoAssignLeadsByLanguage({ language, reason }) {
-  return callingTeamRequest('/iit-counselling-leads/auto-assign-by-language', {
-    method: 'POST',
-    body: JSON.stringify({ language, reason }),
-  });
+export async function autoAssignLeadsByLanguage({ language, reason, filterParams = {} }) {
+  return callingTeamRequest(
+    `/iit-counselling-leads/auto-assign-by-language${toQuery(filterParams)}`,
+    {
+      method: 'POST',
+      body: JSON.stringify({ language, reason }),
+    }
+  );
 }

@@ -172,11 +172,13 @@ async function apiRequest(endpoint, options = {}) {
       const byStatus =
         response.status === 502 || response.status === 503 || response.status === 504
           ? import.meta.env.DEV
-            ? 'Service unavailable. Check VITE_PROXY_TARGET (default is the deployed backend) or run local backend on port 5000 with VITE_PROXY_TARGET=http://localhost:5000.'
+            ? 'Service unavailable. Start the backend: cd backend && npm run dev (port 5000), then retry.'
             : 'Service temporarily unavailable. Please try again in a moment.'
-          : response.status === 404
-            ? 'API endpoint not found. Check VITE_API_URL or the /api proxy.'
-            : null;
+          : response.status === 500 && import.meta.env.DEV
+            ? 'Server error (500). If you are running locally, start the backend: cd backend && npm run dev — the Vite proxy targets http://127.0.0.1:5000.'
+            : response.status === 404
+              ? 'API endpoint not found. Check VITE_API_URL or the /api proxy.'
+              : null;
       return {
         success: false,
         message: fromBody || byStatus || `Request failed (${response.status})`,
@@ -210,9 +212,11 @@ async function apiRequest(endpoint, options = {}) {
  * @returns {Promise<{success: boolean, message?: string, status?: number}>}
  */
 export const sendOtp = async (fullName, whatsappNumber, occupation, options = {}) => {
+  const phoneStr = String(whatsappNumber ?? '').replace(/\D/g, '').slice(-10);
   const body = {
     fullName,
-    whatsappNumber,
+    phone: phoneStr,
+    whatsappNumber: phoneStr,
     occupation,
   };
   if (options.scheduleOsviForAbandonment === true) {

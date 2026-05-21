@@ -1,8 +1,9 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
-import { FiRefreshCw, FiSearch, FiUserPlus } from 'react-icons/fi';
+import { FiRefreshCw, FiUserPlus } from 'react-icons/fi';
 import AssignToBdaModal from './AssignToBdaModal';
 import TableSkeleton from '../../UI/TableSkeleton';
-import { BDA_LANGUAGES, languageBadgeClass } from '../../../constants/bdaLanguage';
+import { languageBadgeClass } from '../../../constants/bdaLanguage';
+import { bdaLeadFiltersToQuery } from '../../../constants/bdaLeadFilters';
 import { getCallingTeamLeads } from '../../../utils/callingTeamApi';
 
 const BULK_ASSIGN_MAX = 200;
@@ -14,29 +15,48 @@ function formatDateTime(value) {
   return d.toLocaleDateString('en-IN', { day: 'numeric', month: 'short', year: 'numeric' });
 }
 
-export default function BdaUnassignedLeadPool({ onAssigned }) {
+function MeetBadge({ attended, label }) {
+  return (
+    <span
+      className={`inline-block text-xs font-medium px-2 py-0.5 rounded-full ${
+        attended
+          ? 'bg-green-100 text-green-900 border border-green-200'
+          : 'bg-gray-100 text-gray-500 border border-gray-200'
+      }`}
+    >
+      {label}: {attended ? 'Yes' : 'No'}
+    </span>
+  );
+}
+
+export default function BdaUnassignedLeadPool({ appliedFilters, filterVersion, onAssigned }) {
   const [rows, setRows] = useState([]);
-  const [loading, setLoading] = useState(true);
+  const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
   const [success, setSuccess] = useState('');
-  const [q, setQ] = useState('');
-  const [searchDraft, setSearchDraft] = useState('');
-  const [preferredLanguage, setPreferredLanguage] = useState('');
   const [page, setPage] = useState(1);
   const [pagination, setPagination] = useState({ totalPages: 1, total: 0 });
   const [selected, setSelected] = useState(new Set());
   const [assignOpen, setAssignOpen] = useState(false);
 
+  const filtersReady = appliedFilters != null;
+
   const load = useCallback(async () => {
+    if (!filtersReady) {
+      setRows([]);
+      setPagination({ totalPages: 1, total: 0 });
+      setLoading(false);
+      return;
+    }
+
     setLoading(true);
     setError('');
     const params = {
       page,
       limit: 25,
-      q,
       unassignedOnly: 'true',
+      ...bdaLeadFiltersToQuery(appliedFilters),
     };
-    if (preferredLanguage) params.preferredLanguage = preferredLanguage;
     const res = await getCallingTeamLeads(params);
     if (res.success) {
       setRows(res.data?.data || []);
@@ -46,7 +66,7 @@ export default function BdaUnassignedLeadPool({ onAssigned }) {
       setError(res.message || 'Failed to load unassigned leads');
     }
     setLoading(false);
-  }, [page, q, preferredLanguage]);
+  }, [page, appliedFilters, filtersReady]);
 
   useEffect(() => {
     load();
@@ -91,16 +111,16 @@ export default function BdaUnassignedLeadPool({ onAssigned }) {
     <div className="bg-white rounded-xl border border-gray-200 shadow-sm overflow-hidden">
       <div className="px-4 py-3 border-b flex flex-wrap items-start justify-between gap-3">
         <div>
-          <h2 className="text-base font-semibold text-gray-900 m-0">Unassigned leads pool</h2>
+          <h2 className="text-base font-semibold text-gray-900 m-0">Filtered unassigned leads</h2>
           <p className="text-sm text-gray-600 mt-1">
-            Browse leads not assigned to any BDA. Select rows and assign in bulk to a specific BDA (max{' '}
-            {BULK_ASSIGN_MAX} per action).
+            Select rows from the filtered set and assign to a BDA (max {BULK_ASSIGN_MAX} per action).
           </p>
         </div>
         <button
           type="button"
           onClick={load}
-          className="p-2 border rounded-lg hover:bg-gray-50 shrink-0"
+          disabled={!filtersReady}
+          className="p-2 border rounded-lg hover:bg-gray-50 shrink-0 disabled:opacity-40"
           aria-label="Refresh pool"
         >
           <FiRefreshCw className={`w-4 h-4 ${loading ? 'animate-spin' : ''}`} />
@@ -108,51 +128,9 @@ export default function BdaUnassignedLeadPool({ onAssigned }) {
       </div>
 
       <div className="px-4 py-3 border-b flex flex-wrap items-center gap-2 bg-gray-50/80">
-        <form
-          className="flex flex-wrap items-center gap-2"
-          onSubmit={(e) => {
-            e.preventDefault();
-            setQ(searchDraft.trim());
-            setPage(1);
-          }}
-        >
-          <div className="relative">
-            <FiSearch className="absolute left-2.5 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
-            <input
-              type="search"
-              value={searchDraft}
-              onChange={(e) => setSearchDraft(e.target.value)}
-              placeholder="Search name or phone"
-              className="pl-9 pr-3 py-2 border border-gray-200 rounded-lg text-sm w-52 sm:w-56"
-            />
-          </div>
-          <button
-            type="submit"
-            className="px-3 py-2 text-sm font-medium border border-gray-200 rounded-lg bg-white hover:bg-gray-50"
-          >
-            Search
-          </button>
-        </form>
-
-        <select
-          value={preferredLanguage}
-          onChange={(e) => {
-            setPreferredLanguage(e.target.value);
-            setPage(1);
-          }}
-          className="border border-gray-200 rounded-lg px-3 py-2 text-sm bg-white"
-        >
-          <option value="">All languages</option>
-          {BDA_LANGUAGES.map(({ value, label }) => (
-            <option key={value} value={value}>
-              {label}
-            </option>
-          ))}
-        </select>
-
         <button
           type="button"
-          disabled={selectedIds.length === 0 || overBulkLimit}
+          disabled={!filtersReady || selectedIds.length === 0 || overBulkLimit}
           onClick={() => setAssignOpen(true)}
           className="inline-flex items-center gap-1.5 px-3 py-2 text-sm font-medium rounded-lg bg-primary-blue text-white hover:opacity-90 disabled:opacity-40 disabled:cursor-not-allowed"
         >
@@ -182,9 +160,13 @@ export default function BdaUnassignedLeadPool({ onAssigned }) {
         </div>
       )}
 
-      {loading ? (
+      {!filtersReady ? (
+        <div className="px-4 py-12 text-center text-gray-500 text-sm">
+          Apply filters above to load unassigned leads for assignment.
+        </div>
+      ) : loading ? (
         <div className="p-4">
-          <TableSkeleton rows={8} cols={6} />
+          <TableSkeleton rows={8} cols={8} />
         </div>
       ) : (
         <>
@@ -203,16 +185,17 @@ export default function BdaUnassignedLeadPool({ onAssigned }) {
                   <th className="px-4 py-3">Student</th>
                   <th className="px-4 py-3">Phone</th>
                   <th className="px-4 py-3">Language</th>
-                  <th className="px-4 py-3">City</th>
+                  <th className="px-4 py-3">English meet</th>
+                  <th className="px-4 py-3">Hindi meet</th>
+                  <th className="px-4 py-3">Slot date</th>
                   <th className="px-4 py-3">Submitted</th>
                 </tr>
               </thead>
               <tbody>
                 {rows.length === 0 ? (
                   <tr>
-                    <td colSpan={6} className="px-4 py-10 text-center text-gray-500">
-                      No unassigned leads in the pool
-                      {preferredLanguage ? ` for ${preferredLanguage}` : ''}.
+                    <td colSpan={8} className="px-4 py-10 text-center text-gray-500">
+                      No unassigned leads match the current filters.
                     </td>
                   </tr>
                 ) : (
@@ -239,7 +222,15 @@ export default function BdaUnassignedLeadPool({ onAssigned }) {
                           <span className="text-gray-400">—</span>
                         )}
                       </td>
-                      <td className="px-4 py-3 text-gray-600">{row.city || '—'}</td>
+                      <td className="px-4 py-3">
+                        <MeetBadge attended={row.meetEnglish} label="Eng" />
+                      </td>
+                      <td className="px-4 py-3">
+                        <MeetBadge attended={row.meetHindi} label="Hin" />
+                      </td>
+                      <td className="px-4 py-3 text-gray-600">
+                        {row.slotBookingDate || '—'}
+                      </td>
                       <td className="px-4 py-3 text-gray-600">{formatDateTime(row.createdAt)}</td>
                     </tr>
                   ))
@@ -250,7 +241,7 @@ export default function BdaUnassignedLeadPool({ onAssigned }) {
 
           <div className="flex flex-wrap items-center justify-between gap-3 px-5 py-3 border-t border-gray-100 text-sm text-gray-600">
             <span>
-              <strong className="text-gray-800">{pagination.total ?? 0}</strong> unassigned in pool
+              <strong className="text-gray-800">{pagination.total ?? 0}</strong> matching unassigned
               {selectedIds.length > 0 && (
                 <span className="text-primary-blue font-medium">
                   {' '}
@@ -286,7 +277,7 @@ export default function BdaUnassignedLeadPool({ onAssigned }) {
       <AssignToBdaModal
         open={assignOpen}
         leadIds={selectedIds.slice(0, BULK_ASSIGN_MAX)}
-        preferredLanguage={preferredLanguage}
+        preferredLanguage={appliedFilters?.preferredLanguage || ''}
         onClose={() => setAssignOpen(false)}
         onSuccess={(data) => {
           setAssignOpen(false);

@@ -4,8 +4,10 @@ import { FiRefreshCw } from 'react-icons/fi';
 import CallingTeamDateFilter from '../../../components/Admin/callingTeam/CallingTeamDateFilter';
 import TableSkeleton from '../../../components/UI/TableSkeleton';
 import BdaCredentialsPanel from '../../../components/Admin/callingTeam/BdaCredentialsPanel';
+import BdaLeadFilterPanel from '../../../components/Admin/callingTeam/BdaLeadFilterPanel';
 import BdaLanguageAutoAssignPanel from '../../../components/Admin/callingTeam/BdaLanguageAutoAssignPanel';
 import BdaUnassignedLeadPool from '../../../components/Admin/callingTeam/BdaUnassignedLeadPool';
+import { EMPTY_BDA_LEAD_FILTERS } from '../../../constants/bdaLeadFilters';
 import BdaProfilesPanel from '../../../components/Admin/callingTeam/BdaProfilesPanel';
 import { buildStatsQuery, getBdaStats } from '../../../utils/callingTeamApi';
 
@@ -16,6 +18,9 @@ export default function CallingTeamBdas() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
   const [profileRefresh, setProfileRefresh] = useState(0);
+  const [filterDraft, setFilterDraft] = useState({ ...EMPTY_BDA_LEAD_FILTERS });
+  const [appliedFilters, setAppliedFilters] = useState(null);
+  const [filterVersion, setFilterVersion] = useState(0);
 
   const load = useCallback(async () => {
     setLoading(true);
@@ -72,17 +77,39 @@ export default function CallingTeamBdas() {
         </div>
       )}
 
-      <BdaLanguageAutoAssignPanel
-        onAssigned={() => {
-          load();
-          setProfileRefresh((k) => k + 1);
+      <BdaLeadFilterPanel
+        draft={filterDraft}
+        onDraftChange={setFilterDraft}
+        applied={appliedFilters != null}
+        onApply={() => {
+          setAppliedFilters({ ...filterDraft });
+          setFilterVersion((v) => v + 1);
+        }}
+        onClear={() => {
+          setFilterDraft({ ...EMPTY_BDA_LEAD_FILTERS });
+          setAppliedFilters(null);
+          setFilterVersion((v) => v + 1);
         }}
       />
 
       <BdaUnassignedLeadPool
+        key={`lead-pool-${filterVersion}`}
+        appliedFilters={appliedFilters}
+        filterVersion={filterVersion}
         onAssigned={() => {
           load();
           setProfileRefresh((k) => k + 1);
+          setFilterVersion((v) => v + 1);
+        }}
+      />
+
+      <BdaLanguageAutoAssignPanel
+        appliedFilters={appliedFilters}
+        filterVersion={filterVersion}
+        onAssigned={() => {
+          load();
+          setProfileRefresh((k) => k + 1);
+          setFilterVersion((v) => v + 1);
         }}
       />
 

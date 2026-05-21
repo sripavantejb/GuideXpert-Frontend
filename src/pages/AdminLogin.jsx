@@ -67,7 +67,12 @@ export default function AdminLogin() {
     try {
       const result = await sendOtp('Admin', p, 'Admin Login');
       if (!result.success) {
-        setError(result.message || 'Could not send OTP.');
+        const msg = result.message || 'Could not send OTP.';
+        setError(
+          result.status === 500 && import.meta.env.DEV
+            ? `${msg} Start the backend in a terminal: cd backend && npm run dev`
+            : msg
+        );
         return;
       }
       setOtpSent(true);

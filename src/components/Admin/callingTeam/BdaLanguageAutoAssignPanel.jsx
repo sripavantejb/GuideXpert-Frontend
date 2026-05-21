@@ -1,13 +1,24 @@
-import { useCallback, useEffect, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { FiRefreshCw, FiUsers, FiZap } from 'react-icons/fi';
+import { bdaLeadFiltersToQuery } from '../../../constants/bdaLeadFilters';
 import {
   autoAssignLeadsByLanguage,
   getAutoAssignPreview,
 } from '../../../utils/callingTeamApi';
 
-function LangCard({ title, data, onAssign, assigning, assignError }) {
+const AUTO_ASSIGN_STORAGE_KEY = 'guideXpert_bdaAutoAssignOnLoad';
+
+function readAutoAssignPreference() {
+  try {
+    return localStorage.getItem(AUTO_ASSIGN_STORAGE_KEY) === '1';
+  } catch {
+    return false;
+  }
+}
+
+function LangCard({ title, data, onAssign, assigning, assignError, disabled }) {
   const unassigned = data?.unassignedLeads ?? 0;
-  const canAssign = data?.activeBdas > 0 && unassigned > 0;
+  const canAssign = !disabled && data?.activeBdas > 0 && unassigned > 0;
   const hasBdas = (data?.bdas?.length ?? 0) > 0;
 
   return (
@@ -15,7 +26,7 @@ function LangCard({ title, data, onAssign, assigning, assignError }) {
       <div className="flex items-center justify-between gap-2">
         <h3 className="font-semibold text-gray-900">{title}</h3>
         <span className="shrink-0 text-xs font-medium px-2 py-0.5 rounded-full bg-white border border-gray-200 text-gray-700">
-          {data?.unassignedLeads ?? 0} unassigned
+          {data?.unassignedLeads ?? 0} in filtered set
         </span>
       </div>
 
@@ -50,7 +61,7 @@ function LangCard({ title, data, onAssign, assigning, assignError }) {
 
       {unassigned === 0 ? (
         <p className="text-center text-xs font-medium text-green-700 py-2 rounded-lg bg-green-50 border border-green-200">
-          No unassigned {title} leads in pool
+          No unassigned {title} leads in filtered set
         </p>
       ) : (
         <button
@@ -67,36 +78,59 @@ function LangCard({ title, data, onAssign, assigning, assignError }) {
   );
 }
 
-export default function BdaLanguageAutoAssignPanel({ onAssigned }) {
+export default function BdaLanguageAutoAssignPanel({
+  appliedFilters,
+  filterVersion,
+  onAssigned,
+}) {
   const [preview, setPreview] = useState(null);
-  const [loading, setLoading] = useState(true);
+  const [loading, setLoading] = useState(false);
   const [assigningLang, setAssigningLang] = useState('');
   const [assigningAll, setAssigningAll] = useState(false);
   const [error, setError] = useState('');
   const [success, setSuccess] = useState('');
   const [langErrors, setLangErrors] = useState({});
+  const [autoAssignOnLoad, setAutoAssignOnLoad] = useState(readAutoAssignPreference);
+  const autoRan = useRef(false);
+
+  const filtersReady = appliedFilters != null;
+  const filterParams = useMemo(
+    () => (filtersReady ? bdaLeadFiltersToQuery(appliedFilters) : {}),
+    [filtersReady, appliedFilters, filterVersion]
+  );
 
   const load = useCallback(async () => {
+    if (!filtersReady) {
+      setPreview(null);
+      setLoading(false);
+      return;
+    }
+
     setLoading(true);
     setError('');
-    const res = await getAutoAssignPreview();
+    const res = await getAutoAssignPreview(filterParams);
     if (res.success) {
       setPreview(res.data?.data || res.data);
     } else {
       setError(res.message || 'Could not load assignment preview');
     }
     setLoading(false);
-  }, []);
+  }, [filtersReady, filterParams]);
 
   useEffect(() => {
+    autoRan.current = false;
     load();
   }, [load]);
 
   const runAssignAll = useCallback(async () => {
+    if (!filtersReady) return false;
     setAssigningAll(true);
     setSuccess('');
     setError('');
-    const res = await autoAssignLeadsByLanguage({ language: 'all' });
+    const res = await autoAssignLeadsByLanguage({
+      language: 'all',
+      filterParams,
+    });
     setAssigningAll(false);
     if (res.success) {
       const d = res.data?.data || res.data;
@@ -109,18 +143,44 @@ export default function BdaLanguageAutoAssignPanel({ onAssigned }) {
     }
     setError(res.message || 'Auto-split failed. Deploy latest backend if you see 404.');
     return false;
-  }, [load, onAssigned]);
+  }, [load, onAssigned, filterParams, filtersReady]);
 
   const canAutoSplit =
+    filtersReady &&
     preview &&
     ((preview.Hindi?.activeBdas > 0 && preview.Hindi?.unassignedLeads > 0) ||
       (preview.Telugu?.activeBdas > 0 && preview.Telugu?.unassignedLeads > 0));
 
+  useEffect(() => {
+    if (!autoAssignOnLoad || !filtersReady || loading || !preview || autoRan.current || !canAutoSplit)
+      return;
+    autoRan.current = true;
+    runAssignAll();
+  }, [autoAssignOnLoad, filtersReady, loading, preview, canAutoSplit, runAssignAll]);
+
+  const setAutoAssignPreference = (enabled) => {
+    setAutoAssignOnLoad(enabled);
+    try {
+      localStorage.setItem(AUTO_ASSIGN_STORAGE_KEY, enabled ? '1' : '0');
+    } catch {
+      /* ignore */
+    }
+    if (!enabled) {
+      autoRan.current = false;
+      return;
+    }
+    if (filtersReady && !loading && preview && canAutoSplit && !assigningAll && !assigningLang) {
+      autoRan.current = true;
+      runAssignAll();
+    }
+  };
+
   const runAssign = async (language) => {
+    if (!filtersReady) return;
     setAssigningLang(language);
     setLangErrors((e) => ({ ...e, [language]: '' }));
     setSuccess('');
-    const res = await autoAssignLeadsByLanguage({ language });
+    const res = await autoAssignLeadsByLanguage({ language, filterParams });
     setAssigningLang('');
     if (res.success) {
       const d = res.data?.data || res.data;
@@ -147,18 +207,18 @@ export default function BdaLanguageAutoAssignPanel({ onAssigned }) {
         <div>
           <h2 className="text-base font-semibold text-gray-900 flex items-center gap-2 m-0">
             <FiZap className="text-primary-blue" aria-hidden />
-            Split leads by language (automatic)
+            Split filtered leads by language
           </h2>
           <p className="text-sm text-gray-600 mt-1">
-            Leads stay in the pool until you click Split. Hindi → Hindi BDAs, Telugu → Telugu BDAs
-            (equal). Uses <strong className="font-medium text-gray-800">preferredLanguage</strong>{' '}
-            from Section 2. Use the pool below for manual assign to a specific BDA.
+            Hindi → Hindi BDAs, Telugu → Telugu BDAs (equal split). Only affects leads in the
+            filtered set above.
           </p>
         </div>
         <button
           type="button"
           onClick={load}
-          className="p-2 border rounded-lg hover:bg-gray-50 shrink-0"
+          disabled={!filtersReady}
+          className="p-2 border rounded-lg hover:bg-gray-50 shrink-0 disabled:opacity-40"
           aria-label="Refresh split preview"
         >
           <FiRefreshCw className={`w-4 h-4 ${loading ? 'animate-spin' : ''}`} />
@@ -166,9 +226,15 @@ export default function BdaLanguageAutoAssignPanel({ onAssigned }) {
       </div>
 
       <div className="p-4 space-y-4">
+        {!filtersReady && (
+          <p className="text-sm text-gray-600 bg-gray-50 border border-gray-200 rounded-lg px-3 py-2">
+            Apply filters above to preview and split leads by language.
+          </p>
+        )}
+
         {assigningAll && (
           <p className="text-sm text-blue-900 bg-blue-50 border border-blue-200 rounded-lg px-3 py-2">
-            Splitting {hindiTeluguUnassigned} unassigned leads by language… please wait.
+            Splitting {hindiTeluguUnassigned} filtered unassigned leads by language… please wait.
           </p>
         )}
 
@@ -183,44 +249,51 @@ export default function BdaLanguageAutoAssignPanel({ onAssigned }) {
           </p>
         )}
 
-        {loading && !assigningAll ? (
+        {filtersReady && loading && !assigningAll ? (
           <p className="text-sm text-gray-500">Loading assignment preview…</p>
-        ) : (
+        ) : null}
+
+        {filtersReady && !loading && (
           <>
-            {!loading && (
-              <div className="flex flex-wrap items-center gap-2 text-sm">
-                <span className="font-medium text-gray-900">
-                  {totalInPool} total in unassigned pool
-                </span>
-                <span className="text-gray-400">·</span>
-                <span className="text-gray-600">
-                  {hindiTeluguUnassigned} Hindi/Telugu (auto-split)
-                </span>
-                {otherLanguage > 0 && (
-                  <>
-                    <span className="text-gray-400">·</span>
-                    <span className="text-amber-800">
-                      {otherLanguage} need language in Section 2 — assign manually below
-                    </span>
-                  </>
-                )}
-              </div>
-            )}
+            <div className="flex flex-wrap items-center gap-2 text-sm">
+              <span className="font-medium text-gray-900">
+                {totalInPool} total in filtered set
+              </span>
+              <span className="text-gray-400">·</span>
+              <span className="text-gray-600">
+                {hindiTeluguUnassigned} Hindi/Telugu (auto-split)
+              </span>
+              {otherLanguage > 0 && (
+                <>
+                  <span className="text-gray-400">·</span>
+                  <span className="text-amber-800">
+                    {otherLanguage} missing Hindi/Telugu — assign manually in the table above
+                  </span>
+                </>
+              )}
+            </div>
 
-            {totalInPool === 0 && !loading && (
+            {totalInPool === 0 && (
               <p className="text-sm text-gray-600 bg-gray-50 border border-gray-200 rounded-lg px-3 py-2">
-                No unassigned leads right now. New IIT counselling submissions will appear in the
-                pool below after Section 2 sets <strong>preferredLanguage</strong> to Hindi or Telugu.
+                No unassigned leads match the current filters.
               </p>
             )}
 
-            {totalInPool > 0 && hindiTeluguUnassigned === 0 && otherLanguage > 0 && (
-              <p className="text-sm text-amber-900 bg-amber-50 border border-amber-200 rounded-lg px-3 py-2">
-                {otherLanguage} lead{otherLanguage !== 1 ? 's are' : ' is'} in the pool but not
-                tagged Hindi/Telugu. Use <strong>Unassigned leads pool</strong> below to assign them,
-                or ensure Section 2 has preferredLanguage set.
-              </p>
-            )}
+            <label className="flex items-start gap-2.5 rounded-lg border border-gray-200 bg-gray-50/80 px-3 py-2.5 cursor-pointer">
+              <input
+                type="checkbox"
+                checked={autoAssignOnLoad}
+                onChange={(e) => setAutoAssignPreference(e.target.checked)}
+                className="mt-0.5 rounded border-gray-300"
+              />
+              <span className="text-sm text-gray-700">
+                <span className="font-medium text-gray-900">Auto-assign on page load</span>
+                <span className="block text-xs text-gray-500 mt-0.5">
+                  When enabled, splits filtered Hindi/Telugu leads each time you open BDA Management
+                  (once per visit, after filters are applied).
+                </span>
+              </span>
+            </label>
 
             <button
               type="button"
@@ -231,7 +304,7 @@ export default function BdaLanguageAutoAssignPanel({ onAssigned }) {
               <FiUsers className="w-4 h-4 shrink-0" aria-hidden />
               {assigningAll
                 ? 'Splitting all leads…'
-                : `Split ${hindiTeluguUnassigned} Hindi + Telugu leads from pool`}
+                : `Split ${hindiTeluguUnassigned} Hindi + Telugu from filtered set`}
             </button>
 
             <div className="grid gap-3 sm:grid-cols-2">
@@ -241,6 +314,7 @@ export default function BdaLanguageAutoAssignPanel({ onAssigned }) {
                 onAssign={runAssign}
                 assigning={assigningLang === 'Hindi'}
                 assignError={langErrors.Hindi}
+                disabled={!filtersReady}
               />
               <LangCard
                 title="Telugu"
@@ -248,6 +322,7 @@ export default function BdaLanguageAutoAssignPanel({ onAssigned }) {
                 onAssign={runAssign}
                 assigning={assigningLang === 'Telugu'}
                 assignError={langErrors.Telugu}
+                disabled={!filtersReady}
               />
             </div>
           </>
