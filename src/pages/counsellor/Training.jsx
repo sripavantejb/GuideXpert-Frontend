@@ -13,6 +13,7 @@ import { getWebinarProgress } from '../../utils/api';
 import { getCounsellorToken, getCounsellorWebinarProgress } from '../../utils/counsellorApi';
 import TrainingProgressOverview from '../../components/Counsellor/TrainingProgressOverview';
 import CertificatePreview from '../../components/Counsellor/CertificatePreview';
+import { formatCertificateDate } from '../webinar/utils/certificateWebinar';
 
 const CERTIFICATE_MODULE_ID = 14;
 const PREREQ_MODULE_ID = 13;
@@ -174,11 +175,7 @@ export default function CounsellorTraining() {
     return true;
   }, [progressForModuleState]);
   const certificateLocked = !isCertificateUnlocked;
-  const issuedDate = new Date().toLocaleDateString(undefined, {
-    year: 'numeric',
-    month: 'long',
-    day: 'numeric',
-  });
+  const issuedDate = formatCertificateDate();
 
   return (
     <div id="main-content" className="flex flex-col min-h-0 max-w-5xl mx-auto w-full">

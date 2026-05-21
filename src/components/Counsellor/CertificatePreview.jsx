@@ -1,18 +1,38 @@
 import { forwardRef } from 'react';
+import {
+  ISSUED_DATE,
+  EXPIRY_DATE,
+  CERTIFICATE_ID,
+  CERTIFICATE_SVG_VERSION,
+} from '../../pages/webinar/utils/certificateWebinarConfig';
+import { formatCertificateExpiryDate } from '../../pages/webinar/utils/certificateWebinar';
 
 /** SVG viewBox from design file: 0 0 842.25 595.5 */
 const WIDTH = 842;
 const HEIGHT = 595;
-const GOLD = '#daa520';
 
 /**
- * Certificate from design SVG: exact design as background, three dynamic overlays only.
- * Ref on root for html2canvas capture.
+ * Certificate from design SVG: labels are baked into the SVG; only dynamic values are overlaid.
  */
 const CertificatePreview = forwardRef(function CertificatePreview(
-  { recipientName = '', date = '', signatureName = '' },
+  { recipientName = '', date = '', expiryDate = '', certificateId = '', signatureName = '' },
   ref
 ) {
+  const issued = date || '';
+  const expiry = expiryDate || (issued ? formatCertificateExpiryDate(issued) : '');
+  const certId = certificateId ? String(certificateId).trim() : '';
+
+  const overlayStyle = (config) => ({
+    position: 'absolute',
+    left: config.x,
+    top: config.y - config.fontSize * 0.82,
+    fontSize: config.fontSize,
+    fontFamily: config.fontFamily,
+    color: config.fillStyle,
+    lineHeight: 1,
+    whiteSpace: 'nowrap',
+  });
+
   return (
     <div
       ref={ref}
@@ -27,9 +47,8 @@ const CertificatePreview = forwardRef(function CertificatePreview(
         boxSizing: 'border-box',
       }}
     >
-      {/* Layer 1: design SVG (exact match) */}
       <img
-        src="/certificate.svg"
+        src={`/certificate.svg?v=${CERTIFICATE_SVG_VERSION}`}
         alt=""
         style={{
           position: 'absolute',
@@ -42,12 +61,12 @@ const CertificatePreview = forwardRef(function CertificatePreview(
         }}
       />
 
-      {/* Layer 2: Recipient name — center, large script, gold underline */}
+      {/* Recipient name */}
       <div
         style={{
           position: 'absolute',
           left: '50%',
-          top: 282,
+          top: 268,
           transform: 'translateX(-50%)',
           textAlign: 'center',
           width: '80%',
@@ -55,98 +74,42 @@ const CertificatePreview = forwardRef(function CertificatePreview(
       >
         <div
           style={{
-            fontFamily: '"Dancing Script", "Great Vibes", cursive',
+            fontFamily: '"Imperial Script", cursive',
             fontSize: 48,
-            fontWeight: 700,
-            color: '#0d0d0d',
-            marginBottom: 6,
+            fontWeight: 400,
+            color: '#1f2937',
             minHeight: 52,
           }}
         >
           {recipientName || '\u00A0'}
         </div>
-        <div
-          style={{
-            width: 320,
-            maxWidth: '95%',
-            height: 2,
-            margin: '0 auto',
-            backgroundColor: GOLD,
-          }}
-        />
       </div>
 
-      {/* Layer 2: Date — bottom-left */}
-      <div
-        style={{
-          position: 'absolute',
-          left: 42,
-          bottom: 48,
-          textAlign: 'left',
-          minWidth: 120,
-        }}
-      >
-        <div
-          style={{
-            fontFamily: '"Dancing Script", cursive',
-            fontSize: 18,
-            color: '#0d0d0d',
-            marginBottom: 4,
-          }}
-        >
-          Date
-        </div>
-        <div
-          style={{
-            fontSize: 14,
-            color: '#1a1a1a',
-            fontFamily: 'Georgia, serif',
-          }}
-        >
-          {date || '\u00A0'}
-        </div>
-      </div>
+      {/* Issued date value (SVG has "Issued Date:" label) */}
+      <div style={overlayStyle(ISSUED_DATE)}>{issued || '\u00A0'}</div>
 
-      {/* Layer 2: Signature — bottom-right: gold line, name, SIGNATURE */}
-      <div
-        style={{
-          position: 'absolute',
-          right: 42,
-          bottom: 48,
-          textAlign: 'right',
-          minWidth: 160,
-        }}
-      >
+      {/* Expiry date value (SVG has "Expiry Date:" label) */}
+      <div style={overlayStyle(EXPIRY_DATE)}>{expiry || '\u00A0'}</div>
+
+      {/* Signature (above "Authorised Signature" in SVG) */}
+      {signatureName ? (
         <div
           style={{
-            width: 130,
-            height: 2,
-            backgroundColor: GOLD,
-            marginLeft: 'auto',
-            marginBottom: 6,
-          }}
-        />
-        <div
-          style={{
-            fontFamily: '"Dancing Script", "Great Vibes", cursive',
-            fontSize: 26,
+            position: 'absolute',
+            right: 48,
+            bottom: 72,
+            textAlign: 'right',
+            fontFamily: '"Imperial Script", cursive',
+            fontSize: 28,
             color: '#0d0d0d',
-            marginBottom: 4,
           }}
         >
-          {signatureName || '\u00A0'}
+          {signatureName}
         </div>
-        <div
-          style={{
-            fontSize: 9,
-            letterSpacing: '0.25em',
-            color: '#1a1a1a',
-            fontFamily: 'Georgia, serif',
-          }}
-        >
-          SIGNATURE
-        </div>
-      </div>
+      ) : null}
+
+      {/* Certificate ID value only (SVG has "Certificate ID:" on the right) */}
+      {certId ? <div style={overlayStyle(CERTIFICATE_ID)}>{certId}</div> : null}
     </div>
   );
 });

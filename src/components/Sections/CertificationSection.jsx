@@ -139,7 +139,7 @@ const CertificationSection = () => {
                 )}
                 {!certLoading && !certPreviewUrl && (
                   <img
-                    src="/certificate-webinar.svg"
+                    src="/certificate.svg?v=certificate123a"
                     alt="GuideXpert certificate"
                     className="w-full h-full object-contain block"
                     width={842}
