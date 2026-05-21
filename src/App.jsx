@@ -4,6 +4,7 @@ import { AuthProvider } from './contexts/AuthContext';
 import { useAuth } from './hooks/useAuth';
 import { CounsellorAuthProvider, useCounsellorAuth } from './contexts/CounsellorAuthContext';
 import { BdaAuthProvider, useBdaAuth } from './contexts/BdaAuthContext';
+import { setBdaToken, setBdaUser } from './utils/bdaApi';
 import BdaLogin from './pages/bda/BdaLogin';
 import BdaDashboard from './pages/bda/BdaDashboard';
 import { WebinarAuthProvider, useWebinarAuth } from './contexts/WebinarAuthContext';
@@ -169,8 +170,6 @@ function SessionExpiryRedirects() {
   const { logout: adminLogout } = useAuth();
   const { logout: webinarLogout } = useWebinarAuth();
   const { logout: counsellorLogout } = useCounsellorAuth();
-  const { logout: bdaLogout } = useBdaAuth();
-
   useEffect(() => {
     const offAdmin = onAdminUnauthorized(() => {
       adminLogout();
@@ -191,7 +190,8 @@ function SessionExpiryRedirects() {
       }
     });
     const offBda = onBdaUnauthorized(() => {
-      bdaLogout();
+      setBdaToken(null);
+      setBdaUser(null);
       if (!location.pathname.startsWith('/bda/login')) {
         navigate('/bda/login', { replace: true });
       }
@@ -202,7 +202,7 @@ function SessionExpiryRedirects() {
       offCounsellor();
       offBda();
     };
-  }, [adminLogout, bdaLogout, counsellorLogout, webinarLogout, location.pathname, navigate]);
+  }, [adminLogout, counsellorLogout, webinarLogout, location.pathname, navigate]);
 
   return null;
 }
@@ -212,7 +212,6 @@ function App() {
     <BrowserRouter>
       <AuthProvider>
         <CounsellorAuthProvider>
-          <BdaAuthProvider>
           <WebinarAuthProvider>
             <SessionExpiryRedirects />
             <Routes>
@@ -441,8 +440,24 @@ function App() {
           </Route>
 
           {/* BDA Portal */}
-          <Route path="/bda/login" element={<BdaLogin />} />
-          <Route path="/bda/dashboard" element={<ProtectedBda><BdaDashboard /></ProtectedBda>} />
+          <Route
+            path="/bda/login"
+            element={
+              <BdaAuthProvider>
+                <BdaLogin />
+              </BdaAuthProvider>
+            }
+          />
+          <Route
+            path="/bda/dashboard"
+            element={
+              <BdaAuthProvider>
+                <ProtectedBda>
+                  <BdaDashboard />
+                </ProtectedBda>
+              </BdaAuthProvider>
+            }
+          />
           <Route path="/bda" element={<Navigate to="/bda/dashboard" replace />} />
 
           {/* Counsellor Portal */}
@@ -484,7 +499,6 @@ function App() {
           <Route path="*" element={<Navigate to="/" replace />} />
             </Routes>
           </WebinarAuthProvider>
-          </BdaAuthProvider>
         </CounsellorAuthProvider>
       </AuthProvider>
     </BrowserRouter>

@@ -26,8 +26,8 @@ export default function CallingTeamDateFilter({ value, onChange }) {
   };
 
   return (
-    <div className="flex flex-wrap items-end gap-2">
-      <div className="flex flex-wrap gap-1">
+    <div className="flex flex-wrap items-center gap-2">
+      <div className="flex flex-wrap gap-1.5">
         {PRESETS.map((p) => (
           <button
             key={p.id || 'all'}

@@ -5,6 +5,7 @@ import CallingTeamDateFilter from '../../../components/Admin/callingTeam/Calling
 import TableSkeleton from '../../../components/UI/TableSkeleton';
 import BdaCredentialsPanel from '../../../components/Admin/callingTeam/BdaCredentialsPanel';
 import BdaLanguageAutoAssignPanel from '../../../components/Admin/callingTeam/BdaLanguageAutoAssignPanel';
+import BdaUnassignedLeadPool from '../../../components/Admin/callingTeam/BdaUnassignedLeadPool';
 import BdaProfilesPanel from '../../../components/Admin/callingTeam/BdaProfilesPanel';
 import { buildStatsQuery, getBdaStats } from '../../../utils/callingTeamApi';
 
@@ -38,20 +39,28 @@ export default function CallingTeamBdas() {
   }, [load]);
 
   return (
-    <div className="space-y-6">
-      <div className="flex flex-wrap items-start justify-between gap-4">
-        <div>
-          <h1 className="text-2xl font-bold text-gray-900">BDA Management</h1>
-          <p className="text-sm text-gray-600 mt-1">
+    <div className="space-y-5 max-w-6xl">
+      <div className="flex flex-wrap items-center justify-between gap-x-4 gap-y-3">
+        <div className="min-w-0">
+          <h1 className="text-2xl font-bold text-gray-900 leading-tight">BDA Management</h1>
+          <p className="text-sm text-gray-600 mt-1.5 max-w-xl">
             Create BDA portal login credentials, manage profiles, and view performance
           </p>
         </div>
-        <div className="flex gap-2">
-          <Link to="/admin/calling-team" className="px-3 py-2 text-sm border rounded-lg bg-white">
+        <div className="flex items-center gap-2 shrink-0">
+          <Link
+            to="/admin/calling-team"
+            className="px-3 py-2 text-sm font-medium border border-gray-200 rounded-lg bg-white hover:bg-gray-50"
+          >
             Dashboard
           </Link>
-          <button type="button" onClick={load} className="p-2 border rounded-lg bg-white">
-            <FiRefreshCw />
+          <button
+            type="button"
+            onClick={load}
+            className="p-2 border border-gray-200 rounded-lg bg-white hover:bg-gray-50"
+            aria-label="Refresh stats"
+          >
+            <FiRefreshCw className="w-4 h-4" />
           </button>
         </div>
       </div>
@@ -71,6 +80,13 @@ export default function CallingTeamBdas() {
         }}
       />
 
+      <BdaUnassignedLeadPool
+        onAssigned={() => {
+          load();
+          setProfileRefresh((k) => k + 1);
+        }}
+      />
+
       <BdaCredentialsPanel
         onCreated={() => {
           load();
@@ -80,10 +96,10 @@ export default function CallingTeamBdas() {
 
       <BdaProfilesPanel refreshKey={profileRefresh} showCredentialsHint />
 
-      <div className="bg-white rounded-xl border overflow-hidden">
+      <div className="bg-white rounded-xl border border-gray-200 shadow-sm overflow-hidden">
         <div className="px-4 py-3 border-b">
           <h2 className="font-semibold text-gray-900">Performance stats</h2>
-          <p className="text-xs text-gray-500">Metrics by date range (below)</p>
+          <p className="text-sm text-gray-600 mt-1">Metrics by date range (filters above)</p>
         </div>
         {loading ? (
           <TableSkeleton rows={8} cols={9} />

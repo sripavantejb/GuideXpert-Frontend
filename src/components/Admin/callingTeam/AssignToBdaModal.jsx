@@ -2,7 +2,13 @@ import { useEffect, useState } from 'react';
 import { FiX } from 'react-icons/fi';
 import { listBdas, bulkAssignLeadsToBda } from '../../../utils/callingTeamApi';
 
-export default function AssignToBdaModal({ open, leadIds, onClose, onSuccess }) {
+export default function AssignToBdaModal({
+  open,
+  leadIds,
+  onClose,
+  onSuccess,
+  preferredLanguage = '',
+}) {
   const [bdas, setBdas] = useState([]);
   const [bdaId, setBdaId] = useState('');
   const [reason, setReason] = useState('');
@@ -19,15 +25,24 @@ export default function AssignToBdaModal({ open, leadIds, onClose, onSuccess }) 
     listBdas({ status: 'active' }).then((res) => {
       setLoadingBdas(false);
       if (res.success && Array.isArray(res.data?.data)) {
-        setBdas(res.data.data);
-        if (res.data.data.length === 0) {
-          setError('No active BDAs. Add a BDA from Calling Team dashboard first.');
+        let list = res.data.data;
+        if (preferredLanguage) {
+          const matched = list.filter((b) => b.language === preferredLanguage);
+          if (matched.length > 0) list = matched;
+        }
+        setBdas(list);
+        if (list.length === 0) {
+          setError(
+            preferredLanguage
+              ? `No active BDAs with language ${preferredLanguage}. Create one in BDA profiles above.`
+              : 'No active BDAs. Add a BDA from BDA Management first.'
+          );
         }
       } else {
         setError(res.message || 'Could not load BDAs');
       }
     });
-  }, [open]);
+  }, [open, preferredLanguage]);
 
   if (!open) return null;
 
@@ -60,6 +75,11 @@ export default function AssignToBdaModal({ open, leadIds, onClose, onSuccess }) 
         <div className="p-4 space-y-3">
           <p className="text-sm text-gray-600">
             {leadIds.length} lead{leadIds.length !== 1 ? 's' : ''} selected
+            {preferredLanguage ? (
+              <span className="block text-xs text-gray-500 mt-0.5">
+                Showing active BDAs for <strong>{preferredLanguage}</strong> when available
+              </span>
+            ) : null}
           </p>
           <label className="block text-sm font-medium text-gray-700">BDA</label>
           <select

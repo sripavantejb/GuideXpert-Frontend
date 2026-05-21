@@ -7,45 +7,56 @@ import {
 
 function LangCard({ title, data, onAssign, assigning, assignError, splitDone }) {
   const canAssign = data?.activeBdas > 0 && data?.unassignedLeads > 0 && !splitDone;
+  const hasBdas = (data?.bdas?.length ?? 0) > 0;
+
   return (
-    <div className="rounded-lg border border-gray-200 bg-gray-50/80 p-4 flex flex-col gap-3">
+    <div className="rounded-lg border border-gray-200 bg-gray-50/80 p-4 space-y-3">
       <div className="flex items-center justify-between gap-2">
         <h3 className="font-semibold text-gray-900">{title}</h3>
-        <span className="text-xs font-medium px-2 py-0.5 rounded-full bg-white border">
+        <span className="shrink-0 text-xs font-medium px-2 py-0.5 rounded-full bg-white border border-gray-200 text-gray-700">
           {data?.unassignedLeads ?? 0} unassigned
         </span>
       </div>
+
       <p className="text-sm text-gray-600">
-        {data?.activeBdas ?? 0} active {title} BDA{data?.activeBdas === 1 ? '' : 's'}
+        <span className="font-medium text-gray-800">{data?.activeBdas ?? 0}</span> active {title}{' '}
+        BDA{data?.activeBdas === 1 ? '' : 's'}
         {data?.activeBdas > 0 && data?.unassignedLeads > 0 && (
-          <>
+          <span className="text-gray-500">
             {' '}
-            → ~{data.perBdaEstimate} leads each
+            → ~{data.perBdaEstimate} each
             {data.remainder > 0 ? ` (+${data.remainder} extra)` : ''}
-          </>
+          </span>
         )}
       </p>
-      {data?.bdas?.length > 0 ? (
-        <ul className="text-xs text-gray-700 flex flex-wrap gap-2">
+
+      {hasBdas ? (
+        <ul className="flex flex-wrap gap-1.5">
           {data.bdas.map((b) => (
-            <li key={b.id} className="bg-white border rounded-md px-2 py-1">
+            <li
+              key={b.id}
+              className="inline-flex items-center bg-white border border-gray-200 rounded-md px-2 py-1 text-xs font-medium text-gray-800"
+            >
               {b.name}
             </li>
           ))}
         </ul>
       ) : (
-        <p className="text-xs text-amber-800 bg-amber-50 border border-amber-200 rounded-md px-2 py-1.5">
+        <p className="text-xs text-amber-900 bg-amber-50 border border-amber-200 rounded-lg px-3 py-2">
           Create active BDAs with language <strong>{title}</strong> first.
         </p>
       )}
+
       {splitDone && data?.unassignedLeads === 0 ? (
-        <p className="text-xs text-green-700 font-medium">All {title} leads assigned</p>
+        <p className="text-center text-xs font-medium text-green-700 py-2 rounded-lg bg-green-50 border border-green-200">
+          All {title} leads assigned
+        </p>
       ) : (
         <button
           type="button"
           disabled={!canAssign || assigning}
           onClick={() => onAssign(title)}
-          className="mt-auto py-2 text-sm font-medium rounded-lg bg-primary-blue text-white disabled:opacity-40 hover:opacity-90"
+          className="w-full py-2.5 text-sm font-medium rounded-lg bg-primary-blue text-white disabled:opacity-40 disabled:cursor-not-allowed hover:enabled:opacity-90"
         >
           {assigning ? 'Splitting…' : `Re-split ${title} leads`}
         </button>
@@ -135,31 +146,40 @@ export default function BdaLanguageAutoAssignPanel({ onAssigned, autoSplitOnLoad
     (preview?.Hindi?.unassignedLeads ?? 0) + (preview?.Telugu?.unassignedLeads ?? 0);
 
   return (
-    <section className="bg-white rounded-xl border-2 border-primary-blue-200 shadow-sm overflow-hidden">
-      <div className="px-4 py-3 border-b bg-primary-blue-50 flex flex-wrap items-center justify-between gap-3">
+    <section className="bg-white rounded-xl border border-primary-blue-200 shadow-sm overflow-hidden">
+      <div className="px-4 py-3 border-b bg-primary-blue-50/80 flex flex-wrap items-start justify-between gap-3">
         <div>
           <h2 className="font-semibold text-gray-900 flex items-center gap-2">
-            <FiZap className="text-primary-blue" />
+            <FiZap className="text-primary-blue" aria-hidden />
             Split leads by language (automatic)
           </h2>
           <p className="text-sm text-gray-600 mt-1">
             Hindi leads → Hindi BDAs (equal). Telugu leads → Telugu BDAs (equal). Uses form{' '}
-            <strong>preferredLanguage</strong> from Section 2.
+            <strong className="font-medium text-gray-800">preferredLanguage</strong> from Section 2.
           </p>
         </div>
-        <button type="button" onClick={load} className="p-2 border rounded-lg bg-white hover:bg-gray-50">
-          <FiRefreshCw className={loading ? 'animate-spin' : ''} />
+        <button
+          type="button"
+          onClick={load}
+          className="p-2 border rounded-lg hover:bg-gray-50 shrink-0"
+          aria-label="Refresh split preview"
+        >
+          <FiRefreshCw className={`w-4 h-4 ${loading ? 'animate-spin' : ''}`} />
         </button>
       </div>
 
       <div className="p-4 space-y-4">
         {assigningAll && (
-          <div className="rounded-lg bg-blue-50 border border-blue-200 px-4 py-3 text-sm text-blue-900">
+          <p className="text-sm text-blue-900 bg-blue-50 border border-blue-200 rounded-lg px-3 py-2">
             Splitting {totalUnassigned} unassigned leads by language… please wait.
-          </div>
+          </p>
         )}
 
-        {error && <p className="text-sm text-red-600">{error}</p>}
+        {error && (
+          <p className="text-sm text-red-600 bg-red-50 border border-red-200 rounded-lg px-3 py-2">
+            {error}
+          </p>
+        )}
         {success && (
           <p className="text-sm text-green-800 bg-green-50 border border-green-200 rounded-lg px-3 py-2">
             {success}
@@ -167,22 +187,22 @@ export default function BdaLanguageAutoAssignPanel({ onAssigned, autoSplitOnLoad
         )}
 
         {loading && !assigningAll ? (
-          <p className="text-sm text-gray-500">Loading…</p>
+          <p className="text-sm text-gray-500">Loading assignment preview…</p>
         ) : (
           <>
             <button
               type="button"
-              disabled={assigningAll || assigningLang || !canAutoSplit}
+              disabled={assigningAll || !!assigningLang || !canAutoSplit}
               onClick={runAssignAll}
-              className="w-full py-3 text-sm font-semibold rounded-lg bg-primary-blue text-white hover:opacity-90 disabled:opacity-50 flex items-center justify-center gap-2"
+              className="w-full py-2.5 text-sm font-medium rounded-lg bg-primary-blue text-white hover:enabled:opacity-90 disabled:opacity-50 disabled:cursor-not-allowed inline-flex items-center justify-center gap-2"
             >
-              <FiUsers />
+              <FiUsers className="w-4 h-4 shrink-0" aria-hidden />
               {assigningAll
                 ? 'Splitting all leads…'
                 : `Split all ${totalUnassigned} unassigned leads now (Hindi + Telugu)`}
             </button>
 
-            <div className="grid gap-4 md:grid-cols-2">
+            <div className="grid gap-3 sm:grid-cols-2">
               <LangCard
                 title="Hindi"
                 data={preview?.Hindi}
