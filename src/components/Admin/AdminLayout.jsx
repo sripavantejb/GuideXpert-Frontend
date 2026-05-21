@@ -36,6 +36,7 @@ const navItems = [
   { to: '/admin/posters', label: 'Poster automation', icon: FiLayers, sectionKey: 'poster-automation' },
   { to: '/admin/assessment-results', label: 'Custom Reports', icon: FiFileText, sectionKey: 'assessment-results' },
   { to: '/admin/webinar-progress', label: 'Webinar Progress', icon: FiVideo, sectionKey: 'webinar-progress' },
+  { to: '/admin/bulk-certificates', label: 'Bulk Certificates', icon: FiDownload, sectionKey: 'bulk-certificates' },
   { to: '/admin/blogs', label: 'Blog Management', icon: FiBookOpen, sectionKey: 'blogs' },
   { to: '/admin/osvi-calls', label: 'OSVI Calls', icon: FiPhone, sectionKey: 'osvi-calls' },
   { to: '/admin/osvi-calls-data', label: 'OSVI calls Data', icon: FiPhone, sectionKey: 'osvi-calls-data' },
@@ -49,7 +50,11 @@ function getVisibleNavItems(user) {
   const access = user.sectionAccess;
   if (!Array.isArray(access) || access.length === 0) return [];
   const set = new Set(access);
-  return navItems.filter((item) => set.has(item.sectionKey));
+  return navItems.filter((item) => {
+    if (set.has(item.sectionKey)) return true;
+    if (item.sectionKey === 'bulk-certificates' && set.has('webinar-progress')) return true;
+    return false;
+  });
 }
 
 function formatHeaderRange(from, to) {

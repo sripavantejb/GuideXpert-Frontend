@@ -757,6 +757,47 @@ export const bulkWebinarProgress = async (payload, token = getStoredToken()) => 
   }, token);
 };
 
+/**
+ * POST /api/admin/certificates/bulk-download — ZIP with PNG, PDF per found cert + manifest.csv
+ * @param {{ mobileNumbers?: string[], mobileNumbersText?: string }} payload
+ */
+export const bulkDownloadCertificates = async (payload = {}, token = getStoredToken()) => {
+  const url = `${getApiBaseUrl()}/admin/certificates/bulk-download`;
+  const headers = { 'Content-Type': 'application/json; charset=utf-8' };
+  if (token) headers.Authorization = `Bearer ${token}`;
+  const response = await fetch(url, {
+    method: 'POST',
+    headers,
+    body: JSON.stringify(payload),
+  });
+  if (!response.ok) {
+    if (response.status === 401) {
+      notifyAdminUnauthorized({ endpoint: '/admin/certificates/bulk-download', status: 401 });
+    }
+    let message = 'Bulk certificate download failed';
+    try {
+      const data = await response.json();
+      message = data.message || message;
+    } catch {
+      message = response.statusText || message;
+    }
+    return { success: false, message, status: response.status };
+  }
+  const blob = await response.blob();
+  const disposition = response.headers.get('Content-Disposition');
+  let filename = `certificates-bulk-${new Date().toISOString().slice(0, 10)}.zip`;
+  if (disposition) {
+    const match = /filename="?([^"]+)"?/.exec(disposition);
+    if (match) filename = match[1];
+  }
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(blob);
+  a.download = filename;
+  a.click();
+  URL.revokeObjectURL(a.href);
+  return { success: true };
+};
+
 export const getWebinarProgressExport = async (paramsOrToken = {}, token = getStoredToken()) => {
   const params = typeof paramsOrToken === 'string' || paramsOrToken == null ? {} : paramsOrToken;
   const actualToken = typeof paramsOrToken === 'string' ? paramsOrToken : token;

@@ -49,6 +49,7 @@ import CounsellorSupportRequests from './pages/admin/CounsellorSupportRequests';
 import TrainingFormResponses from './pages/admin/TrainingFormResponses';
 import Announcements from './pages/admin/Announcements';
 import WebinarProgressAdmin from './pages/admin/WebinarProgress';
+import BulkCertificateDownload from './pages/admin/BulkCertificateDownload';
 import OsviCalls from './pages/admin/OsviCalls';
 import OsviCallsData from './pages/admin/OsviCallsData';
 import PosterDownloads from './pages/admin/PosterDownloads';
@@ -423,6 +424,7 @@ function App() {
             <Route path="assessment-3-results" element={<Navigate to="/admin/assessment-results?type=3" replace />} />
             <Route path="announcements" element={<Announcements />} />
             <Route path="webinar-progress" element={<WebinarProgressAdmin />} />
+            <Route path="bulk-certificates" element={<BulkCertificateDownload />} />
             <Route path="blogs" element={<AdminBlog />} />
             <Route path="osvi-calls" element={<OsviCalls />} />
             <Route path="osvi-calls-data" element={<OsviCallsData />} />
