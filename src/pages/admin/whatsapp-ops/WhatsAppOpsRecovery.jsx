@@ -45,15 +45,20 @@ import {
   formatDt,
   formatIndianMobile91
 } from './whatsappOpsShared';
+import OpsFailureCell from './OpsFailureCell';
+import {
+  GX_TEMPLATE_OPTIONS,
+  IIT_REMINDER_LANGUAGE_CHIPS,
+  IIT_GENERIC_REMINDER_IDS,
+  OPS_PRODUCT_GUIDEXPERT,
+  OPS_PRODUCT_IIT,
+  buildOpsProductQueryParams,
+  parseOpsProductFromSearch,
+  parsePreferredLanguageFromSearch,
+  templateChipKey,
+  visibleTemplateKindsForProduct,
+} from './whatsappOpsProductConfig';
 import WhatsAppOpsMessages from './WhatsAppOpsMessages';
-
-const TEMPLATE_OPTIONS = [
-  { value: '', label: 'All templates' },
-  { value: 'slot_booked', label: 'slot_booked · transactional' },
-  { value: 'pre4hr', label: 'pre4hr · 4 hour reminder' },
-  { value: 'meet', label: 'meet · meeting link' },
-  { value: '30min', label: '30min · 30 min reminder' }
-];
 
 const GROUP_OPTIONS = [
   { id: 'all', label: 'All unresolved' },
@@ -372,222 +377,240 @@ function severityStripeClass(row) {
 }
 
 /* ============================================================================
- * PageHeader — top operations card with summary tiles + last-sync + refresh
+ * RecoveryCommandBar — unified header + KPIs + filters in one panel
  * ========================================================================= */
 
-function PageHeader({
-  totalRows,
-  totals,
-  jobActive,
-  onRefresh,
-  loading,
-  lastSyncAt,
-  messageKind,
-  cohortLoading,
-  cohortBookedSlots,
-  cohortSubtitle,
-  cohortHint
-}) {
-  const showCohort = cohortSubtitle != null;
-  const gridTiles = showCohort
-    ? 'grid-cols-2 sm:grid-cols-3 lg:grid-cols-5'
-    : 'grid-cols-2 sm:grid-cols-4';
+function RecoveryStatTile({ label, value, barClass, loading }) {
   return (
-    <section className="overflow-hidden rounded-2xl border border-slate-200/90 bg-white shadow-sm ring-1 ring-slate-900/[0.04]">
-      <div className="flex flex-col gap-3 p-3 sm:flex-row sm:items-center sm:justify-between sm:gap-4 sm:p-4">
-        <div className="flex min-w-0 flex-1 flex-col gap-2 sm:flex-row sm:items-center sm:gap-4">
-          <div className="min-w-0 border-l-[3px] border-primary-navy pl-3">
-            <div className="flex flex-wrap items-center gap-x-2 gap-y-1">
-              <span className="rounded-full border border-slate-200 bg-slate-50 px-2 py-0.5 text-[10px] font-bold uppercase tracking-wide text-slate-600">
-                Recovery
-              </span>
-              <span
-                className={`inline-flex h-1.5 w-1.5 rounded-full ${
-                  jobActive ? 'bg-amber-500 motion-safe:animate-pulse' : 'bg-emerald-500'
-                }`}
-                aria-hidden
-              />
-              <span className="text-[11px] font-medium text-slate-500">
-                {messageKind || 'All templates'}
-              </span>
-            </div>
-            <h2 className="mt-1 text-lg font-bold tracking-tight text-slate-900 sm:text-xl">Recovery console</h2>
-            <p className="mt-0.5 hidden max-w-xl text-xs text-slate-600 md:block">
-              Unresolved recipients, manual recovery batches, CSV export. Lineage preserved.
-            </p>
-            {cohortHint ? (
-              <p className="mt-2 flex max-w-xl items-start gap-1.5 rounded-lg border border-slate-200/90 bg-slate-50/90 px-2.5 py-2 text-[11px] leading-snug text-slate-600">
-                <FiInfo className="mt-0.5 shrink-0 text-primary-navy" size={13} aria-hidden />
-                <span>{cohortHint}</span>
-              </p>
-            ) : null}
-          </div>
-        </div>
-        <div className="flex shrink-0 flex-wrap items-center gap-2 sm:flex-col sm:items-end md:flex-row md:items-center">
-          {lastSyncAt && (
-            <span className="whitespace-nowrap text-[11px] text-slate-500">Synced {formatDt(lastSyncAt)}</span>
-          )}
-          <button
-            type="button"
-            onClick={onRefresh}
-            disabled={loading}
-            title="Refresh data"
-            className="inline-flex h-9 items-center justify-center gap-2 rounded-lg border border-slate-200 bg-white px-3 text-xs font-semibold text-primary-navy shadow-sm transition hover:bg-slate-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary-navy/25 disabled:opacity-60"
-          >
-            {loading ? <FiLoader className="animate-spin" size={14} /> : <FiRefreshCw size={14} />}
-            Refresh
-          </button>
-        </div>
-      </div>
-      <div className={`grid gap-2 border-t border-slate-100 px-3 pb-3 pt-3 sm:gap-3 sm:px-4 ${gridTiles}`}>
-        {showCohort ? (
-          <CohortSummaryTile
-            label="Booked (cohort)"
-            value={typeof cohortBookedSlots === 'number' ? cohortBookedSlots : 0}
-            subtitle={cohortSubtitle}
-            loading={!!cohortLoading}
-          />
-        ) : null}
-        <SummaryTile label="All unresolved" value={totalRows} accent="text-primary-navy" dense />
-        <SummaryTile label="Failed" value={totals.failed || 0} accent="text-rose-700" dense />
-        <SummaryTile label="Excluded" value={totals.excluded || 0} accent="text-violet-700" dense />
-        <SummaryTile label="Exhausted" value={totals.exhausted || 0} accent="text-amber-700" dense />
-      </div>
-    </section>
+    <div className="relative overflow-hidden rounded-xl border border-slate-200/90 bg-white px-3 py-3 shadow-sm ring-1 ring-slate-900/[0.03] sm:px-4">
+      <span className={`absolute inset-y-2 left-0 w-1 rounded-full ${barClass}`} aria-hidden />
+      <p className="pl-2 text-[10px] font-semibold uppercase tracking-wide text-slate-500">{label}</p>
+      <p className="mt-1 pl-2 text-xl font-bold tabular-nums text-slate-900">
+        {loading ? '…' : typeof value === 'number' ? value.toLocaleString() : (value ?? '—')}
+      </p>
+    </div>
   );
 }
 
-/* ============================================================================
- * FiltersToolbar — sticky filters: date / template / search + group pills
- * ========================================================================= */
-
-function FiltersToolbar({
-  from, to, messageKind, group, search,
-  totals, totalsByCategory, jobActive,
-  onFromChange, onToChange, onTemplateChange, onGroupChange, onSearchChange
+function RecoveryCommandBar({
+  totalRows, totals, totalsByCategory,
+  jobActive, onRefresh, loading, lastSyncAt,
+  messageKind, cohortLoading, cohortBookedSlots, cohortSubtitle, cohortHint,
+  from, to, group, search,
+  opsProduct, isIitProduct, preferredLanguage, visibleTemplateChips, selectedChipKey,
+  onFromChange, onToChange, onTemplateChange, onGroupChange, onSearchChange,
+  onOpsProductChange, onTemplateChipSelect,
+  embedded = false
 }) {
-  const headerRight = jobActive ? (
-    <span className="inline-flex items-center gap-1 rounded-full border border-primary-blue-200 bg-primary-blue-50 px-2 py-0.5 text-[11px] font-semibold text-primary-navy">
-      <FiRotateCw className="animate-spin" size={11} /> auto-refreshing while batch runs
-    </span>
-  ) : null;
+  const showCohort = cohortSubtitle != null;
+  const categoryEntries = Object.entries(totalsByCategory || {})
+    .filter(([, c]) => c > 0)
+    .sort((a, b) => (b[1] || 0) - (a[1] || 0));
 
   const fieldClass =
-    'mt-1.5 block h-10 w-full rounded-lg border border-slate-200 bg-white px-3 text-sm text-slate-900 shadow-sm transition placeholder:text-slate-400 focus:border-primary-navy/40 focus:outline-none focus:ring-2 focus:ring-primary-navy/15';
+    'mt-1.5 block h-10 w-full rounded-lg border border-slate-200 bg-white px-3 text-sm text-slate-900 shadow-sm placeholder:text-slate-400 focus:border-primary-navy/40 focus:outline-none focus:ring-2 focus:ring-primary-navy/15';
 
-  const categoryEntries = Object.entries(totalsByCategory || {});
-  const categoryCount = categoryEntries.length;
+  const shellClass = embedded
+    ? ''
+    : 'overflow-hidden rounded-2xl border border-slate-200/90 bg-white shadow-sm ring-1 ring-slate-900/[0.04]';
+
+  const groupCount = (id) => (id === 'all' ? totalRows : totals[id] ?? 0);
 
   return (
-    <SectionCard
-      icon={FiSliders}
-      kicker="Filters & scope"
-      title="Inspection filters"
-      subtitle="Date, template, group, search."
-      headerRight={headerRight}
-      compact
-      bodyClassName="space-y-3 p-3 sm:p-4"
-    >
-      <div className="rounded-xl border border-slate-200/90 bg-slate-50/70 p-3 ring-1 ring-slate-900/[0.03] sm:p-3.5">
-        <div className="flex flex-col gap-3">
-          <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-12 lg:items-end">
-            <label className="text-sm font-medium text-slate-700 sm:col-span-1 lg:col-span-3">
-              From
-              <input type="date" value={from} onChange={(e) => onFromChange(e.target.value)} className={fieldClass} />
-            </label>
-            <label className="text-sm font-medium text-slate-700 sm:col-span-1 lg:col-span-3">
-              To
-              <input type="date" value={to} onChange={(e) => onToChange(e.target.value)} className={fieldClass} />
-            </label>
-            <label className="text-sm font-medium text-slate-700 sm:col-span-2 lg:col-span-6">
+    <section className={shellClass}>
+      <div className="border-b border-slate-100 px-4 py-4 sm:px-5">
+        <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
+          <div className="min-w-0 border-l-[3px] border-primary-navy pl-3">
+            <p className="text-[11px] font-bold uppercase tracking-[0.14em] text-slate-500">Recovery</p>
+            <h1 className="mt-1 text-xl font-bold tracking-tight text-slate-900 sm:text-2xl">Manual recovery</h1>
+            <p className="mt-1 max-w-2xl text-sm leading-relaxed text-slate-600">
+              Unresolved recipients for the selected product and date range. Pick a template to preview and send a recovery batch.
+            </p>
+          </div>
+          <div className="flex shrink-0 flex-col items-stretch gap-2 sm:items-end">
+            {lastSyncAt && (
+              <p className="text-xs text-slate-400">Last sync {formatDt(lastSyncAt)}</p>
+            )}
+            <button
+              type="button"
+              onClick={onRefresh}
+              disabled={loading}
+              className="inline-flex h-10 items-center justify-center gap-2 rounded-lg border border-slate-200 bg-white px-4 text-sm font-semibold text-primary-navy shadow-sm transition hover:bg-slate-50 disabled:opacity-50"
+            >
+              <FiRefreshCw size={15} className={loading ? 'animate-spin' : ''} />
+              Refresh data
+            </button>
+          </div>
+        </div>
+        {jobActive && (
+          <p className="mt-3 inline-flex items-center gap-2 rounded-lg border border-primary-blue-200 bg-primary-blue-50 px-3 py-1.5 text-xs font-medium text-primary-navy">
+            <FiRotateCw className="animate-spin" size={12} />
+            Batch running — list auto-refreshes
+          </p>
+        )}
+      </div>
+
+      {cohortHint && (
+        <div className="mx-4 mb-0 flex items-start gap-2 rounded-lg border border-amber-100 bg-amber-50 px-3 py-2 text-xs text-amber-900 sm:mx-5">
+          <FiInfo className="mt-0.5 shrink-0" size={14} />
+          <span>{cohortHint}</span>
+        </div>
+      )}
+
+      <div className={`grid grid-cols-2 gap-2 p-3 sm:grid-cols-4 sm:gap-3 sm:p-4 ${showCohort ? 'lg:grid-cols-5' : ''}`}>
+        {showCohort && (
+          <RecoveryStatTile
+            label="Booked (cohort)"
+            value={cohortBookedSlots}
+            barClass="bg-primary-navy/90"
+            loading={cohortLoading}
+          />
+        )}
+        <RecoveryStatTile label="All unresolved" value={totalRows} barClass="bg-slate-500/90" />
+        <RecoveryStatTile label="Failed" value={totals.failed || 0} barClass="bg-rose-500/90" />
+        <RecoveryStatTile label="Excluded" value={totals.excluded || 0} barClass="bg-violet-500/90" />
+        <RecoveryStatTile label="Exhausted" value={totals.exhausted || 0} barClass="bg-amber-500/90" />
+      </div>
+
+      <div className="border-t border-slate-100 px-4 py-4 sm:px-5">
+        <p className="text-xs font-bold uppercase tracking-[0.1em] text-slate-500">Filters</p>
+        <div className="mt-3 flex flex-wrap items-center gap-2">
+          <span className="text-xs font-semibold text-slate-500">Product</span>
+          <button
+            type="button"
+            onClick={() => onOpsProductChange(OPS_PRODUCT_GUIDEXPERT)}
+            className={`rounded-lg border px-3 py-1.5 text-sm font-semibold transition ${
+              !isIitProduct
+                ? 'border-primary-navy bg-primary-navy text-white'
+                : 'border-slate-200 bg-white text-slate-700 hover:bg-slate-50'
+            }`}
+          >
+            GuideXpert
+          </button>
+          <button
+            type="button"
+            onClick={() => onOpsProductChange(OPS_PRODUCT_IIT)}
+            className={`rounded-lg border px-3 py-1.5 text-sm font-semibold transition ${
+              isIitProduct
+                ? 'border-primary-navy bg-primary-navy text-white'
+                : 'border-slate-200 bg-white text-slate-700 hover:bg-slate-50'
+            }`}
+          >
+            IIT Counselling
+          </button>
+        </div>
+
+        {isIitProduct && (
+          <div className="mt-3 flex flex-wrap gap-2">
+            <button
+              type="button"
+              onClick={() => onTemplateChipSelect(null)}
+              className={`rounded-lg border px-2.5 py-1 text-xs font-semibold transition ${
+                !messageKind
+                  ? 'border-primary-navy bg-primary-navy text-white'
+                  : 'border-slate-200 bg-white text-slate-700 hover:bg-slate-50'
+              }`}
+            >
+              All templates
+            </button>
+            {visibleTemplateChips.map((chip) => {
+              const key = templateChipKey(chip);
+              return (
+                <button
+                  key={key}
+                  type="button"
+                  onClick={() => onTemplateChipSelect(chip)}
+                  className={`rounded-lg border px-2.5 py-1 text-xs font-semibold transition ${
+                    selectedChipKey === key
+                      ? 'border-primary-navy bg-primary-navy text-white'
+                      : 'border-slate-200 bg-white text-slate-700 hover:bg-slate-50'
+                  }`}
+                >
+                  {chip.label || chip.id}
+                </button>
+              );
+            })}
+            {preferredLanguage && (
+              <span className="self-center text-xs text-slate-500">· {preferredLanguage}</span>
+            )}
+          </div>
+        )}
+
+        <div className="mt-3 grid grid-cols-1 gap-4 md:grid-cols-2 lg:grid-cols-12 lg:items-end">
+          <label className="text-sm font-medium text-slate-700 lg:col-span-2">
+            From
+            <input type="date" value={from} onChange={(e) => onFromChange(e.target.value)} className={fieldClass} />
+          </label>
+          <label className="text-sm font-medium text-slate-700 lg:col-span-2">
+            To
+            <input type="date" value={to} onChange={(e) => onToChange(e.target.value)} className={fieldClass} />
+          </label>
+          {!isIitProduct && (
+            <label className="text-sm font-medium text-slate-700 lg:col-span-3">
               Template
               <select value={messageKind} onChange={(e) => onTemplateChange(e.target.value)} className={fieldClass}>
-                {TEMPLATE_OPTIONS.map((o) => (
+                <option value="">All templates</option>
+                {GX_TEMPLATE_OPTIONS.filter((o) => o.value).map((o) => (
                   <option key={o.value} value={o.value}>{o.label}</option>
                 ))}
               </select>
             </label>
-          </div>
-          <label className="text-sm font-medium text-slate-700">
-            Search (name / phone / reason)
+          )}
+          <label className={`text-sm font-medium text-slate-700 ${isIitProduct ? 'lg:col-span-8' : 'lg:col-span-5'}`}>
+            Search
             <input
               value={search}
               onChange={(e) => onSearchChange(e.target.value)}
-              placeholder="e.g. 98765… or rate limit"
+              placeholder="Phone, name, or error text"
               className={fieldClass}
             />
           </label>
         </div>
-
-        <div className="mt-3 border-t border-slate-200/80 pt-3">
-          <p className="text-xs font-bold uppercase tracking-wide text-slate-500">Group</p>
-          <div className="scrollbar-hide mt-1.5 flex gap-2 overflow-x-auto pb-1 -mx-1 px-1">
-            {GROUP_OPTIONS.map((g) => (
-              <button
-                key={g.id}
-                type="button"
-                onClick={() => onGroupChange(g.id)}
-                className={`inline-flex min-h-[2.25rem] shrink-0 items-center gap-2 rounded-lg border px-3 py-2 text-sm font-semibold transition ${
-                  group === g.id
-                    ? 'border-primary-navy bg-primary-navy text-white shadow-md'
-                    : 'border-slate-200 bg-white text-slate-700 hover:border-slate-300 hover:bg-slate-50'
-                }`}
-              >
-                {g.label}
-                <span
-                  className={`rounded-full px-2 py-0.5 text-xs font-mono tabular-nums ${
-                    group === g.id ? 'bg-white/20 text-white' : 'bg-slate-100 text-slate-700'
-                  }`}
-                >
-                  {(totals[g.id] ?? 0).toLocaleString()}
-                </span>
-              </button>
-            ))}
-          </div>
-        </div>
       </div>
 
-      {categoryCount > 0 && categoryCount <= 4 && (
-        <div className="flex flex-wrap items-center gap-2 border-t border-slate-200/80 pt-3 text-sm">
-          <span className="w-full text-xs font-bold uppercase tracking-wide text-slate-500 sm:w-auto">By exclusion category</span>
-          {categoryEntries.map(([cat, count]) => (
-            <span
-              key={cat}
-              className={`inline-flex items-center gap-1.5 rounded-full border px-3 py-1 text-sm ${
-                EXCLUSION_CATEGORY_COLORS[cat] || 'border-slate-200 bg-slate-50'
+      <nav className="scrollbar-hide flex gap-1 overflow-x-auto border-t border-slate-100 px-4 sm:px-5" aria-label="Recipient status">
+        {GROUP_OPTIONS.map((g) => {
+          const active = group === g.id;
+          const count = groupCount(g.id);
+          return (
+            <button
+              key={g.id}
+              type="button"
+              onClick={() => onGroupChange(g.id)}
+              className={`shrink-0 border-b-2 px-3 py-3 text-sm font-semibold transition-colors ${
+                active
+                  ? 'border-primary-navy text-primary-navy'
+                  : 'border-transparent text-slate-500 hover:border-slate-300 hover:text-slate-800'
               }`}
             >
-              <strong className="font-mono tabular-nums">{count}</strong>
-              <span className="text-slate-700">{EXCLUSION_CATEGORY_LABELS[cat] || cat}</span>
-            </span>
-          ))}
-        </div>
-      )}
+              {g.label}
+              <span className={`ml-1.5 tabular-nums text-xs font-medium ${active ? 'text-primary-navy/80' : 'text-slate-400'}`}>
+                {count.toLocaleString()}
+              </span>
+            </button>
+          );
+        })}
+      </nav>
 
-      {categoryCount > 4 && (
-        <details className="group rounded-lg border border-slate-200/80 bg-slate-50/50">
-          <summary className="cursor-pointer list-none px-3 py-2 text-xs font-bold uppercase tracking-wide text-slate-500 [&::-webkit-details-marker]:hidden">
-            <span className="inline-flex w-full items-center justify-between gap-2">
-              Exclusion categories ({categoryCount})
-              <FiChevronDown className="h-4 w-4 shrink-0 text-slate-400 transition-transform group-open:rotate-180" aria-hidden />
-            </span>
+      {categoryEntries.length > 0 && (
+        <details className="border-t border-slate-100 px-4 sm:px-5">
+          <summary className="cursor-pointer py-2.5 text-xs font-semibold text-slate-600 hover:text-slate-900">
+            Exclusion breakdown · {categoryEntries.length} categories
           </summary>
-          <div className="flex flex-wrap gap-2 border-t border-slate-200/80 px-3 py-3">
+          <div className="flex flex-wrap gap-2 pb-4">
             {categoryEntries.map(([cat, count]) => (
               <span
                 key={cat}
-                className={`inline-flex items-center gap-1.5 rounded-full border px-3 py-1 text-sm ${
-                  EXCLUSION_CATEGORY_COLORS[cat] || 'border-slate-200 bg-slate-50'
-                }`}
+                className="inline-flex items-center gap-2 rounded-lg border border-slate-200 bg-slate-50 px-2.5 py-1 text-xs text-slate-700"
               >
-                <strong className="font-mono tabular-nums">{count}</strong>
-                <span className="text-slate-700">{EXCLUSION_CATEGORY_LABELS[cat] || cat}</span>
+                <span>{EXCLUSION_CATEGORY_LABELS[cat] || cat}</span>
+                <span className="font-semibold tabular-nums text-slate-900">{count.toLocaleString()}</span>
               </span>
             ))}
           </div>
         </details>
       )}
-    </SectionCard>
+    </section>
   );
 }
 
@@ -999,53 +1022,18 @@ function RecoveryBatchHero({ job, isSuper, onCancel, onDismiss, dismissed }) {
 }
 
 /* ============================================================================
- * RecoveryActionsCard — idle / preview-ready / running modes
+ * RecoveryActionStrip — compact single-card action bar replacing two tall cards
  * ========================================================================= */
 
-function RecoveryActionsCard({
-  messageKind, isSuper, selectedPhones, job,
+function RecoveryActionStrip({
+  messageKind, isSuper, selectedPhones, job, recentJobs,
   preview, previewLoading, previewErr, starting, actionErr,
-  onPreview, onStart
+  onPreview, onStart,
+  embedded = false
 }) {
   const isRunning = job && (job.status === 'queued' || job.status === 'running');
   const isSlotBooked = messageKind === 'slot_booked';
-
-  if (!messageKind) {
-    return (
-      <SectionCard
-        compact
-        icon={FiPlay}
-        kicker="Recovery actions"
-        title="Select a template first"
-        subtitle="Manual recovery is template-scoped. Choose a template in filters, then preview and start a batch."
-        bodyClassName="p-0"
-      >
-        <p className="border-t border-slate-100 px-3 py-2 text-[11px] leading-snug text-slate-600 sm:px-4">
-          Filters above must list a specific template (not “All templates”) to unlock preview and recovery.
-        </p>
-      </SectionCard>
-    );
-  }
-
-  if (isRunning) {
-    return (
-      <SectionCard
-        icon={FiPlay}
-        kicker="Recovery actions"
-        title={`${messageKind} · paused while batch runs`}
-        subtitle="Live operation in progress. Recovery actions resume automatically when the batch completes."
-        bodyClassName="px-3 py-2.5"
-      >
-        <div className="flex flex-wrap items-center gap-2 text-xs leading-snug text-slate-700">
-          <span className="inline-flex items-center gap-1 rounded-full border border-primary-blue-200 bg-primary-blue-50 px-2.5 py-1 text-[11px] font-bold uppercase tracking-wide text-primary-navy">
-            <FiActivity size={11} /> Operation in progress
-          </span>
-          <span>Use the batch card in the main column for counters and cancel.</span>
-          <span className="ml-auto text-[11px] text-slate-500">Started {formatDt(job.startedAt)}</span>
-        </div>
-      </SectionCard>
-    );
-  }
+  const top3 = (recentJobs || []).slice(0, 3);
 
   const targeted = selectedPhones?.length || preview?.candidates?.length || 0;
   const skippedTotal = preview
@@ -1055,169 +1043,150 @@ function RecoveryActionsCard({
     : null;
   const ready = !!preview && targeted > 0;
 
-  const headerRight = (
-    <>
-      <button
-        type="button"
-        onClick={onPreview}
-        disabled={previewLoading}
-        title="Preview unresolved candidates"
-        className="inline-flex items-center gap-1.5 rounded-md border border-primary-blue-200 bg-white px-3 py-1.5 text-xs font-semibold text-primary-navy shadow-sm transition hover:bg-primary-blue-50 disabled:cursor-not-allowed disabled:opacity-60"
-      >
-        {previewLoading ? <FiLoader className="animate-spin" size={13} /> : <FiSearch size={13} />}
-        {preview ? 'Re-run preview' : 'Preview unresolved'}
-      </button>
-      {isSuper && (
-        <button
-          type="button"
-          onClick={onStart}
-          disabled={starting || !ready}
-          title={ready ? 'Start the manual recovery batch' : 'Run preview or select rows to enable'}
-          className={`inline-flex items-center gap-1.5 rounded-md px-3.5 py-1.5 text-sm font-bold shadow-sm transition disabled:cursor-not-allowed disabled:opacity-50 ${
-            ready
-              ? 'border border-rose-700 bg-rose-600 text-white hover:bg-rose-700'
-              : 'border border-slate-300 bg-slate-100 text-slate-500'
-          }`}
-        >
-          {starting ? <FiLoader className="animate-spin" size={14} /> : <FiPlay size={14} />}
-          {selectedPhones?.length
-            ? `Recover ${selectedPhones.length} selected`
-            : ready
-              ? `Start recovery (${targeted})`
-              : 'Start recovery'}
-        </button>
-      )}
-    </>
-  );
+  const recentSection = top3.length > 0 ? (
+    <div className="border-t border-slate-100 px-4 py-2">
+      <div className="scrollbar-hide flex flex-wrap gap-x-6 gap-y-1.5 overflow-x-auto">
+        {top3.map((j) => {
+          const c = j.counters || {};
+          const rec = c.recovered || 0;
+          const tgt = c.targeted || j.candidatePhonesCount || 0;
+          const statusCls =
+            j.status === 'completed' ? 'border-emerald-200 bg-emerald-50 text-emerald-800'
+            : j.status === 'failed' ? 'border-rose-200 bg-rose-50 text-rose-800'
+            : j.status === 'cancelled' ? 'border-slate-200 bg-slate-50 text-slate-600'
+            : 'border-amber-200 bg-amber-50 text-amber-800';
+          return (
+            <div key={j._id} className="flex shrink-0 items-center gap-2 text-xs text-slate-600">
+              <span className="font-mono text-[11px] text-slate-400">{String(j._id).slice(-6)}</span>
+              <span className={`rounded-full border px-2 py-0.5 text-[10px] font-semibold ${statusCls}`}>{j.status}</span>
+              <span className="font-mono tabular-nums">
+                <span className="text-emerald-700">{rec}</span>
+                <span className="text-slate-400">/</span>
+                <span>{tgt}</span>
+              </span>
+              <span className="text-slate-400">{formatDt(j.createdAt)}</span>
+            </div>
+          );
+        })}
+      </div>
+    </div>
+  ) : null;
+
+  const wrapClass = embedded
+    ? 'border-t border-slate-200 bg-slate-50/60'
+    : 'overflow-hidden rounded-2xl border border-slate-200/90 bg-white shadow-sm ring-1 ring-slate-900/[0.04]';
+
+  if (!messageKind) {
+    return (
+      <div className={wrapClass}>
+        <p className="px-4 py-3 text-sm text-slate-600 sm:px-5">
+          Select a specific template (not “All templates”) to preview and start recovery.
+        </p>
+        {recentSection}
+      </div>
+    );
+  }
+
+  if (isRunning) {
+    return (
+      <div className={wrapClass}>
+        <div className="flex flex-wrap items-center gap-3 px-4 py-3 sm:px-5">
+          <FiActivity className="shrink-0 text-primary-navy" size={18} />
+          <div className="min-w-0 flex-1">
+            <p className="text-sm font-semibold text-slate-900">Recovery batch running</p>
+            <p className="text-xs text-slate-500">
+              {messageKind} · started {formatDt(job.startedAt)} · see progress below
+            </p>
+          </div>
+          <span className="inline-flex items-center gap-1.5 rounded-lg border border-primary-blue-200 bg-primary-blue-50 px-2.5 py-1 text-xs font-semibold text-primary-navy">
+            <FiRotateCw className="animate-spin" size={12} /> In progress
+          </span>
+        </div>
+        {recentSection}
+      </div>
+    );
+  }
 
   return (
-    <SectionCard
-      compact
-      icon={FiPlay}
-      kicker="Recovery actions"
-      title={`${messageKind} · unresolved recipients`}
-      subtitle={
-        isSlotBooked
-          ? 'Transactional · immediate-only retry unchanged.'
-          : 'Uses safeSendWhatsApp; duplicate / delivered suppression preserved.'
-      }
-      headerRight={headerRight}
-      bodyClassName="space-y-2 p-3 sm:p-3.5"
-    >
+    <div className={wrapClass}>
+      <div className="flex flex-col gap-3 px-4 py-3 sm:flex-row sm:items-center sm:px-5">
+        <div className="min-w-0 flex-1">
+          <p className="text-sm font-semibold text-slate-900">
+            Recovery · <span className="font-mono text-primary-navy">{messageKind}</span>
+          </p>
+          <p className="mt-0.5 text-xs text-slate-500">
+            {isSlotBooked
+              ? 'Transactional send · immediate retry only'
+              : 'Safe send with duplicate and delivered suppression'}
+            {ready && (
+              <span className="ml-2 inline-flex items-center gap-1 text-emerald-700">
+                <FiCheckCircle size={12} /> {targeted} ready
+              </span>
+            )}
+          </p>
+        </div>
+        <div className="flex shrink-0 flex-wrap items-center gap-2">
+          <button
+            type="button"
+            onClick={onPreview}
+            disabled={previewLoading}
+            className="inline-flex h-10 items-center gap-2 rounded-lg border border-slate-200 bg-white px-4 text-sm font-semibold text-primary-navy shadow-sm transition hover:bg-slate-50 disabled:opacity-60"
+          >
+            {previewLoading ? <FiLoader className="animate-spin" size={14} /> : <FiSearch size={14} />}
+            {preview ? 'Re-run preview' : 'Preview batch'}
+          </button>
+          {isSuper && (
+            <button
+              type="button"
+              onClick={onStart}
+              disabled={starting || !ready}
+              className={`inline-flex h-10 items-center gap-2 rounded-lg px-4 text-sm font-semibold shadow-sm transition disabled:cursor-not-allowed disabled:opacity-50 ${
+                ready
+                  ? 'bg-rose-600 text-white hover:bg-rose-700'
+                  : 'border border-slate-200 bg-slate-100 text-slate-500'
+              }`}
+            >
+              {starting ? <FiLoader className="animate-spin" size={14} /> : <FiPlay size={14} />}
+              {selectedPhones?.length
+                ? `Recover ${selectedPhones.length} selected`
+                : ready
+                  ? `Start recovery (${targeted})`
+                  : 'Start recovery'}
+            </button>
+          )}
+        </div>
+      </div>
+
       {(previewErr || actionErr) && (
-        <div className="rounded-md border border-rose-200 bg-rose-50 px-2.5 py-1 text-xs text-rose-800">
+        <div className="mx-4 mb-2 rounded-lg border border-rose-200 bg-rose-50 px-3 py-2 text-sm text-rose-800 sm:mx-5">
           {previewErr || actionErr}
         </div>
       )}
 
       {(ready || selectedPhones?.length > 0) && (
-        <div className="rounded-lg border border-emerald-200 bg-emerald-50/60 p-2.5">
-          <div className="flex flex-wrap items-center gap-x-3 gap-y-1.5">
-            <span className="inline-flex items-center gap-1 rounded-full bg-emerald-600 px-2 py-0.5 text-[10px] font-bold uppercase tracking-wide text-white sm:text-[11px]">
-              <FiCheckCircle size={11} /> Ready
-            </span>
-            <span className="text-xs font-semibold text-emerald-900 sm:text-sm">
-              {selectedPhones?.length
-                ? `${selectedPhones.length} selected`
-                : `${targeted} unresolved`}
-            </span>
-            {!selectedPhones?.length && skippedTotal != null && skippedTotal > 0 && (
-              <span className="text-[10px] text-emerald-800 sm:text-[11px]">
-                {skippedTotal.toLocaleString()} skipped by guards
-              </span>
-            )}
-            <span className="ml-auto shrink-0 text-[10px] text-slate-600 sm:text-[11px]">
-              {isSuper ? 'Start recovery →' : 'Super-admin only'}
-            </span>
-          </div>
-
+        <div className="border-t border-slate-200/80 bg-white px-4 py-2 text-xs text-slate-600 sm:px-5">
+          <span className="font-medium text-slate-800">
+            {selectedPhones?.length ? `${selectedPhones.length} rows selected` : `${targeted} candidates after guards`}
+          </span>
+          {!selectedPhones?.length && skippedTotal != null && skippedTotal > 0 && (
+            <span className="ml-2 text-slate-500">· {skippedTotal.toLocaleString()} skipped</span>
+          )}
           {!selectedPhones?.length && preview && (
-            <div className="mt-2 grid grid-cols-2 gap-1.5 sm:grid-cols-4 sm:gap-2">
-              <CounterTile label="Targeted" value={preview.targeted || 0} accent="text-slate-900" />
-              <CounterTile
-                label="Skipped delivered"
-                value={(preview.skippedAlreadyDelivered || 0) + (preview.skippedGlobalRecentSuccess || 0)}
-                accent="text-emerald-700"
-              />
-              <CounterTile label="Skipped in-flight" value={preview.skippedInFlightDuplicate || 0} accent="text-violet-700" />
-              <div className="rounded-md border border-slate-200 bg-white px-2.5 py-1.5">
-                <p className="text-[10px] uppercase tracking-wider text-slate-500">Lookback / stale</p>
-                <p className="text-xs font-mono text-slate-700">
-                  {preview.lookbackDays || '—'}d / {preview.inFlightStaleMinutes || '—'}m
-                </p>
-              </div>
-            </div>
+            <span className="ml-2 text-slate-500">
+              · lookback {preview.lookbackDays || '—'}d
+            </span>
           )}
         </div>
       )}
 
       {!ready && !selectedPhones?.length && !previewLoading && (
-        <div className="rounded-lg border border-dashed border-primary-blue-200 bg-primary-blue-50/30 p-2.5 text-xs leading-snug text-slate-600">
-          <FiInfo className="mr-1 inline shrink-0 text-primary-navy" />
-          Run preview or select rows below to recover a subset.
-        </div>
-      )}
-    </SectionCard>
-  );
-}
-
-/* ============================================================================
- * RecentBatchesCard — always-visible recent batches (top 3)
- * ========================================================================= */
-
-function RecentBatchesCard({ recentJobs, messageKind }) {
-  const top3 = (recentJobs || []).slice(0, 3);
-  return (
-    <SectionCard
-      compact
-      icon={FiClock}
-      kicker="Recent batches"
-      title={
-        messageKind
-          ? top3.length
-            ? `${messageKind} · last ${top3.length} batch${top3.length === 1 ? '' : 'es'}`
-            : `${messageKind} · no recent batches`
-          : 'Pick a template to see recent batches'
-      }
-      subtitle="Latest manual jobs for this template."
-      bodyClassName={top3.length ? 'p-0' : 'p-0'}
-    >
-      {top3.length === 0 ? (
-        <p className="border-t border-slate-100 px-3 py-2 text-[11px] leading-snug text-slate-600 sm:px-4">
-          {messageKind
-            ? 'No recent recovery batches for this template.'
-            : 'Choose a template in filters to load recent batches.'}
+        <p className="border-t border-slate-200/80 px-4 py-2 text-xs text-slate-500 sm:px-5">
+          Run preview to see how many recipients will be targeted, or select rows in the table.
         </p>
-      ) : (
-        <ul className="divide-y divide-primary-blue-100">
-          {top3.map((j) => {
-            const c = j.counters || {};
-            const recovered = c.recovered || 0;
-            const target = c.targeted || j.candidatePhonesCount || 0;
-            const statusCls =
-              j.status === 'completed' ? 'border-emerald-200 bg-emerald-50 text-emerald-800'
-              : j.status === 'failed' ? 'border-rose-200 bg-rose-50 text-rose-800'
-              : j.status === 'cancelled' ? 'border-slate-300 bg-slate-50 text-slate-700'
-              : 'border-amber-200 bg-amber-50 text-amber-800';
-            return (
-              <li key={j._id} className="flex flex-wrap items-center gap-2 px-3 py-2 text-xs sm:gap-3 sm:px-4">
-                <span className="font-mono text-[11px] text-slate-600">{String(j._id).slice(-8)}</span>
-                <span className={`rounded-full border px-2 py-0.5 text-[10px] font-semibold ${statusCls}`}>
-                  {j.status}
-                </span>
-                <span className="text-slate-700">
-                  <strong className="font-mono text-emerald-700">{recovered.toLocaleString()}</strong>
-                  <span className="text-slate-400"> / </span>
-                  <strong className="font-mono text-slate-800">{target.toLocaleString()}</strong>
-                  <span className="ml-1 text-slate-500">recovered/targeted</span>
-                </span>
-                <span className="ml-auto text-[11px] text-slate-500">{formatDt(j.createdAt)}</span>
-              </li>
-            );
-          })}
-        </ul>
       )}
-    </SectionCard>
+
+      {recentSection}
+    </div>
   );
 }
 
@@ -1332,16 +1301,15 @@ function UnresolvedTableCard({
     <SectionCard
       compact
       icon={FiTarget}
-      kicker="Unresolved recipients"
-      title={`${rows.length} on this page · ${totalRows.toLocaleString()} total`}
-      subtitle={`Page ${page} / ${totalPages || 1}. Select rows to recover or export a custom subset.`}
+      title="Unresolved recipients"
+      subtitle={`${rows.length} on this page · ${totalRows.toLocaleString()} total · page ${page} of ${totalPages || 1}`}
       headerRight={headerRight}
       bodyClassName="p-0"
     >
       {showBulkBar && (
         <div className="sticky top-0 z-20 flex flex-wrap items-center gap-2 border-b border-slate-200 bg-white/95 px-4 py-2.5 text-sm shadow-sm backdrop-blur-md sm:py-3">
-          <span className="inline-flex items-center gap-1.5 rounded-full bg-primary-navy px-3 py-1 text-xs font-bold uppercase tracking-wide text-white">
-            <FiTarget size={12} /> {selected.size} selected
+          <span className="inline-flex items-center gap-1.5 rounded-md bg-slate-100 px-2.5 py-1 text-xs font-semibold text-slate-800">
+            {selected.size} selected
           </span>
           {isSuper && (
             <button
@@ -1373,18 +1341,8 @@ function UnresolvedTableCard({
       )}
 
       <div className="max-h-[min(70vh,720px)] min-w-0 overflow-x-auto">
-        <table className="w-full min-w-0 table-fixed border-collapse text-sm">
-          <colgroup>
-            <col className="w-10" />
-            <col className="w-[17%]" />
-            <col className="w-[15%]" />
-            <col className="hidden lg:table-column lg:w-[7.75rem]" />
-            <col className="w-[42%] 2xl:w-[24%]" />
-            <col className="hidden 2xl:table-column 2xl:w-[10%]" />
-            <col className="hidden 2xl:table-column 2xl:w-14" />
-            <col className="hidden 2xl:table-column 2xl:w-[10%]" />
-          </colgroup>
-          <thead className="sticky top-0 z-10 border-b border-slate-200 bg-white/95 text-xs font-bold uppercase tracking-wide text-slate-500 shadow-sm backdrop-blur-md">
+        <table className="w-full min-w-[1100px] border-collapse text-sm">
+          <thead className="sticky top-0 z-10 border-b border-slate-200 bg-slate-50/95 text-xs font-semibold text-slate-600 shadow-sm backdrop-blur-md">
             <tr>
               <th className="w-10 px-2 py-2 text-left align-middle sm:px-2.5">
                 <input
@@ -1395,22 +1353,22 @@ function UnresolvedTableCard({
                   className="rounded border-slate-300"
                 />
               </th>
-              <th className="min-w-0 w-[17%] px-2 py-2 text-left align-middle sm:px-2.5">Recipient</th>
-              <th className="min-w-0 w-[15%] px-2 py-2 text-left align-middle sm:px-2.5">Template / stage</th>
-              <th className="hidden min-w-0 w-[7.75rem] px-2 py-2 text-left align-middle lg:table-cell sm:px-2.5">
+              <th className="min-w-[9rem] px-2 py-2 text-left align-middle sm:px-2.5">Recipient</th>
+              <th className="min-w-[8rem] px-2 py-2 text-left align-middle sm:px-2.5">Template / stage</th>
+              <th className="hidden min-w-[6.5rem] px-2 py-2 text-left align-middle lg:table-cell sm:px-2.5">
                 State
               </th>
-              <th className="min-w-0 w-[42%] px-2 py-2 text-left align-middle sm:px-2.5 2xl:w-[24%]">
-                Reason / error
+              <th className="min-w-[16rem] px-2 py-2 text-left align-middle sm:px-2.5">
+                What went wrong
               </th>
-              <th className="hidden min-w-0 px-2 py-2 text-left align-middle 2xl:table-cell sm:px-2.5 2xl:w-[10%]">
+              <th className="hidden min-w-[7rem] px-2 py-2 text-left align-middle lg:table-cell sm:px-2.5">
                 Delivered
               </th>
-              <th className="hidden w-14 px-2 py-2 text-right align-middle 2xl:table-cell sm:px-2.5">
+              <th className="hidden w-16 px-2 py-2 text-right align-middle lg:table-cell sm:px-2.5">
                 Retries
               </th>
-              <th className="hidden min-w-0 px-2 py-2 text-left align-middle 2xl:table-cell sm:px-2.5 2xl:w-[10%]">
-                Last
+              <th className="hidden min-w-[7rem] px-2 py-2 text-left align-middle lg:table-cell sm:px-2.5">
+                Last attempt
               </th>
             </tr>
           </thead>
@@ -1435,7 +1393,6 @@ function UnresolvedTableCard({
             )}
             {rows.map((r) => {
               const isSel = selected.has(r.phone);
-              const reasonTitle = [r.exclusionReason, r.reason, r.errorMessage].filter(Boolean).join(' · ') || '';
               return (
                 <tr
                   key={`${r.phone}-${r.messageKind}-${r.lastEventId}`}
@@ -1464,7 +1421,7 @@ function UnresolvedTableCard({
                   <td className="min-w-0 px-2 py-1.5 align-middle sm:py-2">
                     <div className="flex min-w-0 flex-col gap-0.5">
                       <span
-                        className="inline-flex max-w-full items-center truncate rounded-md bg-primary-blue-50 px-1.5 py-0.5 font-mono text-[10px] font-semibold uppercase text-primary-navy ring-1 ring-primary-blue-200/80 sm:px-2 sm:text-xs"
+                        className="inline-flex max-w-full truncate rounded-md bg-slate-100 px-2 py-0.5 font-mono text-[11px] font-medium text-slate-800"
                         title={r.messageKind}
                       >
                         {r.messageKind}
@@ -1500,17 +1457,10 @@ function UnresolvedTableCard({
                       ) : null}
                     </div>
                   </td>
-                  <td className="min-w-0 px-2 py-1.5 align-middle sm:py-2" title={reasonTitle}>
-                    <p className="line-clamp-2 break-words text-xs font-medium text-slate-800">
-                      {r.exclusionReason || r.reason || '—'}
-                    </p>
-                    {r.errorMessage ? (
-                      <p className="mt-0.5 line-clamp-1 break-words text-xs text-rose-700">{r.errorMessage}</p>
-                    ) : (
-                      <p className="mt-0.5 text-[10px] leading-tight text-slate-400">No error detail</p>
-                    )}
+                  <td className="min-w-0 px-2 py-2 align-middle sm:px-2.5">
+                    <OpsFailureCell row={r} />
                   </td>
-                  <td className="hidden min-w-0 px-2 py-1.5 align-middle text-xs 2xl:table-cell sm:py-2">
+                  <td className="hidden min-w-0 px-2 py-1.5 align-middle text-xs lg:table-cell sm:py-2">
                     {r.everDeliveredAt ? (
                       <span
                         className="inline-flex max-w-full items-center gap-1 rounded-full border border-emerald-200 bg-emerald-50 px-2 py-0.5 text-[10px] font-semibold text-emerald-900"
@@ -1523,10 +1473,10 @@ function UnresolvedTableCard({
                       <span className="text-slate-400">Never</span>
                     )}
                   </td>
-                  <td className="hidden whitespace-nowrap px-2 py-1.5 text-right align-middle font-mono text-xs tabular-nums text-slate-800 2xl:table-cell sm:py-2">
+                  <td className="hidden whitespace-nowrap px-2 py-1.5 text-right align-middle font-mono text-xs tabular-nums text-slate-800 lg:table-cell sm:py-2">
                     {r.retryHistoryCount ?? 0}
                   </td>
-                  <td className="hidden min-w-0 whitespace-nowrap px-2 py-1.5 align-middle text-xs text-slate-600 2xl:table-cell sm:py-2">
+                  <td className="hidden min-w-0 whitespace-nowrap px-2 py-1.5 align-middle text-xs text-slate-600 lg:table-cell sm:py-2">
                     {formatDt(r.lastAttemptAt)}
                   </td>
                 </tr>
@@ -1567,58 +1517,6 @@ function UnresolvedTableCard({
 }
 
 /* ============================================================================
- * FinalExportCard — operator triage and grouped CSV export
- * ========================================================================= */
-
-function FinalExportCard({ totalsByCategory, totalRows }) {
-  const entries = Object.entries(totalsByCategory || {})
-    .filter(([, count]) => count > 0)
-    .sort((a, b) => (b[1] || 0) - (a[1] || 0));
-
-  return (
-    <details className="overflow-hidden rounded-2xl border border-slate-200/90 bg-white shadow-[0_2px_16px_-8px_rgba(15,23,42,0.08)] ring-1 ring-slate-900/[0.04] group">
-      <summary className="flex cursor-pointer list-none items-center justify-between gap-3 px-3 py-2.5 sm:px-4 [&::-webkit-details-marker]:hidden">
-        <div className="flex min-w-0 items-center gap-2.5">
-          <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-slate-50 text-primary-navy ring-1 ring-slate-200/80">
-            <FiDownload size={16} />
-          </span>
-          <div className="min-w-0">
-            <p className="text-[10px] font-bold uppercase tracking-[0.1em] text-slate-500">Triage by category</p>
-            <p className="truncate text-sm font-semibold text-slate-900">
-              {totalRows.toLocaleString()} in slice · expand for breakdown
-            </p>
-          </div>
-        </div>
-        <FiChevronDown className="h-5 w-5 shrink-0 text-slate-400 transition group-open:rotate-180" aria-hidden />
-      </summary>
-      <div className="border-t border-slate-200/80 px-3 pb-3 pt-2 sm:px-4">
-        {entries.length === 0 ? (
-          <p className="rounded-lg border border-dashed border-emerald-200 bg-emerald-50/50 p-3 text-xs text-emerald-900">
-            <FiCheckCircle className="mr-1 inline align-text-bottom" size={14} /> No breakdown for this slice.
-          </p>
-        ) : (
-          <div className="grid grid-cols-2 gap-2 sm:grid-cols-3 lg:grid-cols-4">
-            {entries.map(([cat, count]) => (
-              <div
-                key={cat}
-                className={`flex flex-col rounded-lg border px-3 py-2 shadow-sm ${
-                  EXCLUSION_CATEGORY_COLORS[cat] || 'border-slate-200 bg-slate-50 text-slate-700'
-                }`}
-              >
-                <p className="text-xs font-semibold leading-snug text-slate-800">
-                  {EXCLUSION_CATEGORY_LABELS[cat] || cat}
-                </p>
-                <p className="mt-0.5 text-lg font-bold tabular-nums text-primary-navy">{Number(count).toLocaleString()}</p>
-              </div>
-            ))}
-          </div>
-        )}
-      </div>
-    </details>
-  );
-}
-
-/* ============================================================================
  * RecoveryTab — orchestrator with lifted job state + 6s reload ticker
  * ========================================================================= */
 
@@ -1628,8 +1526,14 @@ function RecoveryTab() {
   const [searchParams, setSearchParams] = useSearchParams();
   const urlHydratedRef = useRef(false);
 
+  const opsProduct = parseOpsProductFromSearch(searchParams);
+  const isIitProduct = opsProduct === OPS_PRODUCT_IIT;
+
   const [{ from, to }, setRange] = useState(defaultRangeIsoDates);
   const [messageKind, setMessageKind] = useState('');
+  const [preferredLanguage, setPreferredLanguage] = useState(() =>
+    parsePreferredLanguageFromSearch(searchParams)
+  );
   const [group, setGroup] = useState('all');
   const [search, setSearch] = useState('');
   const [debouncedSearch, setDebouncedSearch] = useState('');
@@ -1675,6 +1579,7 @@ function RecoveryTab() {
       }
     }
     setMessageKind(searchParams.get('messageKind')?.trim() || '');
+    setPreferredLanguage(parsePreferredLanguageFromSearch(searchParams));
     const g = searchParams.get('group')?.trim().toLowerCase();
     const allowed = new Set(['all', 'failed', 'excluded', 'exhausted', 'not_accepted', 'in_flight_stale']);
     setGroup(g && allowed.has(g) ? g : 'all');
@@ -1691,10 +1596,27 @@ function RecoveryTab() {
     if (from) next.set('from', from);
     if (to) next.set('to', to);
     if (messageKind) next.set('messageKind', messageKind);
+    if (isIitProduct) next.set('opsProduct', OPS_PRODUCT_IIT);
+    if (preferredLanguage && IIT_GENERIC_REMINDER_IDS.has(messageKind)) {
+      next.set('preferredLanguage', preferredLanguage);
+    }
     if (group && group !== 'all') next.set('group', group);
     if (debouncedSearch) next.set('q', debouncedSearch);
     setSearchParams(next, { replace: true });
-  }, [from, to, messageKind, group, debouncedSearch, setSearchParams]);
+  }, [from, to, messageKind, group, debouncedSearch, isIitProduct, preferredLanguage, setSearchParams]);
+
+  const visibleTemplateChips = useMemo(
+    () => visibleTemplateKindsForProduct([], opsProduct),
+    [opsProduct]
+  );
+  const selectedChipKey = useMemo(
+    () => (messageKind ? templateChipKey({ id: messageKind, preferredLanguage }) : 'all'),
+    [messageKind, preferredLanguage]
+  );
+  const apiScopeParams = useMemo(
+    () => buildOpsProductQueryParams(opsProduct, messageKind || null, preferredLanguage),
+    [opsProduct, messageKind, preferredLanguage]
+  );
 
   /* ---------------------- Job state lifted to RecoveryTab ----------------- */
   const [job, setJob] = useState(null);
@@ -1733,7 +1655,8 @@ function RecoveryTab() {
     getWhatsappOpsCalendarDay({
       date: from,
       slotTime: 'all',
-      messageKind
+      messageKind,
+      ...apiScopeParams,
     })
       .then((res) => {
         if (cancelled) return;
@@ -1757,11 +1680,13 @@ function RecoveryTab() {
     return () => {
       cancelled = true;
     };
-  }, [cohortEligible, from, messageKind]);
+  }, [cohortEligible, from, messageKind, apiScopeParams]);
 
   const cohortSubtitle =
     cohortEligible && cohortFetch.status !== 'error'
-      ? `FormSubmission · registered · IST ${from} · all slot times on this IST date`
+      ? isIitProduct
+        ? `IIT counselling · registrations · IST ${from}`
+        : `FormSubmission · registered · IST ${from} · all slot times on this IST date`
       : null;
   const cohortLoading = cohortFetch.status === 'loading';
   const cohortBookedSlots = cohortFetch.status === 'ok' ? cohortFetch.bookedSlots ?? 0 : null;
@@ -1778,7 +1703,7 @@ function RecoveryTab() {
   }, [cohortSubtitle, cohortEligible, cohortFetch.status]);
 
   /** Reset action/preview state when scope changes (template/range). */
-  const scopeKey = `${messageKind || 'none'}|${from}|${to}`;
+  const scopeKey = `${opsProduct}|${messageKind || 'none'}|${preferredLanguage || ''}|${from}|${to}`;
   const lastScopeKeyRef = useRef(scopeKey);
   useEffect(() => {
     if (lastScopeKeyRef.current !== scopeKey) {
@@ -1822,12 +1747,12 @@ function RecoveryTab() {
       setRecentJobs([]);
       return;
     }
-    const res = await listWhatsappOpsManualRecoveryJobs({ messageKind, limit: 5 });
+    const res = await listWhatsappOpsManualRecoveryJobs({ messageKind, limit: 5, ...apiScopeParams });
     if (res.success) {
       const arr = res.data?.data ?? res.data;
       setRecentJobs(Array.isArray(arr) ? arr : []);
     }
-  }, [messageKind]);
+  }, [messageKind, apiScopeParams]);
 
   useEffect(() => {
     Promise.resolve().then(() => loadRecentJobs());
@@ -1863,8 +1788,7 @@ function RecoveryTab() {
   const load = useCallback(async () => {
     setLoading(true);
     setErr(null);
-    const params = { ...apiDateRange, group, page, limit: 50 };
-    if (messageKind) params.messageKind = messageKind;
+    const params = { ...apiDateRange, ...apiScopeParams, group, page, limit: 50 };
     if (debouncedSearch) params.q = debouncedSearch;
     const res = await getUnresolvedRecipients(params);
     setLoading(false);
@@ -1875,7 +1799,7 @@ function RecoveryTab() {
     }
     setData(res.data?.data ?? res.data);
     setLastSyncAt(new Date().toISOString());
-  }, [apiDateRange, group, page, messageKind, debouncedSearch]);
+  }, [apiDateRange, apiScopeParams, group, page, debouncedSearch]);
 
   useEffect(() => {
     load();
@@ -1924,7 +1848,7 @@ function RecoveryTab() {
     if (!messageKind) return;
     setPreviewLoading(true);
     setPreviewErr(null);
-    const res = await previewWhatsappOpsManualRecovery({ messageKind, ...apiDateRange });
+    const res = await previewWhatsappOpsManualRecovery({ messageKind, ...apiDateRange, ...apiScopeParams });
     setPreviewLoading(false);
     if (!res.success) {
       setPreviewErr(res.message || 'Preview failed');
@@ -1932,7 +1856,7 @@ function RecoveryTab() {
       return;
     }
     setPreview(res.data?.data ?? res.data);
-  }, [messageKind, apiDateRange]);
+  }, [messageKind, apiDateRange, apiScopeParams]);
 
   const handleStart = useCallback(async () => {
     if (!messageKind) {
@@ -1950,7 +1874,7 @@ function RecoveryTab() {
     if (!window.confirm(`Send manual recovery to ${label}? Duplicate protections still apply.`)) return;
     setStarting(true);
     setActionErr(null);
-    const body = { messageKind, ...apiDateRange };
+    const body = { messageKind, ...apiDateRange, ...apiScopeParams };
     if (selectedArr.length) body.phones = selectedArr;
     const res = await startWhatsappOpsManualRecovery(body);
     setStarting(false);
@@ -1966,7 +1890,7 @@ function RecoveryTab() {
         loadRecentJobs();
       }
     }
-  }, [messageKind, apiDateRange, selectedArr, preview, refreshJob, loadRecentJobs]);
+  }, [messageKind, apiDateRange, apiScopeParams, selectedArr, preview, refreshJob, loadRecentJobs]);
 
   const handleCancel = useCallback(async () => {
     if (!job?._id) return;
@@ -1994,8 +1918,7 @@ function RecoveryTab() {
     setCsvBusy(true);
     setErr(null);
     try {
-      const params = { ...apiDateRange, group };
-      if (messageKind) params.messageKind = messageKind;
+      const params = { ...apiDateRange, ...apiScopeParams, group };
       if (debouncedSearch) params.q = debouncedSearch;
       const text = await fetchUnresolvedCsvText(params);
       const forClipboard = text.replace(/^\uFEFF/, '');
@@ -2009,8 +1932,7 @@ function RecoveryTab() {
     setCsvBusy(true);
     setErr(null);
     try {
-      const params = { ...apiDateRange, group };
-      if (messageKind) params.messageKind = messageKind;
+      const params = { ...apiDateRange, ...apiScopeParams, group };
       if (debouncedSearch) params.q = debouncedSearch;
       await downloadUnresolvedCsv(params);
     } catch (e) {
@@ -2022,9 +1944,12 @@ function RecoveryTab() {
   /* ---------------------- Render ----------------------------------------- */
   return (
     <div className="space-y-4">
-      <PageHeader
+      <div className="overflow-hidden rounded-2xl border border-slate-200/90 bg-white shadow-sm ring-1 ring-slate-900/[0.04]">
+      <RecoveryCommandBar
+        embedded
         totalRows={totalRows}
         totals={totals}
+        totalsByCategory={totalsByCategory}
         jobActive={jobActive}
         onRefresh={() => setReloadKey((k) => k + 1)}
         loading={loading}
@@ -2034,78 +1959,91 @@ function RecoveryTab() {
         cohortBookedSlots={cohortBookedSlots}
         cohortSubtitle={cohortSubtitle}
         cohortHint={cohortHint}
-      />
-
-      <FiltersToolbar
         from={from}
         to={to}
-        messageKind={messageKind}
         group={group}
         search={search}
-        totals={totals}
-        totalsByCategory={totalsByCategory}
-        jobActive={jobActive}
+        opsProduct={opsProduct}
+        isIitProduct={isIitProduct}
+        preferredLanguage={preferredLanguage}
+        visibleTemplateChips={visibleTemplateChips}
+        selectedChipKey={selectedChipKey}
         onFromChange={(v) => { setRange((r) => ({ ...r, from: v })); setPage(1); }}
         onToChange={(v) => { setRange((r) => ({ ...r, to: v })); setPage(1); }}
-        onTemplateChange={(v) => { setMessageKind(v); setPage(1); }}
+        onTemplateChange={(v) => { setMessageKind(v); setPreferredLanguage(null); setPage(1); }}
+        onOpsProductChange={(next) => {
+          const sp = new URLSearchParams(searchParams.toString());
+          if (next === OPS_PRODUCT_GUIDEXPERT) {
+            sp.delete('opsProduct');
+            sp.delete('preferredLanguage');
+          } else {
+            sp.set('opsProduct', OPS_PRODUCT_IIT);
+          }
+          sp.delete('messageKind');
+          setSearchParams(sp, { replace: true });
+          setMessageKind('');
+          setPreferredLanguage(null);
+          setPage(1);
+        }}
+        onTemplateChipSelect={(chip) => {
+          setMessageKind(chip?.id || '');
+          setPreferredLanguage(chip?.preferredLanguage || null);
+          setPage(1);
+        }}
         onGroupChange={(v) => { setGroup(v); setPage(1); }}
         onSearchChange={(v) => setSearch(v)}
       />
-
-      <div className="flex flex-col gap-4 xl:grid xl:grid-cols-[minmax(17rem,22rem)_1fr] xl:items-start xl:gap-6">
-        <aside className="flex min-w-0 flex-col gap-4 xl:sticky xl:top-2 xl:self-start xl:max-h-[calc(100vh-6rem)] xl:overflow-y-auto">
-          <RecoveryActionsCard
-            messageKind={messageKind}
-            isSuper={isSuper}
-            selectedPhones={selectedArr}
-            job={job}
-            preview={preview}
-            previewLoading={previewLoading}
-            previewErr={previewErr}
-            starting={starting}
-            actionErr={actionErr}
-            onPreview={handlePreview}
-            onStart={handleStart}
-          />
-          <RecentBatchesCard recentJobs={recentJobs} messageKind={messageKind} />
-        </aside>
-
-        <div className="min-w-0 space-y-4">
-          {err && (
-            <div className="rounded-lg border border-rose-200 bg-rose-50 px-3 py-2.5 text-sm text-rose-900">{err}</div>
-          )}
-
-          <RecoveryBatchHero
-            job={job}
-            isSuper={isSuper}
-            onCancel={handleCancel}
-            onDismiss={() => setBannerDismissed(true)}
-            dismissed={bannerDismissed}
-          />
-
-          <UnresolvedTableCard
-            rows={tableRows}
-            loading={loading}
-            page={page}
-            totalPages={totalPages}
-            totalRows={totalRows}
-            selected={selected}
-            onToggleRow={toggleRow}
-            onTogglePage={togglePage}
-            onClearSelection={clearSelection}
-            onPrev={() => setPage((p) => Math.max(1, p - 1))}
-            onNext={() => setPage((p) => p + 1)}
-            onCopyPhones={handleCopyPhones}
-            onCopyCsv={handleCopyCsv}
-            onDownloadCsv={handleDownloadCsv}
-            csvBusy={csvBusy}
-            isSuper={isSuper}
-            onBulkRecover={handleBulkRecover}
-          />
-
-          <FinalExportCard totalsByCategory={totalsByCategory} totalRows={totalRows} />
-        </div>
+      <RecoveryActionStrip
+        embedded
+        messageKind={messageKind}
+        isSuper={isSuper}
+        selectedPhones={selectedArr}
+        job={job}
+        recentJobs={recentJobs}
+        preview={preview}
+        previewLoading={previewLoading}
+        previewErr={previewErr}
+        starting={starting}
+        actionErr={actionErr}
+        onPreview={handlePreview}
+        onStart={handleStart}
+      />
       </div>
+
+      {/* inline error */}
+      {err && (
+        <div className="rounded-lg border border-rose-200 bg-rose-50 px-3 py-2 text-sm text-rose-900">{err}</div>
+      )}
+
+      {/* 3 — batch hero (only when job active/dismissed) */}
+      <RecoveryBatchHero
+        job={job}
+        isSuper={isSuper}
+        onCancel={handleCancel}
+        onDismiss={() => setBannerDismissed(true)}
+        dismissed={bannerDismissed}
+      />
+
+      {/* full-width unresolved table */}
+      <UnresolvedTableCard
+        rows={tableRows}
+        loading={loading}
+        page={page}
+        totalPages={totalPages}
+        totalRows={totalRows}
+        selected={selected}
+        onToggleRow={toggleRow}
+        onTogglePage={togglePage}
+        onClearSelection={clearSelection}
+        onPrev={() => setPage((p) => Math.max(1, p - 1))}
+        onNext={() => setPage((p) => p + 1)}
+        onCopyPhones={handleCopyPhones}
+        onCopyCsv={handleCopyCsv}
+        onDownloadCsv={handleDownloadCsv}
+        csvBusy={csvBusy}
+        isSuper={isSuper}
+        onBulkRecover={handleBulkRecover}
+      />
     </div>
   );
 }
@@ -2116,8 +2054,8 @@ export default function WhatsAppOpsRecovery() {
     <div className="space-y-4">
       <nav
         role="tablist"
-        aria-label="Recovery console sections"
-        className="inline-flex w-full max-w-xl items-center gap-1 rounded-xl border border-slate-200/90 bg-slate-50/80 p-1 shadow-sm ring-1 ring-slate-900/[0.04] sm:w-auto"
+        aria-label="Messages console sections"
+        className="inline-flex w-full max-w-md items-center gap-1 rounded-xl border border-slate-200 bg-slate-50 p-1 sm:w-auto"
       >
         <button
           type="button"

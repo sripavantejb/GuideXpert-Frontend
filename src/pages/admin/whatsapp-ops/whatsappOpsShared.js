@@ -65,3 +65,20 @@ export function formatDt(isoOrDate) {
   if (Number.isNaN(d.getTime())) return String(isoOrDate);
   return d.toLocaleString('en-IN', { dateStyle: 'medium', timeStyle: 'short' });
 }
+
+/** Human label for provider error source (DLR vs send vs parsed fallback). */
+export function providerErrorSourceLabel(source) {
+  if (source === 'dlr') return 'DLR webhook';
+  if (source === 'send') return 'Gupshup send';
+  if (source === 'parsed') return 'Parsed';
+  return '';
+}
+
+/** @returns {{ code: string, subtitle: string }|null} */
+export function formatProviderErrorCode(code, source) {
+  if (code == null || code === '') return null;
+  return {
+    code: String(code),
+    subtitle: providerErrorSourceLabel(source) || 'Provider'
+  };
+}

@@ -13,40 +13,20 @@ import {
   getOperationalHealth
 } from '../../../utils/whatsappOpsAdminApi';
 import { defaultRangeIsoDates, istCalendarIsoToday } from './whatsappOpsShared';
+import {
+  FALLBACK_TEMPLATE_KINDS,
+  IIT_GENERIC_REMINDER_IDS,
+  IIT_REMINDER_LANGUAGE_CHIPS,
+  OPS_PRODUCT_GUIDEXPERT,
+  OPS_PRODUCT_IIT,
+  parseOpsProductFromSearch,
+  parsePreferredLanguageFromSearch,
+  templateChipKey,
+  templateKindAppliesToProduct,
+} from './whatsappOpsProductConfig';
 import { useWhatsappOpsHost } from './whatsappOpsHostContext';
 
 const POLL_KEY = 'guidexpert_whatsapp_ops_poll';
-const FALLBACK_TEMPLATE_KINDS = [
-  { id: 'slot_booked', label: 'Slot booked', description: 'Immediate confirmation after slot booking', opsProducts: ['guidexpert', 'iit_counselling'] },
-  { id: 'pre4hr', label: '4hr reminder', description: 'Reminder sent around 4 hours before slot', opsProducts: ['guidexpert'] },
-  { id: 'meet', label: 'Meet link (~1hr)', description: 'Meeting link reminder sent around 1 hour before slot', opsProducts: ['guidexpert'] },
-  { id: '30min', label: '30 min reminder', description: 'Final reminder sent around 30 minutes before slot', opsProducts: ['guidexpert'] },
-  { id: 'iit_pre2hr', label: '2 hours before', description: 'IIT demo reminder (Telugu/Hindi, Wed/Sat vs Sun)', opsProducts: ['iit_counselling'] },
-  { id: 'iit_pre45min', label: '45 min before', description: 'IIT demo reminder 45 minutes before slot', opsProducts: ['iit_counselling'] },
-  { id: 'iit_pre15min', label: '15 min before', description: 'IIT demo reminder 15 minutes before slot', opsProducts: ['iit_counselling'] },
-];
-
-const IIT_GENERIC_REMINDER_IDS = new Set(['iit_pre2hr', 'iit_pre45min', 'iit_pre15min']);
-
-/** IIT Counselling: one chip per reminder stage × language (replaces generic iit_pre* chips). */
-const IIT_REMINDER_LANGUAGE_CHIPS = [
-  { id: 'iit_pre2hr', preferredLanguage: 'Telugu', label: '2 hours before · Telugu', opsProducts: ['iit_counselling'] },
-  { id: 'iit_pre2hr', preferredLanguage: 'Hindi', label: '2 hours before · Hindi', opsProducts: ['iit_counselling'] },
-  { id: 'iit_pre45min', preferredLanguage: 'Telugu', label: '45 min before · Telugu', opsProducts: ['iit_counselling'] },
-  { id: 'iit_pre45min', preferredLanguage: 'Hindi', label: '45 min before · Hindi', opsProducts: ['iit_counselling'] },
-  { id: 'iit_pre15min', preferredLanguage: 'Telugu', label: '15 min before · Telugu', opsProducts: ['iit_counselling'] },
-  { id: 'iit_pre15min', preferredLanguage: 'Hindi', label: '15 min before · Hindi', opsProducts: ['iit_counselling'] },
-];
-
-function templateChipKey(kind) {
-  if (!kind?.id) return 'all';
-  return kind.preferredLanguage ? `${kind.id}:${kind.preferredLanguage}` : kind.id;
-}
-
-function templateKindAppliesToProduct(kind, opsProduct) {
-  if (!kind?.opsProducts || !Array.isArray(kind.opsProducts)) return true;
-  return kind.opsProducts.includes(opsProduct);
-}
 
 function asNumber(value, fallback = 0) {
   const n = Number(value);
@@ -71,18 +51,6 @@ function humanizeFailureBucketLabel(id) {
 }
 
 const ISO_DATE_RE = /^\d{4}-\d{2}-\d{2}$/;
-const OPS_PRODUCT_GUIDEXPERT = 'guidexpert';
-const OPS_PRODUCT_IIT = 'iit_counselling';
-
-/** @param {URLSearchParams} searchParams */
-function parseOpsProductFromSearch(searchParams) {
-  const raw = (searchParams.get('opsProduct') || searchParams.get('tenant') || '')
-    .trim()
-    .toLowerCase()
-    .replace(/-/g, '_');
-  if (raw === 'iit_counselling' || raw === 'iitcounselling') return OPS_PRODUCT_IIT;
-  return OPS_PRODUCT_GUIDEXPERT;
-}
 
 /** Inclusive list of YYYY-MM months between two ISO dates (by string order). */
 function distinctMonthsBetweenIsoDates(fromIso, toIso) {
@@ -222,10 +190,9 @@ export default function WhatsAppOpsOverview() {
   const isIitProduct = opsProduct === OPS_PRODUCT_IIT;
 
   const [selectedKind, setSelectedKind] = useState(() => searchParams.get('messageKind') || null);
-  const [selectedLanguage, setSelectedLanguage] = useState(() => {
-    const pl = searchParams.get('preferredLanguage');
-    return pl === 'Telugu' || pl === 'Hindi' ? pl : null;
-  });
+  const [selectedLanguage, setSelectedLanguage] = useState(() =>
+    parsePreferredLanguageFromSearch(searchParams)
+  );
 
   const persistOpsProductToUrl = useCallback(
     (next) => {

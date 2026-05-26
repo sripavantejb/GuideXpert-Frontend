@@ -29,6 +29,16 @@ export function formatCertificateDate(d = new Date()) {
   return `${day} ${month} ${year}`;
 }
 
+/** Recipient name: first letter of each word uppercase, rest lowercase. */
+export function formatCertificateDisplayName(name) {
+  return String(name || '')
+    .trim()
+    .split(/\s+/)
+    .filter((part) => part.length > 0)
+    .map((part) => part.charAt(0).toUpperCase() + part.slice(1).toLowerCase())
+    .join(' ');
+}
+
 /** Expiry = one year after issued date (matches template "Expiry Date" field). */
 export function formatCertificateExpiryDate(issuedDateStr) {
   const raw = String(issuedDateStr || '').trim();
@@ -105,6 +115,7 @@ export async function drawCertificateToCanvas(img, name, issuedDateStr, certific
   const scale = OUTPUT_SCALE;
   const issued = issuedDateStr || formatCertificateDate();
   const expiry = expiryDateStr || formatCertificateExpiryDate(issued);
+  const displayName = formatCertificateDisplayName(name);
 
   ctx.drawImage(img, 0, 0, OUTPUT_WIDTH, OUTPUT_HEIGHT);
 
@@ -116,7 +127,7 @@ export async function drawCertificateToCanvas(img, name, issuedDateStr, certific
   ctx.font = `${NAME_CONFIG.fontSize * scale}px ${NAME_CONFIG.fontFamily}`;
   ctx.textAlign = NAME_CONFIG.textAlign;
   ctx.textBaseline = NAME_CONFIG.textBaseline;
-  ctx.fillText(String(name || ' ').trim() || ' ', NAME_CONFIG.x * scale, NAME_CONFIG.y * scale);
+  ctx.fillText(displayName || ' ', NAME_CONFIG.x * scale, NAME_CONFIG.y * scale);
 
   drawTextField(ctx, ISSUED_DATE_CONFIG, issued, scale);
   drawTextField(ctx, EXPIRY_DATE_CONFIG, expiry, scale);

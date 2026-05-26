@@ -6,6 +6,7 @@ import {
   drawCertificateToCanvas,
   downloadCertificatePng,
   downloadCertificatePdf,
+  formatCertificateDisplayName,
 } from './webinar/utils/certificateWebinar';
 import {
   openCommunityRedirectPlaceholder,
@@ -100,7 +101,11 @@ export default function CertificateViewPage() {
           if (cancelled) return;
           const canvas = await drawCertificateToCanvas(img, fullName, dateIssued, storedCertificateId);
           setCertificateUrl(canvas.toDataURL('image/png'));
-          setData({ fullName, dateIssued, certificateId: storedCertificateId });
+          setData({
+            fullName: formatCertificateDisplayName(fullName),
+            dateIssued,
+            certificateId: storedCertificateId,
+          });
           setLoading(false);
           return;
         }
@@ -112,7 +117,11 @@ export default function CertificateViewPage() {
           if (cancelled) return;
           const canvas = await drawCertificateToCanvas(img, fullNameFallback, dateIssuedFallback, idFallback);
           setCertificateUrl(canvas.toDataURL('image/png'));
-          setData({ fullName: fullNameFallback, dateIssued: dateIssuedFallback, certificateId: idFallback });
+          setData({
+            fullName: formatCertificateDisplayName(fullNameFallback),
+            dateIssued: dateIssuedFallback,
+            certificateId: idFallback,
+          });
           setLoading(false);
           return;
         }
@@ -134,7 +143,11 @@ export default function CertificateViewPage() {
             if (cancelled) return;
             const canvas = await drawCertificateToCanvas(img, fullNameFallback, dateIssuedFallback, idFallback);
             setCertificateUrl(canvas.toDataURL('image/png'));
-            setData({ fullName: fullNameFallback, dateIssued: dateIssuedFallback, certificateId: idFallback });
+            setData({
+            fullName: formatCertificateDisplayName(fullNameFallback),
+            dateIssued: dateIssuedFallback,
+            certificateId: idFallback,
+          });
           } catch (imgErr) {
             if (import.meta.env.DEV) console.warn('[CertificateViewPage]', imgErr);
             setError(true);

@@ -21,14 +21,29 @@ import {
   getWhatsappOpsManualRecoveryJob,
   cancelWhatsappOpsManualRecoveryJob
 } from '../../../utils/whatsappOpsAdminApi';
-import { defaultRangeIsoDates, formatDt } from './whatsappOpsShared';
+import { dateInputsToApiRange, defaultRangeIsoDates, formatDt } from './whatsappOpsShared';
+import OpsFailureCell from './OpsFailureCell';
+import {
+  GX_TEMPLATE_OPTIONS,
+  IIT_GENERIC_REMINDER_IDS,
+  OPS_PRODUCT_GUIDEXPERT,
+  OPS_PRODUCT_IIT,
+  buildOpsProductQueryParams,
+  parseOpsProductFromSearch,
+  parsePreferredLanguageFromSearch,
+  templateChipKey,
+  visibleTemplateKindsForProduct,
+} from './whatsappOpsProductConfig';
 import WaStatusBadge from '../../../components/Admin/whatsapp-ops/WaStatusBadge';
 
 const TEMPLATE_LABELS = {
   slot_booked: 'Slot booked',
   pre4hr: '4hr reminder',
   meet: 'Meet link (~1hr)',
-  '30min': '30 min reminder'
+  '30min': '30 min reminder',
+  iit_pre2hr: 'IIT 2hr',
+  iit_pre45min: 'IIT 45m',
+  iit_pre15min: 'IIT 15m',
 };
 
 /** Compact eligibility audit for campaign templates (messages drill-down). */
@@ -46,7 +61,8 @@ function eligibilityTimingSummary(r) {
 }
 
 function buildUnresolvedCsv(candidates) {
-  const header = 'phone,lineageId,maxAttemptAtStart,reason,status,attemptNumber,retryGroupId,errorMessage,createdAt';
+  const header =
+    'phone,lineageId,maxAttemptAtStart,reason,status,attemptNumber,retryGroupId,errorCode,errorReason,errorSource,errorMessage,createdAt';
   const lines = (candidates || []).map((c) => [
     c.phone || '',
     c.lineageId ? String(c.lineageId) : '',
@@ -55,6 +71,9 @@ function buildUnresolvedCsv(candidates) {
     c.status || '',
     c.attemptNumber ?? '',
     c.retryGroupId ? String(c.retryGroupId) : '',
+    c.errorCode || '',
+    (c.errorReason || '').replace(/[\r\n]+/g, ' ').replace(/"/g, '""'),
+    c.errorSource || '',
     (c.errorMessage || '').replace(/[\r\n]+/g, ' ').replace(/"/g, '""'),
     c.createdAt ? new Date(c.createdAt).toISOString() : ''
   ].map((v) => /[",]/.test(String(v)) ? `"${v}"` : String(v)).join(','));
@@ -73,7 +92,7 @@ function downloadCsv(filename, content) {
   URL.revokeObjectURL(url);
 }
 
-function ManualRecoveryPanel({ messageKind, from, to, isSuper, onJobComplete }) {
+function ManualRecoveryPanel({ messageKind, from, to, apiScopeParams, isSuper, onJobComplete }) {
   const [preview, setPreview] = useState(null);
   const [previewLoading, setPreviewLoading] = useState(false);
   const [previewErr, setPreviewErr] = useState(null);
@@ -111,10 +130,12 @@ function ManualRecoveryPanel({ messageKind, from, to, isSuper, onJobComplete }) 
 
   useEffect(() => () => stopPolling(), [stopPolling]);
 
+  const apiDateRange = useMemo(() => dateInputsToApiRange(from, to), [from, to]);
+
   const handlePreview = useCallback(async () => {
     setPreviewLoading(true);
     setPreviewErr(null);
-    const res = await previewWhatsappOpsManualRecovery({ messageKind, from, to });
+    const res = await previewWhatsappOpsManualRecovery({ messageKind, ...apiDateRange, ...apiScopeParams });
     setPreviewLoading(false);
     if (!res.success) {
       setPreviewErr(res.message || 'Preview failed');
@@ -122,7 +143,7 @@ function ManualRecoveryPanel({ messageKind, from, to, isSuper, onJobComplete }) 
       return;
     }
     setPreview(res.data?.data ?? res.data);
-  }, [messageKind, from, to]);
+  }, [messageKind, apiDateRange, apiScopeParams]);
 
   const handleStart = useCallback(async () => {
     if (!preview || !preview.candidates?.length) {
@@ -132,7 +153,7 @@ function ManualRecoveryPanel({ messageKind, from, to, isSuper, onJobComplete }) 
     if (!window.confirm(`Send recovery to ${preview.candidates.length} unresolved recipient(s)?`)) return;
     setStarting(true);
     setActionErr(null);
-    const res = await startWhatsappOpsManualRecovery({ messageKind, from, to });
+    const res = await startWhatsappOpsManualRecovery({ messageKind, ...apiDateRange, ...apiScopeParams });
     setStarting(false);
     if (!res.success) {
       setActionErr(res.message || 'Could not start recovery');
@@ -144,7 +165,7 @@ function ManualRecoveryPanel({ messageKind, from, to, isSuper, onJobComplete }) 
       if (initial && initial.status === 'running') startPolling(data.jobId);
       else if (initial && initial.status === 'queued') startPolling(data.jobId);
     }
-  }, [preview, messageKind, from, to, refreshJob, startPolling]);
+  }, [preview, messageKind, apiDateRange, apiScopeParams, refreshJob, startPolling]);
 
   const handleCancel = useCallback(async () => {
     if (!job?._id) return;
@@ -352,16 +373,19 @@ function Counter({ label, value, accent }) {
   );
 }
 
-export default function WhatsAppOpsMessages() {
-  const [searchParams] = useSearchParams();
+function WhatsAppOpsMessagesInner({ syncProductFromUrl }) {
+  const [searchParams, setSearchParams] = useSearchParams();
   const { user } = useAuth();
   const [{ from, to }, setRange] = useState(defaultRangeIsoDates);
+  const [opsProduct, setOpsProduct] = useState(() => parseOpsProductFromSearch(searchParams));
+  const [preferredLanguage, setPreferredLanguage] = useState(() => parsePreferredLanguageFromSearch(searchParams));
   const [phone, setPhone] = useState('');
   const [name, setName] = useState('');
   const [messageKind, setMessageKind] = useState('');
   const [status, setStatus] = useState('');
   const [attemptNumber, setAttemptNumber] = useState('');
   const [retryGroupId, setRetryGroupId] = useState('');
+  const [errorCodeFilter, setErrorCodeFilter] = useState('');
   const [loading, setLoading] = useState(false);
   const [err, setErr] = useState(null);
   const [rows, setRows] = useState([]);
@@ -390,8 +414,12 @@ export default function WhatsAppOpsMessages() {
         setRange((r) => ({ ...r, to: toQ }));
       }
     }
+    setOpsProduct(parseOpsProductFromSearch(searchParams));
     const k = searchParams.get('messageKind');
     if (k) setMessageKind(k);
+    const pl = parsePreferredLanguageFromSearch(searchParams);
+    if (pl) setPreferredLanguage(pl);
+    else if (!searchParams.get('preferredLanguage')) setPreferredLanguage('');
     const st = searchParams.get('status');
     if (st) setStatus(st);
     const an = searchParams.get('attemptNumber');
@@ -399,6 +427,51 @@ export default function WhatsAppOpsMessages() {
     const rg = searchParams.get('retryGroupId');
     if (rg) setRetryGroupId(rg);
   }, [searchParams]);
+
+  const isIitProduct = opsProduct === OPS_PRODUCT_IIT;
+
+  const apiScopeParams = useMemo(
+    () => buildOpsProductQueryParams(opsProduct, messageKind || null, preferredLanguage),
+    [opsProduct, messageKind, preferredLanguage]
+  );
+
+  const visibleTemplateChips = useMemo(
+    () => visibleTemplateKindsForProduct([], opsProduct),
+    [opsProduct]
+  );
+
+  const selectedChipKey = useMemo(
+    () => (messageKind ? templateChipKey({ id: messageKind, preferredLanguage }) : 'all'),
+    [messageKind, preferredLanguage]
+  );
+
+  const handleProductChange = useCallback(
+    (next) => {
+      setOpsProduct(next);
+      setMessageKind('');
+      setPreferredLanguage('');
+      setPage(1);
+      syncProductFromUrl(next, '', '');
+    },
+    [syncProductFromUrl]
+  );
+
+  const handleTemplateChip = useCallback(
+    (chip) => {
+      if (!chip) {
+        setMessageKind('');
+        setPreferredLanguage('');
+        setPage(1);
+        syncProductFromUrl(opsProduct, '', '');
+        return;
+      }
+      setMessageKind(chip.id);
+      setPreferredLanguage(chip.preferredLanguage || '');
+      setPage(1);
+      syncProductFromUrl(opsProduct, chip.id, chip.preferredLanguage || '');
+    },
+    [opsProduct, syncProductFromUrl]
+  );
 
   const statusPillClass = (status) => {
     const s = String(status || '').toLowerCase();
@@ -413,17 +486,20 @@ export default function WhatsAppOpsMessages() {
     Promise.resolve().then(async () => {
       setLoading(true);
       setErr(null);
+      const { from: apiFrom, to: apiTo } = dateInputsToApiRange(from, to);
       const params = {
-        from,
-        to,
+        from: apiFrom,
+        to: apiTo,
         page,
         limit: 40,
+        ...apiScopeParams,
         ...(phone ? { phone } : {}),
         ...(name ? { name } : {}),
         ...(messageKind ? { messageKind } : {}),
         ...(status ? { status } : {}),
         ...(attemptNumber ? { attemptNumber } : {}),
         ...(retryGroupId ? { retryGroupId } : {}),
+        ...(errorCodeFilter.trim() ? { errorCode: errorCodeFilter.trim() } : {}),
       };
       const res = await listWhatsappOpsMessages(params);
       if (cancelled) return;
@@ -439,7 +515,7 @@ export default function WhatsAppOpsMessages() {
     return () => {
       cancelled = true;
     };
-  }, [from, to, phone, name, messageKind, status, attemptNumber, retryGroupId, page, reloadKey]);
+  }, [from, to, phone, name, messageKind, status, attemptNumber, retryGroupId, errorCodeFilter, page, reloadKey, apiScopeParams]);
 
   async function openTimeline(id) {
     setDrawer(null);
@@ -454,11 +530,18 @@ export default function WhatsAppOpsMessages() {
   }
 
   async function resend(row, kindOverride) {
-    if (!row?.formSubmissionId) return;
+    if (!row?.formSubmissionId && !row?.iitCounsellingSubmissionId && !row?.phone) return;
     if (!window.confirm('Super-admin resend: duplicate message may be delivered. Continue?')) return;
     setResendBusy(row._id);
     const kind = kindOverride || row.messageKind;
-    const res = await manualWhatsappOpsResend({ formSubmissionId: row.formSubmissionId, messageKind: kind });
+    const body = {
+      messageKind: kind,
+      phone: row.phone,
+      ...(row.opsProduct ? { opsProduct: row.opsProduct } : apiScopeParams),
+    };
+    if (row.iitCounsellingSubmissionId) body.iitCounsellingSubmissionId = row.iitCounsellingSubmissionId;
+    else if (row.formSubmissionId) body.formSubmissionId = row.formSubmissionId;
+    const res = await manualWhatsappOpsResend(body);
     setResendBusy(null);
     if (!res.success) alert(res.message || 'Resend failed');
     else setReloadKey((k) => k + 1);
@@ -517,6 +600,63 @@ export default function WhatsAppOpsMessages() {
 
       <div className="rounded-2xl border border-slate-200/90 bg-white p-4 shadow-sm ring-1 ring-slate-900/[0.04] sm:p-5">
         <p className="text-xs font-bold uppercase tracking-[0.1em] text-slate-500">Query filters</p>
+        <div className="mt-3 flex flex-wrap items-center gap-2">
+          <span className="text-xs font-semibold uppercase tracking-wide text-slate-500">Product</span>
+          <button
+            type="button"
+            onClick={() => handleProductChange(OPS_PRODUCT_GUIDEXPERT)}
+            className={`rounded-lg border px-3 py-1.5 text-sm font-semibold transition ${
+              opsProduct === OPS_PRODUCT_GUIDEXPERT
+                ? 'border-primary-navy bg-primary-navy text-white'
+                : 'border-slate-200 bg-white text-slate-700 hover:bg-slate-50'
+            }`}
+          >
+            GuideXpert
+          </button>
+          <button
+            type="button"
+            onClick={() => handleProductChange(OPS_PRODUCT_IIT)}
+            className={`rounded-lg border px-3 py-1.5 text-sm font-semibold transition ${
+              opsProduct === OPS_PRODUCT_IIT
+                ? 'border-primary-navy bg-primary-navy text-white'
+                : 'border-slate-200 bg-white text-slate-700 hover:bg-slate-50'
+            }`}
+          >
+            IIT Counselling
+          </button>
+        </div>
+        {isIitProduct ? (
+          <div className="mt-3 flex flex-wrap gap-2">
+            <button
+              type="button"
+              onClick={() => handleTemplateChip(null)}
+              className={`rounded-lg border px-2.5 py-1 text-xs font-semibold transition ${
+                !messageKind
+                  ? 'border-primary-navy bg-primary-navy text-white'
+                  : 'border-slate-200 bg-white text-slate-700 hover:bg-slate-50'
+              }`}
+            >
+              All templates
+            </button>
+            {visibleTemplateChips.map((chip) => {
+              const key = templateChipKey(chip);
+              return (
+                <button
+                  key={key}
+                  type="button"
+                  onClick={() => handleTemplateChip(chip)}
+                  className={`rounded-lg border px-2.5 py-1 text-xs font-semibold transition ${
+                    selectedChipKey === key
+                      ? 'border-primary-navy bg-primary-navy text-white'
+                      : 'border-slate-200 bg-white text-slate-700 hover:bg-slate-50'
+                  }`}
+                >
+                  {chip.label || chip.id}
+                </button>
+              );
+            })}
+          </div>
+        ) : null}
         <div className="mt-3 grid grid-cols-1 gap-4 md:grid-cols-2 lg:grid-cols-12 lg:items-end">
           <label className="text-sm font-medium text-slate-700 lg:col-span-2">
             From
@@ -536,12 +676,28 @@ export default function WhatsAppOpsMessages() {
           </label>
           <label className="text-sm font-medium text-slate-700 lg:col-span-3">
             Kind
-            <select value={messageKind} onChange={(e) => setMessageKind(e.target.value)} className={auditField}>
+            <select
+              value={messageKind}
+              onChange={(e) => {
+                const v = e.target.value;
+                setMessageKind(v);
+                if (opsProduct === OPS_PRODUCT_IIT && IIT_GENERIC_REMINDER_IDS.has(v)) {
+                  setPreferredLanguage('');
+                }
+                setPage(1);
+                syncProductFromUrl(opsProduct, v, preferredLanguage);
+              }}
+              className={auditField}
+            >
               <option value="">All</option>
-              <option value="slot_booked">slot_booked</option>
-              <option value="pre4hr">pre4hr</option>
-              <option value="meet">meet</option>
-              <option value="30min">30min</option>
+              {(isIitProduct
+                ? [{ value: 'slot_booked', label: 'slot_booked' }]
+                : GX_TEMPLATE_OPTIONS.filter((o) => o.value)
+              ).map((opt) => (
+                <option key={opt.value} value={opt.value}>
+                  {opt.label || TEMPLATE_LABELS[opt.value] || opt.value}
+                </option>
+              ))}
             </select>
           </label>
           <label className="text-sm font-medium text-slate-700 lg:col-span-3">
@@ -556,6 +712,15 @@ export default function WhatsAppOpsMessages() {
               <option value="failed,retry_exhausted">failed,retry_exhausted</option>
               <option value="retry_exhausted">retry_exhausted</option>
             </select>
+          </label>
+          <label className="text-sm font-medium text-slate-700 lg:col-span-2">
+            Error code
+            <input
+              value={errorCodeFilter}
+              onChange={(e) => setErrorCodeFilter(e.target.value)}
+              placeholder="e.g. 132012"
+              className={`${auditField} font-mono text-xs`}
+            />
           </label>
           <label className="text-sm font-medium text-slate-700 lg:col-span-2">
             Attempt #
@@ -592,10 +757,11 @@ export default function WhatsAppOpsMessages() {
 
       {messageKind && (
         <ManualRecoveryPanel
-          key={`${messageKind}|${from}|${to}`}
+          key={`${messageKind}|${from}|${to}|${opsProduct}|${preferredLanguage}`}
           messageKind={messageKind}
           from={from}
           to={to}
+          apiScopeParams={apiScopeParams}
           isSuper={isSuper}
           onJobComplete={() => setReloadKey((k) => k + 1)}
         />
@@ -616,7 +782,7 @@ export default function WhatsAppOpsMessages() {
                 <th className="max-w-[140px] px-4 py-3.5 text-left">Timing audit</th>
                 <th className="px-4 py-3.5 text-left">Retry group</th>
                 <th className="px-4 py-3.5 text-left">Delivery status</th>
-                <th className="min-w-[180px] px-4 py-3.5 text-left">Failure reason</th>
+                <th className="min-w-[14rem] px-4 py-3.5 text-left">What went wrong</th>
                 <th className="px-4 py-3.5 text-right">Retry count</th>
                 <th className="px-4 py-3.5 text-left">Actions</th>
               </tr>
@@ -662,18 +828,14 @@ export default function WhatsAppOpsMessages() {
                     </span>
                   </td>
                   <td className="max-w-md px-4 py-3.5">
-                    {r.failureReason ? (
-                      <span className="line-clamp-2 text-sm text-rose-800" title={r.failureReason}>{r.failureReason}</span>
-                    ) : (
-                      <span className="text-sm text-slate-400">None</span>
-                    )}
+                    <OpsFailureCell row={r} compact />
                   </td>
                   <td className="px-4 py-3.5 text-right font-mono text-sm tabular-nums text-slate-800">{r.retryCount ?? r.retryCountSnapshot ?? 0}</td>
                   <td className="space-x-3 whitespace-nowrap px-4 py-3.5">
                     <button type="button" className="text-sm font-semibold text-primary-navy hover:underline" onClick={() => openTimeline(r._id)}>
                       Timeline
                     </button>
-                    {isSuper && r.formSubmissionId && (
+                    {isSuper && (r.formSubmissionId || r.iitCounsellingSubmissionId || r.phone) && (
                       <button
                         type="button"
                         disabled={resendBusy === r._id}
@@ -736,6 +898,25 @@ export default function WhatsAppOpsMessages() {
             )}
             {drawer && (
               <>
+                {drawer.providerError &&
+                (drawer.providerError.headline ||
+                  drawer.providerError.errorHeadline ||
+                  drawer.providerError.errorCode ||
+                  drawer.providerError.errorReason) ? (
+                  <div className="rounded-lg border border-rose-200 bg-rose-50/80 p-3">
+                    <p className="text-xs font-bold uppercase tracking-wide text-rose-900">What went wrong</p>
+                    <OpsFailureCell
+                      row={{
+                        errorHeadline: drawer.providerError.headline || drawer.providerError.errorHeadline,
+                        errorDetail: drawer.providerError.detail || drawer.providerError.errorDetail,
+                        errorCode: drawer.providerError.technicalCode || drawer.providerError.errorCode,
+                        errorSource: drawer.providerError.technicalSource || drawer.providerError.errorSource,
+                        errorReason: drawer.providerError.errorReason,
+                        errorMessage: drawer.event?.errorMessage
+                      }}
+                    />
+                  </div>
+                ) : null}
                 <div>
                   <p className="font-semibold text-gray-900">Event</p>
                   <pre className="text-xs bg-gray-50 rounded-lg p-2 overflow-auto max-h-48">{JSON.stringify(drawer.event, null, 2)}</pre>
@@ -747,6 +928,11 @@ export default function WhatsAppOpsMessages() {
                       <li key={w._id} className="border border-gray-100 rounded-lg p-2 text-xs">
                         <span className="font-semibold">{formatDt(w.receivedAt)}</span>{' '}
                         <WaStatusBadge status={w.status} /> msg {w.messageId || '—'}
+                        {w.parsedErrorCode ? (
+                          <span className="ml-2 font-mono text-rose-800" title={w.parsedErrorReason || ''}>
+                            code {w.parsedErrorCode}
+                          </span>
+                        ) : null}
                       </li>
                     ))}
                   </ul>
@@ -758,4 +944,24 @@ export default function WhatsAppOpsMessages() {
       )}
     </div>
   );
+}
+
+export default function WhatsAppOpsMessages() {
+  const [searchParams, setSearchParams] = useSearchParams();
+
+  const syncProductFromUrl = useCallback(
+    (product, kind, lang) => {
+      const next = new URLSearchParams(searchParams);
+      if (product === OPS_PRODUCT_IIT) next.set('opsProduct', OPS_PRODUCT_IIT);
+      else next.delete('opsProduct');
+      if (kind) next.set('messageKind', kind);
+      else next.delete('messageKind');
+      if (lang) next.set('preferredLanguage', lang);
+      else next.delete('preferredLanguage');
+      setSearchParams(next, { replace: true });
+    },
+    [searchParams, setSearchParams]
+  );
+
+  return <WhatsAppOpsMessagesInner syncProductFromUrl={syncProductFromUrl} />;
 }

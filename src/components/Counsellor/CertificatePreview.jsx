@@ -5,7 +5,10 @@ import {
   CERTIFICATE_ID,
   CERTIFICATE_SVG_VERSION,
 } from '../../pages/webinar/utils/certificateWebinarConfig';
-import { formatCertificateExpiryDate } from '../../pages/webinar/utils/certificateWebinar';
+import {
+  formatCertificateExpiryDate,
+  formatCertificateDisplayName,
+} from '../../pages/webinar/utils/certificateWebinar';
 
 /** SVG viewBox from design file: 0 0 842.25 595.5 */
 const WIDTH = 842;
@@ -21,6 +24,7 @@ const CertificatePreview = forwardRef(function CertificatePreview(
   const issued = date || '';
   const expiry = expiryDate || (issued ? formatCertificateExpiryDate(issued) : '');
   const certId = certificateId ? String(certificateId).trim() : '';
+  const displayName = formatCertificateDisplayName(recipientName);
 
   const overlayStyle = (config) => ({
     position: 'absolute',
@@ -81,7 +85,7 @@ const CertificatePreview = forwardRef(function CertificatePreview(
             minHeight: 52,
           }}
         >
-          {recipientName || '\u00A0'}
+          {displayName || '\u00A0'}
         </div>
       </div>
 
