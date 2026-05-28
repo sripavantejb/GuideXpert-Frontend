@@ -111,6 +111,12 @@ export async function updateBda(id, body) {
   });
 }
 
+export async function deleteBda(id) {
+  return callingTeamRequest(`/bdas/${id}`, {
+    method: 'DELETE',
+  });
+}
+
 export async function patchBdaStatus(id, status) {
   return callingTeamRequest(`/bdas/${id}/status`, {
     method: 'PATCH',

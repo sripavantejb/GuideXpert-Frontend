@@ -1,9 +1,9 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { Link } from 'react-router-dom';
-import { FiEdit2, FiKey, FiRefreshCw, FiSearch, FiUser } from 'react-icons/fi';
+import { FiEdit2, FiKey, FiRefreshCw, FiSearch, FiTrash2, FiUser } from 'react-icons/fi';
 import TableSkeleton from '../../UI/TableSkeleton';
 import { BDA_LANGUAGES, languageBadgeClass } from '../../../constants/bdaLanguage';
-import { listBdas, resetBdaPassword, updateBda } from '../../../utils/callingTeamApi';
+import { deleteBda, listBdas, resetBdaPassword, updateBda } from '../../../utils/callingTeamApi';
 
 function formatDate(value) {
   if (!value) return '—';
@@ -54,6 +54,7 @@ export default function BdaProfilesPanel({ refreshKey = 0, showTitle = true, sho
   const [saveError, setSaveError] = useState('');
   const [resettingId, setResettingId] = useState(null);
   const [resetPassword, setResetPassword] = useState('');
+  const [deletingId, setDeletingId] = useState(null);
 
   const load = useCallback(async () => {
     setLoading(true);
@@ -173,6 +174,20 @@ export default function BdaProfilesPanel({ refreshKey = 0, showTitle = true, sho
     else setError(res.message || 'Failed to update status');
   };
 
+  const handleDelete = async (profile) => {
+    const id = profile.id || profile.bdaId;
+    if (!id) return;
+    const confirmed = window.confirm(
+      `Delete ${profile.name || 'this BDA'}?\n\nThis permanently removes login access and unassigns their leads.`
+    );
+    if (!confirmed) return;
+    setDeletingId(id);
+    const res = await deleteBda(id);
+    setDeletingId(null);
+    if (res.success) load();
+    else setError(res.message || 'Failed to delete profile');
+  };
+
   return (
     <div className="bg-white rounded-xl border border-gray-200 overflow-hidden shadow-sm">
       <div className="px-4 py-3 border-b flex flex-wrap items-center justify-between gap-3">
@@ -183,7 +198,7 @@ export default function BdaProfilesPanel({ refreshKey = 0, showTitle = true, sho
               <h2 className="font-semibold text-gray-900">BDA profiles & login access</h2>
               <p className="text-xs text-gray-500">
                 {showCredentialsHint
-                  ? 'Edit profile, reset portal password, or deactivate login'
+                  ? 'Edit profile, reset portal password, or deactivate login access'
                   : 'All BDA profiles — use Edit or Reset password for portal access'}
               </p>
             </div>
@@ -315,6 +330,15 @@ export default function BdaProfilesPanel({ refreshKey = 0, showTitle = true, sho
                           className="px-2 py-1 text-xs font-medium border rounded-lg hover:bg-white"
                         >
                           {profile.status === 'active' ? 'Deactivate' : 'Activate'}
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => handleDelete(profile)}
+                          disabled={deletingId === id}
+                          className="inline-flex items-center gap-1 px-2 py-1 text-xs font-medium border border-red-200 text-red-700 rounded-lg hover:bg-red-50 disabled:opacity-50"
+                        >
+                          <FiTrash2 />
+                          {deletingId === id ? 'Deleting…' : 'Delete'}
                         </button>
                         <Link
                           to={`/admin/calling-team/bdas/${id}`}
