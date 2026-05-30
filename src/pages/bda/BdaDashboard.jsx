@@ -20,6 +20,8 @@ import {
   getBdaLeads,
   updateBdaLead,
 } from '../../utils/bdaApi';
+import { formatDemoDateDisplay } from '../../utils/callingDataLeadMapper';
+import { deriveSlotDemoDateKeyIST } from '../../utils/weekendSlots';
 
 const STAT_CARDS = [
   ['totalAssignedLeads', 'Total Assigned'],
@@ -43,7 +45,18 @@ function formatDt(v) {
   if (!v) return '—';
   const d = new Date(v);
   if (Number.isNaN(d.getTime())) return '—';
-  return d.toLocaleString('en-IN', { dateStyle: 'medium', timeStyle: 'short' });
+  return d.toLocaleString('en-IN', { dateStyle: 'medium', timeStyle: 'short', timeZone: 'Asia/Kolkata' });
+}
+
+function formatSlotBooked(row) {
+  if (row.counsellingSlotInstantUtc) {
+    return formatDt(row.counsellingSlotInstantUtc);
+  }
+  const dateKey = deriveSlotDemoDateKeyIST(row);
+  if (!dateKey) return '—';
+  const dateStr = formatDemoDateDisplay(dateKey);
+  const slot = row.slotBooking || row.section1Data?.slotBooking;
+  return slot ? `${dateStr} · ${slot}` : dateStr;
 }
 
 function toDateInput(v) {
@@ -290,6 +303,8 @@ export default function BdaDashboard() {
                 <th className="px-3 py-2">Student</th>
                 <th className="px-3 py-2">Phone</th>
                 <th className="px-3 py-2">Language</th>
+                <th className="px-3 py-2">Slot booked</th>
+                <th className="px-3 py-2">Assigned</th>
                 <th className="px-3 py-2">Last remark</th>
                 <th className="px-3 py-2">Call</th>
                 <th className="px-3 py-2">Lead</th>
@@ -303,9 +318,9 @@ export default function BdaDashboard() {
             </thead>
             <tbody>
               {loading ? (
-                <tr><td colSpan={12} className="px-3 py-8 text-center text-gray-500">Loading…</td></tr>
+                <tr><td colSpan={14} className="px-3 py-8 text-center text-gray-500">Loading…</td></tr>
               ) : rows.length === 0 ? (
-                <tr><td colSpan={12} className="px-3 py-8 text-center text-gray-500">
+                <tr><td colSpan={14} className="px-3 py-8 text-center text-gray-500">
                   No assigned leads yet. Ask admin to split leads by your language in BDA Management.
                 </td></tr>
               ) : (
@@ -318,6 +333,8 @@ export default function BdaDashboard() {
                     <td className="px-3 py-2 font-medium">{row.fullName}</td>
                     <td className="px-3 py-2">{row.phone}</td>
                     <td className="px-3 py-2">{row.preferredLanguage || '—'}</td>
+                    <td className="px-3 py-2 text-xs text-gray-600 whitespace-nowrap">{formatSlotBooked(row)}</td>
+                    <td className="px-3 py-2 text-xs text-gray-600 whitespace-nowrap">{formatDt(row.assignedAt)}</td>
                     <td className="px-3 py-2 text-xs text-gray-600 max-w-[140px] truncate" title={row.latestRemark || row.lastRemark}>
                       {row.latestRemark || row.lastRemark || '—'}
                     </td>
@@ -381,6 +398,8 @@ export default function BdaDashboard() {
                     </span>
                   )}
                   {drawerLead.city && <span className="text-gray-600">City: {drawerLead.city}</span>}
+                  <span className="text-gray-600">Slot booked: {formatSlotBooked(drawerLead)}</span>
+                  <span className="text-gray-600">Assigned: {formatDt(drawerLead.assignedAt)}</span>
                 </div>
                 {drawerLead.latestRemark || drawerLead.lastRemark ? (
                   <p className="mt-2 text-sm bg-gray-50 border rounded-lg p-2 text-gray-700">
