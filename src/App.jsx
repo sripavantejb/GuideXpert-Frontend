@@ -47,6 +47,8 @@ import AssessmentResults from './pages/admin/AssessmentResults';
 import TrainingFeedback from './pages/admin/TrainingFeedback';
 import CounsellorSupportRequests from './pages/admin/CounsellorSupportRequests';
 import TrainingFormResponses from './pages/admin/TrainingFormResponses';
+import OneOnOneCounselingLeads from './pages/admin/OneOnOneCounselingLeads';
+import OneOnOneSessionPage from './pages/OneOnOneSessionPage';
 import Announcements from './pages/admin/Announcements';
 import WebinarProgressAdmin from './pages/admin/WebinarProgress';
 import BulkCertificateDownload from './pages/admin/BulkCertificateDownload';
@@ -258,6 +260,7 @@ function App() {
               </Suspense>
             }
           />
+          <Route path="/one-on-one-session" element={<OneOnOneSessionPage />} />
           <Route
             path="/students"
             element={
@@ -415,6 +418,7 @@ function App() {
             <Route path="training-feedback" element={<TrainingFeedback />} />
             <Route path="counsellor-support-requests" element={<CounsellorSupportRequests />} />
             <Route path="training-form-responses" element={<TrainingFormResponses />} />
+            <Route path="one-on-one-counseling" element={<OneOnOneCounselingLeads />} />
             <Route path="influencer-create" element={<InfluencerCreate />} />
             <Route path="influencer-tracking" element={<InfluencerTracking />} />
             <Route path="poster-downloads" element={<PosterDownloads />} />

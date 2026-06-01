@@ -478,6 +478,31 @@ export const getTrainingFormResponses = async (params = {}, token = getStoredTok
   return adminRequest(`/training-form-responses${query ? `?${query}` : ''}`, { method: 'GET' }, token);
 };
 
+export const getOneOnOneCounselingLeads = async (params = {}, token = getStoredToken()) => {
+  const search = new URLSearchParams();
+  if (params.page != null) search.set('page', params.page);
+  if (params.limit != null) search.set('limit', params.limit);
+  if (params.from) search.set('from', params.from);
+  if (params.to) search.set('to', params.to);
+  if (params.q) search.set('q', params.q);
+  if (params.leadStatus) search.set('leadStatus', params.leadStatus);
+  if (params.currentClass) search.set('currentClass', params.currentClass);
+  if (params.interestedBranch) search.set('interestedBranch', params.interestedBranch);
+  if (params.collegeBudget) search.set('collegeBudget', params.collegeBudget);
+  if (params.biggestConcern) search.set('biggestConcern', params.biggestConcern);
+  if (params.preferredLanguage) search.set('preferredLanguage', params.preferredLanguage);
+  if (params.preferredTimeSlot) search.set('preferredTimeSlot', params.preferredTimeSlot);
+  const query = search.toString();
+  return adminRequest(`/one-on-one-counseling-leads${query ? `?${query}` : ''}`, { method: 'GET' }, token);
+};
+
+export const patchOneOnOneCounselingLeadStatus = async (id, leadStatus, token = getStoredToken()) => {
+  return adminRequest(`/one-on-one-counseling-leads/${encodeURIComponent(id)}`, {
+    method: 'PATCH',
+    body: JSON.stringify({ leadStatus }),
+  }, token);
+};
+
 export const getCounsellorSupportRequests = async (params = {}, token = getStoredToken()) => {
   const search = new URLSearchParams();
   if (params.page != null) search.set('page', params.page);

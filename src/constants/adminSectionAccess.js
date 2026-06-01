@@ -14,6 +14,7 @@ export const ADMIN_SECTION_OPTIONS = [
   { sectionKey: 'export', label: 'Export Data' },
   { sectionKey: 'slots', label: 'Slots' },
   { sectionKey: 'training-form-responses', label: 'Training Form' },
+  { sectionKey: 'one-on-one-counseling', label: '1-on-1 Counseling' },
   { sectionKey: 'training-feedback', label: 'Activation Form' },
   { sectionKey: 'influencer-tracking', label: 'Influencer / UTM Tracking' },
   { sectionKey: 'poster-downloads', label: 'Poster downloads' },
@@ -39,7 +40,14 @@ export const ADMIN_SECTION_GROUPS = [
   {
     id: 'leads',
     label: 'Leads & counselling',
-    sectionKeys: ['leads', 'iit-counselling', 'calling-team', 'calling-data', 'certified-counsellors'],
+    sectionKeys: [
+      'leads',
+      'iit-counselling',
+      'one-on-one-counseling',
+      'calling-team',
+      'calling-data',
+      'certified-counsellors',
+    ],
   },
   {
     id: 'operations',

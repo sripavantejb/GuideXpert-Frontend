@@ -28,6 +28,7 @@ const navItems = [
   { to: '/admin/slots', label: 'Slots', icon: FiCalendar, sectionKey: 'slots' },
   { to: '/admin/demo-meet-schedule', label: 'Demo meet schedule', icon: FiClock, sectionKey: 'slots' },
   { to: '/admin/training-form-responses', label: 'Training Form', icon: FiClipboard, sectionKey: 'training-form-responses' },
+  { to: '/admin/one-on-one-counseling', label: '1-on-1 Counseling', icon: FiUsers, sectionKey: 'one-on-one-counseling' },
   { to: '/admin/training-feedback', label: 'Activation Form', icon: FiMessageSquare, sectionKey: 'training-feedback' },
   { to: '/admin/counsellor-support-requests', label: 'Counsellor Support', icon: FiMessageSquare, sectionKey: 'training-feedback' },
   { to: '/admin/influencer-create', label: 'Create influencer links', icon: FiUserPlus, sectionKey: 'influencer-tracking', hideInSidebar: true },

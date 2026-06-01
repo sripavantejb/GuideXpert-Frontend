@@ -1,0 +1,411 @@
+import { useEffect, useRef, useState } from 'react';
+import {
+  FiAlertCircle,
+  FiChevronLeft,
+  FiChevronRight,
+  FiInbox,
+  FiSearch,
+  FiSliders,
+  FiUsers,
+} from 'react-icons/fi';
+import {
+  getOneOnOneCounselingLeads,
+  getStoredToken,
+  patchOneOnOneCounselingLeadStatus,
+} from '../../utils/adminApi';
+import { useAuth } from '../../hooks/useAuth';
+import {
+  BIGGEST_CONCERN_OPTIONS,
+  COLLEGE_BUDGET_OPTIONS,
+  CURRENT_CLASS_OPTIONS,
+  INTERESTED_BRANCH_OPTIONS,
+  LEAD_STATUS_OPTIONS,
+  PREFERRED_LANGUAGE_OPTIONS,
+  PREFERRED_TIME_SLOT_OPTIONS,
+} from '../../constants/oneOnOneCounselingForm';
+
+function formatDate(d) {
+  if (!d) return '—';
+  const date = new Date(d);
+  return (
+    date.toLocaleDateString('en-IN', { dateStyle: 'short' }) +
+    ' ' +
+    date.toLocaleTimeString('en-IN', { timeStyle: 'short' })
+  );
+}
+
+const EMPTY_FILTERS = {
+  q: '',
+  from: '',
+  to: '',
+  leadStatus: '',
+  currentClass: '',
+  interestedBranch: '',
+  collegeBudget: '',
+  biggestConcern: '',
+  preferredLanguage: '',
+  preferredTimeSlot: '',
+};
+
+export default function OneOnOneCounselingLeads() {
+  const { logout } = useAuth();
+  const [records, setRecords] = useState([]);
+  const [pagination, setPagination] = useState({ page: 1, limit: 25, total: 0, totalPages: 1 });
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState('');
+  const [filters, setFilters] = useState(EMPTY_FILTERS);
+  const [statusUpdating, setStatusUpdating] = useState({});
+  const cancelledRef = useRef(false);
+  const requestIdRef = useRef(0);
+
+  useEffect(() => {
+    cancelledRef.current = false;
+    requestIdRef.current += 1;
+    const thisRequestId = requestIdRef.current;
+
+    const params = {
+      page: pagination.page,
+      limit: pagination.limit,
+      q: filters.q.trim() || undefined,
+      from: filters.from || undefined,
+      to: filters.to || undefined,
+      leadStatus: filters.leadStatus || undefined,
+      currentClass: filters.currentClass || undefined,
+      interestedBranch: filters.interestedBranch || undefined,
+      collegeBudget: filters.collegeBudget || undefined,
+      biggestConcern: filters.biggestConcern || undefined,
+      preferredLanguage: filters.preferredLanguage || undefined,
+      preferredTimeSlot: filters.preferredTimeSlot || undefined,
+    };
+
+    queueMicrotask(() => {
+      if (cancelledRef.current) return;
+      setLoading(true);
+      setError('');
+    });
+
+    getOneOnOneCounselingLeads(params, getStoredToken()).then((result) => {
+      if (cancelledRef.current || thisRequestId !== requestIdRef.current) return;
+      setLoading(false);
+      if (!result.success) {
+        if (result.status === 401) {
+          logout();
+          window.location.href = '/admin/login';
+          return;
+        }
+        setError(result.message || 'Failed to load counseling leads');
+        return;
+      }
+      setRecords(result.data?.data || []);
+      setPagination(
+        result.data?.pagination || { page: 1, limit: 25, total: 0, totalPages: 1 }
+      );
+    });
+
+    return () => {
+      cancelledRef.current = true;
+    };
+  }, [pagination.page, pagination.limit, filters, logout]);
+
+  const handleFilterChange = (key, value) => {
+    setFilters((prev) => ({ ...prev, [key]: value }));
+    setPagination((prev) => ({ ...prev, page: 1 }));
+  };
+
+  const clearFilters = () => {
+    setFilters(EMPTY_FILTERS);
+    setPagination((prev) => ({ ...prev, page: 1 }));
+  };
+
+  const hasActiveFilters = Object.values(filters).some(Boolean);
+
+  const goToPage = (p) => {
+    const next = Math.max(1, Math.min(p, pagination.totalPages));
+    setPagination((prev) => ({ ...prev, page: next }));
+  };
+
+  const handleStatusChange = async (leadId, leadStatus) => {
+    setStatusUpdating((prev) => ({ ...prev, [leadId]: true }));
+    const result = await patchOneOnOneCounselingLeadStatus(leadId, leadStatus, getStoredToken());
+    setStatusUpdating((prev) => ({ ...prev, [leadId]: false }));
+
+    if (!result.success) {
+      if (result.status === 401) {
+        logout();
+        window.location.href = '/admin/login';
+        return;
+      }
+      setError(result.message || 'Failed to update status');
+      return;
+    }
+
+    const updated = result.data?.data;
+    if (updated) {
+      setRecords((prev) =>
+        prev.map((row) => (row.id === leadId || row.id === updated.id ? updated : row))
+      );
+    }
+  };
+
+  return (
+    <div className="space-y-6">
+      <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
+        <div>
+          <h1 className="text-2xl font-bold text-gray-900 flex items-center gap-2">
+            <FiUsers className="text-primary-navy" aria-hidden />
+            1-on-1 Counseling Leads
+          </h1>
+          <p className="text-sm text-gray-600 mt-1">
+            Submissions from the /one-on-one-session booking form
+          </p>
+        </div>
+        <div className="rounded-lg bg-primary-navy/5 border border-primary-navy/10 px-4 py-2 text-sm">
+          <span className="font-semibold text-primary-navy">{pagination.total}</span>
+          <span className="text-gray-600"> total leads</span>
+        </div>
+      </div>
+
+      <div className="bg-white rounded-xl border border-gray-200 shadow-sm p-4 space-y-4">
+        <div className="flex items-center gap-2 text-sm font-semibold text-gray-700">
+          <FiSliders aria-hidden />
+          Search & filters
+        </div>
+        <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
+          <div className="lg:col-span-2 relative">
+            <FiSearch className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" aria-hidden />
+            <input
+              type="search"
+              placeholder="Search name, rank, mobile…"
+              value={filters.q}
+              onChange={(e) => handleFilterChange('q', e.target.value)}
+              className="w-full pl-9 pr-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-primary-navy/20 focus:border-primary-navy outline-none"
+            />
+          </div>
+          <input
+            type="date"
+            value={filters.from}
+            onChange={(e) => handleFilterChange('from', e.target.value)}
+            className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm"
+            aria-label="From date"
+          />
+          <input
+            type="date"
+            value={filters.to}
+            onChange={(e) => handleFilterChange('to', e.target.value)}
+            className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm"
+            aria-label="To date"
+          />
+          <select
+            value={filters.leadStatus}
+            onChange={(e) => handleFilterChange('leadStatus', e.target.value)}
+            className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm"
+            aria-label="Lead status filter"
+          >
+            <option value="">All statuses</option>
+            {LEAD_STATUS_OPTIONS.map((s) => (
+              <option key={s} value={s}>
+                {s}
+              </option>
+            ))}
+          </select>
+          <select
+            value={filters.currentClass}
+            onChange={(e) => handleFilterChange('currentClass', e.target.value)}
+            className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm"
+          >
+            <option value="">All classes</option>
+            {CURRENT_CLASS_OPTIONS.map((o) => (
+              <option key={o} value={o}>
+                {o}
+              </option>
+            ))}
+          </select>
+          <select
+            value={filters.interestedBranch}
+            onChange={(e) => handleFilterChange('interestedBranch', e.target.value)}
+            className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm"
+          >
+            <option value="">All branches</option>
+            {INTERESTED_BRANCH_OPTIONS.map((o) => (
+              <option key={o} value={o}>
+                {o}
+              </option>
+            ))}
+          </select>
+          <select
+            value={filters.preferredLanguage}
+            onChange={(e) => handleFilterChange('preferredLanguage', e.target.value)}
+            className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm"
+          >
+            <option value="">All languages</option>
+            {PREFERRED_LANGUAGE_OPTIONS.map((o) => (
+              <option key={o} value={o}>
+                {o}
+              </option>
+            ))}
+          </select>
+          <select
+            value={filters.preferredTimeSlot}
+            onChange={(e) => handleFilterChange('preferredTimeSlot', e.target.value)}
+            className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm"
+          >
+            <option value="">All time slots</option>
+            {PREFERRED_TIME_SLOT_OPTIONS.map((o) => (
+              <option key={o} value={o}>
+                {o}
+              </option>
+            ))}
+          </select>
+          <select
+            value={filters.collegeBudget}
+            onChange={(e) => handleFilterChange('collegeBudget', e.target.value)}
+            className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm"
+          >
+            <option value="">All budgets</option>
+            {COLLEGE_BUDGET_OPTIONS.map((o) => (
+              <option key={o} value={o}>
+                {o}
+              </option>
+            ))}
+          </select>
+          <select
+            value={filters.biggestConcern}
+            onChange={(e) => handleFilterChange('biggestConcern', e.target.value)}
+            className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm lg:col-span-2"
+          >
+            <option value="">All concerns</option>
+            {BIGGEST_CONCERN_OPTIONS.map((o) => (
+              <option key={o} value={o}>
+                {o}
+              </option>
+            ))}
+          </select>
+        </div>
+        {hasActiveFilters ? (
+          <button
+            type="button"
+            onClick={clearFilters}
+            className="text-sm font-medium text-primary-navy hover:underline"
+          >
+            Clear filters
+          </button>
+        ) : null}
+      </div>
+
+      {error ? (
+        <div className="flex items-center gap-2 rounded-lg bg-red-50 border border-red-100 px-4 py-3 text-sm text-red-700">
+          <FiAlertCircle aria-hidden />
+          {error}
+        </div>
+      ) : null}
+
+      <div className="bg-white rounded-xl border border-gray-200 shadow-sm overflow-hidden">
+        {loading ? (
+          <div className="p-12 text-center text-gray-500 animate-pulse">Loading leads…</div>
+        ) : records.length === 0 ? (
+          <div className="p-12 text-center text-gray-500">
+            <FiInbox className="mx-auto h-10 w-10 text-gray-300 mb-3" aria-hidden />
+            No leads found
+          </div>
+        ) : (
+          <div className="overflow-x-auto">
+            <table className="min-w-full text-sm">
+              <thead className="bg-gray-50 border-b border-gray-200">
+                <tr>
+                  <th className="px-3 py-3 text-left font-semibold text-gray-700 whitespace-nowrap">
+                    Submitted
+                  </th>
+                  <th className="px-3 py-3 text-left font-semibold text-gray-700">Student</th>
+                  <th className="px-3 py-3 text-left font-semibold text-gray-700">Mobile</th>
+                  <th className="px-3 py-3 text-left font-semibold text-gray-700">Parent</th>
+                  <th className="px-3 py-3 text-left font-semibold text-gray-700">Parent mobile</th>
+                  <th className="px-3 py-3 text-left font-semibold text-gray-700">Class</th>
+                  <th className="px-3 py-3 text-left font-semibold text-gray-700">Rank</th>
+                  <th className="px-3 py-3 text-left font-semibold text-gray-700">Branch</th>
+                  <th className="px-3 py-3 text-left font-semibold text-gray-700">Budget</th>
+                  <th className="px-3 py-3 text-left font-semibold text-gray-700">Concern</th>
+                  <th className="px-3 py-3 text-left font-semibold text-gray-700">Language</th>
+                  <th className="px-3 py-3 text-left font-semibold text-gray-700">Slot</th>
+                  <th className="px-3 py-3 text-left font-semibold text-gray-700 min-w-[200px]">
+                    Additional Qs
+                  </th>
+                  <th className="px-3 py-3 text-left font-semibold text-gray-700 min-w-[160px]">
+                    Status
+                  </th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-gray-100">
+                {records.map((row) => (
+                  <tr key={row.id} className="hover:bg-gray-50/80 align-top">
+                    <td className="px-3 py-3 text-gray-600 whitespace-nowrap">
+                      {formatDate(row.createdAt)}
+                    </td>
+                    <td className="px-3 py-3 font-medium text-gray-900">{row.studentName}</td>
+                    <td className="px-3 py-3 text-gray-700 whitespace-nowrap">{row.mobileNumber}</td>
+                    <td className="px-3 py-3 text-gray-700">{row.parentName}</td>
+                    <td className="px-3 py-3 text-gray-700 whitespace-nowrap">
+                      {row.parentMobileNumber}
+                    </td>
+                    <td className="px-3 py-3 text-gray-700">{row.currentClass}</td>
+                    <td className="px-3 py-3 text-gray-700 max-w-[120px]">{row.entranceExamRank}</td>
+                    <td className="px-3 py-3 text-gray-700">{row.interestedBranch}</td>
+                    <td className="px-3 py-3 text-gray-700 max-w-[140px]">{row.collegeBudget}</td>
+                    <td className="px-3 py-3 text-gray-700 max-w-[140px]">{row.biggestConcern}</td>
+                    <td className="px-3 py-3 text-gray-700">{row.preferredLanguage}</td>
+                    <td className="px-3 py-3 text-gray-700">{row.preferredTimeSlot}</td>
+                    <td className="px-3 py-3 text-gray-600 max-w-[220px] text-xs leading-relaxed">
+                      {row.additionalQuestions || '—'}
+                    </td>
+                    <td className="px-3 py-3">
+                      <select
+                        value={row.leadStatus || 'New Lead'}
+                        disabled={statusUpdating[row.id]}
+                        onChange={(e) => handleStatusChange(row.id, e.target.value)}
+                        className="w-full min-w-[140px] px-2 py-1.5 border border-gray-300 rounded-lg text-xs font-medium focus:ring-2 focus:ring-primary-navy/20 focus:border-primary-navy outline-none disabled:opacity-50"
+                        aria-label={`Status for ${row.studentName}`}
+                      >
+                        {LEAD_STATUS_OPTIONS.map((s) => (
+                          <option key={s} value={s}>
+                            {s}
+                          </option>
+                        ))}
+                      </select>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        )}
+
+        {!loading && pagination.totalPages > 1 ? (
+          <div className="flex items-center justify-between border-t border-gray-200 px-4 py-3">
+            <p className="text-sm text-gray-600">
+              Page {pagination.page} of {pagination.totalPages}
+            </p>
+            <div className="flex gap-2">
+              <button
+                type="button"
+                onClick={() => goToPage(pagination.page - 1)}
+                disabled={pagination.page <= 1}
+                className="inline-flex items-center gap-1 px-3 py-1.5 rounded-lg border border-gray-300 text-sm disabled:opacity-40"
+              >
+                <FiChevronLeft aria-hidden />
+                Prev
+              </button>
+              <button
+                type="button"
+                onClick={() => goToPage(pagination.page + 1)}
+                disabled={pagination.page >= pagination.totalPages}
+                className="inline-flex items-center gap-1 px-3 py-1.5 rounded-lg border border-gray-300 text-sm disabled:opacity-40"
+              >
+                Next
+                <FiChevronRight aria-hidden />
+              </button>
+            </div>
+          </div>
+        ) : null}
+      </div>
+    </div>
+  );
+}

@@ -566,6 +566,16 @@ export const submitTrainingFormResponse = async (payload) => {
 };
 
 /**
+ * Submit 1-on-1 IITian career counseling session booking form (public).
+ */
+export const submitOneOnOneCounselingLead = async (payload) => {
+  return apiRequest('/one-on-one-counseling', {
+    method: 'POST',
+    body: JSON.stringify(payload),
+  });
+};
+
+/**
  * Check if this mobile already submitted the public training form (live or legacy DB row).
  * @param {string} phone - Phone string (digits normalized to 10)
  * @returns {Promise<{ success: boolean, submitted?: boolean, message?: string, status?: number }>}
