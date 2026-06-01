@@ -21,7 +21,7 @@ import {
   INTERESTED_BRANCH_OPTIONS,
   LEAD_STATUS_OPTIONS,
   PREFERRED_LANGUAGE_OPTIONS,
-  PREFERRED_TIME_SLOT_OPTIONS,
+  SESSION_ATTENDEE_OPTIONS,
 } from '../../constants/oneOnOneCounselingForm';
 
 function formatDate(d) {
@@ -44,7 +44,8 @@ const EMPTY_FILTERS = {
   collegeBudget: '',
   biggestConcern: '',
   preferredLanguage: '',
-  preferredTimeSlot: '',
+  preferredTimeSlotDate: '',
+  sessionAttendee: '',
 };
 
 export default function OneOnOneCounselingLeads() {
@@ -75,7 +76,8 @@ export default function OneOnOneCounselingLeads() {
       collegeBudget: filters.collegeBudget || undefined,
       biggestConcern: filters.biggestConcern || undefined,
       preferredLanguage: filters.preferredLanguage || undefined,
-      preferredTimeSlot: filters.preferredTimeSlot || undefined,
+      preferredTimeSlotDate: filters.preferredTimeSlotDate || undefined,
+      sessionAttendee: filters.sessionAttendee || undefined,
     };
 
     queueMicrotask(() => {
@@ -175,7 +177,7 @@ export default function OneOnOneCounselingLeads() {
             <FiSearch className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" aria-hidden />
             <input
               type="search"
-              placeholder="Search name, rank, mobile…"
+              placeholder="Search name, city, rank, mobile…"
               value={filters.q}
               onChange={(e) => handleFilterChange('q', e.target.value)}
               className="w-full pl-9 pr-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-primary-navy/20 focus:border-primary-navy outline-none"
@@ -244,13 +246,21 @@ export default function OneOnOneCounselingLeads() {
               </option>
             ))}
           </select>
-          <select
-            value={filters.preferredTimeSlot}
-            onChange={(e) => handleFilterChange('preferredTimeSlot', e.target.value)}
+          <input
+            type="date"
+            value={filters.preferredTimeSlotDate}
+            onChange={(e) => handleFilterChange('preferredTimeSlotDate', e.target.value)}
             className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm"
+            aria-label="Session slot date filter"
+          />
+          <select
+            value={filters.sessionAttendee}
+            onChange={(e) => handleFilterChange('sessionAttendee', e.target.value)}
+            className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm"
+            aria-label="Session attendee filter"
           >
-            <option value="">All time slots</option>
-            {PREFERRED_TIME_SLOT_OPTIONS.map((o) => (
+            <option value="">Who attends (all)</option>
+            {SESSION_ATTENDEE_OPTIONS.map((o) => (
               <option key={o} value={o}>
                 {o}
               </option>
@@ -319,13 +329,17 @@ export default function OneOnOneCounselingLeads() {
                   <th className="px-3 py-3 text-left font-semibold text-gray-700">Mobile</th>
                   <th className="px-3 py-3 text-left font-semibold text-gray-700">Parent</th>
                   <th className="px-3 py-3 text-left font-semibold text-gray-700">Parent mobile</th>
+                  <th className="px-3 py-3 text-left font-semibold text-gray-700">Attendee</th>
                   <th className="px-3 py-3 text-left font-semibold text-gray-700">Class</th>
+                  <th className="px-3 py-3 text-left font-semibold text-gray-700">City</th>
                   <th className="px-3 py-3 text-left font-semibold text-gray-700">Rank</th>
                   <th className="px-3 py-3 text-left font-semibold text-gray-700">Branch</th>
                   <th className="px-3 py-3 text-left font-semibold text-gray-700">Budget</th>
                   <th className="px-3 py-3 text-left font-semibold text-gray-700">Concern</th>
                   <th className="px-3 py-3 text-left font-semibold text-gray-700">Language</th>
-                  <th className="px-3 py-3 text-left font-semibold text-gray-700">Slot</th>
+                  <th className="px-3 py-3 text-left font-semibold text-gray-700 min-w-[200px]">
+                    Session slot
+                  </th>
                   <th className="px-3 py-3 text-left font-semibold text-gray-700 min-w-[200px]">
                     Additional Qs
                   </th>
@@ -346,7 +360,11 @@ export default function OneOnOneCounselingLeads() {
                     <td className="px-3 py-3 text-gray-700 whitespace-nowrap">
                       {row.parentMobileNumber}
                     </td>
+                    <td className="px-3 py-3 text-gray-700 whitespace-nowrap">
+                      {row.sessionAttendee || '—'}
+                    </td>
                     <td className="px-3 py-3 text-gray-700">{row.currentClass}</td>
+                    <td className="px-3 py-3 text-gray-700">{row.city || '—'}</td>
                     <td className="px-3 py-3 text-gray-700 max-w-[120px]">{row.entranceExamRank}</td>
                     <td className="px-3 py-3 text-gray-700">{row.interestedBranch}</td>
                     <td className="px-3 py-3 text-gray-700 max-w-[140px]">{row.collegeBudget}</td>

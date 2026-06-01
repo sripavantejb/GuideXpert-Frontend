@@ -62,7 +62,7 @@ export function FieldError({ message }) {
   return <p className="mt-1 text-xs font-bold text-red-700">{message}</p>;
 }
 
-export function ChoiceGroup({ label, options, value, onChange, error, name }) {
+export function ChoiceGroup({ label, options, value, onChange, error, name, className = '' }) {
   const normalizedOptions = options
     .map((option) => {
       if (typeof option === 'string') {
@@ -76,22 +76,23 @@ export function ChoiceGroup({ label, options, value, onChange, error, name }) {
     .filter((option) => option.value);
 
   return (
-    <div className="sm:col-span-1">
+    <div className={`sm:col-span-1 ${className}`.trim()}>
       <p className={neoLabelClass}>{label}</p>
       <div
-        className={`space-y-2 rounded-[10px] border-2 bg-[#F8FAFC] p-3 ${
+        className={`rounded-[10px] border-2 bg-[#F8FAFC] p-3 ${
           error ? 'border-red-800' : 'border-[#0F172A]'
         }`}
         role="radiogroup"
         aria-label={typeof label === 'string' ? label : undefined}
       >
+        <div className="flex flex-col gap-2 sm:flex-row sm:flex-wrap">
         {normalizedOptions.map((option) => {
           const id = `${name || label}-${option.value}`;
           return (
             <label
               key={option.value}
               htmlFor={id}
-              className="flex cursor-pointer items-center gap-2 text-sm font-semibold text-[#0F172A]"
+              className="flex flex-1 min-w-[140px] cursor-pointer items-center gap-2 rounded-lg border-2 border-transparent bg-white px-3 py-2.5 text-sm font-semibold text-[#0F172A] has-[:checked]:border-[#0F172A] has-[:checked]:bg-[#c7f36b] has-[:checked]:shadow-[2px_2px_0px_#0F172A]"
             >
               <input
                 id={id}
@@ -105,6 +106,7 @@ export function ChoiceGroup({ label, options, value, onChange, error, name }) {
             </label>
           );
         })}
+        </div>
       </div>
       <FieldError message={error} />
     </div>

@@ -3,34 +3,29 @@ import MobileOtpField from '../components/forms/MobileOtpField';
 import {
   ChoiceGroup,
   FormInput,
-  FormSelect,
   FormTextarea,
   NeoField,
 } from '../components/oneOnOneSession/FormControls';
+import SessionSlotPicker from '../components/oneOnOneSession/SessionSlotPicker';
 import {
   BIGGEST_CONCERN_OPTIONS,
   COLLEGE_BUDGET_OPTIONS,
   CURRENT_CLASS_OPTIONS,
-  GUIDEXPERT_LOGO_URL,
   INITIAL_FORM_STATE,
   INTERESTED_BRANCH_OPTIONS,
   PREFERRED_LANGUAGE_OPTIONS,
-  PREFERRED_TIME_SLOT_OPTIONS,
+  SESSION_ATTENDEE_OPTIONS,
 } from '../constants/oneOnOneCounselingForm';
 import { submitOneOnOneCounselingLead } from '../utils/api';
+import {
+  getOneOnOneCounselingSlots,
+  msUntilNextISTMidnight,
+} from '../utils/oneOnOneCounselingSlots';
 import { captureUtmFirstTouch, getStoredUtm } from '../utils/utm';
 import {
   hasValidationErrors,
   validateOneOnOneForm,
 } from '../utils/oneOnOneCounselingValidation';
-
-function FormLogo() {
-  return (
-    <div className="mb-6 flex justify-center">
-      <img src={GUIDEXPERT_LOGO_URL} alt="GuideXpert" className="h-9 object-contain sm:h-10" />
-    </div>
-  );
-}
 
 function SuccessView() {
   return (
@@ -53,8 +48,13 @@ export default function OneOnOneSessionPage() {
   const [submitting, setSubmitting] = useState(false);
   const [submitted, setSubmitted] = useState(false);
   const [otpVerified, setOtpVerified] = useState(false);
+  const [slotOptionsTick, setSlotOptionsTick] = useState(0);
 
   const utm = useMemo(() => getStoredUtm(), []);
+  const sessionSlotOptions = useMemo(() => {
+    void slotOptionsTick;
+    return getOneOnOneCounselingSlots();
+  }, [slotOptionsTick]);
   const handleOtpVerifiedChange = useCallback((verified) => {
     setOtpVerified(verified);
     if (verified) {
@@ -66,6 +66,40 @@ export default function OneOnOneSessionPage() {
     document.title = 'Book 1-on-1 IITian Career Counseling | GuideXpert';
     captureUtmFirstTouch();
   }, []);
+
+  useEffect(() => {
+    const bump = () => setSlotOptionsTick((t) => t + 1);
+    const intervalId = window.setInterval(bump, 60_000);
+    const onVisibility = () => {
+      if (document.visibilityState === 'visible') bump();
+    };
+    document.addEventListener('visibilitychange', onVisibility);
+
+    let cancelled = false;
+    let midnightTimerId;
+    const scheduleMidnightRefresh = () => {
+      midnightTimerId = window.setTimeout(() => {
+        if (cancelled) return;
+        bump();
+        scheduleMidnightRefresh();
+      }, msUntilNextISTMidnight());
+    };
+    scheduleMidnightRefresh();
+
+    return () => {
+      cancelled = true;
+      window.clearInterval(intervalId);
+      document.removeEventListener('visibilitychange', onVisibility);
+      window.clearTimeout(midnightTimerId);
+    };
+  }, []);
+
+  useEffect(() => {
+    if (!form.preferredTimeSlot) return;
+    if (!sessionSlotOptions.some((o) => o.value === form.preferredTimeSlot)) {
+      setForm((prev) => ({ ...prev, preferredTimeSlot: '' }));
+    }
+  }, [sessionSlotOptions, form.preferredTimeSlot]);
 
   const setField = (key, value) => {
     setForm((prev) => ({ ...prev, [key]: value }));
@@ -84,6 +118,12 @@ export default function OneOnOneSessionPage() {
     if (!otpVerified) {
       nextErrors.mobileNumber = 'Please verify your mobile number with OTP first.';
     }
+    if (
+      form.preferredTimeSlot &&
+      !sessionSlotOptions.some((o) => o.value === form.preferredTimeSlot)
+    ) {
+      nextErrors.preferredTimeSlot = 'Please select a valid session slot (next 2 days, IST).';
+    }
     setErrors(nextErrors);
     if (hasValidationErrors(nextErrors)) {
       setSubmitError('Please fix the highlighted fields before submitting.');
@@ -97,7 +137,9 @@ export default function OneOnOneSessionPage() {
         mobileNumber: form.mobileNumber.replace(/\D/g, ''),
         parentName: form.parentName.trim(),
         parentMobileNumber: form.parentMobileNumber.replace(/\D/g, ''),
+        sessionAttendee: form.sessionAttendee,
         currentClass: form.currentClass,
+        city: form.city.trim(),
         entranceExamRank: form.entranceExamRank.trim(),
         interestedBranch: form.interestedBranch,
         collegeBudget: form.collegeBudget,
@@ -125,7 +167,6 @@ export default function OneOnOneSessionPage() {
   return (
     <div className="min-h-screen bg-[#F8FAFC] px-4 py-10 selection:bg-[#c7f36b] selection:text-[#0F172A] sm:px-6">
       <div className="mx-auto max-w-4xl">
-        <FormLogo />
         {!submitted ? (
           <>
             <div className="mb-6 rounded-[14px] border-2 border-[#0F172A] bg-[#0F172A] p-6 text-white shadow-[6px_6px_0px_#c7f36b]">
@@ -184,7 +225,19 @@ export default function OneOnOneSessionPage() {
                   error={errors.currentClass}
                 />
 
-                <NeoField label="4. Entrance Exam Rank" error={errors.entranceExamRank} className="sm:col-span-2">
+                <NeoField label="4. City / Town" error={errors.city}>
+                  <FormInput
+                    id="city"
+                    name="city"
+                    autoComplete="address-level2"
+                    value={form.city}
+                    onChange={(e) => setField('city', e.target.value)}
+                    error={errors.city}
+                    placeholder="e.g. Hyderabad, Vijayawada"
+                  />
+                </NeoField>
+
+                <NeoField label="5. Entrance Exam Rank" error={errors.entranceExamRank} className="sm:col-span-2">
                   <FormInput
                     id="entranceExamRank"
                     name="entranceExamRank"
@@ -195,7 +248,7 @@ export default function OneOnOneSessionPage() {
                   />
                 </NeoField>
 
-                <NeoField label="5. Parent Name" error={errors.parentName}>
+                <NeoField label="6. Parent Name" error={errors.parentName}>
                   <FormInput
                     id="parentName"
                     name="parentName"
@@ -206,7 +259,7 @@ export default function OneOnOneSessionPage() {
                   />
                 </NeoField>
 
-                <NeoField label="6. Parent Mobile Number" error={errors.parentMobileNumber}>
+                <NeoField label="7. Parent Mobile Number" error={errors.parentMobileNumber}>
                   <FormInput
                     id="parentMobileNumber"
                     name="parentMobileNumber"
@@ -220,7 +273,17 @@ export default function OneOnOneSessionPage() {
                 </NeoField>
 
                 <ChoiceGroup
-                  label="7. Interested Branch"
+                  label="8. Who Will Attend the Session?"
+                  name="sessionAttendee"
+                  className="sm:col-span-2"
+                  options={SESSION_ATTENDEE_OPTIONS}
+                  value={form.sessionAttendee}
+                  onChange={(value) => setField('sessionAttendee', value)}
+                  error={errors.sessionAttendee}
+                />
+
+                <ChoiceGroup
+                  label="9. Interested Branch"
                   name="interestedBranch"
                   options={INTERESTED_BRANCH_OPTIONS}
                   value={form.interestedBranch}
@@ -229,7 +292,7 @@ export default function OneOnOneSessionPage() {
                 />
 
                 <ChoiceGroup
-                  label="8. College Budget"
+                  label="10. College Budget"
                   name="collegeBudget"
                   options={COLLEGE_BUDGET_OPTIONS}
                   value={form.collegeBudget}
@@ -237,19 +300,19 @@ export default function OneOnOneSessionPage() {
                   error={errors.collegeBudget}
                 />
 
-                <NeoField label="9. Biggest Concern" error={errors.biggestConcern} className="sm:col-span-2">
-                  <FormSelect
-                    id="biggestConcern"
-                    name="biggestConcern"
-                    value={form.biggestConcern}
-                    onChange={(e) => setField('biggestConcern', e.target.value)}
-                    error={errors.biggestConcern}
-                    options={BIGGEST_CONCERN_OPTIONS}
-                  />
-                </NeoField>
+                <ChoiceGroup
+                  label="11. Biggest Concern"
+                  name="biggestConcern"
+                  layout="grid"
+                  className="sm:col-span-2"
+                  options={BIGGEST_CONCERN_OPTIONS}
+                  value={form.biggestConcern}
+                  onChange={(value) => setField('biggestConcern', value)}
+                  error={errors.biggestConcern}
+                />
 
                 <ChoiceGroup
-                  label="10. Preferred Language"
+                  label="12. Preferred Language"
                   name="preferredLanguage"
                   options={PREFERRED_LANGUAGE_OPTIONS}
                   value={form.preferredLanguage}
@@ -257,17 +320,21 @@ export default function OneOnOneSessionPage() {
                   error={errors.preferredLanguage}
                 />
 
-                <ChoiceGroup
-                  label="11. Preferred Time Slot"
+                <SessionSlotPicker
+                  label="13. Preferred Session Slot"
                   name="preferredTimeSlot"
-                  options={PREFERRED_TIME_SLOT_OPTIONS}
+                  options={sessionSlotOptions}
                   value={form.preferredTimeSlot}
                   onChange={(value) => setField('preferredTimeSlot', value)}
                   error={errors.preferredTimeSlot}
                 />
+                <p className="-mt-2 text-xs font-semibold text-slate-600 sm:col-span-2">
+                  3-hour slots from 9 AM–9 PM (IST) for the next 2 calendar days. Slots update at
+                  12:00 AM IST.
+                </p>
 
                 <NeoField
-                  label="12. Additional Questions (optional)"
+                  label="14. Additional Questions (optional)"
                   error={errors.additionalQuestions}
                   className="sm:col-span-2"
                 >

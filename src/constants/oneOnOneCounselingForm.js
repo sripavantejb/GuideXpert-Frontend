@@ -4,6 +4,7 @@ export const CURRENT_CLASS_OPTIONS = [
   '10th',
   'Inter 1st Year',
   'Inter 2nd Year',
+  'Inter 2nd Year Completed',
   'Diploma',
   'Other',
 ];
@@ -46,7 +47,7 @@ export const BIGGEST_CONCERN_OPTIONS = [
 
 export const PREFERRED_LANGUAGE_OPTIONS = ['Telugu', 'English', 'Hindi'];
 
-export const PREFERRED_TIME_SLOT_OPTIONS = ['Morning', 'Afternoon', 'Evening'];
+export const SESSION_ATTENDEE_OPTIONS = ['Student', 'Parent', 'Student and Parent'];
 
 export const LEAD_STATUS_OPTIONS = [
   'New Lead',
@@ -67,7 +68,9 @@ export const INITIAL_FORM_STATE = {
   mobileNumber: '',
   parentName: '',
   parentMobileNumber: '',
+  sessionAttendee: '',
   currentClass: '',
+  city: '',
   entranceExamRank: '',
   interestedBranch: '',
   collegeBudget: '',

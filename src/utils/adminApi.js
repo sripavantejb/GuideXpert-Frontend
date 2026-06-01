@@ -491,7 +491,8 @@ export const getOneOnOneCounselingLeads = async (params = {}, token = getStoredT
   if (params.collegeBudget) search.set('collegeBudget', params.collegeBudget);
   if (params.biggestConcern) search.set('biggestConcern', params.biggestConcern);
   if (params.preferredLanguage) search.set('preferredLanguage', params.preferredLanguage);
-  if (params.preferredTimeSlot) search.set('preferredTimeSlot', params.preferredTimeSlot);
+  if (params.preferredTimeSlotDate) search.set('preferredTimeSlotDate', params.preferredTimeSlotDate);
+  if (params.sessionAttendee) search.set('sessionAttendee', params.sessionAttendee);
   const query = search.toString();
   return adminRequest(`/one-on-one-counseling-leads${query ? `?${query}` : ''}`, { method: 'GET' }, token);
 };
