@@ -14,6 +14,7 @@ export default function MobileOtpField({
   onVerifiedChange,
   occupation = '1-on-1 Counseling',
   className = 'sm:col-span-2',
+  required = true,
 }) {
   const [otp, setOtp] = useState('');
   const [otpSent, setOtpSent] = useState(false);
@@ -207,6 +208,7 @@ export default function MobileOtpField({
     <div className={className}>
       <label className={neoLabelClass} htmlFor="mobileNumber">
         {label}
+        {required ? <span className="text-red-700"> *</span> : null}
       </label>
       <div className="flex flex-col gap-2 sm:flex-row sm:items-stretch">
         <div className="relative flex-1">
@@ -223,6 +225,8 @@ export default function MobileOtpField({
             onChange={(e) => handlePhoneChange(e.target.value)}
             readOnly={otpVerified}
             aria-invalid={Boolean(externalError)}
+            aria-required={required ? 'true' : undefined}
+            required={required}
             placeholder="10-digit number"
           />
           {otpVerified ? (

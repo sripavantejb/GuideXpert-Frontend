@@ -41,6 +41,7 @@ export default function SessionSlotPicker({
   onChange,
   error,
   name = 'preferredTimeSlot',
+  required = false,
 }) {
   const dayGroups = useMemo(() => groupSlotsByDate(options), [options]);
 
@@ -48,12 +49,15 @@ export default function SessionSlotPicker({
     <div className="sm:col-span-2">
       <p className={neoLabelClass} id={`${name}-label`}>
         {label}
+        {required ? <span className="text-red-700"> *</span> : null}
       </p>
       <div
         className={`rounded-[10px] border-2 bg-[#F8FAFC] p-3 sm:p-4 ${
           error ? 'border-red-800' : 'border-[#0F172A]'
         }`}
         role="radiogroup"
+        aria-required={required ? 'true' : undefined}
+        aria-invalid={error ? 'true' : undefined}
         aria-labelledby={`${name}-label`}
       >
         <div className="space-y-5">
