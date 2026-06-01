@@ -11,6 +11,7 @@ import {
   BIGGEST_CONCERN_OPTIONS,
   COLLEGE_BUDGET_OPTIONS,
   CURRENT_CLASS_OPTIONS,
+  GUIDEXPERT_LOGO_URL,
   INITIAL_FORM_STATE,
   INTERESTED_BRANCH_OPTIONS,
   PREFERRED_LANGUAGE_OPTIONS,
@@ -22,6 +23,14 @@ import {
   hasValidationErrors,
   validateOneOnOneForm,
 } from '../utils/oneOnOneCounselingValidation';
+
+function FormLogo() {
+  return (
+    <div className="mb-6 flex justify-center">
+      <img src={GUIDEXPERT_LOGO_URL} alt="GuideXpert" className="h-9 object-contain sm:h-10" />
+    </div>
+  );
+}
 
 function SuccessView() {
   return (
@@ -116,6 +125,7 @@ export default function OneOnOneSessionPage() {
   return (
     <div className="min-h-screen bg-[#F8FAFC] px-4 py-10 selection:bg-[#c7f36b] selection:text-[#0F172A] sm:px-6">
       <div className="mx-auto max-w-4xl">
+        <FormLogo />
         {!submitted ? (
           <>
             <div className="mb-6 rounded-[14px] border-2 border-[#0F172A] bg-[#0F172A] p-6 text-white shadow-[6px_6px_0px_#c7f36b]">
