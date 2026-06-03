@@ -7,12 +7,10 @@ import {
 } from './iitCounsellingClassStatus.js';
 
 describe('iitCounsellingClassStatus', () => {
-  test('only 12th passed out enum is relevant', () => {
+  test('11th, 12th studying, and 12th passed out are relevant', () => {
     for (const value of RELEVANT_IIT_CLASS_STATUSES) {
       assert.equal(isRelevantIitClassStatus(value), true, value);
     }
-    assert.equal(isRelevantIitClassStatus('Studying 12th/Intermediate 2nd Year'), false);
-    assert.equal(isRelevantIitClassStatus('Studying 11th/Intermediate 1st Year'), false);
   });
 
   test('degree, engineering, and diploma are irrelevant', () => {
@@ -35,9 +33,9 @@ describe('iitCounsellingClassStatus', () => {
     assert.equal(isRelevantIitClassStatus(undefined), false);
   });
 
-  test('legacy 12th Passed is relevant; 12th Appearing is not', () => {
+  test('legacy 12th Passed and 12th Appearing are relevant', () => {
     assert.equal(isRelevantIitClassStatus('12th Passed'), true);
-    assert.equal(isRelevantIitClassStatus('12th Appearing'), false);
+    assert.equal(isRelevantIitClassStatus('12th Appearing'), true);
   });
 
   test('matchesIitLeadRelevance respects filter', () => {
@@ -48,10 +46,9 @@ describe('iitCounsellingClassStatus', () => {
 
     const passedRow = { classStatus: 'Completed 12th/Intermediate 2nd Year' };
     assert.equal(matchesIitLeadRelevance(passedRow, 'relevant'), true);
-    assert.equal(matchesIitLeadRelevance(passedRow, 'irrelevant'), false);
 
     const studyingRow = { classStatus: 'Studying 11th/Intermediate 1st Year' };
-    assert.equal(matchesIitLeadRelevance(studyingRow, 'relevant'), false);
-    assert.equal(matchesIitLeadRelevance(studyingRow, 'irrelevant'), true);
+    assert.equal(matchesIitLeadRelevance(studyingRow, 'relevant'), true);
+    assert.equal(matchesIitLeadRelevance(studyingRow, 'irrelevant'), false);
   });
 });

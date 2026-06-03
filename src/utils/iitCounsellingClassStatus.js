@@ -1,5 +1,7 @@
-/** Current studying values that count as relevant IIT counselling leads (12th passed out only). */
+/** Relevant IIT leads: 11th studying, 12th studying, and 12th passed out. */
 export const RELEVANT_IIT_CLASS_STATUSES = Object.freeze([
+  'Studying 11th/Intermediate 1st Year',
+  'Studying 12th/Intermediate 2nd Year',
   'Completed 12th/Intermediate 2nd Year',
 ]);
 

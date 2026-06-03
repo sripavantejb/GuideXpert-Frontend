@@ -5,6 +5,7 @@ import TableSkeleton from '../../UI/TableSkeleton';
 import { languageBadgeClass } from '../../../constants/bdaLanguage';
 import { bdaLeadFiltersToQuery } from '../../../constants/bdaLeadFilters';
 import { getCallingTeamLeads } from '../../../utils/callingTeamApi';
+import { getLeadClassStatus } from '../../../utils/callingDataLeadMapper';
 
 const BULK_ASSIGN_MAX = 200;
 
@@ -166,7 +167,7 @@ export default function BdaUnassignedLeadPool({ appliedFilters, filterVersion, o
         </div>
       ) : loading ? (
         <div className="p-4">
-          <TableSkeleton rows={8} cols={8} />
+          <TableSkeleton rows={8} cols={9} />
         </div>
       ) : (
         <>
@@ -184,6 +185,7 @@ export default function BdaUnassignedLeadPool({ appliedFilters, filterVersion, o
                   </th>
                   <th className="px-4 py-3">Student</th>
                   <th className="px-4 py-3">Phone</th>
+                  <th className="px-4 py-3">Current studying</th>
                   <th className="px-4 py-3">Language</th>
                   <th className="px-4 py-3">English meet</th>
                   <th className="px-4 py-3">Hindi meet</th>
@@ -194,7 +196,7 @@ export default function BdaUnassignedLeadPool({ appliedFilters, filterVersion, o
               <tbody>
                 {rows.length === 0 ? (
                   <tr>
-                    <td colSpan={8} className="px-4 py-10 text-center text-gray-500">
+                    <td colSpan={9} className="px-4 py-10 text-center text-gray-500">
                       No unassigned leads match the current filters.
                     </td>
                   </tr>
@@ -211,6 +213,12 @@ export default function BdaUnassignedLeadPool({ appliedFilters, filterVersion, o
                       </td>
                       <td className="px-4 py-3 font-medium text-gray-900">{row.fullName || '—'}</td>
                       <td className="px-4 py-3 text-gray-700">{row.phone || '—'}</td>
+                      <td
+                        className="px-4 py-3 text-gray-700 max-w-[200px] truncate"
+                        title={getLeadClassStatus(row)}
+                      >
+                        {getLeadClassStatus(row)}
+                      </td>
                       <td className="px-4 py-3">
                         {row.preferredLanguage ? (
                           <span

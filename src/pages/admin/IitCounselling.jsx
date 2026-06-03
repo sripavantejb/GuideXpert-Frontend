@@ -1038,7 +1038,7 @@ export default function IitCounselling() {
               <span className="mx-1.5 text-gray-300">·</span>
               Demo filters use booking dates and slots.
               <span className="mx-1.5 text-gray-300">·</span>
-              <strong className="font-semibold text-gray-600">Relevant leads</strong> are 12th passed out only (Completed 12th/Intermediate 2nd Year); all other values count as irrelevant.
+              <strong className="font-semibold text-gray-600">Relevant leads</strong> are 11th or 12th studying, or 12th passed out; degree, engineering, diploma, and other values count as irrelevant.
               {heavyClientFilter ? (
                 <span className="block sm:inline sm:ml-1 mt-1 sm:mt-0 text-primary-navy font-medium"> {submissionPagination.total} row(s) after demo filters.</span>
               ) : null}
@@ -1180,7 +1180,7 @@ export default function IitCounselling() {
               <SubmissionOverviewTile
                 title="Relevant"
                 value={submissionRelevanceSplit.relevant}
-                subtitle="12th passed out · current demo/slot filters"
+                subtitle="11th / 12th / passed · current demo/slot filters"
                 icon={<FiUsers className="w-[18px] h-[18px]" />}
               />
               <SubmissionOverviewTile
@@ -1276,7 +1276,7 @@ export default function IitCounselling() {
               aria-label="Filter by lead relevance"
             >
               <option value="all">All leads</option>
-              <option value="relevant">Relevant leads (12th passed out)</option>
+              <option value="relevant">Relevant leads (11th / 12th / passed)</option>
               <option value="irrelevant">Irrelevant leads</option>
             </select>
             <select

@@ -31,7 +31,7 @@ export const APPLICATION_STATUS_OPTIONS = [
 
 export const LEAD_RELEVANCE_OPTIONS = [
   { value: '', label: 'Any relevance' },
-  { value: 'relevant', label: 'Relevant (12th passed out)' },
+  { value: 'relevant', label: 'Relevant (11th / 12th studying / passed)' },
   { value: 'irrelevant', label: 'Not relevant' },
 ];
 
