@@ -3,6 +3,7 @@ import { BDA_LANGUAGES } from '../../../constants/bdaLanguage';
 import {
   APPLICATION_STATUS_OPTIONS,
   EMPTY_BDA_LEAD_FILTERS,
+  LEAD_RELEVANCE_OPTIONS,
   MEET_PRESENCE_OPTIONS,
   MEET_VARIANT_OPTIONS,
 } from '../../../constants/bdaLeadFilters';
@@ -24,7 +25,7 @@ export default function BdaLeadFilterPanel({
           Select leads before assigning
         </h2>
         <p className="text-sm text-gray-600 mt-1">
-          Filter unassigned IIT counselling leads by meet attendance, slot date, language, and more.
+          Filter unassigned IIT counselling leads by meet attendance, slot date, language, relevance, and more.
           Click <strong className="font-medium text-gray-800">Apply filters</strong> to load the pool and
           enable assignment actions.
         </p>
@@ -139,6 +140,24 @@ export default function BdaLeadFilterPanel({
           >
             {APPLICATION_STATUS_OPTIONS.map((o) => (
               <option key={o.value || 'any'} value={o.value}>
+                {o.label}
+              </option>
+            ))}
+          </select>
+        </label>
+
+        <label className="block">
+          <span className="text-xs font-medium text-gray-500 uppercase tracking-wide">
+            Lead relevance
+          </span>
+          <select
+            value={draft.leadRelevance}
+            onChange={(e) => set('leadRelevance', e.target.value)}
+            className="mt-1 w-full border border-gray-200 rounded-lg px-3 py-2 text-sm bg-white"
+            aria-label="Filter by lead relevance"
+          >
+            {LEAD_RELEVANCE_OPTIONS.map((o) => (
+              <option key={o.value || 'any-relevance'} value={o.value}>
                 {o.label}
               </option>
             ))}

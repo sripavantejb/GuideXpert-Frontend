@@ -7,6 +7,7 @@ export const EMPTY_BDA_LEAD_FILTERS = {
   meetPresence: '',
   slotDate: '',
   applicationStatus: '',
+  leadRelevance: '',
 };
 
 export const MEET_VARIANT_OPTIONS = [
@@ -26,6 +27,12 @@ export const APPLICATION_STATUS_OPTIONS = [
   { value: '', label: 'Any application status' },
   { value: 'completed', label: 'Application completed' },
   { value: 'in_progress', label: 'Application in progress' },
+];
+
+export const LEAD_RELEVANCE_OPTIONS = [
+  { value: '', label: 'Any relevance' },
+  { value: 'relevant', label: 'Relevant (12th passed out)' },
+  { value: 'irrelevant', label: 'Not relevant' },
 ];
 
 /** Query params for list / auto-assign APIs after filters are applied. */

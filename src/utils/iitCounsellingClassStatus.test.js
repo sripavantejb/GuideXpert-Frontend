@@ -7,10 +7,12 @@ import {
 } from './iitCounsellingClassStatus.js';
 
 describe('iitCounsellingClassStatus', () => {
-  test('each relevant enum value is relevant', () => {
+  test('only 12th passed out enum is relevant', () => {
     for (const value of RELEVANT_IIT_CLASS_STATUSES) {
       assert.equal(isRelevantIitClassStatus(value), true, value);
     }
+    assert.equal(isRelevantIitClassStatus('Studying 12th/Intermediate 2nd Year'), false);
+    assert.equal(isRelevantIitClassStatus('Studying 11th/Intermediate 1st Year'), false);
   });
 
   test('degree, engineering, and diploma are irrelevant', () => {
@@ -33,9 +35,9 @@ describe('iitCounsellingClassStatus', () => {
     assert.equal(isRelevantIitClassStatus(undefined), false);
   });
 
-  test('legacy values map to relevant', () => {
-    assert.equal(isRelevantIitClassStatus('12th Appearing'), true);
+  test('legacy 12th Passed is relevant; 12th Appearing is not', () => {
     assert.equal(isRelevantIitClassStatus('12th Passed'), true);
+    assert.equal(isRelevantIitClassStatus('12th Appearing'), false);
   });
 
   test('matchesIitLeadRelevance respects filter', () => {
@@ -44,8 +46,12 @@ describe('iitCounsellingClassStatus', () => {
     assert.equal(matchesIitLeadRelevance(row, 'relevant'), false);
     assert.equal(matchesIitLeadRelevance(row, 'irrelevant'), true);
 
-    const relevantRow = { classStatus: 'Studying 11th/Intermediate 1st Year' };
-    assert.equal(matchesIitLeadRelevance(relevantRow, 'relevant'), true);
-    assert.equal(matchesIitLeadRelevance(relevantRow, 'irrelevant'), false);
+    const passedRow = { classStatus: 'Completed 12th/Intermediate 2nd Year' };
+    assert.equal(matchesIitLeadRelevance(passedRow, 'relevant'), true);
+    assert.equal(matchesIitLeadRelevance(passedRow, 'irrelevant'), false);
+
+    const studyingRow = { classStatus: 'Studying 11th/Intermediate 1st Year' };
+    assert.equal(matchesIitLeadRelevance(studyingRow, 'relevant'), false);
+    assert.equal(matchesIitLeadRelevance(studyingRow, 'irrelevant'), true);
   });
 });
