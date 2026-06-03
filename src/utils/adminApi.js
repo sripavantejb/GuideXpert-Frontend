@@ -501,6 +501,13 @@ export const getOneOnOneCounselingLeads = async (params = {}, token = getStoredT
   if (params.utm_medium) search.set('utm_medium', params.utm_medium);
   if (params.utm_campaign) search.set('utm_campaign', params.utm_campaign);
   if (params.utm_content) search.set('utm_content', params.utm_content);
+  if (params.bookingFilter) search.set('bookingFilter', params.bookingFilter);
+  if (params.bookingStatus) search.set('bookingStatus', params.bookingStatus);
+  if (params.selectedSlotId) search.set('selectedSlotId', params.selectedSlotId);
+  if (params.oneOnOneCounselorId) search.set('oneOnOneCounselorId', params.oneOnOneCounselorId);
+  if (params.slotDate) search.set('slotDate', params.slotDate);
+  if (params.parentAttendanceConfirmed === true) search.set('parentAttendanceConfirmed', 'true');
+  if (params.whatsappConsent === true) search.set('whatsappConsent', 'true');
   const query = search.toString();
   return adminRequest(`/one-on-one-counseling-leads${query ? `?${query}` : ''}`, { method: 'GET' }, token);
 };
@@ -510,6 +517,62 @@ export const patchOneOnOneCounselingLeadStatus = async (id, leadStatus, token = 
     method: 'PATCH',
     body: JSON.stringify({ leadStatus }),
   }, token);
+};
+
+export const getOneOnOneCounselors = async (params = {}, token = getStoredToken()) => {
+  const search = new URLSearchParams();
+  if (params.activeOnly) search.set('activeOnly', 'true');
+  const query = search.toString();
+  return adminRequest(`/one-on-one-counselors${query ? `?${query}` : ''}`, { method: 'GET' }, token);
+};
+
+export const createOneOnOneCounselor = async (body, token = getStoredToken()) =>
+  adminRequest('/one-on-one-counselors', { method: 'POST', body: JSON.stringify(body) }, token);
+
+export const updateOneOnOneCounselor = async (id, body, token = getStoredToken()) =>
+  adminRequest(`/one-on-one-counselors/${encodeURIComponent(id)}`, {
+    method: 'PUT',
+    body: JSON.stringify(body),
+  }, token);
+
+export const patchOneOnOneCounselorStatus = async (id, isActive, token = getStoredToken()) =>
+  adminRequest(`/one-on-one-counselors/${encodeURIComponent(id)}/status`, {
+    method: 'PATCH',
+    body: JSON.stringify({ isActive }),
+  }, token);
+
+export const deleteOneOnOneCounselor = async (id, token = getStoredToken()) =>
+  adminRequest(`/one-on-one-counselors/${encodeURIComponent(id)}`, { method: 'DELETE' }, token);
+
+export const getGuidanceSlots = async (params = {}, token = getStoredToken()) => {
+  const search = new URLSearchParams();
+  if (params.counselorId) search.set('counselorId', params.counselorId);
+  const query = search.toString();
+  return adminRequest(`/guidance-slots${query ? `?${query}` : ''}`, { method: 'GET' }, token);
+};
+
+export const createGuidanceSlot = async (body, token = getStoredToken()) =>
+  adminRequest('/guidance-slots', { method: 'POST', body: JSON.stringify(body) }, token);
+
+export const updateGuidanceSlot = async (id, body, token = getStoredToken()) =>
+  adminRequest(`/guidance-slots/${encodeURIComponent(id)}`, {
+    method: 'PUT',
+    body: JSON.stringify(body),
+  }, token);
+
+export const toggleGuidanceSlot = async (id, token = getStoredToken()) =>
+  adminRequest(`/guidance-slots/${encodeURIComponent(id)}/toggle`, { method: 'PATCH' }, token);
+
+export const deleteGuidanceSlot = async (id, token = getStoredToken()) =>
+  adminRequest(`/guidance-slots/${encodeURIComponent(id)}`, { method: 'DELETE' }, token);
+
+export const getGuidanceBookings = async (params = {}, token = getStoredToken()) => {
+  const search = new URLSearchParams();
+  Object.entries(params).forEach(([k, v]) => {
+    if (v !== undefined && v !== null && v !== '') search.set(k, String(v));
+  });
+  const query = search.toString();
+  return adminRequest(`/guidance-bookings${query ? `?${query}` : ''}`, { method: 'GET' }, token);
 };
 
 export const getCounsellorSupportRequests = async (params = {}, token = getStoredToken()) => {

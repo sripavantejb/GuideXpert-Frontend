@@ -48,7 +48,20 @@ import TrainingFeedback from './pages/admin/TrainingFeedback';
 import CounsellorSupportRequests from './pages/admin/CounsellorSupportRequests';
 import TrainingFormResponses from './pages/admin/TrainingFormResponses';
 import OneOnOneCounselingLeads from './pages/admin/OneOnOneCounselingLeads';
+import GuidanceSlotBookings from './pages/admin/GuidanceSlotBookings';
+import OneOnOneCounselorsAdmin from './pages/admin/OneOnOneCounselorsAdmin';
 import OneOnOneSessionPage from './pages/OneOnOneSessionPage';
+import GuidanceBookingConfirmation from './pages/GuidanceBookingConfirmation';
+import {
+  OneOnOneCounselorAuthProvider,
+  useOneOnOneCounselorAuth,
+} from './contexts/OneOnOneCounselorAuthContext';
+import OneOnOneCounselorLogin from './pages/oneOnOneCounselor/OneOnOneCounselorLogin';
+import OneOnOneCounselorLayout from './components/oneOnOneCounselor/OneOnOneCounselorLayout';
+import OneOnOneCounselorDashboard from './pages/oneOnOneCounselor/OneOnOneCounselorDashboard';
+import OneOnOneCounselorSlots from './pages/oneOnOneCounselor/OneOnOneCounselorSlots';
+import OneOnOneCounselorBookings from './pages/oneOnOneCounselor/OneOnOneCounselorBookings';
+import OneOnOneCounselorProfile from './pages/oneOnOneCounselor/OneOnOneCounselorProfile';
 import Announcements from './pages/admin/Announcements';
 import WebinarProgressAdmin from './pages/admin/WebinarProgress';
 import BulkCertificateDownload from './pages/admin/BulkCertificateDownload';
@@ -159,6 +172,14 @@ function ProtectedBda({ children }) {
   return children;
 }
 
+function ProtectedOneOnOneCounselor({ children }) {
+  const { isAuthenticated } = useOneOnOneCounselorAuth();
+  if (!isAuthenticated) {
+    return <Navigate to="/one-on-one-counselor/login" replace />;
+  }
+  return children;
+}
+
 function ProtectedWebinar({ children }) {
   const { isAuthenticated } = useWebinarAuth();
   if (!isAuthenticated) {
@@ -261,6 +282,7 @@ function App() {
             }
           />
           <Route path="/one-on-one-session" element={<OneOnOneSessionPage />} />
+          <Route path="/guidance-booking-confirmation" element={<GuidanceBookingConfirmation />} />
           <Route
             path="/students"
             element={
@@ -419,6 +441,8 @@ function App() {
             <Route path="counsellor-support-requests" element={<CounsellorSupportRequests />} />
             <Route path="training-form-responses" element={<TrainingFormResponses />} />
             <Route path="one-on-one-counseling" element={<OneOnOneCounselingLeads />} />
+            <Route path="guidance-slot-bookings" element={<GuidanceSlotBookings />} />
+            <Route path="one-on-one-counselors" element={<OneOnOneCounselorsAdmin />} />
             <Route path="influencer-create" element={<InfluencerCreate />} />
             <Route path="influencer-tracking" element={<InfluencerTracking />} />
             <Route path="poster-downloads" element={<PosterDownloads />} />
@@ -465,6 +489,32 @@ function App() {
             }
           />
           <Route path="/bda" element={<Navigate to="/bda/dashboard" replace />} />
+
+          {/* One-on-One Counselor Portal (IITian / mentor) */}
+          <Route
+            path="/one-on-one-counselor/login"
+            element={
+              <OneOnOneCounselorAuthProvider>
+                <OneOnOneCounselorLogin />
+              </OneOnOneCounselorAuthProvider>
+            }
+          />
+          <Route
+            path="/one-on-one-counselor"
+            element={
+              <OneOnOneCounselorAuthProvider>
+                <ProtectedOneOnOneCounselor>
+                  <OneOnOneCounselorLayout />
+                </ProtectedOneOnOneCounselor>
+              </OneOnOneCounselorAuthProvider>
+            }
+          >
+            <Route index element={<Navigate to="/one-on-one-counselor/dashboard" replace />} />
+            <Route path="dashboard" element={<OneOnOneCounselorDashboard />} />
+            <Route path="slots" element={<OneOnOneCounselorSlots />} />
+            <Route path="bookings" element={<OneOnOneCounselorBookings />} />
+            <Route path="profile" element={<OneOnOneCounselorProfile />} />
+          </Route>
 
           {/* Counsellor Portal */}
           <Route path="/counsellor/login" element={<CounsellorLogin />} />

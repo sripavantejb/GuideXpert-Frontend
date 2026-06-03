@@ -11,7 +11,9 @@ import {
   FiUsers,
 } from 'react-icons/fi';
 import {
+  getGuidanceSlots,
   getOneOnOneCounselingLeads,
+  getOneOnOneCounselors,
   getStoredToken,
   patchOneOnOneCounselingLeadStatus,
 } from '../../utils/adminApi';
@@ -25,6 +27,28 @@ import {
   PREFERRED_LANGUAGE_OPTIONS,
   SESSION_ATTENDEE_OPTIONS,
 } from '../../constants/oneOnOneCounselingForm';
+
+function BookingStatusBadge({ row }) {
+  if (row.bookingConfirmed) {
+    return (
+      <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-medium bg-emerald-100 text-emerald-800">
+        ✓ {row.bookingStatus || 'Confirmed'}
+      </span>
+    );
+  }
+  if (row.bookingStatus === 'Pending') {
+    return (
+      <span className="px-2 py-0.5 rounded-full text-xs font-medium bg-amber-100 text-amber-800">
+        Pending
+      </span>
+    );
+  }
+  return (
+    <span className="px-2 py-0.5 rounded-full text-xs font-medium bg-red-100 text-red-800">
+      Not Booked
+    </span>
+  );
+}
 
 function formatDate(d) {
   if (!d) return '—';
@@ -52,6 +76,12 @@ const EMPTY_FILTERS = {
   utm_medium: '',
   utm_campaign: '',
   utm_content: '',
+  bookingFilter: '',
+  slotDate: '',
+  selectedSlotId: '',
+  oneOnOneCounselorId: '',
+  parentAttendanceConfirmed: '',
+  whatsappConsent: '',
 };
 
 export default function OneOnOneCounselingLeads() {
@@ -62,6 +92,8 @@ export default function OneOnOneCounselingLeads() {
   const [error, setError] = useState('');
   const [filters, setFilters] = useState(EMPTY_FILTERS);
   const [statusUpdating, setStatusUpdating] = useState({});
+  const [counselors, setCounselors] = useState([]);
+  const [slots, setSlots] = useState([]);
   const cancelledRef = useRef(false);
   const requestIdRef = useRef(0);
 
@@ -88,6 +120,13 @@ export default function OneOnOneCounselingLeads() {
       utm_medium: filters.utm_medium.trim() || undefined,
       utm_campaign: filters.utm_campaign.trim() || undefined,
       utm_content: filters.utm_content.trim() || undefined,
+      bookingFilter: filters.bookingFilter || undefined,
+      slotDate: filters.slotDate || undefined,
+      selectedSlotId: filters.selectedSlotId || undefined,
+      oneOnOneCounselorId: filters.oneOnOneCounselorId || undefined,
+      parentAttendanceConfirmed:
+        filters.parentAttendanceConfirmed === 'true' ? true : undefined,
+      whatsappConsent: filters.whatsappConsent === 'true' ? true : undefined,
     };
 
     queueMicrotask(() => {
@@ -118,6 +157,16 @@ export default function OneOnOneCounselingLeads() {
       cancelledRef.current = true;
     };
   }, [pagination.page, pagination.limit, filters, logout]);
+
+  useEffect(() => {
+    const token = getStoredToken();
+    getOneOnOneCounselors({}, token).then((res) => {
+      if (res.success) setCounselors(res.data?.data || []);
+    });
+    getGuidanceSlots({}, token).then((res) => {
+      if (res.success) setSlots(res.data?.data || []);
+    });
+  }, []);
 
   const handleFilterChange = (key, value) => {
     setFilters((prev) => ({ ...prev, [key]: value }));
@@ -172,6 +221,20 @@ export default function OneOnOneCounselingLeads() {
           </p>
         </div>
         <div className="flex flex-wrap items-center gap-3">
+          <Link
+            to="/admin/guidance-slot-bookings"
+            className="inline-flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium border border-primary-navy text-primary-navy hover:bg-primary-navy/5"
+          >
+            Guidance slots
+          </Link>
+          <a
+            href="/guidance-booking-confirmation"
+            target="_blank"
+            rel="noopener noreferrer"
+            className="inline-flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium border border-gray-300 text-gray-700 hover:bg-gray-50"
+          >
+            Public booking form
+          </a>
           <Link
             to="/admin/iit-counselling-utm?linkTarget=oneOnOneSession#iit-utm-generator"
             className="inline-flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium text-white bg-primary-navy hover:bg-primary-navy/90"
@@ -341,6 +404,64 @@ export default function OneOnOneCounselingLeads() {
             className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm lg:col-span-2"
             aria-label="UTM content filter"
           />
+          <select
+            value={filters.bookingFilter}
+            onChange={(e) => handleFilterChange('bookingFilter', e.target.value)}
+            className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm"
+            aria-label="Booking filter"
+          >
+            <option value="">All booking states</option>
+            <option value="confirmed">Confirmed bookings</option>
+            <option value="pending">Pending bookings</option>
+            <option value="notBooked">Not booked leads</option>
+          </select>
+          <select
+            value={filters.oneOnOneCounselorId}
+            onChange={(e) => handleFilterChange('oneOnOneCounselorId', e.target.value)}
+            className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm"
+          >
+            <option value="">All counselors</option>
+            {counselors.map((c) => (
+              <option key={c.id} value={c.id}>
+                {c.name}
+              </option>
+            ))}
+          </select>
+          <select
+            value={filters.selectedSlotId}
+            onChange={(e) => handleFilterChange('selectedSlotId', e.target.value)}
+            className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm"
+          >
+            <option value="">All slots</option>
+            {slots.map((s) => (
+              <option key={s.id} value={s.id}>
+                {s.sessionTitle} ({s.slotDate})
+              </option>
+            ))}
+          </select>
+          <input
+            type="date"
+            value={filters.slotDate}
+            onChange={(e) => handleFilterChange('slotDate', e.target.value)}
+            className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm"
+            aria-label="Booked slot date"
+          />
+          <select
+            value={filters.parentAttendanceConfirmed}
+            onChange={(e) => handleFilterChange('parentAttendanceConfirmed', e.target.value)}
+            className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm"
+          >
+            <option value="">Parent attendance (all)</option>
+            <option value="true">Parent confirmed</option>
+          </select>
+          <select
+            value={filters.whatsappConsent}
+            onChange={(e) => handleFilterChange('whatsappConsent', e.target.value)}
+            className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm"
+          >
+            <option value="">WhatsApp consent (all)</option>
+            <option value="true">Consent accepted</option>
+          </select>
         </div>
         {hasActiveFilters ? (
           <button
@@ -394,6 +515,8 @@ export default function OneOnOneCounselingLeads() {
                   <th className="px-3 py-3 text-left font-semibold text-gray-700 min-w-[200px]">
                     Additional Qs
                   </th>
+                  <th className="px-3 py-3 text-left font-semibold text-gray-700">Slot booking</th>
+                  <th className="px-3 py-3 text-left font-semibold text-gray-700">Booked slot</th>
                   <th className="px-3 py-3 text-left font-semibold text-gray-700 min-w-[160px]">
                     Status
                   </th>
@@ -428,6 +551,17 @@ export default function OneOnOneCounselingLeads() {
                     <td className="px-3 py-3 text-gray-700">{row.preferredTimeSlot}</td>
                     <td className="px-3 py-3 text-gray-600 max-w-[220px] text-xs leading-relaxed">
                       {row.additionalQuestions || '—'}
+                    </td>
+                    <td className="px-3 py-3">
+                      <BookingStatusBadge row={row} />
+                    </td>
+                    <td className="px-3 py-3 text-gray-700 text-xs">
+                      {row.slotSessionTitle
+                        ? `${row.slotSessionTitle} (${row.slotDate || ''} ${row.slotTime || ''})`
+                        : '—'}
+                      {row.counselorName ? (
+                        <span className="block text-gray-500">{row.counselorName}</span>
+                      ) : null}
                     </td>
                     <td className="px-3 py-3">
                       <select
