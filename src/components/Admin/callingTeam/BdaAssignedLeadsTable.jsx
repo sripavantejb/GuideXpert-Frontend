@@ -6,6 +6,7 @@ import {
   PAYMENT_STATUS_OPTIONS,
   labelForOption,
 } from '../../../constants/callingTeamCrm';
+import { getLeadClassStatus, getLeadTopColleges } from '../../../utils/callingDataLeadMapper';
 
 function formatDateTime(value) {
   if (!value) return '—';
@@ -35,6 +36,8 @@ export default function BdaAssignedLeadsTable({ leads, compact = false, showAssi
           <tr className="bg-gray-50 text-left text-xs font-medium text-gray-500 uppercase">
             <th className="px-3 py-2">Student</th>
             <th className="px-3 py-2">Phone</th>
+            <th className="px-3 py-2">Current studying</th>
+            <th className="px-3 py-2">Top colleges</th>
             {showAssignMeta && <th className="px-3 py-2">Assigned at</th>}
             <th className="px-3 py-2">Call</th>
             <th className="px-3 py-2">Lead</th>
@@ -51,6 +54,18 @@ export default function BdaAssignedLeadsTable({ leads, compact = false, showAssi
             <tr key={lead.id} className="border-t border-gray-100 hover:bg-gray-50/80">
               <td className="px-3 py-2 font-medium">{lead.fullName}</td>
               <td className="px-3 py-2">{lead.phone}</td>
+              <td
+                className="px-3 py-2 text-xs text-gray-700 max-w-[160px] truncate"
+                title={getLeadClassStatus(lead)}
+              >
+                {getLeadClassStatus(lead)}
+              </td>
+              <td
+                className="px-3 py-2 text-xs text-gray-600 max-w-[180px] truncate"
+                title={getLeadTopColleges(lead)}
+              >
+                {getLeadTopColleges(lead)}
+              </td>
               {showAssignMeta && (
                 <td className="px-3 py-2 text-gray-600 whitespace-nowrap">
                   {formatDateTime(lead.assignedAt)}

@@ -20,7 +20,11 @@ import {
   getBdaLeads,
   updateBdaLead,
 } from '../../utils/bdaApi';
-import { formatDemoDateDisplay } from '../../utils/callingDataLeadMapper';
+import {
+  formatDemoDateDisplay,
+  getLeadClassStatus,
+  getLeadTopColleges,
+} from '../../utils/callingDataLeadMapper';
 import { deriveSlotDemoDateKeyIST } from '../../utils/weekendSlots';
 
 const STAT_CARDS = [
@@ -302,6 +306,8 @@ export default function BdaDashboard() {
               <tr>
                 <th className="px-3 py-2">Student</th>
                 <th className="px-3 py-2">Phone</th>
+                <th className="px-3 py-2">Current studying</th>
+                <th className="px-3 py-2">Top colleges</th>
                 <th className="px-3 py-2">Language</th>
                 <th className="px-3 py-2">Slot booked</th>
                 <th className="px-3 py-2">Assigned</th>
@@ -318,9 +324,9 @@ export default function BdaDashboard() {
             </thead>
             <tbody>
               {loading ? (
-                <tr><td colSpan={14} className="px-3 py-8 text-center text-gray-500">Loading…</td></tr>
+                <tr><td colSpan={16} className="px-3 py-8 text-center text-gray-500">Loading…</td></tr>
               ) : rows.length === 0 ? (
-                <tr><td colSpan={14} className="px-3 py-8 text-center text-gray-500">
+                <tr><td colSpan={16} className="px-3 py-8 text-center text-gray-500">
                   No assigned leads yet. Ask admin to split leads by your language in BDA Management.
                 </td></tr>
               ) : (
@@ -332,6 +338,18 @@ export default function BdaDashboard() {
                   >
                     <td className="px-3 py-2 font-medium">{row.fullName}</td>
                     <td className="px-3 py-2">{row.phone}</td>
+                    <td
+                      className="px-3 py-2 text-xs text-gray-700 max-w-[180px] truncate"
+                      title={getLeadClassStatus(row)}
+                    >
+                      {getLeadClassStatus(row)}
+                    </td>
+                    <td
+                      className="px-3 py-2 text-xs text-gray-600 max-w-[200px] truncate"
+                      title={getLeadTopColleges(row)}
+                    >
+                      {getLeadTopColleges(row)}
+                    </td>
                     <td className="px-3 py-2">{row.preferredLanguage || '—'}</td>
                     <td className="px-3 py-2 text-xs text-gray-600 whitespace-nowrap">{formatSlotBooked(row)}</td>
                     <td className="px-3 py-2 text-xs text-gray-600 whitespace-nowrap">{formatDt(row.assignedAt)}</td>
@@ -398,9 +416,18 @@ export default function BdaDashboard() {
                     </span>
                   )}
                   {drawerLead.city && <span className="text-gray-600">City: {drawerLead.city}</span>}
+                  <span className="text-gray-600">
+                    Current studying: {getLeadClassStatus(drawerLead)}
+                  </span>
                   <span className="text-gray-600">Slot booked: {formatSlotBooked(drawerLead)}</span>
                   <span className="text-gray-600">Assigned: {formatDt(drawerLead.assignedAt)}</span>
                 </div>
+                {getLeadTopColleges(drawerLead) !== '—' ? (
+                  <p className="mt-2 text-sm bg-gray-50 border rounded-lg p-2 text-gray-700">
+                    <span className="font-medium text-gray-900">Top colleges: </span>
+                    {getLeadTopColleges(drawerLead)}
+                  </p>
+                ) : null}
                 {drawerLead.latestRemark || drawerLead.lastRemark ? (
                   <p className="mt-2 text-sm bg-gray-50 border rounded-lg p-2 text-gray-700">
                     <span className="font-medium text-gray-900">Previous remark: </span>

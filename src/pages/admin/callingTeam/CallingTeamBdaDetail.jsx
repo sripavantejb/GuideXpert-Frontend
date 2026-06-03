@@ -17,6 +17,7 @@ import {
   getBdaStatsById,
   updateBda,
 } from '../../../utils/callingTeamApi';
+import { getLeadClassStatus, getLeadTopColleges } from '../../../utils/callingDataLeadMapper';
 
 function formatDateTime(value) {
   if (!value) return '—';
@@ -137,6 +138,8 @@ export default function CallingTeamBdaDetail() {
                   <tr className="bg-gray-50 text-xs text-gray-500 uppercase">
                     <th className="px-3 py-2 text-left">Student</th>
                     <th className="px-3 py-2 text-left">Phone</th>
+                    <th className="px-3 py-2 text-left">Current studying</th>
+                    <th className="px-3 py-2 text-left">Top colleges</th>
                     <th className="px-3 py-2 text-left">Call</th>
                     <th className="px-3 py-2 text-left">Lead</th>
                     <th className="px-3 py-2 text-left">Demo</th>
@@ -148,6 +151,18 @@ export default function CallingTeamBdaDetail() {
                     <tr key={lead.id} className="border-t">
                       <td className="px-3 py-2">{lead.fullName}</td>
                       <td className="px-3 py-2">{lead.phone}</td>
+                      <td
+                        className="px-3 py-2 max-w-[160px] truncate text-xs text-gray-700"
+                        title={getLeadClassStatus(lead)}
+                      >
+                        {getLeadClassStatus(lead)}
+                      </td>
+                      <td
+                        className="px-3 py-2 max-w-[180px] truncate text-xs text-gray-600"
+                        title={getLeadTopColleges(lead)}
+                      >
+                        {getLeadTopColleges(lead)}
+                      </td>
                       <td className="px-3 py-2">{labelForOption(CALL_STATUS_OPTIONS, lead.callStatus)}</td>
                       <td className="px-3 py-2">{labelForOption(LEAD_STATUS_OPTIONS, lead.leadStatus)}</td>
                       <td className="px-3 py-2">{labelForOption(DEMO_STATUS_OPTIONS, lead.demoStatus)}</td>

@@ -14,6 +14,26 @@ export function formatDemoDateDisplay(dateKey) {
   return d.toLocaleDateString('en-IN', { dateStyle: 'medium' });
 }
 
+/** Top 5 colleges from IIT section 1 — comma-separated for tables. */
+export function formatTopColleges(value) {
+  if (!Array.isArray(value) || value.length === 0) return '—';
+  const cleaned = value.map((item) => String(item || '').trim()).filter(Boolean);
+  return cleaned.length ? cleaned.join(', ') : '—';
+}
+
+export function getLeadClassStatus(row) {
+  const raw = row?.classStatus ?? row?.section1Data?.classStatus;
+  const t = String(raw ?? '').trim();
+  return t || '—';
+}
+
+export function getLeadTopColleges(row) {
+  if (typeof row?.topColleges === 'string' && row.topColleges.trim()) {
+    return row.topColleges.trim();
+  }
+  return formatTopColleges(row?.section1Data?.top5Colleges ?? row?.top5Colleges);
+}
+
 export function mapCallingDataLeadRow(row) {
   const utm = row?.utm || {};
   const s1 = row?.section1Data || {};
