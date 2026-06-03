@@ -1,9 +1,11 @@
 import { useEffect, useRef, useState } from 'react';
+import { Link } from 'react-router-dom';
 import {
   FiAlertCircle,
   FiChevronLeft,
   FiChevronRight,
   FiInbox,
+  FiLink,
   FiSearch,
   FiSliders,
   FiUsers,
@@ -46,6 +48,10 @@ const EMPTY_FILTERS = {
   preferredLanguage: '',
   preferredTimeSlotDate: '',
   sessionAttendee: '',
+  utm_source: '',
+  utm_medium: '',
+  utm_campaign: '',
+  utm_content: '',
 };
 
 export default function OneOnOneCounselingLeads() {
@@ -78,6 +84,10 @@ export default function OneOnOneCounselingLeads() {
       preferredLanguage: filters.preferredLanguage || undefined,
       preferredTimeSlotDate: filters.preferredTimeSlotDate || undefined,
       sessionAttendee: filters.sessionAttendee || undefined,
+      utm_source: filters.utm_source.trim() || undefined,
+      utm_medium: filters.utm_medium.trim() || undefined,
+      utm_campaign: filters.utm_campaign.trim() || undefined,
+      utm_content: filters.utm_content.trim() || undefined,
     };
 
     queueMicrotask(() => {
@@ -161,9 +171,18 @@ export default function OneOnOneCounselingLeads() {
             Submissions from the /one-on-one-session booking form
           </p>
         </div>
-        <div className="rounded-lg bg-primary-navy/5 border border-primary-navy/10 px-4 py-2 text-sm">
-          <span className="font-semibold text-primary-navy">{pagination.total}</span>
-          <span className="text-gray-600"> total leads</span>
+        <div className="flex flex-wrap items-center gap-3">
+          <Link
+            to="/admin/influencer-create?linkTarget=oneOnOneSession"
+            className="inline-flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium text-white bg-primary-navy hover:bg-primary-navy/90"
+          >
+            <FiLink className="w-4 h-4" aria-hidden />
+            Generate UTM links
+          </Link>
+          <div className="rounded-lg bg-primary-navy/5 border border-primary-navy/10 px-4 py-2 text-sm">
+            <span className="font-semibold text-primary-navy">{pagination.total}</span>
+            <span className="text-gray-600"> total leads</span>
+          </div>
         </div>
       </div>
 
@@ -290,6 +309,38 @@ export default function OneOnOneCounselingLeads() {
               </option>
             ))}
           </select>
+          <input
+            type="text"
+            placeholder="UTM source"
+            value={filters.utm_source}
+            onChange={(e) => handleFilterChange('utm_source', e.target.value)}
+            className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm"
+            aria-label="UTM source filter"
+          />
+          <input
+            type="text"
+            placeholder="UTM medium"
+            value={filters.utm_medium}
+            onChange={(e) => handleFilterChange('utm_medium', e.target.value)}
+            className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm"
+            aria-label="UTM medium filter"
+          />
+          <input
+            type="text"
+            placeholder="UTM campaign"
+            value={filters.utm_campaign}
+            onChange={(e) => handleFilterChange('utm_campaign', e.target.value)}
+            className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm"
+            aria-label="UTM campaign filter"
+          />
+          <input
+            type="text"
+            placeholder="UTM content (influencer)"
+            value={filters.utm_content}
+            onChange={(e) => handleFilterChange('utm_content', e.target.value)}
+            className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm lg:col-span-2"
+            aria-label="UTM content filter"
+          />
         </div>
         {hasActiveFilters ? (
           <button
@@ -346,6 +397,10 @@ export default function OneOnOneCounselingLeads() {
                   <th className="px-3 py-3 text-left font-semibold text-gray-700 min-w-[160px]">
                     Status
                   </th>
+                  <th className="px-3 py-3 text-left font-semibold text-gray-700">UTM Src</th>
+                  <th className="px-3 py-3 text-left font-semibold text-gray-700">UTM Med</th>
+                  <th className="px-3 py-3 text-left font-semibold text-gray-700">UTM Camp</th>
+                  <th className="px-3 py-3 text-left font-semibold text-gray-700">UTM Content</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-gray-100">
@@ -388,6 +443,18 @@ export default function OneOnOneCounselingLeads() {
                           </option>
                         ))}
                       </select>
+                    </td>
+                    <td className="px-3 py-3 text-gray-600 max-w-[100px] truncate" title={row.utm_source || ''}>
+                      {row.utm_source || '—'}
+                    </td>
+                    <td className="px-3 py-3 text-gray-600 max-w-[100px] truncate" title={row.utm_medium || ''}>
+                      {row.utm_medium || '—'}
+                    </td>
+                    <td className="px-3 py-3 text-gray-600 max-w-[120px] truncate" title={row.utm_campaign || ''}>
+                      {row.utm_campaign || '—'}
+                    </td>
+                    <td className="px-3 py-3 text-gray-600 max-w-[140px] truncate" title={row.utm_content || ''}>
+                      {row.utm_content || '—'}
                     </td>
                   </tr>
                 ))}

@@ -23,6 +23,19 @@ export const PLATFORM_TO_UTM_SOURCE = {
 
 export const DEFAULT_CAMPAIGN = 'guide_xperts';
 
+export const LINK_TARGET_OPTIONS = [
+  { value: 'registration', label: 'Registration (/register)' },
+  { value: 'oneOnOneSession', label: '1-on-1 session (/one-on-one-session)' },
+];
+
+/** Normalize ?linkTarget= query for influencer create page. */
+export function normalizeLinkTargetFromQuery(raw) {
+  if (!raw) return 'registration';
+  const s = String(raw).trim().toLowerCase().replace(/-/g, '_');
+  if (s === 'oneononesession' || s === 'one_on_one_session') return 'oneOnOneSession';
+  return 'registration';
+}
+
 /** Normalize @handle, URL, or plain username for Instagram quick-add. */
 export function normalizeInstagramHandle(raw) {
   let s = String(raw ?? '').trim();

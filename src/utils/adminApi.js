@@ -493,6 +493,10 @@ export const getOneOnOneCounselingLeads = async (params = {}, token = getStoredT
   if (params.preferredLanguage) search.set('preferredLanguage', params.preferredLanguage);
   if (params.preferredTimeSlotDate) search.set('preferredTimeSlotDate', params.preferredTimeSlotDate);
   if (params.sessionAttendee) search.set('sessionAttendee', params.sessionAttendee);
+  if (params.utm_source) search.set('utm_source', params.utm_source);
+  if (params.utm_medium) search.set('utm_medium', params.utm_medium);
+  if (params.utm_campaign) search.set('utm_campaign', params.utm_campaign);
+  if (params.utm_content) search.set('utm_content', params.utm_content);
   const query = search.toString();
   return adminRequest(`/one-on-one-counseling-leads${query ? `?${query}` : ''}`, { method: 'GET' }, token);
 };

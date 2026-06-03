@@ -423,6 +423,7 @@ export default function InfluencerTracking() {
         onLinksUpdated={setSavedLinksSnapshot}
         onAfterSave={(name, platform) => openDetailView(name, platform)}
         onOpenInfluencerDetail={openDetailView}
+        showLandingPageSelector
       />
 
       {/* Analytics */}

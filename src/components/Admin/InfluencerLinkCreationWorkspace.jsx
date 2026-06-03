@@ -15,8 +15,26 @@ import {
   DEFAULT_CAMPAIGN,
   LINKS_SORT_OPTIONS,
   LINKS_COPY_FIELDS,
+  LINK_TARGET_OPTIONS,
   normalizeInstagramHandle,
 } from '../../constants/influencerAdminConstants';
+
+function linkTargetCopy(linkTarget) {
+  if (linkTarget === 'oneOnOneSession') {
+    return {
+      generateTitle: '1-on-1 session booking link',
+      generateHint: 'Create a unique 1-on-1 session link. Copy to share or Save to store below.',
+      attributionHint: '1-on-1 counseling bookings attach to this utm_content value.',
+      igLabelHint: '1-on-1 session bookings attach to this value.',
+    };
+  }
+  return {
+    generateTitle: 'registration link',
+    generateHint: 'Create a unique registration link. Copy to share or Save to store below.',
+    attributionHint: 'Registration form leads attach to this utm_content value.',
+    igLabelHint: 'Registration form leads attach to this value.',
+  };
+}
 
 function formatDate(value) {
   if (!value) return '—';
@@ -64,7 +82,7 @@ const sectionHeaderClass = 'px-6 py-4 border-b border-gray-200 bg-gray-50/80 bor
 
 /**
  * Generate UTM link + saved influencer links (shared by Influencer Tracking and Create page).
- * @param {{ onLinksMutated?: () => void, onLinksUpdated?: (links: object[]) => void, onAfterSave?: (name: string, platform: string) => void, onOpenInfluencerDetail?: (name: string, platform: string) => void, showInstagramQuickAdd?: boolean, initialPlatformFilter?: string }} props
+ * @param {{ onLinksMutated?: () => void, onLinksUpdated?: (links: object[]) => void, onAfterSave?: (name: string, platform: string) => void, onOpenInfluencerDetail?: (name: string, platform: string) => void, showInstagramQuickAdd?: boolean, initialPlatformFilter?: string, initialLinkTarget?: string, showLandingPageSelector?: boolean }} props
  */
 export default function InfluencerLinkCreationWorkspace({
   onLinksMutated,
@@ -73,6 +91,8 @@ export default function InfluencerLinkCreationWorkspace({
   onOpenInfluencerDetail,
   showInstagramQuickAdd = false,
   initialPlatformFilter = '',
+  initialLinkTarget = 'registration',
+  showLandingPageSelector = false,
 }) {
   const { logout } = useAuth();
   const token = getStoredToken();
@@ -118,10 +138,19 @@ export default function InfluencerLinkCreationWorkspace({
   const [igQuickSuccess, setIgQuickSuccess] = useState('');
   const [igQuickLink, setIgQuickLink] = useState('');
 
+  const [activeLinkTarget, setActiveLinkTarget] = useState(
+    initialLinkTarget === 'oneOnOneSession' ? 'oneOnOneSession' : 'registration'
+  );
+  const targetCopy = linkTargetCopy(activeLinkTarget);
+
+  useEffect(() => {
+    setActiveLinkTarget(initialLinkTarget === 'oneOnOneSession' ? 'oneOnOneSession' : 'registration');
+  }, [initialLinkTarget]);
+
   const fetchLinks = useCallback(() => {
     setLinksLoading(true);
     setLinksError('');
-    getInfluencerLinks(token, { linkTarget: 'registration' }).then((result) => {
+    getInfluencerLinks(token, { linkTarget: activeLinkTarget }).then((result) => {
       if (!result.success) {
         if (result.status === 401) {
           logout();
@@ -137,12 +166,17 @@ export default function InfluencerLinkCreationWorkspace({
       setLinksLoading(false);
       onLinksUpdated?.(list);
     });
-  }, [token, logout, onLinksUpdated]);
+  }, [token, logout, onLinksUpdated, activeLinkTarget]);
 
   useEffect(() => {
     const t = setTimeout(() => fetchLinks(), 0);
     return () => clearTimeout(t);
   }, [fetchLinks]);
+
+  useEffect(() => {
+    setGeneratedLink(null);
+    setLinksPage(1);
+  }, [activeLinkTarget]);
 
   useEffect(() => {
     const onFocus = () => {
@@ -172,6 +206,7 @@ export default function InfluencerLinkCreationWorkspace({
         influencerName: form.influencerName.trim(),
         platform: form.platform,
         campaign: form.campaign.trim() || DEFAULT_CAMPAIGN,
+        linkTarget: activeLinkTarget,
       },
       false,
       token
@@ -211,6 +246,7 @@ export default function InfluencerLinkCreationWorkspace({
       influencerName: form.influencerName.trim(),
       platform: form.platform,
       campaign: form.campaign.trim() || DEFAULT_CAMPAIGN,
+      linkTarget: activeLinkTarget,
     };
     const costTrimmed = typeof form.cost === 'string' ? form.cost.trim() : '';
     if (costTrimmed !== '') {
@@ -249,6 +285,7 @@ export default function InfluencerLinkCreationWorkspace({
       influencerName,
       platform: 'Instagram',
       campaign: (igCampaign || '').trim() || DEFAULT_CAMPAIGN,
+      linkTarget: activeLinkTarget,
     };
     const costTrimmed = typeof igCost === 'string' ? igCost.trim() : String(igCost ?? '').trim();
     if (costTrimmed !== '') {
@@ -478,7 +515,7 @@ export default function InfluencerLinkCreationWorkspace({
                   placeholder="Leave blank to use handle without @"
                   className="w-full h-10 rounded-lg border border-gray-300 px-3 text-sm focus:ring-2 focus:ring-primary-navy/30 focus:border-primary-navy outline-none"
                 />
-                <p className="text-xs text-gray-500 mt-0.5">Registration form leads attach to this value.</p>
+                <p className="text-xs text-gray-500 mt-0.5">{targetCopy.igLabelHint}</p>
               </div>
               <div>
                 <label htmlFor="igCampaign" className="block text-sm font-medium text-gray-700 mb-1.5">
@@ -556,11 +593,28 @@ export default function InfluencerLinkCreationWorkspace({
       <section className={cardClass}>
         <div className={`${sectionHeaderClass} py-2 sm:py-3`}>
           <h2 className="text-base font-semibold text-gray-800">Generate UTM Link</h2>
-          <p className="text-sm text-gray-500 mt-0.5">
-            Create a unique registration link. Copy to share or Save to store below.
-          </p>
+          <p className="text-sm text-gray-500 mt-0.5">{targetCopy.generateHint}</p>
         </div>
         <form onSubmit={handleGenerate} className="p-6 space-y-5">
+          {showLandingPageSelector ? (
+            <div className="max-w-md">
+              <label htmlFor="landingPage" className="block text-sm font-medium text-gray-700 mb-1.5">
+                Landing page
+              </label>
+              <select
+                id="landingPage"
+                value={activeLinkTarget}
+                onChange={(e) => setActiveLinkTarget(e.target.value)}
+                className="w-full h-10 rounded-lg border border-gray-300 px-3 text-sm focus:ring-2 focus:ring-primary-navy/30 focus:border-primary-navy outline-none bg-white"
+              >
+                {LINK_TARGET_OPTIONS.map((opt) => (
+                  <option key={opt.value} value={opt.value}>
+                    {opt.label}
+                  </option>
+                ))}
+              </select>
+            </div>
+          ) : null}
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
             <div>
               <label htmlFor="influencerName" className="block text-sm font-medium text-gray-700 mb-1.5">Influencer Name</label>
