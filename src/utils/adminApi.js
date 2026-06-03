@@ -252,8 +252,12 @@ export const getIitCounsellingUtmAnalytics = async (params = {}, token = getStor
 /** Saved IIT counselling UTM links (separate DB collection from influencer /register links). */
 const IIT_SAVED_UTM_BASE = '/iit-counselling/saved-utm-links';
 
-export const getIitCounsellingSavedUtmLinks = async (token = getStoredToken()) => {
-  return adminRequest(`${IIT_SAVED_UTM_BASE}`, { method: 'GET' }, token);
+export const getIitCounsellingSavedUtmLinks = async (token = getStoredToken(), params = {}) => {
+  const search = new URLSearchParams();
+  if (params.linkTarget) search.set('linkTarget', params.linkTarget);
+  const query = search.toString();
+  const path = query ? `${IIT_SAVED_UTM_BASE}?${query}` : IIT_SAVED_UTM_BASE;
+  return adminRequest(path, { method: 'GET' }, token);
 };
 
 export const createIitCounsellingSavedUtmLink = async (payload, token = getStoredToken()) => {

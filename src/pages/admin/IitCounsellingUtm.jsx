@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
-import { Link } from 'react-router-dom';
+import { Link, useSearchParams } from 'react-router-dom';
 import {
   FiCopy,
   FiExternalLink,
@@ -36,6 +36,8 @@ import {
   PLATFORMS,
   DEFAULT_CAMPAIGN,
   PLATFORM_TO_UTM_SOURCE,
+  IIT_COUNSELLING_UTM_LINK_TARGETS,
+  normalizeIitUtmLinkTargetFromQuery,
 } from '../../constants/influencerAdminConstants';
 
 const COMBO_COPY_FIELDS = [
@@ -43,6 +45,9 @@ const COMBO_COPY_FIELDS = [
   { key: 'utm_medium', label: 'utm_medium' },
   { key: 'utm_campaign', label: 'utm_campaign' },
   { key: 'utm_content', label: 'utm_content' },
+  { key: 'influencerName', label: 'Influencer name' },
+  { key: 'dateCreated', label: 'Date created' },
+  { key: 'lastVisitAt', label: 'Last visit' },
   { key: 'visits', label: 'Visits' },
   { key: 'uniqueVisitors', label: 'Unique visitors' },
   { key: 'linkedSubmissions', label: 'Linked submissions' },
@@ -50,6 +55,10 @@ const COMBO_COPY_FIELDS = [
 
 const DEFAULT_IIT_COUNSELLING_PAGE_URL = (
   import.meta.env.VITE_IIT_COUNSELLING_PAGE_URL || 'https://guidexpert.co.in/iit-counselling'
+).trim();
+
+const DEFAULT_ONE_ON_ONE_SESSION_PAGE_URL = (
+  import.meta.env.VITE_ONE_ON_ONE_SESSION_PAGE_URL || 'https://www.guidexpert.co.in/one-on-one-session'
 ).trim();
 
 function buildIitCounsellingShareUrl(baseUrl, { utm_source, utm_medium, utm_campaign, utm_content }) {
@@ -62,6 +71,87 @@ function buildIitCounsellingShareUrl(baseUrl, { utm_source, utm_medium, utm_camp
   if (String(utm_content || '').trim()) p.set('utm_content', String(utm_content).trim());
   const qs = p.toString();
   return qs ? `${base}?${qs}` : base;
+}
+
+function normalizeUtmToken(val) {
+  if (val == null || val === '') return '';
+  let s = String(val).trim();
+  try {
+    s = decodeURIComponent(s);
+  } catch {
+    // keep as-is
+  }
+  return s.trim().toLowerCase();
+}
+
+/** Map saved UTM links → display names for the combo analytics table. */
+function buildInfluencerNameLookup(savedLinks) {
+  const byFullKey = new Map();
+  const byContent = new Map();
+  const createdAtByFullKey = new Map();
+  const createdAtByContent = new Map();
+  for (const link of savedLinks || []) {
+    const name = (link.influencerName || '').trim();
+    if (!name) continue;
+    const parsed = parseUtmParamsFromHref(link.utmLink) || {};
+    const contentNorm = normalizeUtmToken(parsed.utm_content || name);
+    const fullKey = [
+      normalizeUtmToken(parsed.utm_source),
+      normalizeUtmToken(parsed.utm_medium),
+      normalizeUtmToken(parsed.utm_campaign),
+      contentNorm,
+    ].join('|');
+    const createdAt = link.createdAt || null;
+    if (fullKey && !byFullKey.has(fullKey)) byFullKey.set(fullKey, name);
+    if (contentNorm && !byContent.has(contentNorm)) byContent.set(contentNorm, name);
+    const nameNorm = normalizeUtmToken(name);
+    if (nameNorm && !byContent.has(nameNorm)) byContent.set(nameNorm, name);
+    if (createdAt && fullKey && !createdAtByFullKey.has(fullKey)) createdAtByFullKey.set(fullKey, createdAt);
+    if (createdAt && contentNorm && !createdAtByContent.has(contentNorm)) {
+      createdAtByContent.set(contentNorm, createdAt);
+    }
+    if (createdAt && nameNorm && !createdAtByContent.has(nameNorm)) {
+      createdAtByContent.set(nameNorm, createdAt);
+    }
+  }
+  return { byFullKey, byContent, createdAtByFullKey, createdAtByContent };
+}
+
+function resolveSavedLinkCreatedAt(row, lookup) {
+  if (!row || !lookup) return null;
+  const contentRaw = row.utm_content === '(none)' ? '' : String(row.utm_content || '').trim();
+  const fullKey = [
+    normalizeUtmToken(row.utm_source),
+    normalizeUtmToken(row.utm_medium),
+    normalizeUtmToken(row.utm_campaign),
+    normalizeUtmToken(contentRaw),
+  ].join('|');
+  return lookup.createdAtByFullKey.get(fullKey)
+    || lookup.createdAtByContent.get(normalizeUtmToken(contentRaw))
+    || null;
+}
+
+/** First visit in range, or saved-link created date when no visits yet. */
+function resolveDateCreated(row, lookup) {
+  if (row?.firstVisitAt) return row.firstVisitAt;
+  return resolveSavedLinkCreatedAt(row, lookup);
+}
+
+function resolveInfluencerName(row, lookup) {
+  if (!row || !lookup) return '';
+  const contentRaw = row.utm_content === '(none)' ? '' : String(row.utm_content || '').trim();
+  const fullKey = [
+    normalizeUtmToken(row.utm_source),
+    normalizeUtmToken(row.utm_medium),
+    normalizeUtmToken(row.utm_campaign),
+    normalizeUtmToken(contentRaw),
+  ].join('|');
+  const fromFull = lookup.byFullKey.get(fullKey);
+  if (fromFull) return fromFull;
+  const fromContent = lookup.byContent.get(normalizeUtmToken(contentRaw));
+  if (fromContent) return fromContent;
+  if (String(row.utm_medium || '').toLowerCase() === 'influencer' && contentRaw) return contentRaw;
+  return '';
 }
 
 /** Decoded UTM tuple as stored on IIT counselling visits (same as combo table / CSV keys). */
@@ -91,6 +181,7 @@ function mapCreateResponseToSavedLinkRow(saved) {
     platform: saved.platform,
     campaign: saved.campaign,
     utmLink: saved.utmLink,
+    linkTarget: saved.linkTarget || 'iitCounselling',
     cost: saved.cost ?? null,
     createdAt: saved.createdAt,
   };
@@ -134,6 +225,11 @@ function ChartSkeleton() {
 }
 
 function getComboCellValue(row, key) {
+  if (key === 'dateCreated' || key === 'lastVisitAt') {
+    const v = key === 'dateCreated' ? row.dateCreated : row.lastVisitAt;
+    if (!v) return '';
+    return formatSavedLinkDate(v);
+  }
   const v = row[key];
   if (v == null || v === '') return '';
   return String(v);
@@ -166,6 +262,8 @@ const LINE_POINT_CAP = 90;
 
 export default function IitCounsellingUtm() {
   const { logout } = useAuth();
+  const [searchParams] = useSearchParams();
+  const queryLinkTarget = normalizeIitUtmLinkTargetFromQuery(searchParams.get('linkTarget'));
 
   const [fromDate, setFromDate] = useState('');
   const [toDate, setToDate] = useState('');
@@ -180,9 +278,10 @@ export default function IitCounsellingUtm() {
   const [error, setError] = useState('');
 
   const [comboSearch, setComboSearch] = useState('');
-  const [comboSort, setComboSort] = useState('visits');
+  const [comboSort, setComboSort] = useState('newest');
   const [copyComboModalOpen, setCopyComboModalOpen] = useState(false);
 
+  const [genLinkTarget, setGenLinkTarget] = useState(queryLinkTarget);
   const [genInfluencerName, setGenInfluencerName] = useState('');
   const [genPlatform, setGenPlatform] = useState('Instagram');
   const [genCampaign, setGenCampaign] = useState(DEFAULT_CAMPAIGN);
@@ -195,6 +294,8 @@ export default function IitCounsellingUtm() {
   const [canonicalIitUtmLink, setCanonicalIitUtmLink] = useState(null);
 
   const [savedIitLinks, setSavedIitLinks] = useState([]);
+  /** All saved links (both landing pages) for influencer name lookup in analytics table. */
+  const [savedLinksForLookup, setSavedLinksForLookup] = useState([]);
   const [savedLinksLoading, setSavedLinksLoading] = useState(true);
   const [savedLinksError, setSavedLinksError] = useState('');
   /** Set when the API returns 404 (route missing on host) or wrong handler (legacy server). */
@@ -240,12 +341,16 @@ export default function IitCounsellingUtm() {
     loadData();
   }, [loadData]);
 
+  useEffect(() => {
+    setGenLinkTarget(queryLinkTarget);
+  }, [queryLinkTarget]);
+
   const fetchSavedIitLinks = useCallback(() => {
     const t = getStoredToken();
     setSavedLinksLoading(true);
     setSavedLinksError('');
     setSavedLinksEnvHint('');
-    getIitCounsellingSavedUtmLinks(t).then((result) => {
+    getIitCounsellingSavedUtmLinks(t, { linkTarget: genLinkTarget }).then((result) => {
       setSavedLinksLoading(false);
       if (!result.success) {
         if (result.status === 401) {
@@ -270,9 +375,10 @@ export default function IitCounsellingUtm() {
       }
       const body = result.data;
       const list = Array.isArray(body?.data) ? body.data : Array.isArray(body) ? body : [];
+      list.sort((a, b) => new Date(b.createdAt || 0).getTime() - new Date(a.createdAt || 0).getTime());
       setSavedIitLinks(list);
     });
-  }, [logout]);
+  }, [logout, genLinkTarget]);
 
   useEffect(() => {
     const id = window.setTimeout(() => fetchSavedIitLinks(), 0);
@@ -280,10 +386,48 @@ export default function IitCounsellingUtm() {
   }, [fetchSavedIitLinks]);
 
   useEffect(() => {
+    setCanonicalIitUtmLink(null);
+    setGenSaveSuccess('');
+  }, [genLinkTarget]);
+
+  useEffect(() => {
     const onFocus = () => fetchSavedIitLinks();
     window.addEventListener('focus', onFocus);
     return () => window.removeEventListener('focus', onFocus);
   }, [fetchSavedIitLinks]);
+
+  const fetchSavedLinksForLookup = useCallback(() => {
+    const t = getStoredToken();
+    Promise.all([
+      getIitCounsellingSavedUtmLinks(t, { linkTarget: 'iitCounselling' }),
+      getIitCounsellingSavedUtmLinks(t, { linkTarget: 'oneOnOneSession' }),
+    ]).then(([iitRes, oneOnOneRes]) => {
+      const pick = (result) => {
+        if (!result.success) return [];
+        const body = result.data;
+        return Array.isArray(body?.data) ? body.data : Array.isArray(body) ? body : [];
+      };
+      const merged = [...pick(iitRes), ...pick(oneOnOneRes)];
+      merged.sort((a, b) => new Date(b.createdAt || 0).getTime() - new Date(a.createdAt || 0).getTime());
+      setSavedLinksForLookup(merged);
+    });
+  }, []);
+
+  useEffect(() => {
+    const id = window.setTimeout(() => fetchSavedLinksForLookup(), 0);
+    return () => window.clearTimeout(id);
+  }, [fetchSavedLinksForLookup]);
+
+  useEffect(() => {
+    const onFocus = () => fetchSavedLinksForLookup();
+    window.addEventListener('focus', onFocus);
+    return () => window.removeEventListener('focus', onFocus);
+  }, [fetchSavedLinksForLookup]);
+
+  const influencerNameLookup = useMemo(
+    () => buildInfluencerNameLookup(savedLinksForLookup),
+    [savedLinksForLookup]
+  );
 
   useEffect(() => {
     if (window.location.hash !== '#iit-utm-generator') return undefined;
@@ -345,27 +489,46 @@ export default function IitCounsellingUtm() {
   }, [visitTrend]);
 
   const filteredSortedCombo = useMemo(() => {
-    const rows = [...(data?.byCombo || [])];
+    const rows = (data?.byCombo || []).map((r) => ({
+      ...r,
+      influencerName: resolveInfluencerName(r, influencerNameLookup),
+      dateCreated: resolveDateCreated(r, influencerNameLookup),
+      lastVisitAt: r.latestVisitAt || null,
+    }));
     const q = comboSearch.trim().toLowerCase();
     let filtered = rows;
     if (q) {
       filtered = rows.filter((r) =>
-        [r.utm_source, r.utm_medium, r.utm_campaign, r.utm_content]
+        [r.utm_source, r.utm_medium, r.utm_campaign, r.utm_content, r.influencerName]
           .some((v) => String(v || '').toLowerCase().includes(q))
       );
     }
-    const key = comboSort === 'unique' ? 'uniqueVisitors' : comboSort === 'linked' ? 'linkedSubmissions' : 'visits';
-    filtered.sort((a, b) => (Number(b[key]) || 0) - (Number(a[key]) || 0));
+    if (comboSort === 'newest') {
+      filtered.sort((a, b) => {
+        const ta = a.latestVisitAt ? new Date(a.latestVisitAt).getTime() : 0;
+        const tb = b.latestVisitAt ? new Date(b.latestVisitAt).getTime() : 0;
+        return tb - ta;
+      });
+    } else {
+      const key = comboSort === 'unique' ? 'uniqueVisitors' : comboSort === 'linked' ? 'linkedSubmissions' : 'visits';
+      filtered.sort((a, b) => (Number(b[key]) || 0) - (Number(a[key]) || 0));
+    }
     return filtered;
-  }, [data?.byCombo, comboSearch, comboSort]);
+  }, [data?.byCombo, comboSearch, comboSort, influencerNameLookup]);
 
   const exportComboCsv = () => {
-    const headers = ['utm_source', 'utm_medium', 'utm_campaign', 'utm_content', 'Visits', 'Unique visitors', 'Linked submissions'];
+    const headers = [
+      'utm_source', 'utm_medium', 'utm_campaign', 'utm_content', 'Influencer name',
+      'Date created', 'Last visit', 'Visits', 'Unique visitors', 'Linked submissions',
+    ];
     const rows = filteredSortedCombo.map((r) => [
       r.utm_source ?? '',
       r.utm_medium ?? '',
       r.utm_campaign ?? '',
       r.utm_content ?? '',
+      r.influencerName ?? '',
+      r.dateCreated ? formatSavedLinkDate(r.dateCreated) : '',
+      r.lastVisitAt ? formatSavedLinkDate(r.lastVisitAt) : '',
       r.visits ?? 0,
       r.uniqueVisitors ?? 0,
       r.linkedSubmissions ?? 0,
@@ -380,18 +543,22 @@ export default function IitCounsellingUtm() {
     URL.revokeObjectURL(url);
   };
 
+  const generatorBaseUrl = genLinkTarget === 'oneOnOneSession'
+    ? DEFAULT_ONE_ON_ONE_SESSION_PAGE_URL
+    : DEFAULT_IIT_COUNSELLING_PAGE_URL;
+
   const generatedIitUtmLink = useMemo(() => {
     const name = genInfluencerName.trim();
     if (!name) return '';
     const utmSource = PLATFORM_TO_UTM_SOURCE[genPlatform] || String(genPlatform || '').toLowerCase();
     const campaign = (genCampaign || '').trim() || DEFAULT_CAMPAIGN;
-    return buildIitCounsellingShareUrl(DEFAULT_IIT_COUNSELLING_PAGE_URL, {
+    return buildIitCounsellingShareUrl(generatorBaseUrl, {
       utm_source: utmSource,
       utm_medium: 'influencer',
       utm_campaign: campaign,
       utm_content: name,
     });
-  }, [genInfluencerName, genPlatform, genCampaign]);
+  }, [genInfluencerName, genPlatform, genCampaign, generatorBaseUrl]);
 
   const displayIitUtmLink = canonicalIitUtmLink || generatedIitUtmLink;
 
@@ -429,6 +596,7 @@ export default function IitCounsellingUtm() {
       influencerName: genInfluencerName.trim(),
       platform: genPlatform,
       campaign: (genCampaign || '').trim() || DEFAULT_CAMPAIGN,
+      linkTarget: genLinkTarget,
     };
     const costTrimmed = typeof genCost === 'string' ? genCost.trim() : '';
     if (costTrimmed !== '') {
@@ -469,6 +637,11 @@ export default function IitCounsellingUtm() {
     }
     setGenSaveSuccess('Saved to the list.');
     setSavedIitLinks((prev) => {
+      const idStr = String(row.id);
+      const rest = prev.filter((r) => String(r.id) !== idStr);
+      return [row, ...rest];
+    });
+    setSavedLinksForLookup((prev) => {
       const idStr = String(row.id);
       const rest = prev.filter((r) => String(r.id) !== idStr);
       return [row, ...rest];
@@ -559,6 +732,7 @@ export default function IitCounsellingUtm() {
         onChange={(e) => setComboSort(e.target.value)}
         className="rounded border border-gray-300 px-2 py-1.5 text-sm bg-white"
       >
+        <option value="newest">Sort: Newest first</option>
         <option value="visits">Sort: Visits</option>
         <option value="unique">Sort: Unique</option>
         <option value="linked">Sort: Linked</option>
@@ -579,15 +753,29 @@ export default function IitCounsellingUtm() {
       <div>
         <h2 className="text-xl font-semibold text-gray-800">IIT Counselling UTM</h2>
         <p className="text-sm text-gray-500 mt-1">
-          Create trackable counselling links and view performance by UTM source/content.
-          {' '}All data is for the public route{' '}
+          Create trackable links for{' '}
           <span className="font-mono text-xs bg-gray-100 px-1 rounded">/iit-counselling</span>
-          {' '}only (page visits and UTMs from that URL).
+          {' '}or{' '}
+          <span className="font-mono text-xs bg-gray-100 px-1 rounded">/one-on-one-session</span>.
+          Visit analytics below apply to the IIT counselling page only.
         </p>
         <p className="text-xs text-gray-500 mt-1">
           <Link to="/admin/iit-counselling" className="text-primary-navy hover:underline">IIT Counselling submissions</Link>
+          {' · '}
+          <Link to="/admin/one-on-one-counseling" className="text-primary-navy hover:underline">1-on-1 Counseling Leads</Link>
         </p>
       </div>
+
+      {genLinkTarget === 'oneOnOneSession' ? (
+        <div className="rounded-xl border border-blue-100 bg-blue-50/80 px-4 py-3 text-sm text-gray-700">
+          <span className="font-semibold text-gray-800">1-on-1 session links:</span> charts above count visits on{' '}
+          <span className="font-mono text-xs">/iit-counselling</span> only. Bookings from your 1-on-1 UTM links appear in{' '}
+          <Link to="/admin/one-on-one-counseling" className="font-medium text-primary-navy hover:underline">
+            1-on-1 Counseling Leads
+          </Link>
+          {' '}(filter by UTM content).
+        </div>
+      ) : null}
 
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
         <div className={cardClass + ' p-4'}>
@@ -693,15 +881,30 @@ export default function IitCounsellingUtm() {
         <div className={`${sectionHeaderClass} py-2 sm:py-3`}>
           <h2 className="text-base font-semibold text-gray-800">Generate UTM Link</h2>
           <p className="text-sm text-gray-500 mt-0.5">
-            Links point to <span className="font-mono text-xs">/iit-counselling</span>. Query keys match the analytics table exactly:{' '}
-            <span className="font-mono text-xs">utm_source</span> (from platform),{' '}
+            Query keys: <span className="font-mono text-xs">utm_source</span> (platform),{' '}
             <span className="font-mono text-xs">utm_medium</span>=<span className="font-mono text-xs">influencer</span>,{' '}
             <span className="font-mono text-xs">utm_campaign</span>,{' '}
-            <span className="font-mono text-xs">utm_content</span> (influencer name)—same decoding as{' '}
-            <code className="text-xs bg-gray-100 px-1 rounded">URLSearchParams</code> on the public page.
+            <span className="font-mono text-xs">utm_content</span> (influencer name).
           </p>
         </div>
         <form className="p-6 space-y-5" onSubmit={(e) => { e.preventDefault(); handleGenerateIitLink(); }}>
+          <div className="max-w-md">
+            <label htmlFor="iitGenLandingPage" className="block text-sm font-medium text-gray-700 mb-1.5">
+              Landing page
+            </label>
+            <select
+              id="iitGenLandingPage"
+              value={genLinkTarget}
+              onChange={(e) => setGenLinkTarget(e.target.value)}
+              className="w-full h-10 rounded-lg border border-gray-300 px-3 text-sm focus:ring-2 focus:ring-primary-navy/30 focus:border-primary-navy outline-none bg-white"
+            >
+              {IIT_COUNSELLING_UTM_LINK_TARGETS.map((opt) => (
+                <option key={opt.value} value={opt.value}>
+                  {opt.label}
+                </option>
+              ))}
+            </select>
+          </div>
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
             <div>
               <label htmlFor="iitGenInfluencerName" className="block text-sm font-medium text-gray-700 mb-1.5">Influencer Name</label>
@@ -816,7 +1019,10 @@ export default function IitCounsellingUtm() {
               <p className="text-sm font-medium text-gray-700 mb-1">Generated link</p>
               <p className="text-sm text-gray-800 break-all font-mono">{displayIitUtmLink}</p>
               {canonicalIitUtmLink ? (
-                <p className="text-xs text-gray-500 mt-2">Showing saved URL from server (matches list and visit tracking).</p>
+                <p className="text-xs text-gray-500 mt-2">
+                  Showing saved URL from server (matches list
+                  {genLinkTarget === 'iitCounselling' ? ' and visit tracking' : ''}).
+                </p>
               ) : null}
               {generatorDecodedUtms ? (
                 <div className="mt-4 pt-3 border-t border-gray-200">
@@ -844,7 +1050,10 @@ export default function IitCounsellingUtm() {
             </div>
           ) : (
             <div className="mt-4 p-4 rounded-lg border border-dashed border-gray-200 bg-gray-50/50">
-              <p className="text-sm text-gray-600 leading-relaxed">Enter an influencer name to preview the counselling page URL (utm_content).</p>
+              <p className="text-sm text-gray-600 leading-relaxed">
+                Enter an influencer name to preview the{' '}
+                {genLinkTarget === 'oneOnOneSession' ? '1-on-1 session' : 'IIT counselling'} page URL (utm_content).
+              </p>
             </div>
           )}
         </form>
@@ -876,7 +1085,7 @@ export default function IitCounsellingUtm() {
             </p>
           ) : null}
           {savedLinksLoading ? (
-            <div className="py-6"><TableSkeleton rows={4} cols={7} /></div>
+            <div className="py-6"><TableSkeleton rows={4} cols={8} /></div>
           ) : savedIitLinks.length === 0 ? (
             savedLinksEnvHint ? null : (
               <p className="text-sm text-gray-500 py-4">No saved links yet. Generate a URL and use Save to list.</p>
@@ -887,6 +1096,7 @@ export default function IitCounsellingUtm() {
                 <thead className="bg-gray-50">
                   <tr>
                     <th className="px-4 py-2.5 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">Influencer</th>
+                    <th className="px-4 py-2.5 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">Landing</th>
                     <th className="px-4 py-2.5 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">Platform</th>
                     <th className="px-4 py-2.5 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">Campaign</th>
                     <th className="px-4 py-2.5 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">Link</th>
@@ -899,6 +1109,9 @@ export default function IitCounsellingUtm() {
                   {savedIitLinks.map((row) => (
                     <tr key={`iit-saved-${String(row.id)}-${row.createdAt || ''}`} className="hover:bg-gray-50/80">
                       <td className="px-4 py-3 font-medium text-gray-900 max-w-[140px] truncate" title={row.influencerName}>{row.influencerName}</td>
+                      <td className="px-4 py-3 text-gray-600 text-xs whitespace-nowrap">
+                        {row.linkTarget === 'oneOnOneSession' ? '1-on-1 session' : 'IIT counselling'}
+                      </td>
                       <td className="px-4 py-3 text-gray-700">{row.platform}</td>
                       <td className="px-4 py-3 text-gray-600 max-w-[120px] truncate" title={row.campaign}>{row.campaign}</td>
                       <td className="px-4 py-3 text-gray-600 max-w-[min(280px,40vw)] truncate font-mono text-xs" title={row.utmLink}>{row.utmLink}</td>
@@ -953,7 +1166,7 @@ export default function IitCounsellingUtm() {
         <div className="p-4 border-b border-gray-100 flex flex-wrap items-center gap-3">
           <input
             type="search"
-            placeholder="Search source, medium, campaign, content"
+            placeholder="Search source, medium, campaign, content, influencer"
             value={comboSearch}
             onChange={(e) => setComboSearch(e.target.value)}
             className="rounded-lg border border-gray-300 px-3 py-2 text-sm w-56 focus:ring-2 focus:ring-primary-navy/30 focus:border-primary-navy outline-none"
@@ -974,7 +1187,7 @@ export default function IitCounsellingUtm() {
         </div>
 
         {loading ? (
-          <div className="px-6 py-8"><TableSkeleton rows={8} cols={7} /></div>
+          <div className="px-6 py-8"><TableSkeleton rows={8} cols={10} /></div>
         ) : (data?.byCombo || []).length === 0 ? (
           <div className="px-6 py-12 text-center">
             <p className="text-gray-500 text-sm">No visit data in this range.</p>
@@ -989,6 +1202,9 @@ export default function IitCounsellingUtm() {
                   <th className="px-6 py-3 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">utm_medium</th>
                   <th className="px-6 py-3 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">utm_campaign</th>
                   <th className="px-6 py-3 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">utm_content</th>
+                  <th className="px-6 py-3 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">Influencer name</th>
+                  <th className="px-6 py-3 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider whitespace-nowrap">Date created</th>
+                  <th className="px-6 py-3 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider whitespace-nowrap">Last visit</th>
                   <th className="px-6 py-3 text-right text-xs font-semibold text-gray-600 uppercase tracking-wider">Visits</th>
                   <th className="px-6 py-3 text-right text-xs font-semibold text-gray-600 uppercase tracking-wider">Unique</th>
                   <th className="px-6 py-3 text-right text-xs font-semibold text-gray-600 uppercase tracking-wider">Linked</th>
@@ -1001,6 +1217,18 @@ export default function IitCounsellingUtm() {
                     <td className="px-6 py-4 text-sm max-w-[140px] truncate" title={row.utm_medium}>{row.utm_medium === '(none)' ? <span className="text-gray-400">(none)</span> : row.utm_medium}</td>
                     <td className="px-6 py-4 text-sm max-w-[160px] truncate" title={row.utm_campaign}>{row.utm_campaign === '(none)' ? <span className="text-gray-400">(none)</span> : row.utm_campaign}</td>
                     <td className="px-6 py-4 text-sm max-w-[160px] truncate" title={row.utm_content}>{row.utm_content === '(none)' ? <span className="text-gray-400">(none)</span> : row.utm_content}</td>
+                    <td className="px-6 py-4 text-sm max-w-[160px] truncate font-medium text-gray-900" title={row.influencerName || ''}>
+                      {row.influencerName ? row.influencerName : <span className="text-gray-400 font-normal">—</span>}
+                    </td>
+                    <td
+                      className="px-6 py-4 text-sm text-gray-600 whitespace-nowrap"
+                      title={row.dateCreated ? 'First visit with this UTM in range, or saved link created date' : ''}
+                    >
+                      {row.dateCreated ? formatSavedLinkDate(row.dateCreated) : <span className="text-gray-400">—</span>}
+                    </td>
+                    <td className="px-6 py-4 text-sm text-gray-600 whitespace-nowrap">
+                      {row.lastVisitAt ? formatSavedLinkDate(row.lastVisitAt) : <span className="text-gray-400">—</span>}
+                    </td>
                     <td className="px-6 py-4 text-sm text-right font-medium text-gray-900 tabular-nums">{row.visits}</td>
                     <td className="px-6 py-4 text-sm text-right text-gray-600 tabular-nums">{row.uniqueVisitors}</td>
                     <td className="px-6 py-4 text-sm text-right text-gray-600 tabular-nums">{row.linkedSubmissions}</td>

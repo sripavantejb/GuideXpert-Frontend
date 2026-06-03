@@ -173,7 +173,7 @@ export default function OneOnOneCounselingLeads() {
         </div>
         <div className="flex flex-wrap items-center gap-3">
           <Link
-            to="/admin/influencer-create?linkTarget=oneOnOneSession"
+            to="/admin/iit-counselling-utm?linkTarget=oneOnOneSession#iit-utm-generator"
             className="inline-flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium text-white bg-primary-navy hover:bg-primary-navy/90"
           >
             <FiLink className="w-4 h-4" aria-hidden />
