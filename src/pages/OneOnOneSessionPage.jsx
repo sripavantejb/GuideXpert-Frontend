@@ -23,7 +23,7 @@ import {
   getOneOnOneCounselingSlots,
   msUntilNextISTMidnight,
 } from '../utils/oneOnOneCounselingSlots';
-import { captureUtmFirstTouch, getStoredUtm } from '../utils/utm';
+import { resolveUtmAttribution, trackOneOnOneSessionVisit } from '../utils/oneOnOneSessionTracking';
 import {
   hasValidationErrors,
   validateOneOnOneForm,
@@ -79,7 +79,6 @@ export default function OneOnOneSessionPage() {
   const [slotOptionsTick, setSlotOptionsTick] = useState(0);
   const [visitorFingerprint, setVisitorFingerprint] = useState('');
 
-  const utm = useMemo(() => getStoredUtm(), []);
   const apiBase = useMemo(() => getApiBaseUrl(), []);
   const sessionSlotOptions = useMemo(() => {
     void slotOptionsTick;
@@ -94,35 +93,14 @@ export default function OneOnOneSessionPage() {
 
   useEffect(() => {
     document.title = 'Book 1-on-1 IITian Career Counseling | GuideXpert';
-    captureUtmFirstTouch();
-  }, []);
-
-  useEffect(() => {
-    const queryParams = new URLSearchParams(window.location.search);
-    const payload = {
-      pageKey: 'oneOnOneSession',
-      path: window.location.pathname,
-      query: window.location.search,
-      referrer: document.referrer || '',
-      utm_source: queryParams.get('utm_source') || '',
-      utm_medium: queryParams.get('utm_medium') || '',
-      utm_campaign: queryParams.get('utm_campaign') || '',
-      utm_content: queryParams.get('utm_content') || '',
+    let cancelled = false;
+    const utmPayload = resolveUtmAttribution();
+    trackOneOnOneSessionVisit(apiBase, utmPayload).then((fingerprint) => {
+      if (!cancelled && fingerprint) setVisitorFingerprint(fingerprint);
+    });
+    return () => {
+      cancelled = true;
     };
-
-    fetch(`${apiBase}/iit-counselling/visit`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(payload),
-    })
-      .then(async (response) => {
-        const result = await response.json().catch(() => ({}));
-        const fingerprint = result?.data?.visitorFingerprint;
-        if (response.ok && typeof fingerprint === 'string' && fingerprint) {
-          setVisitorFingerprint(fingerprint);
-        }
-      })
-      .catch(() => {});
   }, [apiBase]);
 
   useEffect(() => {
@@ -195,6 +173,13 @@ export default function OneOnOneSessionPage() {
 
     setSubmitting(true);
     try {
+      const utmPayload = resolveUtmAttribution();
+      let fingerprint = visitorFingerprint;
+      if (!fingerprint) {
+        fingerprint = await trackOneOnOneSessionVisit(apiBase, utmPayload);
+        if (fingerprint) setVisitorFingerprint(fingerprint);
+      }
+
       const payload = {
         studentName: form.studentName.trim(),
         mobileNumber: form.mobileNumber.replace(/\D/g, ''),
@@ -210,8 +195,8 @@ export default function OneOnOneSessionPage() {
         preferredLanguage: form.preferredLanguage,
         preferredTimeSlot: form.preferredTimeSlot,
         additionalQuestions: form.additionalQuestions.trim() || undefined,
-        ...(utm || {}),
-        ...(visitorFingerprint ? { visitorFingerprint } : {}),
+        ...utmPayload,
+        ...(fingerprint ? { visitorFingerprint: fingerprint } : {}),
       };
 
       const result = await submitOneOnOneCounselingLead(payload);

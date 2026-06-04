@@ -1,0 +1,41 @@
+import { captureUtmFirstTouch, getStoredUtm, parseUtmFromUrl } from './utm';
+
+/** Current URL UTMs override stored first-touch (same session attribution). */
+export function resolveUtmAttribution() {
+  captureUtmFirstTouch();
+  const fromUrl = parseUtmFromUrl();
+  const stored = getStoredUtm() || {};
+  return { ...stored, ...fromUrl };
+}
+
+/**
+ * Record a 1-on-1 landing page visit (pageKey oneOnOneSession).
+ * @returns {Promise<string>} visitorFingerprint or empty string
+ */
+export async function trackOneOnOneSessionVisit(apiBase, utmOverrides = {}) {
+  if (typeof window === 'undefined' || !apiBase) return '';
+  const queryParams = new URLSearchParams(window.location.search);
+  const payload = {
+    pageKey: 'oneOnOneSession',
+    path: window.location.pathname,
+    query: window.location.search,
+    referrer: document.referrer || '',
+    utm_source: utmOverrides.utm_source ?? queryParams.get('utm_source') ?? '',
+    utm_medium: utmOverrides.utm_medium ?? queryParams.get('utm_medium') ?? '',
+    utm_campaign: utmOverrides.utm_campaign ?? queryParams.get('utm_campaign') ?? '',
+    utm_content: utmOverrides.utm_content ?? queryParams.get('utm_content') ?? '',
+  };
+
+  try {
+    const response = await fetch(`${apiBase}/iit-counselling/visit`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(payload),
+    });
+    const result = await response.json().catch(() => ({}));
+    const fingerprint = result?.data?.visitorFingerprint;
+    return response.ok && typeof fingerprint === 'string' ? fingerprint : '';
+  } catch {
+    return '';
+  }
+}
