@@ -236,6 +236,33 @@ function mergeSavedUtmLinksIntoCombo(byCombo, savedLinks, { fromDate, toDate, fr
   return [...map.values()];
 }
 
+/** Allowed combo keys from links saved for a given landing page (generator list). */
+function buildSavedLinkComboKeys(savedLinks) {
+  const keys = new Set();
+  for (const link of savedLinks || []) {
+    const parsed = parseUtmParamsFromHref(link.utmLink);
+    if (!parsed) continue;
+    keys.add(
+      comboRowKeyFromParts(
+        utmFieldForCombo(parsed.utm_source),
+        utmFieldForCombo(parsed.utm_medium),
+        utmFieldForCombo(parsed.utm_campaign),
+        utmFieldForCombo(parsed.utm_content),
+      ),
+    );
+  }
+  return keys;
+}
+
+function filterComboRowsToSavedLinks(rows, savedLinkKeys) {
+  if (!savedLinkKeys || savedLinkKeys.size === 0) return [];
+  return (rows || []).filter((r) =>
+    savedLinkKeys.has(
+      comboRowKeyFromParts(r.utm_source, r.utm_medium, r.utm_campaign, r.utm_content),
+    ),
+  );
+}
+
 /** Map POST saved-utm-links response to table row shape. */
 function mapCreateResponseToSavedLinkRow(saved) {
   if (!saved || typeof saved !== 'object') return null;
@@ -516,6 +543,12 @@ export default function IitCounsellingUtm() {
   const analyticsLinkedHelp = analyticsLinkTarget === 'oneOnOneSession'
     ? 'Linked = visit tied to a 1-on-1 form submission.'
     : 'Linked = visit tied to section 1 save.';
+  const isOneOnOneSavedLinksOnly = analyticsLinkTarget === 'oneOnOneSession';
+
+  const savedLinkComboKeys = useMemo(() => {
+    if (!isOneOnOneSavedLinksOnly) return null;
+    return buildSavedLinkComboKeys(savedLinksForAnalyticsLookup);
+  }, [isOneOnOneSavedLinksOnly, savedLinksForAnalyticsLookup]);
 
   useEffect(() => {
     if (window.location.hash !== '#iit-utm-generator') return undefined;
@@ -536,28 +569,73 @@ export default function IitCounsellingUtm() {
     setToTime('23:59');
   };
 
+  const mergedComboRows = useMemo(() => {
+    const merged = mergeSavedUtmLinksIntoCombo(data?.byCombo, savedLinksForAnalyticsLookup, {
+      fromDate,
+      toDate,
+      fromTime,
+      toTime,
+    });
+    if (isOneOnOneSavedLinksOnly) {
+      return filterComboRowsToSavedLinks(merged, savedLinkComboKeys);
+    }
+    return merged;
+  }, [
+    data?.byCombo,
+    savedLinksForAnalyticsLookup,
+    fromDate,
+    toDate,
+    fromTime,
+    toTime,
+    isOneOnOneSavedLinksOnly,
+    savedLinkComboKeys,
+  ]);
+
   const barChartData = useMemo(() => {
-    const src = [...(data?.byContent || [])]
-      .sort((a, b) => (Number(b.visits) || 0) - (Number(a.visits) || 0))
-      .slice(0, 10);
+    const src = isOneOnOneSavedLinksOnly
+      ? [...mergedComboRows]
+          .map((r) => ({ utm_content: r.utm_content, visits: r.visits ?? 0 }))
+          .sort((a, b) => (Number(b.visits) || 0) - (Number(a.visits) || 0))
+          .slice(0, 10)
+      : [...(data?.byContent || [])]
+          .sort((a, b) => (Number(b.visits) || 0) - (Number(a.visits) || 0))
+          .slice(0, 10);
     return src.map((row, i) => {
       const label = row.utm_content || '—';
       const short = label.length > 14 ? `${String(label).slice(0, 14)}…` : label;
       return {
-        // Recharts keys bars by `name`; suffix keeps keys unique when truncated labels match.
         name: `${short}\u200c${i}`,
         visits: row.visits ?? 0,
         fullName: label,
       };
     });
-  }, [data?.byContent]);
+  }, [data?.byContent, isOneOnOneSavedLinksOnly, mergedComboRows]);
 
   const topUtmContentLabel = useMemo(() => {
-    const rows = [...(data?.byContent || [])].filter((r) => r.utm_content && r.utm_content !== '(none)');
+    const rows = isOneOnOneSavedLinksOnly
+      ? [...mergedComboRows].filter((r) => r.utm_content && r.utm_content !== '(none)')
+      : [...(data?.byContent || [])].filter((r) => r.utm_content && r.utm_content !== '(none)');
     if (rows.length === 0) return '—';
     rows.sort((a, b) => (Number(b.visits) || 0) - (Number(a.visits) || 0));
     return rows[0].utm_content || '—';
-  }, [data?.byContent]);
+  }, [data?.byContent, isOneOnOneSavedLinksOnly, mergedComboRows]);
+
+  const analyticsSummary = useMemo(() => {
+    if (!isOneOnOneSavedLinksOnly) return summary;
+    const totalVisits = mergedComboRows.reduce((s, r) => s + (Number(r.visits) || 0), 0);
+    const visitsWithAnyUtm = mergedComboRows.reduce((s, r) => {
+      const has = [r.utm_source, r.utm_medium, r.utm_campaign, r.utm_content].some(
+        (v) => v && v !== '(none)',
+      );
+      return s + (has ? Number(r.visits) || 0 : 0);
+    }, 0);
+    return {
+      ...summary,
+      totalVisits,
+      visitsWithAnyUtm,
+      visitsWithoutUtm: Math.max(0, totalVisits - visitsWithAnyUtm),
+    };
+  }, [summary, isOneOnOneSavedLinksOnly, mergedComboRows]);
 
   const lineChartData = useMemo(() => {
     const raw = (visitTrend || []).map((p) => ({
@@ -575,16 +653,6 @@ export default function IitCounsellingUtm() {
     if (merged.length > LINE_POINT_CAP) return merged.slice(-LINE_POINT_CAP);
     return merged;
   }, [visitTrend]);
-
-  const mergedComboRows = useMemo(
-    () => mergeSavedUtmLinksIntoCombo(data?.byCombo, savedLinksForAnalyticsLookup, {
-      fromDate,
-      toDate,
-      fromTime,
-      toTime,
-    }),
-    [data?.byCombo, savedLinksForAnalyticsLookup, fromDate, toDate, fromTime, toTime],
-  );
 
   const filteredSortedCombo = useMemo(() => {
     const rows = mergedComboRows.map((r) => ({
@@ -878,14 +946,14 @@ export default function IitCounsellingUtm() {
             <FiEye className="w-4 h-4" />
             <span>Total visits</span>
           </div>
-          <p className="text-2xl font-semibold text-gray-900 mt-1">{loading ? '—' : (summary.totalVisits ?? 0)}</p>
+          <p className="text-2xl font-semibold text-gray-900 mt-1">{loading ? '—' : (analyticsSummary.totalVisits ?? 0)}</p>
         </div>
         <div className={cardClass + ' p-4'}>
           <div className="flex items-center gap-2 text-gray-500 text-sm">
             <FiLink className="w-4 h-4" />
             <span>Visits with any UTM</span>
           </div>
-          <p className="text-2xl font-semibold text-gray-900 mt-1">{loading ? '—' : (summary.visitsWithAnyUtm ?? 0)}</p>
+          <p className="text-2xl font-semibold text-gray-900 mt-1">{loading ? '—' : (analyticsSummary.visitsWithAnyUtm ?? 0)}</p>
         </div>
         <div className={cardClass + ' p-4'}>
           <div className="text-gray-500 text-sm">Top utm_content</div>
@@ -896,7 +964,7 @@ export default function IitCounsellingUtm() {
         <div className={cardClass + ' p-4'}>
           <div className="text-gray-500 text-sm">In range</div>
           <p className="text-2xl font-semibold text-gray-900 mt-1">
-            {loading ? '—' : (fromDate || toDate ? (summary.totalVisits ?? 0) : 'All time')}
+            {loading ? '—' : (fromDate || toDate ? (analyticsSummary.totalVisits ?? 0) : 'All time')}
           </p>
         </div>
       </div>
@@ -1248,10 +1316,23 @@ export default function IitCounsellingUtm() {
             <div>
               <h2 className="text-base font-semibold text-gray-800">{analyticsPageTitle}</h2>
               <p className="text-sm text-gray-500 mt-0.5">
-                UTM combinations from visits and saved links on{' '}
-                <span className="font-mono text-xs">{analyticsPagePath}</span>. {analyticsLinkedHelp}
+                {isOneOnOneSavedLinksOnly ? (
+                  <>
+                    Metrics for <strong className="font-medium text-gray-700">saved 1-on-1 UTM links only</strong>
+                    {' '}(from Generate UTM Link above). {analyticsLinkedHelp}
+                  </>
+                ) : (
+                  <>
+                    UTM combinations from visits and saved links on{' '}
+                    <span className="font-mono text-xs">{analyticsPagePath}</span>. {analyticsLinkedHelp}
+                  </>
+                )}
               </p>
-              <p className="text-xs text-gray-500 mt-0.5">Date filters apply to this table, KPIs, and charts above.</p>
+              <p className="text-xs text-gray-500 mt-0.5">
+                {isOneOnOneSavedLinksOnly
+                  ? 'Date filters apply to visit and lead counts for those saved links. Visits-over-time chart includes all /one-on-one-session traffic.'
+                  : 'Date filters apply to this table, KPIs, and charts above.'}
+              </p>
             </div>
             <div className="flex flex-wrap items-center gap-2" role="group" aria-label="Analytics landing page">
               <span className="text-xs font-medium text-gray-600 uppercase tracking-wide">Landing page</span>
@@ -1309,9 +1390,15 @@ export default function IitCounsellingUtm() {
           <div className="px-6 py-8"><TableSkeleton rows={8} cols={10} /></div>
         ) : mergedComboRows.length === 0 ? (
           <div className="px-6 py-12 text-center">
-            <p className="text-gray-500 text-sm">No UTM rows in this range.</p>
+            <p className="text-gray-500 text-sm">
+              {isOneOnOneSavedLinksOnly
+                ? 'No saved 1-on-1 session links yet.'
+                : 'No UTM rows in this range.'}
+            </p>
             <p className="text-gray-400 text-xs mt-1">
-              Saved links or visits with UTM tags on {analyticsPagePath} will appear here.
+              {isOneOnOneSavedLinksOnly
+                ? 'Choose 1-on-1 session in Generate UTM Link, save influencer links, then refresh.'
+                : `Saved links or visits with UTM tags on ${analyticsPagePath} will appear here.`}
             </p>
           </div>
         ) : (
