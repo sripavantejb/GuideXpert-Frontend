@@ -3,10 +3,12 @@
 export const OPS_PRODUCT_GUIDEXPERT = 'guidexpert';
 export const OPS_PRODUCT_IIT = 'iit_counselling';
 export const OPS_PRODUCT_ONE_ON_ONE = 'one_on_one_counseling';
+export const OPS_PRODUCT_GUIDANCE_BOOKING = 'guidance_booking';
 
 export const FALLBACK_TEMPLATE_KINDS = [
   { id: 'slot_booked', label: 'Slot booked', description: 'Immediate confirmation after slot booking', opsProducts: ['guidexpert', 'iit_counselling'] },
   { id: 'one_on_one_submit', label: 'Form submit confirmation', description: 'Immediate confirmation after 1-on-1 session form submit', opsProducts: ['one_on_one_counseling'] },
+  { id: 'guidance_booking_submit', label: 'Booking confirmation', description: 'Immediate confirmation after guidance booking book-slot', opsProducts: ['guidance_booking'] },
   { id: 'pre4hr', label: '4hr reminder', description: 'Reminder sent around 4 hours before slot', opsProducts: ['guidexpert'] },
   { id: 'meet', label: 'Meet link (~1hr)', description: 'Meeting link reminder sent around 1 hour before slot', opsProducts: ['guidexpert'] },
   { id: '30min', label: '30 min reminder', description: 'Final reminder sent around 30 minutes before slot', opsProducts: ['guidexpert'] },
@@ -42,6 +44,12 @@ export const ONE_ON_ONE_TEMPLATE_OPTIONS = [
   { value: 'one_on_one_submit', label: 'one_on_one_submit · form confirmation' },
 ];
 
+/** Guidance Booking recovery/audit template dropdown options. */
+export const GUIDANCE_BOOKING_TEMPLATE_OPTIONS = [
+  { value: '', label: 'All templates' },
+  { value: 'guidance_booking_submit', label: 'guidance_booking_submit · booking confirmation' },
+];
+
 /** IIT recovery/audit: slot_booked + language chips use IIT_REMINDER_LANGUAGE_CHIPS. */
 export const IIT_SLOT_BOOKED_OPTION = {
   value: 'slot_booked',
@@ -73,6 +81,13 @@ export function parseOpsProductFromSearch(searchParams) {
   ) {
     return OPS_PRODUCT_ONE_ON_ONE;
   }
+  if (
+    raw === 'guidance_booking' ||
+    raw === 'guidance_booking_confirmation' ||
+    raw === 'guidancebooking'
+  ) {
+    return OPS_PRODUCT_GUIDANCE_BOOKING;
+  }
   return OPS_PRODUCT_GUIDEXPERT;
 }
 
@@ -86,9 +101,13 @@ export function visibleTemplateKindsForProduct(templateKinds, opsProduct) {
   const list = Array.isArray(templateKinds) && templateKinds.length ? templateKinds : FALLBACK_TEMPLATE_KINDS;
   const isIit = opsProduct === OPS_PRODUCT_IIT;
   const isOneOnOne = opsProduct === OPS_PRODUCT_ONE_ON_ONE;
+  const isGuidanceBooking = opsProduct === OPS_PRODUCT_GUIDANCE_BOOKING;
   const fromMeta = list.filter((k) => templateKindAppliesToProduct(k, opsProduct));
   if (isOneOnOne) {
     return fromMeta.filter((k) => k.id === 'one_on_one_submit' && !k.preferredLanguage);
+  }
+  if (isGuidanceBooking) {
+    return fromMeta.filter((k) => k.id === 'guidance_booking_submit' && !k.preferredLanguage);
   }
   if (isIit) {
     const slot = fromMeta.find((k) => k.id === 'slot_booked' && !k.preferredLanguage);
@@ -103,6 +122,7 @@ export function buildOpsProductQueryParams(opsProduct, messageKind, preferredLan
   const params = {};
   if (opsProduct === OPS_PRODUCT_IIT) params.opsProduct = OPS_PRODUCT_IIT;
   if (opsProduct === OPS_PRODUCT_ONE_ON_ONE) params.opsProduct = OPS_PRODUCT_ONE_ON_ONE;
+  if (opsProduct === OPS_PRODUCT_GUIDANCE_BOOKING) params.opsProduct = OPS_PRODUCT_GUIDANCE_BOOKING;
   if (messageKind) params.messageKind = messageKind;
   if (preferredLanguage && IIT_GENERIC_REMINDER_IDS.has(messageKind)) {
     params.preferredLanguage = preferredLanguage;

@@ -53,6 +53,7 @@ import {
   OPS_PRODUCT_GUIDEXPERT,
   OPS_PRODUCT_IIT,
   OPS_PRODUCT_ONE_ON_ONE,
+  OPS_PRODUCT_GUIDANCE_BOOKING,
   buildOpsProductQueryParams,
   parseOpsProductFromSearch,
   parsePreferredLanguageFromSearch,
@@ -398,7 +399,7 @@ function RecoveryCommandBar({
   jobActive, onRefresh, loading, lastSyncAt,
   messageKind, cohortLoading, cohortBookedSlots, cohortSubtitle, cohortHint,
   from, to, group, search,
-  opsProduct, isIitProduct, isOneOnOneProduct, preferredLanguage, visibleTemplateChips, selectedChipKey,
+  opsProduct, isIitProduct, isOneOnOneProduct, isGuidanceBookingProduct, preferredLanguage, visibleTemplateChips, selectedChipKey,
   onFromChange, onToChange, onTemplateChange, onGroupChange, onSearchChange,
   onOpsProductChange, onTemplateChipSelect,
   embedded = false
@@ -510,9 +511,20 @@ function RecoveryCommandBar({
           >
             1-on-1 Counseling
           </button>
+          <button
+            type="button"
+            onClick={() => onOpsProductChange(OPS_PRODUCT_GUIDANCE_BOOKING)}
+            className={`rounded-lg border px-3 py-1.5 text-sm font-semibold transition ${
+              opsProduct === OPS_PRODUCT_GUIDANCE_BOOKING
+                ? 'border-primary-navy bg-primary-navy text-white'
+                : 'border-slate-200 bg-white text-slate-700 hover:bg-slate-50'
+            }`}
+          >
+            Guidance Booking
+          </button>
         </div>
 
-        {(isIitProduct || isOneOnOneProduct) && (
+        {(isIitProduct || isOneOnOneProduct || isGuidanceBookingProduct) && (
           <div className="mt-3 flex flex-wrap gap-2">
             <button
               type="button"
@@ -568,7 +580,7 @@ function RecoveryCommandBar({
               </select>
             </label>
           )}
-          <label className={`text-sm font-medium text-slate-700 ${isIitProduct || isOneOnOneProduct ? 'lg:col-span-8' : 'lg:col-span-5'}`}>
+          <label className={`text-sm font-medium text-slate-700 ${isIitProduct || isOneOnOneProduct || isGuidanceBookingProduct ? 'lg:col-span-8' : 'lg:col-span-5'}`}>
             Search
             <input
               value={search}
@@ -1541,6 +1553,7 @@ function RecoveryTab() {
   const opsProduct = parseOpsProductFromSearch(searchParams);
   const isIitProduct = opsProduct === OPS_PRODUCT_IIT;
   const isOneOnOneProduct = opsProduct === OPS_PRODUCT_ONE_ON_ONE;
+  const isGuidanceBookingProduct = opsProduct === OPS_PRODUCT_GUIDANCE_BOOKING;
 
   const [{ from, to }, setRange] = useState(defaultRangeIsoDates);
   const [messageKind, setMessageKind] = useState('');
@@ -1611,13 +1624,14 @@ function RecoveryTab() {
     if (messageKind) next.set('messageKind', messageKind);
     if (isIitProduct) next.set('opsProduct', OPS_PRODUCT_IIT);
     else if (isOneOnOneProduct) next.set('opsProduct', OPS_PRODUCT_ONE_ON_ONE);
+    else if (isGuidanceBookingProduct) next.set('opsProduct', OPS_PRODUCT_GUIDANCE_BOOKING);
     if (preferredLanguage && IIT_GENERIC_REMINDER_IDS.has(messageKind)) {
       next.set('preferredLanguage', preferredLanguage);
     }
     if (group && group !== 'all') next.set('group', group);
     if (debouncedSearch) next.set('q', debouncedSearch);
     setSearchParams(next, { replace: true });
-  }, [from, to, messageKind, group, debouncedSearch, isIitProduct, isOneOnOneProduct, preferredLanguage, setSearchParams]);
+  }, [from, to, messageKind, group, debouncedSearch, isIitProduct, isOneOnOneProduct, isGuidanceBookingProduct, preferredLanguage, setSearchParams]);
 
   const visibleTemplateChips = useMemo(
     () => visibleTemplateKindsForProduct([], opsProduct),
@@ -1980,6 +1994,7 @@ function RecoveryTab() {
         opsProduct={opsProduct}
         isIitProduct={isIitProduct}
         isOneOnOneProduct={isOneOnOneProduct}
+        isGuidanceBookingProduct={isGuidanceBookingProduct}
         preferredLanguage={preferredLanguage}
         visibleTemplateChips={visibleTemplateChips}
         selectedChipKey={selectedChipKey}
@@ -1994,8 +2009,11 @@ function RecoveryTab() {
           } else if (next === OPS_PRODUCT_IIT) {
             sp.set('opsProduct', OPS_PRODUCT_IIT);
             sp.delete('preferredLanguage');
-          } else {
+          } else if (next === OPS_PRODUCT_ONE_ON_ONE) {
             sp.set('opsProduct', OPS_PRODUCT_ONE_ON_ONE);
+            sp.delete('preferredLanguage');
+          } else {
+            sp.set('opsProduct', OPS_PRODUCT_GUIDANCE_BOOKING);
             sp.delete('preferredLanguage');
           }
           sp.delete('messageKind');

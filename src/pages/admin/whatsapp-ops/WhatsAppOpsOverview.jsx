@@ -20,6 +20,7 @@ import {
   OPS_PRODUCT_GUIDEXPERT,
   OPS_PRODUCT_IIT,
   OPS_PRODUCT_ONE_ON_ONE,
+  OPS_PRODUCT_GUIDANCE_BOOKING,
   parseOpsProductFromSearch,
   parsePreferredLanguageFromSearch,
   templateChipKey,
@@ -190,6 +191,7 @@ export default function WhatsAppOpsOverview() {
   const opsProduct = parseOpsProductFromSearch(searchParams);
   const isIitProduct = opsProduct === OPS_PRODUCT_IIT;
   const isOneOnOneProduct = opsProduct === OPS_PRODUCT_ONE_ON_ONE;
+  const isGuidanceBookingProduct = opsProduct === OPS_PRODUCT_GUIDANCE_BOOKING;
 
   const [selectedKind, setSelectedKind] = useState(() => searchParams.get('messageKind') || null);
   const [selectedLanguage, setSelectedLanguage] = useState(() =>
@@ -207,8 +209,12 @@ export default function WhatsAppOpsOverview() {
         sp.set('opsProduct', OPS_PRODUCT_IIT);
         sp.delete('tenant');
         sp.delete('preferredLanguage');
-      } else {
+      } else if (next === OPS_PRODUCT_ONE_ON_ONE) {
         sp.set('opsProduct', OPS_PRODUCT_ONE_ON_ONE);
+        sp.delete('tenant');
+        sp.delete('preferredLanguage');
+      } else {
+        sp.set('opsProduct', OPS_PRODUCT_GUIDANCE_BOOKING);
         sp.delete('tenant');
         sp.delete('preferredLanguage');
       }
@@ -568,9 +574,10 @@ export default function WhatsAppOpsOverview() {
     if (selectedLanguage) p.set('preferredLanguage', selectedLanguage);
     if (isIitProduct) p.set('opsProduct', OPS_PRODUCT_IIT);
     else if (isOneOnOneProduct) p.set('opsProduct', OPS_PRODUCT_ONE_ON_ONE);
+    else if (isGuidanceBookingProduct) p.set('opsProduct', OPS_PRODUCT_GUIDANCE_BOOKING);
     p.set('status', 'failed,retry_exhausted');
     return `/admin/whatsapp-ops/messages?${p.toString()}`;
-  }, [selectedDate, selectedKind, selectedLanguage, isIitProduct]);
+  }, [selectedDate, selectedKind, selectedLanguage, isIitProduct, isOneOnOneProduct, isGuidanceBookingProduct]);
 
   const byAttempt = legacyDay.byAttempt || {};
   const retry2Exclusions = legacyDay.retry2Exclusions || { totalExcluded: 0, byReason: {} };
@@ -1065,6 +1072,18 @@ export default function WhatsAppOpsOverview() {
             >
               1-on-1 Counseling
             </button>
+            <button
+              type="button"
+              onClick={() => persistOpsProductToUrl(OPS_PRODUCT_GUIDANCE_BOOKING)}
+              aria-pressed={opsProduct === OPS_PRODUCT_GUIDANCE_BOOKING}
+              className={`rounded-md px-3 py-1.5 text-sm font-semibold transition-colors ${
+                opsProduct === OPS_PRODUCT_GUIDANCE_BOOKING
+                  ? 'bg-primary-navy text-white shadow-sm'
+                  : 'text-gray-700 hover:bg-gray-50'
+              }`}
+            >
+              Guidance Booking
+            </button>
           </div>
           {isIitProduct ? (
             <p className="text-xs text-slate-600 mt-2 max-w-3xl">
@@ -1074,6 +1093,11 @@ export default function WhatsAppOpsOverview() {
           {isOneOnOneProduct ? (
             <p className="text-xs text-slate-600 mt-2 max-w-3xl">
               1-on-1 mode shows WhatsApp sent immediately when a student submits the /one-on-one-session form (template one_on_one_submit, with automatic retry on failure).
+            </p>
+          ) : null}
+          {isGuidanceBookingProduct ? (
+            <p className="text-xs text-slate-600 mt-2 max-w-3xl">
+              Guidance Booking mode shows WhatsApp sent immediately when a student confirms a slot on /guidance-booking-confirmation (template guidance_booking_submit, date and time in body, with automatic retry on failure).
             </p>
           ) : null}
         </section>
