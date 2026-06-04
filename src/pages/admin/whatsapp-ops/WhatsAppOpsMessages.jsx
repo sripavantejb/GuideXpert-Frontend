@@ -28,6 +28,8 @@ import {
   IIT_GENERIC_REMINDER_IDS,
   OPS_PRODUCT_GUIDEXPERT,
   OPS_PRODUCT_IIT,
+  OPS_PRODUCT_ONE_ON_ONE,
+  ONE_ON_ONE_TEMPLATE_OPTIONS,
   buildOpsProductQueryParams,
   parseOpsProductFromSearch,
   parsePreferredLanguageFromSearch,
@@ -44,6 +46,7 @@ const TEMPLATE_LABELS = {
   iit_pre2hr: 'IIT 2hr',
   iit_pre45min: 'IIT 45m',
   iit_pre15min: 'IIT 15m',
+  one_on_one_submit: '1-on-1 submit',
 };
 
 /** Compact eligibility audit for campaign templates (messages drill-down). */
@@ -429,6 +432,7 @@ function WhatsAppOpsMessagesInner({ syncProductFromUrl }) {
   }, [searchParams]);
 
   const isIitProduct = opsProduct === OPS_PRODUCT_IIT;
+  const isOneOnOneProduct = opsProduct === OPS_PRODUCT_ONE_ON_ONE;
 
   const apiScopeParams = useMemo(
     () => buildOpsProductQueryParams(opsProduct, messageKind || null, preferredLanguage),
@@ -624,8 +628,19 @@ function WhatsAppOpsMessagesInner({ syncProductFromUrl }) {
           >
             IIT Counselling
           </button>
+          <button
+            type="button"
+            onClick={() => handleProductChange(OPS_PRODUCT_ONE_ON_ONE)}
+            className={`rounded-lg border px-3 py-1.5 text-sm font-semibold transition ${
+              opsProduct === OPS_PRODUCT_ONE_ON_ONE
+                ? 'border-primary-navy bg-primary-navy text-white'
+                : 'border-slate-200 bg-white text-slate-700 hover:bg-slate-50'
+            }`}
+          >
+            1-on-1 Counseling
+          </button>
         </div>
-        {isIitProduct ? (
+        {(isIitProduct || isOneOnOneProduct) ? (
           <div className="mt-3 flex flex-wrap gap-2">
             <button
               type="button"
@@ -692,7 +707,9 @@ function WhatsAppOpsMessagesInner({ syncProductFromUrl }) {
               <option value="">All</option>
               {(isIitProduct
                 ? [{ value: 'slot_booked', label: 'slot_booked' }]
-                : GX_TEMPLATE_OPTIONS.filter((o) => o.value)
+                : isOneOnOneProduct
+                  ? ONE_ON_ONE_TEMPLATE_OPTIONS.filter((o) => o.value)
+                  : GX_TEMPLATE_OPTIONS.filter((o) => o.value)
               ).map((opt) => (
                 <option key={opt.value} value={opt.value}>
                   {opt.label || TEMPLATE_LABELS[opt.value] || opt.value}
@@ -953,6 +970,7 @@ export default function WhatsAppOpsMessages() {
     (product, kind, lang) => {
       const next = new URLSearchParams(searchParams);
       if (product === OPS_PRODUCT_IIT) next.set('opsProduct', OPS_PRODUCT_IIT);
+      else if (product === OPS_PRODUCT_ONE_ON_ONE) next.set('opsProduct', OPS_PRODUCT_ONE_ON_ONE);
       else next.delete('opsProduct');
       if (kind) next.set('messageKind', kind);
       else next.delete('messageKind');

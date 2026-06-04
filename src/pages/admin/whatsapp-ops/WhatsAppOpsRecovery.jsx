@@ -52,6 +52,7 @@ import {
   IIT_GENERIC_REMINDER_IDS,
   OPS_PRODUCT_GUIDEXPERT,
   OPS_PRODUCT_IIT,
+  OPS_PRODUCT_ONE_ON_ONE,
   buildOpsProductQueryParams,
   parseOpsProductFromSearch,
   parsePreferredLanguageFromSearch,
@@ -397,7 +398,7 @@ function RecoveryCommandBar({
   jobActive, onRefresh, loading, lastSyncAt,
   messageKind, cohortLoading, cohortBookedSlots, cohortSubtitle, cohortHint,
   from, to, group, search,
-  opsProduct, isIitProduct, preferredLanguage, visibleTemplateChips, selectedChipKey,
+  opsProduct, isIitProduct, isOneOnOneProduct, preferredLanguage, visibleTemplateChips, selectedChipKey,
   onFromChange, onToChange, onTemplateChange, onGroupChange, onSearchChange,
   onOpsProductChange, onTemplateChipSelect,
   embedded = false
@@ -480,7 +481,7 @@ function RecoveryCommandBar({
             type="button"
             onClick={() => onOpsProductChange(OPS_PRODUCT_GUIDEXPERT)}
             className={`rounded-lg border px-3 py-1.5 text-sm font-semibold transition ${
-              !isIitProduct
+              opsProduct === OPS_PRODUCT_GUIDEXPERT
                 ? 'border-primary-navy bg-primary-navy text-white'
                 : 'border-slate-200 bg-white text-slate-700 hover:bg-slate-50'
             }`}
@@ -491,16 +492,27 @@ function RecoveryCommandBar({
             type="button"
             onClick={() => onOpsProductChange(OPS_PRODUCT_IIT)}
             className={`rounded-lg border px-3 py-1.5 text-sm font-semibold transition ${
-              isIitProduct
+              opsProduct === OPS_PRODUCT_IIT
                 ? 'border-primary-navy bg-primary-navy text-white'
                 : 'border-slate-200 bg-white text-slate-700 hover:bg-slate-50'
             }`}
           >
             IIT Counselling
           </button>
+          <button
+            type="button"
+            onClick={() => onOpsProductChange(OPS_PRODUCT_ONE_ON_ONE)}
+            className={`rounded-lg border px-3 py-1.5 text-sm font-semibold transition ${
+              opsProduct === OPS_PRODUCT_ONE_ON_ONE
+                ? 'border-primary-navy bg-primary-navy text-white'
+                : 'border-slate-200 bg-white text-slate-700 hover:bg-slate-50'
+            }`}
+          >
+            1-on-1 Counseling
+          </button>
         </div>
 
-        {isIitProduct && (
+        {(isIitProduct || isOneOnOneProduct) && (
           <div className="mt-3 flex flex-wrap gap-2">
             <button
               type="button"
@@ -545,7 +557,7 @@ function RecoveryCommandBar({
             To
             <input type="date" value={to} onChange={(e) => onToChange(e.target.value)} className={fieldClass} />
           </label>
-          {!isIitProduct && (
+          {opsProduct === OPS_PRODUCT_GUIDEXPERT && (
             <label className="text-sm font-medium text-slate-700 lg:col-span-3">
               Template
               <select value={messageKind} onChange={(e) => onTemplateChange(e.target.value)} className={fieldClass}>
@@ -556,7 +568,7 @@ function RecoveryCommandBar({
               </select>
             </label>
           )}
-          <label className={`text-sm font-medium text-slate-700 ${isIitProduct ? 'lg:col-span-8' : 'lg:col-span-5'}`}>
+          <label className={`text-sm font-medium text-slate-700 ${isIitProduct || isOneOnOneProduct ? 'lg:col-span-8' : 'lg:col-span-5'}`}>
             Search
             <input
               value={search}
@@ -1528,6 +1540,7 @@ function RecoveryTab() {
 
   const opsProduct = parseOpsProductFromSearch(searchParams);
   const isIitProduct = opsProduct === OPS_PRODUCT_IIT;
+  const isOneOnOneProduct = opsProduct === OPS_PRODUCT_ONE_ON_ONE;
 
   const [{ from, to }, setRange] = useState(defaultRangeIsoDates);
   const [messageKind, setMessageKind] = useState('');
@@ -1597,13 +1610,14 @@ function RecoveryTab() {
     if (to) next.set('to', to);
     if (messageKind) next.set('messageKind', messageKind);
     if (isIitProduct) next.set('opsProduct', OPS_PRODUCT_IIT);
+    else if (isOneOnOneProduct) next.set('opsProduct', OPS_PRODUCT_ONE_ON_ONE);
     if (preferredLanguage && IIT_GENERIC_REMINDER_IDS.has(messageKind)) {
       next.set('preferredLanguage', preferredLanguage);
     }
     if (group && group !== 'all') next.set('group', group);
     if (debouncedSearch) next.set('q', debouncedSearch);
     setSearchParams(next, { replace: true });
-  }, [from, to, messageKind, group, debouncedSearch, isIitProduct, preferredLanguage, setSearchParams]);
+  }, [from, to, messageKind, group, debouncedSearch, isIitProduct, isOneOnOneProduct, preferredLanguage, setSearchParams]);
 
   const visibleTemplateChips = useMemo(
     () => visibleTemplateKindsForProduct([], opsProduct),
@@ -1965,6 +1979,7 @@ function RecoveryTab() {
         search={search}
         opsProduct={opsProduct}
         isIitProduct={isIitProduct}
+        isOneOnOneProduct={isOneOnOneProduct}
         preferredLanguage={preferredLanguage}
         visibleTemplateChips={visibleTemplateChips}
         selectedChipKey={selectedChipKey}
@@ -1976,8 +1991,12 @@ function RecoveryTab() {
           if (next === OPS_PRODUCT_GUIDEXPERT) {
             sp.delete('opsProduct');
             sp.delete('preferredLanguage');
-          } else {
+          } else if (next === OPS_PRODUCT_IIT) {
             sp.set('opsProduct', OPS_PRODUCT_IIT);
+            sp.delete('preferredLanguage');
+          } else {
+            sp.set('opsProduct', OPS_PRODUCT_ONE_ON_ONE);
+            sp.delete('preferredLanguage');
           }
           sp.delete('messageKind');
           setSearchParams(sp, { replace: true });

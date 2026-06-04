@@ -19,10 +19,11 @@ import {
   IIT_REMINDER_LANGUAGE_CHIPS,
   OPS_PRODUCT_GUIDEXPERT,
   OPS_PRODUCT_IIT,
+  OPS_PRODUCT_ONE_ON_ONE,
   parseOpsProductFromSearch,
   parsePreferredLanguageFromSearch,
   templateChipKey,
-  templateKindAppliesToProduct,
+  visibleTemplateKindsForProduct,
 } from './whatsappOpsProductConfig';
 import { useWhatsappOpsHost } from './whatsappOpsHostContext';
 
@@ -188,6 +189,7 @@ export default function WhatsAppOpsOverview() {
   const [searchParams, setSearchParams] = useSearchParams();
   const opsProduct = parseOpsProductFromSearch(searchParams);
   const isIitProduct = opsProduct === OPS_PRODUCT_IIT;
+  const isOneOnOneProduct = opsProduct === OPS_PRODUCT_ONE_ON_ONE;
 
   const [selectedKind, setSelectedKind] = useState(() => searchParams.get('messageKind') || null);
   const [selectedLanguage, setSelectedLanguage] = useState(() =>
@@ -201,9 +203,14 @@ export default function WhatsAppOpsOverview() {
         sp.delete('opsProduct');
         sp.delete('tenant');
         sp.delete('preferredLanguage');
-      } else {
+      } else if (next === OPS_PRODUCT_IIT) {
         sp.set('opsProduct', OPS_PRODUCT_IIT);
         sp.delete('tenant');
+        sp.delete('preferredLanguage');
+      } else {
+        sp.set('opsProduct', OPS_PRODUCT_ONE_ON_ONE);
+        sp.delete('tenant');
+        sp.delete('preferredLanguage');
       }
       setSearchParams(sp, { replace: true });
     },
@@ -389,12 +396,10 @@ export default function WhatsAppOpsOverview() {
     });
   }, [from, to]);
 
-  const visibleTemplateKinds = useMemo(() => {
-    const fromMeta = templateKinds.filter((k) => templateKindAppliesToProduct(k, opsProduct));
-    if (!isIitProduct) return fromMeta;
-    const nonGenericReminder = fromMeta.filter((k) => !IIT_GENERIC_REMINDER_IDS.has(k.id));
-    return [...nonGenericReminder, ...IIT_REMINDER_LANGUAGE_CHIPS];
-  }, [templateKinds, opsProduct, isIitProduct]);
+  const visibleTemplateKinds = useMemo(
+    () => visibleTemplateKindsForProduct(templateKinds, opsProduct),
+    [templateKinds, opsProduct]
+  );
 
   useEffect(() => {
     if (!live) return undefined;
@@ -562,6 +567,7 @@ export default function WhatsAppOpsOverview() {
     if (selectedKind) p.set('messageKind', selectedKind);
     if (selectedLanguage) p.set('preferredLanguage', selectedLanguage);
     if (isIitProduct) p.set('opsProduct', OPS_PRODUCT_IIT);
+    else if (isOneOnOneProduct) p.set('opsProduct', OPS_PRODUCT_ONE_ON_ONE);
     p.set('status', 'failed,retry_exhausted');
     return `/admin/whatsapp-ops/messages?${p.toString()}`;
   }, [selectedDate, selectedKind, selectedLanguage, isIitProduct]);
@@ -1047,10 +1053,27 @@ export default function WhatsAppOpsOverview() {
             >
               IIT Counselling
             </button>
+            <button
+              type="button"
+              onClick={() => persistOpsProductToUrl(OPS_PRODUCT_ONE_ON_ONE)}
+              aria-pressed={opsProduct === OPS_PRODUCT_ONE_ON_ONE}
+              className={`rounded-md px-3 py-1.5 text-sm font-semibold transition-colors ${
+                opsProduct === OPS_PRODUCT_ONE_ON_ONE
+                  ? 'bg-primary-navy text-white shadow-sm'
+                  : 'text-gray-700 hover:bg-gray-50'
+              }`}
+            >
+              1-on-1 Counseling
+            </button>
           </div>
           {isIitProduct ? (
             <p className="text-xs text-slate-600 mt-2 max-w-3xl">
               IIT mode shows WhatsApp for IIT counselling bookings. Reminders are sent in Telugu or Hindi at 2 hours, 45 minutes, and 15 minutes before the demo slot (separate templates for Sunday vs Wed/Sat).
+            </p>
+          ) : null}
+          {isOneOnOneProduct ? (
+            <p className="text-xs text-slate-600 mt-2 max-w-3xl">
+              1-on-1 mode shows WhatsApp sent immediately when a student submits the /one-on-one-session form (template one_on_one_submit, with automatic retry on failure).
             </p>
           ) : null}
         </section>
@@ -1844,7 +1867,7 @@ export default function WhatsAppOpsOverview() {
                     ))}
                   </div>
                   <Link
-                    to={`/admin/whatsapp-ops/messages?date=${selectedDate}${selectedKind ? `&messageKind=${selectedKind}` : ''}${selectedLanguage ? `&preferredLanguage=${selectedLanguage}` : ''}${isIitProduct ? `&opsProduct=${OPS_PRODUCT_IIT}` : ''}`}
+                    to={`/admin/whatsapp-ops/messages?date=${selectedDate}${selectedKind ? `&messageKind=${selectedKind}` : ''}${selectedLanguage ? `&preferredLanguage=${selectedLanguage}` : ''}${opsProduct !== OPS_PRODUCT_GUIDEXPERT ? `&opsProduct=${opsProduct}` : ''}`}
                     className="mt-3 inline-block text-xs font-semibold text-primary-navy hover:underline"
                   >
                     Open messages (filter) →

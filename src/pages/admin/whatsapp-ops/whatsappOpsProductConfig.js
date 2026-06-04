@@ -2,9 +2,11 @@
 
 export const OPS_PRODUCT_GUIDEXPERT = 'guidexpert';
 export const OPS_PRODUCT_IIT = 'iit_counselling';
+export const OPS_PRODUCT_ONE_ON_ONE = 'one_on_one_counseling';
 
 export const FALLBACK_TEMPLATE_KINDS = [
   { id: 'slot_booked', label: 'Slot booked', description: 'Immediate confirmation after slot booking', opsProducts: ['guidexpert', 'iit_counselling'] },
+  { id: 'one_on_one_submit', label: 'Form submit confirmation', description: 'Immediate confirmation after 1-on-1 session form submit', opsProducts: ['one_on_one_counseling'] },
   { id: 'pre4hr', label: '4hr reminder', description: 'Reminder sent around 4 hours before slot', opsProducts: ['guidexpert'] },
   { id: 'meet', label: 'Meet link (~1hr)', description: 'Meeting link reminder sent around 1 hour before slot', opsProducts: ['guidexpert'] },
   { id: '30min', label: '30 min reminder', description: 'Final reminder sent around 30 minutes before slot', opsProducts: ['guidexpert'] },
@@ -34,6 +36,12 @@ export const GX_TEMPLATE_OPTIONS = [
   { value: '30min', label: '30min · 30 min reminder' },
 ];
 
+/** 1-on-1 Counseling recovery/audit template dropdown options. */
+export const ONE_ON_ONE_TEMPLATE_OPTIONS = [
+  { value: '', label: 'All templates' },
+  { value: 'one_on_one_submit', label: 'one_on_one_submit · form confirmation' },
+];
+
 /** IIT recovery/audit: slot_booked + language chips use IIT_REMINDER_LANGUAGE_CHIPS. */
 export const IIT_SLOT_BOOKED_OPTION = {
   value: 'slot_booked',
@@ -57,6 +65,14 @@ export function parseOpsProductFromSearch(searchParams) {
     .toLowerCase()
     .replace(/-/g, '_');
   if (raw === 'iit_counselling' || raw === 'iitcounselling') return OPS_PRODUCT_IIT;
+  if (
+    raw === 'one_on_one_counseling' ||
+    raw === 'one_on_one' ||
+    raw === 'oneonone' ||
+    raw === 'one_on_one_session'
+  ) {
+    return OPS_PRODUCT_ONE_ON_ONE;
+  }
   return OPS_PRODUCT_GUIDEXPERT;
 }
 
@@ -69,7 +85,11 @@ export function parsePreferredLanguageFromSearch(searchParams) {
 export function visibleTemplateKindsForProduct(templateKinds, opsProduct) {
   const list = Array.isArray(templateKinds) && templateKinds.length ? templateKinds : FALLBACK_TEMPLATE_KINDS;
   const isIit = opsProduct === OPS_PRODUCT_IIT;
+  const isOneOnOne = opsProduct === OPS_PRODUCT_ONE_ON_ONE;
   const fromMeta = list.filter((k) => templateKindAppliesToProduct(k, opsProduct));
+  if (isOneOnOne) {
+    return fromMeta.filter((k) => k.id === 'one_on_one_submit' && !k.preferredLanguage);
+  }
   if (isIit) {
     const slot = fromMeta.find((k) => k.id === 'slot_booked' && !k.preferredLanguage);
     const langChips = IIT_REMINDER_LANGUAGE_CHIPS;
@@ -82,6 +102,7 @@ export function visibleTemplateKindsForProduct(templateKinds, opsProduct) {
 export function buildOpsProductQueryParams(opsProduct, messageKind, preferredLanguage) {
   const params = {};
   if (opsProduct === OPS_PRODUCT_IIT) params.opsProduct = OPS_PRODUCT_IIT;
+  if (opsProduct === OPS_PRODUCT_ONE_ON_ONE) params.opsProduct = OPS_PRODUCT_ONE_ON_ONE;
   if (messageKind) params.messageKind = messageKind;
   if (preferredLanguage && IIT_GENERIC_REMINDER_IDS.has(messageKind)) {
     params.preferredLanguage = preferredLanguage;
