@@ -1,3 +1,4 @@
+import { bdaLeadFiltersToQuery } from '../constants/bdaLeadFilters';
 import { getStoredToken } from './adminApi';
 import { getApiBaseUrl } from './apiBaseUrl';
 
@@ -80,6 +81,17 @@ export async function bulkMapLeadsToRespectiveBda({ leadIds, reason }) {
     method: 'PATCH',
     body: JSON.stringify({ leadIds, mapToRespectiveBda: true, reason }),
   });
+}
+
+/** Map all previously assigned leads in the applied filter (meet attended / not attended) to each one's BDA. */
+export async function bulkMapFilteredLeadsToRespectiveBda(appliedFilters, reason = '') {
+  return callingTeamRequest(
+    `/iit-counselling-leads/bulk-map-filtered-respective${toQuery(bdaLeadFiltersToQuery(appliedFilters))}`,
+    {
+      method: 'PATCH',
+      body: JSON.stringify({ reason }),
+    }
+  );
 }
 
 export async function assignLeadToBda(id, { bdaId, reason }) {

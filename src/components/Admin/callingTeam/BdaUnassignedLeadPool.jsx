@@ -4,7 +4,11 @@ import AssignToBdaModal from './AssignToBdaModal';
 import TableSkeleton from '../../UI/TableSkeleton';
 import { languageBadgeClass } from '../../../constants/bdaLanguage';
 import { bdaLeadFiltersToQuery } from '../../../constants/bdaLeadFilters';
-import { bulkMapLeadsToRespectiveBda, getCallingTeamLeads } from '../../../utils/callingTeamApi';
+import {
+  bulkMapFilteredLeadsToRespectiveBda,
+  bulkMapLeadsToRespectiveBda,
+  getCallingTeamLeads,
+} from '../../../utils/callingTeamApi';
 import { getLeadClassStatus } from '../../../utils/callingDataLeadMapper';
 
 const BULK_ASSIGN_MAX = 200;
@@ -32,6 +36,14 @@ function MeetBadge({ attended, label }) {
 
 export default function BdaUnassignedLeadPool({ appliedFilters, filterVersion, onAssigned }) {
   const keepExistingBda = appliedFilters?.keepExistingBda === true;
+  const meetPresence = appliedFilters?.meetPresence || '';
+  const meetFilterActive = meetPresence === 'attended' || meetPresence === 'not_attended';
+  const meetLabel =
+    meetPresence === 'attended'
+      ? 'attended meet'
+      : meetPresence === 'not_attended'
+        ? 'did not attend meet'
+        : '';
   const [rows, setRows] = useState([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
@@ -41,6 +53,7 @@ export default function BdaUnassignedLeadPool({ appliedFilters, filterVersion, o
   const [selected, setSelected] = useState(new Set());
   const [assignOpen, setAssignOpen] = useState(false);
   const [mapConfirmOpen, setMapConfirmOpen] = useState(false);
+  const [mapAllConfirmOpen, setMapAllConfirmOpen] = useState(false);
   const [mapping, setMapping] = useState(false);
 
   const filtersReady = appliedFilters != null;
@@ -153,6 +166,23 @@ export default function BdaUnassignedLeadPool({ appliedFilters, filterVersion, o
     }
   };
 
+  const handleMapAllInFilter = async () => {
+    if (!meetFilterActive) {
+      setError('Set Meet attendance to Attended or Did not attend meet, then Apply filters.');
+      return;
+    }
+    setMapping(true);
+    setError('');
+    const res = await bulkMapFilteredLeadsToRespectiveBda(appliedFilters);
+    setMapping(false);
+    setMapAllConfirmOpen(false);
+    if (res.success) {
+      handleAssignSuccess(res.data?.data);
+    } else {
+      setError(res.message || 'Could not map filtered leads to respective BDAs');
+    }
+  };
+
   return (
     <div className="bg-white rounded-xl border border-gray-200 shadow-sm overflow-hidden">
       <div className="px-4 py-3 border-b flex flex-wrap items-start justify-between gap-3">
@@ -162,7 +192,9 @@ export default function BdaUnassignedLeadPool({ appliedFilters, filterVersion, o
           </h2>
           <p className="text-sm text-gray-600 mt-1">
             {keepExistingBda
-              ? 'Every matching lead is listed with their current BDA. Map selected leads back to each one’s respective BDA, or assign only the unassigned rows.'
+              ? meetFilterActive
+                ? `Leads in your ${meetLabel} filter are listed with their BDA. Use “Map all in meet filter” so every previously assigned lead stays with the same BDA.`
+                : 'Set Meet attendance (attended / not attended), Apply filters, then map all or selected leads to their respective BDA.'
               : 'Unassigned leads only. Select rows and assign to a BDA.'}{' '}
             Max {BULK_ASSIGN_MAX} per action.
           </p>
@@ -183,6 +215,20 @@ export default function BdaUnassignedLeadPool({ appliedFilters, filterVersion, o
           <>
             <button
               type="button"
+              disabled={!filtersReady || !meetFilterActive || mapping}
+              onClick={() => setMapAllConfirmOpen(true)}
+              className="inline-flex items-center gap-1.5 px-3 py-2 text-sm font-medium rounded-lg bg-primary-blue text-white hover:opacity-90 disabled:opacity-40 disabled:cursor-not-allowed"
+              title={
+                meetFilterActive
+                  ? undefined
+                  : 'Choose Attended meet or Did not attend meet first'
+              }
+            >
+              <FiUserCheck className="w-4 h-4" />
+              Map all in meet filter to respective BDA
+            </button>
+            <button
+              type="button"
               disabled={
                 !filtersReady ||
                 priorBdaIds.length === 0 ||
@@ -190,10 +236,10 @@ export default function BdaUnassignedLeadPool({ appliedFilters, filterVersion, o
                 mapping
               }
               onClick={() => setMapConfirmOpen(true)}
-              className="inline-flex items-center gap-1.5 px-3 py-2 text-sm font-medium rounded-lg bg-primary-blue text-white hover:opacity-90 disabled:opacity-40 disabled:cursor-not-allowed"
+              className="inline-flex items-center gap-1.5 px-3 py-2 text-sm font-medium rounded-lg border border-primary-blue text-primary-blue bg-white hover:bg-blue-50 disabled:opacity-40 disabled:cursor-not-allowed"
             >
               <FiUserCheck className="w-4 h-4" />
-              Map {priorBdaIds.length > 0 ? priorBdaIds.length : ''} to respective BDA
+              Map selected ({priorBdaIds.length > 0 ? priorBdaIds.length : 0})
             </button>
             <button
               type="button"
@@ -373,6 +419,41 @@ export default function BdaUnassignedLeadPool({ appliedFilters, filterVersion, o
             </div>
           </div>
         </>
+      )}
+
+      {mapAllConfirmOpen && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4">
+          <div className="bg-white rounded-xl shadow-xl w-full max-w-md p-4 space-y-3">
+            <h3 className="font-semibold text-gray-900 m-0">Map meet filter to respective BDA</h3>
+            <p className="text-sm text-gray-600 m-0">
+              Every <strong>previously assigned</strong> lead in your current filter (
+              <strong>{meetLabel}</strong>
+              {appliedFilters?.meetFrom || appliedFilters?.meetTo
+                ? `, dates ${appliedFilters.meetFrom || '…'} – ${appliedFilters.meetTo || '…'}`
+                : ''}
+              ) will be mapped back to the <strong>same BDA</strong> they already had. Unassigned
+              leads in this filter are not changed.
+            </p>
+            <div className="flex justify-end gap-2 pt-1">
+              <button
+                type="button"
+                onClick={() => setMapAllConfirmOpen(false)}
+                className="px-4 py-2 text-sm text-gray-700"
+                disabled={mapping}
+              >
+                Cancel
+              </button>
+              <button
+                type="button"
+                onClick={handleMapAllInFilter}
+                disabled={mapping}
+                className="px-4 py-2 text-sm font-medium rounded-lg bg-primary-blue text-white hover:opacity-90 disabled:opacity-50"
+              >
+                {mapping ? 'Mapping…' : 'Map all in filter'}
+              </button>
+            </div>
+          </div>
+        </div>
       )}
 
       {mapConfirmOpen && (

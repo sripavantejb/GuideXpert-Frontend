@@ -85,10 +85,9 @@ export default function BdaLeadFilterPanel({
                 <strong>Off:</strong> only unassigned leads appear; assign them all to one BDA you
                 pick.
                 <br />
-                <strong>On:</strong> all matching leads appear (assigned + unassigned). Use{' '}
-                <strong>Map to respective BDA</strong> so each lead goes back to the BDA they were
-                already assigned to (for meet attended / not attended batches). Assign unassigned
-                leads separately if needed.
+                <strong>On:</strong> set <strong>Meet attendance</strong> (attended or not attended),
+                Apply filters, then click <strong>Map all in meet filter to respective BDA</strong> —
+                every lead that already had a BDA stays with that same BDA in that meet batch.
               </p>
             </div>
             <button
