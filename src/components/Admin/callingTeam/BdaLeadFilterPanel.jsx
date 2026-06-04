@@ -25,9 +25,9 @@ export default function BdaLeadFilterPanel({
           Select leads before assigning
         </h2>
         <p className="text-sm text-gray-600 mt-1">
-          Filter unassigned IIT counselling leads by meet attendance, slot date, language, relevance, and more.
-          Click <strong className="font-medium text-gray-800">Apply filters</strong> to load the pool and
-          enable assignment actions.
+          Filter IIT counselling leads by meet attendance, slot date, language, relevance, and more.
+          Use <strong className="font-medium text-gray-800">Keep previous BDA assignments</strong> when
+          re-running meet attended / not attended batches. Click <strong className="font-medium text-gray-800">Apply filters</strong> to load the pool.
         </p>
       </div>
 
@@ -74,6 +74,49 @@ export default function BdaLeadFilterPanel({
             ))}
           </select>
         </label>
+
+        <div className="sm:col-span-2 lg:col-span-3 rounded-lg border border-blue-200 bg-blue-50/60 px-4 py-3">
+          <div className="flex flex-wrap items-start justify-between gap-3">
+            <div className="min-w-0 flex-1">
+              <p className="text-sm font-semibold text-gray-900 m-0">
+                Keep previous BDA assignments
+              </p>
+              <p className="text-sm text-gray-600 mt-1 m-0">
+                <strong>Off:</strong> only unassigned leads appear and all selected leads go to the
+                BDA you pick.
+                <br />
+                <strong>On:</strong> includes leads already assigned in this filtered set. When you
+                assign, unassigned leads go to your chosen BDA; leads with an existing BDA stay with
+                that same BDA (useful for meet attended / not attended batches).
+              </p>
+            </div>
+            <button
+              type="button"
+              role="switch"
+              aria-checked={!!draft.keepExistingBda}
+              aria-label="Keep previous BDA assignments"
+              onClick={() => set('keepExistingBda', !draft.keepExistingBda)}
+              className={`relative shrink-0 inline-flex h-8 w-14 items-center rounded-full border-2 transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-primary-blue focus-visible:ring-offset-2 ${
+                draft.keepExistingBda
+                  ? 'bg-primary-blue border-primary-blue'
+                  : 'bg-gray-200 border-gray-300'
+              }`}
+            >
+              <span
+                className={`inline-block h-6 w-6 transform rounded-full bg-white shadow transition-transform ${
+                  draft.keepExistingBda ? 'translate-x-7' : 'translate-x-0.5'
+                }`}
+              />
+            </button>
+          </div>
+          <p
+            className={`text-xs font-medium mt-2 m-0 ${
+              draft.keepExistingBda ? 'text-green-800' : 'text-gray-500'
+            }`}
+          >
+            {draft.keepExistingBda ? 'ON — pool includes assigned leads; existing BDAs preserved' : 'OFF — unassigned leads only'}
+          </p>
+        </div>
 
         <label className="block">
           <span className="text-xs font-medium text-gray-500 uppercase tracking-wide">

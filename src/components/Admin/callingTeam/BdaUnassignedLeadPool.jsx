@@ -31,6 +31,7 @@ function MeetBadge({ attended, label }) {
 }
 
 export default function BdaUnassignedLeadPool({ appliedFilters, filterVersion, onAssigned }) {
+  const keepExistingBda = appliedFilters?.keepExistingBda === true;
   const [rows, setRows] = useState([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
@@ -99,10 +100,13 @@ export default function BdaUnassignedLeadPool({ appliedFilters, filterVersion, o
   const handleAssignSuccess = (result) => {
     const updated = result?.updated ?? 0;
     const failed = result?.failed?.length ?? 0;
+    const kept = result?.skippedSameBda ?? 0;
+    const keptNote =
+      keepExistingBda && kept > 0 ? ` ${kept} already on their BDA (unchanged).` : '';
     setSuccess(
       failed > 0
-        ? `Assigned ${updated} lead(s). ${failed} failed — refresh and retry.`
-        : `Assigned ${updated} lead(s) to BDA.`
+        ? `Processed ${updated} lead(s).${keptNote} ${failed} failed — refresh and retry.`
+        : `Processed ${updated} lead(s).${keptNote}`
     );
     load();
     onAssigned?.();
@@ -112,9 +116,14 @@ export default function BdaUnassignedLeadPool({ appliedFilters, filterVersion, o
     <div className="bg-white rounded-xl border border-gray-200 shadow-sm overflow-hidden">
       <div className="px-4 py-3 border-b flex flex-wrap items-start justify-between gap-3">
         <div>
-          <h2 className="text-base font-semibold text-gray-900 m-0">Filtered unassigned leads</h2>
+          <h2 className="text-base font-semibold text-gray-900 m-0">
+            {keepExistingBda ? 'Filtered leads (incl. assigned)' : 'Filtered unassigned leads'}
+          </h2>
           <p className="text-sm text-gray-600 mt-1">
-            Select rows from the filtered set and assign to a BDA (max {BULK_ASSIGN_MAX} per action).
+            {keepExistingBda
+              ? 'Includes already-assigned leads. Assign keeps each lead on its current BDA; new leads go to the BDA you pick.'
+              : 'Unassigned leads only. Select rows and assign to a BDA.'}{' '}
+            Max {BULK_ASSIGN_MAX} per action.
           </p>
         </div>
         <button
@@ -163,11 +172,11 @@ export default function BdaUnassignedLeadPool({ appliedFilters, filterVersion, o
 
       {!filtersReady ? (
         <div className="px-4 py-12 text-center text-gray-500 text-sm">
-          Apply filters above to load unassigned leads for assignment.
+          Apply filters above to load leads for assignment.
         </div>
       ) : loading ? (
         <div className="p-4">
-          <TableSkeleton rows={8} cols={9} />
+          <TableSkeleton rows={8} cols={keepExistingBda ? 10 : 9} />
         </div>
       ) : (
         <>
@@ -190,14 +199,17 @@ export default function BdaUnassignedLeadPool({ appliedFilters, filterVersion, o
                   <th className="px-4 py-3">English meet</th>
                   <th className="px-4 py-3">Hindi meet</th>
                   <th className="px-4 py-3">Slot date</th>
+                  {keepExistingBda ? <th className="px-4 py-3">Assigned BDA</th> : null}
                   <th className="px-4 py-3">Submitted</th>
                 </tr>
               </thead>
               <tbody>
                 {rows.length === 0 ? (
                   <tr>
-                    <td colSpan={9} className="px-4 py-10 text-center text-gray-500">
-                      No unassigned leads match the current filters.
+                    <td colSpan={keepExistingBda ? 10 : 9} className="px-4 py-10 text-center text-gray-500">
+                      {keepExistingBda
+                        ? 'No leads match the current filters.'
+                        : 'No unassigned leads match the current filters.'}
                     </td>
                   </tr>
                 ) : (
@@ -239,6 +251,17 @@ export default function BdaUnassignedLeadPool({ appliedFilters, filterVersion, o
                       <td className="px-4 py-3 text-gray-600">
                         {row.slotBookingDate || '—'}
                       </td>
+                      {keepExistingBda ? (
+                        <td className="px-4 py-3">
+                          {row.assignedBdaName ? (
+                            <span className="inline-block text-xs font-medium px-2 py-0.5 rounded-full bg-indigo-50 text-indigo-900 border border-indigo-200">
+                              {row.assignedBdaName}
+                            </span>
+                          ) : (
+                            <span className="text-xs text-amber-800 font-medium">Unassigned</span>
+                          )}
+                        </td>
+                      ) : null}
                       <td className="px-4 py-3 text-gray-600">{formatDateTime(row.createdAt)}</td>
                     </tr>
                   ))
@@ -249,7 +272,8 @@ export default function BdaUnassignedLeadPool({ appliedFilters, filterVersion, o
 
           <div className="flex flex-wrap items-center justify-between gap-3 px-5 py-3 border-t border-gray-100 text-sm text-gray-600">
             <span>
-              <strong className="text-gray-800">{pagination.total ?? 0}</strong> matching unassigned
+              <strong className="text-gray-800">{pagination.total ?? 0}</strong>{' '}
+              matching {keepExistingBda ? 'leads' : 'unassigned'}
               {selectedIds.length > 0 && (
                 <span className="text-primary-blue font-medium">
                   {' '}
@@ -286,6 +310,7 @@ export default function BdaUnassignedLeadPool({ appliedFilters, filterVersion, o
         open={assignOpen}
         leadIds={selectedIds.slice(0, BULK_ASSIGN_MAX)}
         preferredLanguage={appliedFilters?.preferredLanguage || ''}
+        respectExistingBda={keepExistingBda}
         onClose={() => setAssignOpen(false)}
         onSuccess={(data) => {
           setAssignOpen(false);

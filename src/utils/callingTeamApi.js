@@ -68,10 +68,10 @@ export async function patchCallingTeamLeadCrm(id, body) {
   });
 }
 
-export async function bulkAssignLeadsToBda({ leadIds, bdaId, reason }) {
+export async function bulkAssignLeadsToBda({ leadIds, bdaId, reason, respectExistingBda }) {
   return callingTeamRequest('/iit-counselling-leads/bulk-assign', {
     method: 'PATCH',
-    body: JSON.stringify({ leadIds, bdaId, reason }),
+    body: JSON.stringify({ leadIds, bdaId, reason, respectExistingBda: !!respectExistingBda }),
   });
 }
 

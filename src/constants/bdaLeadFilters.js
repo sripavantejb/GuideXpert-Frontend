@@ -8,6 +8,8 @@ export const EMPTY_BDA_LEAD_FILTERS = {
   slotDate: '',
   applicationStatus: '',
   leadRelevance: '',
+  /** When true, pool includes already-assigned leads; bulk assign keeps their current BDA. */
+  keepExistingBda: false,
 };
 
 export const MEET_VARIANT_OPTIONS = [
@@ -40,6 +42,10 @@ export function bdaLeadFiltersToQuery(filters) {
   if (!filters) return {};
   const params = { filtersApplied: 'true' };
   Object.entries(filters).forEach(([key, value]) => {
+    if (key === 'keepExistingBda') {
+      if (value === true) params.keepExistingBda = 'true';
+      return;
+    }
     if (value !== undefined && value !== null && String(value).trim() !== '') {
       params[key] = String(value).trim();
     }
@@ -49,5 +55,8 @@ export function bdaLeadFiltersToQuery(filters) {
 
 export function hasActiveBdaLeadFilters(filters) {
   if (!filters) return false;
-  return Object.values(filters).some((v) => v !== undefined && v !== null && String(v).trim() !== '');
+  return Object.entries(filters).some(([key, v]) => {
+    if (key === 'keepExistingBda') return false;
+    return v !== undefined && v !== null && String(v).trim() !== '';
+  });
 }
