@@ -353,6 +353,32 @@ const sectionHeaderClass = 'px-6 py-4 border-b border-gray-200 bg-gray-50/80 bor
 
 const LINE_POINT_CAP = 90;
 
+function LandingPageTargetToggle({ value, onChange, label, ariaLabel }) {
+  return (
+    <div className="flex flex-wrap items-center gap-2 sm:gap-3" role="group" aria-label={ariaLabel || label}>
+      {label ? (
+        <span className="text-xs font-semibold text-gray-600 uppercase tracking-wide shrink-0">{label}</span>
+      ) : null}
+      <div className="inline-flex rounded-lg border border-gray-300 bg-white p-0.5 shadow-sm">
+        {IIT_COUNSELLING_UTM_LINK_TARGETS.map((opt) => (
+          <button
+            key={opt.value}
+            type="button"
+            onClick={() => onChange(opt.value)}
+            className={`text-xs sm:text-sm px-3 py-2 rounded-md transition-colors whitespace-nowrap ${
+              value === opt.value
+                ? 'bg-primary-navy text-white font-medium shadow-sm'
+                : 'text-gray-700 hover:bg-gray-50'
+            }`}
+          >
+            {opt.value === 'oneOnOneSession' ? '1-on-1 session' : 'IIT counselling'}
+          </button>
+        ))}
+      </div>
+    </div>
+  );
+}
+
 export default function IitCounsellingUtm() {
   const { logout } = useAuth();
   const [searchParams] = useSearchParams();
@@ -925,7 +951,6 @@ export default function IitCounsellingUtm() {
           <span className="font-mono text-xs bg-gray-100 px-1 rounded">/iit-counselling</span>
           {' '}or{' '}
           <span className="font-mono text-xs bg-gray-100 px-1 rounded">/one-on-one-session</span>.
-          Use the analytics section switch to view visits for IIT counselling or 1-on-1 session links.
         </p>
         <p className="text-xs text-gray-500 mt-1">
           <Link to="/admin/iit-counselling" className="text-primary-navy hover:underline">IIT Counselling submissions</Link>
@@ -934,11 +959,23 @@ export default function IitCounsellingUtm() {
         </p>
       </div>
 
-      <p className="text-xs text-gray-500 -mt-4">
-        Showing visit analytics for{' '}
-        <span className="font-mono bg-gray-100 px-1 rounded">{analyticsPagePath}</span>
-        {' '}(change in the analytics section below).
-      </p>
+      <div className={`${cardClass} px-4 py-4 sm:px-5 flex flex-wrap items-center justify-between gap-4`}>
+        <LandingPageTargetToggle
+          label="Visit analytics"
+          ariaLabel="Visit analytics landing page"
+          value={analyticsLinkTarget}
+          onChange={setAnalyticsLinkTarget}
+        />
+        <p className="text-sm text-gray-600 min-w-0">
+          Showing KPIs and charts for{' '}
+          <span className="font-mono text-xs bg-gray-100 px-1.5 py-0.5 rounded border border-gray-200">
+            {analyticsPagePath}
+          </span>
+          {isOneOnOneSavedLinksOnly ? (
+            <span className="text-gray-500"> · saved 1-on-1 links only</span>
+          ) : null}
+        </p>
+      </div>
 
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
         <div className={cardClass + ' p-4'}>
@@ -1051,22 +1088,18 @@ export default function IitCounsellingUtm() {
           </p>
         </div>
         <form className="p-6 space-y-5" onSubmit={(e) => { e.preventDefault(); handleGenerateIitLink(); }}>
-          <div className="max-w-md">
-            <label htmlFor="iitGenLandingPage" className="block text-sm font-medium text-gray-700 mb-1.5">
-              Landing page
-            </label>
-            <select
-              id="iitGenLandingPage"
+          <div className="rounded-lg border border-gray-200 bg-gray-50/80 px-4 py-3">
+            <LandingPageTargetToggle
+              label="Save links for"
+              ariaLabel="Landing page for UTM link generator and saved list"
               value={genLinkTarget}
-              onChange={(e) => setGenLinkTarget(e.target.value)}
-              className="w-full h-10 rounded-lg border border-gray-300 px-3 text-sm focus:ring-2 focus:ring-primary-navy/30 focus:border-primary-navy outline-none bg-white"
-            >
-              {IIT_COUNSELLING_UTM_LINK_TARGETS.map((opt) => (
-                <option key={opt.value} value={opt.value}>
-                  {opt.label}
-                </option>
-              ))}
-            </select>
+              onChange={setGenLinkTarget}
+            />
+            <p className="text-xs text-gray-500 mt-2">
+              {genLinkTarget === 'oneOnOneSession'
+                ? 'Links point to /one-on-one-session and appear in the 1-on-1 saved list below.'
+                : 'Links point to /iit-counselling and appear in the IIT counselling saved list below.'}
+            </p>
           </div>
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
             <div>
@@ -1334,25 +1367,12 @@ export default function IitCounsellingUtm() {
                   : 'Date filters apply to this table, KPIs, and charts above.'}
               </p>
             </div>
-            <div className="flex flex-wrap items-center gap-2" role="group" aria-label="Analytics landing page">
-              <span className="text-xs font-medium text-gray-600 uppercase tracking-wide">Landing page</span>
-              <div className="inline-flex rounded-lg border border-gray-300 bg-white p-0.5 shadow-sm">
-                {IIT_COUNSELLING_UTM_LINK_TARGETS.map((opt) => (
-                  <button
-                    key={opt.value}
-                    type="button"
-                    onClick={() => setAnalyticsLinkTarget(opt.value)}
-                    className={`text-xs sm:text-sm px-3 py-1.5 rounded-md transition-colors whitespace-nowrap ${
-                      analyticsLinkTarget === opt.value
-                        ? 'bg-primary-navy text-white font-medium'
-                        : 'text-gray-700 hover:bg-gray-50'
-                    }`}
-                  >
-                    {opt.value === 'oneOnOneSession' ? '1-on-1 session' : 'IIT counselling'}
-                  </button>
-                ))}
-              </div>
-            </div>
+            <LandingPageTargetToggle
+              label="Visit analytics"
+              ariaLabel="UTM combo table landing page"
+              value={analyticsLinkTarget}
+              onChange={setAnalyticsLinkTarget}
+            />
           </div>
           {dateRangeToolbar}
         </div>
