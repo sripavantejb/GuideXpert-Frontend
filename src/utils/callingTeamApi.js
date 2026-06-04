@@ -75,6 +75,13 @@ export async function bulkAssignLeadsToBda({ leadIds, bdaId, reason, respectExis
   });
 }
 
+export async function bulkMapLeadsToRespectiveBda({ leadIds, reason }) {
+  return callingTeamRequest('/iit-counselling-leads/bulk-assign', {
+    method: 'PATCH',
+    body: JSON.stringify({ leadIds, mapToRespectiveBda: true, reason }),
+  });
+}
+
 export async function assignLeadToBda(id, { bdaId, reason }) {
   return callingTeamRequest(`/iit-counselling-leads/${id}/assign-bda`, {
     method: 'PATCH',

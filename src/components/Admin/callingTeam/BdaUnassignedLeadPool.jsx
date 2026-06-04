@@ -1,10 +1,10 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
-import { FiRefreshCw, FiUserPlus } from 'react-icons/fi';
+import { FiRefreshCw, FiUserCheck, FiUserPlus } from 'react-icons/fi';
 import AssignToBdaModal from './AssignToBdaModal';
 import TableSkeleton from '../../UI/TableSkeleton';
 import { languageBadgeClass } from '../../../constants/bdaLanguage';
 import { bdaLeadFiltersToQuery } from '../../../constants/bdaLeadFilters';
-import { getCallingTeamLeads } from '../../../utils/callingTeamApi';
+import { bulkMapLeadsToRespectiveBda, getCallingTeamLeads } from '../../../utils/callingTeamApi';
 import { getLeadClassStatus } from '../../../utils/callingDataLeadMapper';
 
 const BULK_ASSIGN_MAX = 200;
@@ -40,6 +40,8 @@ export default function BdaUnassignedLeadPool({ appliedFilters, filterVersion, o
   const [pagination, setPagination] = useState({ totalPages: 1, total: 0 });
   const [selected, setSelected] = useState(new Set());
   const [assignOpen, setAssignOpen] = useState(false);
+  const [mapConfirmOpen, setMapConfirmOpen] = useState(false);
+  const [mapping, setMapping] = useState(false);
 
   const filtersReady = appliedFilters != null;
 
@@ -77,6 +79,26 @@ export default function BdaUnassignedLeadPool({ appliedFilters, filterVersion, o
   const pageIds = useMemo(() => rows.map((r) => r.id), [rows]);
   const allPageSelected = pageIds.length > 0 && pageIds.every((id) => selected.has(id));
   const selectedIds = useMemo(() => Array.from(selected), [selected]);
+  const selectedRows = useMemo(
+    () => rows.filter((r) => selected.has(r.id)),
+    [rows, selected]
+  );
+  const selectedWithPriorBda = useMemo(
+    () => selectedRows.filter((r) => !!(r.assignedBdaId || r.assignedBdaName)),
+    [selectedRows]
+  );
+  const selectedUnassigned = useMemo(
+    () => selectedRows.filter((r) => !(r.assignedBdaId || r.assignedBdaName)),
+    [selectedRows]
+  );
+  const priorBdaIds = useMemo(
+    () => selectedWithPriorBda.map((r) => r.id).slice(0, BULK_ASSIGN_MAX),
+    [selectedWithPriorBda]
+  );
+  const unassignedIds = useMemo(
+    () => selectedUnassigned.map((r) => r.id).slice(0, BULK_ASSIGN_MAX),
+    [selectedUnassigned]
+  );
   const overBulkLimit = selectedIds.length > BULK_ASSIGN_MAX;
 
   const toggleAll = () => {
@@ -101,15 +123,34 @@ export default function BdaUnassignedLeadPool({ appliedFilters, filterVersion, o
     const updated = result?.updated ?? 0;
     const failed = result?.failed?.length ?? 0;
     const kept = result?.skippedSameBda ?? 0;
-    const keptNote =
-      keepExistingBda && kept > 0 ? ` ${kept} already on their BDA (unchanged).` : '';
+    const skippedUnassigned = result?.skippedUnassigned ?? 0;
+    const keptNote = kept > 0 ? ` ${kept} already on their BDA.` : '';
+    const skipNote =
+      skippedUnassigned > 0 ? ` ${skippedUnassigned} skipped (no previous BDA).` : '';
     setSuccess(
       failed > 0
-        ? `Processed ${updated} lead(s).${keptNote} ${failed} failed — refresh and retry.`
-        : `Processed ${updated} lead(s).${keptNote}`
+        ? `Processed ${updated} lead(s).${keptNote}${skipNote} ${failed} failed — refresh and retry.`
+        : `Processed ${updated} lead(s).${keptNote}${skipNote}`
     );
     load();
     onAssigned?.();
+  };
+
+  const handleMapRespective = async () => {
+    if (priorBdaIds.length === 0) {
+      setError('None of the selected leads have a previous BDA. Use Assign unassigned instead.');
+      return;
+    }
+    setMapping(true);
+    setError('');
+    const res = await bulkMapLeadsToRespectiveBda({ leadIds: priorBdaIds });
+    setMapping(false);
+    setMapConfirmOpen(false);
+    if (res.success) {
+      handleAssignSuccess(res.data?.data);
+    } else {
+      setError(res.message || 'Could not map leads to respective BDAs');
+    }
   };
 
   return (
@@ -117,11 +158,11 @@ export default function BdaUnassignedLeadPool({ appliedFilters, filterVersion, o
       <div className="px-4 py-3 border-b flex flex-wrap items-start justify-between gap-3">
         <div>
           <h2 className="text-base font-semibold text-gray-900 m-0">
-            {keepExistingBda ? 'Filtered leads (incl. assigned)' : 'Filtered unassigned leads'}
+            {keepExistingBda ? 'All filtered leads' : 'Filtered unassigned leads'}
           </h2>
           <p className="text-sm text-gray-600 mt-1">
             {keepExistingBda
-              ? 'Includes already-assigned leads. Assign keeps each lead on its current BDA; new leads go to the BDA you pick.'
+              ? 'Every matching lead is listed with their current BDA. Map selected leads back to each one’s respective BDA, or assign only the unassigned rows.'
               : 'Unassigned leads only. Select rows and assign to a BDA.'}{' '}
             Max {BULK_ASSIGN_MAX} per action.
           </p>
@@ -138,15 +179,43 @@ export default function BdaUnassignedLeadPool({ appliedFilters, filterVersion, o
       </div>
 
       <div className="px-4 py-3 border-b flex flex-wrap items-center gap-2 bg-gray-50/80">
-        <button
-          type="button"
-          disabled={!filtersReady || selectedIds.length === 0 || overBulkLimit}
-          onClick={() => setAssignOpen(true)}
-          className="inline-flex items-center gap-1.5 px-3 py-2 text-sm font-medium rounded-lg bg-primary-blue text-white hover:opacity-90 disabled:opacity-40 disabled:cursor-not-allowed"
-        >
-          <FiUserPlus className="w-4 h-4" />
-          Assign {selectedIds.length > 0 ? selectedIds.length : ''} to BDA
-        </button>
+        {keepExistingBda ? (
+          <>
+            <button
+              type="button"
+              disabled={
+                !filtersReady ||
+                priorBdaIds.length === 0 ||
+                overBulkLimit ||
+                mapping
+              }
+              onClick={() => setMapConfirmOpen(true)}
+              className="inline-flex items-center gap-1.5 px-3 py-2 text-sm font-medium rounded-lg bg-primary-blue text-white hover:opacity-90 disabled:opacity-40 disabled:cursor-not-allowed"
+            >
+              <FiUserCheck className="w-4 h-4" />
+              Map {priorBdaIds.length > 0 ? priorBdaIds.length : ''} to respective BDA
+            </button>
+            <button
+              type="button"
+              disabled={!filtersReady || unassignedIds.length === 0 || overBulkLimit}
+              onClick={() => setAssignOpen(true)}
+              className="inline-flex items-center gap-1.5 px-3 py-2 text-sm font-medium rounded-lg border border-gray-300 bg-white text-gray-800 hover:bg-gray-50 disabled:opacity-40 disabled:cursor-not-allowed"
+            >
+              <FiUserPlus className="w-4 h-4" />
+              Assign {unassignedIds.length > 0 ? unassignedIds.length : ''} unassigned to BDA
+            </button>
+          </>
+        ) : (
+          <button
+            type="button"
+            disabled={!filtersReady || selectedIds.length === 0 || overBulkLimit}
+            onClick={() => setAssignOpen(true)}
+            className="inline-flex items-center gap-1.5 px-3 py-2 text-sm font-medium rounded-lg bg-primary-blue text-white hover:opacity-90 disabled:opacity-40 disabled:cursor-not-allowed"
+          >
+            <FiUserPlus className="w-4 h-4" />
+            Assign {selectedIds.length > 0 ? selectedIds.length : ''} to BDA
+          </button>
+        )}
       </div>
 
       {(error || success || overBulkLimit) && (
@@ -306,11 +375,51 @@ export default function BdaUnassignedLeadPool({ appliedFilters, filterVersion, o
         </>
       )}
 
+      {mapConfirmOpen && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4">
+          <div className="bg-white rounded-xl shadow-xl w-full max-w-md p-4 space-y-3">
+            <h3 className="font-semibold text-gray-900 m-0">Map to respective BDA</h3>
+            <p className="text-sm text-gray-600 m-0">
+              <strong>{priorBdaIds.length}</strong> lead{priorBdaIds.length !== 1 ? 's' : ''} will each
+              be mapped to the BDA they were previously assigned to.
+              {selectedUnassigned.length > 0 && (
+                <span className="block mt-2 text-amber-900">
+                  {selectedUnassigned.length} unassigned lead
+                  {selectedUnassigned.length !== 1 ? 's' : ''} in your selection will be skipped. Use
+                  &quot;Assign unassigned to BDA&quot; for those.
+                </span>
+              )}
+            </p>
+            <div className="flex justify-end gap-2 pt-1">
+              <button
+                type="button"
+                onClick={() => setMapConfirmOpen(false)}
+                className="px-4 py-2 text-sm text-gray-700"
+                disabled={mapping}
+              >
+                Cancel
+              </button>
+              <button
+                type="button"
+                onClick={handleMapRespective}
+                disabled={mapping}
+                className="px-4 py-2 text-sm font-medium rounded-lg bg-primary-blue text-white hover:opacity-90 disabled:opacity-50"
+              >
+                {mapping ? 'Mapping…' : 'Confirm map'}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
       <AssignToBdaModal
         open={assignOpen}
-        leadIds={selectedIds.slice(0, BULK_ASSIGN_MAX)}
+        leadIds={
+          keepExistingBda
+            ? unassignedIds
+            : selectedIds.slice(0, BULK_ASSIGN_MAX)
+        }
         preferredLanguage={appliedFilters?.preferredLanguage || ''}
-        respectExistingBda={keepExistingBda}
         onClose={() => setAssignOpen(false)}
         onSuccess={(data) => {
           setAssignOpen(false);

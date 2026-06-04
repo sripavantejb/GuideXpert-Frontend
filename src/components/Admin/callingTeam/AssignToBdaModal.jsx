@@ -8,7 +8,6 @@ export default function AssignToBdaModal({
   onClose,
   onSuccess,
   preferredLanguage = '',
-  respectExistingBda = false,
 }) {
   const [bdas, setBdas] = useState([]);
   const [bdaId, setBdaId] = useState('');
@@ -54,7 +53,7 @@ export default function AssignToBdaModal({
     }
     setLoading(true);
     setError('');
-    const res = await bulkAssignLeadsToBda({ leadIds, bdaId, reason, respectExistingBda });
+    const res = await bulkAssignLeadsToBda({ leadIds, bdaId, reason });
     setLoading(false);
     if (res.success) {
       onSuccess?.(res.data?.data);
@@ -82,12 +81,6 @@ export default function AssignToBdaModal({
               </span>
             ) : null}
           </p>
-          {respectExistingBda ? (
-            <p className="text-sm text-blue-900 bg-blue-50 border border-blue-200 rounded-lg px-3 py-2">
-              <strong>Keep previous BDA</strong> is ON: unassigned leads go to the BDA below;
-              leads that already have a BDA stay with that same BDA.
-            </p>
-          ) : null}
           <label className="block text-sm font-medium text-gray-700">BDA</label>
           <select
             value={bdaId}

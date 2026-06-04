@@ -26,8 +26,8 @@ export default function BdaLeadFilterPanel({
         </h2>
         <p className="text-sm text-gray-600 mt-1">
           Filter IIT counselling leads by meet attendance, slot date, language, relevance, and more.
-          Use <strong className="font-medium text-gray-800">Keep previous BDA assignments</strong> when
-          re-running meet attended / not attended batches. Click <strong className="font-medium text-gray-800">Apply filters</strong> to load the pool.
+          Turn on <strong className="font-medium text-gray-800">map to respective BDA</strong> for meet
+          attended / not attended batches. Click <strong className="font-medium text-gray-800">Apply filters</strong> to load the pool.
         </p>
       </div>
 
@@ -79,22 +79,23 @@ export default function BdaLeadFilterPanel({
           <div className="flex flex-wrap items-start justify-between gap-3">
             <div className="min-w-0 flex-1">
               <p className="text-sm font-semibold text-gray-900 m-0">
-                Keep previous BDA assignments
+                Show all leads &amp; map to respective BDA
               </p>
               <p className="text-sm text-gray-600 mt-1 m-0">
-                <strong>Off:</strong> only unassigned leads appear and all selected leads go to the
-                BDA you pick.
+                <strong>Off:</strong> only unassigned leads appear; assign them all to one BDA you
+                pick.
                 <br />
-                <strong>On:</strong> includes leads already assigned in this filtered set. When you
-                assign, unassigned leads go to your chosen BDA; leads with an existing BDA stay with
-                that same BDA (useful for meet attended / not attended batches).
+                <strong>On:</strong> all matching leads appear (assigned + unassigned). Use{' '}
+                <strong>Map to respective BDA</strong> so each lead goes back to the BDA they were
+                already assigned to (for meet attended / not attended batches). Assign unassigned
+                leads separately if needed.
               </p>
             </div>
             <button
               type="button"
               role="switch"
               aria-checked={!!draft.keepExistingBda}
-              aria-label="Keep previous BDA assignments"
+              aria-label="Show all leads and map to respective BDA"
               onClick={() => set('keepExistingBda', !draft.keepExistingBda)}
               className={`relative shrink-0 inline-flex h-8 w-14 items-center rounded-full border-2 transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-primary-blue focus-visible:ring-offset-2 ${
                 draft.keepExistingBda
@@ -114,7 +115,9 @@ export default function BdaLeadFilterPanel({
               draft.keepExistingBda ? 'text-green-800' : 'text-gray-500'
             }`}
           >
-            {draft.keepExistingBda ? 'ON — pool includes assigned leads; existing BDAs preserved' : 'OFF — unassigned leads only'}
+            {draft.keepExistingBda
+              ? 'ON — all leads visible; map each to its previous BDA'
+              : 'OFF — unassigned leads only'}
           </p>
         </div>
 
