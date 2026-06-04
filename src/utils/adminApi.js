@@ -235,6 +235,7 @@ export const getIitCounsellingVisitAnalytics = async (params = {}, token = getSt
   if (params.fromTime && String(params.fromTime).trim()) search.set('fromTime', String(params.fromTime).trim());
   if (params.toTime && String(params.toTime).trim()) search.set('toTime', String(params.toTime).trim());
   if (params.granularity && String(params.granularity).trim()) search.set('granularity', String(params.granularity).trim());
+  if (params.linkTarget && String(params.linkTarget).trim()) search.set('linkTarget', String(params.linkTarget).trim());
   const query = search.toString();
   return adminRequest(`/iit-counselling/visits${query ? `?${query}` : ''}`, { method: 'GET' }, token);
 };
@@ -245,6 +246,7 @@ export const getIitCounsellingUtmAnalytics = async (params = {}, token = getStor
   if (params.toDate && String(params.toDate).trim()) search.set('toDate', String(params.toDate).trim());
   if (params.fromTime && String(params.fromTime).trim()) search.set('fromTime', String(params.fromTime).trim());
   if (params.toTime && String(params.toTime).trim()) search.set('toTime', String(params.toTime).trim());
+  if (params.linkTarget && String(params.linkTarget).trim()) search.set('linkTarget', String(params.linkTarget).trim());
   const query = search.toString();
   return adminRequest(`/iit-counselling/utm-analytics${query ? `?${query}` : ''}`, { method: 'GET' }, token);
 };

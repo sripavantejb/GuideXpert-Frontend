@@ -282,6 +282,8 @@ export default function IitCounsellingUtm() {
   const [copyComboModalOpen, setCopyComboModalOpen] = useState(false);
 
   const [genLinkTarget, setGenLinkTarget] = useState(queryLinkTarget);
+  /** Landing page for visit analytics (KPIs, charts, combo table). */
+  const [analyticsLinkTarget, setAnalyticsLinkTarget] = useState(queryLinkTarget);
   const [genInfluencerName, setGenInfluencerName] = useState('');
   const [genPlatform, setGenPlatform] = useState('Instagram');
   const [genCampaign, setGenCampaign] = useState(DEFAULT_CAMPAIGN);
@@ -308,7 +310,8 @@ export default function IitCounsellingUtm() {
     fromTime,
     toTime,
     granularity: 'daily',
-  }), [fromDate, toDate, fromTime, toTime]);
+    linkTarget: analyticsLinkTarget,
+  }), [fromDate, toDate, fromTime, toTime, analyticsLinkTarget]);
 
   const loadData = useCallback(() => {
     const token = getStoredToken();
@@ -343,6 +346,7 @@ export default function IitCounsellingUtm() {
 
   useEffect(() => {
     setGenLinkTarget(queryLinkTarget);
+    setAnalyticsLinkTarget(queryLinkTarget);
   }, [queryLinkTarget]);
 
   const fetchSavedIitLinks = useCallback(() => {
@@ -424,10 +428,28 @@ export default function IitCounsellingUtm() {
     return () => window.removeEventListener('focus', onFocus);
   }, [fetchSavedLinksForLookup]);
 
-  const influencerNameLookup = useMemo(
-    () => buildInfluencerNameLookup(savedLinksForLookup),
-    [savedLinksForLookup]
+  const savedLinksForAnalyticsLookup = useMemo(
+    () => savedLinksForLookup.filter((l) => {
+      const t = l.linkTarget || 'iitCounselling';
+      return t === analyticsLinkTarget;
+    }),
+    [savedLinksForLookup, analyticsLinkTarget]
   );
+
+  const influencerNameLookup = useMemo(
+    () => buildInfluencerNameLookup(savedLinksForAnalyticsLookup),
+    [savedLinksForAnalyticsLookup]
+  );
+
+  const analyticsPagePath = analyticsLinkTarget === 'oneOnOneSession'
+    ? '/one-on-one-session'
+    : '/iit-counselling';
+  const analyticsPageTitle = analyticsLinkTarget === 'oneOnOneSession'
+    ? '1-on-1 session UTM analytics'
+    : 'IIT Counselling UTM analytics';
+  const analyticsLinkedHelp = analyticsLinkTarget === 'oneOnOneSession'
+    ? 'Linked = visit tied to a 1-on-1 form submission.'
+    : 'Linked = visit tied to section 1 save.';
 
   useEffect(() => {
     if (window.location.hash !== '#iit-utm-generator') return undefined;
@@ -519,7 +541,8 @@ export default function IitCounsellingUtm() {
   const exportComboCsv = () => {
     const headers = [
       'utm_source', 'utm_medium', 'utm_campaign', 'utm_content', 'Influencer name',
-      'Date created', 'Last visit', 'Visits', 'Unique visitors', 'Linked submissions',
+      'Date created', 'Last visit', 'Visits', 'Unique visitors',
+      analyticsLinkTarget === 'oneOnOneSession' ? 'Linked leads' : 'Linked submissions',
     ];
     const rows = filteredSortedCombo.map((r) => [
       r.utm_source ?? '',
@@ -538,7 +561,8 @@ export default function IitCounsellingUtm() {
     const url = URL.createObjectURL(blob);
     const a = document.createElement('a');
     a.href = url;
-    a.download = `iit-counselling-utm-${new Date().toISOString().slice(0, 10)}.csv`;
+    const slug = analyticsLinkTarget === 'oneOnOneSession' ? 'one-on-one-session-utm' : 'iit-counselling-utm';
+    a.download = `${slug}-${new Date().toISOString().slice(0, 10)}.csv`;
     a.click();
     URL.revokeObjectURL(url);
   };
@@ -757,7 +781,7 @@ export default function IitCounsellingUtm() {
           <span className="font-mono text-xs bg-gray-100 px-1 rounded">/iit-counselling</span>
           {' '}or{' '}
           <span className="font-mono text-xs bg-gray-100 px-1 rounded">/one-on-one-session</span>.
-          Visit analytics below apply to the IIT counselling page only.
+          Use the analytics section switch to view visits for IIT counselling or 1-on-1 session links.
         </p>
         <p className="text-xs text-gray-500 mt-1">
           <Link to="/admin/iit-counselling" className="text-primary-navy hover:underline">IIT Counselling submissions</Link>
@@ -766,16 +790,11 @@ export default function IitCounsellingUtm() {
         </p>
       </div>
 
-      {genLinkTarget === 'oneOnOneSession' ? (
-        <div className="rounded-xl border border-blue-100 bg-blue-50/80 px-4 py-3 text-sm text-gray-700">
-          <span className="font-semibold text-gray-800">1-on-1 session links:</span> charts above count visits on{' '}
-          <span className="font-mono text-xs">/iit-counselling</span> only. Bookings from your 1-on-1 UTM links appear in{' '}
-          <Link to="/admin/one-on-one-counseling" className="font-medium text-primary-navy hover:underline">
-            1-on-1 Counseling Leads
-          </Link>
-          {' '}(filter by UTM content).
-        </div>
-      ) : null}
+      <p className="text-xs text-gray-500 -mt-4">
+        Showing visit analytics for{' '}
+        <span className="font-mono bg-gray-100 px-1 rounded">{analyticsPagePath}</span>
+        {' '}(change in the analytics section below).
+      </p>
 
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
         <div className={cardClass + ' p-4'}>
@@ -1148,11 +1167,35 @@ export default function IitCounsellingUtm() {
       </section>
 
       <section className={cardClass}>
-        <div className={`${sectionHeaderClass} flex flex-wrap items-center justify-between gap-4`}>
-          <div>
-            <h2 className="text-base font-semibold text-gray-800">IIT Counselling UTM analytics</h2>
-            <p className="text-sm text-gray-500 mt-0.5">Full UTM combinations from visits on <span className="font-mono text-xs">/iit-counselling</span>. Linked = visit tied to section 1 save.</p>
-            <p className="text-xs text-gray-500 mt-0.5">Date filters apply to this table, KPIs, and charts above.</p>
+        <div className={`${sectionHeaderClass} flex flex-wrap items-start justify-between gap-4`}>
+          <div className="space-y-3 min-w-0 flex-1">
+            <div>
+              <h2 className="text-base font-semibold text-gray-800">{analyticsPageTitle}</h2>
+              <p className="text-sm text-gray-500 mt-0.5">
+                Full UTM combinations from visits on{' '}
+                <span className="font-mono text-xs">{analyticsPagePath}</span>. {analyticsLinkedHelp}
+              </p>
+              <p className="text-xs text-gray-500 mt-0.5">Date filters apply to this table, KPIs, and charts above.</p>
+            </div>
+            <div className="flex flex-wrap items-center gap-2" role="group" aria-label="Analytics landing page">
+              <span className="text-xs font-medium text-gray-600 uppercase tracking-wide">Landing page</span>
+              <div className="inline-flex rounded-lg border border-gray-300 bg-white p-0.5 shadow-sm">
+                {IIT_COUNSELLING_UTM_LINK_TARGETS.map((opt) => (
+                  <button
+                    key={opt.value}
+                    type="button"
+                    onClick={() => setAnalyticsLinkTarget(opt.value)}
+                    className={`text-xs sm:text-sm px-3 py-1.5 rounded-md transition-colors whitespace-nowrap ${
+                      analyticsLinkTarget === opt.value
+                        ? 'bg-primary-navy text-white font-medium'
+                        : 'text-gray-700 hover:bg-gray-50'
+                    }`}
+                  >
+                    {opt.value === 'oneOnOneSession' ? '1-on-1 session' : 'IIT counselling'}
+                  </button>
+                ))}
+              </div>
+            </div>
           </div>
           {dateRangeToolbar}
         </div>
@@ -1191,7 +1234,9 @@ export default function IitCounsellingUtm() {
         ) : (data?.byCombo || []).length === 0 ? (
           <div className="px-6 py-12 text-center">
             <p className="text-gray-500 text-sm">No visit data in this range.</p>
-            <p className="text-gray-400 text-xs mt-1">Traffic with UTM tags on /iit-counselling will appear here.</p>
+            <p className="text-gray-400 text-xs mt-1">
+              Traffic with UTM tags on {analyticsPagePath} will appear here.
+            </p>
           </div>
         ) : (
           <div className="overflow-x-auto">
@@ -1207,7 +1252,9 @@ export default function IitCounsellingUtm() {
                   <th className="px-6 py-3 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider whitespace-nowrap">Last visit</th>
                   <th className="px-6 py-3 text-right text-xs font-semibold text-gray-600 uppercase tracking-wider">Visits</th>
                   <th className="px-6 py-3 text-right text-xs font-semibold text-gray-600 uppercase tracking-wider">Unique</th>
-                  <th className="px-6 py-3 text-right text-xs font-semibold text-gray-600 uppercase tracking-wider">Linked</th>
+                  <th className="px-6 py-3 text-right text-xs font-semibold text-gray-600 uppercase tracking-wider">
+                    {analyticsLinkTarget === 'oneOnOneSession' ? 'Linked leads' : 'Linked'}
+                  </th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-gray-100">
