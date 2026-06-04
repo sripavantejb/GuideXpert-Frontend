@@ -170,6 +170,72 @@ function parseUtmParamsFromHref(href) {
   }
 }
 
+/** Match backend combo table: trimmed value or "(none)". */
+function utmFieldForCombo(val) {
+  const s = String(val ?? '').trim();
+  return s || '(none)';
+}
+
+function comboRowKeyFromParts(source, medium, campaign, content) {
+  return [source, medium, campaign, content].join('|');
+}
+
+function savedLinkCreatedInRange(createdAt, fromDate, toDate, fromTime, toTime) {
+  if (!createdAt) return false;
+  if (!fromDate && !toDate) return true;
+  const t = new Date(createdAt).getTime();
+  if (Number.isNaN(t)) return false;
+  if (fromDate) {
+    const start = new Date(`${fromDate}T${fromTime || '00:00'}`);
+    if (!Number.isNaN(start.getTime()) && t < start.getTime()) return false;
+  }
+  if (toDate) {
+    const end = new Date(`${toDate}T${toTime || '23:59'}`);
+    if (!Number.isNaN(end.getTime()) && t > end.getTime()) return false;
+  }
+  return true;
+}
+
+/** Include saved UTM links in analytics even when visit count is still zero. */
+function mergeSavedUtmLinksIntoCombo(byCombo, savedLinks, { fromDate, toDate, fromTime, toTime }) {
+  const map = new Map();
+  for (const row of byCombo || []) {
+    map.set(
+      comboRowKeyFromParts(row.utm_source, row.utm_medium, row.utm_campaign, row.utm_content),
+      row,
+    );
+  }
+  const hasDateRange = Boolean(fromDate || toDate);
+  for (const link of savedLinks || []) {
+    if (hasDateRange && !savedLinkCreatedInRange(link.createdAt, fromDate, toDate, fromTime, toTime)) {
+      continue;
+    }
+    const parsed = parseUtmParamsFromHref(link.utmLink);
+    if (!parsed) continue;
+    const candidate = {
+      utm_source: utmFieldForCombo(parsed.utm_source),
+      utm_medium: utmFieldForCombo(parsed.utm_medium),
+      utm_campaign: utmFieldForCombo(parsed.utm_campaign),
+      utm_content: utmFieldForCombo(parsed.utm_content),
+      visits: 0,
+      uniqueVisitors: 0,
+      linkedSubmissions: 0,
+      firstVisitAt: null,
+      latestVisitAt: null,
+    };
+    const key = comboRowKeyFromParts(
+      candidate.utm_source,
+      candidate.utm_medium,
+      candidate.utm_campaign,
+      candidate.utm_content,
+    );
+    if (!map.has(key)) {
+      map.set(key, candidate);
+    }
+  }
+  return [...map.values()];
+}
+
 /** Map POST saved-utm-links response to table row shape. */
 function mapCreateResponseToSavedLinkRow(saved) {
   if (!saved || typeof saved !== 'object') return null;
@@ -510,8 +576,18 @@ export default function IitCounsellingUtm() {
     return merged;
   }, [visitTrend]);
 
+  const mergedComboRows = useMemo(
+    () => mergeSavedUtmLinksIntoCombo(data?.byCombo, savedLinksForAnalyticsLookup, {
+      fromDate,
+      toDate,
+      fromTime,
+      toTime,
+    }),
+    [data?.byCombo, savedLinksForAnalyticsLookup, fromDate, toDate, fromTime, toTime],
+  );
+
   const filteredSortedCombo = useMemo(() => {
-    const rows = (data?.byCombo || []).map((r) => ({
+    const rows = mergedComboRows.map((r) => ({
       ...r,
       influencerName: resolveInfluencerName(r, influencerNameLookup),
       dateCreated: resolveDateCreated(r, influencerNameLookup),
@@ -536,7 +612,7 @@ export default function IitCounsellingUtm() {
       filtered.sort((a, b) => (Number(b[key]) || 0) - (Number(a[key]) || 0));
     }
     return filtered;
-  }, [data?.byCombo, comboSearch, comboSort, influencerNameLookup]);
+  }, [mergedComboRows, comboSearch, comboSort, influencerNameLookup]);
 
   const exportComboCsv = () => {
     const headers = [
@@ -1172,7 +1248,7 @@ export default function IitCounsellingUtm() {
             <div>
               <h2 className="text-base font-semibold text-gray-800">{analyticsPageTitle}</h2>
               <p className="text-sm text-gray-500 mt-0.5">
-                Full UTM combinations from visits on{' '}
+                UTM combinations from visits and saved links on{' '}
                 <span className="font-mono text-xs">{analyticsPagePath}</span>. {analyticsLinkedHelp}
               </p>
               <p className="text-xs text-gray-500 mt-0.5">Date filters apply to this table, KPIs, and charts above.</p>
@@ -1224,18 +1300,18 @@ export default function IitCounsellingUtm() {
           </button>
           {comboSearch ? (
             <span className="text-sm text-gray-500 self-center">
-              Showing {filteredSortedCombo.length} of {(data?.byCombo || []).length} rows
+              Showing {filteredSortedCombo.length} of {mergedComboRows.length} rows
             </span>
           ) : null}
         </div>
 
         {loading ? (
           <div className="px-6 py-8"><TableSkeleton rows={8} cols={10} /></div>
-        ) : (data?.byCombo || []).length === 0 ? (
+        ) : mergedComboRows.length === 0 ? (
           <div className="px-6 py-12 text-center">
-            <p className="text-gray-500 text-sm">No visit data in this range.</p>
+            <p className="text-gray-500 text-sm">No UTM rows in this range.</p>
             <p className="text-gray-400 text-xs mt-1">
-              Traffic with UTM tags on {analyticsPagePath} will appear here.
+              Saved links or visits with UTM tags on {analyticsPagePath} will appear here.
             </p>
           </div>
         ) : (

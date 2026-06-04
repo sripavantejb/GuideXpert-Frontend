@@ -18,6 +18,7 @@ import {
   SESSION_ATTENDEE_OPTIONS,
 } from '../constants/oneOnOneCounselingForm';
 import { submitOneOnOneCounselingLead } from '../utils/api';
+import { getApiBaseUrl } from '../utils/apiBaseUrl';
 import {
   getOneOnOneCounselingSlots,
   msUntilNextISTMidnight,
@@ -76,8 +77,10 @@ export default function OneOnOneSessionPage() {
   const [submitted, setSubmitted] = useState(false);
   const [otpVerified, setOtpVerified] = useState(false);
   const [slotOptionsTick, setSlotOptionsTick] = useState(0);
+  const [visitorFingerprint, setVisitorFingerprint] = useState('');
 
   const utm = useMemo(() => getStoredUtm(), []);
+  const apiBase = useMemo(() => getApiBaseUrl(), []);
   const sessionSlotOptions = useMemo(() => {
     void slotOptionsTick;
     return getOneOnOneCounselingSlots();
@@ -93,6 +96,34 @@ export default function OneOnOneSessionPage() {
     document.title = 'Book 1-on-1 IITian Career Counseling | GuideXpert';
     captureUtmFirstTouch();
   }, []);
+
+  useEffect(() => {
+    const queryParams = new URLSearchParams(window.location.search);
+    const payload = {
+      pageKey: 'oneOnOneSession',
+      path: window.location.pathname,
+      query: window.location.search,
+      referrer: document.referrer || '',
+      utm_source: queryParams.get('utm_source') || '',
+      utm_medium: queryParams.get('utm_medium') || '',
+      utm_campaign: queryParams.get('utm_campaign') || '',
+      utm_content: queryParams.get('utm_content') || '',
+    };
+
+    fetch(`${apiBase}/iit-counselling/visit`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(payload),
+    })
+      .then(async (response) => {
+        const result = await response.json().catch(() => ({}));
+        const fingerprint = result?.data?.visitorFingerprint;
+        if (response.ok && typeof fingerprint === 'string' && fingerprint) {
+          setVisitorFingerprint(fingerprint);
+        }
+      })
+      .catch(() => {});
+  }, [apiBase]);
 
   useEffect(() => {
     const bump = () => setSlotOptionsTick((t) => t + 1);
@@ -180,6 +211,7 @@ export default function OneOnOneSessionPage() {
         preferredTimeSlot: form.preferredTimeSlot,
         additionalQuestions: form.additionalQuestions.trim() || undefined,
         ...(utm || {}),
+        ...(visitorFingerprint ? { visitorFingerprint } : {}),
       };
 
       const result = await submitOneOnOneCounselingLead(payload);
