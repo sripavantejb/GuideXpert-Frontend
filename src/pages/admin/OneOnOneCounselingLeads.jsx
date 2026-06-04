@@ -507,6 +507,10 @@ export default function OneOnOneCounselingLeads() {
                   <th className="px-3 py-3 text-left font-semibold text-gray-700">Rank</th>
                   <th className="px-3 py-3 text-left font-semibold text-gray-700">Branch</th>
                   <th className="px-3 py-3 text-left font-semibold text-gray-700">Budget</th>
+                  <th className="px-3 py-3 text-left font-semibold text-gray-700">Parent occ.</th>
+                  <th className="px-3 py-3 text-left font-semibold text-gray-700 min-w-[140px]">
+                    Preferred colleges
+                  </th>
                   <th className="px-3 py-3 text-left font-semibold text-gray-700">Concern</th>
                   <th className="px-3 py-3 text-left font-semibold text-gray-700">Language</th>
                   <th className="px-3 py-3 text-left font-semibold text-gray-700 min-w-[200px]">
@@ -546,6 +550,12 @@ export default function OneOnOneCounselingLeads() {
                     <td className="px-3 py-3 text-gray-700 max-w-[120px]">{row.entranceExamRank}</td>
                     <td className="px-3 py-3 text-gray-700">{row.interestedBranch}</td>
                     <td className="px-3 py-3 text-gray-700 max-w-[140px]">{row.collegeBudget}</td>
+                    <td className="px-3 py-3 text-gray-700 max-w-[120px]">{row.parentOccupation || '—'}</td>
+                    <td className="px-3 py-3 text-gray-700 text-xs max-w-[180px]">
+                      {Array.isArray(row.preferredColleges) && row.preferredColleges.length > 0
+                        ? row.preferredColleges.join(', ')
+                        : '—'}
+                    </td>
                     <td className="px-3 py-3 text-gray-700 max-w-[140px]">{row.biggestConcern}</td>
                     <td className="px-3 py-3 text-gray-700">{row.preferredLanguage}</td>
                     <td className="px-3 py-3 text-gray-700">{row.preferredTimeSlot}</td>

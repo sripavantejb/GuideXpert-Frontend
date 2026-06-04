@@ -355,6 +355,9 @@ export default function GuidanceSlotBookings() {
                   <th className="px-3 py-2 text-left">Student</th>
                   <th className="px-3 py-2 text-left">Mobile</th>
                   <th className="px-3 py-2 text-left">Booking</th>
+                  <th className="px-3 py-2 text-left">Budget</th>
+                  <th className="px-3 py-2 text-left">Parent occ.</th>
+                  <th className="px-3 py-2 text-left min-w-[140px]">Preferred colleges</th>
                   <th className="px-3 py-2 text-left">Slot</th>
                   <th className="px-3 py-2 text-left">Counselor</th>
                   <th className="px-3 py-2 text-left">Parent</th>
@@ -368,6 +371,13 @@ export default function GuidanceSlotBookings() {
                     <td className="px-3 py-2">{b.mobileNumber}</td>
                     <td className="px-3 py-2">
                       <BookingBadge confirmed={b.bookingConfirmed} status={b.bookingStatus} />
+                    </td>
+                    <td className="px-3 py-2 text-xs">{b.collegeBudget || '—'}</td>
+                    <td className="px-3 py-2 text-xs">{b.parentOccupation || '—'}</td>
+                    <td className="px-3 py-2 text-xs max-w-[200px]">
+                      {Array.isArray(b.preferredColleges) && b.preferredColleges.length > 0
+                        ? b.preferredColleges.join(', ')
+                        : '—'}
                     </td>
                     <td className="px-3 py-2">
                       {b.slot ? `${b.slot.sessionTitle} (${b.slot.slotDate})` : '—'}

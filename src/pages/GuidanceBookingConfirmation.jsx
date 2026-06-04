@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react';
-import { FormInput, NeoField } from '../components/oneOnOneSession/FormControls';
+import { FormInput, FormSelect, NeoField } from '../components/oneOnOneSession/FormControls';
 import GuidanceSlotPicker from '../components/oneOnOneSession/GuidanceSlotPicker';
+import { COLLEGE_BUDGET_OPTIONS } from '../constants/oneOnOneCounselingForm';
 import { bookGuidanceSlot, checkGuidanceMobile } from '../utils/guidanceBookingApi';
 import { captureUtmFirstTouch } from '../utils/utm';
 
@@ -9,6 +10,39 @@ function normalizeMobile(val) {
     .replace(/\D/g, '')
     .slice(-10)
     .slice(0, 10);
+}
+
+function prefillColleges(student) {
+  const list = Array.isArray(student?.preferredColleges) ? student.preferredColleges : [];
+  return {
+    college1: list[0] || '',
+    college2: list[1] || '',
+    college3: list[2] || '',
+  };
+}
+
+function validateCounselingPreferences({
+  collegeBudget,
+  parentOccupation,
+  preferredCollege1,
+  preferredCollege2,
+  preferredCollege3,
+}) {
+  const errors = {};
+  if (!COLLEGE_BUDGET_OPTIONS.includes(collegeBudget)) {
+    errors.collegeBudget = 'Please select college budget per year.';
+  }
+  const occ = String(parentOccupation || '').trim();
+  if (occ.length < 2) {
+    errors.parentOccupation = 'Please enter parent occupation.';
+  }
+  const colleges = [preferredCollege1, preferredCollege2, preferredCollege3]
+    .map((s) => String(s || '').trim())
+    .filter(Boolean);
+  if (colleges.length < 1) {
+    errors.preferredColleges = 'Please enter at least one preferred college.';
+  }
+  return { errors, preferredColleges: colleges };
 }
 
 function SuccessView() {
@@ -71,6 +105,102 @@ function StudentDetailsCard({ student }) {
   );
 }
 
+function CounselingPreferencesSection({
+  collegeBudget,
+  setCollegeBudget,
+  parentOccupation,
+  setParentOccupation,
+  preferredCollege1,
+  setPreferredCollege1,
+  preferredCollege2,
+  setPreferredCollege2,
+  preferredCollege3,
+  setPreferredCollege3,
+  fieldErrors,
+}) {
+  return (
+    <div className="space-y-5 sm:col-span-2">
+      <p className="text-sm font-black uppercase tracking-wide text-[#0F172A]">
+        Counseling preferences <span className="text-red-700">*</span>
+      </p>
+
+      <NeoField
+        label="College budget per year"
+        error={fieldErrors.collegeBudget}
+        required
+        className="sm:col-span-2"
+      >
+        <FormSelect
+          id="guidance-collegeBudget"
+          name="collegeBudget"
+          required
+          value={collegeBudget}
+          onChange={(e) => setCollegeBudget(e.target.value)}
+          error={fieldErrors.collegeBudget}
+          options={COLLEGE_BUDGET_OPTIONS}
+          placeholder="Select budget"
+        />
+      </NeoField>
+
+      <NeoField label="Parent occupation" error={fieldErrors.parentOccupation} required>
+        <FormInput
+          id="guidance-parentOccupation"
+          name="parentOccupation"
+          value={parentOccupation}
+          onChange={(e) => setParentOccupation(e.target.value)}
+          error={fieldErrors.parentOccupation}
+          placeholder="e.g. Business, Government employee, Homemaker"
+          maxLength={120}
+        />
+      </NeoField>
+
+      <div className="sm:col-span-2">
+        <p className="mb-3 text-sm font-black uppercase tracking-wide text-[#0F172A]">
+          Preferred colleges <span className="text-red-700">*</span>
+        </p>
+        {fieldErrors.preferredColleges ? (
+          <p className="mb-2 text-xs font-bold text-red-700">{fieldErrors.preferredColleges}</p>
+        ) : null}
+        <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
+          <NeoField label="College 1">
+            <FormInput
+              id="guidance-college1"
+              name="preferredCollege1"
+              value={preferredCollege1}
+              onChange={(e) => setPreferredCollege1(e.target.value)}
+              placeholder="e.g. IIT Hyderabad"
+              maxLength={150}
+            />
+          </NeoField>
+          <NeoField label="College 2">
+            <FormInput
+              id="guidance-college2"
+              name="preferredCollege2"
+              value={preferredCollege2}
+              onChange={(e) => setPreferredCollege2(e.target.value)}
+              placeholder="e.g. NIT Warangal"
+              maxLength={150}
+            />
+          </NeoField>
+          <NeoField label="College 3">
+            <FormInput
+              id="guidance-college3"
+              name="preferredCollege3"
+              value={preferredCollege3}
+              onChange={(e) => setPreferredCollege3(e.target.value)}
+              placeholder="e.g. BITS Pilani"
+              maxLength={150}
+            />
+          </NeoField>
+        </div>
+        <p className="mt-2 text-xs font-medium text-slate-500">
+          Enter at least one college you are interested in.
+        </p>
+      </div>
+    </div>
+  );
+}
+
 const neoCheckboxClass =
   'mt-0.5 h-4 w-4 shrink-0 rounded border-2 border-[#0F172A] accent-[#0F172A]';
 
@@ -83,9 +213,15 @@ export default function GuidanceBookingConfirmation() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
   const [slotError, setSlotError] = useState('');
+  const [fieldErrors, setFieldErrors] = useState({});
   const [student, setStudent] = useState(null);
   const [slots, setSlots] = useState([]);
   const [selectedSlotId, setSelectedSlotId] = useState('');
+  const [collegeBudget, setCollegeBudget] = useState('');
+  const [parentOccupation, setParentOccupation] = useState('');
+  const [preferredCollege1, setPreferredCollege1] = useState('');
+  const [preferredCollege2, setPreferredCollege2] = useState('');
+  const [preferredCollege3, setPreferredCollege3] = useState('');
   const [parentConfirmed, setParentConfirmed] = useState(false);
   const [whatsappConsent, setWhatsappConsent] = useState(false);
   const [success, setSuccess] = useState(false);
@@ -95,9 +231,20 @@ export default function GuidanceBookingConfirmation() {
     captureUtmFirstTouch();
   }, []);
 
+  const applyStudentPrefill = (s) => {
+    setStudent(s);
+    setCollegeBudget(s?.collegeBudget || '');
+    setParentOccupation(s?.parentOccupation || '');
+    const c = prefillColleges(s);
+    setPreferredCollege1(c.college1);
+    setPreferredCollege2(c.college2);
+    setPreferredCollege3(c.college3);
+  };
+
   const handleCheckMobile = async (e) => {
     e.preventDefault();
     setError('');
+    setFieldErrors({});
     const digits = normalizeMobile(mobile);
     if (digits.length !== 10) {
       setError('Enter a valid 10-digit Indian mobile number.');
@@ -116,11 +263,11 @@ export default function GuidanceBookingConfirmation() {
     }
     if (res.alreadyBooked) {
       setError(res.message || 'A slot is already booked with this mobile number.');
-      setStudent(res.data?.student || null);
+      applyStudentPrefill(res.data?.student || null);
       setSlots([]);
       return;
     }
-    setStudent(res.data?.student || null);
+    applyStudentPrefill(res.data?.student || null);
     setSlots(res.data?.slots || []);
     setStep('booking');
     window.scrollTo({ top: 0, behavior: 'smooth' });
@@ -130,6 +277,19 @@ export default function GuidanceBookingConfirmation() {
     e.preventDefault();
     setError('');
     setSlotError('');
+    setFieldErrors({});
+
+    const { errors, preferredColleges } = validateCounselingPreferences({
+      collegeBudget,
+      parentOccupation,
+      preferredCollege1,
+      preferredCollege2,
+      preferredCollege3,
+    });
+    if (Object.keys(errors).length > 0) {
+      setFieldErrors(errors);
+      return;
+    }
     if (!selectedSlotId) {
       setSlotError('Please select a session slot.');
       return;
@@ -144,6 +304,9 @@ export default function GuidanceBookingConfirmation() {
       slotId: selectedSlotId,
       parentAttendanceConfirmed: true,
       whatsappConsent: true,
+      collegeBudget,
+      parentOccupation: parentOccupation.trim(),
+      preferredColleges,
     });
     setLoading(false);
     if (!res.success) {
@@ -170,8 +333,8 @@ export default function GuidanceBookingConfirmation() {
                 Confirm Your 1-on-1 Guidance Session Slot
               </h1>
               <p className="mt-2 text-sm font-medium text-slate-300">
-                Already registered with GuideXpert? Enter your mobile number, choose an available
-                slot, and confirm with your parent.
+                Already registered with GuideXpert? Enter your mobile number, share counseling
+                preferences, choose a slot, and confirm with your parent.
               </p>
               <ul className="mt-4 flex flex-wrap gap-2 text-xs font-bold uppercase tracking-wide text-slate-200">
                 <li className="rounded border border-slate-600 bg-[#1E293B] px-2 py-1">
@@ -233,6 +396,20 @@ export default function GuidanceBookingConfirmation() {
                 <div className="grid grid-cols-1 gap-5 sm:grid-cols-2">
                   <StudentDetailsCard student={student} />
 
+                  <CounselingPreferencesSection
+                    collegeBudget={collegeBudget}
+                    setCollegeBudget={setCollegeBudget}
+                    parentOccupation={parentOccupation}
+                    setParentOccupation={setParentOccupation}
+                    preferredCollege1={preferredCollege1}
+                    setPreferredCollege1={setPreferredCollege1}
+                    preferredCollege2={preferredCollege2}
+                    setPreferredCollege2={setPreferredCollege2}
+                    preferredCollege3={preferredCollege3}
+                    setPreferredCollege3={setPreferredCollege3}
+                    fieldErrors={fieldErrors}
+                  />
+
                   <GuidanceSlotPicker
                     slots={slots}
                     value={selectedSlotId}
@@ -286,6 +463,7 @@ export default function GuidanceBookingConfirmation() {
                       setStep('mobile');
                       setError('');
                       setSlotError('');
+                      setFieldErrors({});
                     }}
                     className="rounded-[14px] border-2 border-[#0F172A] bg-white px-5 py-3 text-sm font-black uppercase tracking-wide text-[#0F172A] shadow-[3px_3px_0px_#0F172A] transition-all hover:-translate-y-0.5"
                   >
