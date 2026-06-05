@@ -58,6 +58,12 @@ export const LEAD_STATUS_OPTIONS = [
   'Not Interested',
 ];
 
+export const LEAD_RELEVANCE_FILTER_OPTIONS = [
+  { value: '', label: 'All leads' },
+  { value: 'relevant', label: 'Relevant (Inter 1st / 2nd / completed)' },
+  { value: 'irrelevant', label: 'Irrelevant leads' },
+];
+
 export const INDIAN_MOBILE_REGEX = /^[6-9]\d{9}$/;
 
 export const GUIDEXPERT_LOGO_URL =

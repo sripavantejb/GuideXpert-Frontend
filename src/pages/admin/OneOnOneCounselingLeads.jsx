@@ -23,10 +23,12 @@ import {
   COLLEGE_BUDGET_OPTIONS,
   CURRENT_CLASS_OPTIONS,
   INTERESTED_BRANCH_OPTIONS,
+  LEAD_RELEVANCE_FILTER_OPTIONS,
   LEAD_STATUS_OPTIONS,
   PREFERRED_LANGUAGE_OPTIONS,
   SESSION_ATTENDEE_OPTIONS,
 } from '../../constants/oneOnOneCounselingForm';
+import { isRelevantOneOnOneCurrentClass } from '../../utils/oneOnOneCounselingClassRelevance';
 
 function BookingStatusBadge({ row }) {
   if (row.bookingConfirmed) {
@@ -82,6 +84,7 @@ const EMPTY_FILTERS = {
   oneOnOneCounselorId: '',
   parentAttendanceConfirmed: '',
   whatsappConsent: '',
+  leadRelevance: '',
 };
 
 export default function OneOnOneCounselingLeads() {
@@ -127,6 +130,7 @@ export default function OneOnOneCounselingLeads() {
       parentAttendanceConfirmed:
         filters.parentAttendanceConfirmed === 'true' ? true : undefined,
       whatsappConsent: filters.whatsappConsent === 'true' ? true : undefined,
+      leadRelevance: filters.leadRelevance || undefined,
     };
 
     queueMicrotask(() => {
@@ -301,6 +305,18 @@ export default function OneOnOneCounselingLeads() {
             {CURRENT_CLASS_OPTIONS.map((o) => (
               <option key={o} value={o}>
                 {o}
+              </option>
+            ))}
+          </select>
+          <select
+            value={filters.leadRelevance}
+            onChange={(e) => handleFilterChange('leadRelevance', e.target.value)}
+            className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm"
+            aria-label="Lead relevance filter"
+          >
+            {LEAD_RELEVANCE_FILTER_OPTIONS.map((o) => (
+              <option key={o.value || 'all'} value={o.value}>
+                {o.label}
               </option>
             ))}
           </select>
@@ -531,8 +547,14 @@ export default function OneOnOneCounselingLeads() {
                 </tr>
               </thead>
               <tbody className="divide-y divide-gray-100">
-                {records.map((row) => (
-                  <tr key={row.id} className="hover:bg-gray-50/80 align-top">
+                {records.map((row) => {
+                  const rowIsIrrelevant =
+                    !filters.leadRelevance && !isRelevantOneOnOneCurrentClass(row.currentClass);
+                  return (
+                  <tr
+                    key={row.id}
+                    className={`hover:bg-gray-50/80 align-top${rowIsIrrelevant ? ' opacity-70' : ''}`}
+                  >
                     <td className="px-3 py-3 text-gray-600 whitespace-nowrap">
                       {formatDate(row.createdAt)}
                     </td>
@@ -545,7 +567,9 @@ export default function OneOnOneCounselingLeads() {
                     <td className="px-3 py-3 text-gray-700 whitespace-nowrap">
                       {row.sessionAttendee || '—'}
                     </td>
-                    <td className="px-3 py-3 text-gray-700">{row.currentClass}</td>
+                    <td className={`px-3 py-3${rowIsIrrelevant ? ' text-gray-500' : ' text-gray-700'}`}>
+                      {row.currentClass}
+                    </td>
                     <td className="px-3 py-3 text-gray-700">{row.city || '—'}</td>
                     <td className="px-3 py-3 text-gray-700 max-w-[120px]">{row.entranceExamRank}</td>
                     <td className="px-3 py-3 text-gray-700">{row.interestedBranch}</td>
@@ -601,7 +625,8 @@ export default function OneOnOneCounselingLeads() {
                       {row.utm_content || '—'}
                     </td>
                   </tr>
-                ))}
+                  );
+                })}
               </tbody>
             </table>
           </div>

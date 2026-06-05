@@ -510,6 +510,7 @@ export const getOneOnOneCounselingLeads = async (params = {}, token = getStoredT
   if (params.slotDate) search.set('slotDate', params.slotDate);
   if (params.parentAttendanceConfirmed === true) search.set('parentAttendanceConfirmed', 'true');
   if (params.whatsappConsent === true) search.set('whatsappConsent', 'true');
+  if (params.leadRelevance) search.set('leadRelevance', params.leadRelevance);
   const query = search.toString();
   return adminRequest(`/one-on-one-counseling-leads${query ? `?${query}` : ''}`, { method: 'GET' }, token);
 };
