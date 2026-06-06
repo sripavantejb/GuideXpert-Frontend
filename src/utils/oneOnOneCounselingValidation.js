@@ -64,3 +64,15 @@ export function validateOneOnOneForm(form) {
 export function hasValidationErrors(errors) {
   return Object.values(errors).some(Boolean);
 }
+
+export const ONE_ON_ONE_STEP_CONFIG = {
+  1: ['studentName', 'mobileNumber', 'currentClass', 'city', 'entranceExamRank'],
+  2: ['parentName', 'parentMobileNumber', 'sessionAttendee', 'interestedBranch', 'collegeBudget', 'biggestConcern'],
+  3: ['preferredLanguage', 'preferredTimeSlot', 'additionalQuestions'],
+};
+
+export function validateOneOnOneFormStep(form, step) {
+  const all = validateOneOnOneForm(form);
+  const keys = ONE_ON_ONE_STEP_CONFIG[step] || [];
+  return Object.fromEntries(keys.map((k) => [k, all[k] || '']));
+}
