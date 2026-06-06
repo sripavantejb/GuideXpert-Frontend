@@ -10,6 +10,8 @@ import {
   FiSliders,
   FiUsers,
 } from 'react-icons/fi';
+import CopyToSheetsModal from '../../components/Admin/CopyToSheetsModal';
+import { ADMIN_VIEW_ALL_LIMIT } from '../../constants/adminListLimits';
 import {
   getGuidanceSlots,
   getOneOnOneCounselingLeads,
@@ -17,6 +19,7 @@ import {
   getStoredToken,
   patchOneOnOneCounselingLeadStatus,
 } from '../../utils/adminApi';
+import { fetchAllPaginatedRows } from '../../utils/adminPagedFetch';
 import { useAuth } from '../../hooks/useAuth';
 import {
   BIGGEST_CONCERN_OPTIONS,
@@ -62,6 +65,82 @@ function formatDate(d) {
   );
 }
 
+const COPY_FIELDS = [
+  { key: 'createdAt', label: 'Submitted' },
+  { key: 'studentName', label: 'Student' },
+  { key: 'mobileNumber', label: 'Mobile' },
+  { key: 'parentName', label: 'Parent' },
+  { key: 'parentMobileNumber', label: 'Parent mobile' },
+  { key: 'sessionAttendee', label: 'Attendee' },
+  { key: 'currentClass', label: 'Class' },
+  { key: 'city', label: 'City' },
+  { key: 'entranceExamRank', label: 'Rank' },
+  { key: 'interestedBranch', label: 'Branch' },
+  { key: 'collegeBudget', label: 'Budget' },
+  { key: 'parentOccupation', label: 'Parent occ.' },
+  { key: 'preferredColleges', label: 'Preferred colleges' },
+  { key: 'biggestConcern', label: 'Concern' },
+  { key: 'preferredLanguage', label: 'Language' },
+  { key: 'preferredTimeSlot', label: 'Session slot' },
+  { key: 'additionalQuestions', label: 'Additional Qs' },
+  { key: 'bookingStatus', label: 'Slot booking' },
+  { key: 'bookedSlot', label: 'Booked slot' },
+  { key: 'leadStatus', label: 'Status' },
+  { key: 'utm_source', label: 'UTM Src' },
+  { key: 'utm_medium', label: 'UTM Med' },
+  { key: 'utm_campaign', label: 'UTM Camp' },
+  { key: 'utm_content', label: 'UTM Content' },
+];
+
+function getLeadCellValue(row, key) {
+  if (key === 'createdAt') return row.createdAt ? formatDate(row.createdAt) : '';
+  if (key === 'preferredColleges') {
+    return Array.isArray(row.preferredColleges) && row.preferredColleges.length > 0
+      ? row.preferredColleges.join(', ')
+      : '';
+  }
+  if (key === 'bookedSlot') {
+    if (!row.slotSessionTitle) return '';
+    const slot = `${row.slotSessionTitle} (${row.slotDate || ''} ${row.slotTime || ''})`.trim();
+    return row.counselorName ? `${slot} · ${row.counselorName}` : slot;
+  }
+  if (key === 'bookingStatus') {
+    if (row.bookingConfirmed) return row.bookingStatus || 'Confirmed';
+    return row.bookingStatus || 'Not Booked';
+  }
+  const v = row[key];
+  if (v == null || v === '') return '';
+  return String(v);
+}
+
+function buildLeadListParams(filters) {
+  return {
+    q: filters.q.trim() || undefined,
+    from: filters.from || undefined,
+    to: filters.to || undefined,
+    leadStatus: filters.leadStatus || undefined,
+    currentClass: filters.currentClass || undefined,
+    interestedBranch: filters.interestedBranch || undefined,
+    collegeBudget: filters.collegeBudget || undefined,
+    biggestConcern: filters.biggestConcern || undefined,
+    preferredLanguage: filters.preferredLanguage || undefined,
+    preferredTimeSlotDate: filters.preferredTimeSlotDate || undefined,
+    sessionAttendee: filters.sessionAttendee || undefined,
+    utm_source: filters.utm_source.trim() || undefined,
+    utm_medium: filters.utm_medium.trim() || undefined,
+    utm_campaign: filters.utm_campaign.trim() || undefined,
+    utm_content: filters.utm_content.trim() || undefined,
+    bookingFilter: filters.bookingFilter || undefined,
+    slotDate: filters.slotDate || undefined,
+    selectedSlotId: filters.selectedSlotId || undefined,
+    oneOnOneCounselorId: filters.oneOnOneCounselorId || undefined,
+    parentAttendanceConfirmed:
+      filters.parentAttendanceConfirmed === 'true' ? true : undefined,
+    whatsappConsent: filters.whatsappConsent === 'true' ? true : undefined,
+    leadRelevance: filters.leadRelevance || undefined,
+  };
+}
+
 const EMPTY_FILTERS = {
   q: '',
   from: '',
@@ -97,6 +176,10 @@ export default function OneOnOneCounselingLeads() {
   const [statusUpdating, setStatusUpdating] = useState({});
   const [counselors, setCounselors] = useState([]);
   const [slots, setSlots] = useState([]);
+  const [viewAll, setViewAll] = useState(false);
+  const [copyModalOpen, setCopyModalOpen] = useState(false);
+  const [copyLoading, setCopyLoading] = useState(false);
+  const [copyRecords, setCopyRecords] = useState([]);
   const cancelledRef = useRef(false);
   const requestIdRef = useRef(0);
 
@@ -106,31 +189,9 @@ export default function OneOnOneCounselingLeads() {
     const thisRequestId = requestIdRef.current;
 
     const params = {
-      page: pagination.page,
-      limit: pagination.limit,
-      q: filters.q.trim() || undefined,
-      from: filters.from || undefined,
-      to: filters.to || undefined,
-      leadStatus: filters.leadStatus || undefined,
-      currentClass: filters.currentClass || undefined,
-      interestedBranch: filters.interestedBranch || undefined,
-      collegeBudget: filters.collegeBudget || undefined,
-      biggestConcern: filters.biggestConcern || undefined,
-      preferredLanguage: filters.preferredLanguage || undefined,
-      preferredTimeSlotDate: filters.preferredTimeSlotDate || undefined,
-      sessionAttendee: filters.sessionAttendee || undefined,
-      utm_source: filters.utm_source.trim() || undefined,
-      utm_medium: filters.utm_medium.trim() || undefined,
-      utm_campaign: filters.utm_campaign.trim() || undefined,
-      utm_content: filters.utm_content.trim() || undefined,
-      bookingFilter: filters.bookingFilter || undefined,
-      slotDate: filters.slotDate || undefined,
-      selectedSlotId: filters.selectedSlotId || undefined,
-      oneOnOneCounselorId: filters.oneOnOneCounselorId || undefined,
-      parentAttendanceConfirmed:
-        filters.parentAttendanceConfirmed === 'true' ? true : undefined,
-      whatsappConsent: filters.whatsappConsent === 'true' ? true : undefined,
-      leadRelevance: filters.leadRelevance || undefined,
+      ...buildLeadListParams(filters),
+      page: viewAll ? 1 : pagination.page,
+      limit: viewAll ? ADMIN_VIEW_ALL_LIMIT : pagination.limit,
     };
 
     queueMicrotask(() => {
@@ -160,7 +221,7 @@ export default function OneOnOneCounselingLeads() {
     return () => {
       cancelledRef.current = true;
     };
-  }, [pagination.page, pagination.limit, filters, logout]);
+  }, [viewAll, pagination.page, pagination.limit, filters, logout]);
 
   useEffect(() => {
     const token = getStoredToken();
@@ -187,6 +248,33 @@ export default function OneOnOneCounselingLeads() {
   const goToPage = (p) => {
     const next = Math.max(1, Math.min(p, pagination.totalPages));
     setPagination((prev) => ({ ...prev, page: next }));
+  };
+
+  const handleViewAllChange = (e) => {
+    setViewAll(e.target.checked);
+    if (!e.target.checked) setPagination((prev) => ({ ...prev, page: 1 }));
+  };
+
+  const prepareCopyLeads = async () => {
+    setCopyLoading(true);
+    setError('');
+    const baseParams = buildLeadListParams(filters);
+    const result = await fetchAllPaginatedRows((page, limit) =>
+      getOneOnOneCounselingLeads({ ...baseParams, page, limit }, getStoredToken())
+    );
+    setCopyLoading(false);
+    if (!result.success) {
+      const r = result.result;
+      if (r?.status === 401) {
+        logout();
+        window.location.href = '/admin/login';
+        return;
+      }
+      setError(r?.message || 'Failed to load leads for copy');
+      return;
+    }
+    setCopyRecords(result.rows || []);
+    setCopyModalOpen(true);
   };
 
   const handleStatusChange = async (leadId, leadStatus) => {
@@ -498,6 +586,41 @@ export default function OneOnOneCounselingLeads() {
       ) : null}
 
       <div className="bg-white rounded-xl border border-gray-200 shadow-sm overflow-hidden">
+        <div className="flex flex-wrap items-center justify-between gap-3 border-b border-gray-200 px-4 py-3 bg-gray-50/80">
+          <p className="text-sm text-gray-600">
+            {viewAll ? (
+              <>
+                Showing <span className="font-semibold text-gray-900">{records.length}</span> of{' '}
+                <span className="font-semibold text-gray-900">{pagination.total}</span> leads
+              </>
+            ) : (
+              <>
+                Page <span className="font-semibold text-gray-900">{pagination.page}</span> of{' '}
+                <span className="font-semibold text-gray-900">{pagination.totalPages}</span>
+              </>
+            )}
+          </p>
+          <div className="flex flex-wrap items-center gap-3">
+            <label className="inline-flex items-center gap-2 cursor-pointer text-sm text-gray-700">
+              <input
+                type="checkbox"
+                checked={viewAll}
+                onChange={handleViewAllChange}
+                className="rounded border-gray-300 text-primary-navy focus:ring-primary-navy"
+                aria-label="View all leads in one list"
+              />
+              View all
+            </label>
+            <button
+              type="button"
+              onClick={prepareCopyLeads}
+              disabled={copyLoading || loading}
+              className="inline-flex items-center gap-1.5 px-4 py-2 rounded-lg border border-gray-300 bg-white text-sm font-semibold text-gray-700 hover:bg-gray-50 transition-colors disabled:opacity-50"
+            >
+              {copyLoading ? 'Preparing…' : 'Copy all'}
+            </button>
+          </div>
+        </div>
         {loading ? (
           <div className="p-12 text-center text-gray-500 animate-pulse">Loading leads…</div>
         ) : records.length === 0 ? (
@@ -632,7 +755,7 @@ export default function OneOnOneCounselingLeads() {
           </div>
         )}
 
-        {!loading && pagination.totalPages > 1 ? (
+        {!loading && !viewAll && pagination.totalPages > 1 ? (
           <div className="flex items-center justify-between border-t border-gray-200 px-4 py-3">
             <p className="text-sm text-gray-600">
               Page {pagination.page} of {pagination.totalPages}
@@ -660,6 +783,18 @@ export default function OneOnOneCounselingLeads() {
           </div>
         ) : null}
       </div>
+
+      <CopyToSheetsModal
+        fields={COPY_FIELDS}
+        records={copyRecords}
+        getCellValue={getLeadCellValue}
+        open={copyModalOpen}
+        onClose={() => setCopyModalOpen(false)}
+        recordLabel="leads"
+        dedupeByPhoneKey="mobileNumber"
+        loading={copyLoading}
+        loadingMessage="Preparing all matching leads for copy…"
+      />
     </div>
   );
 }

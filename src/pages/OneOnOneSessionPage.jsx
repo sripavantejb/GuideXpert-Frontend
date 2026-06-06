@@ -17,7 +17,11 @@ import {
   PREFERRED_LANGUAGE_OPTIONS,
   SESSION_ATTENDEE_OPTIONS,
 } from '../constants/oneOnOneCounselingForm';
-import { submitOneOnOneCounselingLead } from '../utils/api';
+import {
+  saveOneOnOneSection1,
+  saveOneOnOneSection2,
+  saveOneOnOneSection3,
+} from '../utils/api';
 import { getApiBaseUrl } from '../utils/apiBaseUrl';
 import {
   getOneOnOneCounselingSlots,
@@ -79,6 +83,7 @@ function SuccessView() {
 export default function OneOnOneSessionPage() {
   const [form, setForm] = useState(INITIAL_FORM_STATE);
   const [currentStep, setCurrentStep] = useState(1);
+  const [leadId, setLeadId] = useState('');
   const [errors, setErrors] = useState({});
   const [submitError, setSubmitError] = useState('');
   const [submitting, setSubmitting] = useState(false);
@@ -179,7 +184,7 @@ export default function OneOnOneSessionPage() {
     return nextErrors;
   };
 
-  const handleNext = (e) => {
+  const handleNext = async (e) => {
     e.preventDefault();
     setSubmitError('');
     const nextErrors = validateCurrentStep();
@@ -189,9 +194,61 @@ export default function OneOnOneSessionPage() {
       scrollToFirstError();
       return;
     }
-    setErrors({});
-    setCurrentStep((prev) => prev + 1);
-    window.scrollTo({ top: 0, behavior: 'smooth' });
+
+    setSubmitting(true);
+    try {
+      const utmPayload = resolveUtmAttribution();
+      let fingerprint = visitorFingerprint;
+      if (!fingerprint) {
+        fingerprint = await trackOneOnOneSessionVisit(apiBase, utmPayload);
+        if (fingerprint) setVisitorFingerprint(fingerprint);
+      }
+
+      if (currentStep === 1) {
+        const result = await saveOneOnOneSection1({
+          studentName: form.studentName.trim(),
+          mobileNumber: form.mobileNumber.replace(/\D/g, ''),
+          currentClass: form.currentClass,
+          city: form.city.trim(),
+          entranceExamRank: form.entranceExamRank.trim(),
+          otpVerified: true,
+          ...utmPayload,
+          ...(fingerprint ? { visitorFingerprint: fingerprint } : {}),
+        });
+        if (!result.success) {
+          setSubmitError(result.message || 'Could not save this step. Please try again.');
+          return;
+        }
+        const savedLeadId = result.data?.data?.leadId;
+        if (savedLeadId) setLeadId(savedLeadId);
+      } else if (currentStep === 2) {
+        if (!leadId) {
+          setSubmitError('Session expired. Please go back to step 1 and try again.');
+          return;
+        }
+        const result = await saveOneOnOneSection2({
+          leadId,
+          parentName: form.parentName.trim(),
+          parentMobileNumber: form.parentMobileNumber.replace(/\D/g, ''),
+          sessionAttendee: form.sessionAttendee,
+          interestedBranch: form.interestedBranch,
+          collegeBudget: form.collegeBudget,
+          biggestConcern: form.biggestConcern,
+        });
+        if (!result.success) {
+          setSubmitError(result.message || 'Could not save this step. Please try again.');
+          return;
+        }
+      }
+
+      setErrors({});
+      setCurrentStep((prev) => prev + 1);
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+    } catch {
+      setSubmitError('Connection issue. Please check your network and try again.');
+    } finally {
+      setSubmitting(false);
+    }
   };
 
   const handleBack = () => {
@@ -205,7 +262,7 @@ export default function OneOnOneSessionPage() {
   const handleSubmit = async (e) => {
     e.preventDefault();
     if (currentStep < 3) {
-      handleNext(e);
+      await handleNext(e);
       return;
     }
 
@@ -227,35 +284,20 @@ export default function OneOnOneSessionPage() {
       return;
     }
 
+    if (!leadId) {
+      setSubmitError('Session expired. Please go back to step 1 and try again.');
+      return;
+    }
+
     setSubmitting(true);
     try {
-      const utmPayload = resolveUtmAttribution();
-      let fingerprint = visitorFingerprint;
-      if (!fingerprint) {
-        fingerprint = await trackOneOnOneSessionVisit(apiBase, utmPayload);
-        if (fingerprint) setVisitorFingerprint(fingerprint);
-      }
-
-      const payload = {
-        studentName: form.studentName.trim(),
-        mobileNumber: form.mobileNumber.replace(/\D/g, ''),
-        parentName: form.parentName.trim(),
-        parentMobileNumber: form.parentMobileNumber.replace(/\D/g, ''),
-        sessionAttendee: form.sessionAttendee,
-        currentClass: form.currentClass,
-        city: form.city.trim(),
-        entranceExamRank: form.entranceExamRank.trim(),
-        interestedBranch: form.interestedBranch,
-        collegeBudget: form.collegeBudget,
-        biggestConcern: form.biggestConcern,
+      const result = await saveOneOnOneSection3({
+        leadId,
         preferredLanguage: form.preferredLanguage,
         preferredTimeSlot: form.preferredTimeSlot,
         additionalQuestions: form.additionalQuestions.trim() || undefined,
-        ...utmPayload,
-        ...(fingerprint ? { visitorFingerprint: fingerprint } : {}),
-      };
+      });
 
-      const result = await submitOneOnOneCounselingLead(payload);
       if (result.success) {
         setSubmitted(true);
         window.scrollTo({ top: 0, behavior: 'smooth' });
@@ -532,7 +574,7 @@ export default function OneOnOneSessionPage() {
                 <p className="text-xs font-bold uppercase tracking-wide text-slate-500">
                   {currentStep === 3
                     ? "We'll contact you on WhatsApp to confirm your session."
-                    : 'Your progress is saved as you move through each step.'}
+                    : 'Data is saved section by section.'}
                 </p>
                 <div className="flex items-center gap-3">
                   <button
@@ -554,10 +596,12 @@ export default function OneOnOneSessionPage() {
                     className="rounded-[14px] border-2 border-[#0F172A] bg-[#c7f36b] px-6 py-3 text-sm font-black uppercase tracking-wide text-[#0F172A] shadow-[4px_4px_0px_#0F172A] transition-all hover:-translate-y-0.5 hover:bg-[#b0d95d] disabled:cursor-not-allowed disabled:opacity-70"
                   >
                     {submitting
-                      ? 'Booking…'
+                      ? currentStep === 3
+                        ? 'Booking…'
+                        : 'Saving…'
                       : currentStep === 3
                         ? 'Book My Free Counseling Session'
-                        : 'Next'}
+                        : 'Save & Next'}
                   </button>
                 </div>
               </div>

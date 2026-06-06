@@ -576,6 +576,36 @@ export const submitOneOnOneCounselingLead = async (payload) => {
 };
 
 /**
+ * Save 1-on-1 counseling form step 1 (student details).
+ */
+export const saveOneOnOneSection1 = async (payload) => {
+  return apiRequest('/one-on-one-counseling/section1', {
+    method: 'POST',
+    body: JSON.stringify(payload),
+  });
+};
+
+/**
+ * Save 1-on-1 counseling form step 2 (parent & preferences).
+ */
+export const saveOneOnOneSection2 = async (payload) => {
+  return apiRequest('/one-on-one-counseling/section2', {
+    method: 'POST',
+    body: JSON.stringify(payload),
+  });
+};
+
+/**
+ * Save 1-on-1 counseling form step 3 (session booking) and complete submission.
+ */
+export const saveOneOnOneSection3 = async (payload) => {
+  return apiRequest('/one-on-one-counseling/section3', {
+    method: 'POST',
+    body: JSON.stringify(payload),
+  });
+};
+
+/**
  * Check if this mobile already submitted the public training form (live or legacy DB row).
  * @param {string} phone - Phone string (digits normalized to 10)
  * @returns {Promise<{ success: boolean, submitted?: boolean, message?: string, status?: number }>}
