@@ -56,7 +56,18 @@ function toDatetimeLocalValue(date = new Date()) {
 }
 
 function defaultTestCallbackLocal() {
-  return toDatetimeLocalValue(new Date(Date.now() + 2 * 60 * 1000));
+  return toDatetimeLocalValue(new Date(Date.now() + 3 * 60 * 1000));
+}
+
+/** Parse datetime-local as local wall-clock (avoids UTC mis-parse). */
+function parseDatetimeLocalToDate(value) {
+  if (!value || typeof value !== 'string') return null;
+  const [datePart, timePart] = value.split('T');
+  if (!datePart || !timePart) return null;
+  const [y, m, d] = datePart.split('-').map(Number);
+  const [hh, mm] = timePart.split(':').map(Number);
+  if (!y || !m || !d || Number.isNaN(hh) || Number.isNaN(mm)) return null;
+  return new Date(y, m - 1, d, hh, mm, 0, 0);
 }
 
 function fmt(dateStr) {
@@ -198,7 +209,7 @@ export default function AiCallsDashboard() {
   const [testForm, setTestForm] = useState({
     personName: '',
     phone: '',
-    callbackTime: '',
+    callbackTime: defaultTestCallbackLocal(),
     notes: '',
   });
   const [testPayload, setTestPayload] = useState(null);
@@ -369,10 +380,11 @@ export default function AiCallsDashboard() {
   async function handlePreviewTest() {
     setTestLoading(true);
     setTestPayload(null);
+    const parsed = parseDatetimeLocalToDate(testForm.callbackTime);
     const body = {
       personName: testForm.personName,
       phone: testForm.phone,
-      callbackTime: testForm.callbackTime ? new Date(testForm.callbackTime).toISOString() : null,
+      callbackTime: parsed ? parsed.toISOString() : null,
       notes: testForm.notes,
     };
     const res = await previewAiTestCall(body);
@@ -389,10 +401,16 @@ export default function AiCallsDashboard() {
     setTestLoading(true);
     setTestSuccess('');
     setError('');
+    const parsed = parseDatetimeLocalToDate(testForm.callbackTime);
+    if (!parsed) {
+      setError('Invalid callback time.');
+      setTestLoading(false);
+      return;
+    }
     const body = {
       personName: testForm.personName,
       phone: testForm.phone,
-      callbackTime: new Date(testForm.callbackTime).toISOString(),
+      callbackTime: parsed.toISOString(),
       notes: testForm.notes,
     };
     const res = await createAiTestCall(body);
@@ -615,7 +633,7 @@ export default function AiCallsDashboard() {
                 className="px-3 py-2 text-sm border rounded-lg whitespace-nowrap"
                 onClick={() => setTestForm((f) => ({ ...f, callbackTime: defaultTestCallbackLocal() }))}
               >
-                Set ~2 min from now
+                Set ~3 min from now
               </button>
             </div>
           </label>
