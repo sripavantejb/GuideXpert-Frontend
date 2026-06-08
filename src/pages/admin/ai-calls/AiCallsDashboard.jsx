@@ -49,6 +49,16 @@ const FILTERS = [
   { id: 'cancelled', label: 'Cancelled' },
 ];
 
+function toDatetimeLocalValue(date = new Date()) {
+  const pad = (n) => String(n).padStart(2, '0');
+  const d = new Date(date);
+  return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}T${pad(d.getHours())}:${pad(d.getMinutes())}`;
+}
+
+function defaultTestCallbackLocal() {
+  return toDatetimeLocalValue(new Date(Date.now() + 2 * 60 * 1000));
+}
+
 function fmt(dateStr) {
   if (!dateStr) return '—';
   try {
@@ -193,6 +203,7 @@ export default function AiCallsDashboard() {
   });
   const [testPayload, setTestPayload] = useState(null);
   const [testLoading, setTestLoading] = useState(false);
+  const [testSuccess, setTestSuccess] = useState('');
 
   const LIMIT = 25;
 
@@ -374,8 +385,10 @@ export default function AiCallsDashboard() {
   }
 
   async function handleSendTest() {
-    if (!window.confirm('Send test call to OSVI?')) return;
+    if (!window.confirm('Schedule this test call with OSVI? The phone will ring at the callback time you set — not immediately.')) return;
     setTestLoading(true);
+    setTestSuccess('');
+    setError('');
     const body = {
       personName: testForm.personName,
       phone: testForm.phone,
@@ -385,11 +398,12 @@ export default function AiCallsDashboard() {
     const res = await createAiTestCall(body);
     setTestLoading(false);
     if (!res.success) {
-      setError(res.message || 'Test call failed.');
+      setError(res.message || res.data?.message || 'Test call failed.');
       return;
     }
-    alert('Test call submitted.');
-    setTestForm({ personName: '', phone: '', callbackTime: '', notes: '' });
+    const msg = res.data?.message || res.data?.data?.message || 'Test call scheduled with OSVI.';
+    setTestSuccess(msg);
+    setTestForm({ personName: '', phone: '', callbackTime: defaultTestCallbackLocal(), notes: '' });
     setTestPayload(null);
     refreshAnalytics();
   }
@@ -566,7 +580,16 @@ export default function AiCallsDashboard() {
       </section>
 
       <section className="bg-white rounded-xl border shadow-sm p-4">
-        <h2 className="text-lg font-semibold text-gray-900 mb-4">Request Test Call</h2>
+        <h2 className="text-lg font-semibold text-gray-900 mb-2">Request Test Call</h2>
+        <p className="text-sm text-amber-800 bg-amber-50 border border-amber-200 rounded-lg px-3 py-2 mb-4 max-w-2xl">
+          OSVI <strong>schedules</strong> the call for the callback time — your phone rings at that time, not right away.
+          Use a time at least 1–2 minutes in the future. Notes are sent as <code className="text-xs">prev_call_summary</code>.
+        </p>
+        {testSuccess && (
+          <div className="mb-4 rounded-lg bg-green-50 border border-green-200 px-3 py-2 text-sm text-green-800 max-w-2xl">
+            {testSuccess}
+          </div>
+        )}
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4 max-w-2xl">
           {['personName', 'phone', 'notes'].map((field) => (
             <label key={field} className="block text-sm text-gray-600">
@@ -578,14 +601,23 @@ export default function AiCallsDashboard() {
               />
             </label>
           ))}
-          <label className="block text-sm text-gray-600">
-            Callback Time
-            <input
-              type="datetime-local"
-              className="mt-1 w-full border rounded-lg px-3 py-2 text-sm"
-              value={testForm.callbackTime}
-              onChange={(e) => setTestForm((f) => ({ ...f, callbackTime: e.target.value }))}
-            />
+          <label className="block text-sm text-gray-600 md:col-span-2">
+            Callback Time (when OSVI will ring the phone)
+            <div className="mt-1 flex flex-wrap gap-2">
+              <input
+                type="datetime-local"
+                className="flex-1 min-w-[200px] border rounded-lg px-3 py-2 text-sm"
+                value={testForm.callbackTime}
+                onChange={(e) => setTestForm((f) => ({ ...f, callbackTime: e.target.value }))}
+              />
+              <button
+                type="button"
+                className="px-3 py-2 text-sm border rounded-lg whitespace-nowrap"
+                onClick={() => setTestForm((f) => ({ ...f, callbackTime: defaultTestCallbackLocal() }))}
+              >
+                Set ~2 min from now
+              </button>
+            </div>
           </label>
         </div>
         {testPayload && (
