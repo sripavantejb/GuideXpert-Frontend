@@ -583,7 +583,7 @@ export default function AiCallsDashboard() {
         <h2 className="text-lg font-semibold text-gray-900 mb-2">Request Test Call</h2>
         <p className="text-sm text-amber-800 bg-amber-50 border border-amber-200 rounded-lg px-3 py-2 mb-4 max-w-2xl">
           OSVI <strong>schedules</strong> the call for the callback time — your phone rings at that time, not right away.
-          Use a time at least 1–2 minutes in the future. Notes are sent as <code className="text-xs">prev_call_summary</code>.
+          Use a time at least 1–2 minutes in the future. Notes are sent as <code className="text-xs">additional_data.biggest_concern</code>.
         </p>
         {testSuccess && (
           <div className="mb-4 rounded-lg bg-green-50 border border-green-200 px-3 py-2 text-sm text-green-800 max-w-2xl">
