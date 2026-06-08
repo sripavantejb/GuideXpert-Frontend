@@ -27,6 +27,7 @@ export const ADMIN_SECTION_OPTIONS = [
   { sectionKey: 'blogs', label: 'Blog Management' },
   { sectionKey: 'osvi-calls', label: 'OSVI Calls' },
   { sectionKey: 'osvi-calls-data', label: 'OSVI calls Data' },
+  { sectionKey: 'ai-calls', label: 'AI Calls' },
   { sectionKey: 'whatsapp-ops', label: 'WhatsApp ops' },
   { sectionKey: 'settings', label: 'Settings' },
 ];
@@ -65,6 +66,7 @@ export const ADMIN_SECTION_GROUPS = [
       'training-feedback',
       'osvi-calls',
       'osvi-calls-data',
+      'ai-calls',
       'whatsapp-ops',
     ],
   },

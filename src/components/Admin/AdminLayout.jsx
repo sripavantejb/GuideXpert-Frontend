@@ -43,6 +43,7 @@ const navItems = [
   { to: '/admin/blogs', label: 'Blog Management', icon: FiBookOpen, sectionKey: 'blogs' },
   { to: '/admin/osvi-calls', label: 'OSVI Calls', icon: FiPhone, sectionKey: 'osvi-calls' },
   { to: '/admin/osvi-calls-data', label: 'OSVI calls Data', icon: FiPhone, sectionKey: 'osvi-calls-data' },
+  { to: '/admin/ai-calls', label: 'AI Calls', icon: FiPhone, sectionKey: 'ai-calls' },
   { to: '/admin/whatsapp-ops', label: 'WhatsApp ops', icon: FiSend, sectionKey: 'whatsapp-ops' },
   { to: '/admin/settings', label: 'Settings', icon: FiSettings, sectionKey: 'settings' },
 ];
@@ -94,7 +95,8 @@ export default function AdminLayout() {
     allowedPaths.has(currentPath) ||
     currentPath.startsWith('/admin/whatsapp-ops') ||
     currentPath.startsWith('/admin/calling-team') ||
-    currentPath.startsWith('/admin/calling-data');
+    currentPath.startsWith('/admin/calling-data') ||
+    currentPath.startsWith('/admin/ai-calls');
   useEffect(() => {
     const firstAllowed = visibleNavItems[0];
     if (user && !user.isSuperAdmin && !isPathAllowed && firstAllowed) {
