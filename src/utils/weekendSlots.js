@@ -189,6 +189,36 @@ export function parseIitSlotSelection(selectedValue, options = []) {
   };
 }
 
+export function extractIitCounsellingSlotsPayload(res) {
+  if (!res?.success || !res.data || typeof res.data !== 'object') return null;
+  const body = res.data;
+  if (body.data && typeof body.data === 'object') return body.data;
+  return body;
+}
+
+/** Map server-computed slotOptions to form choice objects. */
+export function normalizeSlotOptionsFromApi(apiOptions) {
+  if (!Array.isArray(apiOptions)) return [];
+  return apiOptions
+    .map((o) => {
+      const slotBooking = (o?.slotBooking || String(o?.value || '').split('|')[0] || '').trim();
+      const slotBookingDate = (o?.slotBookingDate || String(o?.value || '').split('|')[1] || '').trim();
+      const value =
+        (o?.value && String(o.value).trim()) ||
+        (slotBooking && slotBookingDate ? `${slotBooking}|${slotBookingDate}` : slotBooking);
+      const label = (o?.label && String(o.label).trim()) || slotBooking;
+      if (!value || !slotBooking) return null;
+      return {
+        value,
+        slotBooking,
+        label,
+        slotBookingDate,
+        date: slotBookingDate ? new Date(`${slotBookingDate}T12:00:00+05:30`) : null,
+      };
+    })
+    .filter(Boolean);
+}
+
 export function getAvailableSlots(currentDate = new Date(), enabledBookingValues = null, dateOverrides = null) {
   const now = new Date(currentDate);
 

@@ -1,7 +1,12 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { getIitCounsellingSlots } from '../utils/api';
 import { getApiBaseUrl } from '../utils/apiBaseUrl';
-import { formatDateISTYYYYMMDD, getAvailableSlots, parseIitSlotSelection, resolveSlotBookingDateForIitPayload } from '../utils/weekendSlots';
+import {
+  extractIitCounsellingSlotsPayload,
+  getAvailableSlots,
+  normalizeSlotOptionsFromApi,
+  parseIitSlotSelection,
+} from '../utils/weekendSlots';
 /** Keep in sync with GuideXpert-Backend/controllers/formController.js IIT_ALLOWED_VALUES.classStatus and IitCounsellingSubmission schema. */
 const CURRENT_STUDYING_OPTIONS = [
   'Completed 12th/Intermediate 2nd Year',
@@ -78,6 +83,7 @@ export default function IitCounsellingPage() {
   const apiBase = useMemo(() => getApiBaseUrl(), []);
   const [slotOptionsTick, setSlotOptionsTick] = useState(0);
   const [enabledSlotBookings, setEnabledSlotBookings] = useState(null);
+  const [resolvedSlotOptions, setResolvedSlotOptions] = useState(null);
   const [iitSlotDateOverrides, setIitSlotDateOverrides] = useState([]);
   const [slotsLoading, setSlotsLoading] = useState(true);
 
@@ -100,19 +106,23 @@ export default function IitCounsellingPage() {
     getIitCounsellingSlots()
       .then((res) => {
         if (cancelled) return;
-        const payload = res.data?.data ?? res.data;
-        if (res.success && Array.isArray(payload?.enabledSlotBookings)) {
+        const payload = extractIitCounsellingSlotsPayload(res);
+        if (payload && Array.isArray(payload.enabledSlotBookings)) {
           setEnabledSlotBookings(payload.enabledSlotBookings);
-          setIitSlotDateOverrides(Array.isArray(payload?.dateOverrides) ? payload.dateOverrides : []);
+          setIitSlotDateOverrides(Array.isArray(payload.dateOverrides) ? payload.dateOverrides : []);
+          const fromApi = normalizeSlotOptionsFromApi(payload.slotOptions);
+          setResolvedSlotOptions(fromApi.length > 0 ? fromApi : null);
         } else {
           setEnabledSlotBookings([]);
           setIitSlotDateOverrides([]);
+          setResolvedSlotOptions(null);
         }
       })
       .catch(() => {
         if (!cancelled) {
           setEnabledSlotBookings([]);
           setIitSlotDateOverrides([]);
+          setResolvedSlotOptions(null);
         }
       })
       .finally(() => {
@@ -122,9 +132,12 @@ export default function IitCounsellingPage() {
   }, [slotOptionsTick]);
 
   const slotBookingOptions = useMemo(() => {
+    if (Array.isArray(resolvedSlotOptions) && resolvedSlotOptions.length > 0) {
+      return resolvedSlotOptions;
+    }
     if (enabledSlotBookings === null) return [];
     return getAvailableSlots(new Date(), enabledSlotBookings, iitSlotDateOverrides);
-  }, [slotOptionsTick, enabledSlotBookings, iitSlotDateOverrides]);
+  }, [slotOptionsTick, enabledSlotBookings, iitSlotDateOverrides, resolvedSlotOptions]);
 
   useEffect(() => {
     if (!formData.slotBooking || !enabledSlotBookings) return;
