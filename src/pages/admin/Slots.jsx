@@ -2,6 +2,8 @@ import { useState, useEffect, useMemo } from 'react';
 import {
   getSlotConfigs,
   updateSlotConfig,
+  getIitSlotConfigs,
+  updateIitSlotConfig,
   getSlotOverrides,
   setSlotOverride,
   getSlotBookingCounts,
@@ -84,9 +86,12 @@ const MONTH_NAMES = ['January', 'February', 'March', 'April', 'May', 'June', 'Ju
 export default function Slots() {
   const { logout } = useAuth();
   const [slots, setSlots] = useState([]);
+  const [iitSlots, setIitSlots] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [iitLoading, setIitLoading] = useState(true);
   const [error, setError] = useState('');
   const [togglingId, setTogglingId] = useState(null);
+  const [iitTogglingId, setIitTogglingId] = useState(null);
 
   const [viewYear, setViewYear] = useState(() => new Date().getFullYear());
   const [viewMonth, setViewMonth] = useState(() => new Date().getMonth());
@@ -115,8 +120,27 @@ export default function Slots() {
     });
   };
 
+  const fetchIitSlots = () => {
+    setIitLoading(true);
+    getIitSlotConfigs(getStoredToken()).then((result) => {
+      if (!result.success) {
+        if (result.status === 401) {
+          logout();
+          window.location.href = '/admin/login';
+          return;
+        }
+        setError(result.message || 'Failed to load IIT slot configs');
+        setIitLoading(false);
+        return;
+      }
+      setIitSlots(result.data?.data?.slots ?? []);
+      setIitLoading(false);
+    });
+  };
+
   useEffect(() => {
     fetchSlots();
+    fetchIitSlots();
   }, [logout]);
 
   const fromStr = useMemo(() => {
@@ -152,6 +176,24 @@ export default function Slots() {
       }
     });
   }, [fromStr, toStr, logout]);
+
+  const handleIitToggle = async (slotId, enabled) => {
+    setIitTogglingId(slotId);
+    const result = await updateIitSlotConfig(slotId, enabled, getStoredToken());
+    setIitTogglingId(null);
+    if (!result.success) {
+      if (result.status === 401) {
+        logout();
+        window.location.href = '/admin/login';
+        return;
+      }
+      setError(result.message || 'Failed to update IIT slot');
+      return;
+    }
+    setIitSlots((prev) =>
+      prev.map((s) => (s.slotId === slotId ? { ...s, enabled } : s))
+    );
+  };
 
   const handleToggle = async (slotId, enabled) => {
     setTogglingId(slotId);
@@ -386,6 +428,48 @@ export default function Slots() {
                 </ul>
               )}
             </div>
+          )}
+        </div>
+      </section>
+
+      {/* IIT group sessions */}
+      <section className="mb-8">
+        <h2 className="text-sm font-semibold text-gray-700 uppercase tracking-wider mb-3">IIT Group Sessions</h2>
+        <p className="text-sm text-gray-500 mb-4">
+          Toggle demo slots for the IIT counselling form at /iit-counselling. These are independent from lead funnel slots below.
+        </p>
+        <div className="bg-white rounded-xl border border-gray-200 shadow-sm overflow-hidden">
+          {iitLoading ? (
+            <div className="px-8 py-10 text-center">
+              <p className="text-gray-500">Loading IIT slots…</p>
+            </div>
+          ) : iitSlots.length === 0 ? (
+            <div className="px-8 py-10 text-center">
+              <p className="text-gray-500">No IIT slots configured.</p>
+            </div>
+          ) : (
+            <ul className="divide-y divide-gray-100">
+              {iitSlots.map((slot) => (
+                <li key={slot.slotId} className="flex items-center justify-between px-6 py-4">
+                  <div className="flex items-center gap-3">
+                    <span className="text-sm font-medium text-gray-900">{slot.label}</span>
+                    <span
+                      className={`inline-flex items-center px-2.5 py-0.5 rounded-md text-xs font-medium ${
+                        (slot.bookedCount ?? 0) > 0 ? 'bg-primary-blue-100 text-primary-blue-600' : 'bg-gray-100 text-gray-500'
+                      }`}
+                    >
+                      {slot.bookedCount ?? 0} booked
+                    </span>
+                  </div>
+                  <ToggleSwitch
+                    id={`iit-slot-${slot.slotId}`}
+                    checked={slot.enabled}
+                    onChange={(checked) => handleIitToggle(slot.slotId, checked)}
+                    disabled={iitTogglingId === slot.slotId}
+                  />
+                </li>
+              ))}
+            </ul>
           )}
         </div>
       </section>

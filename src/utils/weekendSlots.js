@@ -89,40 +89,44 @@ function slotOption(value, day, date, timeLabel) {
   };
 }
 
-export function getAvailableSlots(currentDate = new Date()) {
+export function getAvailableSlots(currentDate = new Date(), enabledBookingValues = null) {
   const now = new Date(currentDate);
   const phase = getIitSlotPhase(now);
+  let options;
 
   if (phase === 1) {
     const wed = nextISTWallClockAfterOrEqual(now, 3, 18, 0);
     const sun = nextISTWallClockAfterOrEqual(now, 0, 11, 0);
-    return [
+    options = [
       slotOption('Wednesday 6PM', 'Wednesday', wed, '6:00 PM'),
       slotOption('Sunday 11AM', 'Sunday', sun, '11:00 AM'),
     ];
-  }
-  if (phase === 2) {
+  } else if (phase === 2) {
     const sat = nextISTWallClockAfterOrEqual(now, 6, 18, 0);
     const wed = nextISTWallClockAfterOrEqual(now, 3, 18, 0);
-    return [
+    options = [
       slotOption('Saturday 6PM', 'Saturday', sat, '6:00 PM'),
       slotOption('Wednesday 6PM', 'Wednesday', wed, '6:00 PM'),
     ];
-  }
-  if (phase === 3) {
+  } else if (phase === 3) {
     const sat = nextISTWallClockAfterOrEqual(now, 6, 18, 0);
     const sun = nextISTWallClockAfterOrEqual(now, 0, 11, 0);
-    return [
+    options = [
       slotOption('Saturday 6PM', 'Saturday', sat, '6:00 PM'),
       slotOption('Sunday 11AM', 'Sunday', sun, '11:00 AM'),
     ];
+  } else {
+    const sun = nextISTWallClockAfterOrEqual(now, 0, 11, 0);
+    const wed = nextISTWallClockAfterOrEqual(now, 3, 18, 0);
+    options = [
+      slotOption('Sunday 11AM', 'Sunday', sun, '11:00 AM'),
+      slotOption('Wednesday 6PM', 'Wednesday', wed, '6:00 PM'),
+    ];
   }
-  const sun = nextISTWallClockAfterOrEqual(now, 0, 11, 0);
-  const wed = nextISTWallClockAfterOrEqual(now, 3, 18, 0);
-  return [
-    slotOption('Sunday 11AM', 'Sunday', sun, '11:00 AM'),
-    slotOption('Wednesday 6PM', 'Wednesday', wed, '6:00 PM'),
-  ];
+
+  if (!enabledBookingValues) return options;
+  const enabledSet = new Set(enabledBookingValues);
+  return options.filter((o) => enabledSet.has(o.value));
 }
 
 /** IST calendar date YYYY-MM-DD for a Date instance. */

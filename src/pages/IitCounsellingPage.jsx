@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
+import { getIitCounsellingSlots } from '../utils/api';
 import { getApiBaseUrl } from '../utils/apiBaseUrl';
 import { formatDateISTYYYYMMDD, getAvailableSlots, resolveSlotBookingDateForIitPayload } from '../utils/weekendSlots';
 
@@ -76,6 +77,9 @@ export default function IitCounsellingPage() {
 
   const apiBase = useMemo(() => getApiBaseUrl(), []);
   const [slotOptionsTick, setSlotOptionsTick] = useState(0);
+  const [enabledSlotBookings, setEnabledSlotBookings] = useState(null);
+  const [slotsLoading, setSlotsLoading] = useState(true);
+
   useEffect(() => {
     const bump = () => setSlotOptionsTick((t) => t + 1);
     const id = window.setInterval(bump, 60_000);
@@ -88,7 +92,39 @@ export default function IitCounsellingPage() {
       document.removeEventListener('visibilitychange', onVis);
     };
   }, []);
-  const slotBookingOptions = useMemo(() => getAvailableSlots(), [slotOptionsTick]);
+
+  useEffect(() => {
+    let cancelled = false;
+    setSlotsLoading(true);
+    getIitCounsellingSlots()
+      .then((res) => {
+        if (cancelled) return;
+        if (res.success && Array.isArray(res.data?.enabledSlotBookings)) {
+          setEnabledSlotBookings(res.data.enabledSlotBookings);
+        } else {
+          setEnabledSlotBookings([]);
+        }
+      })
+      .catch(() => {
+        if (!cancelled) setEnabledSlotBookings([]);
+      })
+      .finally(() => {
+        if (!cancelled) setSlotsLoading(false);
+      });
+    return () => { cancelled = true; };
+  }, [slotOptionsTick]);
+
+  const slotBookingOptions = useMemo(() => {
+    if (enabledSlotBookings === null) return [];
+    return getAvailableSlots(new Date(), enabledSlotBookings);
+  }, [slotOptionsTick, enabledSlotBookings]);
+
+  useEffect(() => {
+    if (!formData.slotBooking || !enabledSlotBookings) return;
+    if (!enabledSlotBookings.includes(formData.slotBooking)) {
+      setFormData((prev) => ({ ...prev, slotBooking: '' }));
+    }
+  }, [enabledSlotBookings, formData.slotBooking]);
 
   const stepConfig = useMemo(() => ({
     1: ['fullName', 'mobileNumber', 'studentOrParent', 'classStatus', 'stream', 'city', 'slotBooking', 'top5Colleges'],
@@ -642,13 +678,28 @@ export default function IitCounsellingPage() {
               <Field label="6. City" error={errors.city}>
                 <input className={neoInputClass} value={formData.city} onChange={(e) => handleInputChange('city', e.target.value)} />
               </Field>
-              <ChoiceGroup
-                label="7. Select Your Demo Slot"
-                options={slotBookingOptions}
-                value={formData.slotBooking}
-                onChange={(value) => handleInputChange('slotBooking', value)}
-                error={errors.slotBooking}
-              />
+              <div className="sm:col-span-1">
+                <p className={neoLabelClass}>7. Select Your Demo Slot</p>
+                {slotsLoading ? (
+                  <p className="text-sm font-semibold text-[#64748B]">Loading available slots…</p>
+                ) : slotBookingOptions.length === 0 ? (
+                  <p className="rounded-[10px] border-2 border-[#0F172A] bg-[#F8FAFC] p-3 text-sm font-semibold text-[#64748B]">
+                    No demo slots are available right now. Please check back later.
+                  </p>
+                ) : (
+                  <ChoiceGroup
+                    label="7. Select Your Demo Slot"
+                    options={slotBookingOptions}
+                    value={formData.slotBooking}
+                    onChange={(value) => handleInputChange('slotBooking', value)}
+                    error={errors.slotBooking}
+                    hideLabel
+                  />
+                )}
+                {!slotsLoading && errors.slotBooking ? (
+                  <p className="mt-1 text-xs font-semibold text-red-600">{errors.slotBooking}</p>
+                ) : null}
+              </div>
               <Field label="8. Your Top 5 colleges (comma separated)" error={errors.top5Colleges}>
                 <textarea className={`${neoInputClass} min-h-[100px]`} value={formData.top5Colleges} onChange={(e) => handleInputChange('top5Colleges', e.target.value)} />
               </Field>
@@ -722,7 +773,7 @@ function Field({ label, children, error }) {
   );
 }
 
-function ChoiceGroup({ label, options, value, onChange, error }) {
+function ChoiceGroup({ label, options, value, onChange, error, hideLabel = false }) {
   const normalizedOptions = options
     .map((option) => {
       if (typeof option === 'string') {
@@ -736,10 +787,12 @@ function ChoiceGroup({ label, options, value, onChange, error }) {
     .filter((option) => option.value);
 
   return (
-    <div className="sm:col-span-1">
-      <p className={neoLabelClass}>
-        {label}
-      </p>
+    <div className={hideLabel ? '' : 'sm:col-span-1'}>
+      {hideLabel ? null : (
+        <p className={neoLabelClass}>
+          {label}
+        </p>
+      )}
       <div className="space-y-2 rounded-[10px] border-2 border-[#0F172A] bg-[#F8FAFC] p-3">
         {normalizedOptions.map((option) => {
           const id = `${label}-${option.value}`;
@@ -757,7 +810,7 @@ function ChoiceGroup({ label, options, value, onChange, error }) {
           );
         })}
       </div>
-      {error ? <p className="mt-1 text-xs font-bold text-red-700">{error}</p> : null}
+      {!hideLabel && error ? <p className="mt-1 text-xs font-bold text-red-700">{error}</p> : null}
     </div>
   );
 }

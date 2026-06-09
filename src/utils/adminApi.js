@@ -358,6 +358,17 @@ export const updateSlotConfig = async (slotId, enabled, token = getStoredToken()
   }, token);
 };
 
+export const getIitSlotConfigs = async (token = getStoredToken()) => {
+  return adminRequest('/iit-slots', { method: 'GET' }, token);
+};
+
+export const updateIitSlotConfig = async (slotId, enabled, token = getStoredToken()) => {
+  return adminRequest(`/iit-slots/${slotId}`, {
+    method: 'PUT',
+    body: JSON.stringify({ enabled }),
+  }, token);
+};
+
 /** GET /admin/slots/overrides?from=YYYY-MM-DD&to=YYYY-MM-DD */
 export const getSlotOverrides = async (from, to, token = getStoredToken()) => {
   const params = new URLSearchParams({ from, to });

@@ -296,6 +296,16 @@ export const getDemoSlots = async () => {
 };
 
 /**
+ * Fetch enabled IIT counselling group session slots.
+ * @returns {Promise<{success: boolean, data?: {enabledSlotBookings: string[]}, status?: number}>}
+ */
+export const getIitCounsellingSlots = async () => {
+  return apiRequest('/iit-counselling/slots', {
+    method: 'GET',
+  });
+};
+
+/**
  * Save Step 2 data to MongoDB (OTP verification)
  * @param {string} phone - Phone number
  * @param {{ utm_source?: string, utm_medium?: string, utm_campaign?: string, utm_content?: string }} [utm] - Optional first-touch UTM data
