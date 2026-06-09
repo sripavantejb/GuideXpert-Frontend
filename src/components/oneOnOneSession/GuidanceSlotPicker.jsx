@@ -1,5 +1,24 @@
 import { FieldError, neoLabelClass } from './FormControls';
 
+function renderSessionTitle(sessionTitle) {
+  const title = String(sessionTitle || '').trim();
+  if (!title) return null;
+
+  const sep = ' - ';
+  const idx = title.indexOf(sep);
+  if (idx === -1) return title;
+
+  const main = title.slice(0, idx);
+  const subtitle = title.slice(idx + sep.length);
+  return (
+    <>
+      {main}
+      {' - '}
+      <span className="italic">{subtitle}</span>
+    </>
+  );
+}
+
 /**
  * Admin guidance slots (from /api/guidance-booking) in neo-brutalist card style.
  */
@@ -45,7 +64,9 @@ export default function GuidanceSlotPicker({
                       : 'border-[#0F172A] bg-white text-[#0F172A] hover:-translate-y-0.5 hover:shadow-[2px_2px_0px_#0F172A]'
                   }`}
                 >
-                  <span className="block text-sm font-black leading-snug">{slot.sessionTitle}</span>
+                  <span className="block text-sm font-black leading-snug">
+                    {renderSessionTitle(slot.sessionTitle)}
+                  </span>
                   <span className="mt-2 block text-xs font-bold uppercase tracking-wide text-[#0F172A]/80">
                     {slot.slotDate} · {slot.slotTime}
                   </span>
