@@ -1,9 +1,7 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { getIitCounsellingSlots } from '../utils/api';
 import { getApiBaseUrl } from '../utils/apiBaseUrl';
-import { formatDateISTYYYYMMDD, getAvailableSlots, resolveSlotBookingDateForIitPayload } from '../utils/weekendSlots';
-
-const STUDENT_PARENT_OPTIONS = ['Student', 'Parent'];
+import { formatDateISTYYYYMMDD, getAvailableSlots, parseIitSlotSelection, resolveSlotBookingDateForIitPayload } from '../utils/weekendSlots';
 /** Keep in sync with GuideXpert-Backend/controllers/formController.js IIT_ALLOWED_VALUES.classStatus and IitCounsellingSubmission schema. */
 const CURRENT_STUDYING_OPTIONS = [
   'Completed 12th/Intermediate 2nd Year',
@@ -45,6 +43,8 @@ const initialFormData = {
   biggestConfusion: '',
 };
 
+const STUDENT_PARENT_OPTIONS = ['Student', 'Parent'];
+
 const neoInputClass =
   'w-full rounded-[10px] border-2 border-[#0F172A] bg-white px-4 py-3 text-sm font-semibold text-[#0F172A] outline-none transition-all focus:-translate-y-0.5 focus:shadow-[3px_3px_0px_#0F172A]';
 
@@ -78,6 +78,7 @@ export default function IitCounsellingPage() {
   const apiBase = useMemo(() => getApiBaseUrl(), []);
   const [slotOptionsTick, setSlotOptionsTick] = useState(0);
   const [enabledSlotBookings, setEnabledSlotBookings] = useState(null);
+  const [iitSlotDateOverrides, setIitSlotDateOverrides] = useState([]);
   const [slotsLoading, setSlotsLoading] = useState(true);
 
   useEffect(() => {
@@ -99,14 +100,20 @@ export default function IitCounsellingPage() {
     getIitCounsellingSlots()
       .then((res) => {
         if (cancelled) return;
-        if (res.success && Array.isArray(res.data?.enabledSlotBookings)) {
-          setEnabledSlotBookings(res.data.enabledSlotBookings);
+        const payload = res.data?.data ?? res.data;
+        if (res.success && Array.isArray(payload?.enabledSlotBookings)) {
+          setEnabledSlotBookings(payload.enabledSlotBookings);
+          setIitSlotDateOverrides(Array.isArray(payload?.dateOverrides) ? payload.dateOverrides : []);
         } else {
           setEnabledSlotBookings([]);
+          setIitSlotDateOverrides([]);
         }
       })
       .catch(() => {
-        if (!cancelled) setEnabledSlotBookings([]);
+        if (!cancelled) {
+          setEnabledSlotBookings([]);
+          setIitSlotDateOverrides([]);
+        }
       })
       .finally(() => {
         if (!cancelled) setSlotsLoading(false);
@@ -116,15 +123,16 @@ export default function IitCounsellingPage() {
 
   const slotBookingOptions = useMemo(() => {
     if (enabledSlotBookings === null) return [];
-    return getAvailableSlots(new Date(), enabledSlotBookings);
-  }, [slotOptionsTick, enabledSlotBookings]);
+    return getAvailableSlots(new Date(), enabledSlotBookings, iitSlotDateOverrides);
+  }, [slotOptionsTick, enabledSlotBookings, iitSlotDateOverrides]);
 
   useEffect(() => {
     if (!formData.slotBooking || !enabledSlotBookings) return;
-    if (!enabledSlotBookings.includes(formData.slotBooking)) {
+    const stillAvailable = slotBookingOptions.some((opt) => opt.value === formData.slotBooking);
+    if (!stillAvailable) {
       setFormData((prev) => ({ ...prev, slotBooking: '' }));
     }
-  }, [enabledSlotBookings, formData.slotBooking]);
+  }, [enabledSlotBookings, formData.slotBooking, slotBookingOptions]);
 
   const stepConfig = useMemo(() => ({
     1: ['fullName', 'mobileNumber', 'studentOrParent', 'classStatus', 'stream', 'city', 'slotBooking', 'top5Colleges'],
@@ -388,8 +396,8 @@ export default function IitCounsellingPage() {
       nextErrors.mobileNumber = 'Please verify your mobile number with OTP first.';
     }
     if (step === 1 && String(formData.slotBooking ?? '').trim()) {
-      const ymd = resolveSlotBookingDateForIitPayload(formData.slotBooking);
-      if (!ymd) {
+      const { slotBookingDate } = parseIitSlotSelection(formData.slotBooking, slotBookingOptions);
+      if (!slotBookingDate) {
         nextErrors.slotBooking = 'Could not resolve your session date. Please choose a slot from the list again.';
       }
     }
@@ -410,9 +418,7 @@ export default function IitCounsellingPage() {
     const selectedSlotOption = currentStep === 1
       ? slotBookingOptions.find((o) => o.value === formData.slotBooking)
       : null;
-    const slotBookingDate =
-      resolveSlotBookingDateForIitPayload(formData.slotBooking) ||
-      (selectedSlotOption?.date ? formatDateISTYYYYMMDD(selectedSlotOption.date) : '');
+    const { slotBooking, slotBookingDate } = parseIitSlotSelection(formData.slotBooking, slotBookingOptions);
 
     const payload = currentStep === 1
       ? {
@@ -422,7 +428,7 @@ export default function IitCounsellingPage() {
           classStatus: formData.classStatus,
           stream: formData.stream,
           city: formData.city.trim(),
-          slotBooking: formData.slotBooking,
+          slotBooking: slotBooking || selectedSlotOption?.slotBooking || formData.slotBooking,
           ...(slotBookingDate ? { slotBookingDate } : {}),
           visitorFingerprint,
           otpVerified: true,

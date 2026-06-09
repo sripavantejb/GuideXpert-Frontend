@@ -89,8 +89,114 @@ function slotOption(value, day, date, timeLabel) {
   };
 }
 
-export function getAvailableSlots(currentDate = new Date(), enabledBookingValues = null) {
+/** Canonical IIT counselling slot definitions (IST). */
+const IIT_SLOT_SPECS = [
+  { value: 'Wednesday 6PM', weekday: 3, hour: 18, minute: 0, timeLabel: '6:00 PM', day: 'Wednesday' },
+  { value: 'Saturday 6PM', weekday: 6, hour: 18, minute: 0, timeLabel: '6:00 PM', day: 'Saturday' },
+  { value: 'Sunday 11AM', weekday: 0, hour: 11, minute: 0, timeLabel: '11:00 AM', day: 'Sunday' },
+];
+
+export const IIT_BOOKING_VALUE_TO_SLOT_ID = {
+  'Wednesday 6PM': 'WEDNESDAY_6PM',
+  'Saturday 6PM': 'SATURDAY_6PM',
+  'Sunday 11AM': 'SUNDAY_11AM',
+};
+
+function isDateOverrideDisabled(date, slotValue, dateOverrides) {
+  if (!Array.isArray(dateOverrides) || dateOverrides.length === 0) return false;
+  const dateStr = formatDateISTYYYYMMDD(date);
+  const slotId = IIT_BOOKING_VALUE_TO_SLOT_ID[slotValue];
+  if (!dateStr || !slotId) return false;
+  const match = dateOverrides.find((o) => o.date === dateStr && o.slotId === slotId);
+  return match ? !match.enabled : false;
+}
+
+function buildEnabledSlotOption(spec, date) {
+  const dateStr = formatDateISTYYYYMMDD(date);
+  return {
+    value: `${spec.value}|${dateStr}`,
+    slotBooking: spec.value,
+    label: formatSlotLabel(date, spec.timeLabel),
+    day: spec.day,
+    date,
+  };
+}
+
+/** Next bookable occurrence for one slot type, skipping date overrides disabled for that day. */
+function nextEnabledSlotOccurrence(now, spec, dateOverrides = null) {
+  let anchor = now;
+  for (let attempt = 0; attempt < 12; attempt += 1) {
+    const date = nextISTWallClockAfterOrEqual(anchor, spec.weekday, spec.hour, spec.minute);
+    if (!isDateOverrideDisabled(date, spec.value, dateOverrides)) {
+      return buildEnabledSlotOption(spec, date);
+    }
+    anchor = new Date(date.getTime() + 60_000);
+  }
+  return null;
+}
+
+function nextOccurrencesForSpec(now, spec, dateOverrides, count) {
+  const results = [];
+  let anchor = now;
+  while (results.length < count) {
+    const opt = nextEnabledSlotOccurrence(anchor, spec, dateOverrides);
+    if (!opt) break;
+    const dateStr = formatDateISTYYYYMMDD(opt.date);
+    if (!results.some((r) => formatDateISTYYYYMMDD(r.date) === dateStr)) {
+      results.push(opt);
+    }
+    anchor = new Date(opt.date.getTime() + 60_000);
+  }
+  return results;
+}
+
+function getAvailableSlotsForEnabled(now, enabledBookingValues, dateOverrides = null) {
+  const enabledSet = new Set(enabledBookingValues);
+  const enabledSpecs = IIT_SLOT_SPECS.filter((spec) => enabledSet.has(spec.value));
+
+  if (enabledSpecs.length === 1) {
+    return nextOccurrencesForSpec(now, enabledSpecs[0], dateOverrides, 2);
+  }
+
+  return enabledSpecs
+    .map((spec) => nextEnabledSlotOccurrence(now, spec, dateOverrides))
+    .filter(Boolean)
+    .sort((a, b) => a.date.getTime() - b.date.getTime())
+    .slice(0, 2);
+}
+
+/** Resolve API slotBooking label + YYYY-MM-DD from a form selection value. */
+export function parseIitSlotSelection(selectedValue, options = []) {
+  const opt = options.find((o) => o.value === selectedValue);
+  if (opt?.slotBooking && opt?.date) {
+    return {
+      slotBooking: opt.slotBooking,
+      slotBookingDate: formatDateISTYYYYMMDD(opt.date),
+    };
+  }
+  const raw = String(selectedValue ?? '').trim();
+  if (!raw) return { slotBooking: '', slotBookingDate: '' };
+  const pipe = raw.indexOf('|');
+  if (pipe > 0) {
+    return {
+      slotBooking: raw.slice(0, pipe).trim(),
+      slotBookingDate: raw.slice(pipe + 1).trim(),
+    };
+  }
+  return {
+    slotBooking: raw,
+    slotBookingDate: resolveSlotBookingDateForIitPayload(raw, new Date()),
+  };
+}
+
+export function getAvailableSlots(currentDate = new Date(), enabledBookingValues = null, dateOverrides = null) {
   const now = new Date(currentDate);
+
+  if (enabledBookingValues !== null && enabledBookingValues !== undefined) {
+    if (enabledBookingValues.length === 0) return [];
+    return getAvailableSlotsForEnabled(now, enabledBookingValues, dateOverrides);
+  }
+
   const phase = getIitSlotPhase(now);
   let options;
 
@@ -124,9 +230,7 @@ export function getAvailableSlots(currentDate = new Date(), enabledBookingValues
     ];
   }
 
-  if (!enabledBookingValues) return options;
-  const enabledSet = new Set(enabledBookingValues);
-  return options.filter((o) => enabledSet.has(o.value));
+  return options;
 }
 
 /** IST calendar date YYYY-MM-DD for a Date instance. */
@@ -236,8 +340,9 @@ export function deriveSlotDemoDateKeyIST(row) {
 export function resolveSlotBookingDateForIitPayload(slotBookingValue, now = new Date()) {
   const v = String(slotBookingValue ?? '').trim();
   if (!v) return '';
-  const slots = getAvailableSlots(now);
-  const opt = slots.find((s) => s.value === v);
-  if (opt?.date) return formatDateISTYYYYMMDD(opt.date);
-  return '';
+  const booking = v.includes('|') ? v.slice(0, v.indexOf('|')).trim() : v;
+  const spec = IIT_SLOT_SPECS.find((s) => s.value === booking);
+  if (!spec) return '';
+  const date = nextISTWallClockAfterOrEqual(now, spec.weekday, spec.hour, spec.minute);
+  return formatDateISTYYYYMMDD(date);
 }

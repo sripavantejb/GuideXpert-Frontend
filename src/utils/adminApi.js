@@ -369,6 +369,26 @@ export const updateIitSlotConfig = async (slotId, enabled, token = getStoredToke
   }, token);
 };
 
+/** GET /admin/iit-slots/overrides?from=YYYY-MM-DD&to=YYYY-MM-DD */
+export const getIitSlotOverrides = async (from, to, token = getStoredToken()) => {
+  const params = new URLSearchParams({ from, to });
+  return adminRequest(`/iit-slots/overrides?${params}`, { method: 'GET' }, token);
+};
+
+/** PUT /admin/iit-slots/overrides — body: { date, slotId, enabled } */
+export const setIitSlotOverride = async (date, slotId, enabled, token = getStoredToken()) => {
+  return adminRequest('/iit-slots/overrides', {
+    method: 'PUT',
+    body: JSON.stringify({ date, slotId, enabled }),
+  }, token);
+};
+
+/** GET /admin/iit-slots/booking-counts?from=YYYY-MM-DD&to=YYYY-MM-DD */
+export const getIitSlotBookingCounts = async (from, to, token = getStoredToken()) => {
+  const params = new URLSearchParams({ from, to });
+  return adminRequest(`/iit-slots/booking-counts?${params}`, { method: 'GET' }, token);
+};
+
 /** GET /admin/slots/overrides?from=YYYY-MM-DD&to=YYYY-MM-DD */
 export const getSlotOverrides = async (from, to, token = getStoredToken()) => {
   const params = new URLSearchParams({ from, to });
