@@ -4,13 +4,13 @@ import {
   BarChart,
   CartesianGrid,
   Legend,
-  ResponsiveContainer,
   Tooltip,
   XAxis,
   YAxis,
 } from 'recharts';
 import KpiCard from '../../../components/Admin/KpiCard';
 import ChartContainer from '../../../components/Admin/ChartContainer';
+import AdminChartFrame from '../../../components/Admin/AdminChartFrame';
 import ReminderReviewDrawer from './ReminderReviewDrawer';
 import {
   bulkScheduleAiCalls,
@@ -455,7 +455,7 @@ export default function AiCallsDashboard() {
       {dailySeries.length > 0 && (
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
           <ChartContainer title="Daily Calls">
-            <ResponsiveContainer width="100%" height={220}>
+            <AdminChartFrame height={220}>
               <BarChart data={dailySeries}>
                 <CartesianGrid strokeDasharray="3 3" />
                 <XAxis dataKey="date" tick={{ fontSize: 11 }} />
@@ -466,7 +466,7 @@ export default function AiCallsDashboard() {
                 <Bar dataKey="completed" fill="#16a34a" name="Completed" />
                 <Bar dataKey="failed" fill="#dc2626" name="Failed" />
               </BarChart>
-            </ResponsiveContainer>
+            </AdminChartFrame>
           </ChartContainer>
           <ChartContainer title="Success / Failure Rate">
             <div className="flex items-center justify-center h-[220px] gap-8">

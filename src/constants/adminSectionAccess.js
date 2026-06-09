@@ -28,6 +28,7 @@ export const ADMIN_SECTION_OPTIONS = [
   { sectionKey: 'osvi-calls', label: 'OSVI Calls' },
   { sectionKey: 'osvi-calls-data', label: 'OSVI calls Data' },
   { sectionKey: 'ai-calls', label: 'AI Calls' },
+  { sectionKey: 'iit-ai-calls-summary', label: 'IITian AI Calls Summary' },
   { sectionKey: 'whatsapp-ops', label: 'WhatsApp ops' },
   { sectionKey: 'settings', label: 'Settings' },
 ];
@@ -67,6 +68,7 @@ export const ADMIN_SECTION_GROUPS = [
       'osvi-calls',
       'osvi-calls-data',
       'ai-calls',
+      'iit-ai-calls-summary',
       'whatsapp-ops',
     ],
   },

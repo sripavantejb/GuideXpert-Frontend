@@ -16,11 +16,11 @@ import {
   Cell,
   Line,
   LineChart,
-  ResponsiveContainer,
   Tooltip,
   XAxis,
   YAxis,
 } from 'recharts';
+import AdminChartFrame from '../../components/Admin/AdminChartFrame';
 import {
   createIitCounsellingSavedUtmLink,
   deleteIitCounsellingSavedUtmLink,
@@ -1018,7 +1018,7 @@ export default function IitCounsellingUtm() {
             ) : barChartData.length === 0 ? (
               <div className="h-full flex items-center justify-center text-gray-500 text-sm">No data</div>
             ) : (
-              <ResponsiveContainer width="100%" height="100%" minWidth={0} minHeight={200}>
+              <AdminChartFrame height={200}>
                 <BarChart data={barChartData} margin={{ top: 8, right: 8, left: 0, bottom: 0 }}>
                   <XAxis
                     dataKey="name"
@@ -1037,7 +1037,7 @@ export default function IitCounsellingUtm() {
                     ))}
                   </Bar>
                 </BarChart>
-              </ResponsiveContainer>
+              </AdminChartFrame>
             )}
           </div>
         </div>
@@ -1052,7 +1052,7 @@ export default function IitCounsellingUtm() {
             ) : lineChartData.length === 0 ? (
               <div className="h-full flex items-center justify-center text-gray-500 text-sm">No data</div>
             ) : (
-              <ResponsiveContainer width="100%" height="100%" minWidth={0} minHeight={200}>
+              <AdminChartFrame height={200}>
                 <LineChart data={lineChartData} margin={{ top: 8, right: 8, left: 0, bottom: 0 }}>
                   <CartesianGrid strokeDasharray="3 3" stroke="#eee" />
                   <XAxis dataKey="date" tick={{ fontSize: 11 }} tickFormatter={(v) => (v && v.length >= 10 ? `${v.slice(8, 10)}/${v.slice(5, 7)}` : v)} />
@@ -1071,7 +1071,7 @@ export default function IitCounsellingUtm() {
                     dot={{ r: 3 }}
                   />
                 </LineChart>
-              </ResponsiveContainer>
+              </AdminChartFrame>
             )}
           </div>
         </div>

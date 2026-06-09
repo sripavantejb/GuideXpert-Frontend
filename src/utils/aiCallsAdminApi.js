@@ -53,7 +53,7 @@ export const getAiCallsAnalytics = () => aiCallsRequest('/analytics');
 export const getAiCallsQueue = (params) =>
   aiCallsRequest(`/queue${buildAiCallsQuery(params)}`);
 export const getAiCallsReminders = (params) =>
-  aiCallsRequest(`/${buildAiCallsQuery(params)}`);
+  aiCallsRequest(`${buildAiCallsQuery(params)}`);
 export const getAiCallReminder = (id) => aiCallsRequest(`/${id}`);
 export const getAiCallPreviewPayload = (id) => aiCallsRequest(`/${id}/preview-payload`);
 export const patchAiCallReminder = (id, body) =>
@@ -78,3 +78,8 @@ export const previewAiTestCall = (body) =>
   aiCallsRequest('/test/preview', { method: 'POST', body: JSON.stringify(body) });
 export const createAiTestCall = (body) =>
   aiCallsRequest('/test', { method: 'POST', body: JSON.stringify(body) });
+
+export const getIitAiCallSummaryStats = () => aiCallsRequest('/summary/stats');
+export const getIitAiCallSummaries = (params) =>
+  aiCallsRequest(`/summary${buildAiCallsQuery(params)}`);
+export const getIitAiCallSummary = (id) => aiCallsRequest(`/summary/${id}`);

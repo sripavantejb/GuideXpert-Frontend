@@ -68,6 +68,7 @@ import BulkCertificateDownload from './pages/admin/BulkCertificateDownload';
 import OsviCalls from './pages/admin/OsviCalls';
 import OsviCallsData from './pages/admin/OsviCallsData';
 import AiCallsDashboard from './pages/admin/ai-calls/AiCallsDashboard';
+import IitAiCallSummary from './pages/admin/ai-calls/IitAiCallSummary';
 import PosterDownloads from './pages/admin/PosterDownloads';
 import CertifiedCounsellors from './pages/admin/CertifiedCounsellors';
 import CallingTeamDashboard from './pages/admin/callingTeam/CallingTeamDashboard';
@@ -458,6 +459,7 @@ function App() {
             <Route path="osvi-calls" element={<OsviCalls />} />
             <Route path="osvi-calls-data" element={<OsviCallsData />} />
             <Route path="ai-calls" element={<AiCallsDashboard />} />
+            <Route path="iit-ai-calls-summary" element={<IitAiCallSummary />} />
             <Route path="whatsapp-ops" element={<WhatsAppOpsLayout />}>
               <Route index element={<Navigate to="overview" replace />} />
               <Route path="overview" element={<WhatsAppOpsOverview />} />

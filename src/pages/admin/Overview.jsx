@@ -2,7 +2,7 @@ import { useState, useEffect, useLayoutEffect, useRef } from 'react';
 import { createPortal } from 'react-dom';
 import { Link } from 'react-router-dom';
 import { FiUsers, FiCheckCircle, FiCalendar, FiVideo, FiEdit3, FiAward, FiLoader, FiUserCheck, FiCheck, FiX } from 'react-icons/fi';
-import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, Legend, CartesianGrid, AreaChart, Area, ReferenceLine } from 'recharts';
+import { BarChart, Bar, XAxis, YAxis, Tooltip, Legend, CartesianGrid, AreaChart, Area, ReferenceLine } from 'recharts';
 import { getAdminStats, getAdminLeads, getInfluencerLinks, getStoredToken } from '../../utils/adminApi';
 import { useAuth } from '../../hooks/useAuth';
 import { useAdminDateRange } from '../../hooks/useAdminDateRange';
@@ -10,6 +10,7 @@ import { leadListFiltersToSearchParams, leadListFiltersToApiParams } from '../..
 import DashboardSkeleton from '../../components/Admin/DashboardSkeleton';
 import KpiCard from '../../components/Admin/KpiCard';
 import ChartContainer from '../../components/Admin/ChartContainer';
+import AdminChartFrame from '../../components/Admin/AdminChartFrame';
 
 /** Card ID -> getAdminLeads params and optional "View related" label for unsupported stages */
 const FUNNEL_CARD_LEADS_PARAMS = {
@@ -709,8 +710,7 @@ export default function Overview() {
           emptyMessage="No page visit data for the selected period"
         >
           {pageVisitsChartData.length > 0 && (
-            <div className="h-64 w-full min-w-0">
-              <ResponsiveContainer width="100%" height="100%" minWidth={0} minHeight={256}>
+            <AdminChartFrame height={256}>
                 <AreaChart
                   data={
                     (() => {
@@ -750,8 +750,7 @@ export default function Overview() {
                     fill="url(#pageVisitsGradient)"
                   />
                 </AreaChart>
-              </ResponsiveContainer>
-            </div>
+            </AdminChartFrame>
           )}
         </ChartContainer>
       </section>
@@ -917,8 +916,7 @@ export default function Overview() {
         <h2 id="section-lead-pipeline" className="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-4">Lead pipeline</h2>
         <ChartContainer title="" empty={pipelineEmpty} emptyMessage="No data for the selected period">
           {!pipelineEmpty && (
-            <div className="h-64 w-full min-w-0">
-              <ResponsiveContainer width="100%" height="100%" minWidth={0} minHeight={256}>
+            <AdminChartFrame height={256}>
                 <BarChart data={pipelineChartData} margin={{ top: 8, right: 8, left: 8, bottom: 8 }}>
                   <XAxis dataKey="name" tick={{ fontSize: 12 }} stroke="#64748b" />
                   <YAxis tick={{ fontSize: 12 }} stroke="#64748b" />
@@ -930,8 +928,7 @@ export default function Overview() {
                   <Legend />
                   <Bar dataKey="count" name="# Leads" fill="#003366" radius={[4, 4, 0, 0]} />
                 </BarChart>
-              </ResponsiveContainer>
-            </div>
+            </AdminChartFrame>
           )}
         </ChartContainer>
       </section>
@@ -969,8 +966,7 @@ export default function Overview() {
               emptyMessage="No UTM links with cost data"
             >
               {!utmLinksLoading && !utmBudgetEmpty && (
-                <div className="h-64 w-full min-w-0">
-                  <ResponsiveContainer width="100%" height="100%" minWidth={0} minHeight={256}>
+                <AdminChartFrame height={256}>
                     <BarChart data={utmBudgetData} margin={{ top: 8, right: 8, left: 8, bottom: 8 }}>
                       <XAxis
                         dataKey="name"
@@ -986,8 +982,7 @@ export default function Overview() {
                       />
                       <Bar dataKey="cost" name="Budget" fill="#003366" radius={[4, 4, 0, 0]} />
                     </BarChart>
-                  </ResponsiveContainer>
-                </div>
+                </AdminChartFrame>
               )}
             </ChartContainer>
           </div>
@@ -1000,8 +995,7 @@ export default function Overview() {
               emptyMessage="No cost-per-lead data for the selected sources"
             >
               {!utmLinksLoading && !utmCostPerLeadEmpty && (
-                <div className="h-64 w-full min-w-0">
-                  <ResponsiveContainer width="100%" height="100%" minWidth={0} minHeight={256}>
+                <AdminChartFrame height={256}>
                     <BarChart data={utmCostPerLeadData} margin={{ top: 8, right: 8, left: 8, bottom: 8 }}>
                       <XAxis
                         dataKey="name"
@@ -1017,8 +1011,7 @@ export default function Overview() {
                       />
                       <Bar dataKey="costPerLead" name="Cost per lead" fill="#003366" radius={[4, 4, 0, 0]} />
                     </BarChart>
-                  </ResponsiveContainer>
-                </div>
+                </AdminChartFrame>
               )}
             </ChartContainer>
           </div>
@@ -1031,8 +1024,7 @@ export default function Overview() {
           <h2 id="section-signups" className="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-4">Signups over time</h2>
           <ChartContainer title="" empty={signupsOverTime.length === 0} emptyMessage="No data for the selected period">
             {signupsOverTime.length > 0 && (
-              <div className="h-64 w-full min-w-0">
-                <ResponsiveContainer width="100%" height="100%" minWidth={0} minHeight={256}>
+              <AdminChartFrame height={256}>
                   <AreaChart data={signupsOverTime} margin={{ top: 8, right: 8, left: 8, bottom: 8 }}>
                     <CartesianGrid strokeDasharray="3 3" stroke="#e2e8f0" />
                     <XAxis dataKey="date" tick={{ fontSize: 11 }} stroke="#64748b" />
@@ -1044,8 +1036,7 @@ export default function Overview() {
                     />
                     <Area type="monotone" dataKey="count" name="Signups" stroke="#003366" fill="#003366" fillOpacity={0.2} />
                   </AreaChart>
-                </ResponsiveContainer>
-              </div>
+              </AdminChartFrame>
             )}
           </ChartContainer>
         </section>
@@ -1053,8 +1044,7 @@ export default function Overview() {
           <h2 id="section-slot-distribution" className="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-4">Slot distribution</h2>
           <ChartContainer title="" empty={slotData.length === 0} emptyMessage="No slot bookings yet">
             {slotData.length > 0 && (
-              <div className="h-64 w-full min-w-0">
-                <ResponsiveContainer width="100%" height="100%" minWidth={0} minHeight={256}>
+              <AdminChartFrame height={256}>
                   <BarChart data={slotData} layout="vertical" margin={{ top: 8, right: 8, left: 8, bottom: 8 }}>
                     <XAxis type="number" tick={{ fontSize: 11 }} stroke="#64748b" />
                     <YAxis type="category" dataKey="name" width={80} tick={{ fontSize: 11 }} stroke="#64748b" />
@@ -1064,8 +1054,7 @@ export default function Overview() {
                     />
                     <Bar dataKey="count" name="Bookings" fill="#003366" radius={[0, 4, 4, 0]} />
                   </BarChart>
-                </ResponsiveContainer>
-              </div>
+              </AdminChartFrame>
             )}
           </ChartContainer>
         </section>
