@@ -2,7 +2,7 @@ import { useEffect, useState } from 'react';
 import { FormInput, FormSelect, NeoField } from '../components/oneOnOneSession/FormControls';
 import GuidanceSlotPicker from '../components/oneOnOneSession/GuidanceSlotPicker';
 import { COLLEGE_BUDGET_OPTIONS, CURRENT_CLASS_OPTIONS, PREFERRED_LANGUAGE_OPTIONS } from '../constants/oneOnOneCounselingForm';
-import { bookGuidanceSlot, checkGuidanceMobile } from '../utils/guidanceBookingApi';
+import { bookGuidanceSlot, checkGuidanceMobile, getGuidanceActiveSlots } from '../utils/guidanceBookingApi';
 import { captureUtmFirstTouch, getStoredUtm } from '../utils/utm';
 
 function normalizeMobile(val) {
@@ -349,6 +349,26 @@ export default function GuidanceBookingConfirmation() {
     setPreferredCollege3(c.college3);
   };
 
+  const resetNewStudentProfile = () => {
+    setStudent(null);
+    setNeedsProfile(true);
+    setStudentName('');
+    setCurrentClass('');
+    setCity('');
+    setPreferredLanguage('');
+    setCollegeBudget('');
+    setParentOccupation('');
+    setPreferredCollege1('');
+    setPreferredCollege2('');
+    setPreferredCollege3('');
+  };
+
+  const goToBookingStep = (nextSlots) => {
+    setSlots(nextSlots);
+    setStep('booking');
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  };
+
   const handleCheckMobile = async (e) => {
     e.preventDefault();
     setError('');
@@ -361,12 +381,31 @@ export default function GuidanceBookingConfirmation() {
     setLoading(true);
     const res = await checkGuidanceMobile(digits);
     setLoading(false);
+
     if (!res.success) {
+      const legacyNotFound =
+        res.status === 404 &&
+        /not found/i.test(String(res.message || ''));
+      if (legacyNotFound) {
+        setLoading(true);
+        const slotsRes = await getGuidanceActiveSlots();
+        setLoading(false);
+        if (!slotsRes.success) {
+          setError(slotsRes.message || 'Something went wrong. Please try again.');
+          setStudent(null);
+          setSlots([]);
+          return;
+        }
+        resetNewStudentProfile();
+        goToBookingStep(slotsRes.data || []);
+        return;
+      }
       setError(res.message || 'Something went wrong. Please try again.');
       setStudent(null);
       setSlots([]);
       return;
     }
+
     if (res.alreadyBooked) {
       setError(res.message || 'A slot is already booked with this mobile number.');
       applyStudentPrefill(res.data?.student || null);
@@ -374,6 +413,7 @@ export default function GuidanceBookingConfirmation() {
       setSlots([]);
       return;
     }
+
     if (res.found) {
       applyStudentPrefill(res.data?.student || null);
       setNeedsProfile(false);
@@ -381,25 +421,11 @@ export default function GuidanceBookingConfirmation() {
       setCurrentClass('');
       setCity('');
       setPreferredLanguage('');
-    } else if (res.needsProfile) {
-      setStudent(null);
-      setNeedsProfile(true);
-      setStudentName('');
-      setCurrentClass('');
-      setCity('');
-      setPreferredLanguage('');
-      setCollegeBudget('');
-      setParentOccupation('');
-      setPreferredCollege1('');
-      setPreferredCollege2('');
-      setPreferredCollege3('');
     } else {
-      setError(res.message || 'Something went wrong. Please try again.');
-      return;
+      resetNewStudentProfile();
     }
-    setSlots(res.data?.slots || []);
-    setStep('booking');
-    window.scrollTo({ top: 0, behavior: 'smooth' });
+
+    goToBookingStep(res.data?.slots || []);
   };
 
   const handleBook = async (e) => {
