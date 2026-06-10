@@ -1,9 +1,9 @@
 import { useEffect, useState } from 'react';
 import { FormInput, FormSelect, NeoField } from '../components/oneOnOneSession/FormControls';
 import GuidanceSlotPicker from '../components/oneOnOneSession/GuidanceSlotPicker';
-import { COLLEGE_BUDGET_OPTIONS } from '../constants/oneOnOneCounselingForm';
+import { COLLEGE_BUDGET_OPTIONS, CURRENT_CLASS_OPTIONS, PREFERRED_LANGUAGE_OPTIONS } from '../constants/oneOnOneCounselingForm';
 import { bookGuidanceSlot, checkGuidanceMobile } from '../utils/guidanceBookingApi';
-import { captureUtmFirstTouch } from '../utils/utm';
+import { captureUtmFirstTouch, getStoredUtm } from '../utils/utm';
 
 function normalizeMobile(val) {
   return String(val || '')
@@ -45,6 +45,25 @@ function validateCounselingPreferences({
   return { errors, preferredColleges: colleges };
 }
 
+function validateStudentProfile({ studentName, currentClass, city, preferredLanguage }) {
+  const errors = {};
+  const name = String(studentName || '').trim();
+  if (name.length < 2 || name.length > 100) {
+    errors.studentName = 'Student name must be 2–100 characters.';
+  }
+  if (!CURRENT_CLASS_OPTIONS.includes(currentClass)) {
+    errors.currentClass = 'Please select your current class.';
+  }
+  const cityVal = String(city || '').trim();
+  if (cityVal.length < 2 || cityVal.length > 80) {
+    errors.city = 'City / town must be 2–80 characters.';
+  }
+  if (!PREFERRED_LANGUAGE_OPTIONS.includes(preferredLanguage)) {
+    errors.preferredLanguage = 'Please select a preferred language.';
+  }
+  return errors;
+}
+
 function SuccessView() {
   return (
     <div className="rounded-[14px] border-2 border-[#0F172A] bg-white p-8 text-center shadow-[6px_6px_0px_#0F172A] sm:p-12">
@@ -72,6 +91,90 @@ function SuccessView() {
           Keep WhatsApp notifications on — we will message you with the session link and reminders.
         </p>
       </div>
+    </div>
+  );
+}
+
+function StudentDetailsForm({
+  mobile,
+  studentName,
+  setStudentName,
+  currentClass,
+  setCurrentClass,
+  city,
+  setCity,
+  preferredLanguage,
+  setPreferredLanguage,
+  fieldErrors,
+}) {
+  return (
+    <div className="space-y-5 sm:col-span-2">
+      <p className="text-sm font-black uppercase tracking-wide text-[#0F172A]">
+        Your details <span className="text-red-700">*</span>
+      </p>
+      <p className="text-xs font-medium text-slate-500">
+        Fill in your details below to complete your guidance session booking.
+      </p>
+
+      <NeoField label="Mobile number" className="sm:col-span-2">
+        <FormInput
+          id="guidance-mobile-readonly"
+          name="mobileReadonly"
+          type="tel"
+          value={mobile}
+          readOnly
+          disabled
+          className="bg-slate-100"
+        />
+      </NeoField>
+
+      <NeoField label="Student name" error={fieldErrors.studentName} required>
+        <FormInput
+          id="guidance-studentName"
+          name="studentName"
+          value={studentName}
+          onChange={(e) => setStudentName(e.target.value)}
+          error={fieldErrors.studentName}
+          placeholder="Your full name"
+          maxLength={100}
+        />
+      </NeoField>
+
+      <NeoField label="Current class" error={fieldErrors.currentClass} required>
+        <FormSelect
+          id="guidance-currentClass"
+          name="currentClass"
+          value={currentClass}
+          onChange={(e) => setCurrentClass(e.target.value)}
+          error={fieldErrors.currentClass}
+          options={CURRENT_CLASS_OPTIONS}
+          placeholder="Select class"
+        />
+      </NeoField>
+
+      <NeoField label="City / town" error={fieldErrors.city} required>
+        <FormInput
+          id="guidance-city"
+          name="city"
+          value={city}
+          onChange={(e) => setCity(e.target.value)}
+          error={fieldErrors.city}
+          placeholder="e.g. Hyderabad"
+          maxLength={80}
+        />
+      </NeoField>
+
+      <NeoField label="Preferred language" error={fieldErrors.preferredLanguage} required>
+        <FormSelect
+          id="guidance-preferredLanguage"
+          name="preferredLanguage"
+          value={preferredLanguage}
+          onChange={(e) => setPreferredLanguage(e.target.value)}
+          error={fieldErrors.preferredLanguage}
+          options={PREFERRED_LANGUAGE_OPTIONS}
+          placeholder="Select language"
+        />
+      </NeoField>
     </div>
   );
 }
@@ -214,7 +317,12 @@ export default function GuidanceBookingConfirmation() {
   const [error, setError] = useState('');
   const [slotError, setSlotError] = useState('');
   const [fieldErrors, setFieldErrors] = useState({});
+  const [needsProfile, setNeedsProfile] = useState(false);
   const [student, setStudent] = useState(null);
+  const [studentName, setStudentName] = useState('');
+  const [currentClass, setCurrentClass] = useState('');
+  const [city, setCity] = useState('');
+  const [preferredLanguage, setPreferredLanguage] = useState('');
   const [slots, setSlots] = useState([]);
   const [selectedSlotId, setSelectedSlotId] = useState('');
   const [collegeBudget, setCollegeBudget] = useState('');
@@ -253,10 +361,8 @@ export default function GuidanceBookingConfirmation() {
     setLoading(true);
     const res = await checkGuidanceMobile(digits);
     setLoading(false);
-    if (!res.success || !res.found) {
-      setError(
-        res.message || 'This mobile number is not found. Please contact the GuideXpert team.'
-      );
+    if (!res.success) {
+      setError(res.message || 'Something went wrong. Please try again.');
       setStudent(null);
       setSlots([]);
       return;
@@ -264,10 +370,33 @@ export default function GuidanceBookingConfirmation() {
     if (res.alreadyBooked) {
       setError(res.message || 'A slot is already booked with this mobile number.');
       applyStudentPrefill(res.data?.student || null);
+      setNeedsProfile(false);
       setSlots([]);
       return;
     }
-    applyStudentPrefill(res.data?.student || null);
+    if (res.found) {
+      applyStudentPrefill(res.data?.student || null);
+      setNeedsProfile(false);
+      setStudentName('');
+      setCurrentClass('');
+      setCity('');
+      setPreferredLanguage('');
+    } else if (res.needsProfile) {
+      setStudent(null);
+      setNeedsProfile(true);
+      setStudentName('');
+      setCurrentClass('');
+      setCity('');
+      setPreferredLanguage('');
+      setCollegeBudget('');
+      setParentOccupation('');
+      setPreferredCollege1('');
+      setPreferredCollege2('');
+      setPreferredCollege3('');
+    } else {
+      setError(res.message || 'Something went wrong. Please try again.');
+      return;
+    }
     setSlots(res.data?.slots || []);
     setStep('booking');
     window.scrollTo({ top: 0, behavior: 'smooth' });
@@ -279,6 +408,16 @@ export default function GuidanceBookingConfirmation() {
     setSlotError('');
     setFieldErrors({});
 
+    let profileErrors = {};
+    if (needsProfile) {
+      profileErrors = validateStudentProfile({
+        studentName,
+        currentClass,
+        city,
+        preferredLanguage,
+      });
+    }
+
     const { errors, preferredColleges } = validateCounselingPreferences({
       collegeBudget,
       parentOccupation,
@@ -286,8 +425,9 @@ export default function GuidanceBookingConfirmation() {
       preferredCollege2,
       preferredCollege3,
     });
-    if (Object.keys(errors).length > 0) {
-      setFieldErrors(errors);
+    const allErrors = { ...profileErrors, ...errors };
+    if (Object.keys(allErrors).length > 0) {
+      setFieldErrors(allErrors);
       return;
     }
     if (!selectedSlotId) {
@@ -299,7 +439,8 @@ export default function GuidanceBookingConfirmation() {
       return;
     }
     setLoading(true);
-    const res = await bookGuidanceSlot({
+    const utm = getStoredUtm();
+    const payload = {
       mobileNumber: normalizeMobile(mobile),
       slotId: selectedSlotId,
       parentAttendanceConfirmed: true,
@@ -307,7 +448,17 @@ export default function GuidanceBookingConfirmation() {
       collegeBudget,
       parentOccupation: parentOccupation.trim(),
       preferredColleges,
-    });
+      ...(needsProfile
+        ? {
+            studentName: studentName.trim(),
+            currentClass,
+            city: city.trim(),
+            preferredLanguage,
+          }
+        : {}),
+      ...(utm || {}),
+    };
+    const res = await bookGuidanceSlot(payload);
     setLoading(false);
     if (!res.success) {
       setError(res.message || 'Booking failed. Please try again.');
@@ -333,12 +484,12 @@ export default function GuidanceBookingConfirmation() {
                 Confirm Your 1-on-1 Guidance Session Slot
               </h1>
               <p className="mt-2 text-sm font-medium text-slate-300">
-                Already registered with GuideXpert? Enter your mobile number, share counseling
-                preferences, choose a slot, and confirm with your parent.
+                Enter your mobile number, share your details and counseling preferences, choose a
+                slot, and confirm with your parent.
               </p>
               <ul className="mt-4 flex flex-wrap gap-2 text-xs font-bold uppercase tracking-wide text-slate-200">
                 <li className="rounded border border-slate-600 bg-[#1E293B] px-2 py-1">
-                  For registered students
+                  Direct booking available
                 </li>
                 <li className="rounded border border-emerald-800 bg-emerald-950/60 px-2 py-1 text-emerald-100">
                   Parent must attend
@@ -353,14 +504,14 @@ export default function GuidanceBookingConfirmation() {
                 noValidate
               >
                 <p className="mb-4 text-xs font-semibold text-slate-600">
-                  Use the same mobile number you used on the{' '}
+                  New here? You can book directly below. Already filled the{' '}
                   <a
                     href="/one-on-one-session"
                     className="font-bold text-[#0F172A] underline underline-offset-2"
                   >
                     1-on-1 session form
                   </a>
-                  .
+                  ? We will prefill your details when we find your number.
                 </p>
 
                 <NeoField label="Student mobile number" error={error} required className="sm:col-span-2">
@@ -394,7 +545,22 @@ export default function GuidanceBookingConfirmation() {
                 noValidate
               >
                 <div className="grid grid-cols-1 gap-5 sm:grid-cols-2">
-                  <StudentDetailsCard student={student} />
+                  {needsProfile ? (
+                    <StudentDetailsForm
+                      mobile={normalizeMobile(mobile)}
+                      studentName={studentName}
+                      setStudentName={setStudentName}
+                      currentClass={currentClass}
+                      setCurrentClass={setCurrentClass}
+                      city={city}
+                      setCity={setCity}
+                      preferredLanguage={preferredLanguage}
+                      setPreferredLanguage={setPreferredLanguage}
+                      fieldErrors={fieldErrors}
+                    />
+                  ) : (
+                    <StudentDetailsCard student={student} />
+                  )}
 
                   <CounselingPreferencesSection
                     collegeBudget={collegeBudget}
@@ -461,6 +627,7 @@ export default function GuidanceBookingConfirmation() {
                     type="button"
                     onClick={() => {
                       setStep('mobile');
+                      setNeedsProfile(false);
                       setError('');
                       setSlotError('');
                       setFieldErrors({});

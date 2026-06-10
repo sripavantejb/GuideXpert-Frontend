@@ -59,6 +59,42 @@ function defaultTestCallbackLocal() {
   return toDatetimeLocalValue(new Date(Date.now() + 3 * 60 * 1000));
 }
 
+/** Sample data aligned with real IIT counselling reminder queue / additional_data. */
+function createDefaultTestForm() {
+  return {
+    personName: 'Ravi Kumar',
+    phone: '',
+    callbackTime: defaultTestCallbackLocal(),
+    notes: 'Registered for free IITian career counselling session — college selection guidance.',
+    class: 'Studying 12th/Intermediate 2nd Year',
+    city: 'Hyderabad',
+    stream: 'MPC',
+    selectedSlot: 'Saturday 7 PM',
+    biggestConcern: 'College selection',
+    preferredLanguage: 'Telugu',
+    top5CollegesText: 'IIT Hyderabad, NIT Warangal, BITS Pilani',
+    helpNeeded: 'Career Counseling with IITian',
+  };
+}
+
+function buildTestCallRequestBody(testForm) {
+  const parsed = parseDatetimeLocalToDate(testForm.callbackTime);
+  return {
+    personName: testForm.personName,
+    phone: testForm.phone,
+    callbackTime: parsed ? parsed.toISOString() : null,
+    notes: testForm.notes,
+    class: testForm.class,
+    city: testForm.city,
+    stream: testForm.stream,
+    selectedSlot: testForm.selectedSlot,
+    biggestConcern: testForm.biggestConcern,
+    preferredLanguage: testForm.preferredLanguage,
+    top5CollegesText: testForm.top5CollegesText,
+    helpNeeded: testForm.helpNeeded,
+  };
+}
+
 /** Parse datetime-local as local wall-clock (avoids UTC mis-parse). */
 function parseDatetimeLocalToDate(value) {
   if (!value || typeof value !== 'string') return null;
@@ -206,12 +242,7 @@ export default function AiCallsDashboard() {
 
   const [drawerId, setDrawerId] = useState(null);
 
-  const [testForm, setTestForm] = useState({
-    personName: '',
-    phone: '',
-    callbackTime: defaultTestCallbackLocal(),
-    notes: '',
-  });
+  const [testForm, setTestForm] = useState(createDefaultTestForm);
   const [testPayload, setTestPayload] = useState(null);
   const [testLoading, setTestLoading] = useState(false);
   const [testSuccess, setTestSuccess] = useState('');
@@ -380,13 +411,7 @@ export default function AiCallsDashboard() {
   async function handlePreviewTest() {
     setTestLoading(true);
     setTestPayload(null);
-    const parsed = parseDatetimeLocalToDate(testForm.callbackTime);
-    const body = {
-      personName: testForm.personName,
-      phone: testForm.phone,
-      callbackTime: parsed ? parsed.toISOString() : null,
-      notes: testForm.notes,
-    };
+    const body = buildTestCallRequestBody(testForm);
     const res = await previewAiTestCall(body);
     setTestLoading(false);
     if (res.success) {
@@ -407,12 +432,8 @@ export default function AiCallsDashboard() {
       setTestLoading(false);
       return;
     }
-    const body = {
-      personName: testForm.personName,
-      phone: testForm.phone,
-      callbackTime: parsed.toISOString(),
-      notes: testForm.notes,
-    };
+    const body = buildTestCallRequestBody(testForm);
+    body.callbackTime = parsed.toISOString();
     const res = await createAiTestCall(body);
     setTestLoading(false);
     if (!res.success) {
@@ -421,7 +442,7 @@ export default function AiCallsDashboard() {
     }
     const msg = res.data?.message || res.data?.data?.message || 'Test call scheduled with OSVI.';
     setTestSuccess(msg);
-    setTestForm({ personName: '', phone: '', callbackTime: defaultTestCallbackLocal(), notes: '' });
+    setTestForm(createDefaultTestForm());
     setTestPayload(null);
     refreshAnalytics();
   }
@@ -601,21 +622,42 @@ export default function AiCallsDashboard() {
         <h2 className="text-lg font-semibold text-gray-900 mb-2">Request Test Call</h2>
         <p className="text-sm text-amber-800 bg-amber-50 border border-amber-200 rounded-lg px-3 py-2 mb-4 max-w-2xl">
           OSVI <strong>schedules</strong> the call for the callback time — your phone rings at that time, not right away.
-          Use a time at least 1–2 minutes in the future. Notes fill <code className="text-xs">prev_call_summary</code> and <code className="text-xs">additional_data.biggest_concern</code>.
+          Use a time at least 1–2 minutes in the future. Sample fields below mirror real queue <code className="text-xs">additional_data</code> (class, city, stream, selected slot, colleges, etc.).
         </p>
         {testSuccess && (
           <div className="mb-4 rounded-lg bg-green-50 border border-green-200 px-3 py-2 text-sm text-green-800 max-w-2xl">
             {testSuccess}
           </div>
         )}
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4 max-w-2xl">
-          {['personName', 'phone', 'notes'].map((field) => (
-            <label key={field} className="block text-sm text-gray-600">
-              {field === 'personName' ? 'Person Name' : field === 'phone' ? 'Phone Number' : 'Notes'}
+        <div className="flex flex-wrap gap-2 mb-4">
+          <button
+            type="button"
+            onClick={() => setTestForm(createDefaultTestForm())}
+            className="px-3 py-1.5 text-sm border rounded-lg hover:bg-gray-50"
+          >
+            Reset sample data
+          </button>
+        </div>
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4 max-w-4xl">
+          {[
+            { key: 'personName', label: 'Person Name' },
+            { key: 'phone', label: 'Phone Number' },
+            { key: 'class', label: 'Class' },
+            { key: 'city', label: 'City' },
+            { key: 'stream', label: 'Stream' },
+            { key: 'selectedSlot', label: 'Selected Session Slot' },
+            { key: 'biggestConcern', label: 'Biggest Concern' },
+            { key: 'preferredLanguage', label: 'Preferred Language' },
+            { key: 'top5CollegesText', label: 'Top 5 Colleges' },
+            { key: 'helpNeeded', label: 'Help Needed' },
+            { key: 'notes', label: 'Notes (optional override)' },
+          ].map(({ key, label }) => (
+            <label key={key} className={`block text-sm text-gray-600 ${key === 'notes' ? 'md:col-span-2' : ''}`}>
+              {label}
               <input
                 className="mt-1 w-full border rounded-lg px-3 py-2 text-sm"
-                value={testForm[field]}
-                onChange={(e) => setTestForm((f) => ({ ...f, [field]: e.target.value }))}
+                value={testForm[key]}
+                onChange={(e) => setTestForm((f) => ({ ...f, [key]: e.target.value }))}
               />
             </label>
           ))}
