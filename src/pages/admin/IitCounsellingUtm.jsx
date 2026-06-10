@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { Link, useSearchParams } from 'react-router-dom';
 import {
   FiCopy,
@@ -432,8 +432,25 @@ export default function IitCounsellingUtm() {
     linkTarget: analyticsLinkTarget,
   }), [fromDate, toDate, fromTime, toTime, analyticsLinkTarget]);
 
+  /** Incremented on each fetch so stale responses cannot overwrite the active tab's data. */
+  const analyticsLoadIdRef = useRef(0);
+
+  const handleAnalyticsLinkTargetChange = useCallback((nextTarget) => {
+    if (nextTarget === analyticsLinkTarget) return;
+    analyticsLoadIdRef.current += 1;
+    setAnalyticsLinkTarget(nextTarget);
+    setData(null);
+    setVisitTrend([]);
+    setError('');
+    setLoading(true);
+    setTrendLoading(true);
+  }, [analyticsLinkTarget]);
+
   const loadData = useCallback(() => {
     const token = getStoredToken();
+    const loadId = ++analyticsLoadIdRef.current;
+    const requestedLinkTarget = analyticsLinkTarget;
+
     setLoading(true);
     setTrendLoading(true);
     setError('');
@@ -442,6 +459,8 @@ export default function IitCounsellingUtm() {
       getIitCounsellingUtmAnalytics(sharedFilters, token),
       getIitCounsellingVisitAnalytics(sharedFilters, token),
     ]).then(([utmRes, visitRes]) => {
+      if (loadId !== analyticsLoadIdRef.current) return;
+
       setLoading(false);
       setTrendLoading(false);
       if (!utmRes.success) {
@@ -450,14 +469,24 @@ export default function IitCounsellingUtm() {
         setVisitTrend([]);
         return;
       }
-      setData(utmRes.data?.data || null);
+      const payload = utmRes.data?.data || null;
+      const responseLinkTarget = payload?.filters?.linkTarget;
+      if (responseLinkTarget && responseLinkTarget !== requestedLinkTarget) {
+        return;
+      }
+      setData(payload);
       if (visitRes.success && visitRes.data?.data?.trend) {
+        const visitFilters = visitRes.data.data.filters;
+        if (visitFilters?.linkTarget && visitFilters.linkTarget !== requestedLinkTarget) {
+          setVisitTrend([]);
+          return;
+        }
         setVisitTrend(visitRes.data.data.trend);
       } else {
         setVisitTrend([]);
       }
     });
-  }, [sharedFilters]);
+  }, [sharedFilters, analyticsLinkTarget]);
 
   useEffect(() => {
     loadData();
@@ -964,7 +993,7 @@ export default function IitCounsellingUtm() {
           label="Visit analytics"
           ariaLabel="Visit analytics landing page"
           value={analyticsLinkTarget}
-          onChange={setAnalyticsLinkTarget}
+          onChange={handleAnalyticsLinkTargetChange}
         />
         <p className="text-sm text-gray-600 min-w-0">
           Showing KPIs and charts for{' '}
@@ -1371,7 +1400,7 @@ export default function IitCounsellingUtm() {
               label="Visit analytics"
               ariaLabel="UTM combo table landing page"
               value={analyticsLinkTarget}
-              onChange={setAnalyticsLinkTarget}
+              onChange={handleAnalyticsLinkTargetChange}
             />
           </div>
           {dateRangeToolbar}
