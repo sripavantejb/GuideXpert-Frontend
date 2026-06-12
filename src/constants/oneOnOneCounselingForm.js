@@ -1,10 +1,10 @@
 /** Keep in sync with backend/constants/oneOnOneCounseling.js */
 
 export const CURRENT_CLASS_OPTIONS = [
+  'Inter 2nd Year Completed',
   '10th',
   'Inter 1st Year',
   'Inter 2nd Year',
-  'Inter 2nd Year Completed',
   'Diploma',
   'Other',
 ];

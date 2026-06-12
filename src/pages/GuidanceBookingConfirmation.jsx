@@ -1,4 +1,5 @@
-import { useEffect, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
+import MobileOtpField from '../components/forms/MobileOtpField';
 import { FormInput, FormSelect, NeoField } from '../components/oneOnOneSession/FormControls';
 import GuidanceSlotPicker from '../components/oneOnOneSession/GuidanceSlotPicker';
 import { COLLEGE_BUDGET_OPTIONS, CURRENT_CLASS_OPTIONS, PREFERRED_LANGUAGE_OPTIONS } from '../constants/oneOnOneCounselingForm';
@@ -333,10 +334,19 @@ export default function GuidanceBookingConfirmation() {
   const [parentConfirmed, setParentConfirmed] = useState(false);
   const [whatsappConsent, setWhatsappConsent] = useState(false);
   const [success, setSuccess] = useState(false);
+  const [otpRequired, setOtpRequired] = useState(false);
+  const [otpVerified, setOtpVerified] = useState(false);
+  const pendingCheckRef = useRef(null);
 
   useEffect(() => {
     document.title = 'Confirm Your Guidance Session Slot | GuideXpert';
     captureUtmFirstTouch();
+  }, []);
+
+  const resetOtpState = useCallback(() => {
+    setOtpRequired(false);
+    setOtpVerified(false);
+    pendingCheckRef.current = null;
   }, []);
 
   const applyStudentPrefill = (s) => {
@@ -369,6 +379,33 @@ export default function GuidanceBookingConfirmation() {
     window.scrollTo({ top: 0, behavior: 'smooth' });
   };
 
+  const proceedWithCheckResult = useCallback((res) => {
+    if (res.found) {
+      applyStudentPrefill(res.data?.student || null);
+      setNeedsProfile(false);
+      setStudentName('');
+      setCurrentClass('');
+      setCity('');
+      setPreferredLanguage('');
+    } else {
+      resetNewStudentProfile();
+    }
+    goToBookingStep(res.data?.slots || []);
+    resetOtpState();
+  }, [resetOtpState]);
+
+  const handleOtpVerifiedChange = useCallback(
+    (verified) => {
+      setOtpVerified(verified);
+      if (verified && pendingCheckRef.current) {
+        const pending = pendingCheckRef.current;
+        pendingCheckRef.current = null;
+        proceedWithCheckResult(pending);
+      }
+    },
+    [proceedWithCheckResult]
+  );
+
   const handleCheckMobile = async (e) => {
     e.preventDefault();
     setError('');
@@ -396,8 +433,19 @@ export default function GuidanceBookingConfirmation() {
           setSlots([]);
           return;
         }
-        resetNewStudentProfile();
-        goToBookingStep(slotsRes.data || []);
+        const legacyRes = {
+          success: true,
+          found: false,
+          needsProfile: true,
+          needsOtp: true,
+          data: { slots: slotsRes.data || [] },
+        };
+        if (!otpVerified) {
+          pendingCheckRef.current = legacyRes;
+          setOtpRequired(true);
+          return;
+        }
+        proceedWithCheckResult(legacyRes);
         return;
       }
       setError(res.message || 'Something went wrong. Please try again.');
@@ -414,18 +462,13 @@ export default function GuidanceBookingConfirmation() {
       return;
     }
 
-    if (res.found) {
-      applyStudentPrefill(res.data?.student || null);
-      setNeedsProfile(false);
-      setStudentName('');
-      setCurrentClass('');
-      setCity('');
-      setPreferredLanguage('');
-    } else {
-      resetNewStudentProfile();
+    if (res.needsOtp && !otpVerified) {
+      pendingCheckRef.current = res;
+      setOtpRequired(true);
+      return;
     }
 
-    goToBookingStep(res.data?.slots || []);
+    proceedWithCheckResult(res);
   };
 
   const handleBook = async (e) => {
@@ -529,35 +572,65 @@ export default function GuidanceBookingConfirmation() {
                 className="rounded-[14px] border-2 border-[#0F172A] bg-white p-5 shadow-[6px_6px_0px_#0F172A] sm:p-7"
                 noValidate
               >
-                <p className="mb-4 text-xs font-semibold text-slate-600">
-                  New here? You can book directly below. Already filled the{' '}
-                  <a
-                    href="/one-on-one-session"
-                    className="font-bold text-[#0F172A] underline underline-offset-2"
-                  >
-                    1-on-1 session form
-                  </a>
-                  ? We will prefill your details when we find your number.
-                </p>
+                {otpRequired ? (
+                  <p className="mb-4 text-xs font-semibold text-slate-600">
+                    Verify your mobile number to continue booking.
+                  </p>
+                ) : (
+                  <p className="mb-4 text-xs font-semibold text-slate-600">
+                    New here? You can book directly below. Already filled the{' '}
+                    <a
+                      href="/one-on-one-session"
+                      className="font-bold text-[#0F172A] underline underline-offset-2"
+                    >
+                      1-on-1 session form
+                    </a>
+                    ? We will prefill your details when we find your number.
+                  </p>
+                )}
 
-                <NeoField label="Student mobile number" error={error} required className="sm:col-span-2">
-                  <FormInput
-                    id="guidance-mobile"
-                    name="mobile"
-                    type="tel"
-                    inputMode="numeric"
-                    maxLength={10}
-                    value={mobile}
-                    onChange={(e) => setMobile(normalizeMobile(e.target.value))}
+                {otpRequired ? (
+                  <MobileOtpField
+                    label="Student mobile number"
+                    mobileNumber={mobile}
+                    onMobileChange={(digits) => {
+                      setMobile(digits);
+                      setOtpVerified(false);
+                      pendingCheckRef.current = null;
+                    }}
                     error={error}
-                    placeholder="10-digit mobile number"
+                    onVerifiedChange={handleOtpVerifiedChange}
+                    requireName={false}
+                    occupation="Guidance Session Booking"
                   />
-                </NeoField>
+                ) : (
+                  <NeoField label="Student mobile number" error={error} required className="sm:col-span-2">
+                    <FormInput
+                      id="guidance-mobile"
+                      name="mobile"
+                      type="tel"
+                      inputMode="numeric"
+                      maxLength={10}
+                      value={mobile}
+                      onChange={(e) => {
+                        setMobile(normalizeMobile(e.target.value));
+                        resetOtpState();
+                      }}
+                      error={error}
+                      placeholder="10-digit mobile number"
+                    />
+                  </NeoField>
+                )}
 
                 <div className="mt-8">
                   <button
                     type="submit"
-                    disabled={loading}
+                    disabled={loading || (otpRequired && !otpVerified)}
+                    title={
+                      otpRequired && !otpVerified
+                        ? 'Verify your mobile number with OTP to continue'
+                        : undefined
+                    }
                     className="w-full rounded-[14px] border-2 border-[#0F172A] bg-[#c7f36b] px-6 py-3 text-sm font-black uppercase tracking-wide text-[#0F172A] shadow-[4px_4px_0px_#0F172A] transition-all hover:-translate-y-0.5 hover:bg-[#b0d95d] disabled:cursor-not-allowed disabled:opacity-70 sm:w-auto"
                   >
                     {loading ? 'Checking…' : 'Continue'}
@@ -657,6 +730,7 @@ export default function GuidanceBookingConfirmation() {
                       setError('');
                       setSlotError('');
                       setFieldErrors({});
+                      resetOtpState();
                     }}
                     className="rounded-[14px] border-2 border-[#0F172A] bg-white px-5 py-3 text-sm font-black uppercase tracking-wide text-[#0F172A] shadow-[3px_3px_0px_#0F172A] transition-all hover:-translate-y-0.5"
                   >

@@ -5,6 +5,8 @@ import { sendOtp, verifyOtp } from '../../utils/api';
 /**
  * Mobile number field with Send OTP / 6-digit verify flow (IIT counselling pattern).
  */
+const MOBILE_ONLY_OTP_NAME = 'Student';
+
 export default function MobileOtpField({
   label = '2. Mobile Number',
   fullName,
@@ -15,6 +17,7 @@ export default function MobileOtpField({
   occupation = '1-on-1 Counseling',
   className = 'sm:col-span-2',
   required = true,
+  requireName = true,
 }) {
   const [otp, setOtp] = useState('');
   const [otpSent, setOtpSent] = useState(false);
@@ -48,17 +51,25 @@ export default function MobileOtpField({
     return undefined;
   }, [otpSent, otpVerified]);
 
-  const canRequestOtp = () => {
+  const otpFullName = () => {
     const name = String(fullName ?? '').trim();
+    if (requireName) return name;
+    return name.length >= 2 ? name : MOBILE_ONLY_OTP_NAME;
+  };
+
+  const canRequestOtp = () => {
     const phone = String(mobileNumber ?? '').trim();
-    return name.length >= 2 && /^\d{10}$/.test(phone);
+    if (!/^\d{10}$/.test(phone)) return false;
+    if (!requireName) return true;
+    return String(fullName ?? '').trim().length >= 2;
   };
 
   const missingOtpRequirementHint = () => {
-    const name = String(fullName ?? '').trim();
     const phone = String(mobileNumber ?? '').trim();
-    if (name.length < 2) return 'Enter student name to enable OTP.';
     if (!/^\d{10}$/.test(phone)) return 'Enter a valid 10-digit mobile number to enable OTP.';
+    if (requireName && String(fullName ?? '').trim().length < 2) {
+      return 'Enter student name to enable OTP.';
+    }
     return '';
   };
 
@@ -86,7 +97,7 @@ export default function MobileOtpField({
     setOtpLoading(true);
     try {
       const result = await sendOtp(
-        String(fullName).trim(),
+        otpFullName(),
         String(mobileNumber).trim(),
         occupation
       );
@@ -270,7 +281,7 @@ export default function MobileOtpField({
       {externalError ? (
         <p className="mt-1 text-xs font-bold text-red-700">{externalError}</p>
       ) : null}
-      {!otpVerified && !otpSent && !externalError && !canRequestOtp() ? (
+      {!otpVerified && !otpSent && !externalError && !canRequestOtp() && missingOtpRequirementHint() ? (
         <p className="mt-1 text-xs font-semibold text-slate-600">{missingOtpRequirementHint()}</p>
       ) : null}
 

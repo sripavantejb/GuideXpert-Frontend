@@ -33,6 +33,12 @@ const STEP_TITLES = {
   2: 'Session Preferences',
 };
 
+const neoCheckboxClass =
+  'mt-0.5 h-4 w-4 shrink-0 rounded border-2 border-[#0F172A] accent-[#0F172A]';
+
+const neoCheckboxLabelClass =
+  'flex cursor-pointer items-start gap-3 rounded-[10px] border-2 border-[#0F172A] bg-white p-4 shadow-[2px_2px_0px_#0F172A] transition-all hover:-translate-y-0.5 hover:shadow-[3px_3px_0px_#0F172A]';
+
 function SuccessView() {
   return (
     <div className="rounded-[14px] border-2 border-[#0F172A] bg-white p-8 text-center shadow-[6px_6px_0px_#0F172A] sm:p-12">
@@ -82,6 +88,7 @@ export default function OneOnOneSessionPage() {
   const [submitting, setSubmitting] = useState(false);
   const [submitted, setSubmitted] = useState(false);
   const [otpVerified, setOtpVerified] = useState(false);
+  const [parentAttendanceConfirmed, setParentAttendanceConfirmed] = useState(false);
   const [slotOptionsTick, setSlotOptionsTick] = useState(0);
   const [visitorFingerprint, setVisitorFingerprint] = useState('');
 
@@ -221,6 +228,7 @@ export default function OneOnOneSessionPage() {
     if (currentStep <= 1) return;
     setErrors({});
     setSubmitError('');
+    setParentAttendanceConfirmed(false);
     setCurrentStep((prev) => prev - 1);
     window.scrollTo({ top: 0, behavior: 'smooth' });
   };
@@ -250,6 +258,11 @@ export default function OneOnOneSessionPage() {
       return;
     }
 
+    if (!parentAttendanceConfirmed) {
+      setSubmitError('Please confirm that you will mandatorily attend the session with your parent.');
+      return;
+    }
+
     if (!leadId) {
       setSubmitError('Session expired. Please go back to step 1 and try again.');
       return;
@@ -264,6 +277,7 @@ export default function OneOnOneSessionPage() {
         collegeBudget: form.collegeBudget,
         preferredLanguage: form.preferredLanguage,
         preferredTimeSlot: form.preferredTimeSlot,
+        parentAttendanceConfirmed: true,
       });
 
       if (result.success) {
@@ -436,6 +450,26 @@ export default function OneOnOneSessionPage() {
                     3-hour slots from 9 AM–9 PM (IST) for the next 2 calendar days. Slots update at
                     12:00 AM IST.
                   </p>
+
+                  <div className="sm:col-span-2">
+                    <p className="mb-3 text-sm font-black uppercase tracking-wide text-[#0F172A]">
+                      Confirmation <span className="text-red-700">*</span>
+                    </p>
+                    <label className={neoCheckboxLabelClass}>
+                      <input
+                        type="checkbox"
+                        checked={parentAttendanceConfirmed}
+                        onChange={(e) => {
+                          setParentAttendanceConfirmed(e.target.checked);
+                          if (e.target.checked) setSubmitError('');
+                        }}
+                        className={neoCheckboxClass}
+                      />
+                      <span className="text-sm font-semibold text-[#0F172A]">
+                        I&apos;ll mandatorily attend the session with the parent.
+                      </span>
+                    </label>
+                  </div>
                 </div>
               ) : null}
 
@@ -462,11 +496,17 @@ export default function OneOnOneSessionPage() {
                   </button>
                   <button
                     type="submit"
-                    disabled={submitting || (currentStep === 1 && !otpVerified)}
+                    disabled={
+                      submitting ||
+                      (currentStep === 1 && !otpVerified) ||
+                      (currentStep === 2 && !parentAttendanceConfirmed)
+                    }
                     title={
                       currentStep === 1 && !otpVerified
                         ? 'Verify your mobile number with OTP to continue'
-                        : undefined
+                        : currentStep === 2 && !parentAttendanceConfirmed
+                          ? 'Please confirm parent attendance to book your session'
+                          : undefined
                     }
                     className="rounded-[14px] border-2 border-[#0F172A] bg-[#c7f36b] px-6 py-3 text-sm font-black uppercase tracking-wide text-[#0F172A] shadow-[4px_4px_0px_#0F172A] transition-all hover:-translate-y-0.5 hover:bg-[#b0d95d] disabled:cursor-not-allowed disabled:opacity-70"
                   >
