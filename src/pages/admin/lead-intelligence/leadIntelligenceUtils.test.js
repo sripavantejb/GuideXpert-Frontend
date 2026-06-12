@@ -3,6 +3,7 @@ import { describe, test } from 'node:test';
 import {
   flattenRecentEvents,
   formatConfidence,
+  formatLeadProfileSummary,
   getStageTone,
   isValidPhone10,
 } from './leadIntelligenceUtils.js';
@@ -37,5 +38,17 @@ describe('leadIntelligenceUtils', () => {
   test('isValidPhone10 validates 10 digit phones', () => {
     assert.equal(isValidPhone10('9876543210'), true);
     assert.equal(isValidPhone10('123'), false);
+  });
+
+  test('formatLeadProfileSummary builds signal tags from profile fields', () => {
+    assert.deepEqual(
+      formatLeadProfileSummary({
+        exam: 'JEE',
+        handoffRequested: true,
+        demoInterested: false,
+        priceSensitive: true,
+      }),
+      ['JEE', 'Handoff', 'Price']
+    );
   });
 });

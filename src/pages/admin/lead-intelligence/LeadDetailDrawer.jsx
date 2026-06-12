@@ -41,7 +41,9 @@ export default function LeadDetailDrawer({ phone, onClose }) {
             <p className="text-[11px] font-semibold uppercase tracking-[0.14em] text-primary-blue-600">
               Chatbot Lead Profile
             </p>
-            <h2 className="mt-1 text-lg font-semibold tracking-tight text-slate-900">Lead Details</h2>
+            <h2 className="mt-1 text-lg font-semibold tracking-tight text-slate-900">
+              {details?.name || profile?.name || 'Lead Details'}
+            </h2>
             <p className="mt-0.5 text-xs tabular-nums text-slate-500">{phone}</p>
           </div>
           <button
@@ -73,6 +75,7 @@ export default function LeadDetailDrawer({ phone, onClose }) {
               <section className="rounded-2xl border border-slate-200/80 bg-slate-50/40 p-4">
                 <h3 className="mb-3 text-sm font-semibold tracking-tight text-slate-900">Profile</h3>
                 <dl className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                  <DetailField label="Name" value={details?.name || profile?.name} />
                   <DetailField label="Branch" value={profile?.branchInterest} />
                   <DetailField label="College" value={profile?.collegeInterest} />
                   <DetailField label="Exam" value={profile?.exam} />

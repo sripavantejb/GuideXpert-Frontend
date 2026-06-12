@@ -57,3 +57,13 @@ export function flattenRecentEvents(recentEvents = []) {
 export function isValidPhone10(value) {
   return /^\d{10}$/.test(String(value || '').trim());
 }
+
+export function formatLeadProfileSummary(row = {}) {
+  const tags = [];
+  if (row.exam) tags.push(row.exam);
+  if (row.handoffRequested) tags.push('Handoff');
+  if (row.demoInterested) tags.push('Demo');
+  if (row.priceSensitive) tags.push('Price');
+  if (row.languagePreference) tags.push(row.languagePreference);
+  return tags;
+}
