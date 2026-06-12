@@ -50,7 +50,7 @@ export const getLeadStats = () => leadInsightsRequest('/stats');
 export const getHotLeads = () => leadInsightsRequest('/hot');
 
 export const listLeads = (params = {}) =>
-  leadInsightsRequest(`/${buildLeadInsightsQuery(params)}`);
+  leadInsightsRequest(buildLeadInsightsQuery(params));
 
 export const getLeadDetails = (phone) =>
   leadInsightsRequest(`/${encodeURIComponent(String(phone || '').trim())}`);

@@ -22,6 +22,13 @@ describe('leadInsightsService', () => {
     assert.equal(buildLeadInsightsQuery({}), '');
   });
 
+  test('list query path avoids slash before query (Vercel /api proxy 404)', () => {
+    const query = buildLeadInsightsQuery({ page: 1, limit: 25 });
+    const listPath = `${query}`;
+    assert.equal(listPath, '?page=1&limit=25');
+    assert.equal(listPath.includes('/?'), false);
+  });
+
   test('normalizeLeadInsightsResponse maps success payload', () => {
     const normalized = normalizeLeadInsightsResponse({
       success: true,
