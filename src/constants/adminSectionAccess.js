@@ -15,6 +15,7 @@ export const ADMIN_SECTION_OPTIONS = [
   { sectionKey: 'slots', label: 'Slots' },
   { sectionKey: 'training-form-responses', label: 'Training Form' },
   { sectionKey: 'one-on-one-counseling', label: '1-on-1 Counseling' },
+  { sectionKey: 'lead-intelligence', label: 'Chatbot Lead Intelligence' },
   { sectionKey: 'guidance-slot-bookings', label: 'Guidance Slot Bookings' },
   { sectionKey: 'one-on-one-counselors-admin', label: 'One-on-One Counselors' },
   { sectionKey: 'training-feedback', label: 'Activation Form' },
@@ -70,6 +71,7 @@ export const ADMIN_SECTION_GROUPS = [
       'ai-calls',
       'iit-ai-calls-summary',
       'whatsapp-ops',
+      'lead-intelligence',
     ],
   },
   {

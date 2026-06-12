@@ -46,6 +46,7 @@ const navItems = [
   { to: '/admin/ai-calls', label: 'AI Calls', icon: FiPhone, sectionKey: 'ai-calls' },
   { to: '/admin/iit-ai-calls-summary', label: 'IITian AI Calls Summary', icon: FiPhone, sectionKey: 'iit-ai-calls-summary' },
   { to: '/admin/whatsapp-ops', label: 'WhatsApp ops', icon: FiSend, sectionKey: 'whatsapp-ops' },
+  { to: '/admin/lead-intelligence', label: 'Chatbot Lead Intelligence', icon: FiMessageSquare, sectionKey: 'lead-intelligence' },
   { to: '/admin/settings', label: 'Settings', icon: FiSettings, sectionKey: 'settings' },
 ];
 
@@ -98,7 +99,8 @@ export default function AdminLayout() {
     currentPath.startsWith('/admin/calling-team') ||
     currentPath.startsWith('/admin/calling-data') ||
     currentPath.startsWith('/admin/ai-calls') ||
-    currentPath.startsWith('/admin/iit-ai-calls-summary');
+    currentPath.startsWith('/admin/iit-ai-calls-summary') ||
+    currentPath.startsWith('/admin/lead-intelligence');
   useEffect(() => {
     const firstAllowed = visibleNavItems[0];
     if (user && !user.isSuperAdmin && !isPathAllowed && firstAllowed) {

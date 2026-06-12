@@ -48,6 +48,7 @@ import TrainingFeedback from './pages/admin/TrainingFeedback';
 import CounsellorSupportRequests from './pages/admin/CounsellorSupportRequests';
 import TrainingFormResponses from './pages/admin/TrainingFormResponses';
 import OneOnOneCounselingLeads from './pages/admin/OneOnOneCounselingLeads';
+import LeadIntelligenceDashboard from './pages/admin/lead-intelligence/LeadIntelligenceDashboard';
 import GuidanceSlotBookings from './pages/admin/GuidanceSlotBookings';
 import OneOnOneCounselorsAdmin from './pages/admin/OneOnOneCounselorsAdmin';
 import OneOnOneSessionPage from './pages/OneOnOneSessionPage';
@@ -443,6 +444,7 @@ function App() {
             <Route path="counsellor-support-requests" element={<CounsellorSupportRequests />} />
             <Route path="training-form-responses" element={<TrainingFormResponses />} />
             <Route path="one-on-one-counseling" element={<OneOnOneCounselingLeads />} />
+            <Route path="lead-intelligence" element={<LeadIntelligenceDashboard />} />
             <Route path="guidance-slot-bookings" element={<GuidanceSlotBookings />} />
             <Route path="one-on-one-counselors" element={<OneOnOneCounselorsAdmin />} />
             <Route path="influencer-create" element={<InfluencerCreate />} />
