@@ -4,12 +4,10 @@ import {
   ChoiceGroup,
   FormInput,
   FormSelect,
-  FormTextarea,
   NeoField,
 } from '../components/oneOnOneSession/FormControls';
 import SessionSlotPicker from '../components/oneOnOneSession/SessionSlotPicker';
 import {
-  BIGGEST_CONCERN_OPTIONS,
   COLLEGE_BUDGET_OPTIONS,
   CURRENT_CLASS_OPTIONS,
   INITIAL_FORM_STATE,
@@ -17,11 +15,7 @@ import {
   PREFERRED_LANGUAGE_OPTIONS,
   SESSION_ATTENDEE_OPTIONS,
 } from '../constants/oneOnOneCounselingForm';
-import {
-  saveOneOnOneSection1,
-  saveOneOnOneSection2,
-  saveOneOnOneSection3,
-} from '../utils/api';
+import { saveOneOnOneSection1, saveOneOnOneSection2 } from '../utils/api';
 import { getApiBaseUrl } from '../utils/apiBaseUrl';
 import {
   getOneOnOneCounselingSlots,
@@ -36,8 +30,7 @@ import {
 
 const STEP_TITLES = {
   1: 'Student Details',
-  2: 'Parent & Preferences',
-  3: 'Session Booking',
+  2: 'Session Preferences',
 };
 
 function SuccessView() {
@@ -155,11 +148,6 @@ export default function OneOnOneSessionPage() {
     setErrors((prev) => ({ ...prev, [key]: '' }));
   };
 
-  const handleMobileChange = (key, raw) => {
-    const digits = raw.replace(/\D/g, '').slice(0, 10);
-    setField(key, digits);
-  };
-
   const scrollToFirstError = () => {
     requestAnimationFrame(() => {
       document
@@ -173,7 +161,7 @@ export default function OneOnOneSessionPage() {
     if (currentStep === 1 && !otpVerified) {
       nextErrors.mobileNumber = 'Please verify your mobile number with OTP first.';
     }
-    if (currentStep === 3) {
+    if (currentStep === 2) {
       if (!form.preferredTimeSlot?.trim()) {
         nextErrors.preferredTimeSlot =
           nextErrors.preferredTimeSlot || 'Please select a session slot';
@@ -204,45 +192,23 @@ export default function OneOnOneSessionPage() {
         if (fingerprint) setVisitorFingerprint(fingerprint);
       }
 
-      if (currentStep === 1) {
-        const result = await saveOneOnOneSection1({
-          studentName: form.studentName.trim(),
-          mobileNumber: form.mobileNumber.replace(/\D/g, ''),
-          currentClass: form.currentClass,
-          city: form.city.trim(),
-          entranceExamRank: form.entranceExamRank.trim(),
-          otpVerified: true,
-          ...utmPayload,
-          ...(fingerprint ? { visitorFingerprint: fingerprint } : {}),
-        });
-        if (!result.success) {
-          setSubmitError(result.message || 'Could not save this step. Please try again.');
-          return;
-        }
-        const savedLeadId = result.data?.data?.leadId;
-        if (savedLeadId) setLeadId(savedLeadId);
-      } else if (currentStep === 2) {
-        if (!leadId) {
-          setSubmitError('Session expired. Please go back to step 1 and try again.');
-          return;
-        }
-        const result = await saveOneOnOneSection2({
-          leadId,
-          parentName: form.parentName.trim(),
-          parentMobileNumber: form.parentMobileNumber.replace(/\D/g, ''),
-          sessionAttendee: form.sessionAttendee,
-          interestedBranch: form.interestedBranch,
-          collegeBudget: form.collegeBudget,
-          biggestConcern: form.biggestConcern,
-        });
-        if (!result.success) {
-          setSubmitError(result.message || 'Could not save this step. Please try again.');
-          return;
-        }
+      const result = await saveOneOnOneSection1({
+        studentName: form.studentName.trim(),
+        mobileNumber: form.mobileNumber.replace(/\D/g, ''),
+        currentClass: form.currentClass,
+        otpVerified: true,
+        ...utmPayload,
+        ...(fingerprint ? { visitorFingerprint: fingerprint } : {}),
+      });
+      if (!result.success) {
+        setSubmitError(result.message || 'Could not save this step. Please try again.');
+        return;
       }
+      const savedLeadId = result.data?.data?.leadId;
+      if (savedLeadId) setLeadId(savedLeadId);
 
       setErrors({});
-      setCurrentStep((prev) => prev + 1);
+      setCurrentStep(2);
       window.scrollTo({ top: 0, behavior: 'smooth' });
     } catch {
       setSubmitError('Connection issue. Please check your network and try again.');
@@ -261,7 +227,7 @@ export default function OneOnOneSessionPage() {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    if (currentStep < 3) {
+    if (currentStep === 1) {
       await handleNext(e);
       return;
     }
@@ -291,11 +257,13 @@ export default function OneOnOneSessionPage() {
 
     setSubmitting(true);
     try {
-      const result = await saveOneOnOneSection3({
+      const result = await saveOneOnOneSection2({
         leadId,
+        sessionAttendee: form.sessionAttendee,
+        interestedBranch: form.interestedBranch,
+        collegeBudget: form.collegeBudget,
         preferredLanguage: form.preferredLanguage,
         preferredTimeSlot: form.preferredTimeSlot,
-        additionalQuestions: form.additionalQuestions.trim() || undefined,
       });
 
       if (result.success) {
@@ -324,7 +292,7 @@ export default function OneOnOneSessionPage() {
                 Book Your 1-on-1 IITian Career Counseling Session
               </h1>
               <p className="mt-2 text-sm font-medium text-slate-300">
-                Step {currentStep} of 3 — {STEP_TITLES[currentStep]}
+                Step {currentStep} of 2 — {STEP_TITLES[currentStep]}
               </p>
               <p className="mt-1 text-sm font-medium text-slate-400">
                 Get clarity on college selection, branch selection, placements, fees, and future career
@@ -342,7 +310,7 @@ export default function OneOnOneSessionPage() {
               <div className="h-2 overflow-hidden rounded-full border-2 border-[#0F172A] bg-slate-200">
                 <div
                   className="h-full bg-[#c7f36b] transition-all duration-300"
-                  style={{ width: `${(currentStep / 3) * 100}%` }}
+                  style={{ width: `${(currentStep / 2) * 100}%` }}
                 />
               </div>
             </div>
@@ -396,69 +364,13 @@ export default function OneOnOneSessionPage() {
                     error={errors.currentClass}
                     required
                   />
-
-                  <NeoField label="4. City / Town" error={errors.city} required>
-                    <FormInput
-                      id="city"
-                      name="city"
-                      autoComplete="address-level2"
-                      required
-                      value={form.city}
-                      onChange={(e) => setField('city', e.target.value)}
-                      error={errors.city}
-                      placeholder="e.g. Hyderabad, Vijayawada"
-                    />
-                  </NeoField>
-
-                  <NeoField
-                    label="5. Entrance Exam Rank"
-                    error={errors.entranceExamRank}
-                    className="sm:col-span-2"
-                    required
-                  >
-                    <FormInput
-                      id="entranceExamRank"
-                      name="entranceExamRank"
-                      required
-                      value={form.entranceExamRank}
-                      onChange={(e) => setField('entranceExamRank', e.target.value)}
-                      error={errors.entranceExamRank}
-                      placeholder="e.g. JEE Main rank / EAMCET rank / Not appeared yet"
-                    />
-                  </NeoField>
                 </div>
               ) : null}
 
               {currentStep === 2 ? (
                 <div className="grid grid-cols-1 gap-5 sm:grid-cols-2">
-                  <NeoField label="6. Parent Name" error={errors.parentName} required>
-                    <FormInput
-                      id="parentName"
-                      name="parentName"
-                      required
-                      value={form.parentName}
-                      onChange={(e) => setField('parentName', e.target.value)}
-                      error={errors.parentName}
-                      placeholder="Parent / guardian name"
-                    />
-                  </NeoField>
-
-                  <NeoField label="7. Parent Mobile Number" error={errors.parentMobileNumber} required>
-                    <FormInput
-                      id="parentMobileNumber"
-                      name="parentMobileNumber"
-                      inputMode="numeric"
-                      required
-                      value={form.parentMobileNumber}
-                      onChange={(e) => handleMobileChange('parentMobileNumber', e.target.value)}
-                      error={errors.parentMobileNumber}
-                      placeholder="10-digit number"
-                      maxLength={10}
-                    />
-                  </NeoField>
-
                   <NeoField
-                    label="8. Who Will Attend the Session?"
+                    label="4. Who Will Attend the Session?"
                     error={errors.sessionAttendee}
                     className="sm:col-span-2"
                     required
@@ -475,7 +387,7 @@ export default function OneOnOneSessionPage() {
                     />
                   </NeoField>
 
-                  <NeoField label="9. Interested Branch" error={errors.interestedBranch} required>
+                  <NeoField label="5. Interested Branch" error={errors.interestedBranch} required>
                     <FormSelect
                       id="interestedBranch"
                       name="interestedBranch"
@@ -488,7 +400,7 @@ export default function OneOnOneSessionPage() {
                     />
                   </NeoField>
 
-                  <NeoField label="10. College Budget" error={errors.collegeBudget} required>
+                  <NeoField label="6. College Budget" error={errors.collegeBudget} required>
                     <FormSelect
                       id="collegeBudget"
                       name="collegeBudget"
@@ -501,30 +413,8 @@ export default function OneOnOneSessionPage() {
                     />
                   </NeoField>
 
-                  <NeoField
-                    label="11. Biggest Concern"
-                    error={errors.biggestConcern}
-                    className="sm:col-span-2"
-                    required
-                  >
-                    <FormSelect
-                      id="biggestConcern"
-                      name="biggestConcern"
-                      required
-                      value={form.biggestConcern}
-                      onChange={(e) => setField('biggestConcern', e.target.value)}
-                      error={errors.biggestConcern}
-                      options={BIGGEST_CONCERN_OPTIONS}
-                      placeholder="Select your biggest concern"
-                    />
-                  </NeoField>
-                </div>
-              ) : null}
-
-              {currentStep === 3 ? (
-                <div className="grid grid-cols-1 gap-5 sm:grid-cols-2">
                   <ChoiceGroup
-                    label="12. Preferred Language"
+                    label="7. Preferred Language"
                     name="preferredLanguage"
                     options={PREFERRED_LANGUAGE_OPTIONS}
                     value={form.preferredLanguage}
@@ -534,7 +424,7 @@ export default function OneOnOneSessionPage() {
                   />
 
                   <SessionSlotPicker
-                    label="13. Preferred Session Slot"
+                    label="8. Preferred Session Slot"
                     name="preferredTimeSlot"
                     options={sessionSlotOptions}
                     value={form.preferredTimeSlot}
@@ -546,21 +436,6 @@ export default function OneOnOneSessionPage() {
                     3-hour slots from 9 AM–9 PM (IST) for the next 2 calendar days. Slots update at
                     12:00 AM IST.
                   </p>
-
-                  <NeoField
-                    label="14. Additional Questions (optional)"
-                    error={errors.additionalQuestions}
-                    className="sm:col-span-2"
-                  >
-                    <FormTextarea
-                      id="additionalQuestions"
-                      name="additionalQuestions"
-                      value={form.additionalQuestions}
-                      onChange={(e) => setField('additionalQuestions', e.target.value)}
-                      error={errors.additionalQuestions}
-                      placeholder="Any specific questions for our counselor?"
-                    />
-                  </NeoField>
                 </div>
               ) : null}
 
@@ -572,7 +447,7 @@ export default function OneOnOneSessionPage() {
 
               <div className="mt-8 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
                 <p className="text-xs font-bold uppercase tracking-wide text-slate-500">
-                  {currentStep === 3
+                  {currentStep === 2
                     ? "We'll contact you on WhatsApp to confirm your session."
                     : 'Data is saved section by section.'}
                 </p>
@@ -596,10 +471,10 @@ export default function OneOnOneSessionPage() {
                     className="rounded-[14px] border-2 border-[#0F172A] bg-[#c7f36b] px-6 py-3 text-sm font-black uppercase tracking-wide text-[#0F172A] shadow-[4px_4px_0px_#0F172A] transition-all hover:-translate-y-0.5 hover:bg-[#b0d95d] disabled:cursor-not-allowed disabled:opacity-70"
                   >
                     {submitting
-                      ? currentStep === 3
+                      ? currentStep === 2
                         ? 'Booking…'
                         : 'Saving…'
-                      : currentStep === 3
+                      : currentStep === 2
                         ? 'Book My Free Counseling Session'
                         : 'Save & Next'}
                   </button>

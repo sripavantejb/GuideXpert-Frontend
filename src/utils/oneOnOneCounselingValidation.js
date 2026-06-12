@@ -21,43 +21,16 @@ export function validateRequiredSelect(value, label) {
   return '';
 }
 
-export function validateCity(value) {
-  const t = typeof value === 'string' ? value.trim() : '';
-  if (!t) return 'City / town is required';
-  if (t.length < 2) return 'City / town must be at least 2 characters';
-  if (t.length > 80) return 'City / town must be at most 80 characters';
-  return '';
-}
-
-export function validateEntranceExamRank(value) {
-  const t = typeof value === 'string' ? value.trim() : '';
-  if (!t) return 'Entrance exam rank is required';
-  if (t.length > 120) return 'Maximum 120 characters';
-  return '';
-}
-
-export function validateAdditionalQuestions(value) {
-  const t = typeof value === 'string' ? value.trim() : '';
-  if (t.length > 2000) return 'Maximum 2000 characters';
-  return '';
-}
-
 export function validateOneOnOneForm(form) {
   return {
     studentName: validateName(form.studentName, 'Student name'),
     mobileNumber: validateIndianMobile(form.mobileNumber, 'Student mobile'),
-    parentName: validateName(form.parentName, 'Parent name'),
-    parentMobileNumber: validateIndianMobile(form.parentMobileNumber, 'Parent mobile'),
-    sessionAttendee: validateRequiredSelect(form.sessionAttendee, 'who will attend'),
     currentClass: validateRequiredSelect(form.currentClass, 'current class'),
-    city: validateCity(form.city),
-    entranceExamRank: validateEntranceExamRank(form.entranceExamRank),
+    sessionAttendee: validateRequiredSelect(form.sessionAttendee, 'who will attend'),
     interestedBranch: validateRequiredSelect(form.interestedBranch, 'branch'),
     collegeBudget: validateRequiredSelect(form.collegeBudget, 'college budget'),
-    biggestConcern: validateRequiredSelect(form.biggestConcern, 'biggest concern'),
     preferredLanguage: validateRequiredSelect(form.preferredLanguage, 'language'),
     preferredTimeSlot: validateRequiredSelect(form.preferredTimeSlot, 'session slot'),
-    additionalQuestions: validateAdditionalQuestions(form.additionalQuestions),
   };
 }
 
@@ -66,9 +39,14 @@ export function hasValidationErrors(errors) {
 }
 
 export const ONE_ON_ONE_STEP_CONFIG = {
-  1: ['studentName', 'mobileNumber', 'currentClass', 'city', 'entranceExamRank'],
-  2: ['parentName', 'parentMobileNumber', 'sessionAttendee', 'interestedBranch', 'collegeBudget', 'biggestConcern'],
-  3: ['preferredLanguage', 'preferredTimeSlot', 'additionalQuestions'],
+  1: ['studentName', 'mobileNumber', 'currentClass'],
+  2: [
+    'sessionAttendee',
+    'interestedBranch',
+    'collegeBudget',
+    'preferredLanguage',
+    'preferredTimeSlot',
+  ],
 };
 
 export function validateOneOnOneFormStep(form, step) {
