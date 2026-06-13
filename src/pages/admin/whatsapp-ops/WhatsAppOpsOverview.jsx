@@ -27,6 +27,7 @@ import {
   visibleTemplateKindsForProduct,
 } from './whatsappOpsProductConfig';
 import { useWhatsappOpsHost } from './whatsappOpsHostContext';
+import GuidanceReminderSlotPipeline from '../../../components/Admin/GuidanceReminderSlotPipeline';
 
 const POLL_KEY = 'guidexpert_whatsapp_ops_poll';
 
@@ -271,6 +272,8 @@ export default function WhatsAppOpsOverview() {
   const [monthCursor, setMonthCursor] = useState(() => istCalendarIsoToday().slice(0, 7));
   const [selectedSlotTime, setSelectedSlotTime] = useState('6PM');
   const [calendarMode, setCalendarMode] = useState('day');
+  const showGuidanceSlotPipelineView =
+    isGuidanceBookingProduct && calendarMode === 'day' && selectedKind === 'guidance_pre30min';
   const [templateKinds, setTemplateKinds] = useState(FALLBACK_TEMPLATE_KINDS);
   const [waDiagnostics, setWaDiagnostics] = useState(false);
   const [live, setLive] = useState(
@@ -1097,7 +1100,7 @@ export default function WhatsAppOpsOverview() {
           ) : null}
           {isGuidanceBookingProduct ? (
             <p className="text-xs text-slate-600 mt-2 max-w-3xl">
-              Guidance Booking mode shows WhatsApp sent immediately when a student confirms a slot on /guidance-booking-confirmation (template guidance_booking_submit, date and time in body, with automatic retry on failure).
+              Guidance Booking covers immediate confirmation (guidance_booking_submit) and the scheduled 30-minute reminder (guidance_pre30min). With “30 min before session” selected, pipeline & reliability shows every slot’s booked count and whether the reminder was sent.
             </p>
           ) : null}
         </section>
@@ -1298,7 +1301,9 @@ export default function WhatsAppOpsOverview() {
                   {isRecipientDay
                     ? isIitProduct
                       ? 'Primary metrics use IIT Counselling registrations (counsellingSlotInstantUtc in the IST slot-day window). WhatsApp rows are restricted to IIT-tagged sends for this cohort.'
-                      : 'Primary metrics use registered FormSubmission bookings for the selected IST date and slot-time filter. WhatsApp rows are restricted to those submissions; all-templates view rolls up by unique phone across template kinds. Legacy attempt-row charts below still use message createdAt for that IST day (debugging).'
+                      : isGuidanceBookingProduct
+                        ? 'Volume uses guidance booking WhatsApp events for the selected IST date. Pipeline for guidance_pre30min lists each slot with booked count and reminder sent status.'
+                        : 'Primary metrics use registered FormSubmission bookings for the selected IST date and slot-time filter. WhatsApp rows are restricted to those submissions; all-templates view rolls up by unique phone across template kinds. Legacy attempt-row charts below still use message createdAt for that IST day (debugging).'
                     : 'Daily drilldown is IST-based and shows exact stored booking + WhatsApp pipeline metrics for the selected date.'}
                 </p>
                 {isRecipientDay && dayView?._meta?.source === 'snapshot' && dayView?._meta?.capturedAt && (
@@ -1555,6 +1560,9 @@ export default function WhatsAppOpsOverview() {
                 <p className="mb-3 text-[11px] font-semibold uppercase tracking-[0.14em] text-primary-navy">
                   {isAllTemplates ? 'Pipeline & reliability' : 'Selected template pipeline & reliability'}
                 </p>
+                {showGuidanceSlotPipelineView ? (
+                  <GuidanceReminderSlotPipeline slotDate={selectedDate} />
+                ) : (
                 <div className="grid gap-4 [grid-template-columns:repeat(auto-fill,minmax(12rem,1fr))]">
                   {pipelineCards.map((card) => (
                     <KpiCard
@@ -1566,6 +1574,7 @@ export default function WhatsAppOpsOverview() {
                     />
                   ))}
                 </div>
+                )}
               </div>
               {isIitProduct && isRecipientDay && iitSlotBreakdown?.bySlotTime && (
                 <div className="rounded-2xl border border-cyan-200 bg-white p-4 shadow-sm">

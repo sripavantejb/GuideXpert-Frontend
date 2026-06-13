@@ -9,6 +9,7 @@ export const FALLBACK_TEMPLATE_KINDS = [
   { id: 'slot_booked', label: 'Slot booked', description: 'Immediate confirmation after slot booking', opsProducts: ['guidexpert', 'iit_counselling'] },
   { id: 'one_on_one_submit', label: 'Form submit confirmation', description: 'Immediate confirmation after 1-on-1 session form submit', opsProducts: ['one_on_one_counseling'] },
   { id: 'guidance_booking_submit', label: 'Booking confirmation', description: 'Immediate confirmation after guidance booking book-slot', opsProducts: ['guidance_booking'] },
+  { id: 'guidance_pre30min', label: '30 min before session', description: 'Guidance session reminder 30 minutes before slot start', opsProducts: ['guidance_booking'] },
   { id: 'pre4hr', label: '4hr reminder', description: 'Reminder sent around 4 hours before slot', opsProducts: ['guidexpert'] },
   { id: 'meet', label: 'Meet link (~1hr)', description: 'Meeting link reminder sent around 1 hour before slot', opsProducts: ['guidexpert'] },
   { id: '30min', label: '30 min reminder', description: 'Final reminder sent around 30 minutes before slot', opsProducts: ['guidexpert'] },
@@ -48,6 +49,7 @@ export const ONE_ON_ONE_TEMPLATE_OPTIONS = [
 export const GUIDANCE_BOOKING_TEMPLATE_OPTIONS = [
   { value: '', label: 'All templates' },
   { value: 'guidance_booking_submit', label: 'guidance_booking_submit · booking confirmation' },
+  { value: 'guidance_pre30min', label: 'guidance_pre30min · 30 min before session' },
 ];
 
 /** IIT recovery/audit: slot_booked + language chips use IIT_REMINDER_LANGUAGE_CHIPS. */
@@ -96,9 +98,21 @@ export function parsePreferredLanguageFromSearch(searchParams) {
   return pl === 'Telugu' || pl === 'Hindi' ? pl : null;
 }
 
+/** Merge API meta with local fallback so newly added chips appear before backend deploy catches up. */
+function mergeTemplateKindLists(primary, fallback) {
+  const base = Array.isArray(primary) && primary.length ? [...primary] : [];
+  for (const fb of fallback || []) {
+    const exists = base.some(
+      (k) => k.id === fb.id && (k.preferredLanguage || null) === (fb.preferredLanguage || null)
+    );
+    if (!exists) base.push(fb);
+  }
+  return base.length ? base : [...(fallback || [])];
+}
+
 /** Visible template chips for a product (meta kinds or fallback). */
 export function visibleTemplateKindsForProduct(templateKinds, opsProduct) {
-  const list = Array.isArray(templateKinds) && templateKinds.length ? templateKinds : FALLBACK_TEMPLATE_KINDS;
+  const list = mergeTemplateKindLists(templateKinds, FALLBACK_TEMPLATE_KINDS);
   const isIit = opsProduct === OPS_PRODUCT_IIT;
   const isOneOnOne = opsProduct === OPS_PRODUCT_ONE_ON_ONE;
   const isGuidanceBooking = opsProduct === OPS_PRODUCT_GUIDANCE_BOOKING;
@@ -107,7 +121,10 @@ export function visibleTemplateKindsForProduct(templateKinds, opsProduct) {
     return fromMeta.filter((k) => k.id === 'one_on_one_submit' && !k.preferredLanguage);
   }
   if (isGuidanceBooking) {
-    return fromMeta.filter((k) => k.id === 'guidance_booking_submit' && !k.preferredLanguage);
+    return fromMeta.filter(
+      (k) =>
+        (k.id === 'guidance_booking_submit' || k.id === 'guidance_pre30min') && !k.preferredLanguage
+    );
   }
   if (isIit) {
     const slot = fromMeta.find((k) => k.id === 'slot_booked' && !k.preferredLanguage);

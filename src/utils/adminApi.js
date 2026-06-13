@@ -609,6 +609,13 @@ export const getGuidanceBookings = async (params = {}, token = getStoredToken())
   return adminRequest(`/guidance-bookings${query ? `?${query}` : ''}`, { method: 'GET' }, token);
 };
 
+export const getGuidanceReminderStatus = async (params = {}, token = getStoredToken()) => {
+  const search = new URLSearchParams();
+  if (params.slotDate) search.set('slotDate', params.slotDate);
+  const query = search.toString();
+  return adminRequest(`/guidance-reminder-status${query ? `?${query}` : ''}`, { method: 'GET' }, token);
+};
+
 export const getCounsellorSupportRequests = async (params = {}, token = getStoredToken()) => {
   const search = new URLSearchParams();
   if (params.page != null) search.set('page', params.page);

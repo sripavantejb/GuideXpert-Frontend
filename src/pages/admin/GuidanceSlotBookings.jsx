@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useState } from 'react';
-import { FiCalendar, FiPlus, FiRefreshCw, FiToggleLeft, FiToggleRight, FiTrash2 } from 'react-icons/fi';
+import { FiPlus, FiRefreshCw, FiToggleLeft, FiToggleRight, FiTrash2 } from 'react-icons/fi';
 import {
   createGuidanceSlot,
   deleteGuidanceSlot,
@@ -11,6 +11,7 @@ import {
   updateGuidanceSlot,
 } from '../../utils/adminApi';
 import { useAuth } from '../../hooks/useAuth';
+import GuidanceReminderSlotStatus from '../../components/Admin/GuidanceReminderSlotStatus';
 
 const EMPTY_SLOT = {
   sessionTitle: '',
@@ -43,6 +44,13 @@ function BookingBadge({ confirmed, status }) {
   );
 }
 
+function todayIsoDate() {
+  const d = new Date();
+  const offset = d.getTimezoneOffset();
+  const local = new Date(d.getTime() - offset * 60 * 1000);
+  return local.toISOString().slice(0, 10);
+}
+
 export default function GuidanceSlotBookings() {
   const { logout } = useAuth();
   const [tab, setTab] = useState('slots');
@@ -58,6 +66,7 @@ export default function GuidanceSlotBookings() {
   const [filterSlotId, setFilterSlotId] = useState('');
   const [filterCounselorId, setFilterCounselorId] = useState('');
   const [filterSlotDate, setFilterSlotDate] = useState('');
+  const [reminderDate, setReminderDate] = useState(todayIsoDate);
 
   const token = getStoredToken();
 
@@ -120,7 +129,7 @@ export default function GuidanceSlotBookings() {
 
   useEffect(() => {
     if (tab === 'slots') loadSlots();
-    else loadBookings();
+    else if (tab === 'bookings') loadBookings();
   }, [tab, loadSlots, loadBookings]);
 
   const saveSlot = async (e) => {
@@ -172,6 +181,13 @@ export default function GuidanceSlotBookings() {
             className={`px-4 py-2 rounded-lg text-sm font-medium ${tab === 'bookings' ? 'bg-primary-navy text-white' : 'bg-gray-100'}`}
           >
             Bookings
+          </button>
+          <button
+            type="button"
+            onClick={() => setTab('reminders')}
+            className={`px-4 py-2 rounded-lg text-sm font-medium ${tab === 'reminders' ? 'bg-primary-navy text-white' : 'bg-gray-100'}`}
+          >
+            Reminders
           </button>
         </div>
       </div>
@@ -304,7 +320,7 @@ export default function GuidanceSlotBookings() {
             </table>
           </div>
         </>
-      ) : (
+      ) : tab === 'bookings' ? (
         <>
           <div className="flex flex-wrap gap-2">
             <select
@@ -393,6 +409,12 @@ export default function GuidanceSlotBookings() {
             </table>
           </div>
         </>
+      ) : (
+        <GuidanceReminderSlotStatus
+          slotDate={reminderDate}
+          showDatePicker
+          onDateChange={setReminderDate}
+        />
       )}
     </div>
   );
