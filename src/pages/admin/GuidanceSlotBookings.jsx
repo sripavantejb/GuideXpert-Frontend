@@ -380,7 +380,9 @@ export default function GuidanceSlotBookings() {
                         : '—'}
                     </td>
                     <td className="px-3 py-2">
-                      {b.slot ? `${b.slot.sessionTitle} (${b.slot.slotDate})` : '—'}
+                      {b.slot
+                        ? `${b.slot.sessionTitle} (${b.slot.slotDate}${b.slot.slotTime ? ` · ${b.slot.slotTime}` : ''})`
+                        : '—'}
                     </td>
                     <td className="px-3 py-2">{b.counselor?.name || '—'}</td>
                     <td className="px-3 py-2">{b.parentAttendanceConfirmed ? 'Yes' : '—'}</td>
