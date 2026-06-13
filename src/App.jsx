@@ -53,6 +53,7 @@ import GuidanceSlotBookings from './pages/admin/GuidanceSlotBookings';
 import OneOnOneCounselorsAdmin from './pages/admin/OneOnOneCounselorsAdmin';
 import OneOnOneSessionPage from './pages/OneOnOneSessionPage';
 import GuidanceBookingConfirmation from './pages/GuidanceBookingConfirmation';
+import GuidanceSessionMeet from './pages/GuidanceSessionMeet';
 import {
   OneOnOneCounselorAuthProvider,
   useOneOnOneCounselorAuth,
@@ -286,6 +287,7 @@ function App() {
           />
           <Route path="/one-on-one-session" element={<OneOnOneSessionPage />} />
           <Route path="/guidance-booking-confirmation" element={<GuidanceBookingConfirmation />} />
+          <Route path="/guidance-session-meet" element={<GuidanceSessionMeet />} />
           <Route
             path="/students"
             element={

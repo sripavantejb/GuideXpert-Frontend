@@ -52,33 +52,53 @@ export default function GuidanceSlotPicker({
           <div className="grid gap-3 sm:grid-cols-2">
             {slots.map((slot) => {
               const selected = value === slot.id;
+              const bookingClosed = !!slot.bookingClosed;
               return (
                 <button
                   key={slot.id}
                   type="button"
                   aria-pressed={selected}
-                  onClick={() => onChange(slot.id)}
+                  disabled={bookingClosed}
+                  onClick={() => {
+                    if (!bookingClosed) onChange(slot.id);
+                  }}
                   className={`rounded-[10px] border-2 p-4 text-left transition-all focus:outline-none focus-visible:ring-2 focus-visible:ring-[#0F172A] focus-visible:ring-offset-2 ${
-                    selected
-                      ? 'border-[#0F172A] bg-[#c7f36b] text-[#0F172A] shadow-[4px_4px_0px_#0F172A] -translate-y-0.5'
-                      : 'border-[#0F172A] bg-white text-[#0F172A] hover:-translate-y-0.5 hover:shadow-[2px_2px_0px_#0F172A]'
+                    bookingClosed
+                      ? 'cursor-not-allowed border-slate-300 bg-slate-100 text-slate-500 opacity-80'
+                      : selected
+                        ? 'border-[#0F172A] bg-[#c7f36b] text-[#0F172A] shadow-[4px_4px_0px_#0F172A] -translate-y-0.5'
+                        : 'border-[#0F172A] bg-white text-[#0F172A] hover:-translate-y-0.5 hover:shadow-[2px_2px_0px_#0F172A]'
                   }`}
                 >
                   <span className="block text-sm font-black leading-snug">
                     {renderSessionTitle(slot.sessionTitle)}
                   </span>
-                  <span className="mt-2 block text-xs font-bold uppercase tracking-wide text-[#0F172A]/80">
+                  <span
+                    className={`mt-2 block text-xs font-bold uppercase tracking-wide ${
+                      bookingClosed ? 'text-slate-500' : 'text-[#0F172A]/80'
+                    }`}
+                  >
                     {slot.slotDate} · {slot.slotTime}
                   </span>
                   {(slot.counselorName || slot.collegeName) && (
-                    <span className="mt-2 block text-[10px] font-semibold text-[#0F172A]/70">
+                    <span
+                      className={`mt-2 block text-[10px] font-semibold ${
+                        bookingClosed ? 'text-slate-500' : 'text-[#0F172A]/70'
+                      }`}
+                    >
                       {slot.counselorName}
                       {slot.collegeName ? ` · ${slot.collegeName}` : ''}
                     </span>
                   )}
-                  <span className="mt-2 inline-flex rounded border border-emerald-800 bg-emerald-100 px-2 py-0.5 text-[10px] font-black uppercase text-emerald-900">
-                    {slot.spotsLeft} spots left
-                  </span>
+                  {bookingClosed ? (
+                    <span className="mt-2 inline-flex rounded border border-slate-400 bg-slate-200 px-2 py-0.5 text-[10px] font-black uppercase text-slate-700">
+                      Booking closed
+                    </span>
+                  ) : (
+                    <span className="mt-2 inline-flex rounded border border-emerald-800 bg-emerald-100 px-2 py-0.5 text-[10px] font-black uppercase text-emerald-900">
+                      {slot.spotsLeft} spots left
+                    </span>
+                  )}
                 </button>
               );
             })}

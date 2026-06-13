@@ -38,3 +38,9 @@ export const bookGuidanceSlot = (payload) =>
     method: 'POST',
     body: JSON.stringify(payload),
   });
+
+export const joinGuidanceMeet = (mobileNumber) =>
+  guidanceRequest('/meet-join', {
+    method: 'POST',
+    body: JSON.stringify({ mobileNumber }),
+  });
