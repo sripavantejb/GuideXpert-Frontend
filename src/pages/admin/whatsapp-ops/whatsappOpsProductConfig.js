@@ -10,6 +10,7 @@ export const FALLBACK_TEMPLATE_KINDS = [
   { id: 'one_on_one_submit', label: 'Form submit confirmation', description: 'Immediate confirmation after 1-on-1 session form submit', opsProducts: ['one_on_one_counseling'] },
   { id: 'guidance_booking_submit', label: 'Booking confirmation', description: 'Immediate confirmation after guidance booking book-slot', opsProducts: ['guidance_booking'] },
   { id: 'guidance_pre30min', label: '30 min before session', description: 'Guidance session reminder 30 minutes before slot start', opsProducts: ['guidance_booking'] },
+  { id: 'guidance_counsellor_booking_notify', label: 'Counsellor booking notify', description: 'Immediate WhatsApp to assigned counsellor when student books a guidance slot', opsProducts: ['guidance_booking'] },
   { id: 'pre4hr', label: '4hr reminder', description: 'Reminder sent around 4 hours before slot', opsProducts: ['guidexpert'] },
   { id: 'meet', label: 'Meet link (~1hr)', description: 'Meeting link reminder sent around 1 hour before slot', opsProducts: ['guidexpert'] },
   { id: '30min', label: '30 min reminder', description: 'Final reminder sent around 30 minutes before slot', opsProducts: ['guidexpert'] },
@@ -50,6 +51,7 @@ export const GUIDANCE_BOOKING_TEMPLATE_OPTIONS = [
   { value: '', label: 'All templates' },
   { value: 'guidance_booking_submit', label: 'guidance_booking_submit · booking confirmation' },
   { value: 'guidance_pre30min', label: 'guidance_pre30min · 30 min before session' },
+  { value: 'guidance_counsellor_booking_notify', label: 'guidance_counsellor_booking_notify · counsellor booking notify' },
 ];
 
 /** IIT recovery/audit: slot_booked + language chips use IIT_REMINDER_LANGUAGE_CHIPS. */
@@ -123,7 +125,10 @@ export function visibleTemplateKindsForProduct(templateKinds, opsProduct) {
   if (isGuidanceBooking) {
     return fromMeta.filter(
       (k) =>
-        (k.id === 'guidance_booking_submit' || k.id === 'guidance_pre30min') && !k.preferredLanguage
+        (k.id === 'guidance_booking_submit' ||
+          k.id === 'guidance_pre30min' ||
+          k.id === 'guidance_counsellor_booking_notify') &&
+        !k.preferredLanguage
     );
   }
   if (isIit) {

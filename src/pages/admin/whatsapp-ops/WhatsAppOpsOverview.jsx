@@ -273,7 +273,9 @@ export default function WhatsAppOpsOverview() {
   const [selectedSlotTime, setSelectedSlotTime] = useState('6PM');
   const [calendarMode, setCalendarMode] = useState('day');
   const showGuidanceSlotPipelineView =
-    isGuidanceBookingProduct && calendarMode === 'day' && selectedKind === 'guidance_pre30min';
+    isGuidanceBookingProduct &&
+    calendarMode === 'day' &&
+    (selectedKind === 'guidance_pre30min' || selectedKind === 'guidance_counsellor_booking_notify');
   const [templateKinds, setTemplateKinds] = useState(FALLBACK_TEMPLATE_KINDS);
   const [waDiagnostics, setWaDiagnostics] = useState(false);
   const [live, setLive] = useState(
@@ -1100,7 +1102,7 @@ export default function WhatsAppOpsOverview() {
           ) : null}
           {isGuidanceBookingProduct ? (
             <p className="text-xs text-slate-600 mt-2 max-w-3xl">
-              Guidance Booking covers immediate confirmation (guidance_booking_submit) and the scheduled 30-minute reminder (guidance_pre30min). With “30 min before session” selected, pipeline & reliability shows every slot’s booked count and whether the reminder was sent.
+              Guidance Booking covers immediate student confirmation (guidance_booking_submit), counsellor notify on book (guidance_counsellor_booking_notify), and the scheduled 30-minute reminder (guidance_pre30min). With “30 min before session” or “Counsellor booking notify” selected, pipeline & reliability shows every slot’s booked count and send status.
             </p>
           ) : null}
         </section>
@@ -1302,7 +1304,7 @@ export default function WhatsAppOpsOverview() {
                     ? isIitProduct
                       ? 'Primary metrics use IIT Counselling registrations (counsellingSlotInstantUtc in the IST slot-day window). WhatsApp rows are restricted to IIT-tagged sends for this cohort.'
                       : isGuidanceBookingProduct
-                        ? 'Volume uses guidance booking WhatsApp events for the selected IST date. Pipeline for guidance_pre30min lists each slot with booked count and reminder sent status.'
+                        ? 'Volume uses guidance booking WhatsApp events for the selected IST date. Pipeline for guidance_pre30min and guidance_counsellor_booking_notify lists each slot with booked count and send status.'
                         : 'Primary metrics use registered FormSubmission bookings for the selected IST date and slot-time filter. WhatsApp rows are restricted to those submissions; all-templates view rolls up by unique phone across template kinds. Legacy attempt-row charts below still use message createdAt for that IST day (debugging).'
                     : 'Daily drilldown is IST-based and shows exact stored booking + WhatsApp pipeline metrics for the selected date.'}
                 </p>
@@ -1561,7 +1563,7 @@ export default function WhatsAppOpsOverview() {
                   {isAllTemplates ? 'Pipeline & reliability' : 'Selected template pipeline & reliability'}
                 </p>
                 {showGuidanceSlotPipelineView ? (
-                  <GuidanceReminderSlotPipeline slotDate={selectedDate} />
+                  <GuidanceReminderSlotPipeline slotDate={selectedDate} messageKind={selectedKind} />
                 ) : (
                 <div className="grid gap-4 [grid-template-columns:repeat(auto-fill,minmax(12rem,1fr))]">
                   {pipelineCards.map((card) => (

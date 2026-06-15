@@ -13,6 +13,7 @@ const SENT_STATES = new Set(['sent', 'delivered', 'read']);
 
 const SUPPRESSION_LABELS = {
   no_reminder_job: 'No reminder job at booking',
+  no_notify_event: 'No counsellor notify at booking',
   missed_no_scheduler_at_booking: 'Missed — scheduler was not deployed',
   template_env_missing: 'Template not configured',
   booking_too_late: 'Booked inside 30-min window',
@@ -44,10 +45,14 @@ function slotSendSummary(slot) {
   const deliveredCount = students.filter((s) => ['delivered', 'read'].includes(s.reminderState)).length;
   const failedCount = students.filter((s) => s.reminderState === 'failed').length;
   const skippedCount = students.filter((s) => s.reminderState === 'skipped').length;
-  const noneNoJobCount = students.filter((s) => s.suppressionReason === 'no_reminder_job').length;
+  const noneNoJobCount = students.filter((s) =>
+    ['no_reminder_job', 'no_notify_event'].includes(s.suppressionReason)
+  ).length;
   const waitingCount = students.filter((s) => ['pending', 'overdue'].includes(s.reminderState)).length;
   const noneOther = students.filter(
-    (s) => s.reminderState === 'none' && s.suppressionReason !== 'no_reminder_job'
+    (s) =>
+      s.reminderState === 'none' &&
+      !['no_reminder_job', 'no_notify_event'].includes(s.suppressionReason)
   ).length;
 
   if (deliveredCount === confirmed) {
@@ -104,10 +109,29 @@ function formatCronAge(ageMs) {
 }
 
 /**
- * Replaces "Selected template pipeline & reliability" KPI row for guidance_pre30min.
- * Shows every slot with large booked count + reminder sent / not sent.
+ * Replaces "Selected template pipeline & reliability" KPI row for guidance slot templates.
+ * Shows every slot with large booked count + reminder / counsellor notify sent status.
  */
-export default function GuidanceReminderSlotPipeline({ slotDate, className = '' }) {
+const GUIDANCE_SLOT_PIPELINE_CONFIG = {
+  guidance_pre30min: {
+    statusLabel: 'Reminder',
+    showCronHealth: true,
+    emptyError: 'Failed to load slot reminder status',
+  },
+  guidance_counsellor_booking_notify: {
+    statusLabel: 'Counsellor',
+    showCronHealth: false,
+    emptyError: 'Failed to load counsellor notify status',
+  },
+};
+
+export default function GuidanceReminderSlotPipeline({
+  slotDate,
+  messageKind = 'guidance_pre30min',
+  className = '',
+}) {
+  const pipelineConfig =
+    GUIDANCE_SLOT_PIPELINE_CONFIG[messageKind] || GUIDANCE_SLOT_PIPELINE_CONFIG.guidance_pre30min;
   const token = getStoredToken();
   const [slots, setSlots] = useState([]);
   const [cronHealth, setCronHealth] = useState(null);
@@ -118,10 +142,10 @@ export default function GuidanceReminderSlotPipeline({ slotDate, className = '' 
     if (!slotDate) return;
     setLoading(true);
     setError('');
-    const res = await getGuidanceReminderStatus({ slotDate }, token);
+    const res = await getGuidanceReminderStatus({ slotDate, messageKind }, token);
     setLoading(false);
     if (!res.success) {
-      setError(res.message || 'Failed to load slot reminder status');
+      setError(res.message || pipelineConfig.emptyError);
       setSlots([]);
       setCronHealth(null);
       return;
@@ -129,7 +153,7 @@ export default function GuidanceReminderSlotPipeline({ slotDate, className = '' 
     const payload = res.data?.data || res.data || {};
     setSlots(payload.slots || []);
     setCronHealth(payload.cronHealth || null);
-  }, [slotDate, token]);
+  }, [slotDate, messageKind, token, pipelineConfig.emptyError]);
 
   useEffect(() => {
     load();
@@ -151,7 +175,7 @@ export default function GuidanceReminderSlotPipeline({ slotDate, className = '' 
 
   return (
     <div className={className}>
-      {cronStale ? (
+      {pipelineConfig.showCronHealth && cronStale ? (
         <div className="mb-3 flex items-start gap-2 rounded-lg border border-amber-200 bg-amber-50 px-3 py-2 text-xs text-amber-900">
           <FiAlertTriangle className="mt-0.5 shrink-0" size={14} />
           <div>
@@ -163,7 +187,7 @@ export default function GuidanceReminderSlotPipeline({ slotDate, className = '' 
             </p>
           </div>
         </div>
-      ) : cronHealth?.lastSuccessAt ? (
+      ) : pipelineConfig.showCronHealth && cronHealth?.lastSuccessAt ? (
         <p className="mb-3 text-[10px] text-emerald-700">
           Guidance cron healthy · last run {formatCronAge(cronHealth.ageMs)}
         </p>
@@ -208,7 +232,9 @@ export default function GuidanceReminderSlotPipeline({ slotDate, className = '' 
                   <p className="mt-1 text-[10px] text-slate-500">confirmed</p>
                 </div>
                 <div>
-                  <p className="text-[10px] font-bold uppercase tracking-wide text-slate-500">Reminder</p>
+                  <p className="text-[10px] font-bold uppercase tracking-wide text-slate-500">
+                    {pipelineConfig.statusLabel}
+                  </p>
                   <p className={`mt-1 text-2xl font-black leading-tight ${SEND_TONE_CLASS[send.tone] || SEND_TONE_CLASS.muted}`}>
                     {send.sendLabel}
                   </p>

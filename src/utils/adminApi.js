@@ -612,6 +612,7 @@ export const getGuidanceBookings = async (params = {}, token = getStoredToken())
 export const getGuidanceReminderStatus = async (params = {}, token = getStoredToken()) => {
   const search = new URLSearchParams();
   if (params.slotDate) search.set('slotDate', params.slotDate);
+  if (params.messageKind) search.set('messageKind', params.messageKind);
   const query = search.toString();
   return adminRequest(`/guidance-reminder-status${query ? `?${query}` : ''}`, { method: 'GET' }, token);
 };
