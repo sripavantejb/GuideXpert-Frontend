@@ -378,6 +378,7 @@ export default function GuidanceSlotBookings() {
                   <th className="px-3 py-2 text-left">Counselor</th>
                   <th className="px-3 py-2 text-left">Parent</th>
                   <th className="px-3 py-2 text-left">WhatsApp</th>
+                  <th className="px-3 py-2 text-left">UTM Campaign</th>
                 </tr>
               </thead>
               <tbody>
@@ -403,6 +404,9 @@ export default function GuidanceSlotBookings() {
                     <td className="px-3 py-2">{b.counselor?.name || '—'}</td>
                     <td className="px-3 py-2">{b.parentAttendanceConfirmed ? 'Yes' : '—'}</td>
                     <td className="px-3 py-2">{b.whatsappConsent ? 'Yes' : '—'}</td>
+                    <td className="px-3 py-2 text-xs max-w-[140px] truncate" title={b.utm_campaign || ''}>
+                      {b.utm_campaign || '—'}
+                    </td>
                   </tr>
                 ))}
               </tbody>

@@ -657,32 +657,39 @@ export default function IitCounsellingUtm() {
     savedLinkComboKeys,
   ]);
 
+  const linkedMetricLabel = isIitUtmSavedLinksOnlyTarget(analyticsLinkTarget)
+    ? 'Linked leads'
+    : 'Linked submissions';
+
   const barChartData = useMemo(() => {
+    const linkedCount = (row) => Number(row.linkedSubmissions) || 0;
     const src = isSavedLinksOnlyTarget
       ? [...mergedComboRows]
-          .map((r) => ({ utm_content: r.utm_content, visits: r.visits ?? 0 }))
-          .sort((a, b) => (Number(b.visits) || 0) - (Number(a.visits) || 0))
+          .map((r) => ({ utm_content: r.utm_content, linked: linkedCount(r) }))
+          .sort((a, b) => b.linked - a.linked)
           .slice(0, 10)
       : [...(data?.byContent || [])]
-          .sort((a, b) => (Number(b.visits) || 0) - (Number(a.visits) || 0))
+          .map((r) => ({ utm_content: r.utm_content, linked: linkedCount(r) }))
+          .sort((a, b) => b.linked - a.linked)
           .slice(0, 10);
     return src.map((row, i) => {
       const label = row.utm_content || '—';
       const short = label.length > 14 ? `${String(label).slice(0, 14)}…` : label;
       return {
         name: `${short}\u200c${i}`,
-        visits: row.visits ?? 0,
+        linked: row.linked,
         fullName: label,
       };
     });
   }, [data?.byContent, isSavedLinksOnlyTarget, mergedComboRows]);
 
   const topUtmContentLabel = useMemo(() => {
+    const linkedCount = (row) => Number(row.linkedSubmissions) || 0;
     const rows = isSavedLinksOnlyTarget
       ? [...mergedComboRows].filter((r) => r.utm_content && r.utm_content !== '(none)')
       : [...(data?.byContent || [])].filter((r) => r.utm_content && r.utm_content !== '(none)');
     if (rows.length === 0) return '—';
-    rows.sort((a, b) => (Number(b.visits) || 0) - (Number(a.visits) || 0));
+    rows.sort((a, b) => linkedCount(b) - linkedCount(a));
     return rows[0].utm_content || '—';
   }, [data?.byContent, isSavedLinksOnlyTarget, mergedComboRows]);
 
@@ -1048,7 +1055,7 @@ export default function IitCounsellingUtm() {
           <p className="text-2xl font-semibold text-gray-900 mt-1">{loading ? '—' : (analyticsSummary.visitsWithAnyUtm ?? 0)}</p>
         </div>
         <div className={cardClass + ' p-4'}>
-          <div className="text-gray-500 text-sm">Top utm_content</div>
+          <div className="text-gray-500 text-sm">Top utm_content (by linked)</div>
           <p className="text-lg font-medium text-gray-900 mt-1 truncate" title={topUtmContentLabel === '—' ? '' : topUtmContentLabel}>
             {loading ? '—' : topUtmContentLabel}
           </p>
@@ -1064,8 +1071,10 @@ export default function IitCounsellingUtm() {
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         <div className={cardClass}>
           <div className={sectionHeaderClass}>
-            <h3 className="text-sm font-semibold text-gray-800">Visits by utm_content</h3>
-            <p className="text-xs text-gray-500 mt-0.5">Top 10 by visit count (current date range)</p>
+            <h3 className="text-sm font-semibold text-gray-800">Linked by utm_content</h3>
+            <p className="text-xs text-gray-500 mt-0.5">
+              Top 10 by {linkedMetricLabel.toLowerCase()} (current date range)
+            </p>
           </div>
           <div className="p-4 h-[240px] min-h-[200px] w-full min-w-0">
             {loading ? (
@@ -1082,11 +1091,11 @@ export default function IitCounsellingUtm() {
                   />
                   <YAxis allowDecimals={false} tick={{ fontSize: 11 }} />
                   <Tooltip
-                    formatter={(value) => [value, 'Visits']}
+                    formatter={(value) => [value, linkedMetricLabel]}
                     labelFormatter={(_, payload) => payload?.[0]?.payload?.fullName ?? ''}
                     contentStyle={{ fontSize: 12 }}
                   />
-                  <Bar dataKey="visits" fill="#003366" name="Visits" radius={[4, 4, 0, 0]}>
+                  <Bar dataKey="linked" fill="#003366" name={linkedMetricLabel} radius={[4, 4, 0, 0]}>
                     {barChartData.map((entry, index) => (
                       <Cell key={`iit-utm-bar-${index}-${String(entry.fullName)}`} />
                     ))}
