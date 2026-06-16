@@ -8,15 +8,11 @@ export function resolveUtmAttribution() {
   return { ...stored, ...fromUrl };
 }
 
-/**
- * Record a 1-on-1 landing page visit (pageKey oneOnOneSession).
- * @returns {Promise<string>} visitorFingerprint or empty string
- */
-export async function trackOneOnOneSessionVisit(apiBase, utmOverrides = {}) {
+async function trackLandingPageVisit(apiBase, pageKey, utmOverrides = {}) {
   if (typeof window === 'undefined' || !apiBase) return '';
   const queryParams = new URLSearchParams(window.location.search);
   const payload = {
-    pageKey: 'oneOnOneSession',
+    pageKey,
     path: window.location.pathname,
     query: window.location.search,
     referrer: document.referrer || '',
@@ -38,4 +34,20 @@ export async function trackOneOnOneSessionVisit(apiBase, utmOverrides = {}) {
   } catch {
     return '';
   }
+}
+
+/**
+ * Record a 1-on-1 landing page visit (pageKey oneOnOneSession).
+ * @returns {Promise<string>} visitorFingerprint or empty string
+ */
+export async function trackOneOnOneSessionVisit(apiBase, utmOverrides = {}) {
+  return trackLandingPageVisit(apiBase, 'oneOnOneSession', utmOverrides);
+}
+
+/**
+ * Record a guidance booking confirmation page visit.
+ * @returns {Promise<string>} visitorFingerprint or empty string
+ */
+export async function trackGuidanceBookingConfirmationVisit(apiBase, utmOverrides = {}) {
+  return trackLandingPageVisit(apiBase, 'guidanceBookingConfirmation', utmOverrides);
 }

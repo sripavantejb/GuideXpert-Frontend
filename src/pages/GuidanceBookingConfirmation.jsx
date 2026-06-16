@@ -1,10 +1,12 @@
-import { useCallback, useEffect, useRef, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import MobileOtpField from '../components/forms/MobileOtpField';
 import { FormInput, FormSelect, NeoField } from '../components/oneOnOneSession/FormControls';
 import GuidanceSlotPicker from '../components/oneOnOneSession/GuidanceSlotPicker';
 import { COLLEGE_BUDGET_OPTIONS, CURRENT_CLASS_OPTIONS, PREFERRED_LANGUAGE_OPTIONS } from '../constants/oneOnOneCounselingForm';
 import { bookGuidanceSlot, checkGuidanceMobile, getGuidanceActiveSlots } from '../utils/guidanceBookingApi';
-import { captureUtmFirstTouch, getStoredUtm } from '../utils/utm';
+import { getApiBaseUrl } from '../utils/apiBaseUrl';
+import { resolveUtmAttribution, trackGuidanceBookingConfirmationVisit } from '../utils/oneOnOneSessionTracking';
+import { getStoredUtm } from '../utils/utm';
 
 function normalizeMobile(val) {
   return String(val || '')
@@ -336,12 +338,22 @@ export default function GuidanceBookingConfirmation() {
   const [success, setSuccess] = useState(false);
   const [otpRequired, setOtpRequired] = useState(false);
   const [otpVerified, setOtpVerified] = useState(false);
+  const [visitorFingerprint, setVisitorFingerprint] = useState('');
   const pendingCheckRef = useRef(null);
+
+  const apiBase = useMemo(() => getApiBaseUrl(), []);
 
   useEffect(() => {
     document.title = 'Confirm Your Guidance Session Slot | GuideXpert';
-    captureUtmFirstTouch();
-  }, []);
+    let cancelled = false;
+    const utmPayload = resolveUtmAttribution();
+    trackGuidanceBookingConfirmationVisit(apiBase, utmPayload).then((fingerprint) => {
+      if (!cancelled && fingerprint) setVisitorFingerprint(fingerprint);
+    });
+    return () => {
+      cancelled = true;
+    };
+  }, [apiBase]);
 
   const resetOtpState = useCallback(() => {
     setOtpRequired(false);
@@ -509,6 +521,11 @@ export default function GuidanceBookingConfirmation() {
     }
     setLoading(true);
     const utm = getStoredUtm();
+    let fingerprint = visitorFingerprint;
+    if (!fingerprint) {
+      fingerprint = await trackGuidanceBookingConfirmationVisit(apiBase, utm || {});
+      if (fingerprint) setVisitorFingerprint(fingerprint);
+    }
     const payload = {
       mobileNumber: normalizeMobile(mobile),
       slotId: selectedSlotId,
@@ -517,6 +534,7 @@ export default function GuidanceBookingConfirmation() {
       collegeBudget,
       parentOccupation: parentOccupation.trim(),
       preferredColleges,
+      ...(fingerprint ? { visitorFingerprint: fingerprint } : {}),
       ...(needsProfile
         ? {
             studentName: studentName.trim(),

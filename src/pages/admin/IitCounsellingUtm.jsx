@@ -38,6 +38,9 @@ import {
   PLATFORM_TO_UTM_SOURCE,
   IIT_COUNSELLING_UTM_LINK_TARGETS,
   normalizeIitUtmLinkTargetFromQuery,
+  isIitUtmSavedLinksOnlyTarget,
+  getIitUtmPagePath,
+  getIitUtmTabLabel,
 } from '../../constants/influencerAdminConstants';
 
 const COMBO_COPY_FIELDS = [
@@ -59,6 +62,11 @@ const DEFAULT_IIT_COUNSELLING_PAGE_URL = (
 
 const DEFAULT_ONE_ON_ONE_SESSION_PAGE_URL = (
   import.meta.env.VITE_ONE_ON_ONE_SESSION_PAGE_URL || 'https://www.guidexpert.co.in/one-on-one-session'
+).trim();
+
+const DEFAULT_GUIDANCE_BOOKING_CONFIRMATION_PAGE_URL = (
+  import.meta.env.VITE_GUIDANCE_BOOKING_CONFIRMATION_PAGE_URL
+    || 'https://www.guidexpert.co.in/guidance-booking-confirmation'
 ).trim();
 
 function buildIitCounsellingShareUrl(baseUrl, { utm_source, utm_medium, utm_campaign, utm_content }) {
@@ -371,7 +379,7 @@ function LandingPageTargetToggle({ value, onChange, label, ariaLabel }) {
                 : 'text-gray-700 hover:bg-gray-50'
             }`}
           >
-            {opt.value === 'oneOnOneSession' ? '1-on-1 session' : 'IIT counselling'}
+            {opt.tabLabel || getIitUtmTabLabel(opt.value)}
           </button>
         ))}
       </div>
@@ -553,13 +561,14 @@ export default function IitCounsellingUtm() {
     Promise.all([
       getIitCounsellingSavedUtmLinks(t, { linkTarget: 'iitCounselling' }),
       getIitCounsellingSavedUtmLinks(t, { linkTarget: 'oneOnOneSession' }),
-    ]).then(([iitRes, oneOnOneRes]) => {
+      getIitCounsellingSavedUtmLinks(t, { linkTarget: 'guidanceBookingConfirmation' }),
+    ]).then(([iitRes, oneOnOneRes, guidanceRes]) => {
       const pick = (result) => {
         if (!result.success) return [];
         const body = result.data;
         return Array.isArray(body?.data) ? body.data : Array.isArray(body) ? body : [];
       };
-      const merged = [...pick(iitRes), ...pick(oneOnOneRes)];
+      const merged = [...pick(iitRes), ...pick(oneOnOneRes), ...pick(guidanceRes)];
       merged.sort((a, b) => new Date(b.createdAt || 0).getTime() - new Date(a.createdAt || 0).getTime());
       setSavedLinksForLookup(merged);
     });
@@ -589,21 +598,23 @@ export default function IitCounsellingUtm() {
     [savedLinksForAnalyticsLookup]
   );
 
-  const analyticsPagePath = analyticsLinkTarget === 'oneOnOneSession'
-    ? '/one-on-one-session'
-    : '/iit-counselling';
+  const analyticsPagePath = getIitUtmPagePath(analyticsLinkTarget);
   const analyticsPageTitle = analyticsLinkTarget === 'oneOnOneSession'
     ? '1-on-1 session UTM analytics'
-    : 'IIT Counselling UTM analytics';
+    : analyticsLinkTarget === 'guidanceBookingConfirmation'
+      ? 'Guidance booking confirmation UTM analytics'
+      : 'IIT Counselling UTM analytics';
   const analyticsLinkedHelp = analyticsLinkTarget === 'oneOnOneSession'
     ? 'Linked = visit tied to a 1-on-1 form submission.'
-    : 'Linked = visit tied to section 1 save.';
-  const isOneOnOneSavedLinksOnly = analyticsLinkTarget === 'oneOnOneSession';
+    : analyticsLinkTarget === 'guidanceBookingConfirmation'
+      ? 'Linked = visit tied to a confirmed guidance slot booking.'
+      : 'Linked = visit tied to section 1 save.';
+  const isSavedLinksOnlyTarget = isIitUtmSavedLinksOnlyTarget(analyticsLinkTarget);
 
   const savedLinkComboKeys = useMemo(() => {
-    if (!isOneOnOneSavedLinksOnly) return null;
+    if (!isSavedLinksOnlyTarget) return null;
     return buildSavedLinkComboKeys(savedLinksForAnalyticsLookup);
-  }, [isOneOnOneSavedLinksOnly, savedLinksForAnalyticsLookup]);
+  }, [isSavedLinksOnlyTarget, savedLinksForAnalyticsLookup]);
 
   useEffect(() => {
     if (window.location.hash !== '#iit-utm-generator') return undefined;
@@ -631,7 +642,7 @@ export default function IitCounsellingUtm() {
       fromTime,
       toTime,
     });
-    if (isOneOnOneSavedLinksOnly) {
+    if (isSavedLinksOnlyTarget) {
       return filterComboRowsToSavedLinks(merged, savedLinkComboKeys);
     }
     return merged;
@@ -642,12 +653,12 @@ export default function IitCounsellingUtm() {
     toDate,
     fromTime,
     toTime,
-    isOneOnOneSavedLinksOnly,
+    isSavedLinksOnlyTarget,
     savedLinkComboKeys,
   ]);
 
   const barChartData = useMemo(() => {
-    const src = isOneOnOneSavedLinksOnly
+    const src = isSavedLinksOnlyTarget
       ? [...mergedComboRows]
           .map((r) => ({ utm_content: r.utm_content, visits: r.visits ?? 0 }))
           .sort((a, b) => (Number(b.visits) || 0) - (Number(a.visits) || 0))
@@ -664,19 +675,19 @@ export default function IitCounsellingUtm() {
         fullName: label,
       };
     });
-  }, [data?.byContent, isOneOnOneSavedLinksOnly, mergedComboRows]);
+  }, [data?.byContent, isSavedLinksOnlyTarget, mergedComboRows]);
 
   const topUtmContentLabel = useMemo(() => {
-    const rows = isOneOnOneSavedLinksOnly
+    const rows = isSavedLinksOnlyTarget
       ? [...mergedComboRows].filter((r) => r.utm_content && r.utm_content !== '(none)')
       : [...(data?.byContent || [])].filter((r) => r.utm_content && r.utm_content !== '(none)');
     if (rows.length === 0) return '—';
     rows.sort((a, b) => (Number(b.visits) || 0) - (Number(a.visits) || 0));
     return rows[0].utm_content || '—';
-  }, [data?.byContent, isOneOnOneSavedLinksOnly, mergedComboRows]);
+  }, [data?.byContent, isSavedLinksOnlyTarget, mergedComboRows]);
 
   const analyticsSummary = useMemo(() => {
-    if (!isOneOnOneSavedLinksOnly) return summary;
+    if (!isSavedLinksOnlyTarget) return summary;
     const totalVisits = mergedComboRows.reduce((s, r) => s + (Number(r.visits) || 0), 0);
     const visitsWithAnyUtm = mergedComboRows.reduce((s, r) => {
       const has = [r.utm_source, r.utm_medium, r.utm_campaign, r.utm_content].some(
@@ -690,7 +701,7 @@ export default function IitCounsellingUtm() {
       visitsWithAnyUtm,
       visitsWithoutUtm: Math.max(0, totalVisits - visitsWithAnyUtm),
     };
-  }, [summary, isOneOnOneSavedLinksOnly, mergedComboRows]);
+  }, [summary, isSavedLinksOnlyTarget, mergedComboRows]);
 
   const lineChartData = useMemo(() => {
     const raw = (visitTrend || []).map((p) => ({
@@ -741,7 +752,9 @@ export default function IitCounsellingUtm() {
     const headers = [
       'utm_source', 'utm_medium', 'utm_campaign', 'utm_content', 'Influencer name',
       'Date created', 'Last visit', 'Visits', 'Unique visitors',
-      analyticsLinkTarget === 'oneOnOneSession' ? 'Linked leads' : 'Linked submissions',
+      analyticsLinkTarget === 'oneOnOneSession' || analyticsLinkTarget === 'guidanceBookingConfirmation'
+        ? 'Linked leads'
+        : 'Linked submissions',
     ];
     const rows = filteredSortedCombo.map((r) => [
       r.utm_source ?? '',
@@ -760,7 +773,11 @@ export default function IitCounsellingUtm() {
     const url = URL.createObjectURL(blob);
     const a = document.createElement('a');
     a.href = url;
-    const slug = analyticsLinkTarget === 'oneOnOneSession' ? 'one-on-one-session-utm' : 'iit-counselling-utm';
+    const slug = analyticsLinkTarget === 'oneOnOneSession'
+      ? 'one-on-one-session-utm'
+      : analyticsLinkTarget === 'guidanceBookingConfirmation'
+        ? 'guidance-booking-confirmation-utm'
+        : 'iit-counselling-utm';
     a.download = `${slug}-${new Date().toISOString().slice(0, 10)}.csv`;
     a.click();
     URL.revokeObjectURL(url);
@@ -768,7 +785,9 @@ export default function IitCounsellingUtm() {
 
   const generatorBaseUrl = genLinkTarget === 'oneOnOneSession'
     ? DEFAULT_ONE_ON_ONE_SESSION_PAGE_URL
-    : DEFAULT_IIT_COUNSELLING_PAGE_URL;
+    : genLinkTarget === 'guidanceBookingConfirmation'
+      ? DEFAULT_GUIDANCE_BOOKING_CONFIRMATION_PAGE_URL
+      : DEFAULT_IIT_COUNSELLING_PAGE_URL;
 
   const generatedIitUtmLink = useMemo(() => {
     const name = genInfluencerName.trim();
@@ -978,13 +997,17 @@ export default function IitCounsellingUtm() {
         <p className="text-sm text-gray-500 mt-1">
           Create trackable links for{' '}
           <span className="font-mono text-xs bg-gray-100 px-1 rounded">/iit-counselling</span>
-          {' '}or{' '}
-          <span className="font-mono text-xs bg-gray-100 px-1 rounded">/one-on-one-session</span>.
+          {', '}
+          <span className="font-mono text-xs bg-gray-100 px-1 rounded">/one-on-one-session</span>
+          {', or '}
+          <span className="font-mono text-xs bg-gray-100 px-1 rounded">/guidance-booking-confirmation</span>.
         </p>
         <p className="text-xs text-gray-500 mt-1">
           <Link to="/admin/iit-counselling" className="text-primary-navy hover:underline">IIT Counselling submissions</Link>
           {' · '}
           <Link to="/admin/one-on-one-counseling" className="text-primary-navy hover:underline">1-on-1 Counseling Leads</Link>
+          {' · '}
+          <Link to="/admin/guidance-slot-bookings" className="text-primary-navy hover:underline">Guidance Slot Bookings</Link>
         </p>
       </div>
 
@@ -1000,8 +1023,11 @@ export default function IitCounsellingUtm() {
           <span className="font-mono text-xs bg-gray-100 px-1.5 py-0.5 rounded border border-gray-200">
             {analyticsPagePath}
           </span>
-          {isOneOnOneSavedLinksOnly ? (
-            <span className="text-gray-500"> · saved 1-on-1 links only</span>
+          {isSavedLinksOnlyTarget ? (
+            <span className="text-gray-500">
+              {' '}
+              · saved {getIitUtmTabLabel(analyticsLinkTarget).toLowerCase()} links only
+            </span>
           ) : null}
         </p>
       </div>
@@ -1127,7 +1153,9 @@ export default function IitCounsellingUtm() {
             <p className="text-xs text-gray-500 mt-2">
               {genLinkTarget === 'oneOnOneSession'
                 ? 'Links point to /one-on-one-session and appear in the 1-on-1 saved list below.'
-                : 'Links point to /iit-counselling and appear in the IIT counselling saved list below.'}
+                : genLinkTarget === 'guidanceBookingConfirmation'
+                  ? 'Links point to /guidance-booking-confirmation and appear in the guidance booking saved list below.'
+                  : 'Links point to /iit-counselling and appear in the IIT counselling saved list below.'}
             </p>
           </div>
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
@@ -1277,7 +1305,7 @@ export default function IitCounsellingUtm() {
             <div className="mt-4 p-4 rounded-lg border border-dashed border-gray-200 bg-gray-50/50">
               <p className="text-sm text-gray-600 leading-relaxed">
                 Enter an influencer name to preview the{' '}
-                {genLinkTarget === 'oneOnOneSession' ? '1-on-1 session' : 'IIT counselling'} page URL (utm_content).
+                {getIitUtmTabLabel(genLinkTarget).toLowerCase()} page URL (utm_content).
               </p>
             </div>
           )}
@@ -1335,7 +1363,7 @@ export default function IitCounsellingUtm() {
                     <tr key={`iit-saved-${String(row.id)}-${row.createdAt || ''}`} className="hover:bg-gray-50/80">
                       <td className="px-4 py-3 font-medium text-gray-900 max-w-[140px] truncate" title={row.influencerName}>{row.influencerName}</td>
                       <td className="px-4 py-3 text-gray-600 text-xs whitespace-nowrap">
-                        {row.linkTarget === 'oneOnOneSession' ? '1-on-1 session' : 'IIT counselling'}
+                        {getIitUtmTabLabel(row.linkTarget || 'iitCounselling')}
                       </td>
                       <td className="px-4 py-3 text-gray-700">{row.platform}</td>
                       <td className="px-4 py-3 text-gray-600 max-w-[120px] truncate" title={row.campaign}>{row.campaign}</td>
@@ -1378,9 +1406,12 @@ export default function IitCounsellingUtm() {
             <div>
               <h2 className="text-base font-semibold text-gray-800">{analyticsPageTitle}</h2>
               <p className="text-sm text-gray-500 mt-0.5">
-                {isOneOnOneSavedLinksOnly ? (
+                {isSavedLinksOnlyTarget ? (
                   <>
-                    Metrics for <strong className="font-medium text-gray-700">saved 1-on-1 UTM links only</strong>
+                    Metrics for{' '}
+                    <strong className="font-medium text-gray-700">
+                      saved {getIitUtmTabLabel(analyticsLinkTarget).toLowerCase()} UTM links only
+                    </strong>
                     {' '}(from Generate UTM Link above). {analyticsLinkedHelp}
                   </>
                 ) : (
@@ -1391,8 +1422,8 @@ export default function IitCounsellingUtm() {
                 )}
               </p>
               <p className="text-xs text-gray-500 mt-0.5">
-                {isOneOnOneSavedLinksOnly
-                  ? 'Date filters apply to visit and lead counts for those saved links. Visits-over-time chart includes all /one-on-one-session traffic.'
+                {isSavedLinksOnlyTarget
+                  ? `Date filters apply to visit and lead counts for those saved links. Visits-over-time chart includes all ${analyticsPagePath} traffic.`
                   : 'Date filters apply to this table, KPIs, and charts above.'}
               </p>
             </div>
@@ -1440,13 +1471,13 @@ export default function IitCounsellingUtm() {
         ) : mergedComboRows.length === 0 ? (
           <div className="px-6 py-12 text-center">
             <p className="text-gray-500 text-sm">
-              {isOneOnOneSavedLinksOnly
-                ? 'No saved 1-on-1 session links yet.'
+              {isSavedLinksOnlyTarget
+                ? `No saved ${getIitUtmTabLabel(analyticsLinkTarget).toLowerCase()} links yet.`
                 : 'No UTM rows in this range.'}
             </p>
             <p className="text-gray-400 text-xs mt-1">
-              {isOneOnOneSavedLinksOnly
-                ? 'Choose 1-on-1 session in Generate UTM Link, save influencer links, then refresh.'
+              {isSavedLinksOnlyTarget
+                ? `Choose ${getIitUtmTabLabel(analyticsLinkTarget)} in Generate UTM Link, save influencer links, then refresh.`
                 : `Saved links or visits with UTM tags on ${analyticsPagePath} will appear here.`}
             </p>
           </div>
@@ -1465,7 +1496,7 @@ export default function IitCounsellingUtm() {
                   <th className="px-6 py-3 text-right text-xs font-semibold text-gray-600 uppercase tracking-wider">Visits</th>
                   <th className="px-6 py-3 text-right text-xs font-semibold text-gray-600 uppercase tracking-wider">Unique</th>
                   <th className="px-6 py-3 text-right text-xs font-semibold text-gray-600 uppercase tracking-wider">
-                    {analyticsLinkTarget === 'oneOnOneSession' ? 'Linked leads' : 'Linked'}
+                    {isIitUtmSavedLinksOnlyTarget(analyticsLinkTarget) ? 'Linked leads' : 'Linked'}
                   </th>
                 </tr>
               </thead>

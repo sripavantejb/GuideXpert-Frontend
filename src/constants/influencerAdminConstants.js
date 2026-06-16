@@ -25,15 +25,40 @@ export const DEFAULT_CAMPAIGN = 'guide_xperts';
 
 /** Landing pages for Admin → IIT Counselling UTM (not registration influencer tracking). */
 export const IIT_COUNSELLING_UTM_LINK_TARGETS = [
-  { value: 'iitCounselling', label: 'IIT counselling (/iit-counselling)' },
-  { value: 'oneOnOneSession', label: '1-on-1 session (/one-on-one-session)' },
+  { value: 'iitCounselling', label: 'IIT counselling (/iit-counselling)', tabLabel: 'IIT counselling' },
+  { value: 'oneOnOneSession', label: '1-on-1 session (/one-on-one-session)', tabLabel: '1-on-1 session' },
+  {
+    value: 'guidanceBookingConfirmation',
+    label: 'Guidance booking confirmation (/guidance-booking-confirmation)',
+    tabLabel: 'Guidance booking',
+  },
 ];
+
+export const IIT_UTM_SAVED_LINKS_ONLY_TARGETS = new Set(['oneOnOneSession', 'guidanceBookingConfirmation']);
+
+export function isIitUtmSavedLinksOnlyTarget(linkTarget) {
+  return IIT_UTM_SAVED_LINKS_ONLY_TARGETS.has(linkTarget);
+}
+
+export function getIitUtmPagePath(linkTarget) {
+  if (linkTarget === 'oneOnOneSession') return '/one-on-one-session';
+  if (linkTarget === 'guidanceBookingConfirmation') return '/guidance-booking-confirmation';
+  return '/iit-counselling';
+}
+
+export function getIitUtmTabLabel(linkTarget) {
+  const found = IIT_COUNSELLING_UTM_LINK_TARGETS.find((o) => o.value === linkTarget);
+  return found?.tabLabel || found?.label || 'IIT counselling';
+}
 
 /** Normalize ?linkTarget= query on IIT Counselling UTM page. */
 export function normalizeIitUtmLinkTargetFromQuery(raw) {
   if (!raw) return 'iitCounselling';
   const s = String(raw).trim().toLowerCase().replace(/-/g, '_');
   if (s === 'oneononesession' || s === 'one_on_one_session') return 'oneOnOneSession';
+  if (s === 'guidancebookingconfirmation' || s === 'guidance_booking_confirmation') {
+    return 'guidanceBookingConfirmation';
+  }
   return 'iitCounselling';
 }
 
