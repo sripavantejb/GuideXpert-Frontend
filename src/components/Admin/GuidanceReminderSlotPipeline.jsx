@@ -27,6 +27,16 @@ function suppressionLabel(reason) {
   return SUPPRESSION_LABELS[reason] || reason.replace(/_/g, ' ');
 }
 
+function failureLabelForStudent(student) {
+  const code = String(student?.webhookErrorCode || '').trim();
+  if (code === '131049' || /ecosystem engagement/i.test(student?.lastError || '')) {
+    return 'Engagement limit';
+  }
+  if (code === '131048') return 'Spam rate limit';
+  if (code === '131047') return 'Re-engagement required';
+  return null;
+}
+
 function slotSendSummary(slot) {
   const confirmed = slot.bookings?.confirmed || 0;
   const max = slot.bookings?.max || 0;
@@ -63,9 +73,13 @@ function slotSendSummary(slot) {
   }
   if (failedCount > 0) {
     const err = students.find((s) => s.reminderState === 'failed');
+    const failureLabel = failureLabelForStudent(err);
+    const codeSuffix = err?.webhookErrorCode ? ` (${err.webhookErrorCode})` : '';
     return {
-      sendLabel: 'Failed',
-      sendSub: `${failedCount} of ${confirmed}`,
+      sendLabel: failureLabel || 'Failed',
+      sendSub: failureLabel
+        ? `${failedCount} of ${confirmed}${codeSuffix}`
+        : `${failedCount} of ${confirmed}`,
       tone: 'danger',
       detail: err?.lastError || suppressionLabel(err?.suppressionReason),
     };
@@ -249,4 +263,4 @@ export default function GuidanceReminderSlotPipeline({
   );
 }
 
-export { slotSendSummary, suppressionLabel };
+export { slotSendSummary, suppressionLabel, failureLabelForStudent };

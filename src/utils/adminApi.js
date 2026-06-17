@@ -581,6 +581,10 @@ export const deleteOneOnOneCounselor = async (id, token = getStoredToken()) =>
 export const getGuidanceSlots = async (params = {}, token = getStoredToken()) => {
   const search = new URLSearchParams();
   if (params.counselorId) search.set('counselorId', params.counselorId);
+  if (params.slotDate) search.set('slotDate', params.slotDate);
+  if (params.isActive) search.set('isActive', params.isActive);
+  if (params.q) search.set('q', params.q);
+  if (params.availability) search.set('availability', params.availability);
   const query = search.toString();
   return adminRequest(`/guidance-slots${query ? `?${query}` : ''}`, { method: 'GET' }, token);
 };
