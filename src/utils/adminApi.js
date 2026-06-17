@@ -613,6 +613,9 @@ export const getGuidanceBookings = async (params = {}, token = getStoredToken())
   return adminRequest(`/guidance-bookings${query ? `?${query}` : ''}`, { method: 'GET' }, token);
 };
 
+export const cancelGuidanceBooking = async (id, token = getStoredToken()) =>
+  adminRequest(`/guidance-bookings/${encodeURIComponent(id)}/cancel`, { method: 'POST' }, token);
+
 export const getGuidanceReminderStatus = async (params = {}, token = getStoredToken()) => {
   const search = new URLSearchParams();
   if (params.slotDate) search.set('slotDate', params.slotDate);

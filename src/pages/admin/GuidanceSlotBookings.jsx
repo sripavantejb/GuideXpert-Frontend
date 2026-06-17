@@ -1,9 +1,10 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
-import { FiChevronLeft, FiChevronRight, FiCopy, FiPlus, FiRefreshCw, FiToggleLeft, FiToggleRight, FiTrash2, FiX } from 'react-icons/fi';
+import { FiChevronLeft, FiChevronRight, FiCopy, FiPlus, FiRefreshCw, FiSearch, FiToggleLeft, FiToggleRight, FiTrash2, FiX } from 'react-icons/fi';
 import CopyToSheetsModal from '../../components/Admin/CopyToSheetsModal';
 import { ADMIN_VIEW_ALL_LIMIT } from '../../constants/adminListLimits';
 import { fetchAllPaginatedRows } from '../../utils/adminPagedFetch';
 import {
+  cancelGuidanceBooking,
   createGuidanceSlot,
   deleteGuidanceSlot,
   getGuidanceBookings,
@@ -112,6 +113,8 @@ function buildBookingsQueryParams({
   bookingsSlotId,
   bookingsCounselorId,
   bookingsSlotDate,
+  debouncedBookingsStudentSearch,
+  debouncedBookingsMobileSearch,
 }) {
   return {
     page,
@@ -120,6 +123,8 @@ function buildBookingsQueryParams({
     selectedSlotId: bookingsSlotId || undefined,
     oneOnOneCounselorId: bookingsCounselorId || undefined,
     slotDate: bookingsSlotDate || undefined,
+    studentName: debouncedBookingsStudentSearch.trim() || undefined,
+    mobile: debouncedBookingsMobileSearch.trim() || undefined,
   };
 }
 
@@ -154,6 +159,10 @@ export default function GuidanceSlotBookings() {
   const [bookingsCounselorId, setBookingsCounselorId] = useState('');
   const [bookingsSlotDate, setBookingsSlotDate] = useState('');
   const [bookingsSlotId, setBookingsSlotId] = useState('');
+  const [bookingsStudentSearch, setBookingsStudentSearch] = useState('');
+  const [bookingsMobileSearch, setBookingsMobileSearch] = useState('');
+  const debouncedBookingsStudentSearch = useDebouncedValue(bookingsStudentSearch, 350);
+  const debouncedBookingsMobileSearch = useDebouncedValue(bookingsMobileSearch, 350);
   const [slotsCounselorId, setSlotsCounselorId] = useState('');
   const [slotsDate, setSlotsDate] = useState('');
   const [slotsActive, setSlotsActive] = useState('');
@@ -166,6 +175,7 @@ export default function GuidanceSlotBookings() {
   const [copyLoading, setCopyLoading] = useState(false);
   const [copyRecords, setCopyRecords] = useState([]);
   const [copyMode, setCopyMode] = useState('bookings');
+  const [cancellingId, setCancellingId] = useState(null);
 
   const slotsFilterActive = useMemo(
     () =>
@@ -178,9 +188,21 @@ export default function GuidanceSlotBookings() {
   const bookingsFilterActive = useMemo(
     () =>
       Boolean(
-        bookingFilter || bookingsCounselorId || bookingsSlotDate || bookingsSlotId
+        bookingFilter ||
+          bookingsCounselorId ||
+          bookingsSlotDate ||
+          bookingsSlotId ||
+          bookingsStudentSearch.trim() ||
+          bookingsMobileSearch.trim()
       ),
-    [bookingFilter, bookingsCounselorId, bookingsSlotDate, bookingsSlotId]
+    [
+      bookingFilter,
+      bookingsCounselorId,
+      bookingsSlotDate,
+      bookingsSlotId,
+      bookingsStudentSearch,
+      bookingsMobileSearch,
+    ]
   );
 
   const slotOptions = useMemo(
@@ -234,6 +256,8 @@ export default function GuidanceSlotBookings() {
         bookingsSlotId,
         bookingsCounselorId,
         bookingsSlotDate,
+        debouncedBookingsStudentSearch,
+        debouncedBookingsMobileSearch,
       }),
       token
     );
@@ -259,6 +283,8 @@ export default function GuidanceSlotBookings() {
     bookingsSlotId,
     bookingsCounselorId,
     bookingsSlotDate,
+    debouncedBookingsStudentSearch,
+    debouncedBookingsMobileSearch,
     logout,
   ]);
 
@@ -357,6 +383,8 @@ export default function GuidanceSlotBookings() {
       bookingsSlotId,
       bookingsCounselorId,
       bookingsSlotDate,
+      debouncedBookingsStudentSearch,
+      debouncedBookingsMobileSearch,
     });
     const result = await fetchAllPaginatedRows((page, limit) =>
       getGuidanceBookings({ ...baseParams, page, limit }, token)
@@ -375,6 +403,31 @@ export default function GuidanceSlotBookings() {
     setCopyMode('bookings');
     setCopyRecords(result.rows || []);
     setCopyModalOpen(true);
+  };
+
+  const handleCancelBooking = async (booking) => {
+    const slotLabel = booking.slot
+      ? `${booking.slot.sessionTitle} (${booking.slot.slotDate}${booking.slot.slotTime ? ` · ${booking.slot.slotTime}` : ''})`
+      : 'this slot';
+    const confirmed = window.confirm(
+      `Cancel guidance booking for ${booking.studentName} (${booking.mobileNumber})?\n\nSlot: ${slotLabel}\n\nThis will free the slot for others to book.`
+    );
+    if (!confirmed) return;
+
+    setCancellingId(booking.id);
+    setError('');
+    const res = await cancelGuidanceBooking(booking.id, token);
+    setCancellingId(null);
+    if (!res.success) {
+      if (res.status === 401) {
+        logout();
+        window.location.href = '/admin/login';
+        return;
+      }
+      setError(res.message || 'Failed to cancel booking');
+      return;
+    }
+    await Promise.all([loadBookings(), loadSlots()]);
   };
 
   const listToolbar = (kind) => {
@@ -672,6 +725,35 @@ export default function GuidanceSlotBookings() {
       ) : tab === 'bookings' ? (
         <>
           <div className="flex flex-wrap items-center gap-2 bg-white rounded-xl border p-3">
+            <div className="relative min-w-[180px] flex-1">
+              <FiSearch className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" aria-hidden />
+              <input
+                type="search"
+                value={bookingsStudentSearch}
+                onChange={(e) => {
+                  setBookingsStudentSearch(e.target.value);
+                  setPagination((p) => ({ ...p, page: 1 }));
+                }}
+                placeholder="Search student name"
+                className="w-full border rounded-lg pl-9 pr-3 py-2 text-sm"
+                aria-label="Search by student name"
+              />
+            </div>
+            <div className="relative min-w-[160px] flex-1">
+              <FiSearch className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" aria-hidden />
+              <input
+                type="search"
+                inputMode="numeric"
+                value={bookingsMobileSearch}
+                onChange={(e) => {
+                  setBookingsMobileSearch(e.target.value);
+                  setPagination((p) => ({ ...p, page: 1 }));
+                }}
+                placeholder="Search mobile number"
+                className="w-full border rounded-lg pl-9 pr-3 py-2 text-sm"
+                aria-label="Search by mobile number"
+              />
+            </div>
             <select
               value={bookingFilter}
               onChange={(e) => {
@@ -741,6 +823,8 @@ export default function GuidanceSlotBookings() {
                   setBookingsCounselorId('');
                   setBookingsSlotDate('');
                   setBookingsSlotId('');
+                  setBookingsStudentSearch('');
+                  setBookingsMobileSearch('');
                   setPagination((p) => ({ ...p, page: 1 }));
                 }}
                 className="inline-flex items-center gap-1 px-3 py-2 text-sm text-gray-600 hover:bg-gray-100 rounded-lg"
@@ -766,18 +850,19 @@ export default function GuidanceSlotBookings() {
                   <th className="px-3 py-2 text-left">Parent</th>
                   <th className="px-3 py-2 text-left">WhatsApp</th>
                   <th className="px-3 py-2 text-left">UTM Campaign</th>
+                  <th className="px-3 py-2 text-left">Actions</th>
                 </tr>
               </thead>
               <tbody>
                 {loading ? (
                   <tr>
-                    <td colSpan={11} className="p-8 text-center text-gray-500">
+                    <td colSpan={12} className="p-8 text-center text-gray-500">
                       Loading…
                     </td>
                   </tr>
                 ) : bookings.length === 0 ? (
                   <tr>
-                    <td colSpan={11} className="p-8 text-center text-gray-500">
+                    <td colSpan={12} className="p-8 text-center text-gray-500">
                       {bookingsFilterActive ? 'No bookings match your filters.' : 'No bookings yet.'}
                     </td>
                   </tr>
@@ -806,6 +891,20 @@ export default function GuidanceSlotBookings() {
                     <td className="px-3 py-2">{b.whatsappConsent ? 'Yes' : '—'}</td>
                     <td className="px-3 py-2 text-xs max-w-[140px] truncate" title={b.utm_campaign || ''}>
                       {b.utm_campaign || '—'}
+                    </td>
+                    <td className="px-3 py-2">
+                      {b.bookingConfirmed ? (
+                        <button
+                          type="button"
+                          onClick={() => handleCancelBooking(b)}
+                          disabled={cancellingId === b.id || loading}
+                          className="inline-flex items-center rounded-lg border border-red-200 bg-white px-2.5 py-1 text-xs font-semibold text-red-700 hover:bg-red-50 disabled:opacity-50"
+                        >
+                          {cancellingId === b.id ? 'Cancelling…' : 'Cancel slot'}
+                        </button>
+                      ) : (
+                        '—'
+                      )}
                     </td>
                   </tr>
                   ))
