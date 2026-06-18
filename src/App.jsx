@@ -150,6 +150,7 @@ import BlogDetails from './pages/BlogDetails';
 import BlogsPage from './pages/BlogsPage';
 import LegacyBlogRedirect from './pages/LegacyBlogRedirect';
 import AdminBlog from './pages/AdminBlog';
+import FeaturesPage from './pages/FeaturesPage';
 import { onAdminUnauthorized, onBdaUnauthorized, onCounsellorUnauthorized, onWebinarUnauthorized } from './utils/authSession';
 
 function ProtectedAdmin({ children }) {
@@ -245,6 +246,7 @@ function App() {
             <Routes>
           <Route path="/" element={<LandingPage />} />
           <Route path="/register" element={<LandingPage />} />
+          <Route path="/features" element={<FeaturesPage />} />
           <Route path="/meet" element={<MeetingRegistration />} />
           <Route path="/meet1" element={<MeetingRegistration redirectMeetUrl="https://meet.google.com/ryt-wtjh-gep" />} />
           <Route path="/meet2" element={<MeetingRegistration redirectMeetUrl="https://meet.google.com/izo-wyts-sas" />} />
