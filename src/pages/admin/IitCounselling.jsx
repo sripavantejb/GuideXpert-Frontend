@@ -21,6 +21,11 @@ import {
   isRelevantIitClassStatus,
   matchesIitLeadRelevance,
 } from '../../utils/iitCounsellingClassStatus';
+import { MEET_PRESENCE_OPTIONS } from '../../constants/bdaLeadFilters';
+import {
+  fetchIitMeetAttendancePhoneSets,
+  matchesIitAttendanceFilter,
+} from '../../utils/iitMeetAttendancePhones';
 
 function formatDateTime(value) {
   if (!value) return '—';
@@ -447,6 +452,11 @@ export default function IitCounselling() {
   const [languageFilter, setLanguageFilter] = useState('');
   /** 'all' | 'relevant' | 'irrelevant' — filters by Current studying (classStatus). */
   const [leadRelevanceFilter, setLeadRelevanceFilter] = useState('all');
+  /** '' | 'attended' | 'not_attended' — IIT meet join data from /admin/iit-meet-attendance. */
+  const [attendanceFilter, setAttendanceFilter] = useState('');
+  const [attendancePhoneSets, setAttendancePhoneSets] = useState(null);
+  const [attendanceLoading, setAttendanceLoading] = useState(false);
+  const [attendanceError, setAttendanceError] = useState('');
   /** Visit analytics range (top KPIs & charts only). */
   const [fromDate, setFromDate] = useState('');
   const [toDate, setToDate] = useState('');
@@ -473,6 +483,7 @@ export default function IitCounselling() {
 
   const aggFetchGen = useRef(0);
   const listFetchGen = useRef(0);
+  const attendanceFetchGen = useRef(0);
 
   const sharedFilters = useMemo(() => ({
     fromDate,
@@ -507,13 +518,14 @@ export default function IitCounselling() {
       });
   }, [search]);
 
-  /** Client-side table mode when demo date, slot, or relevance filters are active. */
+  /** Client-side table mode when demo date, slot, relevance, or attendance filters are active. */
   const heavyClientFilter = Boolean(
     String(demoFromDate || '').trim()
     || String(demoToDate || '').trim()
     || String(slotFilter || '').trim()
     || String(languageFilter || '').trim()
     || leadRelevanceFilter !== 'all'
+    || String(attendanceFilter || '').trim()
   );
 
   /** Canonical range for comparisons when only one bound is set or user picks to before from. */
@@ -548,6 +560,42 @@ export default function IitCounselling() {
   );
 
   useEffect(() => {
+    const gen = ++attendanceFetchGen.current;
+    setAttendanceLoading(true);
+    setAttendanceError('');
+    fetchIitMeetAttendancePhoneSets(
+      { from: effectiveDemoRange.from, to: effectiveDemoRange.to },
+      getStoredToken()
+    ).then((res) => {
+      if (gen !== attendanceFetchGen.current) return;
+      setAttendanceLoading(false);
+      if (!res?.success) {
+        setAttendancePhoneSets(null);
+        setAttendanceError(res?.message || 'Failed to load IIT meet attendance');
+        return;
+      }
+      setAttendancePhoneSets({
+        english: res.english,
+        hindi: res.hindi,
+        union: res.union,
+      });
+    }).catch((err) => {
+      if (gen !== attendanceFetchGen.current) return;
+      setAttendanceLoading(false);
+      setAttendancePhoneSets(null);
+      setAttendanceError(err?.message || 'Failed to load IIT meet attendance');
+    });
+  }, [effectiveDemoRange.from, effectiveDemoRange.to]);
+
+  const attendanceFilteredRows = useMemo(() => {
+    if (!String(attendanceFilter || '').trim()) return relevanceFilteredRows;
+    if (!attendancePhoneSets) return [];
+    return relevanceFilteredRows.filter((row) =>
+      matchesIitAttendanceFilter(row, attendanceFilter, attendancePhoneSets)
+    );
+  }, [relevanceFilteredRows, attendanceFilter, attendancePhoneSets]);
+
+  useEffect(() => {
     if (heavyClientFilter) {
       setLoading(false);
       return;
@@ -576,17 +624,20 @@ export default function IitCounselling() {
   useEffect(() => {
     if (!heavyClientFilter) return;
     if (aggError) setError(aggError);
+    else if (String(attendanceFilter || '').trim() && attendanceError) setError(attendanceError);
     else setError('');
-  }, [heavyClientFilter, aggError]);
+  }, [heavyClientFilter, aggError, attendanceFilter, attendanceError]);
 
-  /** Server-paged path uses `loading`; demo/slot client path uses `aggLoading` only (avoids stuck spinner when demo dates or page change without a new agg request). */
-  const submissionsListLoading = heavyClientFilter ? aggLoading : loading;
+  /** Server-paged path uses `loading`; demo/slot client path uses `aggLoading`; attendance filter also waits on meet phones. */
+  const submissionsListLoading = heavyClientFilter
+    ? (aggLoading || (String(attendanceFilter || '').trim() && attendanceLoading))
+    : loading;
 
   useEffect(() => {
-    if (!heavyClientFilter || relevanceFilteredRows.length === 0) return;
-    const totalPages = Math.max(1, Math.ceil(relevanceFilteredRows.length / 25));
+    if (!heavyClientFilter || attendanceFilteredRows.length === 0) return;
+    const totalPages = Math.max(1, Math.ceil(attendanceFilteredRows.length / 25));
     if (page > totalPages) setPage(totalPages);
-  }, [heavyClientFilter, relevanceFilteredRows, page]);
+  }, [heavyClientFilter, attendanceFilteredRows, page]);
 
   useEffect(() => {
     let cancelled = false;
@@ -617,7 +668,7 @@ export default function IitCounselling() {
 
   const submissionPagination = useMemo(() => {
     if (heavyClientFilter) {
-      const total = relevanceFilteredRows.length;
+      const total = attendanceFilteredRows.length;
       const totalPages = Math.max(1, Math.ceil(total / 25));
       return { total, totalPages };
     }
@@ -625,15 +676,15 @@ export default function IitCounselling() {
       total: pagination.total || 0,
       totalPages: pagination.totalPages || 1,
     };
-  }, [heavyClientFilter, relevanceFilteredRows, pagination]);
+  }, [heavyClientFilter, attendanceFilteredRows, pagination]);
 
   const pageMappedRows = useMemo(() => {
     if (heavyClientFilter) {
       const start = (page - 1) * 25;
-      return relevanceFilteredRows.slice(start, start + 25);
+      return attendanceFilteredRows.slice(start, start + 25);
     }
     return rows.map(mapIitSubmissionRecord);
-  }, [heavyClientFilter, relevanceFilteredRows, page, rows]);
+  }, [heavyClientFilter, attendanceFilteredRows, page, rows]);
 
   const slotToolbarOptions = useMemo(() => {
     const seen = new Set();
@@ -664,8 +715,8 @@ export default function IitCounselling() {
   }, [demoFilteredBaseRows, pageMappedRows]);
 
   const viewSourceRows = useMemo(
-    () => (submissionsViewAllOpen ? relevanceFilteredRows : pageMappedRows),
-    [submissionsViewAllOpen, relevanceFilteredRows, pageMappedRows]
+    () => (submissionsViewAllOpen ? attendanceFilteredRows : pageMappedRows),
+    [submissionsViewAllOpen, attendanceFilteredRows, pageMappedRows]
   );
   const filteredSubmissionRows = useMemo(
     () => applySubmissionViewFilters(viewSourceRows, viewFilters),
@@ -745,7 +796,7 @@ export default function IitCounselling() {
 
   const prepareCopySubmissions = useCallback(() => {
     setCopyPrepareError('');
-    if (aggLoading) {
+    if (aggLoading || (String(attendanceFilter || '').trim() && attendanceLoading)) {
       setCopyPrepareError('Still loading submissions; try again in a moment.');
       return;
     }
@@ -753,7 +804,7 @@ export default function IitCounselling() {
       if (aggError && submissionAggRows.length === 0) {
         throw new Error(aggError);
       }
-      const base = relevanceFilteredRows;
+      const base = attendanceFilteredRows;
       const vf = submissionsViewAllOpen ? viewFilters : EMPTY_VIEW_FILTERS;
       const filtered = applySubmissionViewFilters(base, vf);
       setCopyModalRecords(filtered);
@@ -764,9 +815,11 @@ export default function IitCounselling() {
     }
   }, [
     aggLoading,
+    attendanceFilter,
+    attendanceLoading,
     aggError,
     submissionAggRows.length,
-    relevanceFilteredRows,
+    attendanceFilteredRows,
     submissionsViewAllOpen,
     viewFilters,
   ]);
@@ -798,7 +851,7 @@ export default function IitCounselling() {
 
   /** Submission KPIs for current toolbar filters (aligned with table totals). */
   const submissionFilteredOverview = useMemo(() => {
-    const list = relevanceFilteredRows;
+    const list = attendanceFilteredRows;
     const total = list.length;
     const completed = list.filter((r) => r.completed === 'Yes').length;
     const completedPct = total ? Math.round((completed / total) * 1000) / 10 : 0;
@@ -828,7 +881,7 @@ export default function IitCounselling() {
       topSlot: topSlot || '—',
       topSlotCount,
     };
-  }, [relevanceFilteredRows]);
+  }, [attendanceFilteredRows]);
 
   const todayStrLocal = toYYYYMMDDLocal(new Date());
   const monthGridCounsel = useMemo(
@@ -1038,6 +1091,12 @@ export default function IitCounselling() {
               <span className="mx-1.5 text-gray-300">·</span>
               Demo filters use booking dates and slots.
               <span className="mx-1.5 text-gray-300">·</span>
+              <strong className="font-semibold text-gray-600">Meet attendance</strong> is matched by phone against{' '}
+              <Link to="/admin/iit-meet-attendance" className="text-primary-navy font-medium hover:underline underline-offset-2">
+                IIT meet attendance
+              </Link>
+              (English meet for Telugu; Hindi meet for Hindi).
+              <span className="mx-1.5 text-gray-300">·</span>
               <strong className="font-semibold text-gray-600">Relevant leads</strong> are 11th or 12th studying, or 12th passed out; degree, engineering, diploma, and other values count as irrelevant.
               {heavyClientFilter ? (
                 <span className="block sm:inline sm:ml-1 mt-1 sm:mt-0 text-primary-navy font-medium"> {submissionPagination.total} row(s) after demo filters.</span>
@@ -1236,7 +1295,7 @@ export default function IitCounselling() {
             <button
               type="button"
               onClick={() => setSubmissionsViewAllOpen(true)}
-              disabled={relevanceFilteredRows.length === 0 || aggLoading}
+              disabled={attendanceFilteredRows.length === 0 || aggLoading || (String(attendanceFilter || '').trim() && attendanceLoading)}
               className="h-10 rounded-xl border border-gray-200 bg-white px-4 text-sm font-semibold text-gray-700 shadow-sm hover:bg-gray-50 hover:border-gray-300 disabled:opacity-50 transition-colors"
             >
               View all
@@ -1244,7 +1303,7 @@ export default function IitCounselling() {
             <button
               type="button"
               onClick={prepareCopySubmissions}
-              disabled={relevanceFilteredRows.length === 0 || aggLoading}
+              disabled={attendanceFilteredRows.length === 0 || aggLoading || (String(attendanceFilter || '').trim() && attendanceLoading)}
               className="h-10 rounded-xl bg-primary-navy px-4 text-sm font-semibold text-white shadow-md shadow-primary-navy/20 hover:opacity-95 disabled:opacity-50 transition-opacity"
             >
               Copy all
@@ -1278,6 +1337,21 @@ export default function IitCounselling() {
               <option value="all">All leads</option>
               <option value="relevant">Relevant leads (11th / 12th / passed)</option>
               <option value="irrelevant">Irrelevant leads</option>
+            </select>
+            <select
+              value={attendanceFilter}
+              onChange={(e) => {
+                setLoading(true);
+                setError('');
+                setAttendanceFilter(e.target.value);
+                setPage(1);
+              }}
+              className="h-10 min-w-[11rem] max-w-[18rem] rounded-xl border border-gray-200 bg-white px-3 text-sm font-medium text-gray-800 shadow-sm outline-none focus:ring-2 focus:ring-primary-blue-500/25 focus:border-primary-blue-500"
+              aria-label="Filter by IIT meet attendance"
+            >
+              {MEET_PRESENCE_OPTIONS.map((o) => (
+                <option key={o.value || 'all'} value={o.value}>{o.label}</option>
+              ))}
             </select>
             <select
               value={slotFilter}
@@ -1416,7 +1490,7 @@ export default function IitCounselling() {
                 <button
                   type="button"
                   onClick={prepareCopySubmissions}
-                  disabled={relevanceFilteredRows.length === 0 || aggLoading}
+                  disabled={attendanceFilteredRows.length === 0 || aggLoading || (String(attendanceFilter || '').trim() && attendanceLoading)}
                   className="rounded border border-gray-300 px-2 py-1 text-[11px] font-medium text-gray-700 hover:bg-gray-50 disabled:opacity-50"
                 >
                   Copy all
