@@ -27,6 +27,7 @@ export default function CopilotReplyEditor({
   disabled,
   deliveryStatus,
   suggestNotice,
+  embedded = false,
 }) {
   const assignOptions = useMemo(() => {
     if (agents.length) {
@@ -54,9 +55,13 @@ export default function CopilotReplyEditor({
     setAssignValue(initialAssign);
   }, [initialAssign]);
 
+  const shellClass = embedded
+    ? 'shrink-0 border-t border-slate-200/80 bg-white p-4 space-y-3'
+    : `${PANEL_CLASS} p-4 space-y-3`;
+
   if (!handoff) {
     return (
-      <section className={`${PANEL_CLASS} p-4 text-sm text-slate-500`}>
+      <section className={embedded ? 'shrink-0 border-t border-slate-200/80 bg-white p-4 text-sm text-slate-500' : `${PANEL_CLASS} p-4 text-sm text-slate-500`}>
         Select a conversation to reply.
       </section>
     );
@@ -75,7 +80,7 @@ export default function CopilotReplyEditor({
   };
 
   return (
-    <section className={`${PANEL_CLASS} p-4 space-y-3`}>
+    <section className={shellClass}>
       <div className="flex flex-wrap items-center gap-2">
         <span className="rounded-full border border-slate-200 bg-slate-50 px-2 py-0.5 text-[10px] font-medium text-slate-600">
           {getCopilotStateLabel(handoff.copilotState)}

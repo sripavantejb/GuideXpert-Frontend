@@ -24,6 +24,7 @@ import CopilotNotificationBanner from './CopilotNotificationBanner';
 import CopilotQueuePanel from './CopilotQueuePanel';
 import CopilotReplyEditor from './CopilotReplyEditor';
 import { buildQueueFilterOptions, filterQueueBySr, PANEL_CLASS } from './copilotUtils';
+import { useCopilotTranscript } from './useCopilotTranscript';
 
 const POLL_MS = 30000;
 
@@ -52,6 +53,8 @@ export default function HumanCopilotPage() {
   const [retrying, setRetrying] = useState(false);
   const [activeView, setActiveView] = useState('inbox');
   const [agents, setAgents] = useState([]);
+
+  const transcript = useCopilotTranscript(selectedId, { pollMs: POLL_MS });
 
   const queueFilterOptions = useMemo(() => buildQueueFilterOptions(agents), [agents]);
 
@@ -210,6 +213,7 @@ export default function HumanCopilotPage() {
     setSuggestedText('');
     await loadQueue();
     await loadDetail(selectedId);
+    await transcript.refreshLatest();
   };
 
   const handleRetry = async () => {
@@ -229,6 +233,7 @@ export default function HumanCopilotPage() {
     setDeliveryStatus(result.deliveryStatus || 'sent');
     setLockVersion(result.lockVersion ?? lockVersion);
     await loadDetail(selectedId);
+    await transcript.refreshLatest();
   };
 
   const handleResolve = async () => {
@@ -418,12 +423,20 @@ export default function HumanCopilotPage() {
           />
         </div>
 
-        <div className="lg:col-span-5 flex min-h-[420px] flex-col gap-4 lg:min-h-0">
-          <div className="min-h-[280px] flex-1 lg:min-h-0">
+        <div className="lg:col-span-5 flex h-[80vh] max-h-[80vh] min-h-[420px] flex-col overflow-hidden rounded-2xl border border-slate-200/90 bg-white shadow-[0_1px_2px_rgba(15,23,42,0.04)] ring-1 ring-slate-100">
+          <div className="min-h-0 flex-1">
             <CopilotConversationView
-              transcript={detail?.transcript}
-              loading={detailLoading}
               handoff={handoff}
+              messages={transcript.messages}
+              loading={detailLoading || transcript.loading}
+              loadingOlder={transcript.loadingOlder}
+              hasMoreOlder={transcript.hasMoreOlder}
+              pendingNewCount={transcript.pendingNewCount}
+              error={transcript.error}
+              scrollRef={transcript.scrollRef}
+              onScroll={transcript.updatePinned}
+              onLoadOlder={transcript.loadOlder}
+              onScrollToLatest={transcript.scrollToLatest}
             />
           </div>
           <CopilotReplyEditor
@@ -444,6 +457,7 @@ export default function HumanCopilotPage() {
             disabled={!handoff}
             deliveryStatus={deliveryStatus || handoff?.latestDeliveryStatus}
             suggestNotice={suggestNotice}
+            embedded
           />
         </div>
 

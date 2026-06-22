@@ -1,59 +1,87 @@
-import { formatCopilotDate } from './copilotUtils';
+import { useEffect, useRef } from 'react';
+import CopilotConversationHeader from './CopilotConversationHeader';
+import CopilotMessageBubble from './CopilotMessageBubble';
+import CopilotNewMessagesPill from './CopilotNewMessagesPill';
+import { normalizeMessageKey } from './copilotUtils';
 
-function bubbleClass(message) {
-  if (message.direction === 'in') {
-    return 'ml-0 mr-8 bg-white border border-slate-200 text-slate-900';
-  }
-  if (message.senderType === 'agent') {
-    return 'ml-8 mr-0 bg-emerald-50 border border-emerald-200 text-emerald-950';
-  }
-  return 'ml-8 mr-0 bg-primary-blue-50 border border-primary-blue-100 text-primary-navy';
-}
+export default function CopilotConversationView({
+  handoff,
+  messages = [],
+  loading = false,
+  loadingOlder = false,
+  hasMoreOlder = false,
+  pendingNewCount = 0,
+  error = '',
+  scrollRef,
+  onScroll,
+  onLoadOlder,
+  onScrollToLatest,
+}) {
+  const topSentinelRef = useRef(null);
 
-function senderLabel(message) {
-  if (message.direction === 'in') return 'User';
-  if (message.senderType === 'agent') return 'Counsellor';
-  return 'Assistant';
-}
+  useEffect(() => {
+    const root = scrollRef?.current;
+    const sentinel = topSentinelRef.current;
+    if (!root || !sentinel || !hasMoreOlder || !onLoadOlder) return undefined;
 
-export default function CopilotConversationView({ transcript, loading, handoff }) {
-  const messages = transcript?.messages || [];
+    const observer = new IntersectionObserver(
+      (entries) => {
+        if (entries.some((e) => e.isIntersecting) && !loadingOlder) {
+          onLoadOlder();
+        }
+      },
+      { root, rootMargin: '80px', threshold: 0 }
+    );
+    observer.observe(sentinel);
+    return () => observer.disconnect();
+  }, [scrollRef, hasMoreOlder, loadingOlder, onLoadOlder, messages.length]);
 
   return (
-    <section className="flex h-full min-h-0 flex-col overflow-hidden rounded-2xl border border-slate-200/90 bg-slate-50/60 ring-1 ring-slate-100">
-      <div className="border-b border-slate-200/80 bg-white px-4 py-3">
-        <h2 className="text-sm font-semibold text-slate-900">Conversation</h2>
-        {handoff ? (
-          <p className="mt-0.5 text-xs text-slate-500 tabular-nums">
-            {handoff.phone} · {handoff.productLine || '—'} · {handoff.reason || 'handoff'}
-          </p>
-        ) : (
-          <p className="mt-0.5 text-xs text-slate-500">Select a handoff from the queue</p>
-        )}
-      </div>
+    <section className="flex h-full min-h-0 flex-col overflow-hidden bg-[#e5ddd5]/40">
+      <CopilotConversationHeader handoff={handoff} />
 
-      <div className="min-h-0 flex-1 overflow-y-auto p-4 space-y-3">
-        {loading ? (
-          <p className="text-sm text-slate-500">Loading transcript…</p>
-        ) : !handoff ? (
-          <p className="text-sm text-slate-500">No conversation selected.</p>
-        ) : messages.length === 0 ? (
-          <p className="text-sm text-slate-500">No messages yet.</p>
-        ) : (
-          messages.map((message, idx) => (
-            <div key={`${message.at || idx}-${idx}`} className="flex flex-col">
-              <div className="mb-1 flex items-center gap-2 text-[10px] uppercase tracking-wide text-slate-400">
-                <span>{senderLabel(message)}</span>
-                <span>{formatCopilotDate(message.at)}</span>
-              </div>
-              <div
-                className={`rounded-2xl px-3 py-2 text-sm leading-relaxed whitespace-pre-wrap break-words ${bubbleClass(message)}`}
-              >
-                {message.text || '—'}
-              </div>
-            </div>
-          ))
-        )}
+      <div className="relative min-h-0 flex-1">
+        <div
+          ref={scrollRef}
+          onScroll={onScroll}
+          className="h-full overflow-y-auto overscroll-contain px-3 py-4 space-y-3"
+        >
+          {loading ? (
+            <p className="text-sm text-slate-500">Loading transcript…</p>
+          ) : !handoff ? (
+            <p className="text-sm text-slate-500">No conversation selected.</p>
+          ) : (
+            <>
+              <div ref={topSentinelRef} className="h-1 w-full shrink-0" aria-hidden />
+              {loadingOlder ? (
+                <p className="text-center text-xs text-slate-500">Loading older messages…</p>
+              ) : hasMoreOlder ? (
+                <p className="text-center text-xs text-slate-400">Scroll up for older messages</p>
+              ) : messages.length > 0 ? (
+                <p className="text-center text-xs text-slate-400">Beginning of conversation</p>
+              ) : null}
+              {error ? (
+                <p className="rounded-lg border border-red-200 bg-red-50 px-3 py-2 text-sm text-red-800">
+                  {error}
+                </p>
+              ) : null}
+              {messages.length === 0 && !loading ? (
+                <p className="text-sm text-slate-500">No messages yet.</p>
+              ) : (
+                messages.map((message, idx) => (
+                  <CopilotMessageBubble
+                    key={normalizeMessageKey(message, idx)}
+                    message={message}
+                    handoff={handoff}
+                    index={idx}
+                  />
+                ))
+              )}
+            </>
+          )}
+        </div>
+
+        <CopilotNewMessagesPill count={pendingNewCount} onClick={onScrollToLatest} />
       </div>
     </section>
   );

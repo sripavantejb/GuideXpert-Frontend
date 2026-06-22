@@ -6,6 +6,13 @@ import {
   formatSrSlot,
   getAlertLabel,
   getAlertTone,
+  getMessageBubbleClasses,
+  getMessageRole,
+  getMessageRowAlignment,
+  getMessageSenderLabel,
+  isScrollPinnedToBottom,
+  mergeTranscriptMessages,
+  normalizeMessageKey,
   SR_FILTER_OPTIONS,
   buildSummaryFactRows,
   formatLeadQualityLine,
@@ -126,5 +133,43 @@ describe('copilotUtils', () => {
     assert.equal(getFollowupPriorityLabel('high'), 'High priority');
     assert.equal(formatFollowupDelay(0), 'Send now');
     assert.equal(formatFollowupDelay(3), '3 days');
+  });
+
+  test('message helpers map roles labels and bubble classes', () => {
+    assert.equal(getMessageRole({ direction: 'in' }), 'user');
+    assert.equal(getMessageRole({ direction: 'out', senderType: 'bot' }), 'assistant');
+    assert.equal(getMessageRole({ direction: 'out', senderType: 'agent' }), 'counsellor');
+    assert.equal(getMessageRole({ direction: 'out', senderType: 'system' }), 'system');
+    assert.equal(getMessageSenderLabel({ direction: 'out', senderType: 'system' }), 'System');
+    assert.equal(
+      getMessageSenderLabel({ direction: 'out', senderType: 'agent', senderName: 'Priya' }),
+      'Priya'
+    );
+    assert.match(getMessageBubbleClasses({ direction: 'in' }), /bg-white/);
+    assert.match(getMessageBubbleClasses({ direction: 'out', senderType: 'bot' }), /dcf8c6/);
+    assert.match(getMessageBubbleClasses({ direction: 'out', senderType: 'agent' }), /emerald-600/);
+    assert.equal(getMessageRowAlignment({ direction: 'in' }), 'justify-start');
+    assert.equal(getMessageRowAlignment({ direction: 'out', senderType: 'bot' }), 'justify-end');
+  });
+
+  test('mergeTranscriptMessages dedupes and sorts chronologically', () => {
+    const merged = mergeTranscriptMessages(
+      [{ id: '2', at: '2026-06-01T10:01:00.000Z', text: 'b' }],
+      [{ id: '1', at: '2026-06-01T10:00:00.000Z', text: 'a' }, { id: '2', at: '2026-06-01T10:01:00.000Z', text: 'b' }]
+    );
+    assert.equal(merged.length, 2);
+    assert.equal(merged[0].text, 'a');
+    assert.equal(normalizeMessageKey({ id: 'x' }), 'x');
+  });
+
+  test('isScrollPinnedToBottom detects bottom threshold', () => {
+    const el = {
+      scrollHeight: 1000,
+      clientHeight: 400,
+      scrollTop: 560,
+    };
+    assert.equal(isScrollPinnedToBottom(el, 80), true);
+    el.scrollTop = 100;
+    assert.equal(isScrollPinnedToBottom(el, 80), false);
   });
 });

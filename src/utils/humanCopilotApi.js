@@ -235,6 +235,27 @@ export async function fetchHandoffDetail(handoffId) {
   return { success: true, data: result.data.data };
 }
 
+export async function fetchHandoffMessages(handoffId, { limit, before, beforeId, after, afterId } = {}) {
+  const params = new URLSearchParams();
+  if (limit) params.set('limit', String(limit));
+  if (before) params.set('before', before);
+  if (beforeId) params.set('beforeId', beforeId);
+  if (after) params.set('after', after);
+  if (afterId) params.set('afterId', afterId);
+  const qs = params.toString();
+  const result = await copilotRequest(`/handoffs/${handoffId}/messages${qs ? `?${qs}` : ''}`);
+  if (!result.success) return result;
+  const payload = result.data.data || result.data;
+  return {
+    success: true,
+    messages: payload.messages || [],
+    hasMoreOlder: Boolean(payload.hasMoreOlder),
+    hasMoreNewer: Boolean(payload.hasMoreNewer),
+    oldestCursor: payload.oldestCursor || null,
+    newestCursor: payload.newestCursor || null,
+  };
+}
+
 export async function assignHandoff(handoffId, target, { lockVersion, force } = {}) {
   const body =
     typeof target === 'string'

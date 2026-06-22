@@ -171,6 +171,79 @@ export function formatCopilotDate(value) {
   }
 }
 
+export const MESSAGE_ROLES = Object.freeze({
+  user: 'user',
+  assistant: 'assistant',
+  counsellor: 'counsellor',
+  system: 'system',
+});
+
+export function getMessageRole(message) {
+  if (!message || message.direction === 'in') return MESSAGE_ROLES.user;
+  if (message.senderType === 'agent') return MESSAGE_ROLES.counsellor;
+  if (message.senderType === 'system') return MESSAGE_ROLES.system;
+  return MESSAGE_ROLES.assistant;
+}
+
+export function getMessageSenderLabel(message, handoff = null) {
+  const role = getMessageRole(message);
+  if (role === MESSAGE_ROLES.user) return 'User';
+  if (role === MESSAGE_ROLES.system) return 'System';
+  if (role === MESSAGE_ROLES.counsellor) {
+    return message.senderName || handoff?.assignedAgentName || 'Counsellor';
+  }
+  return 'Assistant';
+}
+
+export function getMessageRowAlignment(message) {
+  const role = getMessageRole(message);
+  if (role === MESSAGE_ROLES.user) return 'justify-start';
+  if (role === MESSAGE_ROLES.system) return 'justify-center';
+  return 'justify-end';
+}
+
+export function getMessageBubbleClasses(message) {
+  const role = getMessageRole(message);
+  const base =
+    'max-w-[85%] rounded-2xl px-3 py-2 text-sm leading-relaxed whitespace-pre-wrap break-words shadow-sm';
+  if (role === MESSAGE_ROLES.user) {
+    return `${base} rounded-tl-sm bg-white border border-slate-200 text-slate-900`;
+  }
+  if (role === MESSAGE_ROLES.counsellor) {
+    return `${base} rounded-tr-sm bg-emerald-600 text-white`;
+  }
+  if (role === MESSAGE_ROLES.system) {
+    return `${base} max-w-[90%] bg-slate-100 text-slate-600 text-xs border border-slate-200`;
+  }
+  return `${base} rounded-tr-sm bg-[#dcf8c6] text-slate-900 border border-emerald-100`;
+}
+
+export function normalizeMessageKey(message, index = 0) {
+  if (message?.id) return String(message.id);
+  return `${message?.at || 'unknown'}-${index}`;
+}
+
+export function mergeTranscriptMessages(existing = [], incoming = []) {
+  const map = new Map();
+  for (const msg of existing) {
+    map.set(normalizeMessageKey(msg), msg);
+  }
+  for (const msg of incoming) {
+    map.set(normalizeMessageKey(msg), msg);
+  }
+  return [...map.values()].sort((a, b) => new Date(a.at) - new Date(b.at));
+}
+
+export function isScrollPinnedToBottom(element, threshold = 80) {
+  if (!element) return true;
+  return element.scrollHeight - element.scrollTop - element.clientHeight <= threshold;
+}
+
+export function scrollElementToBottom(element) {
+  if (!element) return;
+  element.scrollTop = element.scrollHeight;
+}
+
 export function truncateText(text, max = 80) {
   const s = String(text || '').trim();
   if (s.length <= max) return s;
