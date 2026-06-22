@@ -2,7 +2,7 @@ import { createElement, useState, useMemo, useEffect } from 'react';
 import { useSidebarScrollbarActivity } from '../../hooks/useSidebarScrollbarActivity';
 import { Link, NavLink, Outlet, useLocation, useNavigate } from 'react-router-dom';
 import { HiMenu, HiX } from 'react-icons/hi';
-import { FiLayout, FiUsers, FiBarChart2, FiDownload, FiSettings, FiCalendar, FiClock, FiVideo, FiFileText, FiBell, FiLink, FiClipboard, FiMessageSquare, FiBookOpen, FiImage, FiPhone, FiLayers, FiTarget, FiUserPlus, FiSend, FiDatabase } from 'react-icons/fi';
+import { FiLayout, FiUsers, FiBarChart2, FiDownload, FiSettings, FiCalendar, FiClock, FiVideo, FiFileText, FiBell, FiLink, FiClipboard, FiMessageSquare, FiBookOpen, FiImage, FiPhone, FiLayers, FiTarget, FiUserPlus, FiSend, FiDatabase, FiHeadphones } from 'react-icons/fi';
 import { useAuth } from '../../hooks/useAuth';
 import { AdminDashboardProvider } from '../../contexts/AdminDashboardContext';
 import { useAdminDateRange } from '../../hooks/useAdminDateRange';
@@ -47,6 +47,7 @@ const navItems = [
   { to: '/admin/iit-ai-calls-summary', label: 'IITian AI Calls Summary', icon: FiPhone, sectionKey: 'iit-ai-calls-summary' },
   { to: '/admin/whatsapp-ops', label: 'WhatsApp ops', icon: FiSend, sectionKey: 'whatsapp-ops' },
   { to: '/admin/lead-intelligence', label: 'Chatbot Lead Intelligence', icon: FiMessageSquare, sectionKey: 'lead-intelligence' },
+  { to: '/admin/human-copilot', label: 'Human Copilot', icon: FiHeadphones, sectionKey: 'human-copilot' },
   { to: '/admin/settings', label: 'Settings', icon: FiSettings, sectionKey: 'settings' },
 ];
 
@@ -100,7 +101,8 @@ export default function AdminLayout() {
     currentPath.startsWith('/admin/calling-data') ||
     currentPath.startsWith('/admin/ai-calls') ||
     currentPath.startsWith('/admin/iit-ai-calls-summary') ||
-    currentPath.startsWith('/admin/lead-intelligence');
+    currentPath.startsWith('/admin/lead-intelligence') ||
+    currentPath.startsWith('/admin/human-copilot');
   useEffect(() => {
     const firstAllowed = visibleNavItems[0];
     if (user && !user.isSuperAdmin && !isPathAllowed && firstAllowed) {
