@@ -546,6 +546,18 @@ export const getOneOnOneCounselingLeads = async (params = {}, token = getStoredT
   return adminRequest(`/one-on-one-counseling-leads${query ? `?${query}` : ''}`, { method: 'GET' }, token);
 };
 
+export const getOneOnOneCounselingFunnelStats = async (params = {}, token = getStoredToken()) => {
+  const search = new URLSearchParams();
+  if (params.from) search.set('from', params.from);
+  if (params.to) search.set('to', params.to);
+  const query = search.toString();
+  return adminRequest(
+    `/one-on-one-counseling-leads/funnel-stats${query ? `?${query}` : ''}`,
+    { method: 'GET' },
+    token
+  );
+};
+
 export const patchOneOnOneCounselingLeadStatus = async (id, leadStatus, token = getStoredToken()) => {
   return adminRequest(`/one-on-one-counseling-leads/${encodeURIComponent(id)}`, {
     method: 'PATCH',

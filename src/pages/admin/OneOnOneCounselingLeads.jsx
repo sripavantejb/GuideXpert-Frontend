@@ -11,6 +11,7 @@ import {
   FiUsers,
 } from 'react-icons/fi';
 import CopyToSheetsModal from '../../components/Admin/CopyToSheetsModal';
+import OneOnOneCounselingFunnelDashboard from '../../components/Admin/OneOnOneCounselingFunnelDashboard';
 import { ADMIN_VIEW_ALL_LIMIT } from '../../constants/adminListLimits';
 import {
   getGuidanceSlots,
@@ -385,6 +386,8 @@ export default function OneOnOneCounselingLeads() {
           </div>
         </div>
       </div>
+
+      <OneOnOneCounselingFunnelDashboard />
 
       <div className="bg-white rounded-xl border border-gray-200 shadow-sm p-4 space-y-4">
         <div className="flex flex-wrap items-center justify-between gap-2">
