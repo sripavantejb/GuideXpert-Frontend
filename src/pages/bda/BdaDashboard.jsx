@@ -1,7 +1,6 @@
-import { useCallback, useEffect, useState } from 'react';
-import { useNavigate } from 'react-router-dom';
-import { FiLogOut, FiRefreshCw, FiSearch } from 'react-icons/fi';
-import { useBdaAuth } from '../../contexts/BdaAuthContext';
+import { useCallback, useEffect, useRef, useState } from 'react';
+import { FiRefreshCw, FiSearch } from 'react-icons/fi';
+import BdaLayout from '../../components/bda/BdaLayout';
 import BdaLeadCrmForm from '../../components/bda/BdaLeadCrmForm';
 import { languageBadgeClass } from '../../constants/bdaLanguage';
 import {
@@ -78,8 +77,7 @@ function toTimeInput(v) {
 }
 
 export default function BdaDashboard() {
-  const { user, logout } = useBdaAuth();
-  const navigate = useNavigate();
+  const openDrawerRef = useRef(null);
   const [stats, setStats] = useState({});
   const [rows, setRows] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -158,6 +156,8 @@ export default function BdaDashboard() {
     if (histRes.success) setHistory(histRes.data?.data || []);
   };
 
+  openDrawerRef.current = openDrawer;
+
   const closeDrawer = () => {
     setDrawerId('');
     setDrawerLead(null);
@@ -195,38 +195,13 @@ export default function BdaDashboard() {
     }
   };
 
-  const handleLogout = () => {
-    logout();
-    navigate('/bda/login', { replace: true });
-  };
+  const handleNotificationLeadClick = useCallback((leadId) => {
+    openDrawerRef.current?.(leadId);
+  }, []);
 
   return (
-    <div className="min-h-screen bg-gray-50">
-      <header className="bg-white border-b border-gray-200 sticky top-0 z-20">
-        <div className="max-w-7xl mx-auto px-4 py-3 flex items-center justify-between gap-4">
-          <div>
-            <h1 className="text-lg font-semibold text-gray-900">BDA Dashboard</h1>
-            <p className="text-sm text-gray-600 flex items-center gap-2 flex-wrap">
-              <span>{user?.name || 'BDA'}</span>
-              {user?.language && (
-                <span className={`text-xs px-2 py-0.5 rounded-full font-medium ${languageBadgeClass(user.language)}`}>
-                  {user.language} leads only
-                </span>
-              )}
-            </p>
-          </div>
-          <button
-            type="button"
-            onClick={handleLogout}
-            className="inline-flex items-center gap-2 px-3 py-2 text-sm rounded-lg border border-gray-200 hover:bg-gray-50"
-          >
-            <FiLogOut />
-            Logout
-          </button>
-        </div>
-      </header>
-
-      <main className="max-w-7xl mx-auto px-4 py-6 space-y-6">
+    <BdaLayout onLeadClick={handleNotificationLeadClick}>
+      <div className="space-y-6">
         <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-3">
           {STAT_CARDS.map(([key, label]) => (
             <div key={key} className="bg-white rounded-xl border border-gray-100 p-3 shadow-sm">
@@ -397,7 +372,7 @@ export default function BdaDashboard() {
             <button type="button" disabled={page >= (pagination.totalPages || 1)} onClick={() => setPage((p) => p + 1)} className="px-3 py-1 border rounded-lg disabled:opacity-40">Next</button>
           </div>
         </div>
-      </main>
+      </div>
 
       {drawerId && (
         <div className="fixed inset-0 z-40 flex justify-end">
@@ -469,6 +444,6 @@ export default function BdaDashboard() {
           </div>
         </div>
       )}
-    </div>
+    </BdaLayout>
   );
 }

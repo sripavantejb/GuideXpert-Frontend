@@ -1,23 +1,17 @@
 import { useCallback, useEffect, useState } from 'react';
 import { Link, useParams } from 'react-router-dom';
 import { FiArrowLeft } from 'react-icons/fi';
+import AssignToBdaModal from '../../../components/Admin/callingTeam/AssignToBdaModal';
+import BdaAssignedLeadsTable from '../../../components/Admin/callingTeam/BdaAssignedLeadsTable';
+import TransferAllLeadsModal from '../../../components/Admin/callingTeam/TransferAllLeadsModal';
 import CallingTeamDateFilter from '../../../components/Admin/callingTeam/CallingTeamDateFilter';
 import TableSkeleton from '../../../components/UI/TableSkeleton';
-import {
-  CALL_STATUS_OPTIONS,
-  DEMO_STATUS_OPTIONS,
-  LEAD_STATUS_OPTIONS,
-  NIAT_STATUS_OPTIONS,
-  PAYMENT_STATUS_OPTIONS,
-  labelForOption,
-} from '../../../constants/callingTeamCrm';
 import {
   buildStatsQuery,
   getBdaAssignedLeads,
   getBdaStatsById,
   updateBda,
 } from '../../../utils/callingTeamApi';
-import { getLeadClassStatus, getLeadTopColleges } from '../../../utils/callingDataLeadMapper';
 
 function formatDateTime(value) {
   if (!value) return '—';
@@ -44,6 +38,11 @@ export default function CallingTeamBdaDetail() {
   const [loading, setLoading] = useState(true);
   const [leadsLoading, setLeadsLoading] = useState(true);
   const [error, setError] = useState('');
+  const [selectedIds, setSelectedIds] = useState([]);
+  const [reassignModalOpen, setReassignModalOpen] = useState(false);
+  const [reassignLeadIds, setReassignLeadIds] = useState([]);
+  const [transferModalOpen, setTransferModalOpen] = useState(false);
+  const [actionMessage, setActionMessage] = useState('');
 
   const loadDetail = useCallback(async () => {
     setLoading(true);
@@ -62,6 +61,7 @@ export default function CallingTeamBdaDetail() {
     if (res.success) {
       setLeads(res.data?.data || []);
       setPagination(res.data?.pagination || { page: 1, totalPages: 1 });
+      setSelectedIds([]);
     }
     setLeadsLoading(false);
   }, [id]);
@@ -77,12 +77,46 @@ export default function CallingTeamBdaDetail() {
   const bda = detail?.bda;
   const m = detail?.metrics || {};
   const activities = detail?.recentActivities || [];
+  const totalAssigned = m.totalAssigned ?? 0;
 
   const toggleStatus = async () => {
     if (!bda) return;
     const next = bda.status === 'active' ? 'inactive' : 'active';
     await updateBda(id, { status: next });
     loadDetail();
+  };
+
+  const handleToggleSelect = (leadId) => {
+    setSelectedIds((prev) =>
+      prev.includes(leadId) ? prev.filter((x) => x !== leadId) : [...prev, leadId]
+    );
+  };
+
+  const handleToggleSelectAll = (checked) => {
+    setSelectedIds(checked ? leads.map((l) => l.id) : []);
+  };
+
+  const openReassignModal = (leadIds) => {
+    setReassignLeadIds(leadIds);
+    setReassignModalOpen(true);
+  };
+
+  const handleReassignSuccess = (result) => {
+    const updated = result?.updated;
+    setActionMessage(
+      typeof updated === 'number'
+        ? `Reassigned ${updated} lead${updated !== 1 ? 's' : ''} successfully.`
+        : 'Lead reassigned successfully.'
+    );
+    loadDetail();
+    loadLeads(pagination.page);
+  };
+
+  const handleTransferSuccess = (result) => {
+    const updated = result?.updated ?? 0;
+    setActionMessage(`Transferred ${updated} lead${updated !== 1 ? 's' : ''} successfully.`);
+    loadDetail();
+    loadLeads(1);
   };
 
   return (
@@ -105,13 +139,28 @@ export default function CallingTeamBdaDetail() {
               {formatDateTime(bda.joinedAt)}
             </p>
           </div>
-          <button type="button" onClick={toggleStatus} className="px-3 py-2 text-sm border rounded-lg">
-            Mark {bda.status === 'active' ? 'inactive' : 'active'}
-          </button>
+          <div className="flex flex-wrap items-center gap-2">
+            <button
+              type="button"
+              onClick={() => setTransferModalOpen(true)}
+              disabled={totalAssigned === 0 || bda.status !== 'active'}
+              className="px-3 py-2 text-sm border rounded-lg hover:bg-gray-50 disabled:opacity-50"
+            >
+              Transfer all leads
+            </button>
+            <button type="button" onClick={toggleStatus} className="px-3 py-2 text-sm border rounded-lg">
+              Mark {bda.status === 'active' ? 'inactive' : 'active'}
+            </button>
+          </div>
         </div>
       ) : null}
 
       {error && <p className="text-sm text-red-600">{error}</p>}
+      {actionMessage && (
+        <div className="rounded-lg border border-green-200 bg-green-50 px-4 py-3 text-sm text-green-800">
+          {actionMessage}
+        </div>
+      )}
 
       <CallingTeamDateFilter value={dateFilter} onChange={setDateFilter} />
 
@@ -128,50 +177,31 @@ export default function CallingTeamBdaDetail() {
 
       <div className="grid lg:grid-cols-3 gap-6">
         <div className="lg:col-span-2 bg-white rounded-xl border overflow-hidden">
-          <div className="px-4 py-3 border-b font-semibold">Assigned Leads</div>
+          <div className="px-4 py-3 border-b flex flex-wrap items-center justify-between gap-2">
+            <span className="font-semibold">Assigned Leads</span>
+            {selectedIds.length > 0 && (
+              <button
+                type="button"
+                onClick={() => openReassignModal(selectedIds)}
+                className="px-3 py-1.5 text-sm font-medium rounded-lg bg-primary-blue text-white hover:opacity-90"
+              >
+                Reassign selected ({selectedIds.length})
+              </button>
+            )}
+          </div>
           {leadsLoading ? (
             <TableSkeleton rows={5} cols={6} />
           ) : (
-            <div className="overflow-x-auto">
-              <table className="w-full text-sm">
-                <thead>
-                  <tr className="bg-gray-50 text-xs text-gray-500 uppercase">
-                    <th className="px-3 py-2 text-left">Student</th>
-                    <th className="px-3 py-2 text-left">Phone</th>
-                    <th className="px-3 py-2 text-left">Current studying</th>
-                    <th className="px-3 py-2 text-left">Top colleges</th>
-                    <th className="px-3 py-2 text-left">Call</th>
-                    <th className="px-3 py-2 text-left">Lead</th>
-                    <th className="px-3 py-2 text-left">Demo</th>
-                    <th className="px-3 py-2 text-left">Updated</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {leads.map((lead) => (
-                    <tr key={lead.id} className="border-t">
-                      <td className="px-3 py-2">{lead.fullName}</td>
-                      <td className="px-3 py-2">{lead.phone}</td>
-                      <td
-                        className="px-3 py-2 max-w-[160px] truncate text-xs text-gray-700"
-                        title={getLeadClassStatus(lead)}
-                      >
-                        {getLeadClassStatus(lead)}
-                      </td>
-                      <td
-                        className="px-3 py-2 max-w-[180px] truncate text-xs text-gray-600"
-                        title={getLeadTopColleges(lead)}
-                      >
-                        {getLeadTopColleges(lead)}
-                      </td>
-                      <td className="px-3 py-2">{labelForOption(CALL_STATUS_OPTIONS, lead.callStatus)}</td>
-                      <td className="px-3 py-2">{labelForOption(LEAD_STATUS_OPTIONS, lead.leadStatus)}</td>
-                      <td className="px-3 py-2">{labelForOption(DEMO_STATUS_OPTIONS, lead.demoStatus)}</td>
-                      <td className="px-3 py-2">{formatDateTime(lead.updatedAt)}</td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
+            <BdaAssignedLeadsTable
+              leads={leads}
+              compact
+              showAssignMeta
+              selectable
+              selectedIds={selectedIds}
+              onToggleSelect={handleToggleSelect}
+              onToggleSelectAll={handleToggleSelectAll}
+              onReassignLead={(lead) => openReassignModal([lead.id])}
+            />
           )}
           {pagination.totalPages > 1 && (
             <div className="flex justify-center gap-2 p-3 border-t">
@@ -215,6 +245,25 @@ export default function CallingTeamBdaDetail() {
           </ul>
         </div>
       </div>
+
+      <AssignToBdaModal
+        open={reassignModalOpen}
+        leadIds={reassignLeadIds}
+        mode="reassign"
+        excludeBdaId={id}
+        preferredLanguage={bda?.language || ''}
+        onClose={() => setReassignModalOpen(false)}
+        onSuccess={handleReassignSuccess}
+      />
+
+      <TransferAllLeadsModal
+        open={transferModalOpen}
+        sourceBdaId={id}
+        sourceBdaName={bda?.name}
+        leadCount={totalAssigned}
+        onClose={() => setTransferModalOpen(false)}
+        onSuccess={handleTransferSuccess}
+      />
     </div>
   );
 }

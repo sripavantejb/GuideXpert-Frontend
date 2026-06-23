@@ -125,3 +125,25 @@ export async function updateBdaLead(id, body) {
 export async function getBdaLeadHistory(id) {
   return bdaRequest(`/leads/${id}/history`);
 }
+
+export async function getBdaNotifications({ page = 1, limit = 20, unreadOnly = false } = {}) {
+  const res = await bdaRequest(
+    `/notifications${toQuery({ page, limit, unreadOnly: unreadOnly ? 'true' : '' })}`
+  );
+  if (res.success) {
+    return {
+      success: true,
+      data: res.data?.data || [],
+      unreadCount: res.data?.unreadCount ?? 0,
+      pagination: res.data?.pagination,
+    };
+  }
+  return res;
+}
+
+export async function markBdaNotificationsRead({ ids = [], all = false } = {}) {
+  return bdaRequest('/notifications/mark-read', {
+    method: 'POST',
+    body: JSON.stringify({ ids, all }),
+  });
+}

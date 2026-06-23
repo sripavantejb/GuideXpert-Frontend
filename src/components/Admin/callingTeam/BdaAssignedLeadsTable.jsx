@@ -22,7 +22,19 @@ function formatDate(value) {
   return d.toLocaleDateString('en-IN', { dateStyle: 'short' });
 }
 
-export default function BdaAssignedLeadsTable({ leads, compact = false, showAssignMeta = true }) {
+export default function BdaAssignedLeadsTable({
+  leads,
+  compact = false,
+  showAssignMeta = true,
+  selectable = false,
+  selectedIds = [],
+  onToggleSelect,
+  onToggleSelectAll,
+  onReassignLead,
+}) {
+  const allSelected =
+    selectable && leads?.length > 0 && leads.every((l) => selectedIds.includes(l.id));
+
   if (!leads?.length) {
     return (
       <p className="text-sm text-gray-500 py-4 text-center">No assigned leads for this profile</p>
@@ -34,6 +46,16 @@ export default function BdaAssignedLeadsTable({ leads, compact = false, showAssi
       <table className={`w-full text-sm ${compact ? '' : 'min-w-[900px]'}`}>
         <thead>
           <tr className="bg-gray-50 text-left text-xs font-medium text-gray-500 uppercase">
+            {selectable && (
+              <th className="px-3 py-2 w-10">
+                <input
+                  type="checkbox"
+                  checked={allSelected}
+                  onChange={(e) => onToggleSelectAll?.(e.target.checked)}
+                  aria-label="Select all leads on page"
+                />
+              </th>
+            )}
             <th className="px-3 py-2">Student</th>
             <th className="px-3 py-2">Phone</th>
             <th className="px-3 py-2">Current studying</th>
@@ -42,16 +64,27 @@ export default function BdaAssignedLeadsTable({ leads, compact = false, showAssi
             <th className="px-3 py-2">Call</th>
             <th className="px-3 py-2">Lead</th>
             <th className="px-3 py-2">Demo</th>
-            <th className="px-3 py-2">NIAT</th>
-            <th className="px-3 py-2">Payment</th>
-            <th className="px-3 py-2">Callback</th>
-            <th className="px-3 py-2">Last remark</th>
+            {!compact && <th className="px-3 py-2">NIAT</th>}
+            {!compact && <th className="px-3 py-2">Payment</th>}
+            {!compact && <th className="px-3 py-2">Callback</th>}
+            {!compact && <th className="px-3 py-2">Last remark</th>}
             <th className="px-3 py-2">Updated</th>
+            {onReassignLead && <th className="px-3 py-2">Actions</th>}
           </tr>
         </thead>
         <tbody>
           {leads.map((lead) => (
             <tr key={lead.id} className="border-t border-gray-100 hover:bg-gray-50/80">
+              {selectable && (
+                <td className="px-3 py-2">
+                  <input
+                    type="checkbox"
+                    checked={selectedIds.includes(lead.id)}
+                    onChange={() => onToggleSelect?.(lead.id)}
+                    aria-label={`Select ${lead.fullName}`}
+                  />
+                </td>
+              )}
               <td className="px-3 py-2 font-medium">{lead.fullName}</td>
               <td className="px-3 py-2">{lead.phone}</td>
               <td
@@ -74,13 +107,30 @@ export default function BdaAssignedLeadsTable({ leads, compact = false, showAssi
               <td className="px-3 py-2">{labelForOption(CALL_STATUS_OPTIONS, lead.callStatus)}</td>
               <td className="px-3 py-2">{labelForOption(LEAD_STATUS_OPTIONS, lead.leadStatus)}</td>
               <td className="px-3 py-2">{labelForOption(DEMO_STATUS_OPTIONS, lead.demoStatus)}</td>
-              <td className="px-3 py-2">{labelForOption(NIAT_STATUS_OPTIONS, lead.niatStatus)}</td>
-              <td className="px-3 py-2">{labelForOption(PAYMENT_STATUS_OPTIONS, lead.paymentStatus)}</td>
-              <td className="px-3 py-2">{formatDate(lead.callbackDate)}</td>
-              <td className="px-3 py-2 max-w-[160px] truncate" title={lead.lastRemark || ''}>
-                {lead.lastRemark || '—'}
-              </td>
+              {!compact && (
+                <td className="px-3 py-2">{labelForOption(NIAT_STATUS_OPTIONS, lead.niatStatus)}</td>
+              )}
+              {!compact && (
+                <td className="px-3 py-2">{labelForOption(PAYMENT_STATUS_OPTIONS, lead.paymentStatus)}</td>
+              )}
+              {!compact && <td className="px-3 py-2">{formatDate(lead.callbackDate)}</td>}
+              {!compact && (
+                <td className="px-3 py-2 max-w-[160px] truncate" title={lead.lastRemark || ''}>
+                  {lead.lastRemark || '—'}
+                </td>
+              )}
               <td className="px-3 py-2 whitespace-nowrap">{formatDateTime(lead.updatedAt)}</td>
+              {onReassignLead && (
+                <td className="px-3 py-2">
+                  <button
+                    type="button"
+                    onClick={() => onReassignLead(lead)}
+                    className="text-xs font-medium text-primary-blue hover:underline"
+                  >
+                    Reassign
+                  </button>
+                </td>
+              )}
             </tr>
           ))}
         </tbody>

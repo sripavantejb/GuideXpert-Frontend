@@ -108,6 +108,20 @@ export async function reassignLeadToBda(id, { bdaId, reason }) {
   });
 }
 
+export async function bulkReassignLeadsToBda({ leadIds, bdaId, reason }) {
+  return callingTeamRequest('/iit-counselling-leads/bulk-reassign', {
+    method: 'PATCH',
+    body: JSON.stringify({ leadIds, bdaId, reason }),
+  });
+}
+
+export async function transferAllLeadsFromBda(sourceBdaId, { targetBdaId, reason }) {
+  return callingTeamRequest(`/bdas/${sourceBdaId}/transfer-leads`, {
+    method: 'PATCH',
+    body: JSON.stringify({ targetBdaId, reason }),
+  });
+}
+
 export async function getLeadAssignmentHistory(id) {
   return callingTeamRequest(`/iit-counselling-leads/${id}/assignment-history`);
 }
