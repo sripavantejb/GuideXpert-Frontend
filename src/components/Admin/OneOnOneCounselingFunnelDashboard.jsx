@@ -15,8 +15,9 @@ import { getOneOnOneCounselingFunnelStats, getStoredToken } from '../../utils/ad
 import DashboardLayout from './DashboardLayout';
 import StatsCard from './StatsCard';
 import FunnelChart from './FunnelChart';
+import { RELEVANT_ONE_ON_ONE_CURRENT_CLASSES } from '../../utils/oneOnOneCounselingClassRelevance';
 
-const emptyFunnelData = {
+const emptyStageData = {
   totalLeads: 0,
   formStarted: 0,
   formCompleted: 0,
@@ -30,9 +31,166 @@ const emptyFunnelData = {
   parentAttendanceConfirmed: 0,
 };
 
+const emptyFunnelData = {
+  ...emptyStageData,
+  relevantLeads: 0,
+  irrelevantLeads: 0,
+  relevant: { ...emptyStageData },
+  irrelevant: { ...emptyStageData },
+};
+
 function safeRate(numerator, denominator) {
   if (!denominator) return 0;
   return (numerator / denominator) * 100;
+}
+
+function buildTransitionRows(data, { includeRelevanceSplit = false, colors } = {}) {
+  const palette = colors || {
+    total: '#002a57',
+    form: '#003366',
+    booking: '#0f4c81',
+    contact: '#1d6fa5',
+    counseling: '#3b82a8',
+    converted: '#1f9ea1',
+    relevant: '#047857',
+    irrelevant: '#94a3b8',
+  };
+
+  const notFormCompleted = Math.max(0, data.totalLeads - data.formCompleted);
+  const notBooked = Math.max(0, data.formCompleted - data.bookingConfirmed);
+  const notContacted = Math.max(0, data.bookingConfirmed - data.contacted);
+  const notCounselingDone = Math.max(0, data.contacted - data.counselingDone);
+  const notConverted = Math.max(0, data.counselingDone - data.converted);
+
+  const rows = [
+    {
+      stageTitle: 'Total leads',
+      cohortTotal: data.totalLeads,
+      success: data.totalLeads,
+      drop: 0,
+      successLabel: 'Total',
+      dropLabel: 'Dropped',
+      successColor: palette.total,
+    },
+  ];
+
+  if (includeRelevanceSplit && (data.relevantLeads != null || data.irrelevantLeads != null)) {
+    const relevant = data.relevantLeads ?? 0;
+    const irrelevant = data.irrelevantLeads ?? 0;
+    rows.push({
+      stageTitle: 'Lead relevance',
+      cohortTotal: data.totalLeads,
+      success: relevant,
+      drop: irrelevant,
+      successLabel: 'Relevant',
+      dropLabel: 'Irrelevant',
+      successColor: palette.relevant,
+    });
+  }
+
+  rows.push(
+    {
+      stageTitle: 'Form completed',
+      cohortTotal: data.totalLeads,
+      success: data.formCompleted,
+      drop: notFormCompleted,
+      successLabel: 'Completed',
+      dropLabel: 'Incomplete',
+      successColor: palette.form,
+    },
+    {
+      stageTitle: 'Booking confirmed',
+      cohortTotal: data.formCompleted,
+      success: data.bookingConfirmed,
+      drop: notBooked,
+      successLabel: 'Confirmed',
+      dropLabel: 'Not booked',
+      successColor: palette.booking,
+    },
+    {
+      stageTitle: 'Contacted',
+      cohortTotal: data.bookingConfirmed,
+      success: data.contacted,
+      drop: notContacted,
+      successLabel: 'Contacted',
+      dropLabel: 'Not contacted',
+      successColor: palette.contact,
+    },
+    {
+      stageTitle: 'Counseling done',
+      cohortTotal: data.contacted,
+      success: data.counselingDone,
+      drop: notCounselingDone,
+      successLabel: 'Done',
+      dropLabel: 'Pending',
+      successColor: palette.counseling,
+    },
+    {
+      stageTitle: 'Converted',
+      cohortTotal: data.counselingDone,
+      success: data.converted,
+      drop: notConverted,
+      successLabel: 'Converted',
+      dropLabel: 'Not converted',
+      successColor: palette.converted,
+    }
+  );
+
+  const metrics = {
+    formCompletionRate: safeRate(data.formCompleted, data.totalLeads),
+    bookingRate: safeRate(data.bookingConfirmed, data.formCompleted),
+    contactRate: safeRate(data.contacted, data.bookingConfirmed),
+    counselingRate: safeRate(data.counselingDone, data.contacted),
+    conversionRate: safeRate(data.converted, data.totalLeads),
+  };
+
+  return {
+    transitionRows: rows,
+    maxDomain: data.totalLeads,
+    metrics,
+  };
+}
+
+function buildFunnelDerived(funnelData) {
+  const overall = buildTransitionRows(
+    {
+      ...funnelData,
+      relevantLeads: funnelData.relevantLeads,
+      irrelevantLeads: funnelData.irrelevantLeads,
+    },
+    { includeRelevanceSplit: true }
+  );
+
+  const relevant = buildTransitionRows(funnelData.relevant || emptyStageData, {
+    colors: {
+      total: '#047857',
+      form: '#059669',
+      booking: '#10b981',
+      contact: '#34d399',
+      counseling: '#6ee7b7',
+      converted: '#065f46',
+    },
+  });
+
+  const irrelevant = buildTransitionRows(funnelData.irrelevant || emptyStageData, {
+    colors: {
+      total: '#475569',
+      form: '#64748b',
+      booking: '#94a3b8',
+      contact: '#cbd5e1',
+      counseling: '#94a3b8',
+      converted: '#334155',
+    },
+  });
+
+  return {
+    overall,
+    relevant,
+    irrelevant,
+    relevanceRate: safeRate(funnelData.relevantLeads, funnelData.totalLeads),
+    relevantConversionRate: safeRate(funnelData.relevant?.converted, funnelData.relevantLeads),
+    irrelevantConversionRate: safeRate(funnelData.irrelevant?.converted, funnelData.irrelevantLeads),
+  };
 }
 
 function ConversionItem({ label, value, helper }) {
@@ -89,88 +247,7 @@ export default function OneOnOneCounselingFunnelDashboard() {
     };
   }, [logout, dateRange.from, dateRange.to, refreshTrigger]);
 
-  const derived = useMemo(() => {
-    const formCompletionRate = safeRate(funnelData.formCompleted, funnelData.totalLeads);
-    const bookingRate = safeRate(funnelData.bookingConfirmed, funnelData.formCompleted);
-    const contactRate = safeRate(funnelData.contacted, funnelData.bookingConfirmed);
-    const counselingRate = safeRate(funnelData.counselingDone, funnelData.contacted);
-    const conversionRate = safeRate(funnelData.converted, funnelData.totalLeads);
-
-    const notFormCompleted = Math.max(0, funnelData.totalLeads - funnelData.formCompleted);
-    const notBooked = Math.max(0, funnelData.formCompleted - funnelData.bookingConfirmed);
-    const notContacted = Math.max(0, funnelData.bookingConfirmed - funnelData.contacted);
-    const notCounselingDone = Math.max(0, funnelData.contacted - funnelData.counselingDone);
-    const notConverted = Math.max(0, funnelData.counselingDone - funnelData.converted);
-
-    const transitionRows = [
-      {
-        stageTitle: 'Total leads',
-        cohortTotal: funnelData.totalLeads,
-        success: funnelData.totalLeads,
-        drop: 0,
-        successLabel: 'Total',
-        dropLabel: 'Dropped',
-        successColor: '#002a57',
-      },
-      {
-        stageTitle: 'Form completed',
-        cohortTotal: funnelData.totalLeads,
-        success: funnelData.formCompleted,
-        drop: notFormCompleted,
-        successLabel: 'Completed',
-        dropLabel: 'Incomplete',
-        successColor: '#003366',
-      },
-      {
-        stageTitle: 'Booking confirmed',
-        cohortTotal: funnelData.formCompleted,
-        success: funnelData.bookingConfirmed,
-        drop: notBooked,
-        successLabel: 'Confirmed',
-        dropLabel: 'Not booked',
-        successColor: '#0f4c81',
-      },
-      {
-        stageTitle: 'Contacted',
-        cohortTotal: funnelData.bookingConfirmed,
-        success: funnelData.contacted,
-        drop: notContacted,
-        successLabel: 'Contacted',
-        dropLabel: 'Not contacted',
-        successColor: '#1d6fa5',
-      },
-      {
-        stageTitle: 'Counseling done',
-        cohortTotal: funnelData.contacted,
-        success: funnelData.counselingDone,
-        drop: notCounselingDone,
-        successLabel: 'Done',
-        dropLabel: 'Pending',
-        successColor: '#3b82a8',
-      },
-      {
-        stageTitle: 'Converted',
-        cohortTotal: funnelData.counselingDone,
-        success: funnelData.converted,
-        drop: notConverted,
-        successLabel: 'Converted',
-        dropLabel: 'Not converted',
-        successColor: '#1f9ea1',
-      },
-    ];
-
-    return {
-      transitionRows,
-      maxDomain: funnelData.totalLeads,
-      metrics: {
-        formCompletionRate,
-        bookingRate,
-        contactRate,
-        counselingRate,
-        conversionRate,
-      },
-    };
-  }, [funnelData]);
+  const derived = useMemo(() => buildFunnelDerived(funnelData), [funnelData]);
 
   return (
     <div className="rounded-xl border border-gray-200 bg-gray-50/60 shadow-sm overflow-hidden">
@@ -186,7 +263,7 @@ export default function OneOnOneCounselingFunnelDashboard() {
             Funnel analytics
           </p>
           <p className="text-xs text-gray-500 mt-0.5">
-            Form → booking → contact → counseling → conversion
+            Relevance split → form → booking → contact → counseling → conversion
             {dateRange.from || dateRange.to ? ' (uses admin date range from header)' : ''}
           </p>
         </div>
@@ -227,9 +304,9 @@ export default function OneOnOneCounselingFunnelDashboard() {
           ) : (
             <DashboardLayout
               title="1-on-1 Counseling Funnel"
-              subtitle="Track intake completion, slot bookings, CRM progression, and conversions."
+              subtitle="Track relevant vs irrelevant leads, intake completion, bookings, CRM progression, and conversions."
             >
-              <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-4 2xl:grid-cols-8">
+              <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-4 2xl:grid-cols-10">
                 <StatsCard
                   title="Total Leads"
                   count={funnelData.totalLeads}
@@ -238,53 +315,97 @@ export default function OneOnOneCounselingFunnelDashboard() {
                   iconClassName="text-primary-navy"
                 />
                 <StatsCard
+                  title="Relevant Leads"
+                  count={funnelData.relevantLeads}
+                  indicator={`${derived.relevanceRate.toFixed(1)}% · ${RELEVANT_ONE_ON_ONE_CURRENT_CLASSES.join(', ')}`}
+                  icon={FiUsers}
+                  iconClassName="text-emerald-700"
+                />
+                <StatsCard
+                  title="Irrelevant Leads"
+                  count={funnelData.irrelevantLeads}
+                  indicator={`${safeRate(funnelData.irrelevantLeads, funnelData.totalLeads).toFixed(1)}% of total`}
+                  icon={FiUsers}
+                  iconClassName="text-slate-400"
+                />
+                <StatsCard
                   title="Form Completed"
                   count={funnelData.formCompleted}
-                  indicator={`${derived.metrics.formCompletionRate.toFixed(1)}% from total`}
+                  indicator={`${derived.overall.metrics.formCompletionRate.toFixed(1)}% from total`}
                   icon={FiCheckCircle}
                 />
                 <StatsCard
                   title="Booking Confirmed"
                   count={funnelData.bookingConfirmed}
-                  indicator={`${derived.metrics.bookingRate.toFixed(1)}% from form done`}
+                  indicator={`${derived.overall.metrics.bookingRate.toFixed(1)}% from form done`}
                   icon={FiCalendar}
                 />
                 <StatsCard
                   title="Contacted"
                   count={funnelData.contacted}
-                  indicator={`${derived.metrics.contactRate.toFixed(1)}% from booked`}
+                  indicator={`${derived.overall.metrics.contactRate.toFixed(1)}% from booked`}
                   icon={FiPhone}
                 />
                 <StatsCard
                   title="Counseling Done"
                   count={funnelData.counselingDone}
-                  indicator={`${derived.metrics.counselingRate.toFixed(1)}% from contacted`}
+                  indicator={`${derived.overall.metrics.counselingRate.toFixed(1)}% from contacted`}
                   icon={FiCheckCircle}
                 />
                 <StatsCard
                   title="Converted"
                   count={funnelData.converted}
-                  indicator={`${derived.metrics.conversionRate.toFixed(1)}% of all leads`}
+                  indicator={`${derived.overall.metrics.conversionRate.toFixed(1)}% of all leads`}
                   icon={FiAward}
                   iconClassName="text-emerald-600"
                 />
                 <StatsCard
-                  title="Booking Pending"
-                  count={funnelData.bookingPending}
-                  indicator="Awaiting slot confirmation"
-                  icon={FiCalendar}
-                  iconClassName="text-amber-600"
+                  title="Relevant Converted"
+                  count={funnelData.relevant?.converted ?? 0}
+                  indicator={`${derived.relevantConversionRate.toFixed(1)}% of relevant`}
+                  icon={FiAward}
+                  iconClassName="text-emerald-700"
                 />
                 <StatsCard
-                  title="Not Interested"
-                  count={funnelData.notInterested}
-                  indicator="Marked not interested"
-                  icon={FiUsers}
-                  iconClassName="text-gray-400"
+                  title="Irrelevant Converted"
+                  count={funnelData.irrelevant?.converted ?? 0}
+                  indicator={`${derived.irrelevantConversionRate.toFixed(1)}% of irrelevant`}
+                  icon={FiAward}
+                  iconClassName="text-slate-500"
                 />
               </div>
 
-              <FunnelChart data={derived.transitionRows} maxDomain={derived.maxDomain} />
+              <FunnelChart
+                data={derived.overall.transitionRows}
+                maxDomain={derived.overall.maxDomain}
+              />
+
+              <div className="grid grid-cols-1 gap-6 xl:grid-cols-2">
+                <div className="space-y-3">
+                  <div>
+                    <h3 className="text-sm font-semibold text-emerald-800">Relevant leads funnel</h3>
+                    <p className="text-xs text-gray-500 mt-0.5">
+                      Inter 1st Year, Inter 2nd Year, Inter 2nd Year Completed
+                    </p>
+                  </div>
+                  <FunnelChart
+                    data={derived.relevant.transitionRows}
+                    maxDomain={derived.relevant.maxDomain}
+                  />
+                </div>
+                <div className="space-y-3">
+                  <div>
+                    <h3 className="text-sm font-semibold text-slate-600">Irrelevant leads funnel</h3>
+                    <p className="text-xs text-gray-500 mt-0.5">
+                      All other classes (10th, Diploma, Other, etc.)
+                    </p>
+                  </div>
+                  <FunnelChart
+                    data={derived.irrelevant.transitionRows}
+                    maxDomain={derived.irrelevant.maxDomain}
+                  />
+                </div>
+              </div>
 
               <div
                 className="rounded-xl border border-gray-200 bg-white p-5 lg:p-6 portal-card"
@@ -298,33 +419,48 @@ export default function OneOnOneCounselingFunnelDashboard() {
                   Conversion analytics
                 </h2>
                 <p className="mt-1.5 text-sm leading-relaxed text-gray-500">
-                  Stage-to-stage conversion across the 1-on-1 counseling journey.
+                  Stage-to-stage conversion across the full journey and by relevance.
                 </p>
-                <div className="mt-5 grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-5">
+                <div className="mt-5 grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4 xl:grid-cols-8">
+                  <ConversionItem
+                    label="Relevance rate"
+                    value={derived.relevanceRate}
+                    helper="Relevant / Total leads"
+                  />
                   <ConversionItem
                     label="Form completion"
-                    value={derived.metrics.formCompletionRate}
+                    value={derived.overall.metrics.formCompletionRate}
                     helper="Form completed / Total leads"
                   />
                   <ConversionItem
                     label="Booking rate"
-                    value={derived.metrics.bookingRate}
+                    value={derived.overall.metrics.bookingRate}
                     helper="Booking confirmed / Form completed"
                   />
                   <ConversionItem
                     label="Contact rate"
-                    value={derived.metrics.contactRate}
+                    value={derived.overall.metrics.contactRate}
                     helper="Contacted / Booking confirmed"
                   />
                   <ConversionItem
                     label="Counseling rate"
-                    value={derived.metrics.counselingRate}
+                    value={derived.overall.metrics.counselingRate}
                     helper="Counseling done / Contacted"
                   />
                   <ConversionItem
                     label="Overall conversion"
-                    value={derived.metrics.conversionRate}
+                    value={derived.overall.metrics.conversionRate}
                     helper="Converted / Total leads"
+                  />
+                  <ConversionItem
+                    label="Relevant conversion"
+                    value={derived.relevantConversionRate}
+                    helper="Converted / Relevant leads"
+                  />
+                  <ConversionItem
+                    label="Irrelevant conversion"
+                    value={derived.irrelevantConversionRate}
+                    helper="Converted / Irrelevant leads"
                   />
                 </div>
               </div>
