@@ -2,12 +2,14 @@ import { createElement, useState, useMemo, useEffect } from 'react';
 import { useSidebarScrollbarActivity } from '../../hooks/useSidebarScrollbarActivity';
 import { Link, NavLink, Outlet, useLocation, useNavigate } from 'react-router-dom';
 import { HiMenu, HiX } from 'react-icons/hi';
-import { FiLayout, FiUsers, FiBarChart2, FiDownload, FiSettings, FiCalendar, FiClock, FiVideo, FiFileText, FiBell, FiLink, FiClipboard, FiMessageSquare, FiBookOpen, FiImage, FiPhone, FiLayers, FiTarget, FiUserPlus, FiSend, FiDatabase, FiHeadphones } from 'react-icons/fi';
+import { FiLayout, FiUsers, FiBarChart2, FiDownload, FiSettings, FiCalendar, FiClock, FiVideo, FiFileText, FiBell, FiLink, FiClipboard, FiMessageSquare, FiBookOpen, FiImage, FiPhone, FiLayers, FiTarget, FiUserPlus, FiSend, FiDatabase, FiHeadphones, FiChevronLeft, FiChevronRight, FiLogOut } from 'react-icons/fi';
 import { useAuth } from '../../hooks/useAuth';
 import { AdminDashboardProvider } from '../../contexts/AdminDashboardContext';
 import { useAdminDateRange } from '../../hooks/useAdminDateRange';
 import AdminFiltersPanel, { AdminFiltersTriggerButton } from './AdminFiltersPanel';
 import { countActiveLeadFilters } from '../../utils/adminLeadFiltersShared';
+
+const SIDEBAR_COLLAPSED_KEY = 'admin-sidebar-collapsed';
 
 const navItems = [
   { to: '/admin/dashboard', label: 'Dashboard', icon: FiLayout, sectionKey: 'dashboard' },
@@ -63,6 +65,14 @@ function getVisibleNavItems(user) {
   });
 }
 
+function readSidebarCollapsed() {
+  try {
+    return localStorage.getItem(SIDEBAR_COLLAPSED_KEY) === '1';
+  } catch {
+    return false;
+  }
+}
+
 function formatHeaderRange(from, to) {
   if (!from && !to) return '';
   try {
@@ -85,6 +95,20 @@ export default function AdminLayout() {
     navigate('/admin/login', { replace: true });
   };
   const [sidebarOpen, setSidebarOpen] = useState(false);
+  const [sidebarCollapsed, setSidebarCollapsed] = useState(readSidebarCollapsed);
+
+  const toggleSidebarCollapsed = () => {
+    setSidebarCollapsed((prev) => {
+      const next = !prev;
+      try {
+        localStorage.setItem(SIDEBAR_COLLAPSED_KEY, next ? '1' : '0');
+      } catch {
+        // ignore storage errors
+      }
+      return next;
+    });
+  };
+
   const visibleNavItems = useMemo(() => getVisibleNavItems(user), [user]);
   const sidebarNavItems = useMemo(
     () => visibleNavItems.filter((item) => !item.hideInSidebar),
@@ -123,45 +147,63 @@ export default function AdminLayout() {
 
       <aside
         className={`
-          fixed inset-y-0 left-0 z-30 w-[280px] flex flex-col bg-sidebar-blue
-          transform transition-transform duration-200 ease-out
-          lg:transform-none
+          fixed inset-y-0 left-0 z-30 flex flex-col bg-sidebar-blue
+          transform transition-[transform,width] duration-200 ease-out
+          lg:transform-none w-[280px]
+          ${sidebarCollapsed ? 'lg:w-[72px]' : 'lg:w-[280px]'}
           ${sidebarOpen ? 'translate-x-0' : '-translate-x-full lg:translate-x-0'}
         `}
         style={{ boxShadow: '1px 0 0 0 rgba(255,255,255,0.04), 8px 0 32px rgba(0,0,0,0.16)' }}
       >
-        <Link
-          to="/"
-          className="flex w-full flex-col items-start justify-center py-5 border-b border-white/10 hover:bg-white/10 transition-colors duration-200"
-          aria-label="GuideXpert Home"
-        >
-          <div className="w-full flex flex-col items-center justify-center py-3 px-4 gap-1.5">
-            <img
-              src="https://res.cloudinary.com/dfqdb1xws/image/upload/v1773394005/GuideXpert_Logo_inbaz5.png"
-              alt="GuideXpert"
-              className="h-8 w-auto object-contain"
-            />
-            <p className="text-[0.5625rem] font-semibold text-white/70 uppercase tracking-wider text-center leading-tight">
-              GuideXpert Admin
-            </p>
+        <div className="relative border-b border-white/10">
+          <button
+            type="button"
+            onClick={toggleSidebarCollapsed}
+            className={`hidden lg:flex absolute z-10 p-1.5 rounded-lg text-white/80 hover:bg-white/10 hover:text-white transition-colors ${
+              sidebarCollapsed ? 'top-2 left-1/2 -translate-x-1/2' : 'top-3 right-2'
+            }`}
+            aria-label={sidebarCollapsed ? 'Expand sidebar' : 'Collapse sidebar'}
+          >
+            {sidebarCollapsed ? (
+              <FiChevronRight className="w-5 h-5 shrink-0" aria-hidden />
+            ) : (
+              <FiChevronLeft className="w-5 h-5 shrink-0" aria-hidden />
+            )}
+          </button>
+          <div className="flex w-full flex-col items-start justify-center py-5 lg:py-4">
+            <div className={`w-full flex flex-col items-center justify-center py-3 gap-1.5 ${sidebarCollapsed ? 'lg:px-2 lg:py-2 lg:pt-8' : 'px-4 lg:pr-10'}`}>
+              <img
+                src="https://res.cloudinary.com/dfqdb1xws/image/upload/v1773394005/GuideXpert_Logo_inbaz5.png"
+                alt="GuideXpert"
+                className={`h-8 w-auto object-contain ${sidebarCollapsed ? 'lg:h-7' : ''}`}
+              />
+              <p className={`text-[0.5625rem] font-semibold text-white/70 uppercase tracking-wider text-center leading-tight ${sidebarCollapsed ? 'lg:hidden' : ''}`}>
+                GuideXpert Admin
+              </p>
+            </div>
           </div>
-        </Link>
+        </div>
 
         <nav
-          className={`sidebar-nav-scroll flex-1 min-h-0 overflow-y-auto overscroll-y-contain py-5 flex flex-col gap-6 px-3${sidebarScrollActive ? ' sidebar-nav-scroll--active' : ''}`}
+          className={`sidebar-nav-scroll flex-1 min-h-0 overflow-y-auto overscroll-y-contain py-5 flex flex-col gap-6 ${sidebarCollapsed ? 'lg:px-2 lg:py-3' : 'px-3'}${sidebarScrollActive ? ' sidebar-nav-scroll--active' : ''}`}
           onScroll={onSidebarScroll}
         >
           <div>
-            <p className="px-3 mb-2 text-[0.6875rem] font-semibold text-white/50 uppercase tracking-wider">Menu</p>
+            <p className={`px-3 mb-2 text-[0.6875rem] font-semibold text-white/50 uppercase tracking-wider ${sidebarCollapsed ? 'lg:hidden' : ''}`}>
+              Menu
+            </p>
             <div className="space-y-0.5">
               {sidebarNavItems.map(({ to, label, icon: Icon }) => (
                 <NavLink
                   key={to}
                   to={to}
                   end={to === '/admin/dashboard'}
+                  title={sidebarCollapsed ? label : undefined}
                   onClick={() => setSidebarOpen(false)}
                   className={({ isActive }) =>
-                    `flex items-center gap-3 px-3 py-2.5 rounded-lg text-[0.8125rem] font-medium transition-all duration-200 ${
+                    `flex items-center gap-3 py-2.5 rounded-lg text-[0.8125rem] font-medium transition-all duration-200 ${
+                      sidebarCollapsed ? 'lg:justify-center lg:px-2 lg:gap-0' : 'px-3'
+                    } ${
                       isActive
                         ? 'bg-primary-navy/90 text-white shadow-[inset_3px_0_0_0_#4d8ec7]'
                         : 'text-white/90 hover:bg-white/10 hover:text-white'
@@ -172,19 +214,22 @@ export default function AdminLayout() {
                     className: 'w-[1.125rem] h-[1.125rem] shrink-0 opacity-90',
                     'aria-hidden': true,
                   })}
-                  <span>{label}</span>
+                  <span className={sidebarCollapsed ? 'lg:hidden' : 'truncate'}>{label}</span>
                 </NavLink>
               ))}
             </div>
           </div>
         </nav>
 
-        <div className="p-3 border-t border-white/10 mt-auto space-y-1.5">
-          <div className="flex items-center gap-3 px-3 py-2.5 rounded-lg bg-white/10">
+        <div className={`p-3 border-t border-white/10 mt-auto space-y-1.5 ${sidebarCollapsed ? 'lg:p-2' : ''}`}>
+          <div
+            className={`flex items-center gap-3 rounded-lg bg-white/10 ${sidebarCollapsed ? 'lg:justify-center lg:px-2 lg:py-2' : 'px-3 py-2.5'}`}
+            title={sidebarCollapsed ? user?.username || 'Admin' : undefined}
+          >
             <div className="w-9 h-9 rounded-full bg-primary-blue-400 flex items-center justify-center shrink-0 ring-2 ring-white/20">
               <span className="text-white text-xs font-semibold">{initials}</span>
             </div>
-            <div className="min-w-0 flex-1">
+            <div className={`min-w-0 flex-1 ${sidebarCollapsed ? 'lg:hidden' : ''}`}>
               <p className="text-sm font-semibold text-white truncate">{user?.username || 'Admin'}</p>
               <p className="text-[0.6875rem] text-white/60 font-medium">Admin</p>
             </div>
@@ -192,14 +237,20 @@ export default function AdminLayout() {
           <button
             type="button"
             onClick={handleLogout}
-            className="w-full flex items-center justify-center gap-2 px-3 py-2 rounded-lg text-sm font-medium text-white/90 hover:bg-white/10 hover:text-white transition-colors border border-white/10"
+            title={sidebarCollapsed ? 'Log out' : undefined}
+            className={`w-full flex items-center justify-center gap-2 rounded-lg text-sm font-medium text-white/90 hover:bg-white/10 hover:text-white transition-colors border border-white/10 ${sidebarCollapsed ? 'lg:px-2 lg:py-2' : 'px-3 py-2'}`}
           >
-            Log out
+            <FiLogOut className="w-4 h-4 shrink-0" aria-hidden />
+            <span className={sidebarCollapsed ? 'lg:hidden' : ''}>Log out</span>
           </button>
         </div>
       </aside>
 
-      <div className="flex-1 flex flex-col min-w-0 min-h-0 lg:ml-[280px]">
+      <div
+        className={`flex-1 flex flex-col min-w-0 min-h-0 transition-[margin] duration-200 ease-out ${
+          sidebarCollapsed ? 'lg:ml-[72px]' : 'lg:ml-[280px]'
+        }`}
+      >
         <AdminDashboardProvider>
           <AdminChrome
             sidebarOpen={sidebarOpen}
