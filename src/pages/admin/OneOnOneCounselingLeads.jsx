@@ -141,6 +141,17 @@ function buildLeadListParams(filters) {
   };
 }
 
+function FilterField({ label, className = '', children }) {
+  return (
+    <div className={className}>
+      <span className="mb-1 block text-[10px] font-semibold uppercase tracking-wide text-gray-400">
+        {label}
+      </span>
+      {children}
+    </div>
+  );
+}
+
 const EMPTY_FILTERS = {
   q: '',
   from: '',
@@ -180,13 +191,17 @@ export default function OneOnOneCounselingLeads() {
   const [copyModalOpen, setCopyModalOpen] = useState(false);
   const [copyLoading, setCopyLoading] = useState(false);
   const [copyRecords, setCopyRecords] = useState([]);
+  const [grandTotal, setGrandTotal] = useState(null);
   const cancelledRef = useRef(false);
   const requestIdRef = useRef(0);
+
+  const hasActiveFilters = Object.values(filters).some(Boolean);
 
   useEffect(() => {
     cancelledRef.current = false;
     requestIdRef.current += 1;
     const thisRequestId = requestIdRef.current;
+    const filtersActive = Object.values(filters).some(Boolean);
 
     const params = {
       ...buildLeadListParams(filters),
@@ -198,9 +213,16 @@ export default function OneOnOneCounselingLeads() {
       if (cancelledRef.current) return;
       setLoading(true);
       setError('');
+      if (filtersActive) setGrandTotal(null);
     });
 
-    getOneOnOneCounselingLeads(params, getStoredToken()).then((result) => {
+    const token = getStoredToken();
+    const listPromise = getOneOnOneCounselingLeads(params, token);
+    const grandTotalPromise = filtersActive
+      ? getOneOnOneCounselingLeads({ page: 1, limit: 1 }, token)
+      : Promise.resolve(null);
+
+    Promise.all([listPromise, grandTotalPromise]).then(([result, grandResult]) => {
       if (cancelledRef.current || thisRequestId !== requestIdRef.current) return;
       setLoading(false);
       if (!result.success) {
@@ -216,6 +238,13 @@ export default function OneOnOneCounselingLeads() {
       setPagination(
         result.data?.pagination || { page: 1, limit: 25, total: 0, totalPages: 1 }
       );
+      if (filtersActive) {
+        setGrandTotal(
+          grandResult?.success ? (grandResult.data?.pagination?.total ?? null) : null
+        );
+      } else {
+        setGrandTotal(null);
+      }
     });
 
     return () => {
@@ -242,8 +271,6 @@ export default function OneOnOneCounselingLeads() {
     setFilters(EMPTY_FILTERS);
     setPagination((prev) => ({ ...prev, page: 1 }));
   };
-
-  const hasActiveFilters = Object.values(filters).some(Boolean);
 
   const goToPage = (p) => {
     const next = Math.max(1, Math.min(p, pagination.totalPages));
@@ -335,237 +362,323 @@ export default function OneOnOneCounselingLeads() {
             Generate UTM links
           </Link>
           <div className="rounded-lg bg-primary-navy/5 border border-primary-navy/10 px-4 py-2 text-sm">
-            <span className="font-semibold text-primary-navy">{pagination.total}</span>
-            <span className="text-gray-600"> total leads</span>
+            {hasActiveFilters ? (
+              <>
+                {grandTotal != null ? (
+                  <>
+                    <span className="font-semibold text-primary-navy">{grandTotal}</span>
+                    <span className="text-gray-600"> total</span>
+                    <span className="mx-1.5 text-gray-300" aria-hidden>
+                      ·
+                    </span>
+                  </>
+                ) : null}
+                <span className="font-semibold text-emerald-700">{pagination.total}</span>
+                <span className="text-gray-600"> matching</span>
+              </>
+            ) : (
+              <>
+                <span className="font-semibold text-primary-navy">{pagination.total}</span>
+                <span className="text-gray-600"> total leads</span>
+              </>
+            )}
           </div>
         </div>
       </div>
 
       <div className="bg-white rounded-xl border border-gray-200 shadow-sm p-4 space-y-4">
-        <div className="flex items-center gap-2 text-sm font-semibold text-gray-700">
-          <FiSliders aria-hidden />
-          Search & filters
+        <div className="flex flex-wrap items-center justify-between gap-2">
+          <div className="flex items-center gap-2 text-sm font-semibold text-gray-700">
+            <FiSliders aria-hidden />
+            Search & filters
+          </div>
+          <p className="text-sm text-gray-600">
+            {loading ? (
+              'Updating…'
+            ) : hasActiveFilters ? (
+              <>
+                <span className="font-semibold text-emerald-700">{pagination.total}</span> matching
+                {grandTotal != null ? (
+                  <>
+                    {' '}
+                    of <span className="font-semibold text-gray-900">{grandTotal}</span> total
+                  </>
+                ) : null}
+              </>
+            ) : (
+              <>
+                <span className="font-semibold text-gray-900">{pagination.total}</span> leads
+              </>
+            )}
+          </p>
         </div>
         <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
-          <div className="lg:col-span-2 relative">
-            <FiSearch className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" aria-hidden />
+          <FilterField label="Keywords" className="lg:col-span-2">
+            <div className="relative">
+              <FiSearch
+                className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400"
+                aria-hidden
+              />
+              <input
+                type="search"
+                placeholder="Search name, city, rank, mobile…"
+                value={filters.q}
+                onChange={(e) => handleFilterChange('q', e.target.value)}
+                className="w-full pl-9 pr-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-primary-navy/20 focus:border-primary-navy outline-none"
+              />
+            </div>
+          </FilterField>
+          <FilterField label="From">
             <input
-              type="search"
-              placeholder="Search name, city, rank, mobile…"
-              value={filters.q}
-              onChange={(e) => handleFilterChange('q', e.target.value)}
-              className="w-full pl-9 pr-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-primary-navy/20 focus:border-primary-navy outline-none"
+              type="date"
+              value={filters.from}
+              onChange={(e) => handleFilterChange('from', e.target.value)}
+              className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm"
+              aria-label="From date"
             />
-          </div>
-          <input
-            type="date"
-            value={filters.from}
-            onChange={(e) => handleFilterChange('from', e.target.value)}
-            className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm"
-            aria-label="From date"
-          />
-          <input
-            type="date"
-            value={filters.to}
-            onChange={(e) => handleFilterChange('to', e.target.value)}
-            className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm"
-            aria-label="To date"
-          />
-          <select
-            value={filters.leadStatus}
-            onChange={(e) => handleFilterChange('leadStatus', e.target.value)}
-            className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm"
-            aria-label="Lead status filter"
-          >
-            <option value="">All statuses</option>
-            {LEAD_STATUS_OPTIONS.map((s) => (
-              <option key={s} value={s}>
-                {s}
-              </option>
-            ))}
-          </select>
-          <select
-            value={filters.currentClass}
-            onChange={(e) => handleFilterChange('currentClass', e.target.value)}
-            className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm"
-          >
-            <option value="">All classes</option>
-            {CURRENT_CLASS_OPTIONS.map((o) => (
-              <option key={o} value={o}>
-                {o}
-              </option>
-            ))}
-          </select>
-          <select
-            value={filters.leadRelevance}
-            onChange={(e) => handleFilterChange('leadRelevance', e.target.value)}
-            className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm"
-            aria-label="Lead relevance filter"
-          >
-            {LEAD_RELEVANCE_FILTER_OPTIONS.map((o) => (
-              <option key={o.value || 'all'} value={o.value}>
-                {o.label}
-              </option>
-            ))}
-          </select>
-          <select
-            value={filters.interestedBranch}
-            onChange={(e) => handleFilterChange('interestedBranch', e.target.value)}
-            className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm"
-          >
-            <option value="">All branches</option>
-            {INTERESTED_BRANCH_OPTIONS.map((o) => (
-              <option key={o} value={o}>
-                {o}
-              </option>
-            ))}
-          </select>
-          <select
-            value={filters.preferredLanguage}
-            onChange={(e) => handleFilterChange('preferredLanguage', e.target.value)}
-            className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm"
-          >
-            <option value="">All languages</option>
-            {PREFERRED_LANGUAGE_OPTIONS.map((o) => (
-              <option key={o} value={o}>
-                {o}
-              </option>
-            ))}
-          </select>
-          <input
-            type="date"
-            value={filters.preferredTimeSlotDate}
-            onChange={(e) => handleFilterChange('preferredTimeSlotDate', e.target.value)}
-            className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm"
-            aria-label="Session slot date filter"
-          />
-          <select
-            value={filters.sessionAttendee}
-            onChange={(e) => handleFilterChange('sessionAttendee', e.target.value)}
-            className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm"
-            aria-label="Session attendee filter"
-          >
-            <option value="">Who attends (all)</option>
-            {SESSION_ATTENDEE_OPTIONS.map((o) => (
-              <option key={o} value={o}>
-                {o}
-              </option>
-            ))}
-          </select>
-          <select
-            value={filters.collegeBudget}
-            onChange={(e) => handleFilterChange('collegeBudget', e.target.value)}
-            className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm"
-          >
-            <option value="">All budgets</option>
-            {COLLEGE_BUDGET_OPTIONS.map((o) => (
-              <option key={o} value={o}>
-                {o}
-              </option>
-            ))}
-          </select>
-          <select
-            value={filters.biggestConcern}
-            onChange={(e) => handleFilterChange('biggestConcern', e.target.value)}
-            className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm lg:col-span-2"
-          >
-            <option value="">All concerns</option>
-            {BIGGEST_CONCERN_OPTIONS.map((o) => (
-              <option key={o} value={o}>
-                {o}
-              </option>
-            ))}
-          </select>
-          <input
-            type="text"
-            placeholder="UTM source"
-            value={filters.utm_source}
-            onChange={(e) => handleFilterChange('utm_source', e.target.value)}
-            className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm"
-            aria-label="UTM source filter"
-          />
-          <input
-            type="text"
-            placeholder="UTM medium"
-            value={filters.utm_medium}
-            onChange={(e) => handleFilterChange('utm_medium', e.target.value)}
-            className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm"
-            aria-label="UTM medium filter"
-          />
-          <input
-            type="text"
-            placeholder="UTM campaign"
-            value={filters.utm_campaign}
-            onChange={(e) => handleFilterChange('utm_campaign', e.target.value)}
-            className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm"
-            aria-label="UTM campaign filter"
-          />
-          <input
-            type="text"
-            placeholder="UTM content (influencer)"
-            value={filters.utm_content}
-            onChange={(e) => handleFilterChange('utm_content', e.target.value)}
-            className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm lg:col-span-2"
-            aria-label="UTM content filter"
-          />
-          <select
-            value={filters.bookingFilter}
-            onChange={(e) => handleFilterChange('bookingFilter', e.target.value)}
-            className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm"
-            aria-label="Booking filter"
-          >
-            <option value="">All booking states</option>
-            <option value="confirmed">Confirmed bookings</option>
-            <option value="pending">Pending bookings</option>
-            <option value="notBooked">Not booked leads</option>
-          </select>
-          <select
-            value={filters.oneOnOneCounselorId}
-            onChange={(e) => handleFilterChange('oneOnOneCounselorId', e.target.value)}
-            className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm"
-          >
-            <option value="">All counselors</option>
-            {counselors.map((c) => (
-              <option key={c.id} value={c.id}>
-                {c.name}
-              </option>
-            ))}
-          </select>
-          <select
-            value={filters.selectedSlotId}
-            onChange={(e) => handleFilterChange('selectedSlotId', e.target.value)}
-            className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm"
-          >
-            <option value="">All slots</option>
-            {slots.map((s) => (
-              <option key={s.id} value={s.id}>
-                {s.sessionTitle} ({s.slotDate})
-              </option>
-            ))}
-          </select>
-          <input
-            type="date"
-            value={filters.slotDate}
-            onChange={(e) => handleFilterChange('slotDate', e.target.value)}
-            className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm"
-            aria-label="Booked slot date"
-          />
-          <select
-            value={filters.parentAttendanceConfirmed}
-            onChange={(e) => handleFilterChange('parentAttendanceConfirmed', e.target.value)}
-            className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm"
-          >
-            <option value="">Parent attendance (all)</option>
-            <option value="true">Parent confirmed</option>
-          </select>
-          <select
-            value={filters.whatsappConsent}
-            onChange={(e) => handleFilterChange('whatsappConsent', e.target.value)}
-            className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm"
-          >
-            <option value="">WhatsApp consent (all)</option>
-            <option value="true">Consent accepted</option>
-          </select>
+          </FilterField>
+          <FilterField label="To">
+            <input
+              type="date"
+              value={filters.to}
+              onChange={(e) => handleFilterChange('to', e.target.value)}
+              className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm"
+              aria-label="To date"
+            />
+          </FilterField>
+          <FilterField label="Status">
+            <select
+              value={filters.leadStatus}
+              onChange={(e) => handleFilterChange('leadStatus', e.target.value)}
+              className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm"
+              aria-label="Lead status filter"
+            >
+              <option value="">All statuses</option>
+              {LEAD_STATUS_OPTIONS.map((s) => (
+                <option key={s} value={s}>
+                  {s}
+                </option>
+              ))}
+            </select>
+          </FilterField>
+          <FilterField label="Class">
+            <select
+              value={filters.currentClass}
+              onChange={(e) => handleFilterChange('currentClass', e.target.value)}
+              className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm"
+            >
+              <option value="">All classes</option>
+              {CURRENT_CLASS_OPTIONS.map((o) => (
+                <option key={o} value={o}>
+                  {o}
+                </option>
+              ))}
+            </select>
+          </FilterField>
+          <FilterField label="Relevance">
+            <select
+              value={filters.leadRelevance}
+              onChange={(e) => handleFilterChange('leadRelevance', e.target.value)}
+              className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm"
+              aria-label="Lead relevance filter"
+            >
+              {LEAD_RELEVANCE_FILTER_OPTIONS.map((o) => (
+                <option key={o.value || 'all'} value={o.value}>
+                  {o.label}
+                </option>
+              ))}
+            </select>
+          </FilterField>
+          <FilterField label="Branch">
+            <select
+              value={filters.interestedBranch}
+              onChange={(e) => handleFilterChange('interestedBranch', e.target.value)}
+              className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm"
+            >
+              <option value="">All branches</option>
+              {INTERESTED_BRANCH_OPTIONS.map((o) => (
+                <option key={o} value={o}>
+                  {o}
+                </option>
+              ))}
+            </select>
+          </FilterField>
+          <FilterField label="Language">
+            <select
+              value={filters.preferredLanguage}
+              onChange={(e) => handleFilterChange('preferredLanguage', e.target.value)}
+              className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm"
+            >
+              <option value="">All languages</option>
+              {PREFERRED_LANGUAGE_OPTIONS.map((o) => (
+                <option key={o} value={o}>
+                  {o}
+                </option>
+              ))}
+            </select>
+          </FilterField>
+          <FilterField label="Session">
+            <input
+              type="date"
+              value={filters.preferredTimeSlotDate}
+              onChange={(e) => handleFilterChange('preferredTimeSlotDate', e.target.value)}
+              className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm"
+              aria-label="Session slot date filter"
+            />
+          </FilterField>
+          <FilterField label="Attendee">
+            <select
+              value={filters.sessionAttendee}
+              onChange={(e) => handleFilterChange('sessionAttendee', e.target.value)}
+              className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm"
+              aria-label="Session attendee filter"
+            >
+              <option value="">Who attends (all)</option>
+              {SESSION_ATTENDEE_OPTIONS.map((o) => (
+                <option key={o} value={o}>
+                  {o}
+                </option>
+              ))}
+            </select>
+          </FilterField>
+          <FilterField label="Budget">
+            <select
+              value={filters.collegeBudget}
+              onChange={(e) => handleFilterChange('collegeBudget', e.target.value)}
+              className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm"
+            >
+              <option value="">All budgets</option>
+              {COLLEGE_BUDGET_OPTIONS.map((o) => (
+                <option key={o} value={o}>
+                  {o}
+                </option>
+              ))}
+            </select>
+          </FilterField>
+          <FilterField label="Concern" className="lg:col-span-2">
+            <select
+              value={filters.biggestConcern}
+              onChange={(e) => handleFilterChange('biggestConcern', e.target.value)}
+              className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm"
+            >
+              <option value="">All concerns</option>
+              {BIGGEST_CONCERN_OPTIONS.map((o) => (
+                <option key={o} value={o}>
+                  {o}
+                </option>
+              ))}
+            </select>
+          </FilterField>
+          <FilterField label="Source">
+            <input
+              type="text"
+              placeholder="UTM source"
+              value={filters.utm_source}
+              onChange={(e) => handleFilterChange('utm_source', e.target.value)}
+              className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm"
+              aria-label="UTM source filter"
+            />
+          </FilterField>
+          <FilterField label="Medium">
+            <input
+              type="text"
+              placeholder="UTM medium"
+              value={filters.utm_medium}
+              onChange={(e) => handleFilterChange('utm_medium', e.target.value)}
+              className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm"
+              aria-label="UTM medium filter"
+            />
+          </FilterField>
+          <FilterField label="Campaign">
+            <input
+              type="text"
+              placeholder="UTM campaign"
+              value={filters.utm_campaign}
+              onChange={(e) => handleFilterChange('utm_campaign', e.target.value)}
+              className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm"
+              aria-label="UTM campaign filter"
+            />
+          </FilterField>
+          <FilterField label="Content" className="lg:col-span-2">
+            <input
+              type="text"
+              placeholder="UTM content (influencer)"
+              value={filters.utm_content}
+              onChange={(e) => handleFilterChange('utm_content', e.target.value)}
+              className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm"
+              aria-label="UTM content filter"
+            />
+          </FilterField>
+          <FilterField label="Booking">
+            <select
+              value={filters.bookingFilter}
+              onChange={(e) => handleFilterChange('bookingFilter', e.target.value)}
+              className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm"
+              aria-label="Booking filter"
+            >
+              <option value="">All booking states</option>
+              <option value="confirmed">Confirmed bookings</option>
+              <option value="pending">Pending bookings</option>
+              <option value="notBooked">Not booked leads</option>
+            </select>
+          </FilterField>
+          <FilterField label="Counselor">
+            <select
+              value={filters.oneOnOneCounselorId}
+              onChange={(e) => handleFilterChange('oneOnOneCounselorId', e.target.value)}
+              className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm"
+            >
+              <option value="">All counselors</option>
+              {counselors.map((c) => (
+                <option key={c.id} value={c.id}>
+                  {c.name}
+                </option>
+              ))}
+            </select>
+          </FilterField>
+          <FilterField label="Slot">
+            <select
+              value={filters.selectedSlotId}
+              onChange={(e) => handleFilterChange('selectedSlotId', e.target.value)}
+              className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm"
+            >
+              <option value="">All slots</option>
+              {slots.map((s) => (
+                <option key={s.id} value={s.id}>
+                  {s.sessionTitle} ({s.slotDate})
+                </option>
+              ))}
+            </select>
+          </FilterField>
+          <FilterField label="Booked">
+            <input
+              type="date"
+              value={filters.slotDate}
+              onChange={(e) => handleFilterChange('slotDate', e.target.value)}
+              className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm"
+              aria-label="Booked slot date"
+            />
+          </FilterField>
+          <FilterField label="Parent">
+            <select
+              value={filters.parentAttendanceConfirmed}
+              onChange={(e) => handleFilterChange('parentAttendanceConfirmed', e.target.value)}
+              className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm"
+            >
+              <option value="">Parent attendance (all)</option>
+              <option value="true">Parent confirmed</option>
+            </select>
+          </FilterField>
+          <FilterField label="Consent">
+            <select
+              value={filters.whatsappConsent}
+              onChange={(e) => handleFilterChange('whatsappConsent', e.target.value)}
+              className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm"
+            >
+              <option value="">WhatsApp consent (all)</option>
+              <option value="true">Consent accepted</option>
+            </select>
+          </FilterField>
         </div>
         {hasActiveFilters ? (
           <button
