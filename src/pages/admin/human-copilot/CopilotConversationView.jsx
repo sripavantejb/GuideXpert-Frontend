@@ -1,8 +1,8 @@
 import { useEffect, useRef } from 'react';
-import CopilotConversationHeader from './CopilotConversationHeader';
+import CopilotDateSeparator from './CopilotDateSeparator';
 import CopilotMessageBubble from './CopilotMessageBubble';
-import CopilotNewMessagesPill from './CopilotNewMessagesPill';
-import { normalizeMessageKey } from './copilotUtils';
+import CopilotScrollToBottom from './CopilotScrollToBottom';
+import { normalizeMessageKey, shouldShowDateSeparator } from './copilotUtils';
 
 export default function CopilotConversationView({
   handoff,
@@ -11,6 +11,7 @@ export default function CopilotConversationView({
   loadingOlder = false,
   hasMoreOlder = false,
   pendingNewCount = 0,
+  isPinnedToBottom = true,
   error = '',
   scrollRef,
   onScroll,
@@ -36,53 +37,66 @@ export default function CopilotConversationView({
     return () => observer.disconnect();
   }, [scrollRef, hasMoreOlder, loadingOlder, onLoadOlder, messages.length]);
 
+  const handleScrollToLatest = () => {
+    onScrollToLatest?.({ smooth: true });
+  };
+
   return (
-    <section className="flex h-full min-h-0 flex-col overflow-hidden bg-[#e5ddd5]/40">
-      <CopilotConversationHeader handoff={handoff} />
-
-      <div className="relative min-h-0 flex-1">
-        <div
-          ref={scrollRef}
-          onScroll={onScroll}
-          className="h-full overflow-y-auto overscroll-contain px-3 py-4 space-y-3"
-        >
-          {loading ? (
-            <p className="text-sm text-slate-500">Loading transcript…</p>
-          ) : !handoff ? (
-            <p className="text-sm text-slate-500">No conversation selected.</p>
-          ) : (
-            <>
-              <div ref={topSentinelRef} className="h-1 w-full shrink-0" aria-hidden />
-              {loadingOlder ? (
-                <p className="text-center text-xs text-slate-500">Loading older messages…</p>
-              ) : hasMoreOlder ? (
-                <p className="text-center text-xs text-slate-400">Scroll up for older messages</p>
-              ) : messages.length > 0 ? (
-                <p className="text-center text-xs text-slate-400">Beginning of conversation</p>
-              ) : null}
-              {error ? (
-                <p className="rounded-lg border border-red-200 bg-red-50 px-3 py-2 text-sm text-red-800">
-                  {error}
-                </p>
-              ) : null}
-              {messages.length === 0 && !loading ? (
-                <p className="text-sm text-slate-500">No messages yet.</p>
-              ) : (
-                messages.map((message, idx) => (
-                  <CopilotMessageBubble
-                    key={normalizeMessageKey(message, idx)}
-                    message={message}
-                    handoff={handoff}
-                    index={idx}
-                  />
-                ))
-              )}
-            </>
-          )}
-        </div>
-
-        <CopilotNewMessagesPill count={pendingNewCount} onClick={onScrollToLatest} />
+    <div className="relative min-h-0 overflow-hidden">
+      <div
+        ref={scrollRef}
+        onScroll={onScroll}
+        className="absolute inset-0 scroll-smooth overflow-y-auto overscroll-contain bg-[#efeae2] px-3 pt-4 pb-4"
+      >
+        {loading ? (
+          <p className="text-sm text-slate-500">Loading transcript…</p>
+        ) : !handoff ? (
+          <p className="text-sm text-slate-500">No conversation selected.</p>
+        ) : (
+          <>
+            <div ref={topSentinelRef} className="h-1 w-full shrink-0" aria-hidden />
+            {loadingOlder ? (
+              <p className="text-center text-xs text-slate-500">Loading older messages…</p>
+            ) : hasMoreOlder ? (
+              <p className="text-center text-xs text-slate-500/80">Scroll up for older messages</p>
+            ) : messages.length > 0 ? (
+              <p className="text-center text-xs text-slate-500/80">Beginning of conversation</p>
+            ) : null}
+            {error ? (
+              <p className="rounded-lg border border-red-200 bg-red-50 px-3 py-2 text-sm text-red-800">
+                {error}
+              </p>
+            ) : null}
+            {messages.length === 0 && !loading ? (
+              <p className="text-sm text-slate-500">No messages yet.</p>
+            ) : (
+              messages.map((message, idx) => {
+                const prevMessage = idx > 0 ? messages[idx - 1] : null;
+                const nextMessage = idx < messages.length - 1 ? messages[idx + 1] : null;
+                return (
+                  <div key={normalizeMessageKey(message, idx)}>
+                    {shouldShowDateSeparator(message, prevMessage) ? (
+                      <CopilotDateSeparator at={message.at} />
+                    ) : null}
+                    <CopilotMessageBubble
+                      message={message}
+                      handoff={handoff}
+                      prevMessage={prevMessage}
+                      nextMessage={nextMessage}
+                    />
+                  </div>
+                );
+              })
+            )}
+          </>
+        )}
       </div>
-    </section>
+
+      <CopilotScrollToBottom
+        visible={!isPinnedToBottom}
+        pendingCount={pendingNewCount}
+        onClick={handleScrollToLatest}
+      />
+    </div>
   );
 }

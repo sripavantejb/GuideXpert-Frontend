@@ -7,21 +7,29 @@ import {
   getAlertLabel,
   getAlertTone,
   getMessageBubbleClasses,
+  getMessageGroupSpacing,
   getMessageRole,
   getMessageRowAlignment,
   getMessageSenderLabel,
+  isSameMessageGroup,
   isScrollPinnedToBottom,
   mergeTranscriptMessages,
   normalizeMessageKey,
+  scrollElementToBottom,
+  shouldShowMessageMeta,
   SR_FILTER_OPTIONS,
   buildSummaryFactRows,
   formatLeadQualityLine,
   formatDurationMs,
   formatPercentRate,
   formatFollowupDelay,
+  formatDateSeparatorLabel,
   getFollowupPriorityLabel,
   getEditClassificationLabel,
   getEditTopicLabel,
+  shouldShowDateSeparator,
+  normalizeDeliveryStatus,
+  getDeliveryStatusLabel,
 } from './copilotUtils.js';
 
 describe('copilotUtils', () => {
@@ -146,7 +154,7 @@ describe('copilotUtils', () => {
       'Priya'
     );
     assert.match(getMessageBubbleClasses({ direction: 'in' }), /bg-white/);
-    assert.match(getMessageBubbleClasses({ direction: 'out', senderType: 'bot' }), /dcf8c6/);
+    assert.match(getMessageBubbleClasses({ direction: 'out', senderType: 'bot' }), /d9fdd3/);
     assert.match(getMessageBubbleClasses({ direction: 'out', senderType: 'agent' }), /emerald-600/);
     assert.equal(getMessageRowAlignment({ direction: 'in' }), 'justify-start');
     assert.equal(getMessageRowAlignment({ direction: 'out', senderType: 'bot' }), 'justify-end');
@@ -171,5 +179,51 @@ describe('copilotUtils', () => {
     assert.equal(isScrollPinnedToBottom(el, 80), true);
     el.scrollTop = 100;
     assert.equal(isScrollPinnedToBottom(el, 80), false);
+  });
+
+  test('scrollElementToBottom uses smooth behavior when requested', () => {
+    let scrollArgs = null;
+    const el = {
+      scrollHeight: 900,
+      scrollTo: (args) => {
+        scrollArgs = args;
+      },
+    };
+    scrollElementToBottom(el, { smooth: true });
+    assert.deepEqual(scrollArgs, { top: 900, behavior: 'smooth' });
+    scrollElementToBottom(el);
+    assert.deepEqual(scrollArgs, { top: 900, behavior: 'auto' });
+  });
+
+  test('shouldShowMessageMeta groups consecutive messages from same sender', () => {
+    const first = { direction: 'out', senderType: 'bot', at: '2026-06-01T10:00:00.000Z' };
+    const second = { direction: 'out', senderType: 'bot', at: '2026-06-01T10:01:00.000Z' };
+    const third = { direction: 'in', at: '2026-06-01T10:02:00.000Z' };
+    const counsellor = { direction: 'out', senderType: 'agent', at: '2026-06-01T10:03:00.000Z' };
+    assert.equal(shouldShowMessageMeta(first, null), false);
+    assert.equal(shouldShowMessageMeta(second, first), false);
+    assert.equal(shouldShowMessageMeta(third, second), false);
+    assert.equal(shouldShowMessageMeta(counsellor, third), true);
+    assert.equal(isSameMessageGroup(first, second), true);
+    assert.equal(isSameMessageGroup(first, third), false);
+    assert.equal(getMessageGroupSpacing(first, second), 'mt-1');
+    assert.equal(getMessageGroupSpacing(first, third), 'mt-4');
+  });
+
+  test('shouldShowDateSeparator detects day boundaries', () => {
+    const dayOne = { at: '2026-06-01T10:00:00.000Z' };
+    const dayOneLater = { at: '2026-06-01T15:00:00.000Z' };
+    const dayTwo = { at: '2026-06-02T09:00:00.000Z' };
+    assert.equal(shouldShowDateSeparator(dayOne, null), true);
+    assert.equal(shouldShowDateSeparator(dayOneLater, dayOne), false);
+    assert.equal(shouldShowDateSeparator(dayTwo, dayOneLater), true);
+    assert.ok(formatDateSeparatorLabel('2026-06-02T09:00:00.000Z'));
+  });
+
+  test('normalizeDeliveryStatus maps legacy sent to submitted', () => {
+    assert.equal(normalizeDeliveryStatus('sent'), 'submitted');
+    assert.equal(normalizeDeliveryStatus('simulated'), 'simulated');
+    assert.equal(getDeliveryStatusLabel('submitted'), 'Submitted to WhatsApp');
+    assert.equal(getDeliveryStatusLabel('simulated'), 'Simulated (not sent)');
   });
 });

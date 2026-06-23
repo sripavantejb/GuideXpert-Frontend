@@ -1,6 +1,6 @@
 import assert from 'node:assert/strict';
 import { describe, test } from 'node:test';
-import { mergeTranscriptMessages } from './copilotUtils.js';
+import { isScrollPinnedToBottom, mergeTranscriptMessages } from './copilotUtils.js';
 
 describe('useCopilotTranscript helpers', () => {
   test('mergeTranscriptMessages appends without duplicates', () => {
@@ -20,5 +20,12 @@ describe('useCopilotTranscript helpers', () => {
     const merged = mergeTranscriptMessages(older, prev);
     assert.equal(merged[0].text, 'old');
     assert.equal(merged[1].text, 'new');
+  });
+
+  test('isScrollPinnedToBottom mirrors hook pinned detection', () => {
+    const el = { scrollHeight: 800, clientHeight: 400, scrollTop: 360 };
+    assert.equal(isScrollPinnedToBottom(el), true);
+    el.scrollTop = 120;
+    assert.equal(isScrollPinnedToBottom(el), false);
   });
 });

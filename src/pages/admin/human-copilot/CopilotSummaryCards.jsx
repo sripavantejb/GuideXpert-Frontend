@@ -3,88 +3,79 @@ import {
   buildSummaryFactRows,
   formatLeadQualityLine,
   formatSummaryFactValue,
-  PANEL_CLASS,
 } from './copilotUtils';
 
-function SummaryCard({ title, children }) {
+function BriefingRow({ label, children, highlight }) {
   return (
-    <div className="rounded-xl border border-slate-200/80 bg-white p-3 shadow-sm">
-      <h3 className="text-[10px] font-semibold uppercase tracking-wide text-primary-blue-600">
-        {title}
-      </h3>
-      <div className="mt-1.5 text-xs leading-relaxed text-slate-800">{children}</div>
+    <div className={highlight ? 'rounded-md bg-emerald-50/80 px-2.5 py-1.5' : ''}>
+      <dt className="text-[10px] font-semibold uppercase tracking-wide text-slate-400">{label}</dt>
+      <dd className={`mt-0.5 text-xs leading-snug ${highlight ? 'font-medium text-emerald-900' : 'text-slate-800'}`}>
+        {children}
+      </dd>
     </div>
   );
 }
 
 export default function CopilotSummaryCards({ structuredSummary, loading }) {
   if (loading) {
-    return (
-      <div className={`${PANEL_CLASS} p-4 text-sm text-slate-500`}>Loading briefing…</div>
-    );
+    return <p className="text-xs text-slate-500">Loading briefing…</p>;
   }
 
   if (!structuredSummary) {
-    return (
-      <div className={`${PANEL_CLASS} p-4 text-xs text-slate-500`}>
-        Briefing summary will appear when conversation detail loads.
-      </div>
-    );
+    return null;
   }
 
   const factRows = buildSummaryFactRows(structuredSummary.importantFacts);
 
   return (
-    <div className="space-y-2">
-      <div className="flex items-center justify-between gap-2 px-0.5">
-        <p className="text-[11px] font-semibold uppercase tracking-[0.12em] text-slate-500">
+    <div className="rounded-lg border border-slate-100 bg-slate-50/70 p-3">
+      <div className="mb-2.5 flex items-center justify-between gap-2">
+        <p className="text-[10px] font-semibold uppercase tracking-[0.14em] text-primary-blue-600">
           Counsellor briefing
         </p>
         {structuredSummary.source ? (
-          <span className="rounded-full border border-slate-200 bg-slate-50 px-2 py-0.5 text-[10px] text-slate-500 capitalize">
+          <span className="rounded-full border border-slate-200 bg-white px-2 py-0.5 text-[10px] font-medium text-slate-500 capitalize">
             {structuredSummary.source}
           </span>
         ) : null}
       </div>
 
-      <div className="grid grid-cols-1 gap-2 sm:grid-cols-2">
-        <SummaryCard title="Goal">
-          {formatSummaryFactValue(structuredSummary.studentGoal)}
-        </SummaryCard>
-        <SummaryCard title="Concern">
+      <dl className="space-y-2.5">
+        <BriefingRow label="Goal">{formatSummaryFactValue(structuredSummary.studentGoal)}</BriefingRow>
+        <BriefingRow label="Concern">
           {formatSummaryFactValue(structuredSummary.currentConcern)}
-        </SummaryCard>
-      </div>
+        </BriefingRow>
 
-      <SummaryCard title="Facts">
-        <ul className="space-y-1">
-          {factRows.map((row) => (
-            <li key={row.key}>
-              <span className="font-medium text-slate-700">{row.label}:</span>{' '}
-              <span className="text-slate-600">{row.value}</span>
-            </li>
-          ))}
-        </ul>
-      </SummaryCard>
+        {factRows.length > 0 ? (
+          <div>
+            <dt className="text-[10px] font-semibold uppercase tracking-wide text-slate-400">Facts</dt>
+            <dd className="mt-1 space-y-0.5 text-xs leading-snug text-slate-700">
+              {factRows.map((row) => (
+                <p key={row.key}>
+                  <span className="font-medium text-slate-800">{row.label}:</span> {row.value}
+                </p>
+              ))}
+            </dd>
+          </div>
+        ) : null}
 
-      <SummaryCard title="Lead quality">
-        <div className="flex flex-wrap items-center gap-2">
-          <span>{formatLeadQualityLine(structuredSummary.leadQuality)}</span>
-          {structuredSummary.leadQuality?.stage ? (
-            <LeadStageBadge stage={structuredSummary.leadQuality.stage} />
-          ) : null}
-        </div>
-      </SummaryCard>
+        <BriefingRow label="Lead quality">
+          <span className="inline-flex flex-wrap items-center gap-1.5">
+            <span>{formatLeadQualityLine(structuredSummary.leadQuality)}</span>
+            {structuredSummary.leadQuality?.stage ? (
+              <LeadStageBadge stage={structuredSummary.leadQuality.stage} />
+            ) : null}
+          </span>
+        </BriefingRow>
 
-      <SummaryCard title="Previous interactions">
-        {formatSummaryFactValue(structuredSummary.previousInteractions)}
-      </SummaryCard>
+        <BriefingRow label="Previous interactions">
+          {formatSummaryFactValue(structuredSummary.previousInteractions)}
+        </BriefingRow>
 
-      <SummaryCard title="Recommended action">
-        <span className="font-medium text-emerald-900">
+        <BriefingRow label="Recommended action" highlight>
           {formatSummaryFactValue(structuredSummary.recommendedNextAction)}
-        </span>
-      </SummaryCard>
+        </BriefingRow>
+      </dl>
     </div>
   );
 }

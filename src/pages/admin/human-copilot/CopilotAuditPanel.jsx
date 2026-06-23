@@ -1,4 +1,5 @@
-import { formatCopilotDate, PANEL_CLASS } from './copilotUtils';
+import { CopilotRailSection, RailEmptyState } from './CopilotRailSection';
+import { formatCopilotDate } from './copilotUtils';
 
 const ACTION_LABELS = {
   assigned: 'Assigned',
@@ -11,37 +12,39 @@ const ACTION_LABELS = {
 };
 
 export default function CopilotAuditPanel({ auditTrail, loading }) {
+  const entries = auditTrail || [];
+
   return (
-    <section className={`${PANEL_CLASS} flex max-h-48 min-h-0 flex-col overflow-hidden`}>
-      <div className="border-b border-slate-200/80 px-4 py-3">
-        <h2 className="text-sm font-semibold text-slate-900">Activity history</h2>
-      </div>
-      <div className="min-h-0 flex-1 overflow-y-auto p-4">
-        {loading ? (
-          <p className="text-xs text-slate-500">Loading history…</p>
-        ) : !(auditTrail || []).length ? (
-          <p className="text-xs text-slate-500">No activity recorded yet.</p>
-        ) : (
-          <ul className="space-y-2">
-            {auditTrail.map((entry, idx) => (
-              <li
-                key={`${entry.at || idx}-${entry.action}`}
-                className="rounded-lg border border-slate-200 bg-slate-50 px-3 py-2 text-xs"
-              >
+    <CopilotRailSection title="Activity history">
+      {loading ? (
+        <p className="text-xs text-slate-500">Loading history…</p>
+      ) : !entries.length ? (
+        <RailEmptyState>No activity recorded yet.</RailEmptyState>
+      ) : (
+        <ol className="relative space-y-0 border-l border-slate-200 pl-3">
+          {entries.map((entry, idx) => (
+            <li key={`${entry.at || idx}-${entry.action}`} className="relative pb-3 last:pb-0">
+              <span
+                className="absolute -left-[calc(0.75rem+1px)] top-1.5 h-2 w-2 rounded-full border-2 border-white bg-slate-300"
+                aria-hidden
+              />
+              <div className="rounded-md border border-slate-100 bg-slate-50 px-2.5 py-1.5">
                 <div className="flex items-center justify-between gap-2">
-                  <span className="font-medium text-slate-800">
+                  <span className="text-xs font-medium text-slate-800">
                     {ACTION_LABELS[entry.action] || entry.action}
                   </span>
-                  <span className="text-[10px] text-slate-400">{formatCopilotDate(entry.at)}</span>
+                  <time className="shrink-0 text-[10px] text-slate-400">
+                    {formatCopilotDate(entry.at)}
+                  </time>
                 </div>
                 {entry.srCounsellor ? (
-                  <p className="mt-0.5 text-slate-600">Slot: {entry.srCounsellor}</p>
+                  <p className="mt-0.5 text-[11px] text-slate-500">Slot: {entry.srCounsellor}</p>
                 ) : null}
-              </li>
-            ))}
-          </ul>
-        )}
-      </div>
-    </section>
+              </div>
+            </li>
+          ))}
+        </ol>
+      )}
+    </CopilotRailSection>
   );
 }

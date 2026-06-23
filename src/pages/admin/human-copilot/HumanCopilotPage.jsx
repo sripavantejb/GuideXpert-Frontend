@@ -4,6 +4,7 @@ import {
   addHandoffNote,
   assignHandoff,
   fetchCopilotAgents,
+  fetchCopilotConfig,
   fetchCopilotNotifications,
   fetchCopilotQueue,
   fetchHandoffDetail,
@@ -13,20 +14,77 @@ import {
   suggestHandoffReply,
 } from '../../../utils/humanCopilotApi';
 import CopilotAgentsPanel from './CopilotAgentsPanel';
+import CopilotAlertStrip from './CopilotAlertStrip';
 import CopilotAnalyticsPanel from './CopilotAnalyticsPanel';
-import CopilotFollowupPanel from './CopilotFollowupPanel';
-import CopilotLearningPanel from './CopilotLearningPanel';
 import CopilotAuditPanel from './CopilotAuditPanel';
+import CopilotChatPanel from './CopilotChatPanel';
 import CopilotContextPanel from './CopilotContextPanel';
-import CopilotConversationView from './CopilotConversationView';
+import CopilotFollowupPanel from './CopilotFollowupPanel';
+import CopilotInboxWorkspace from './CopilotInboxWorkspace';
+import CopilotLearningPanel from './CopilotLearningPanel';
 import CopilotNotesPanel from './CopilotNotesPanel';
-import CopilotNotificationBanner from './CopilotNotificationBanner';
 import CopilotQueuePanel from './CopilotQueuePanel';
-import CopilotReplyEditor from './CopilotReplyEditor';
 import { buildQueueFilterOptions, filterQueueBySr, PANEL_CLASS } from './copilotUtils';
 import { useCopilotTranscript } from './useCopilotTranscript';
 
 const POLL_MS = 30000;
+
+const VIEW_TABS = [
+  { id: 'inbox', label: 'Inbox' },
+  { id: 'analytics', label: 'Conversation Analytics' },
+  { id: 'learning', label: 'Learning From Counsellor Edits' },
+  { id: 'followups', label: 'Follow-up Assistant' },
+  { id: 'agents', label: 'Agents' },
+];
+
+const VIEW_TITLES = {
+  analytics: 'Conversation Analytics',
+  learning: 'Learning From Counsellor Edits',
+  followups: 'Follow-up Assistant',
+  agents: 'Agents',
+  inbox: 'SR Counsellor Inbox',
+};
+
+const VIEW_DESCRIPTIONS = {
+  analytics: 'Operational metrics for Human Copilot volume, response times, workloads, and AI usage.',
+  learning: 'See how counsellors modify AI suggestions and which topics need the most edits.',
+  followups: 'Review AI-suggested follow-ups and send only after counsellor approval.',
+  agents: 'Manage copilot agents, routing modes, workload limits, and availability.',
+  inbox: 'Manage admin-pool handoffs, assign counsellors, reply on WhatsApp, and review lead context in one workspace.',
+};
+
+function CopilotViewTabs({ activeView, onChange, compact = false }) {
+  return (
+    <div
+      className={
+        compact
+          ? 'inline-flex shrink-0 rounded-lg border border-slate-200 bg-slate-100 p-0.5'
+          : 'mt-4 inline-flex rounded-lg border border-slate-200 bg-slate-100 p-1'
+      }
+      role="tablist"
+      aria-label="Human Copilot views"
+    >
+      {VIEW_TABS.map((tab) => (
+        <button
+          key={tab.id}
+          type="button"
+          role="tab"
+          aria-selected={activeView === tab.id}
+          onClick={() => onChange(tab.id)}
+          className={`rounded-md font-medium transition-colors ${
+            compact ? 'px-3 py-1.5 text-xs' : 'px-4 py-2 text-sm'
+          } ${
+            activeView === tab.id
+              ? 'bg-white text-slate-900 shadow-sm'
+              : 'text-slate-600 hover:text-slate-900'
+          }`}
+        >
+          {compact && tab.id !== 'inbox' ? tab.label.split(' ')[0] : tab.label}
+        </button>
+      ))}
+    </div>
+  );
+}
 
 export default function HumanCopilotPage() {
   const [queueItems, setQueueItems] = useState([]);
@@ -53,6 +111,8 @@ export default function HumanCopilotPage() {
   const [retrying, setRetrying] = useState(false);
   const [activeView, setActiveView] = useState('inbox');
   const [agents, setAgents] = useState([]);
+  const [copilotConfig, setCopilotConfig] = useState(null);
+  const [configLoading, setConfigLoading] = useState(true);
 
   const transcript = useCopilotTranscript(selectedId, { pollMs: POLL_MS });
 
@@ -113,10 +173,20 @@ export default function HumanCopilotPage() {
     return result;
   }, []);
 
+  const loadConfig = useCallback(async () => {
+    setConfigLoading(true);
+    const result = await fetchCopilotConfig();
+    if (result.success) {
+      setCopilotConfig(result.config);
+    }
+    setConfigLoading(false);
+  }, []);
+
   useEffect(() => {
     loadQueue();
     loadAlerts();
     loadAgents();
+    loadConfig();
     const timer = setInterval(() => {
       loadQueue();
       loadAlerts();
@@ -124,7 +194,7 @@ export default function HumanCopilotPage() {
       if (selectedId) loadDetail(selectedId);
     }, POLL_MS);
     return () => clearInterval(timer);
-  }, [loadQueue, loadAlerts, loadAgents, loadDetail, selectedId]);
+  }, [loadQueue, loadAlerts, loadAgents, loadConfig, loadDetail, selectedId]);
 
   const handleSelect = (id) => {
     setSelectedId(id);
@@ -204,10 +274,14 @@ export default function HumanCopilotPage() {
     if (!result.success) {
       setDeliveryStatus('failed');
       if (result.lockVersion != null) setLockVersion(result.lockVersion);
-      setActionError(result.message || 'Send failed');
+      setActionError(result.message || result.errorMessage || 'Send failed');
       return;
     }
-    setDeliveryStatus(result.deliveryStatus || 'sent');
+    const status = result.deliveryStatus || result.providerStatus || 'submitted';
+    setDeliveryStatus(status);
+    if (status === 'simulated') {
+      setActionError('Reply was simulated only — not delivered to WhatsApp. Disable WA_INTEGRATION_STUB and configure Gupshup.');
+    }
     setLockVersion(result.lockVersion ?? lockVersion);
     setReplyText('');
     setSuggestedText('');
@@ -276,140 +350,64 @@ export default function HumanCopilotPage() {
 
   const handoff = detail?.handoff || null;
 
-  return (
-    <div className="space-y-4">
-      <header className={`${PANEL_CLASS} bg-gradient-to-br from-white via-white to-slate-50/90 px-5 py-5 sm:px-6`}>
-        <div className="flex flex-wrap items-start justify-between gap-4">
-          <div className="min-w-0">
-            <div className="flex items-center gap-2 text-primary-blue-600">
-              <FiHeadphones className="h-4 w-4 shrink-0" aria-hidden />
-              <p className="text-[11px] font-semibold uppercase tracking-[0.14em]">
-                WhatsApp Human Copilot
+  if (activeView !== 'inbox') {
+    return (
+      <div className="space-y-4">
+        <header className={`${PANEL_CLASS} bg-gradient-to-br from-white via-white to-slate-50/90 px-5 py-5 sm:px-6`}>
+          <div className="flex flex-wrap items-start justify-between gap-4">
+            <div className="min-w-0">
+              <div className="flex items-center gap-2 text-primary-blue-600">
+                <FiHeadphones className="h-4 w-4 shrink-0" aria-hidden />
+                <p className="text-[11px] font-semibold uppercase tracking-[0.14em]">
+                  WhatsApp Human Copilot
+                </p>
+              </div>
+              <h1 className="mt-2 text-2xl font-semibold text-slate-900 tracking-tight sm:text-[1.65rem]">
+                {VIEW_TITLES[activeView]}
+              </h1>
+              <p className="mt-2 max-w-3xl text-sm leading-relaxed text-slate-600">
+                {VIEW_DESCRIPTIONS[activeView]}
               </p>
             </div>
-            <h1 className="mt-2 text-2xl font-semibold text-slate-900 tracking-tight sm:text-[1.65rem]">
-              {activeView === 'analytics'
-                ? 'Conversation Analytics'
-                : activeView === 'learning'
-                  ? 'Learning From Counsellor Edits'
-                  : activeView === 'followups'
-                    ? 'Follow-up Assistant'
-                    : activeView === 'agents'
-                      ? 'Agents'
-                      : 'SR Counsellor Inbox'}
-            </h1>
-            <p className="mt-2 max-w-3xl text-sm leading-relaxed text-slate-600">
-              {activeView === 'analytics'
-                ? 'Operational metrics for Human Copilot volume, response times, workloads, and AI usage.'
-                : activeView === 'learning'
-                  ? 'See how counsellors modify AI suggestions and which topics need the most edits.'
-                  : activeView === 'followups'
-                    ? 'Review AI-suggested follow-ups and send only after counsellor approval.'
-                    : activeView === 'agents'
-                      ? 'Manage copilot agents, routing modes, workload limits, and availability.'
-                      : 'Manage admin-pool handoffs, assign counsellors, reply on WhatsApp, and review lead context in one workspace.'}
-            </p>
           </div>
-        </div>
-        <div
-          className="mt-4 inline-flex rounded-lg border border-slate-200 bg-slate-100 p-1"
-          role="tablist"
-          aria-label="Human Copilot views"
-        >
-          <button
-            type="button"
-            role="tab"
-            aria-selected={activeView === 'inbox'}
-            onClick={() => setActiveView('inbox')}
-            className={`rounded-md px-4 py-2 text-sm font-medium transition-colors ${
-              activeView === 'inbox'
-                ? 'bg-white text-slate-900 shadow-sm'
-                : 'text-slate-600 hover:text-slate-900'
-            }`}
-          >
-            Inbox
-          </button>
-          <button
-            type="button"
-            role="tab"
-            aria-selected={activeView === 'analytics'}
-            onClick={() => setActiveView('analytics')}
-            className={`rounded-md px-4 py-2 text-sm font-medium transition-colors ${
-              activeView === 'analytics'
-                ? 'bg-white text-slate-900 shadow-sm'
-                : 'text-slate-600 hover:text-slate-900'
-            }`}
-          >
-            Conversation Analytics
-          </button>
-          <button
-            type="button"
-            role="tab"
-            aria-selected={activeView === 'learning'}
-            onClick={() => setActiveView('learning')}
-            className={`rounded-md px-4 py-2 text-sm font-medium transition-colors ${
-              activeView === 'learning'
-                ? 'bg-white text-slate-900 shadow-sm'
-                : 'text-slate-600 hover:text-slate-900'
-            }`}
-          >
-            Learning From Counsellor Edits
-          </button>
-          <button
-            type="button"
-            role="tab"
-            aria-selected={activeView === 'followups'}
-            onClick={() => setActiveView('followups')}
-            className={`rounded-md px-4 py-2 text-sm font-medium transition-colors ${
-              activeView === 'followups'
-                ? 'bg-white text-slate-900 shadow-sm'
-                : 'text-slate-600 hover:text-slate-900'
-            }`}
-          >
-            Follow-up Assistant
-          </button>
-          <button
-            type="button"
-            role="tab"
-            aria-selected={activeView === 'agents'}
-            onClick={() => setActiveView('agents')}
-            className={`rounded-md px-4 py-2 text-sm font-medium transition-colors ${
-              activeView === 'agents'
-                ? 'bg-white text-slate-900 shadow-sm'
-                : 'text-slate-600 hover:text-slate-900'
-            }`}
-          >
-            Agents
-          </button>
-        </div>
-      </header>
+          <CopilotViewTabs activeView={activeView} onChange={setActiveView} />
+        </header>
 
-      {activeView === 'analytics' ? (
-        <CopilotAnalyticsPanel />
-      ) : activeView === 'learning' ? (
-        <CopilotLearningPanel />
-      ) : activeView === 'followups' ? (
-        <CopilotFollowupPanel />
-      ) : activeView === 'agents' ? (
-        <CopilotAgentsPanel />
-      ) : (
-        <>
-      <CopilotNotificationBanner count={alertCount} loading={alertsLoading} />
+        {activeView === 'analytics' ? (
+          <CopilotAnalyticsPanel />
+        ) : activeView === 'learning' ? (
+          <CopilotLearningPanel />
+        ) : activeView === 'followups' ? (
+          <CopilotFollowupPanel />
+        ) : (
+          <CopilotAgentsPanel />
+        )}
+      </div>
+    );
+  }
 
-      {actionError ? (
-        <div className="rounded-lg border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-800">
-          {actionError}
+  return (
+    <div className="-m-4 flex h-[calc(100dvh-4.25rem)] min-h-0 flex-col gap-3 p-4 lg:-m-6 lg:h-[calc(100dvh-4.75rem)] lg:p-6">
+      <div className="flex shrink-0 flex-wrap items-center justify-between gap-3">
+        <div className="flex min-w-0 items-center gap-2">
+          <FiHeadphones className="h-4 w-4 shrink-0 text-primary-blue-600" aria-hidden />
+          <h1 className="truncate text-lg font-semibold text-slate-900">SR Counsellor Inbox</h1>
         </div>
-      ) : null}
+        <CopilotViewTabs activeView={activeView} onChange={setActiveView} compact />
+      </div>
 
-      {detailError ? (
-        <div className="rounded-lg border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-800">
-          {detailError}
-        </div>
-      ) : null}
+      <CopilotAlertStrip
+        alertCount={alertCount}
+        alertsLoading={alertsLoading}
+        copilotConfig={copilotConfig}
+        configLoading={configLoading}
+        actionError={actionError}
+        detailError={detailError}
+      />
 
-      <div className="grid min-h-[calc(100vh-14rem)] grid-cols-1 gap-4 lg:grid-cols-12">
-        <div className="lg:col-span-3 min-h-[320px] lg:min-h-0">
+      <div className="min-h-0 flex-1">
+      <CopilotInboxWorkspace
+        queue={
           <CopilotQueuePanel
             items={filteredQueue}
             loading={queueLoading}
@@ -421,27 +419,22 @@ export default function HumanCopilotPage() {
             onSelect={handleSelect}
             onRetry={loadQueue}
           />
-        </div>
-
-        <div className="lg:col-span-5 flex h-[80vh] max-h-[80vh] min-h-[420px] flex-col overflow-hidden rounded-2xl border border-slate-200/90 bg-white shadow-[0_1px_2px_rgba(15,23,42,0.04)] ring-1 ring-slate-100">
-          <div className="min-h-0 flex-1">
-            <CopilotConversationView
-              handoff={handoff}
-              messages={transcript.messages}
-              loading={detailLoading || transcript.loading}
-              loadingOlder={transcript.loadingOlder}
-              hasMoreOlder={transcript.hasMoreOlder}
-              pendingNewCount={transcript.pendingNewCount}
-              error={transcript.error}
-              scrollRef={transcript.scrollRef}
-              onScroll={transcript.updatePinned}
-              onLoadOlder={transcript.loadOlder}
-              onScrollToLatest={transcript.scrollToLatest}
-            />
-          </div>
-          <CopilotReplyEditor
+        }
+        chat={
+          <CopilotChatPanel
             handoff={handoff}
             agents={agents}
+            messages={transcript.messages}
+            loading={detailLoading || transcript.loading}
+            loadingOlder={transcript.loadingOlder}
+            hasMoreOlder={transcript.hasMoreOlder}
+            pendingNewCount={transcript.pendingNewCount}
+            isPinnedToBottom={transcript.isPinnedToBottom}
+            error={transcript.error}
+            scrollRef={transcript.scrollRef}
+            onScroll={transcript.updatePinned}
+            onLoadOlder={transcript.loadOlder}
+            onScrollToLatest={transcript.scrollToLatest}
             replyText={replyText}
             onReplyTextChange={setReplyText}
             onSuggest={handleSuggest}
@@ -457,31 +450,28 @@ export default function HumanCopilotPage() {
             disabled={!handoff}
             deliveryStatus={deliveryStatus || handoff?.latestDeliveryStatus}
             suggestNotice={suggestNotice}
-            embedded
           />
-        </div>
-
-        <div className="lg:col-span-4 flex min-h-[420px] flex-col gap-4 lg:min-h-0">
-          <div className="min-h-[240px] flex-1 lg:min-h-0">
-            <CopilotContextPanel
-              userProfile={detail?.userProfile}
-              leadProfile={detail?.leadProfile}
-              recentEvents={detail?.recentEvents}
-              structuredSummary={detail?.structuredSummary}
-              loading={detailLoading}
-            />
-          </div>
-          <CopilotAuditPanel auditTrail={detail?.auditTrail} loading={detailLoading} />
+        }
+        context={
+          <CopilotContextPanel
+            userProfile={detail?.userProfile}
+            leadProfile={detail?.leadProfile}
+            recentEvents={detail?.recentEvents}
+            structuredSummary={detail?.structuredSummary}
+            loading={detailLoading}
+          />
+        }
+        audit={<CopilotAuditPanel auditTrail={detail?.auditTrail} loading={detailLoading} />}
+        notes={
           <CopilotNotesPanel
             notes={handoff?.internalNotes}
             onAdd={handleAddNote}
             adding={addingNote}
             disabled={!handoff}
           />
-        </div>
+        }
+      />
       </div>
-        </>
-      )}
     </div>
   );
 }

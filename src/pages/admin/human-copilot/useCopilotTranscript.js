@@ -15,6 +15,7 @@ export function useCopilotTranscript(handoffId, { pollMs = POLL_MS } = {}) {
   const [loadingOlder, setLoadingOlder] = useState(false);
   const [hasMoreOlder, setHasMoreOlder] = useState(false);
   const [pendingNewCount, setPendingNewCount] = useState(0);
+  const [isPinnedToBottom, setIsPinnedToBottom] = useState(true);
   const [error, setError] = useState('');
   const oldestCursorRef = useRef(null);
   const newestCursorRef = useRef(null);
@@ -23,15 +24,18 @@ export function useCopilotTranscript(handoffId, { pollMs = POLL_MS } = {}) {
   const loadOlderLockRef = useRef(false);
 
   const updatePinned = useCallback(() => {
-    pinnedRef.current = isScrollPinnedToBottom(scrollRef.current);
-    if (pinnedRef.current) {
+    const pinned = isScrollPinnedToBottom(scrollRef.current);
+    pinnedRef.current = pinned;
+    setIsPinnedToBottom(pinned);
+    if (pinned) {
       setPendingNewCount(0);
     }
   }, []);
 
-  const scrollToLatest = useCallback(() => {
-    scrollElementToBottom(scrollRef.current);
+  const scrollToLatest = useCallback(({ smooth = false } = {}) => {
+    scrollElementToBottom(scrollRef.current, { smooth });
     pinnedRef.current = true;
+    setIsPinnedToBottom(true);
     setPendingNewCount(0);
   }, []);
 
@@ -62,6 +66,7 @@ export function useCopilotTranscript(handoffId, { pollMs = POLL_MS } = {}) {
       setMessages([]);
       setHasMoreOlder(false);
       setPendingNewCount(0);
+      setIsPinnedToBottom(true);
       oldestCursorRef.current = null;
       newestCursorRef.current = null;
       return;
@@ -72,7 +77,9 @@ export function useCopilotTranscript(handoffId, { pollMs = POLL_MS } = {}) {
     setLoading(false);
     if (!applyPage(result, { mode: 'replace' })) return;
     pinnedRef.current = true;
-    requestAnimationFrame(() => scrollToLatest());
+    requestAnimationFrame(() => {
+      requestAnimationFrame(() => scrollToLatest());
+    });
   }, [applyPage, scrollToLatest]);
 
   const loadOlder = useCallback(async () => {
@@ -161,6 +168,7 @@ export function useCopilotTranscript(handoffId, { pollMs = POLL_MS } = {}) {
     loadingOlder,
     hasMoreOlder,
     pendingNewCount,
+    isPinnedToBottom,
     error,
     scrollRef,
     scrollToLatest,

@@ -27,6 +27,8 @@ export const DELIVERY_STATUS_LABELS = {
   draft: 'Draft',
   sending: 'Sending…',
   sent: 'Sent',
+  submitted: 'Submitted to WhatsApp',
+  simulated: 'Simulated (not sent)',
   failed: 'Failed',
 };
 
@@ -34,6 +36,8 @@ export const DELIVERY_STATUS_TONES = {
   draft: 'bg-slate-100 text-slate-700 border-slate-200',
   sending: 'bg-blue-100 text-blue-800 border-blue-200',
   sent: 'bg-emerald-100 text-emerald-800 border-emerald-200',
+  submitted: 'bg-emerald-100 text-emerald-800 border-emerald-200',
+  simulated: 'bg-amber-100 text-amber-900 border-amber-200',
   failed: 'bg-red-100 text-red-800 border-red-200',
 };
 
@@ -63,6 +67,11 @@ export function getDeliveryStatusLabel(status) {
 
 export function getDeliveryStatusTone(status) {
   return DELIVERY_STATUS_TONES[status] || 'bg-slate-100 text-slate-700 border-slate-200';
+}
+
+export function normalizeDeliveryStatus(status) {
+  if (status === 'sent') return 'submitted';
+  return status || '';
 }
 
 export function getAlertTone(reason) {
@@ -202,20 +211,123 @@ export function getMessageRowAlignment(message) {
   return 'justify-end';
 }
 
-export function getMessageBubbleClasses(message) {
+export const MESSAGE_GROUP_WINDOW_MS = 2 * 60 * 1000;
+
+export function isSameMessageGroup(current, other) {
+  if (!current || !other) return false;
+  if (getMessageRole(current) !== getMessageRole(other)) return false;
+  const currentAt = new Date(current.at).getTime();
+  const otherAt = new Date(other.at).getTime();
+  if (!Number.isFinite(currentAt) || !Number.isFinite(otherAt)) return false;
+  return Math.abs(currentAt - otherAt) <= MESSAGE_GROUP_WINDOW_MS;
+}
+
+export function shouldShowMessageMeta(message, prevMessage) {
   const role = getMessageRole(message);
-  const base =
-    'max-w-[85%] rounded-2xl px-3 py-2 text-sm leading-relaxed whitespace-pre-wrap break-words shadow-sm';
-  if (role === MESSAGE_ROLES.user) {
-    return `${base} rounded-tl-sm bg-white border border-slate-200 text-slate-900`;
+  if (role === MESSAGE_ROLES.system) return true;
+  if (role === MESSAGE_ROLES.counsellor) return !isSameMessageGroup(message, prevMessage);
+  return false;
+}
+
+export function getMessageGroupSpacing(prevMessage, message) {
+  if (!prevMessage) return '';
+  return isSameMessageGroup(prevMessage, message) ? 'mt-1' : 'mt-4';
+}
+
+export function formatMessageTime(value) {
+  if (!value) return '';
+  try {
+    return new Date(value).toLocaleString('en-IN', {
+      hour: '2-digit',
+      minute: '2-digit',
+      hour12: true,
+      timeZone: 'Asia/Kolkata',
+    });
+  } catch {
+    return '';
   }
-  if (role === MESSAGE_ROLES.counsellor) {
-    return `${base} rounded-tr-sm bg-emerald-600 text-white`;
+}
+
+function getMessageDayKey(value) {
+  if (!value) return '';
+  try {
+    return new Date(value).toLocaleDateString('en-IN', { timeZone: 'Asia/Kolkata' });
+  } catch {
+    return '';
+  }
+}
+
+export function shouldShowDateSeparator(message, prevMessage) {
+  if (!message?.at) return false;
+  if (!prevMessage?.at) return true;
+  return getMessageDayKey(message.at) !== getMessageDayKey(prevMessage.at);
+}
+
+export function formatDateSeparatorLabel(value) {
+  if (!value) return '';
+  try {
+    const date = new Date(value);
+    if (Number.isNaN(date.getTime())) return '';
+    const todayKey = getMessageDayKey(new Date().toISOString());
+    const yesterday = new Date();
+    yesterday.setDate(yesterday.getDate() - 1);
+    const yesterdayKey = getMessageDayKey(yesterday.toISOString());
+    const messageKey = getMessageDayKey(value);
+    if (messageKey === todayKey) return 'Today';
+    if (messageKey === yesterdayKey) return 'Yesterday';
+    return date.toLocaleDateString('en-IN', {
+      day: 'numeric',
+      month: 'short',
+      year: 'numeric',
+      timeZone: 'Asia/Kolkata',
+    });
+  } catch {
+    return '';
+  }
+}
+
+function getGroupedCornerClasses(role, samePrev, sameNext) {
+  if (role === MESSAGE_ROLES.user) {
+    const corners = ['rounded-2xl'];
+    if (samePrev) corners.push('rounded-tl-md');
+    else corners.push('rounded-tl-2xl');
+    if (sameNext) corners.push('rounded-bl-md');
+    else corners.push('rounded-bl-sm');
+    return corners.join(' ');
   }
   if (role === MESSAGE_ROLES.system) {
-    return `${base} max-w-[90%] bg-slate-100 text-slate-600 text-xs border border-slate-200`;
+    return 'rounded-xl';
   }
-  return `${base} rounded-tr-sm bg-[#dcf8c6] text-slate-900 border border-emerald-100`;
+  const corners = ['rounded-2xl'];
+  if (samePrev) corners.push('rounded-tr-md');
+  else corners.push('rounded-tr-2xl');
+  if (sameNext) corners.push('rounded-br-md');
+  else corners.push('rounded-br-sm');
+  return corners.join(' ');
+}
+
+export function getGroupedBubbleClasses(message, prevMessage = null, nextMessage = null) {
+  const role = getMessageRole(message);
+  const samePrev = isSameMessageGroup(message, prevMessage);
+  const sameNext = isSameMessageGroup(message, nextMessage);
+  const corners = getGroupedCornerClasses(role, samePrev, sameNext);
+  const base =
+    'max-w-[85%] px-3 py-1.5 text-sm leading-relaxed break-words shadow-sm';
+
+  if (role === MESSAGE_ROLES.user) {
+    return `${base} ${corners} bg-white text-slate-900 border border-slate-200/80`;
+  }
+  if (role === MESSAGE_ROLES.counsellor) {
+    return `${base} ${corners} bg-emerald-600 text-white`;
+  }
+  if (role === MESSAGE_ROLES.system) {
+    return `${base} max-w-[90%] ${corners} bg-slate-100 text-slate-600 text-xs border border-slate-200`;
+  }
+  return `${base} ${corners} bg-[#d9fdd3] text-slate-900`;
+}
+
+export function getMessageBubbleClasses(message, prevMessage = null, nextMessage = null) {
+  return getGroupedBubbleClasses(message, prevMessage, nextMessage);
 }
 
 export function normalizeMessageKey(message, index = 0) {
@@ -239,8 +351,12 @@ export function isScrollPinnedToBottom(element, threshold = 80) {
   return element.scrollHeight - element.scrollTop - element.clientHeight <= threshold;
 }
 
-export function scrollElementToBottom(element) {
+export function scrollElementToBottom(element, { smooth = false } = {}) {
   if (!element) return;
+  if (typeof element.scrollTo === 'function') {
+    element.scrollTo({ top: element.scrollHeight, behavior: smooth ? 'smooth' : 'auto' });
+    return;
+  }
   element.scrollTop = element.scrollHeight;
 }
 

@@ -23,8 +23,8 @@ export default function CopilotQueuePanel({
 }) {
   const options = filterOptions || buildQueueFilterOptions();
   return (
-    <section className={`${PANEL_CLASS} flex h-full min-h-0 flex-col overflow-hidden`}>
-      <div className="border-b border-slate-200/80 px-4 py-3">
+    <section className={`${PANEL_CLASS} flex h-full min-h-0 flex-col overflow-hidden rounded-xl`}>
+      <div className="border-b border-slate-200/80 px-4 py-2.5">
         <div className="flex items-center gap-2">
           <FiInbox className="h-4 w-4 text-primary-blue-600" aria-hidden />
           <h2 className="text-sm font-semibold text-slate-900">Pending queue</h2>

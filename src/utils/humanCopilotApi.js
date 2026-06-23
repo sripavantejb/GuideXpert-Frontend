@@ -40,6 +40,12 @@ async function copilotRequest(path, options = {}, token = getStoredToken()) {
   return { success: true, status: res.status, data: body };
 }
 
+export async function fetchCopilotConfig() {
+  const result = await copilotRequest('/config');
+  if (!result.success) return result;
+  return { success: true, config: result.data.config || result.data };
+}
+
 export async function fetchCopilotQueue({ srCounsellor, status, limit } = {}) {
   const params = new URLSearchParams();
   if (srCounsellor) params.set('srCounsellor', srCounsellor);
@@ -302,10 +308,19 @@ export async function sendHandoffReply(handoffId, text, { lockVersion, suggested
     method: 'POST',
     body: JSON.stringify({ text, lockVersion, suggestedText, replySource }),
   });
-  if (!result.success) return result;
+  if (!result.success) {
+    return {
+      ...result,
+      errorMessage: result.data?.message || result.message || null,
+      deliveryStatus: result.data?.deliveryStatus || 'failed',
+    };
+  }
   return {
     success: true,
     deliveryStatus: result.data.deliveryStatus,
+    providerStatus: result.data.providerStatus || result.data.deliveryStatus,
+    outboundMessageId: result.data.outboundMessageId || null,
+    errorMessage: result.data.errorMessage || null,
     replyId: result.data.replyId,
     lockVersion: result.data.lockVersion,
   };
