@@ -13,8 +13,14 @@ function isChunkLoadFailureMessage(text) {
     text.includes('Importing a module script failed') ||
     text.includes('Loading chunk') ||
     text.includes('ChunkLoadError') ||
-    text.includes('error loading dynamically imported module')
+    text.includes('error loading dynamically imported module') ||
+    text.includes('Unable to preload CSS')
   )
+}
+
+function isAssetScriptTarget(target) {
+  if (!target || target.tagName !== 'SCRIPT' || !target.src) return false
+  return target.src.includes('/assets/') || target.src.endsWith('.js')
 }
 
 function installChunkLoadRecovery() {
@@ -29,9 +35,13 @@ function installChunkLoadRecovery() {
   }
 
   window.addEventListener('error', (event) => {
+    if (isAssetScriptTarget(event?.target)) {
+      tryReload()
+      return
+    }
     const msg = event?.message || ''
     if (isChunkLoadFailureMessage(msg)) tryReload()
-  })
+  }, true)
 
   window.addEventListener('unhandledrejection', (event) => {
     const r = event?.reason

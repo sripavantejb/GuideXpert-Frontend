@@ -23,6 +23,37 @@
     <link href="https://fonts.googleapis.com/css2?family=Imperial+Script&display=swap" rel="stylesheet">
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
     <title>GuideXpert - Become a Certified Elite Counselor</title>
+    <script>
+      (function () {
+        var key = 'gx_entry_reload_done';
+        function reloadOnce() {
+          try {
+            if (sessionStorage.getItem(key)) return;
+            sessionStorage.setItem(key, '1');
+            location.reload();
+          } catch (e) {}
+        }
+        window.addEventListener(
+          'error',
+          function (event) {
+            var target = event.target;
+            if (
+              target &&
+              target.tagName === 'SCRIPT' &&
+              target.src &&
+              (target.src.indexOf('/assets/') !== -1 || target.src.indexOf('.js') !== -1)
+            ) {
+              reloadOnce();
+            }
+          },
+          true
+        );
+        window.addEventListener('vite:preloadError', function (event) {
+          event.preventDefault();
+          reloadOnce();
+        });
+      })();
+    </script>
     <script src="https://www.youtube.com/iframe_api" async></script>
   </head>
   <body>
