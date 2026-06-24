@@ -1,7 +1,14 @@
 import { useState, useRef } from 'react';
-import { sendOtp, verifyOtp, submitCollegeDostForm } from '../utils/api';
+import { sendOtp, verifyOtp, submitCollegeDostForm, checkCollegeDostFormStatus } from '../utils/api';
 
 const OTP_OCCUPATION = 'CollegeDost Form';
+
+const NEW_AGE_COLLEGE_OPTIONS = [
+  { value: 'zenith-school-of-ai', label: 'Zenith School of AI' },
+  { value: 'niat', label: 'NIAT' },
+  { value: 'scaler', label: 'Scaler' },
+  { value: 'newton-school-of-technology', label: 'Newton School of technology' },
+];
 
 function validateName(value) {
   const trimmed = typeof value === 'string' ? value.trim() : '';
@@ -19,7 +26,7 @@ function validateMobile(value) {
 }
 
 /**
- * Public flow: name + mobile → OTP → interested in new colleges (yes/no).
+ * Public flow: name + mobile → OTP → interested in new age colleges (yes/no) → top preference (if yes).
  * Route: /collegedost
  */
 export default function CollegeDostForm() {
@@ -34,6 +41,7 @@ export default function CollegeDostForm() {
   const [loading, setLoading] = useState(false);
   const [verifying, setVerifying] = useState(false);
   const [submittingInterest, setSubmittingInterest] = useState(false);
+  const [interestedInNewColleges, setInterestedInNewColleges] = useState(null);
   const [showSuccessModal, setShowSuccessModal] = useState(false);
 
   const otpInputRefs = useRef([]);
@@ -74,6 +82,15 @@ export default function CollegeDostForm() {
     const cleanPhone = mobileNumber.replace(/\D/g, '');
 
     try {
+      const statusResult = await checkCollegeDostFormStatus(cleanPhone);
+      if (statusResult.success && statusResult.exists) {
+        if (statusResult.data?.name) {
+          setName(statusResult.data.name);
+        }
+        setStep(3);
+        return;
+      }
+
       const result = await sendOtp(name.trim(), cleanPhone, OTP_OCCUPATION);
 
       if (result.success) {
@@ -191,13 +208,23 @@ export default function CollegeDostForm() {
     setSuccessMessage('');
   };
 
-  const handleSubmitInterest = async (interestedInNewColleges) => {
+  const handleInterestChoice = (choice) => {
+    setSubmitError('');
+    if (choice === 'no') {
+      handleSubmitForm('no', null);
+      return;
+    }
+    setInterestedInNewColleges('yes');
+    setStep(4);
+  };
+
+  const handleSubmitForm = async (interest, preference) => {
     setSubmitError('');
     setSubmittingInterest(true);
     const phone = normalizedPhone();
 
     try {
-      const res = await submitCollegeDostForm(name.trim(), phone, interestedInNewColleges);
+      const res = await submitCollegeDostForm(name.trim(), phone, interest, preference);
       if (!res.success) {
         setSubmitError(res.message || 'Could not save your response. Please try again.');
         setSubmittingInterest(false);
@@ -209,6 +236,10 @@ export default function CollegeDostForm() {
     } finally {
       setSubmittingInterest(false);
     }
+  };
+
+  const handleSubmitPreference = (preference) => {
+    handleSubmitForm(interestedInNewColleges || 'yes', preference);
   };
 
   return (
@@ -242,11 +273,11 @@ export default function CollegeDostForm() {
         {step === 2 && (
           <div className="mb-4">
             <div className="flex items-center justify-between text-xs text-gray-500 mb-1">
-              <span>Step 2 of 3</span>
+              <span>Step 2 of 4</span>
               <span>OTP verification</span>
             </div>
             <div className="w-full bg-gray-200 rounded-full h-1.5">
-              <div className="bg-blue-700 h-1.5 rounded-full transition-all" style={{ width: '66%' }} />
+              <div className="bg-blue-700 h-1.5 rounded-full transition-all" style={{ width: '50%' }} />
             </div>
           </div>
         )}
@@ -254,8 +285,20 @@ export default function CollegeDostForm() {
         {step === 3 && (
           <div className="mb-4">
             <div className="flex items-center justify-between text-xs text-gray-500 mb-1">
-              <span>Step 3 of 3</span>
+              <span>Step 3 of 4</span>
               <span>Your interest</span>
+            </div>
+            <div className="w-full bg-gray-200 rounded-full h-1.5">
+              <div className="bg-blue-700 h-1.5 rounded-full transition-all" style={{ width: '75%' }} />
+            </div>
+          </div>
+        )}
+
+        {step === 4 && (
+          <div className="mb-4">
+            <div className="flex items-center justify-between text-xs text-gray-500 mb-1">
+              <span>Step 4 of 4</span>
+              <span>Your preference</span>
             </div>
             <div className="w-full bg-gray-200 rounded-full h-1.5">
               <div className="bg-blue-700 h-1.5 rounded-full transition-all" style={{ width: '100%' }} />
@@ -284,7 +327,16 @@ export default function CollegeDostForm() {
           <>
             <p className="text-xs font-semibold text-gray-500 uppercase tracking-wide mb-3">One quick question</p>
             <h2 className="text-xl sm:text-2xl font-bold text-gray-900 leading-snug mb-6 border-l-4 border-blue-600 pl-4 py-0.5">
-              Interested in new colleges?
+              Interested in new age colleges?
+            </h2>
+          </>
+        )}
+
+        {step === 4 && (
+          <>
+            <p className="text-xs font-semibold text-gray-500 uppercase tracking-wide mb-3">One more question</p>
+            <h2 className="text-xl sm:text-2xl font-bold text-gray-900 leading-snug mb-6 border-l-4 border-blue-600 pl-4 py-0.5">
+              Your top preference in the new age college?
             </h2>
           </>
         )}
@@ -427,21 +479,37 @@ export default function CollegeDostForm() {
             <div className="flex gap-3">
               <button
                 type="button"
-                onClick={() => handleSubmitInterest('yes')}
+                onClick={() => handleInterestChoice('yes')}
                 disabled={submittingInterest}
                 className="flex-1 py-3 px-4 bg-blue-700 hover:bg-blue-800 text-white font-medium rounded-lg transition disabled:opacity-60 disabled:cursor-not-allowed"
               >
-                {submittingInterest ? 'Submitting…' : 'Yes'}
+                Yes
               </button>
               <button
                 type="button"
-                onClick={() => handleSubmitInterest('no')}
+                onClick={() => handleInterestChoice('no')}
                 disabled={submittingInterest}
                 className="flex-1 py-3 px-4 bg-gray-100 hover:bg-gray-200 text-gray-800 font-medium rounded-lg transition disabled:opacity-60 disabled:cursor-not-allowed"
               >
                 {submittingInterest ? 'Submitting…' : 'No'}
               </button>
             </div>
+          </div>
+        )}
+
+        {step === 4 && (
+          <div className="space-y-3">
+            {NEW_AGE_COLLEGE_OPTIONS.map((option) => (
+              <button
+                key={option.value}
+                type="button"
+                onClick={() => handleSubmitPreference(option.value)}
+                disabled={submittingInterest}
+                className="w-full py-3 px-4 bg-gray-100 hover:bg-blue-50 hover:border-blue-300 border border-gray-200 text-gray-900 font-medium rounded-lg transition text-left disabled:opacity-60 disabled:cursor-not-allowed"
+              >
+                {submittingInterest ? 'Submitting…' : option.label}
+              </button>
+            ))}
           </div>
         )}
 
