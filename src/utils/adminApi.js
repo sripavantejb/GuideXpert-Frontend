@@ -477,6 +477,17 @@ export const getIitSecondFormSubmissions = async (params = {}, token = getStored
   return adminRequest(`/iit-second-form-submissions${query ? `?${query}` : ''}`, { method: 'GET' }, token);
 };
 
+export const getCollegeDostFormSubmissions = async (params = {}, token = getStoredToken()) => {
+  const search = new URLSearchParams();
+  if (params.page != null) search.set('page', params.page);
+  if (params.limit != null) search.set('limit', params.limit);
+  if (params.from) search.set('from', params.from);
+  if (params.to) search.set('to', params.to);
+  if (params.q) search.set('q', params.q);
+  const query = search.toString();
+  return adminRequest(`/college-dost-form-submissions${query ? `?${query}` : ''}`, { method: 'GET' }, token);
+};
+
 export const getTrainingAttendance = async (params = {}, token = getStoredToken()) => {
   const search = new URLSearchParams();
   if (params.page != null) search.set('page', params.page);
@@ -1198,6 +1209,101 @@ export const setPosterMarketingFeatured = async (id, featured, token = getStored
     {
       method: 'POST',
       body: JSON.stringify({ featured: !!featured }),
+    },
+    token
+  );
+};
+
+function buildAnalyticsQuery(params = {}) {
+  const search = new URLSearchParams();
+  if (params.from) search.set('from', params.from);
+  if (params.to) search.set('to', params.to);
+  if (params.fromDate) search.set('fromDate', params.fromDate);
+  if (params.toDate) search.set('toDate', params.toDate);
+  if (params.productLine) search.set('productLine', params.productLine);
+  if (params.preset) search.set('preset', params.preset);
+  if (params.sinceDays != null) search.set('sinceDays', String(params.sinceDays));
+  const query = search.toString();
+  return query ? `?${query}` : '';
+}
+
+/** GET /admin/analytics/lifecycle/funnel */
+export const getLifecycleFunnel = async (params = {}, token = getStoredToken()) => {
+  return adminRequest(`/analytics/lifecycle/funnel${buildAnalyticsQuery(params)}`, { method: 'GET' }, token);
+};
+
+/** GET /admin/analytics/executive/summary */
+export const getExecutiveSummary = async (params = {}, token = getStoredToken()) => {
+  return adminRequest(`/analytics/executive/summary${buildAnalyticsQuery(params)}`, { method: 'GET' }, token);
+};
+
+/** GET /admin/analytics/lifecycle/validation */
+export const getLifecycleValidation = async (params = {}, token = getStoredToken()) => {
+  return adminRequest(`/analytics/lifecycle/validation${buildAnalyticsQuery(params)}`, { method: 'GET' }, token);
+};
+
+/** GET /admin/analytics/alerts */
+export const getAnalyticsAlerts = async (params = {}, token = getStoredToken()) => {
+  const search = new URLSearchParams();
+  if (params.status) search.set('status', params.status);
+  if (params.severity) search.set('severity', params.severity);
+  if (params.productLine) search.set('productLine', params.productLine);
+  if (params.type) search.set('type', params.type);
+  if (params.page) search.set('page', String(params.page));
+  if (params.limit) search.set('limit', String(params.limit));
+  const query = search.toString();
+  return adminRequest(`/analytics/alerts${query ? `?${query}` : ''}`, { method: 'GET' }, token);
+};
+
+/** POST /admin/analytics/alerts/:id/acknowledge */
+export const acknowledgeAnalyticsAlert = async (id, token = getStoredToken()) => {
+  return adminRequest(`/analytics/alerts/${encodeURIComponent(id)}/acknowledge`, { method: 'POST' }, token);
+};
+
+/** POST /admin/analytics/alerts/:id/resolve */
+export const resolveAnalyticsAlert = async (id, token = getStoredToken()) => {
+  return adminRequest(`/analytics/alerts/${encodeURIComponent(id)}/resolve`, { method: 'POST' }, token);
+};
+
+/** GET /admin/analytics/followup-effectiveness */
+export const getFollowupEffectiveness = async (params = {}, token = getStoredToken()) => {
+  return adminRequest(`/analytics/followup-effectiveness${buildAnalyticsQuery(params)}`, { method: 'GET' }, token);
+};
+
+/** GET /admin/analytics/counsellor-performance */
+export const getCounsellorPerformance = async (params = {}, token = getStoredToken()) => {
+  return adminRequest(`/analytics/counsellor-performance${buildAnalyticsQuery(params)}`, { method: 'GET' }, token);
+};
+
+/** GET /admin/analytics/reports/latest */
+export const getLatestExecutiveReport = async (token = getStoredToken()) => {
+  return adminRequest('/analytics/reports/latest', { method: 'GET' }, token);
+};
+
+/** GET /admin/analytics/reports/history */
+export const getExecutiveReportHistory = async (params = {}, token = getStoredToken()) => {
+  const search = new URLSearchParams();
+  if (params.page) search.set('page', String(params.page));
+  if (params.limit) search.set('limit', String(params.limit));
+  const query = search.toString();
+  return adminRequest(`/analytics/reports/history${query ? `?${query}` : ''}`, { method: 'GET' }, token);
+};
+
+/** GET /admin/analytics/reports/:date */
+export const getExecutiveReportByDate = async (date, token = getStoredToken()) => {
+  return adminRequest(`/analytics/reports/${encodeURIComponent(date)}`, { method: 'GET' }, token);
+};
+
+/** POST /admin/analytics/reports/generate */
+export const generateExecutiveReport = async (params = {}, token = getStoredToken()) => {
+  return adminRequest(
+    '/analytics/reports/generate',
+    {
+      method: 'POST',
+      body: JSON.stringify({
+        reportDate: params.reportDate,
+        force: params.force === true,
+      }),
     },
     token
   );

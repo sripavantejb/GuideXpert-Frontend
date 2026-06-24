@@ -13,6 +13,9 @@ const SIDEBAR_COLLAPSED_KEY = 'admin-sidebar-collapsed';
 
 const navItems = [
   { to: '/admin/dashboard', label: 'Dashboard', icon: FiLayout, sectionKey: 'dashboard' },
+  { to: '/admin/executive-dashboard', label: 'Executive Dashboard', icon: FiBarChart2, sectionKey: 'funnel-analytics' },
+  { to: '/admin/analytics/alerts', label: 'Smart Alerts', icon: FiBell, sectionKey: 'funnel-analytics' },
+  { to: '/admin/analytics/reports', label: 'Executive Reports', icon: FiFileText, sectionKey: 'funnel-analytics' },
   { to: '/admin/funnel-analytics', label: 'Funnel Analytics', icon: FiBarChart2, sectionKey: 'funnel-analytics' },
   { to: '/admin/certified-counsellors', label: 'Certified Counsellors', icon: FiUsers, sectionKey: 'certified-counsellors' },
   { to: '/admin/leads', label: 'Lead Funnel', icon: FiUsers, sectionKey: 'leads' },
@@ -30,6 +33,7 @@ const navItems = [
   { to: '/admin/slots', label: 'Slots', icon: FiCalendar, sectionKey: 'slots' },
   { to: '/admin/demo-meet-schedule', label: 'Demo meet schedule', icon: FiClock, sectionKey: 'slots' },
   { to: '/admin/training-form-responses', label: 'Training Form', icon: FiClipboard, sectionKey: 'training-form-responses' },
+  { to: '/admin/college-dost', label: 'CollegeDost', icon: FiClipboard, sectionKey: 'college-dost' },
   { to: '/admin/one-on-one-counseling', label: '1-on-1 Counseling', icon: FiUsers, sectionKey: 'one-on-one-counseling' },
   { to: '/admin/guidance-slot-bookings', label: 'Guidance Slot Bookings', icon: FiCalendar, sectionKey: 'guidance-slot-bookings' },
   { to: '/admin/one-on-one-counselors', label: 'One-on-One Counselors', icon: FiUserPlus, sectionKey: 'one-on-one-counselors-admin' },

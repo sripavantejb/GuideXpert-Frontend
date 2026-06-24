@@ -16,6 +16,7 @@ import MeetingRegistration from './pages/MeetingRegistration';
 import IitCounsellingMeet from './pages/IitCounsellingMeet';
 import IitCounsellingMeetHindi from './pages/IitCounsellingMeetHindi';
 import IitFirstForm from './pages/IitFirstForm';
+import CollegeDostForm from './pages/CollegeDostForm';
 import IitSecondForm from './pages/IitSecondForm';
 import TrainingMeeting from './pages/TrainingMeeting';
 import FeedbackForm from './pages/FeedbackForm';
@@ -29,6 +30,9 @@ import AssessmentFormCounsellorTest from './pages/AssessmentFormCounsellorTest';
 import AssessmentLayout from './components/Layout/AssessmentLayout';
 import AdminLayout from './components/Admin/AdminLayout';
 import Overview from './pages/admin/Overview';
+import ExecutiveDashboard from './pages/admin/ExecutiveDashboard';
+import AlertsDashboard from './pages/admin/AlertsDashboard';
+import ReportsDashboard from './pages/admin/ReportsDashboard';
 import FunnelAnalytics from './pages/admin/FunnelAnalytics';
 import Leads from './pages/admin/Leads';
 import IitCounselling from './pages/admin/IitCounselling';
@@ -47,6 +51,7 @@ import AssessmentResults from './pages/admin/AssessmentResults';
 import TrainingFeedback from './pages/admin/TrainingFeedback';
 import CounsellorSupportRequests from './pages/admin/CounsellorSupportRequests';
 import TrainingFormResponses from './pages/admin/TrainingFormResponses';
+import CollegeDostFormSubmissions from './pages/admin/CollegeDostFormSubmissions';
 import OneOnOneCounselingLeads from './pages/admin/OneOnOneCounselingLeads';
 import LeadIntelligenceDashboard from './pages/admin/lead-intelligence/LeadIntelligenceDashboard';
 const HumanCopilotPage = lazy(() => import('./pages/admin/human-copilot/HumanCopilotPage'));
@@ -264,6 +269,7 @@ function App() {
           <Route path="/iitcounsellingmeethindi" element={<IitCounsellingMeetHindi />} />
           <Route path="/iitfirstform" element={<IitFirstForm />} />
           <Route path="/Iitfirstform" element={<IitFirstForm />} />
+          <Route path="/collegedost" element={<CollegeDostForm />} />
           <Route path="/iitsecondform" element={<IitSecondForm />} />
           <Route path="/Iitsecondform" element={<IitSecondForm />} />
           <Route path="/training" element={<TrainingMeeting />} />
@@ -426,6 +432,9 @@ function App() {
           >
             <Route index element={<Navigate to="/admin/dashboard" replace />} />
             <Route path="dashboard" element={<Overview />} />
+            <Route path="executive-dashboard" element={<ExecutiveDashboard />} />
+            <Route path="analytics/alerts" element={<AlertsDashboard />} />
+            <Route path="analytics/reports" element={<ReportsDashboard />} />
             <Route path="funnel-analytics" element={<FunnelAnalytics />} />
             <Route path="certified-counsellors" element={<CertifiedCounsellors />} />
             <Route path="leads" element={<Leads />} />
@@ -448,6 +457,7 @@ function App() {
             <Route path="training-feedback" element={<TrainingFeedback />} />
             <Route path="counsellor-support-requests" element={<CounsellorSupportRequests />} />
             <Route path="training-form-responses" element={<TrainingFormResponses />} />
+            <Route path="college-dost" element={<CollegeDostFormSubmissions />} />
             <Route path="one-on-one-counseling" element={<OneOnOneCounselingLeads />} />
             <Route path="lead-intelligence" element={<LeadIntelligenceDashboard />} />
             <Route path="human-copilot" element={<Suspense fallback={<div className="p-6 text-sm text-slate-500">Loading Human Copilot…</div>}><HumanCopilotPage /></Suspense>} />

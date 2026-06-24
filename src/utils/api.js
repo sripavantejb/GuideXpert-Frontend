@@ -539,6 +539,19 @@ export const submitIitSecondForm = async (name, mobileNumber, careerGuidanceSupp
 };
 
 /**
+ * CollegeDost form: after OTP, submit name, mobile, and yes/no interest in new colleges.
+ * @param {string} name
+ * @param {string} mobileNumber - 10 digits
+ * @param {'yes'|'no'} interestedInNewColleges
+ */
+export const submitCollegeDostForm = async (name, mobileNumber, interestedInNewColleges) => {
+  return apiRequest('/college-dost-form/submit', {
+    method: 'POST',
+    body: JSON.stringify({ name, mobileNumber, interestedInNewColleges }),
+  });
+};
+
+/**
  * Register for training meeting (saves name and mobile to training attendance, then redirect to training Meet link)
  * @param {string} name - User's full name
  * @param {string} mobileNumber - 10-digit mobile number
