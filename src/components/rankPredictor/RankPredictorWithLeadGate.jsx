@@ -18,6 +18,20 @@ import {
 } from '../../utils/rankPredictorLeadConstants';
 import { saveOrganicRankLeadSnapshot } from '../../utils/organicRankLeadLocal';
 import ResultCard from './ResultCard';
+import {
+  swBtnGhost,
+  swBtnPrimary,
+  swBtnSecondary,
+  swCard,
+  swErrorBox,
+  swInput,
+  swLabel,
+  swOtpInput,
+  swPreviewLabel,
+  swSelect,
+  swSuccess,
+  swWarningBox,
+} from '../../pages/studentsTools/components/studentWorkspaceUi';
 
 export default function RankPredictorWithLeadGate({
   exam,
@@ -354,7 +368,7 @@ export default function RankPredictorWithLeadGate({
           </p>
         </div>
       )}
-      <label className={isStudent ? 'text-sm font-semibold text-[#0F172A]' : 'block'}>
+      <label className={isStudent ? swLabel : 'block'}>
         <span className={isStudent ? '' : 'mb-1 block text-sm font-medium text-gray-700'}>
           {exam.scoreLabel || 'Score'}
           <span className={isStudent ? 'ml-1 text-xs font-normal text-slate-400' : ' text-gray-500'}>
@@ -374,7 +388,7 @@ export default function RankPredictorWithLeadGate({
           placeholder={getRankPredictorInputPlaceholder(exam)}
           className={
             isStudent
-              ? 'mt-1 w-full rounded-[10px] border-[3px] border-black bg-white px-3 py-2 shadow-[2px_2px_0_#000]'
+              ? swInput
               : 'mt-1 w-full rounded-lg border border-gray-300 px-3 py-2 text-sm focus:border-primary-navy focus:outline-none'
           }
         />
@@ -385,14 +399,14 @@ export default function RankPredictorWithLeadGate({
       </label>
 
       {exam.requiresDifficulty && (
-        <label className={isStudent ? 'text-sm font-semibold text-[#0F172A]' : 'block'}>
+        <label className={isStudent ? swLabel : 'block'}>
           <span className={isStudent ? '' : 'mb-1 block text-sm font-medium text-gray-700'}>Difficulty Level</span>
           <select
             value={difficulty}
             onChange={(e) => setDifficulty(e.target.value)}
             className={
               isStudent
-                ? 'mt-1 w-full rounded-[10px] border-[3px] border-black bg-white px-3 py-2 shadow-[2px_2px_0_#000]'
+                ? swSelect
                 : 'mt-1 w-full rounded-lg border border-gray-300 px-3 py-2 text-sm focus:border-primary-navy focus:outline-none'
             }
           >
@@ -407,13 +421,7 @@ export default function RankPredictorWithLeadGate({
 
       <div className={isStudent ? 'sm:col-span-2' : 'mt-5'}>
         {marksError && (
-          <p
-            className={
-              isStudent
-                ? 'mb-3 rounded-[10px] border-2 border-red-300 bg-red-50 px-3 py-2 text-sm font-semibold text-red-700'
-                : 'mb-3 rounded-lg bg-red-50 p-3 text-sm text-red-700'
-            }
-          >
+          <p className={isStudent ? `mb-3 ${swErrorBox}` : 'mb-3 rounded-lg bg-red-50 p-3 text-sm text-red-700'}>
             {marksError}
           </p>
         )}
@@ -422,7 +430,7 @@ export default function RankPredictorWithLeadGate({
           disabled={isCounsellor && predicting}
           className={
             isStudent
-              ? 'rounded-[12px] border-[3px] border-black bg-[#c7f36b] px-6 py-3 text-sm font-black text-[#0F172A] shadow-[4px_4px_0_#000] transition-all hover:-translate-y-0.5 hover:shadow-[6px_6px_0_#000]'
+              ? swBtnPrimary
               : 'w-full min-h-11 rounded-lg bg-primary-navy px-5 py-2.5 text-sm font-semibold text-white transition-colors hover:bg-primary-navy/90 disabled:opacity-60 sm:w-auto'
           }
         >
@@ -445,11 +453,7 @@ export default function RankPredictorWithLeadGate({
             setOtpSent(false);
             setOtp(['', '', '', '', '', '']);
           }}
-          className={
-            isStudent
-              ? 'text-sm font-bold text-slate-600 underline decoration-2 underline-offset-2 hover:text-[#0F172A]'
-              : 'text-sm font-medium text-primary-navy hover:underline'
-          }
+          className={isStudent ? swBtnGhost : 'text-sm font-medium text-primary-navy hover:underline'}
         >
           ← Back to score
         </button>
@@ -457,7 +461,7 @@ export default function RankPredictorWithLeadGate({
       <p className={isStudent ? 'text-sm font-medium text-slate-600' : 'text-sm text-gray-600'}>
         Enter your details to receive an OTP. After verification, your rank prediction will load automatically.
       </p>
-      <label className={isStudent ? 'block text-sm font-semibold text-[#0F172A]' : 'block'}>
+      <label className={isStudent ? `block ${swLabel}` : 'block'}>
         <span className={isStudent ? '' : 'text-sm font-medium text-gray-700'}>Full name</span>
         <input
           type="text"
@@ -469,12 +473,12 @@ export default function RankPredictorWithLeadGate({
           autoComplete="name"
           className={
             isStudent
-              ? 'mt-1 w-full rounded-[10px] border-[3px] border-black bg-white px-3 py-2 shadow-[2px_2px_0_#000]'
+              ? swInput
               : 'mt-1 w-full rounded-lg border border-gray-300 px-3 py-2 text-sm focus:border-primary-navy focus:outline-none'
           }
         />
       </label>
-      <label className={isStudent ? 'block text-sm font-semibold text-[#0F172A]' : 'block'}>
+      <label className={isStudent ? `block ${swLabel}` : 'block'}>
         <span className={isStudent ? '' : 'text-sm font-medium text-gray-700'}>Mobile number</span>
         <input
           type="tel"
@@ -488,25 +492,19 @@ export default function RankPredictorWithLeadGate({
           placeholder="10-digit mobile"
           className={
             isStudent
-              ? 'mt-1 w-full rounded-[10px] border-[3px] border-black bg-white px-3 py-2 shadow-[2px_2px_0_#000]'
+              ? swInput
               : 'mt-1 w-full rounded-lg border border-gray-300 px-3 py-2 text-sm focus:border-primary-navy focus:outline-none'
           }
         />
       </label>
 
       {leadError && (
-        <p
-          className={
-            isStudent
-              ? 'rounded-[10px] border-2 border-red-300 bg-red-50 px-3 py-2 text-sm font-semibold text-red-700'
-              : 'rounded-lg bg-red-50 p-3 text-sm text-red-700'
-          }
-        >
+        <p className={isStudent ? swErrorBox : 'rounded-lg bg-red-50 p-3 text-sm text-red-700'}>
           {leadError}
         </p>
       )}
       {successMessage && (
-        <p className={isStudent ? 'text-sm font-semibold text-emerald-800' : 'text-sm text-emerald-700'}>{successMessage}</p>
+        <p className={isStudent ? swSuccess : 'text-sm text-emerald-700'}>{successMessage}</p>
       )}
 
       {!otpSent ? (
@@ -516,7 +514,7 @@ export default function RankPredictorWithLeadGate({
           disabled={loadingOtp}
           className={
             isStudent
-              ? 'rounded-[12px] border-[3px] border-black bg-[#c7f36b] px-6 py-3 text-sm font-black text-[#0F172A] shadow-[4px_4px_0_#000] disabled:opacity-60'
+              ? swBtnPrimary
               : 'rounded-lg bg-primary-navy px-5 py-2.5 text-sm font-semibold text-white disabled:opacity-50'
           }
         >
@@ -525,7 +523,7 @@ export default function RankPredictorWithLeadGate({
       ) : (
         <form onSubmit={handleVerifyAndPredict} className="space-y-4">
           <div>
-            <p className={isStudent ? 'mb-2 text-xs font-bold uppercase tracking-wider text-slate-500' : 'mb-2 text-sm font-medium text-gray-700'}>
+            <p className={isStudent ? `mb-2 ${swPreviewLabel}` : 'mb-2 text-sm font-medium text-gray-700'}>
               Enter 6-digit OTP
             </p>
             <div className="flex gap-2">
@@ -544,7 +542,7 @@ export default function RankPredictorWithLeadGate({
                   onPaste={i === 0 ? handleOtpPaste : undefined}
                   className={
                     isStudent
-                      ? 'h-11 w-10 rounded-[10px] border-[3px] border-black bg-white text-center text-lg font-black shadow-[2px_2px_0_#000]'
+                      ? swOtpInput
                       : 'h-11 w-10 rounded-lg border border-gray-300 text-center text-lg font-semibold'
                   }
                   aria-label={`Digit ${i + 1}`}
@@ -561,7 +559,7 @@ export default function RankPredictorWithLeadGate({
               disabled={verifying || predicting}
               className={
                 isStudent
-                  ? 'rounded-[12px] border-[3px] border-black bg-[#c7f36b] px-6 py-3 text-sm font-black text-[#0F172A] shadow-[4px_4px_0_#000] disabled:opacity-60'
+                  ? swBtnPrimary
                   : 'rounded-lg bg-primary-navy px-5 py-2.5 text-sm font-semibold text-white disabled:opacity-50'
               }
             >
@@ -586,11 +584,7 @@ export default function RankPredictorWithLeadGate({
       <button
         type="button"
         onClick={resetFlow}
-        className={
-          isStudent
-            ? 'rounded-[12px] border-[3px] border-black bg-white px-6 py-3 text-sm font-black text-[#0F172A] shadow-[4px_4px_0_#000]'
-            : 'rounded-lg border border-gray-300 bg-white px-5 py-2.5 text-sm font-semibold text-gray-800 hover:bg-gray-50'
-        }
+        className={isStudent ? swBtnSecondary : 'rounded-lg border border-gray-300 bg-white px-5 py-2.5 text-sm font-semibold text-gray-800 hover:bg-gray-50'}
       >
         Predict another score
       </button>
@@ -603,12 +597,12 @@ export default function RankPredictorWithLeadGate({
       {wizardStep === 'marks' && marksForm}
       {wizardStep === 'lead' && leadForm}
       {wizardStep === 'result' && (
-        <div className={isStudent ? 'rounded-[14px] border-[3px] border-black bg-[#F8FAFC] p-6 shadow-[4px_4px_0_#000]' : ''}>
-          <p className={isStudent ? 'text-base font-black text-[#0F172A]' : 'text-lg font-semibold text-gray-900'}>
+        <div className={isStudent ? `${swCard} bg-slate-50` : ''}>
+          <p className={isStudent ? 'text-base font-medium text-slate-900' : 'text-lg font-semibold text-gray-900'}>
             {isStudent ? 'Your prediction is ready — check the results panel.' : 'Your prediction is ready.'}
           </p>
           {isStudent && predictionSyncError ? (
-            <p className="mt-3 rounded-[10px] border-2 border-amber-300 bg-amber-50 px-3 py-2 text-sm font-semibold text-amber-900">
+            <p className={`mt-3 ${swWarningBox}`}>
               Admin could not save this prediction ({predictionSyncError}). If this persists, contact support with your phone number.
             </p>
           ) : null}

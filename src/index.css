@@ -880,3 +880,28 @@
     animation: none;
   }
 }
+
+/* BDA portal — react-toastify assignment alerts */
+.bda-toast-container {
+  z-index: 9999 !important;
+}
+
+.bda-toast-container .Toastify__toast {
+  border-radius: 0.75rem;
+  border: 1px solid var(--color-gray-200, #e5e7eb);
+  box-shadow: 0 10px 25px rgba(0, 0, 0, 0.08);
+  font-family: inherit;
+  cursor: pointer;
+}
+
+.bda-toast-container .Toastify__toast--success {
+  border-left: 4px solid var(--color-success, #15803d);
+}
+
+.bda-toast-container .Toastify__toast--info {
+  border-left: 4px solid var(--color-primary-blue, #003366);
+}
+
+.bda-toast-container .Toastify__toast--warning {
+  border-left: 4px solid var(--color-warning, #d97706);
+}

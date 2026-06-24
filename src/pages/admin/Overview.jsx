@@ -672,21 +672,21 @@ export default function Overview() {
   const showLeadConversionFunnel = false;
 
   return (
-    <div className="w-full min-h-0 flex flex-col gap-5">
-      <div className="flex flex-wrap items-center justify-between gap-3">
-        <p className="text-sm text-gray-600">
-          This dashboard gives you analytics insights of the leads created and conversion funnel.
+    <div className="w-full min-h-0 flex flex-col gap-1">
+      <div className="flex flex-wrap items-center justify-between gap-x-2 gap-y-1">
+        <p className="text-xs text-gray-500 leading-snug">
+          Analytics insights for leads created and the conversion funnel.
         </p>
-        <div className="flex items-center gap-3">
+        <div className="flex items-center gap-2">
           {lastFetchedAt != null && (
-            <span className="text-xs text-gray-500" aria-live="polite">
+            <span className="text-[11px] text-gray-500" aria-live="polite">
               Last updated: {formatLastUpdated(lastFetchedAt)}
             </span>
           )}
           <button
             type="button"
             onClick={() => setRefreshTrigger((t) => t + 1)}
-            className="inline-flex items-center gap-2 h-9 px-3 rounded-lg border border-gray-300 bg-white text-sm font-medium text-gray-700 hover:bg-gray-50 transition-colors focus:outline-none focus:ring-2 focus:ring-primary-navy focus:ring-offset-2"
+            className="inline-flex items-center gap-1.5 h-8 px-2.5 rounded-lg border border-gray-300 bg-white text-xs font-medium text-gray-700 hover:bg-gray-50 transition-colors focus:outline-none focus:ring-2 focus:ring-primary-navy focus:ring-offset-2"
             aria-label="Refresh dashboard data"
           >
             Refresh
@@ -695,16 +695,17 @@ export default function Overview() {
       </div>
 
       {/* Page visits on live — stock-market themed chart */}
-      <section aria-labelledby="section-page-visits-live" className="mb-2">
-        <h2 id="section-page-visits-live" className="text-sm font-bold text-gray-700 uppercase tracking-wider mb-1 flex items-center gap-2">
+      <section aria-labelledby="section-page-visits-live">
+        <h2 id="section-page-visits-live" className="text-xs font-bold text-gray-700 uppercase tracking-wider flex items-center gap-2">
           Page visits on live
-          <span className="inline-flex items-center gap-1.5 rounded-full bg-emerald-50 px-2 py-0.5 text-xs font-medium text-emerald-700" aria-label="Live updating">
+          <span className="inline-flex items-center gap-1 rounded-full bg-emerald-50 px-1.5 py-0.5 text-[10px] font-medium text-emerald-700" aria-label="Live updating">
             <span className="h-1.5 w-1.5 rounded-full bg-emerald-500 animate-pulse" />
             Live
           </span>
         </h2>
-        <p className="text-sm text-gray-500 mb-5">Traffic over time. Refreshes every 5 minutes while you&apos;re on this page.</p>
+        <p className="text-[11px] text-gray-500 mb-1 leading-snug">Traffic over time. Refreshes every 5 minutes while you&apos;re on this page.</p>
         <ChartContainer
+          compact
           title=""
           empty={pageVisitsChartData.length === 0}
           emptyMessage="No page visit data for the selected period"
@@ -758,8 +759,8 @@ export default function Overview() {
       {/* Key metrics */}
       <section aria-labelledby="section-key-metrics" className="mb-2">
         <h2 id="section-key-metrics" className="text-sm font-bold text-gray-700 uppercase tracking-wider mb-1">Key metrics</h2>
-        <p className="text-sm text-gray-500 mb-5">Lead funnel and application status at a glance.</p>
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 lg:gap-5">
+        <p className="text-sm text-gray-500 mb-3">Lead funnel and application status at a glance.</p>
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
           <KpiCard
             label="Total Leads"
             value={total}
@@ -870,8 +871,8 @@ export default function Overview() {
       {/* Organic rank predictor leads */}
       <section aria-labelledby="section-organic-rank-leads" className="mb-2">
         <h2 id="section-organic-rank-leads" className="text-sm font-bold text-gray-700 uppercase tracking-wider mb-1">Organic rank predictor leads</h2>
-        <p className="text-sm text-gray-500 mb-5">Separate counts for leads coming from the rank predictor lead-gate flow.</p>
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 lg:gap-5">
+        <p className="text-sm text-gray-500 mb-3">Separate counts for leads coming from the rank predictor lead-gate flow.</p>
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
           <KpiCard
             label="Organic Total"
             value={organicLeadStats.total}

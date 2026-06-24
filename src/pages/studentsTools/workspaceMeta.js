@@ -12,17 +12,17 @@ import {
 
 /** Hero icon tile + accent per route (ToolWorkspaceLayout) */
 export const HERO_META_BY_PATH = {
-  '/students/rank-predictor': { Icon: FiTrendingUp, accent: 'lime' },
-  '/students/college-predictor': { Icon: FiSearch, accent: 'pink' },
-  '/students/branch-predictor': { Icon: FiGitBranch, accent: 'blue' },
-  '/students/course-fit-test': { Icon: FiBookOpen, accent: 'yellow' },
-  '/students/college-fit-test': { Icon: FiMapPin, accent: 'pink' },
-  '/students/college-comparison': { Icon: FiColumns, accent: 'lime' },
-  '/students/exam-predictor': { Icon: FiZap, accent: 'yellow' },
-  '/students/deadline-manager': { Icon: FiClock, accent: 'blue' },
+  '/students/rank-predictor': { Icon: FiTrendingUp, accent: 'emerald' },
+  '/students/college-predictor': { Icon: FiSearch, accent: 'rose' },
+  '/students/branch-predictor': { Icon: FiGitBranch, accent: 'violet' },
+  '/students/course-fit-test': { Icon: FiBookOpen, accent: 'amber' },
+  '/students/college-fit-test': { Icon: FiMapPin, accent: 'sky' },
+  '/students/college-comparison': { Icon: FiColumns, accent: 'indigo' },
+  '/students/exam-predictor': { Icon: FiZap, accent: 'amber' },
+  '/students/deadline-manager': { Icon: FiClock, accent: 'sky' },
 };
 
-const DEFAULT_HERO = { Icon: FiLayers, accent: 'lime' };
+const DEFAULT_HERO = { Icon: FiLayers, accent: 'emerald' };
 
 export function getHeroMeta(pathname) {
   if (HERO_META_BY_PATH[pathname]) return HERO_META_BY_PATH[pathname];
@@ -30,10 +30,16 @@ export function getHeroMeta(pathname) {
   return DEFAULT_HERO;
 }
 
-/** Tailwind border/bg tokens for hero icon tile */
+/** Tailwind tokens for hero icon tile */
 export const HERO_ACCENT_STYLES = {
-  lime: 'border-[#c7f36b] bg-[#c7f36b]/15 text-[#c7f36b] shadow-[6px_6px_0_#c7f36b]',
-  pink: 'border-[#F7B5B5] bg-[#F7B5B5]/15 text-[#F7B5B5] shadow-[6px_6px_0_#F7B5B5]',
-  blue: 'border-[#B7E5FF] bg-[#B7E5FF]/15 text-[#B7E5FF] shadow-[6px_6px_0_#B7E5FF]',
-  yellow: 'border-[#c7f36b] bg-[#c7f36b]/15 text-[#c7f36b] shadow-[6px_6px_0_#c7f36b]',
+  emerald: 'bg-emerald-50 text-emerald-600',
+  rose: 'bg-rose-50 text-rose-600',
+  violet: 'bg-violet-50 text-violet-600',
+  amber: 'bg-amber-50 text-amber-600',
+  sky: 'bg-sky-50 text-sky-600',
+  indigo: 'bg-indigo-50 text-indigo-600',
+  lime: 'bg-emerald-50 text-emerald-600',
+  pink: 'bg-rose-50 text-rose-600',
+  blue: 'bg-sky-50 text-sky-600',
+  yellow: 'bg-amber-50 text-amber-600',
 };

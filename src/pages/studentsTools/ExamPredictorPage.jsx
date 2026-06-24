@@ -3,6 +3,22 @@ import { FiZap } from 'react-icons/fi';
 import ToolWorkspaceLayout from './components/ToolWorkspaceLayout';
 import { getRankPredictorExams, getExamConfig } from '../../utils/rankPredictor';
 import { predictRankPublic } from '../../utils/api';
+import {
+  swBtnChip,
+  swBtnPrimary,
+  swError,
+  swErrorBox,
+  swInsightsPanel,
+  swInput,
+  swLabel,
+  swPreviewLabel,
+  swResultCard,
+  swResultsPanel,
+  swSectionSubtitle,
+  swSectionTitle,
+  swSelect,
+  swWorkspaceTitle,
+} from './components/studentWorkspaceUi';
 
 const exams = getRankPredictorExams();
 
@@ -77,59 +93,41 @@ export default function ExamPredictorPage() {
         'Difficulty (MHT CET only): Select the paper difficulty for more accurate percentile prediction.',
       ]}
       preview={
-        <div className="space-y-2.5">
+        <div className="space-y-3 text-sm">
           <div className="flex items-center gap-2">
-            <span className="inline-flex rounded-md border-2 border-black bg-[#c7f36b] p-0.5 shadow-[2px_2px_0_#000]">
-              <FiZap className="h-3 w-3 text-[#0F172A]" aria-hidden />
+            <span className="flex h-6 w-6 items-center justify-center rounded-lg bg-amber-50 text-amber-600">
+              <FiZap className="h-3.5 w-3.5" aria-hidden />
             </span>
-            <p className="text-[9px] font-black uppercase tracking-widest text-slate-500">
-              {exams.length} exams supported
-            </p>
+            <p className={swPreviewLabel}>{exams.length} exams supported</p>
           </div>
-          <div>
-            <p className="text-[9px] font-black uppercase tracking-widest text-slate-500">Supported exams</p>
-            <div className="mt-1.5 flex flex-wrap gap-1">
-              {exams.slice(0, 5).map((e) => (
-                <span
-                  key={e.id}
-                  className="rounded-md border border-black/20 bg-slate-50 px-1.5 py-0.5 text-[9px] font-bold text-[#0F172A]"
-                >
-                  {e.name}
-                </span>
-              ))}
-              {exams.length > 5 && (
-                <span className="rounded-md border border-black/20 bg-slate-50 px-1.5 py-0.5 text-[9px] font-bold text-slate-500">
-                  +{exams.length - 5} more
-                </span>
-              )}
-            </div>
+          <div className="flex flex-wrap gap-1.5">
+            {exams.slice(0, 5).map((e) => (
+              <span key={e.id} className={swBtnChip}>
+                {e.name}
+              </span>
+            ))}
+            {exams.length > 5 && <span className={swBtnChip}>+{exams.length - 5} more</span>}
           </div>
         </div>
       }
       results={
         result ? (
-          <section
-            ref={resultsRef}
-            className="animate-[fadeIn_0.35s_ease] rounded-[14px] border-[3px] border-black bg-[#B7E5FF]/50 p-6 shadow-[6px_6px_0_#000]"
-            tabIndex={-1}
-          >
-            <h2 className="wrap-break-word text-2xl font-black text-[#0F172A] sm:text-3xl">Results Panel</h2>
-            {result.message && (
-              <p className="mt-1 text-sm font-medium text-slate-600">{result.message}</p>
-            )}
+          <section ref={resultsRef} tabIndex={-1} className={swResultsPanel}>
+            <h2 className={swSectionTitle}>Results</h2>
+            {result.message && <p className={swSectionSubtitle}>{result.message}</p>}
             <div className="mt-5 grid gap-4 sm:grid-cols-2">
-              <div className="rounded-[12px] border-[3px] border-black bg-white p-4 shadow-[4px_4px_0_#000]">
-                <p className="text-xs font-bold uppercase tracking-wider text-slate-500">
-                  {result.metricLabel || 'Predicted Value'}
+              <div className={swResultCard}>
+                <p className="text-xs font-medium uppercase tracking-wider text-slate-400">
+                  {result.metricLabel || 'Predicted value'}
                 </p>
-                <p className="mt-1 text-3xl font-black tabular-nums">
+                <p className="mt-1 text-3xl font-semibold tabular-nums text-slate-900">
                   {result.predictedValue != null ? result.predictedValue.toLocaleString() : '—'}
                 </p>
               </div>
               {result.range && (
-                <div className="rounded-[12px] border-[3px] border-black bg-white p-4 shadow-[4px_4px_0_#000]">
-                  <p className="text-xs font-bold uppercase tracking-wider text-slate-500">Range</p>
-                  <p className="mt-1 text-xl font-black tabular-nums">
+                <div className={swResultCard}>
+                  <p className="text-xs font-medium uppercase tracking-wider text-slate-400">Range</p>
+                  <p className="mt-1 text-xl font-semibold tabular-nums text-slate-900">
                     {result.range.low?.toLocaleString()} – {result.range.high?.toLocaleString()}
                   </p>
                 </div>
@@ -140,9 +138,9 @@ export default function ExamPredictorPage() {
       }
       insights={
         result ? (
-          <section className="rounded-[14px] border-[3px] border-black bg-white p-6 shadow-[6px_6px_0_#000]">
-            <h3 className="text-xl font-black text-[#0F172A]">Next Step Suggestions</h3>
-            <ul className="mt-3 list-disc space-y-2 pl-5 text-sm font-medium text-slate-600">
+          <section className={swInsightsPanel}>
+            <h3 className={swSectionTitle}>Next steps</h3>
+            <ul className="mt-3 list-disc space-y-2 pl-5 text-sm text-slate-600">
               <li>Compare this prediction with the College Predictor to shortlist matching institutions.</li>
               <li>Try different score inputs to see how small improvements affect your predicted rank.</li>
             </ul>
@@ -150,13 +148,11 @@ export default function ExamPredictorPage() {
         ) : null
       }
     >
-      <h2 className="text-xl font-black text-[#0F172A] sm:text-2xl">Input Workspace</h2>
-      <p className="mt-1 text-sm font-medium text-slate-600">
-        Select an exam and enter your score to get an instant prediction.
-      </p>
+      <h2 className={swWorkspaceTitle}>Enter your score</h2>
+      <p className={swSectionSubtitle}>Select an exam and enter your score to get an instant prediction.</p>
 
       <form className="mt-5 grid gap-4 sm:grid-cols-2" onSubmit={handleSubmit}>
-        <label className="text-sm font-semibold text-[#0F172A]">
+        <label className={swLabel}>
           Exam
           <select
             value={examId}
@@ -165,17 +161,19 @@ export default function ExamPredictorPage() {
               setResult(null);
               setApiError('');
             }}
-            className="mt-1 w-full rounded-[10px] border-[3px] border-black bg-white px-3 py-2 shadow-[2px_2px_0_#000]"
+            className={swSelect}
           >
-            <option value="">Select Exam</option>
+            <option value="">Select exam</option>
             {exams.map((e) => (
-              <option key={e.id} value={e.id}>{e.name}</option>
+              <option key={e.id} value={e.id}>
+                {e.name}
+              </option>
             ))}
           </select>
-          {errors.exam && <span className="mt-1 block text-xs text-red-600">{errors.exam}</span>}
+          {errors.exam && <span className={swError}>{errors.exam}</span>}
         </label>
 
-        <label className="text-sm font-semibold text-[#0F172A]">
+        <label className={swLabel}>
           {selectedExam?.scoreLabel || 'Score'}
           {selectedExam && (
             <span className="ml-1 text-xs font-normal text-slate-400">
@@ -189,39 +187,33 @@ export default function ExamPredictorPage() {
             min={selectedExam?.minScore}
             max={selectedExam?.maxScore}
             onChange={(e) => setScore(e.target.value)}
-            placeholder={selectedExam ? `e.g. ${Math.round((selectedExam.minScore + selectedExam.maxScore) / 2)}` : 'e.g. 180'}
-            className="mt-1 w-full rounded-[10px] border-[3px] border-black bg-white px-3 py-2 shadow-[2px_2px_0_#000]"
+            placeholder={
+              selectedExam
+                ? `e.g. ${Math.round((selectedExam.minScore + selectedExam.maxScore) / 2)}`
+                : 'e.g. 180'
+            }
+            className={swInput}
           />
-          {errors.score && <span className="mt-1 block text-xs text-red-600">{errors.score}</span>}
+          {errors.score && <span className={swError}>{errors.score}</span>}
         </label>
 
         {selectedExam?.requiresDifficulty && (
-          <label className="text-sm font-semibold text-[#0F172A]">
+          <label className={swLabel}>
             Difficulty
-            <select
-              value={difficulty}
-              onChange={(e) => setDifficulty(e.target.value)}
-              className="mt-1 w-full rounded-[10px] border-[3px] border-black bg-white px-3 py-2 shadow-[2px_2px_0_#000]"
-            >
+            <select value={difficulty} onChange={(e) => setDifficulty(e.target.value)} className={swSelect}>
               {selectedExam.difficultyOptions.map((opt) => (
-                <option key={opt} value={opt}>{opt}</option>
+                <option key={opt} value={opt}>
+                  {opt}
+                </option>
               ))}
             </select>
           </label>
         )}
 
         <div className="sm:col-span-2">
-          {apiError && (
-            <p className="mb-3 rounded-[10px] border-2 border-red-300 bg-red-50 px-3 py-2 text-sm font-semibold text-red-700">
-              {apiError}
-            </p>
-          )}
-          <button
-            type="submit"
-            disabled={loading}
-            className="rounded-[12px] border-[3px] border-black bg-[#c7f36b] px-6 py-3 text-sm font-black text-[#0F172A] shadow-[4px_4px_0_#000] transition-all hover:-translate-y-0.5 hover:shadow-[6px_6px_0_#000] disabled:opacity-60 disabled:cursor-not-allowed"
-          >
-            {loading ? 'Predicting…' : 'Predict Now'}
+          {apiError && <p className={`mb-3 ${swErrorBox}`}>{apiError}</p>}
+          <button type="submit" disabled={loading} className={swBtnPrimary}>
+            {loading ? 'Predicting…' : 'Predict now'}
           </button>
         </div>
       </form>

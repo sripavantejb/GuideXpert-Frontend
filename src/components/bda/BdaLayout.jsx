@@ -1,15 +1,22 @@
-import { useCallback, useEffect, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { FiBell, FiLogOut } from 'react-icons/fi';
+import { ToastContainer } from 'react-toastify';
+import 'react-toastify/dist/ReactToastify.css';
 import { useBdaAuth } from '../../contexts/BdaAuthContext';
 import { languageBadgeClass } from '../../constants/bdaLanguage';
 import {
   getBdaNotifications,
   markBdaNotificationsRead,
 } from '../../utils/bdaApi';
+import { showBdaNotificationToast } from '../../utils/bdaNotificationToast';
 import BdaNotificationDropdown from './BdaNotificationDropdown';
 
-const POLL_MS = 30000;
+const POLL_MS = 15000;
+
+/** Module-level so dev StrictMode remount does not re-toast existing items. */
+const seenNotificationIds = new Set();
+let hasSeededNotifications = false;
 
 export default function BdaLayout({ children, onLeadClick }) {
   const { user, logout } = useBdaAuth();
@@ -18,11 +25,36 @@ export default function BdaLayout({ children, onLeadClick }) {
   const [notifications, setNotifications] = useState([]);
   const [unreadCount, setUnreadCount] = useState(0);
   const [notificationsLoading, setNotificationsLoading] = useState(false);
+  const onLeadClickRef = useRef(onLeadClick);
 
-  const fetchNotifications = useCallback(async () => {
+  useEffect(() => {
+    onLeadClickRef.current = onLeadClick;
+  }, [onLeadClick]);
+
+  const fetchNotifications = useCallback(async ({ showToasts = true } = {}) => {
     const res = await getBdaNotifications({ page: 1, limit: 20 });
     if (res.success) {
-      setNotifications(res.data || []);
+      const items = res.data || [];
+
+      if (!hasSeededNotifications) {
+        items.forEach((item) => seenNotificationIds.add(item.id));
+        hasSeededNotifications = true;
+      } else if (showToasts) {
+        const sortedNew = [...items]
+          .filter((item) => !seenNotificationIds.has(item.id))
+          .sort((a, b) => new Date(a.createdAt) - new Date(b.createdAt));
+
+        sortedNew.forEach((item) => {
+          seenNotificationIds.add(item.id);
+          if (!item.isRead) {
+            showBdaNotificationToast(item, {
+              onLeadClick: (...args) => onLeadClickRef.current?.(...args),
+            });
+          }
+        });
+      }
+
+      setNotifications(items);
       setUnreadCount(res.unreadCount ?? 0);
     }
     return res;
@@ -59,7 +91,7 @@ export default function BdaLayout({ children, onLeadClick }) {
       && onLeadClick
       && item.type !== 'lead_reassigned_out'
     ) {
-      onLeadClick(item.leadId);
+      onLeadClick(item.leadId, item.leadType || 'iit_counselling');
     }
   };
 
@@ -70,6 +102,18 @@ export default function BdaLayout({ children, onLeadClick }) {
 
   return (
     <div className="min-h-screen bg-gray-50">
+      <ToastContainer
+        position="top-right"
+        autoClose={8000}
+        hideProgressBar={false}
+        newestOnTop
+        closeOnClick
+        pauseOnHover
+        draggable
+        theme="light"
+        limit={4}
+        className="bda-toast-container"
+      />
       <header className="bg-white border-b border-gray-200 sticky top-0 z-20">
         <div className="max-w-7xl mx-auto px-4 py-3 flex items-center justify-between gap-4">
           <div>

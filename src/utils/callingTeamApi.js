@@ -69,10 +69,16 @@ export async function patchCallingTeamLeadCrm(id, body) {
   });
 }
 
-export async function bulkAssignLeadsToBda({ leadIds, bdaId, reason, respectExistingBda }) {
-  return callingTeamRequest('/iit-counselling-leads/bulk-assign', {
+export async function bulkAssignLeadsToBda({ leadIds, bdaId, reason, respectExistingBda, leadType = 'iit_counselling' }) {
+  if (leadType === 'iit_counselling') {
+    return callingTeamRequest('/iit-counselling-leads/bulk-assign', {
+      method: 'PATCH',
+      body: JSON.stringify({ leadIds, bdaId, reason, respectExistingBda: !!respectExistingBda }),
+    });
+  }
+  return callingTeamRequest('/bda-assignable-leads/bulk-assign', {
     method: 'PATCH',
-    body: JSON.stringify({ leadIds, bdaId, reason, respectExistingBda: !!respectExistingBda }),
+    body: JSON.stringify({ leadType, leadIds, bdaId, reason }),
   });
 }
 
@@ -101,17 +107,29 @@ export async function assignLeadToBda(id, { bdaId, reason }) {
   });
 }
 
-export async function reassignLeadToBda(id, { bdaId, reason }) {
-  return callingTeamRequest(`/iit-counselling-leads/${id}/reassign-bda`, {
+export async function reassignLeadToBda(id, { bdaId, reason, leadType = 'iit_counselling' }) {
+  if (leadType === 'iit_counselling') {
+    return callingTeamRequest(`/iit-counselling-leads/${id}/reassign-bda`, {
+      method: 'PATCH',
+      body: JSON.stringify({ bdaId, reason }),
+    });
+  }
+  return callingTeamRequest(`/bda-assignable-leads/${leadType}/${id}/reassign-bda`, {
     method: 'PATCH',
     body: JSON.stringify({ bdaId, reason }),
   });
 }
 
-export async function bulkReassignLeadsToBda({ leadIds, bdaId, reason }) {
-  return callingTeamRequest('/iit-counselling-leads/bulk-reassign', {
+export async function bulkReassignLeadsToBda({ leadIds, bdaId, reason, leadType = 'iit_counselling' }) {
+  if (leadType === 'iit_counselling') {
+    return callingTeamRequest('/iit-counselling-leads/bulk-reassign', {
+      method: 'PATCH',
+      body: JSON.stringify({ leadIds, bdaId, reason }),
+    });
+  }
+  return callingTeamRequest('/bda-assignable-leads/bulk-reassign', {
     method: 'PATCH',
-    body: JSON.stringify({ leadIds, bdaId, reason }),
+    body: JSON.stringify({ leadType, leadIds, bdaId, reason }),
   });
 }
 
@@ -182,6 +200,14 @@ export async function getCallingTeamDashboard(params = {}) {
 
 export async function getBdaAssignedLeads(id, params = {}) {
   return callingTeamRequest(`/bdas/${id}/assigned-leads${toQuery(params)}`);
+}
+
+export async function getBdaLeadTypes() {
+  return callingTeamRequest('/bda-lead-types');
+}
+
+export async function getBdaAssignableLeads(params = {}) {
+  return callingTeamRequest(`/bda-assignable-leads${toQuery(params)}`);
 }
 
 /** BDA profiles with assigned lead CRM rows (Calling Data section). */

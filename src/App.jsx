@@ -304,8 +304,8 @@ function App() {
             element={
               <Suspense
                 fallback={
-                  <div className="min-h-screen flex items-center justify-center bg-[#0F172A] text-white">
-                    <div className="animate-pulse text-sm font-medium">Loading intelligence suite…</div>
+                  <div className="flex min-h-screen items-center justify-center bg-slate-50 text-slate-500">
+                    <div className="animate-pulse text-sm font-medium">Loading…</div>
                   </div>
                 }
               >
@@ -316,7 +316,7 @@ function App() {
           <Route
             path="/students/rank-predictor"
             element={
-              <Suspense fallback={<div className="min-h-screen flex items-center justify-center bg-[#0F172A] text-white"><div className="animate-pulse text-sm font-medium">Loading rank predictor…</div></div>}>
+              <Suspense fallback={<div className="flex min-h-screen items-center justify-center bg-slate-50 text-slate-500"><div className="animate-pulse text-sm font-medium">Loading…</div></div>}>
                 <RankPredictorToolPage />
               </Suspense>
             }
@@ -324,7 +324,7 @@ function App() {
           <Route
             path="/students/rank-predictor/:examId"
             element={
-              <Suspense fallback={<div className="min-h-screen flex items-center justify-center bg-[#0F172A] text-white"><div className="animate-pulse text-sm font-medium">Loading exam predictor…</div></div>}>
+              <Suspense fallback={<div className="flex min-h-screen items-center justify-center bg-slate-50 text-slate-500"><div className="animate-pulse text-sm font-medium">Loading…</div></div>}>
                 <StudentExamPredictorPage />
               </Suspense>
             }
@@ -332,7 +332,7 @@ function App() {
           <Route
             path="/students/predictors"
             element={
-              <Suspense fallback={<div className="min-h-screen flex items-center justify-center bg-[#0F172A] text-white"><div className="animate-pulse text-sm font-medium">Loading predictor hub…</div></div>}>
+              <Suspense fallback={<div className="flex min-h-screen items-center justify-center bg-slate-50 text-slate-500"><div className="animate-pulse text-sm font-medium">Loading…</div></div>}>
                 <PredictorsHubPage />
               </Suspense>
             }
@@ -340,7 +340,7 @@ function App() {
           <Route
             path="/students/tests"
             element={
-              <Suspense fallback={<div className="min-h-screen flex items-center justify-center bg-[#0F172A] text-white"><div className="animate-pulse text-sm font-medium">Loading tests hub…</div></div>}>
+              <Suspense fallback={<div className="flex min-h-screen items-center justify-center bg-slate-50 text-slate-500"><div className="animate-pulse text-sm font-medium">Loading…</div></div>}>
                 <TestsHubPage />
               </Suspense>
             }
@@ -348,7 +348,7 @@ function App() {
           <Route
             path="/students/college-predictor"
             element={
-              <Suspense fallback={<div className="min-h-screen flex items-center justify-center bg-[#0F172A] text-white"><div className="animate-pulse text-sm font-medium">Loading college predictor…</div></div>}>
+              <Suspense fallback={<div className="flex min-h-screen items-center justify-center bg-slate-50 text-slate-500"><div className="animate-pulse text-sm font-medium">Loading…</div></div>}>
                 <CollegePredictorToolPage />
               </Suspense>
             }
@@ -356,7 +356,7 @@ function App() {
           <Route
             path="/students/branch-predictor"
             element={
-              <Suspense fallback={<div className="min-h-screen flex items-center justify-center bg-[#0F172A] text-white"><div className="animate-pulse text-sm font-medium">Loading branch predictor…</div></div>}>
+              <Suspense fallback={<div className="flex min-h-screen items-center justify-center bg-slate-50 text-slate-500"><div className="animate-pulse text-sm font-medium">Loading…</div></div>}>
                 <BranchPredictorToolPage />
               </Suspense>
             }
@@ -364,7 +364,7 @@ function App() {
           <Route
             path="/students/course-fit-test"
             element={
-              <Suspense fallback={<div className="min-h-screen flex items-center justify-center bg-[#0F172A] text-white"><div className="animate-pulse text-sm font-medium">Loading course fit test…</div></div>}>
+              <Suspense fallback={<div className="flex min-h-screen items-center justify-center bg-slate-50 text-slate-500"><div className="animate-pulse text-sm font-medium">Loading…</div></div>}>
                 <CourseFitTestToolPage />
               </Suspense>
             }
@@ -372,7 +372,7 @@ function App() {
           <Route
             path="/students/college-fit-test"
             element={
-              <Suspense fallback={<div className="min-h-screen flex items-center justify-center bg-[#0F172A] text-white"><div className="animate-pulse text-sm font-medium">Loading college fit test…</div></div>}>
+              <Suspense fallback={<div className="flex min-h-screen items-center justify-center bg-slate-50 text-slate-500"><div className="animate-pulse text-sm font-medium">Loading…</div></div>}>
                 <CollegeFitTestToolPage />
               </Suspense>
             }
@@ -380,7 +380,7 @@ function App() {
           <Route
             path="/students/college-comparison"
             element={
-              <Suspense fallback={<div className="min-h-screen flex items-center justify-center bg-[#0F172A] text-white"><div className="animate-pulse text-sm font-medium">Loading comparison workspace…</div></div>}>
+              <Suspense fallback={<div className="flex min-h-screen items-center justify-center bg-slate-50 text-slate-500"><div className="animate-pulse text-sm font-medium">Loading…</div></div>}>
                 <CollegeComparisonToolPage />
               </Suspense>
             }
@@ -388,7 +388,7 @@ function App() {
           <Route
             path="/students/exam-predictor"
             element={
-              <Suspense fallback={<div className="min-h-screen flex items-center justify-center bg-[#0F172A] text-white"><div className="animate-pulse text-sm font-medium">Loading exam predictor…</div></div>}>
+              <Suspense fallback={<div className="flex min-h-screen items-center justify-center bg-slate-50 text-slate-500"><div className="animate-pulse text-sm font-medium">Loading…</div></div>}>
                 <ExamPredictorToolPage />
               </Suspense>
             }
@@ -396,7 +396,7 @@ function App() {
           <Route
             path="/students/deadline-manager"
             element={
-              <Suspense fallback={<div className="min-h-screen flex items-center justify-center bg-[#0F172A] text-white"><div className="animate-pulse text-sm font-medium">Loading deadline manager…</div></div>}>
+              <Suspense fallback={<div className="flex min-h-screen items-center justify-center bg-slate-50 text-slate-500"><div className="animate-pulse text-sm font-medium">Loading…</div></div>}>
                 <DeadlineManagerToolPage />
               </Suspense>
             }

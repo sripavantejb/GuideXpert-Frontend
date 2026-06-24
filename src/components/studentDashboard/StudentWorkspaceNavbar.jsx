@@ -34,18 +34,11 @@ function isCompareSectionActive(pathname) {
   return pathname === '/students/college-comparison' || pathname.startsWith('/students/college-comparison/');
 }
 
-/** Position only — border/radius live on non-scrolling frame so the box is never clipped at the bottom. */
-const dropdownAnchorClass =
-  'absolute left-0 top-full z-[120] min-w-[min(100vw-2rem,280px)] pt-1';
-
-const dropdownFrameClass =
-  'overflow-hidden rounded-[10px] border-[3px] border-black bg-white shadow-[4px_4px_0_#000]';
-
-const dropdownScrollClass =
-  'max-h-[min(70vh,calc(100dvh-6rem))] overflow-y-auto py-1';
-
+const dropdownAnchorClass = 'absolute left-0 top-full z-[120] min-w-[min(100vw-2rem,260px)] pt-2';
+const dropdownFrameClass = 'overflow-hidden rounded-xl border border-slate-200 bg-white py-1 shadow-lg shadow-slate-200/50';
+const dropdownScrollClass = 'max-h-[min(70vh,calc(100dvh-6rem))] overflow-y-auto';
 const dropdownLinkClass =
-  'block px-3 py-2.5 text-sm font-bold text-[#0F172A] outline-none transition-colors hover:bg-[#c7f36b]/50 focus-visible:bg-[#c7f36b]/50 focus-visible:ring-2 focus-visible:ring-[#0F172A]/20';
+  'block px-4 py-2.5 text-sm font-medium text-slate-700 outline-none transition-colors hover:bg-slate-50 hover:text-slate-900 focus-visible:bg-slate-50';
 
 export default function StudentWorkspaceNavbar() {
   const [mobileOpen, setMobileOpen] = useState(false);
@@ -105,50 +98,47 @@ export default function StudentWorkspaceNavbar() {
   const fitTestsActive = isFitTestsSectionActive(pathname);
   const compareActive = isCompareSectionActive(pathname);
 
-  const handleNavLinkClick = useCallback((e, menuId) => {
-    if (window.innerWidth >= 640) {
-      if (openMenuId !== menuId) {
-        e.preventDefault();
-        setOpenMenuId(menuId);
-      } else {
-        e.preventDefault();
-        setOpenMenuId(null);
+  const handleNavLinkClick = useCallback(
+    (e, menuId) => {
+      if (window.innerWidth >= 640) {
+        if (openMenuId !== menuId) {
+          e.preventDefault();
+          setOpenMenuId(menuId);
+        } else {
+          e.preventDefault();
+          setOpenMenuId(null);
+        }
       }
-    }
-  }, [openMenuId]);
+    },
+    [openMenuId]
+  );
 
   const navLinkBase =
-    'sw-nav-link inline-flex items-center gap-0.5 rounded-md px-2.5 py-2.5 text-sm font-bold md:px-3';
-  const navLinkActive = 'bg-[#c7f36b]';
+    'inline-flex items-center gap-0.5 rounded-lg px-3 py-2 text-sm font-medium text-slate-600 transition hover:bg-slate-100 hover:text-slate-900';
+  const navLinkActive = 'bg-slate-100 text-slate-900';
 
   return (
-    <header
-      className="sticky top-0 z-100 overflow-visible border-b-[3px] border-black bg-white shadow-[4px_4px_0_0_#000]"
-      role="banner"
-    >
-      <div className="mx-auto flex max-w-[1600px] items-center justify-between gap-3 overflow-visible px-4 py-3 sm:px-6 lg:px-8">
+    <header className="sticky top-0 z-50 border-b border-slate-200/80 bg-white/90 backdrop-blur-md" role="banner">
+      <div className="mx-auto flex max-w-6xl items-center justify-between gap-3 px-4 py-3 sm:px-6 lg:px-8">
         <div className="flex min-w-0 shrink-0 items-center">
           <Link to="/students" className="flex min-w-0 items-center gap-2" aria-label="GuideXpert home">
-            <img src={LOGO_URL} alt="" className="h-7 max-h-8 w-auto max-w-[min(100%,200px)] object-contain md:h-8" />
+            <img
+              src={LOGO_URL}
+              alt=""
+              className="h-7 max-h-8 w-auto max-w-[min(100%,200px)] object-contain md:h-8"
+            />
           </Link>
         </div>
 
-        {/* Desktop / tablet: inline nav */}
         <div
           ref={navRef}
-          className="hidden min-w-0 flex-1 items-center justify-end gap-3 overflow-visible sm:flex md:flex-nowrap"
+          className="hidden min-w-0 flex-1 items-center justify-end gap-4 overflow-visible sm:flex"
         >
-          <nav
-            className="flex flex-wrap items-center justify-end gap-1 overflow-visible md:gap-2"
-            aria-label="Student workspace"
-          >
-            {/* Predictors dropdown */}
+          <nav className="flex items-center gap-1" aria-label="Student workspace">
             <div
-              className="relative overflow-visible"
+              className="relative"
               onMouseEnter={() => setOpenMenuId(DROPDOWN_IDS.predictors)}
-              onMouseLeave={() =>
-                setOpenMenuId((id) => (id === DROPDOWN_IDS.predictors ? null : id))
-              }
+              onMouseLeave={() => setOpenMenuId((id) => (id === DROPDOWN_IDS.predictors ? null : id))}
               onFocusCapture={() => setOpenMenuId(DROPDOWN_IDS.predictors)}
               onBlurCapture={(e) => {
                 if (!e.currentTarget.contains(e.relatedTarget)) {
@@ -159,14 +149,14 @@ export default function StudentWorkspaceNavbar() {
               <NavLink
                 to="/students/rank-predictor"
                 className={({ isActive }) =>
-                  `${navLinkBase} text-[#0F172A] ${isActive ? navLinkActive : ''}`
+                  `${navLinkBase} ${isActive || predictorsActive ? navLinkActive : ''}`
                 }
                 onClick={(e) => handleNavLinkClick(e, DROPDOWN_IDS.predictors)}
                 aria-haspopup="menu"
                 aria-expanded={openMenuId === DROPDOWN_IDS.predictors}
               >
                 Predictors
-                <FiChevronDown className="h-4 w-4 shrink-0 opacity-80" aria-hidden />
+                <FiChevronDown className="h-4 w-4 shrink-0 opacity-60" aria-hidden />
               </NavLink>
               <div
                 className={`${dropdownAnchorClass} ${openMenuId === DROPDOWN_IDS.predictors ? 'block' : 'hidden'}`}
@@ -182,7 +172,7 @@ export default function StudentWorkspaceNavbar() {
                             role="menuitem"
                             to={item.to}
                             className={({ isActive }) =>
-                              `${dropdownLinkClass} ${isActive ? 'bg-[#c7f36b]/60' : ''}`
+                              `${dropdownLinkClass} ${isActive ? 'bg-emerald-50 text-emerald-700' : ''}`
                             }
                             onClick={() => setOpenMenuId(null)}
                           >
@@ -196,13 +186,10 @@ export default function StudentWorkspaceNavbar() {
               </div>
             </div>
 
-            {/* Fit Tests dropdown */}
             <div
-              className="relative overflow-visible"
+              className="relative"
               onMouseEnter={() => setOpenMenuId(DROPDOWN_IDS.fitTests)}
-              onMouseLeave={() =>
-                setOpenMenuId((id) => (id === DROPDOWN_IDS.fitTests ? null : id))
-              }
+              onMouseLeave={() => setOpenMenuId((id) => (id === DROPDOWN_IDS.fitTests ? null : id))}
               onFocusCapture={() => setOpenMenuId(DROPDOWN_IDS.fitTests)}
               onBlurCapture={(e) => {
                 if (!e.currentTarget.contains(e.relatedTarget)) {
@@ -213,14 +200,14 @@ export default function StudentWorkspaceNavbar() {
               <NavLink
                 to="/students/tests"
                 className={({ isActive }) =>
-                  `${navLinkBase} text-[#0F172A] ${isActive || fitTestsActive ? navLinkActive : ''}`
+                  `${navLinkBase} ${isActive || fitTestsActive ? navLinkActive : ''}`
                 }
                 onClick={(e) => handleNavLinkClick(e, DROPDOWN_IDS.fitTests)}
                 aria-haspopup="menu"
                 aria-expanded={openMenuId === DROPDOWN_IDS.fitTests}
               >
                 Fit Tests
-                <FiChevronDown className="h-4 w-4 shrink-0 opacity-80" aria-hidden />
+                <FiChevronDown className="h-4 w-4 shrink-0 opacity-60" aria-hidden />
               </NavLink>
               <div
                 className={`${dropdownAnchorClass} ${openMenuId === DROPDOWN_IDS.fitTests ? 'block' : 'hidden'}`}
@@ -236,7 +223,7 @@ export default function StudentWorkspaceNavbar() {
                             role="menuitem"
                             to={item.to}
                             className={({ isActive }) =>
-                              `${dropdownLinkClass} ${isActive ? 'bg-[#c7f36b]/60' : ''}`
+                              `${dropdownLinkClass} ${isActive ? 'bg-emerald-50 text-emerald-700' : ''}`
                             }
                             onClick={() => setOpenMenuId(null)}
                           >
@@ -250,13 +237,10 @@ export default function StudentWorkspaceNavbar() {
               </div>
             </div>
 
-            {/* Compare Colleges dropdown */}
             <div
-              className="relative overflow-visible"
+              className="relative"
               onMouseEnter={() => setOpenMenuId(DROPDOWN_IDS.compare)}
-              onMouseLeave={() =>
-                setOpenMenuId((id) => (id === DROPDOWN_IDS.compare ? null : id))
-              }
+              onMouseLeave={() => setOpenMenuId((id) => (id === DROPDOWN_IDS.compare ? null : id))}
               onFocusCapture={() => setOpenMenuId(DROPDOWN_IDS.compare)}
               onBlurCapture={(e) => {
                 if (!e.currentTarget.contains(e.relatedTarget)) {
@@ -267,14 +251,14 @@ export default function StudentWorkspaceNavbar() {
               <NavLink
                 to="/students/college-comparison"
                 className={({ isActive }) =>
-                  `${navLinkBase} text-[#0F172A] ${isActive || compareActive ? navLinkActive : ''}`
+                  `${navLinkBase} ${isActive || compareActive ? navLinkActive : ''}`
                 }
                 onClick={(e) => handleNavLinkClick(e, DROPDOWN_IDS.compare)}
                 aria-haspopup="menu"
                 aria-expanded={openMenuId === DROPDOWN_IDS.compare}
               >
-                Compare Colleges
-                <FiChevronDown className="h-4 w-4 shrink-0 opacity-80" aria-hidden />
+                Compare
+                <FiChevronDown className="h-4 w-4 shrink-0 opacity-60" aria-hidden />
               </NavLink>
               <div
                 className={`${dropdownAnchorClass} ${openMenuId === DROPDOWN_IDS.compare ? 'block' : 'hidden'}`}
@@ -290,7 +274,7 @@ export default function StudentWorkspaceNavbar() {
                             role="menuitem"
                             to={item.to}
                             className={({ isActive }) =>
-                              `${dropdownLinkClass} ${isActive ? 'bg-[#c7f36b]/60' : ''}`
+                              `${dropdownLinkClass} ${isActive ? 'bg-emerald-50 text-emerald-700' : ''}`
                             }
                             onClick={() => setOpenMenuId(null)}
                           >
@@ -307,76 +291,70 @@ export default function StudentWorkspaceNavbar() {
 
           <Link
             to="/students/rank-predictor"
-            className="shrink-0 font-bold rounded-[10px] px-4 py-2 border-2 border-black bg-[#c7f36b] text-[#0F172A] shadow-[2px_2px_0px_#000] hover:bg-[#b0d95d] active:shadow-[0px_0px_0px_#000] active:translate-y-[2px] active:translate-x-[2px] transition-all text-sm flex items-center justify-center gap-1.5"
+            className="shrink-0 rounded-xl bg-emerald-600 px-4 py-2 text-sm font-semibold text-white transition hover:bg-emerald-500"
           >
-            Start Prediction
+            Start prediction
           </Link>
         </div>
 
-        {/* Mobile: menu toggle */}
         <div className="flex shrink-0 items-center sm:hidden">
           <button
             type="button"
-            className="flex h-11 w-11 items-center justify-center rounded-lg border-2 border-black bg-white text-[#0F172A] shadow-[2px_2px_0_0_#000] transition hover:bg-slate-50"
+            className="flex h-10 w-10 items-center justify-center rounded-lg text-slate-600 transition hover:bg-slate-100"
             aria-expanded={mobileOpen}
             aria-controls={menuId}
             aria-label={mobileOpen ? 'Close menu' : 'Open menu'}
             onClick={() => setMobileOpen((o) => !o)}
           >
-            {mobileOpen ? <FiX className="h-6 w-6" aria-hidden /> : <FiMenu className="h-6 w-6" aria-hidden />}
+            {mobileOpen ? <FiX className="h-5 w-5" aria-hidden /> : <FiMenu className="h-5 w-5" aria-hidden />}
           </button>
         </div>
       </div>
 
-      {/* Mobile menu panel */}
       {mobileOpen ? (
         <>
           <button
             type="button"
-            className="fixed inset-x-0 bottom-0 top-16 z-90 bg-black/40 sm:hidden"
+            className="fixed inset-x-0 bottom-0 top-14 z-40 bg-slate-900/20 backdrop-blur-sm sm:hidden"
             aria-label="Close menu"
             onClick={closeMenu}
           />
           <div
             id={menuId}
-            className="absolute left-0 right-0 top-full z-95 max-h-[min(70vh,calc(100dvh-5rem))] overflow-y-auto border-b-[3px] border-black bg-white shadow-[0_8px_0_0_#000] sm:hidden"
+            className="absolute left-0 right-0 top-full z-50 max-h-[min(70vh,calc(100dvh-5rem))] overflow-y-auto border-b border-slate-200 bg-white shadow-lg sm:hidden"
             role="navigation"
             aria-label="Student workspace"
           >
-            <nav className="mx-auto max-w-[1600px] px-4 py-3">
-              <div className="mb-4">
-                <Link
-                  to="/students/rank-predictor"
-                  className="w-full font-bold rounded-[10px] px-4 py-3 border-2 border-black bg-[#c7f36b] text-[#0F172A] shadow-[3px_3px_0px_#000] hover:bg-[#b0d95d] active:translate-y-[3px] active:translate-x-[3px] active:shadow-[0px_0px_0px_#000] transition-all text-sm flex items-center justify-center gap-1.5"
-                  onClick={closeMenu}
-                >
-                  Start Prediction
-                </Link>
-              </div>
-              <ul className="flex flex-col gap-1">
-                <li className="rounded-lg border-2 border-black/10 bg-slate-50/80 p-2">
-                  <div className="px-1 pb-2 text-xs font-black uppercase tracking-wide text-slate-500">
-                    Predictors
-                  </div>
+            <nav className="mx-auto max-w-6xl px-4 py-4">
+              <Link
+                to="/students/rank-predictor"
+                className="mb-4 flex w-full items-center justify-center rounded-xl bg-emerald-600 px-4 py-3 text-sm font-semibold text-white"
+                onClick={closeMenu}
+              >
+                Start prediction
+              </Link>
+              <ul className="flex flex-col gap-4">
+                <li>
+                  <p className="mb-2 px-1 text-xs font-medium uppercase tracking-wider text-slate-400">Predictors</p>
                   <NavLink
                     to="/students/rank-predictor"
                     className={({ isActive }) =>
-                      `mb-2 block min-h-[44px] rounded-md border-2 px-3 py-2.5 text-sm font-bold outline-none transition-colors hover:bg-[#c7f36b]/40 focus-visible:ring-2 focus-visible:ring-[#0F172A]/30 ${
-                        isActive || predictorsActive ? 'border-black bg-[#c7f36b]/50' : 'border-transparent text-[#0F172A]'
+                      `mb-2 block rounded-lg px-3 py-2.5 text-sm font-medium ${
+                        isActive || predictorsActive ? 'bg-slate-100 text-slate-900' : 'text-slate-700'
                       }`
                     }
                     onClick={closeMenu}
                   >
                     All rank predictors
                   </NavLink>
-                  <ul className="flex max-h-[min(40vh,280px)] flex-col gap-0.5 overflow-y-auto border-t border-black/10 pt-2">
+                  <ul className="flex max-h-48 flex-col gap-0.5 overflow-y-auto border-t border-slate-100 pt-2">
                     {rankPredictorItems.map((item) => (
                       <li key={item.to}>
                         <NavLink
                           to={item.to}
                           className={({ isActive }) =>
-                            `block min-h-[44px] rounded-md px-3 py-2.5 text-sm font-semibold text-[#0F172A] outline-none transition-colors hover:bg-[#c7f36b]/30 focus-visible:ring-2 focus-visible:ring-[#0F172A]/30 ${
-                              isActive ? 'bg-[#c7f36b]/50 font-bold' : ''
+                            `block rounded-lg px-3 py-2 text-sm ${
+                              isActive ? 'bg-emerald-50 font-medium text-emerald-700' : 'text-slate-600'
                             }`
                           }
                           onClick={closeMenu}
@@ -388,29 +366,27 @@ export default function StudentWorkspaceNavbar() {
                   </ul>
                 </li>
 
-                <li className="rounded-lg border-2 border-black/10 bg-slate-50/80 p-2">
-                  <div className="px-1 pb-2 text-xs font-black uppercase tracking-wide text-slate-500">
-                    Fit Tests
-                  </div>
+                <li>
+                  <p className="mb-2 px-1 text-xs font-medium uppercase tracking-wider text-slate-400">Fit tests</p>
                   <NavLink
                     to="/students/tests"
                     className={({ isActive }) =>
-                      `mb-2 block min-h-[44px] rounded-md border-2 px-3 py-2.5 text-sm font-bold outline-none transition-colors hover:bg-[#c7f36b]/40 focus-visible:ring-2 focus-visible:ring-[#0F172A]/30 ${
-                        isActive || fitTestsActive ? 'border-black bg-[#c7f36b]/50' : 'border-transparent text-[#0F172A]'
+                      `mb-2 block rounded-lg px-3 py-2.5 text-sm font-medium ${
+                        isActive || fitTestsActive ? 'bg-slate-100 text-slate-900' : 'text-slate-700'
                       }`
                     }
                     onClick={closeMenu}
                   >
                     Fit tests hub
                   </NavLink>
-                  <ul className="flex flex-col gap-0.5 border-t border-black/10 pt-2">
+                  <ul className="flex flex-col gap-0.5 border-t border-slate-100 pt-2">
                     {fitTestNavItems.map((item) => (
                       <li key={item.to}>
                         <NavLink
                           to={item.to}
                           className={({ isActive }) =>
-                            `block min-h-[44px] rounded-md px-3 py-2.5 text-sm font-semibold text-[#0F172A] outline-none transition-colors hover:bg-[#c7f36b]/30 focus-visible:ring-2 focus-visible:ring-[#0F172A]/30 ${
-                              isActive ? 'bg-[#c7f36b]/50 font-bold' : ''
+                            `block rounded-lg px-3 py-2 text-sm ${
+                              isActive ? 'bg-emerald-50 font-medium text-emerald-700' : 'text-slate-600'
                             }`
                           }
                           onClick={closeMenu}
@@ -422,18 +398,16 @@ export default function StudentWorkspaceNavbar() {
                   </ul>
                 </li>
 
-                <li className="rounded-lg border-2 border-black/10 bg-slate-50/80 p-2">
-                  <div className="px-1 pb-2 text-xs font-black uppercase tracking-wide text-slate-500">
-                    Compare Colleges
-                  </div>
+                <li>
+                  <p className="mb-2 px-1 text-xs font-medium uppercase tracking-wider text-slate-400">Compare</p>
                   <ul className="flex flex-col gap-0.5">
                     {compareCollegesNavItems.map((item) => (
                       <li key={item.to}>
                         <NavLink
                           to={item.to}
                           className={({ isActive }) =>
-                            `block min-h-[48px] rounded-md border-2 px-3 py-3 text-base font-bold outline-none transition-colors hover:bg-[#c7f36b]/30 focus-visible:ring-2 focus-visible:ring-[#0F172A]/30 ${
-                              isActive || compareActive ? 'border-black bg-[#c7f36b]/50' : 'border-transparent text-[#0F172A]'
+                            `block rounded-lg px-3 py-2.5 text-sm font-medium ${
+                              isActive || compareActive ? 'bg-slate-100 text-slate-900' : 'text-slate-700'
                             }`
                           }
                           onClick={closeMenu}
@@ -449,17 +423,6 @@ export default function StudentWorkspaceNavbar() {
           </div>
         </>
       ) : null}
-
-      <style>{`
-        @keyframes sw-nav-bounce {
-          0%, 100% { transform: translateY(0); }
-          50% { transform: translateY(-3px); }
-        }
-        .sw-nav-link:hover {
-          animation: sw-nav-bounce 0.35s ease;
-          background: #c7f36b;
-        }
-      `}</style>
     </header>
   );
 }

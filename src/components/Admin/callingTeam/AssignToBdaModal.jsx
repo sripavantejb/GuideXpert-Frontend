@@ -15,6 +15,7 @@ export default function AssignToBdaModal({
   preferredLanguage = '',
   mode = 'assign',
   excludeBdaId = '',
+  leadType = 'iit_counselling',
 }) {
   const [bdas, setBdas] = useState([]);
   const [bdaId, setBdaId] = useState('');
@@ -71,11 +72,11 @@ export default function AssignToBdaModal({
 
     let res;
     if (isReassign && isSingle) {
-      res = await reassignLeadToBda(leadIds[0], { bdaId, reason });
+      res = await reassignLeadToBda(leadIds[0], { bdaId, reason, leadType });
     } else if (isReassign) {
-      res = await bulkReassignLeadsToBda({ leadIds, bdaId, reason });
+      res = await bulkReassignLeadsToBda({ leadIds, bdaId, reason, leadType });
     } else {
-      res = await bulkAssignLeadsToBda({ leadIds, bdaId, reason });
+      res = await bulkAssignLeadsToBda({ leadIds, bdaId, reason, leadType });
     }
 
     setLoading(false);

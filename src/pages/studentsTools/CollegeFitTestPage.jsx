@@ -1,5 +1,18 @@
 import { useRef, useState } from 'react';
 import ToolWorkspaceLayout from './components/ToolWorkspaceLayout';
+import {
+  swBtnPrimary,
+  swError,
+  swInsightsPanel,
+  swInput,
+  swLabel,
+  swResultCard,
+  swResultsHighlight,
+  swSectionSubtitle,
+  swSectionTitle,
+  swSelect,
+  swWorkspaceTitle,
+} from './components/studentWorkspaceUi';
 
 const SUGGESTIONS = [
   { name: 'SRM Institute', avgPackage: '8.5 LPA', placementRate: '89%', fees: '14L' },
@@ -47,22 +60,22 @@ export default function CollegeFitTestPage() {
         'Placement Priority: Importance weight for placements in recommendations.',
       ]}
       preview={
-        <div className="space-y-2 text-sm font-bold">
-          <p>Recommended Colleges: 8</p>
-          <p>Placement-focused matches: 4</p>
+        <div className="space-y-1 text-sm text-slate-600">
+          <p>Recommended colleges: <span className="font-semibold text-slate-900">8</span></p>
+          <p>Placement-focused matches: <span className="font-semibold text-slate-900">4</span></p>
         </div>
       }
       results={
         results.length ? (
-          <section ref={resultsRef} className="rounded-[14px] border-2 border-black bg-[#B7E5FF]/35 p-6 shadow-[4px_4px_0px_#000]">
-            <h2 className="text-2xl font-black text-[#0F172A]">Results Panel</h2>
-            <p className="mt-1 text-sm text-slate-600">How to read this result: recommendations prioritize your chosen criteria, especially placement weight.</p>
+          <section ref={resultsRef} className={swResultsHighlight}>
+            <h2 className={swSectionTitle}>Results</h2>
+            <p className={swSectionSubtitle}>Recommendations prioritize your chosen criteria.</p>
             <div className="mt-4 grid gap-4 md:grid-cols-2">
               {results.map((college) => (
-                <article key={college.name} className="rounded-[12px] border-2 border-black bg-white p-4 shadow-[3px_3px_0px_#000]">
-                  <h3 className="text-base font-black text-[#0F172A]">{college.name}</h3>
-                  <p className="mt-2 text-sm text-slate-600">Average Package: {college.avgPackage}</p>
-                  <p className="text-sm text-slate-600">Placement Rate: {college.placementRate}</p>
+                <article key={college.name} className={swResultCard}>
+                  <h3 className="font-semibold text-slate-900">{college.name}</h3>
+                  <p className="mt-2 text-sm text-slate-600">Average package: {college.avgPackage}</p>
+                  <p className="text-sm text-slate-600">Placement rate: {college.placementRate}</p>
                   <p className="text-sm text-slate-600">Fees: {college.fees}</p>
                 </article>
               ))}
@@ -72,8 +85,8 @@ export default function CollegeFitTestPage() {
       }
       insights={
         results.length ? (
-          <section className="rounded-[14px] border-2 border-black bg-white p-6 shadow-[4px_4px_0px_#000]">
-            <h3 className="text-xl font-black text-[#0F172A]">Next Step Suggestions</h3>
+          <section className={swInsightsPanel}>
+            <h3 className={swSectionTitle}>Next steps</h3>
             <ul className="mt-3 list-disc space-y-2 pl-5 text-sm text-slate-600">
               <li>For high placement priority, compare avg package against fee burden ratio.</li>
               <li>Check campus and city lifestyle fit before finalizing applications.</li>
@@ -82,49 +95,46 @@ export default function CollegeFitTestPage() {
         ) : null
       }
     >
-      <h2 className="text-2xl font-black text-[#0F172A]">Input Workspace</h2>
+      <h2 className={swWorkspaceTitle}>Your preferences</h2>
       <form className="mt-5 grid gap-4 sm:grid-cols-2" onSubmit={onSubmit}>
-        <label className="text-sm font-semibold text-[#0F172A]">
-          Fee Budget
-          <select value={form.fee} onChange={(e) => onChange('fee', e.target.value)} className="mt-1 w-full rounded-[10px] border-2 border-black px-3 py-2">
+        <label className={swLabel}>
+          Fee budget
+          <select value={form.fee} onChange={(e) => onChange('fee', e.target.value)} className={swSelect}>
             <option value="">Select budget</option>
             <option value="lt10">&lt; 10L</option>
-            <option value="10to20">10L - 20L</option>
+            <option value="10to20">10L – 20L</option>
             <option value="gt20">&gt; 20L</option>
           </select>
-          {errors.fee ? <span className="mt-1 block text-xs text-red-600">{errors.fee}</span> : null}
+          {errors.fee ? <span className={swError}>{errors.fee}</span> : null}
         </label>
-        <label className="text-sm font-semibold text-[#0F172A]">
-          Campus Size
-          <select value={form.campus} onChange={(e) => onChange('campus', e.target.value)} className="mt-1 w-full rounded-[10px] border-2 border-black px-3 py-2">
+        <label className={swLabel}>
+          Campus size
+          <select value={form.campus} onChange={(e) => onChange('campus', e.target.value)} className={swSelect}>
             <option value="">Select campus size</option>
             <option value="small">Compact</option>
             <option value="large">Large</option>
           </select>
-          {errors.campus ? <span className="mt-1 block text-xs text-red-600">{errors.campus}</span> : null}
+          {errors.campus ? <span className={swError}>{errors.campus}</span> : null}
         </label>
-        <label className="text-sm font-semibold text-[#0F172A]">
-          City Preference
-          <input value={form.city} onChange={(e) => onChange('city', e.target.value)} className="mt-1 w-full rounded-[10px] border-2 border-black px-3 py-2" />
-          {errors.city ? <span className="mt-1 block text-xs text-red-600">{errors.city}</span> : null}
+        <label className={swLabel}>
+          City preference
+          <input value={form.city} onChange={(e) => onChange('city', e.target.value)} className={swInput} />
+          {errors.city ? <span className={swError}>{errors.city}</span> : null}
         </label>
-        <label className="text-sm font-semibold text-[#0F172A]">
-          Placement Priority ({form.placement}%)
+        <label className={swLabel}>
+          Placement priority ({form.placement}%)
           <input
             type="range"
             min="0"
             max="100"
             value={form.placement}
             onChange={(e) => onChange('placement', Number(e.target.value))}
-            className="mt-3 w-full"
+            className="mt-3 w-full accent-emerald-600"
           />
         </label>
         <div className="sm:col-span-2">
-          <button
-            type="submit"
-            className="rounded-[12px] border-2 border-black bg-[#c7f36b] px-5 py-2.5 text-sm font-black shadow-[4px_4px_0px_#000] transition-all hover:-translate-y-0.5"
-          >
-            Process Criteria
+          <button type="submit" className={swBtnPrimary}>
+            Process criteria
           </button>
         </div>
       </form>
