@@ -1,4 +1,5 @@
-import { useCallback, useEffect, useMemo, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { useNavigate, useParams } from 'react-router-dom';
 import { FiHeadphones } from 'react-icons/fi';
 import {
   addHandoffNote,
@@ -8,6 +9,8 @@ import {
   fetchCopilotNotifications,
   fetchCopilotQueue,
   fetchHandoffDetail,
+  reassignHandoff,
+  releaseHandoff,
   resolveHandoff,
   retryHandoffReply,
   sendHandoffReply,
@@ -24,7 +27,13 @@ import CopilotInboxWorkspace from './CopilotInboxWorkspace';
 import CopilotLearningPanel from './CopilotLearningPanel';
 import CopilotNotesPanel from './CopilotNotesPanel';
 import CopilotQueuePanel from './CopilotQueuePanel';
-import { buildQueueFilterOptions, filterQueueBySr, PANEL_CLASS } from './copilotUtils';
+import {
+  buildFailedReplyPatch,
+  buildQueueFilterOptions,
+  filterQueueBySr,
+  mergeDetailPreserving,
+  PANEL_CLASS,
+} from './copilotUtils';
 import { useCopilotTranscript } from './useCopilotTranscript';
 
 const POLL_MS = 30000;
@@ -87,13 +96,17 @@ function CopilotViewTabs({ activeView, onChange, compact = false }) {
 }
 
 export default function HumanCopilotPage() {
+  const { handoffId: routeHandoffId } = useParams();
+  const navigate = useNavigate();
+  const detailInitialRef = useRef(new Set());
+
   const [queueItems, setQueueItems] = useState([]);
   const [queueLoading, setQueueLoading] = useState(true);
   const [queueError, setQueueError] = useState('');
   const [srFilter, setSrFilter] = useState('all');
-  const [selectedId, setSelectedId] = useState('');
+  const [selectedId, setSelectedId] = useState(routeHandoffId || '');
   const [detail, setDetail] = useState(null);
-  const [detailLoading, setDetailLoading] = useState(false);
+  const [detailInitialLoading, setDetailInitialLoading] = useState(false);
   const [detailError, setDetailError] = useState('');
   const [alertCount, setAlertCount] = useState(0);
   const [alertsLoading, setAlertsLoading] = useState(true);
@@ -103,13 +116,18 @@ export default function HumanCopilotPage() {
   const [sending, setSending] = useState(false);
   const [resolving, setResolving] = useState(false);
   const [assigning, setAssigning] = useState(false);
+  const [releasing, setReleasing] = useState(false);
+  const [reassigning, setReassigning] = useState(false);
   const [addingNote, setAddingNote] = useState(false);
   const [lockVersion, setLockVersion] = useState(0);
   const [deliveryStatus, setDeliveryStatus] = useState('');
   const [suggestedText, setSuggestedText] = useState('');
+  const [suggestions, setSuggestions] = useState([]);
   const [suggestNotice, setSuggestNotice] = useState('');
   const [retrying, setRetrying] = useState(false);
   const [activeView, setActiveView] = useState('inbox');
+  const [mobileTab, setMobileTab] = useState('chat');
+  const [resolveConfirmOpen, setResolveConfirmOpen] = useState(false);
   const [agents, setAgents] = useState([]);
   const [copilotConfig, setCopilotConfig] = useState(null);
   const [configLoading, setConfigLoading] = useState(true);
@@ -123,53 +141,80 @@ export default function HumanCopilotPage() {
     [queueItems, srFilter]
   );
 
-  const loadAgents = useCallback(async () => {
+  const syncRoute = useCallback(
+    (id) => {
+      const base = '/admin/human-copilot';
+      if (id) {
+        navigate(`${base}/${id}`, { replace: false });
+      } else {
+        navigate(base, { replace: false });
+      }
+    },
+    [navigate]
+  );
+
+  const loadAgents = useCallback(async ({ silent = false } = {}) => {
     const result = await fetchCopilotAgents();
     if (result.success) {
       setAgents(result.agents || []);
     }
+    return result;
   }, []);
 
-  const loadQueue = useCallback(async () => {
-    setQueueLoading(true);
+  const loadQueue = useCallback(async ({ silent = false } = {}) => {
+    if (!silent) setQueueLoading(true);
     const result = await fetchCopilotQueue({ limit: 100 });
     if (!result.success) {
-      setQueueError(result.message || 'Failed to load queue');
-      setQueueItems([]);
+      if (!silent) {
+        setQueueError(result.message || 'Failed to load queue');
+        setQueueItems([]);
+      }
     } else {
       setQueueError('');
       setQueueItems(result.items);
     }
-    setQueueLoading(false);
+    if (!silent) setQueueLoading(false);
+    return result;
   }, []);
 
-  const loadAlerts = useCallback(async () => {
-    setAlertsLoading(true);
+  const loadAlerts = useCallback(async ({ silent = false } = {}) => {
+    if (!silent) setAlertsLoading(true);
     const result = await fetchCopilotNotifications();
     if (result.success) {
       setAlertCount(result.count || 0);
     }
-    setAlertsLoading(false);
+    if (!silent) setAlertsLoading(false);
+    return result;
   }, []);
 
-  const loadDetail = useCallback(async (handoffId) => {
+  const loadDetail = useCallback(async (handoffId, { silent = false } = {}) => {
     if (!handoffId) {
       setDetail(null);
-      return;
+      setDetailInitialLoading(false);
+      return { success: false };
     }
-    setDetailLoading(true);
-    setDetailError('');
+
+    const isFirstLoad = !detailInitialRef.current.has(handoffId);
+    if (!silent && isFirstLoad) {
+      setDetailInitialLoading(true);
+    }
+    if (!silent) setDetailError('');
+
     const result = await fetchHandoffDetail(handoffId);
     if (!result.success) {
-      setDetail(null);
-      setDetailError(result.message || 'Failed to load handoff');
-      setDetailLoading(false);
+      if (!silent || isFirstLoad) {
+        setDetail(null);
+        setDetailError(result.message || 'Failed to load handoff');
+      }
+      if (!silent && isFirstLoad) setDetailInitialLoading(false);
       return result;
     }
-    setDetail(result.data);
+
+    detailInitialRef.current.add(handoffId);
+    setDetail((prev) => (silent && prev ? mergeDetailPreserving(prev, result.data) : result.data));
     setLockVersion(result.data?.handoff?.lockVersion ?? 0);
     setDeliveryStatus(result.data?.handoff?.latestDeliveryStatus || '');
-    setDetailLoading(false);
+    if (!silent && isFirstLoad) setDetailInitialLoading(false);
     return result;
   }, []);
 
@@ -188,21 +233,47 @@ export default function HumanCopilotPage() {
     loadAgents();
     loadConfig();
     const timer = setInterval(() => {
-      loadQueue();
-      loadAlerts();
-      loadAgents();
-      if (selectedId) loadDetail(selectedId);
+      loadQueue({ silent: true });
+      loadAlerts({ silent: true });
+      loadAgents({ silent: true });
+      if (selectedId) loadDetail(selectedId, { silent: true });
     }, POLL_MS);
     return () => clearInterval(timer);
   }, [loadQueue, loadAlerts, loadAgents, loadConfig, loadDetail, selectedId]);
 
-  const handleSelect = (id) => {
-    setSelectedId(id);
+  useEffect(() => {
+    if (!routeHandoffId) {
+      if (selectedId) {
+        setSelectedId('');
+        setDetail(null);
+      }
+      return;
+    }
+    setSelectedId(routeHandoffId);
     setReplyText('');
     setSuggestedText('');
+    setSuggestions([]);
     setSuggestNotice('');
     setDeliveryStatus('');
     setActionError('');
+    setMobileTab('chat');
+    loadDetail(routeHandoffId).then((result) => {
+      if (result?.data?.handoff?.failedReply?.draftText) {
+        setReplyText(result.data.handoff.failedReply.draftText);
+      }
+    });
+  }, [routeHandoffId, loadDetail]);
+
+  const handleSelect = (id) => {
+    setSelectedId(id);
+    syncRoute(id);
+    setReplyText('');
+    setSuggestedText('');
+    setSuggestions([]);
+    setSuggestNotice('');
+    setDeliveryStatus('');
+    setActionError('');
+    setMobileTab('chat');
     loadDetail(id).then((result) => {
       if (result?.data?.handoff?.failedReply?.draftText) {
         setReplyText(result.data.handoff.failedReply.draftText);
@@ -231,8 +302,40 @@ export default function HumanCopilotPage() {
       return;
     }
     setLockVersion(result.lockVersion ?? lockVersion);
-    await loadQueue();
-    await loadDetail(selectedId);
+    await loadQueue({ silent: true });
+    await loadDetail(selectedId, { silent: true });
+  };
+
+  const handleReassign = async (target) => {
+    if (!selectedId) return;
+    setReassigning(true);
+    setActionError('');
+    const result = await reassignHandoff(selectedId, target, { lockVersion });
+    setReassigning(false);
+    if (!result.success) {
+      setActionError(result.message || 'Reassign failed');
+      if (result.lockVersion != null) setLockVersion(result.lockVersion);
+      return;
+    }
+    setLockVersion(result.lockVersion ?? lockVersion);
+    await loadQueue({ silent: true });
+    await loadDetail(selectedId, { silent: true });
+  };
+
+  const handleRelease = async () => {
+    if (!selectedId) return;
+    setReleasing(true);
+    setActionError('');
+    const result = await releaseHandoff(selectedId, { lockVersion });
+    setReleasing(false);
+    if (!result.success) {
+      setActionError(result.message || 'Release failed');
+      if (result.lockVersion != null) setLockVersion(result.lockVersion);
+      return;
+    }
+    setLockVersion(result.lockVersion ?? lockVersion);
+    await loadQueue({ silent: true });
+    await loadDetail(selectedId, { silent: true });
   };
 
   const handleSuggest = async () => {
@@ -240,6 +343,7 @@ export default function HumanCopilotPage() {
     setSuggesting(true);
     setActionError('');
     setSuggestNotice('');
+    setSuggestions([]);
     const result = await suggestHandoffReply(selectedId);
     setSuggesting(false);
     if (!result.success) {
@@ -250,11 +354,18 @@ export default function HumanCopilotPage() {
       setSuggestNotice(result.fallbackMessage || 'AI suggestions unavailable. You can reply manually.');
       return;
     }
-    const first = result.suggestions?.[0]?.text;
+    const list = result.suggestions || [];
+    setSuggestions(list);
+    const first = list[0]?.text;
     if (first) {
       setReplyText(first);
       setSuggestedText(first);
     }
+  };
+
+  const handlePickSuggestion = (text) => {
+    setReplyText(text);
+    setSuggestedText(text);
   };
 
   const handleSend = async () => {
@@ -265,6 +376,7 @@ export default function HumanCopilotPage() {
     const trimmed = replyText.trim();
     const replySource =
       !suggestedText ? 'manual' : trimmed === suggestedText.trim() ? 'ai_used' : 'ai_edited';
+    const optimisticId = transcript.addOptimisticMessage(trimmed);
     const result = await sendHandoffReply(selectedId, trimmed, {
       lockVersion,
       suggestedText: suggestedText || null,
@@ -272,22 +384,50 @@ export default function HumanCopilotPage() {
     });
     setSending(false);
     if (!result.success) {
+      transcript.removeOptimisticMessage(optimisticId);
       setDeliveryStatus('failed');
       if (result.lockVersion != null) setLockVersion(result.lockVersion);
+      const failedReply =
+        result.failedReply || buildFailedReplyPatch(trimmed, result.errorMessage || result.message);
+      setDetail((prev) =>
+        prev
+          ? {
+              ...prev,
+              handoff: {
+                ...prev.handoff,
+                failedReply,
+                latestDeliveryStatus: 'failed',
+              },
+            }
+          : prev
+      );
       setActionError(result.message || result.errorMessage || 'Send failed');
       return;
     }
     const status = result.deliveryStatus || result.providerStatus || 'submitted';
     setDeliveryStatus(status);
+    setDetail((prev) =>
+      prev
+        ? {
+            ...prev,
+            handoff: {
+              ...prev.handoff,
+              failedReply: null,
+              latestDeliveryStatus: status,
+            },
+          }
+        : prev
+    );
     if (status === 'simulated') {
       setActionError('Reply was simulated only — not delivered to WhatsApp. Disable WA_INTEGRATION_STUB and configure Gupshup.');
     }
     setLockVersion(result.lockVersion ?? lockVersion);
     setReplyText('');
     setSuggestedText('');
-    await loadQueue();
-    await loadDetail(selectedId);
-    await transcript.refreshLatest();
+    setSuggestions([]);
+    await loadQueue({ silent: true });
+    await loadDetail(selectedId, { silent: true });
+    await transcript.refreshLatest({ silent: true });
   };
 
   const handleRetry = async () => {
@@ -304,27 +444,48 @@ export default function HumanCopilotPage() {
       setActionError(result.message || 'Retry failed');
       return;
     }
-    setDeliveryStatus(result.deliveryStatus || 'sent');
+    const status = result.deliveryStatus || 'submitted';
+    setDeliveryStatus(status);
+    setDetail((prev) =>
+      prev
+        ? {
+            ...prev,
+            handoff: {
+              ...prev.handoff,
+              failedReply: null,
+              latestDeliveryStatus: status,
+            },
+          }
+        : prev
+    );
     setLockVersion(result.lockVersion ?? lockVersion);
-    await loadDetail(selectedId);
-    await transcript.refreshLatest();
+    await loadDetail(selectedId, { silent: true });
+    await transcript.refreshLatest({ silent: true });
   };
 
-  const handleResolve = async () => {
+  const handleResolveRequest = () => {
     if (!selectedId) return;
+    setResolveConfirmOpen(true);
+  };
+
+  const handleResolveConfirm = async () => {
+    if (!selectedId) return;
+    setResolveConfirmOpen(false);
     setResolving(true);
     setActionError('');
-    const result = await resolveHandoff(selectedId);
+    const result = await resolveHandoff(selectedId, { lockVersion });
     setResolving(false);
     if (!result.success) {
       setActionError(result.message || 'Resolve failed');
+      if (result.lockVersion != null) setLockVersion(result.lockVersion);
       return;
     }
     setSelectedId('');
     setDetail(null);
     setReplyText('');
+    syncRoute('');
     await loadQueue();
-    await loadAlerts();
+    await loadAlerts({ silent: true });
   };
 
   const handleAddNote = async (text) => {
@@ -349,6 +510,8 @@ export default function HumanCopilotPage() {
   };
 
   const handoff = detail?.handoff || null;
+  const chatLoading = detailInitialLoading || transcript.isInitialLoad;
+  const contextLoading = detailInitialLoading;
 
   if (activeView !== 'inbox') {
     return (
@@ -406,72 +569,116 @@ export default function HumanCopilotPage() {
       />
 
       <div className="min-h-0 flex-1">
-      <CopilotInboxWorkspace
-        queue={
-          <CopilotQueuePanel
-            items={filteredQueue}
-            loading={queueLoading}
-            error={queueError}
-            selectedId={selectedId}
-            srFilter={srFilter}
-            onSrFilterChange={setSrFilter}
-            filterOptions={queueFilterOptions}
-            onSelect={handleSelect}
-            onRetry={loadQueue}
-          />
-        }
-        chat={
-          <CopilotChatPanel
-            handoff={handoff}
-            agents={agents}
-            messages={transcript.messages}
-            loading={detailLoading || transcript.loading}
-            loadingOlder={transcript.loadingOlder}
-            hasMoreOlder={transcript.hasMoreOlder}
-            pendingNewCount={transcript.pendingNewCount}
-            isPinnedToBottom={transcript.isPinnedToBottom}
-            error={transcript.error}
-            scrollRef={transcript.scrollRef}
-            onScroll={transcript.updatePinned}
-            onLoadOlder={transcript.loadOlder}
-            onScrollToLatest={transcript.scrollToLatest}
-            replyText={replyText}
-            onReplyTextChange={setReplyText}
-            onSuggest={handleSuggest}
-            onSend={handleSend}
-            onResolve={handleResolve}
-            onAssign={handleAssign}
-            onRetry={handleRetry}
-            suggesting={suggesting}
-            sending={sending}
-            resolving={resolving}
-            assigning={assigning}
-            retrying={retrying}
-            disabled={!handoff}
-            deliveryStatus={deliveryStatus || handoff?.latestDeliveryStatus}
-            suggestNotice={suggestNotice}
-          />
-        }
-        context={
-          <CopilotContextPanel
-            userProfile={detail?.userProfile}
-            leadProfile={detail?.leadProfile}
-            recentEvents={detail?.recentEvents}
-            structuredSummary={detail?.structuredSummary}
-            loading={detailLoading}
-          />
-        }
-        audit={<CopilotAuditPanel auditTrail={detail?.auditTrail} loading={detailLoading} />}
-        notes={
-          <CopilotNotesPanel
-            notes={handoff?.internalNotes}
-            onAdd={handleAddNote}
-            adding={addingNote}
-            disabled={!handoff}
-          />
-        }
-      />
+        <CopilotInboxWorkspace
+          mobileTab={mobileTab}
+          onMobileTabChange={setMobileTab}
+          queue={
+            <CopilotQueuePanel
+              items={filteredQueue}
+              loading={queueLoading}
+              error={queueError}
+              selectedId={selectedId}
+              srFilter={srFilter}
+              onSrFilterChange={setSrFilter}
+              filterOptions={queueFilterOptions}
+              onSelect={handleSelect}
+              onRetry={loadQueue}
+            />
+          }
+          chat={
+            <CopilotChatPanel
+              handoff={handoff}
+              agents={agents}
+              messages={transcript.messages}
+              loading={chatLoading}
+              loadingOlder={transcript.loadingOlder}
+              hasMoreOlder={transcript.hasMoreOlder}
+              pendingNewCount={transcript.pendingNewCount}
+              isPinnedToBottom={transcript.isPinnedToBottom}
+              error={transcript.error}
+              scrollRef={transcript.scrollRef}
+              onScroll={transcript.updatePinned}
+              onLoadOlder={transcript.loadOlder}
+              onScrollToLatest={transcript.scrollToLatest}
+              replyText={replyText}
+              onReplyTextChange={setReplyText}
+              onSuggest={handleSuggest}
+              onSend={handleSend}
+              onResolve={handleResolveRequest}
+              onAssign={handleAssign}
+              onReassign={handleReassign}
+              onRelease={handleRelease}
+              onRetry={handleRetry}
+              suggesting={suggesting}
+              sending={sending}
+              resolving={resolving}
+              assigning={assigning}
+              reassigning={reassigning}
+              releasing={releasing}
+              retrying={retrying}
+              disabled={!handoff}
+              deliveryStatus={deliveryStatus || handoff?.latestDeliveryStatus}
+              suggestNotice={suggestNotice}
+              suggestions={suggestions}
+              onPickSuggestion={handlePickSuggestion}
+            />
+          }
+          context={
+            <CopilotContextPanel
+              userProfile={detail?.userProfile}
+              leadProfile={detail?.leadProfile}
+              recentEvents={detail?.recentEvents}
+              structuredSummary={detail?.structuredSummary}
+              loading={contextLoading}
+            />
+          }
+          audit={<CopilotAuditPanel auditTrail={detail?.auditTrail} loading={contextLoading} />}
+          notes={
+            <CopilotNotesPanel
+              notes={handoff?.internalNotes}
+              onAdd={handleAddNote}
+              adding={addingNote}
+              disabled={!handoff}
+              pinned
+            />
+          }
+        />
       </div>
+
+      {resolveConfirmOpen ? (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/40 p-4">
+          <div
+            className="w-full max-w-md rounded-2xl border border-slate-200 bg-white p-5 shadow-xl"
+            role="dialog"
+            aria-labelledby="resolve-confirm-title"
+          >
+            <h2 id="resolve-confirm-title" className="text-base font-semibold text-slate-900">
+              Resolve conversation?
+            </h2>
+            <p className="mt-2 text-sm text-slate-600">
+              This marks the handoff resolved and removes it from your active inbox. The transcript
+              stays on record.
+            </p>
+            <div className="mt-4 flex justify-end gap-2">
+              <button
+                type="button"
+                onClick={() => setResolveConfirmOpen(false)}
+                className="rounded-lg border border-slate-200 px-3 py-2 text-sm text-slate-700 hover:bg-slate-50"
+              >
+                Cancel
+              </button>
+              <button
+                type="button"
+                onClick={handleResolveConfirm}
+                disabled={resolving}
+                className="rounded-lg bg-emerald-600 px-3 py-2 text-sm font-medium text-white hover:bg-emerald-700 disabled:opacity-50"
+              >
+                {resolving ? 'Resolving…' : 'Resolve'}
+              </button>
+            </div>
+          </div>
+        </div>
+      ) : null}
     </div>
   );
 }

@@ -22,15 +22,21 @@ export default function CopilotChatPanel({
   onSend,
   onResolve,
   onAssign,
+  onReassign,
+  onRelease,
   onRetry,
   suggesting,
   sending,
   resolving,
   assigning,
+  reassigning,
+  releasing,
   retrying,
   disabled,
   deliveryStatus,
   suggestNotice,
+  suggestions,
+  onPickSuggestion,
 }) {
   return (
     <div className="grid h-full min-h-0 grid-rows-[auto_1fr_auto] overflow-hidden rounded-2xl border border-slate-200/90 bg-white shadow-[0_1px_2px_rgba(15,23,42,0.04)] ring-1 ring-slate-100">
@@ -38,7 +44,11 @@ export default function CopilotChatPanel({
         handoff={handoff}
         agents={agents}
         onAssign={onAssign}
+        onReassign={onReassign}
+        onRelease={onRelease}
         assigning={assigning}
+        reassigning={reassigning}
+        releasing={releasing}
         disabled={disabled}
       />
       <CopilotConversationView
@@ -70,6 +80,8 @@ export default function CopilotChatPanel({
         disabled={disabled}
         deliveryStatus={deliveryStatus}
         suggestNotice={suggestNotice}
+        suggestions={suggestions}
+        onPickSuggestion={onPickSuggestion}
         embedded
       />
     </div>

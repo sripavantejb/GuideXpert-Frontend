@@ -3,12 +3,17 @@ import { formatCopilotDate } from './copilotUtils';
 
 const ACTION_LABELS = {
   assigned: 'Assigned',
+  reassigned: 'Reassigned',
+  released: 'Released to queue',
   replied: 'Reply sent',
   reply_failed: 'Reply failed',
   reply_retried: 'Reply retried',
+  reply_delivered: 'Reply delivered',
+  reply_read: 'Reply read',
   resolved: 'Resolved',
   reopened: 'Reopened',
   note_added: 'Note added',
+  suggest_requested: 'AI suggestion requested',
 };
 
 export default function CopilotAuditPanel({ auditTrail, loading }) {

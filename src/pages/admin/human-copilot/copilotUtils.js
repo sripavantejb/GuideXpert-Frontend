@@ -28,6 +28,8 @@ export const DELIVERY_STATUS_LABELS = {
   sending: 'Sending…',
   sent: 'Sent',
   submitted: 'Submitted to WhatsApp',
+  delivered: 'Delivered',
+  read: 'Read',
   simulated: 'Simulated (not sent)',
   failed: 'Failed',
 };
@@ -37,9 +39,17 @@ export const DELIVERY_STATUS_TONES = {
   sending: 'bg-blue-100 text-blue-800 border-blue-200',
   sent: 'bg-emerald-100 text-emerald-800 border-emerald-200',
   submitted: 'bg-emerald-100 text-emerald-800 border-emerald-200',
+  delivered: 'bg-teal-100 text-teal-800 border-teal-200',
+  read: 'bg-sky-100 text-sky-800 border-sky-200',
   simulated: 'bg-amber-100 text-amber-900 border-amber-200',
   failed: 'bg-red-100 text-red-800 border-red-200',
 };
+
+export const MOBILE_INBOX_TABS = [
+  { id: 'queue', label: 'Queue' },
+  { id: 'chat', label: 'Chat' },
+  { id: 'context', label: 'Context' },
+];
 
 export const SR_FILTER_OPTIONS = [
   { value: 'all', label: 'All' },
@@ -67,6 +77,38 @@ export function getDeliveryStatusLabel(status) {
 
 export function getDeliveryStatusTone(status) {
   return DELIVERY_STATUS_TONES[status] || 'bg-slate-100 text-slate-700 border-slate-200';
+}
+
+export function mergeDetailPreserving(prev, incoming) {
+  if (!prev || !incoming) return incoming || prev;
+  return {
+    ...incoming,
+    handoff: {
+      ...prev.handoff,
+      ...incoming.handoff,
+      internalNotes: incoming.handoff?.internalNotes ?? prev.handoff?.internalNotes,
+    },
+    auditTrail: incoming.auditTrail ?? prev.auditTrail,
+    userProfile: incoming.userProfile ?? prev.userProfile,
+    leadProfile: incoming.leadProfile ?? prev.leadProfile,
+    recentEvents: incoming.recentEvents ?? prev.recentEvents,
+    structuredSummary: incoming.structuredSummary ?? prev.structuredSummary,
+  };
+}
+
+export function buildFailedReplyPatch(text, errorMessage = null) {
+  return {
+    id: `local-failed-${Date.now()}`,
+    draftText: text,
+    errorMessage: errorMessage || 'Send failed',
+    status: 'failed',
+  };
+}
+
+export function shouldShowRetryBar(handoff, deliveryStatus) {
+  if (!handoff?.failedReply) return false;
+  const status = normalizeDeliveryStatus(deliveryStatus || handoff.latestDeliveryStatus);
+  return status === 'failed' || handoff.failedReply.status === 'failed';
 }
 
 export function normalizeDeliveryStatus(status) {

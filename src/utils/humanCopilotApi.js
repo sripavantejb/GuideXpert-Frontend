@@ -313,6 +313,8 @@ export async function sendHandoffReply(handoffId, text, { lockVersion, suggested
       ...result,
       errorMessage: result.data?.message || result.message || null,
       deliveryStatus: result.data?.deliveryStatus || 'failed',
+      failedReply: result.data?.failedReply || null,
+      lockVersion: result.data?.lockVersion ?? result.lockVersion ?? null,
     };
   }
   return {
@@ -340,8 +342,47 @@ export async function retryHandoffReply(handoffId, replyId, { lockVersion } = {}
   };
 }
 
-export async function resolveHandoff(handoffId) {
-  return copilotRequest(`/handoffs/${handoffId}/resolve`, { method: 'POST' });
+export async function releaseHandoff(handoffId, { lockVersion } = {}) {
+  const result = await copilotRequest(`/handoffs/${handoffId}/release`, {
+    method: 'POST',
+    body: JSON.stringify({ lockVersion }),
+  });
+  if (!result.success) return result;
+  return {
+    success: true,
+    handoff: result.data.handoff,
+    lockVersion: result.data.lockVersion,
+  };
+}
+
+export async function reassignHandoff(handoffId, target, { lockVersion } = {}) {
+  const body =
+    typeof target === 'string'
+      ? { srCounsellor: target, lockVersion, force: true }
+      : { ...target, lockVersion, force: true };
+  const result = await copilotRequest(`/handoffs/${handoffId}/reassign`, {
+    method: 'POST',
+    body: JSON.stringify(body),
+  });
+  if (!result.success) return result;
+  return {
+    success: true,
+    handoff: result.data.handoff,
+    lockVersion: result.data.lockVersion,
+  };
+}
+
+export async function resolveHandoff(handoffId, { lockVersion } = {}) {
+  const result = await copilotRequest(`/handoffs/${handoffId}/resolve`, {
+    method: 'POST',
+    body: JSON.stringify({ lockVersion }),
+  });
+  if (!result.success) return result;
+  return {
+    success: true,
+    handoff: result.data.handoff,
+    lockVersion: result.data.lockVersion,
+  };
 }
 
 export async function fetchCopilotAgents() {

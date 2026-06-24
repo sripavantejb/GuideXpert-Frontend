@@ -3,7 +3,7 @@ export function CopilotRailSection({ title, subtitle, children, className = '' }
 
   return (
     <section aria-labelledby={sectionId} className={`bg-white ${className}`.trim()}>
-      <header className="sticky top-0 z-10 border-b border-slate-100 bg-white/95 px-4 py-2.5 backdrop-blur-sm">
+      <header className="border-b border-slate-100 bg-white px-4 py-2.5">
         <h2 id={sectionId} className="text-[13px] font-semibold tracking-tight text-slate-900">
           {title}
         </h2>

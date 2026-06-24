@@ -451,6 +451,7 @@ function App() {
             <Route path="one-on-one-counseling" element={<OneOnOneCounselingLeads />} />
             <Route path="lead-intelligence" element={<LeadIntelligenceDashboard />} />
             <Route path="human-copilot" element={<Suspense fallback={<div className="p-6 text-sm text-slate-500">Loading Human Copilot…</div>}><HumanCopilotPage /></Suspense>} />
+            <Route path="human-copilot/:handoffId" element={<Suspense fallback={<div className="p-6 text-sm text-slate-500">Loading Human Copilot…</div>}><HumanCopilotPage /></Suspense>} />
             <Route path="guidance-slot-bookings" element={<GuidanceSlotBookings />} />
             <Route path="one-on-one-counselors" element={<OneOnOneCounselorsAdmin />} />
             <Route path="influencer-create" element={<InfluencerCreate />} />

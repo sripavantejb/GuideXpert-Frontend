@@ -5,7 +5,11 @@ export default function CopilotConversationHeader({
   handoff,
   agents = [],
   onAssign,
+  onReassign,
+  onRelease,
   assigning = false,
+  reassigning = false,
+  releasing = false,
   disabled = false,
 }) {
   const assignOptions = useMemo(() => {
@@ -33,14 +37,17 @@ export default function CopilotConversationHeader({
     setAssignValue(initialAssign);
   }, [initialAssign]);
 
-  const handleAssignClick = () => {
-    if (!assignValue || !onAssign) return;
+  const dispatchTarget = (handler) => {
+    if (!assignValue || !handler) return;
     if (assignValue.startsWith('agent:')) {
-      onAssign({ agentId: assignValue.slice(6) });
+      handler({ agentId: assignValue.slice(6) });
     } else {
-      onAssign(assignValue);
+      handler(assignValue);
     }
   };
+
+  const isClaimed = Boolean(handoff?.activeAdminId);
+  const canReassign = Boolean(initialAssign && assignValue && assignValue !== initialAssign);
 
   return (
     <div className="z-10 shrink-0 border-b border-slate-200/80 bg-white px-4 py-2.5">
@@ -74,8 +81,8 @@ export default function CopilotConversationHeader({
               id="copilot-agent-assign"
               value={assignValue}
               onChange={(e) => setAssignValue(e.target.value)}
-              disabled={disabled || assigning}
-              className="rounded-lg border border-slate-200 bg-white px-2 py-1.5 text-xs text-slate-800 min-w-[140px] max-w-[180px]"
+              disabled={disabled || assigning || reassigning}
+              className="min-w-[140px] max-w-[180px] rounded-lg border border-slate-200 bg-white px-2 py-1.5 text-xs text-slate-800"
               aria-label="Assign to counsellor"
             >
               <option value="">Unassigned</option>
@@ -88,11 +95,31 @@ export default function CopilotConversationHeader({
             <button
               type="button"
               disabled={!assignValue || assigning || disabled}
-              onClick={handleAssignClick}
+              onClick={() => dispatchTarget(onAssign)}
               className="rounded-lg border border-slate-200 bg-white px-3 py-1.5 text-xs font-medium text-slate-700 hover:bg-slate-50 disabled:opacity-50"
             >
               {assigning ? 'Assigning…' : 'Assign'}
             </button>
+            {canReassign ? (
+              <button
+                type="button"
+                disabled={reassigning || disabled}
+                onClick={() => dispatchTarget(onReassign)}
+                className="rounded-lg border border-violet-200 bg-violet-50 px-3 py-1.5 text-xs font-medium text-violet-900 hover:bg-violet-100 disabled:opacity-50"
+              >
+                {reassigning ? 'Reassigning…' : 'Reassign'}
+              </button>
+            ) : null}
+            {isClaimed ? (
+              <button
+                type="button"
+                disabled={releasing || disabled}
+                onClick={onRelease}
+                className="rounded-lg border border-amber-200 bg-amber-50 px-3 py-1.5 text-xs font-medium text-amber-900 hover:bg-amber-100 disabled:opacity-50"
+              >
+                {releasing ? 'Releasing…' : 'Release'}
+              </button>
+            ) : null}
           </div>
         ) : null}
       </div>

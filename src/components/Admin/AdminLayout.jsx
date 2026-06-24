@@ -318,7 +318,13 @@ function AdminChrome({ sidebarOpen, setSidebarOpen, initials, username }) {
         </div>
       </header>
       <AdminFiltersPanel open={filtersOpen} onClose={() => setFiltersOpen(false)} />
-      <main className="grow p-4 lg:p-6 overflow-auto scrollbar-hide bg-gray-50">
+      <main
+        className={`grow bg-gray-50 p-4 lg:p-6 ${
+          location.pathname.includes('/admin/human-copilot')
+            ? 'flex min-h-0 flex-col overflow-hidden'
+            : 'overflow-auto scrollbar-hide'
+        }`}
+      >
         <Outlet />
       </main>
     </>
