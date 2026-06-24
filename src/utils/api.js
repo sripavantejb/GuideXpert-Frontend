@@ -513,6 +513,18 @@ export const registerForIitMeetHindi = async (name, mobileNumber) => {
 };
 
 /**
+ * Register for /cdgxmeet after OTP verification; client then redirects to Google Meet.
+ * @param {string} name - 2-100 char name
+ * @param {string} mobileNumber - 10-digit mobile number
+ */
+export const registerForCollegeDostMeet = async (name, mobileNumber) => {
+  return apiRequest('/college-dost-meet/register', {
+    method: 'POST',
+    body: JSON.stringify({ name, mobileNumber }),
+  });
+};
+
+/**
  * IIT first form: after OTP on the client, submit name, mobile, and free-text AI question answer.
  * @param {string} name
  * @param {string} mobileNumber - 10 digits

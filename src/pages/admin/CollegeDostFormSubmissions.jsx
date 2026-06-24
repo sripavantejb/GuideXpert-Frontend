@@ -1,5 +1,9 @@
 import { useState, useEffect, useRef } from 'react';
-import { getCollegeDostFormSubmissions, getStoredToken } from '../../utils/adminApi';
+import {
+  getCollegeDostFormSubmissions,
+  getCollegeDostMeetAttendance,
+  getStoredToken,
+} from '../../utils/adminApi';
 import { useAuth } from '../../hooks/useAuth';
 import {
   FiClipboard,
@@ -11,6 +15,7 @@ import {
   FiAlertCircle,
   FiInbox,
   FiCopy,
+  FiVideo,
 } from 'react-icons/fi';
 import CopyToSheetsModal from '../../components/Admin/CopyToSheetsModal';
 import { ADMIN_VIEW_ALL_LIMIT } from '../../constants/adminListLimits';
@@ -35,14 +40,21 @@ function InterestBadge({ value }) {
   );
 }
 
-const COPY_FIELDS = [
+const COPY_FIELDS_FORM = [
   { key: 'name', label: 'Name' },
   { key: 'mobileNumber', label: 'Mobile' },
   { key: 'interestedInNewColleges', label: 'Interested in new colleges' },
   { key: 'timestamp', label: 'Submitted' },
 ];
 
-function getSubmissionCellValue(row, key) {
+const COPY_FIELDS_MEET = [
+  { key: 'name', label: 'Name' },
+  { key: 'mobileNumber', label: 'Mobile' },
+  { key: 'timestamp', label: 'Join time' },
+  { key: 'attendanceStatus', label: 'Status' },
+];
+
+function getFormCellValue(row, key) {
   const v = row[key];
   if (key === 'timestamp') return v ? formatDate(v) : '';
   if (key === 'interestedInNewColleges') {
@@ -54,19 +66,30 @@ function getSubmissionCellValue(row, key) {
   return String(v);
 }
 
+function getMeetCellValue(row, key) {
+  const v = row[key];
+  if (key === 'timestamp') return v ? formatDate(v) : '';
+  if (v == null || v === '') return '';
+  return String(v);
+}
+
 export default function CollegeDostFormSubmissions() {
   const { logout } = useAuth();
+  const [activeTab, setActiveTab] = useState('form');
   const [records, setRecords] = useState([]);
   const [pagination, setPagination] = useState({ page: 1, limit: 25, total: 0, totalPages: 1 });
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
   const [filters, setFilters] = useState({ q: '', from: '', to: '' });
   const [viewAll, setViewAll] = useState(false);
+  const [uniqueByMobile, setUniqueByMobile] = useState(false);
   const [copyModalOpen, setCopyModalOpen] = useState(false);
   const [copyLoading, setCopyLoading] = useState(false);
   const [copyRecords, setCopyRecords] = useState([]);
   const cancelledRef = useRef(false);
   const requestIdRef = useRef(0);
+
+  const isMeetTab = activeTab === 'meet';
 
   useEffect(() => {
     cancelledRef.current = false;
@@ -80,13 +103,15 @@ export default function CollegeDostFormSubmissions() {
       q: filters.q.trim() || undefined,
       from: filters.from || undefined,
       to: filters.to || undefined,
+      ...(isMeetTab && uniqueByMobile ? { uniqueByMobile: true, dedupeMode: 'latest' } : {}),
     };
     queueMicrotask(() => {
       if (cancelledRef.current) return;
       setLoading(true);
       setError('');
     });
-    getCollegeDostFormSubmissions(params, getStoredToken()).then((result) => {
+    const fetchFn = isMeetTab ? getCollegeDostMeetAttendance : getCollegeDostFormSubmissions;
+    fetchFn(params, getStoredToken()).then((result) => {
       if (cancelledRef.current) return;
       if (thisRequestId !== requestIdRef.current) return;
       setLoading(false);
@@ -96,7 +121,10 @@ export default function CollegeDostFormSubmissions() {
           window.location.href = '/admin/login';
           return;
         }
-        setError(result.message || 'Failed to load CollegeDost form submissions');
+        setError(
+          result.message ||
+            (isMeetTab ? 'Failed to load meet attendance' : 'Failed to load CollegeDost form submissions')
+        );
         return;
       }
       const dataList = result.data?.data || [];
@@ -105,7 +133,17 @@ export default function CollegeDostFormSubmissions() {
       setPagination(paginationData);
     });
     return () => { cancelledRef.current = true; };
-  }, [viewAll, pagination.page, pagination.limit, filters.q, filters.from, filters.to, logout]);
+  }, [
+    isMeetTab,
+    viewAll,
+    uniqueByMobile,
+    pagination.page,
+    pagination.limit,
+    filters.q,
+    filters.from,
+    filters.to,
+    logout,
+  ]);
 
   const goToPage = (p) => {
     const next = Math.max(1, Math.min(p, pagination.totalPages));
@@ -122,6 +160,15 @@ export default function CollegeDostFormSubmissions() {
     if (!e.target.checked) setPagination((prev) => ({ ...prev, page: 1 }));
   };
 
+  const handleTabChange = (tab) => {
+    setActiveTab(tab);
+    setPagination({ page: 1, limit: 25, total: 0, totalPages: 1 });
+    setRecords([]);
+    setError('');
+    setViewAll(false);
+    setUniqueByMobile(false);
+  };
+
   const clearFilters = () => {
     setFilters({ q: '', from: '', to: '' });
     setPagination((prev) => ({ ...prev, page: 1 }));
@@ -136,9 +183,11 @@ export default function CollegeDostFormSubmissions() {
       q: filters.q.trim() || undefined,
       from: filters.from || undefined,
       to: filters.to || undefined,
+      ...(isMeetTab && uniqueByMobile ? { uniqueByMobile: true, dedupeMode: 'latest' } : {}),
     };
+    const fetchFn = isMeetTab ? getCollegeDostMeetAttendance : getCollegeDostFormSubmissions;
     const result = await fetchAllPaginatedRows((page, limit) =>
-      getCollegeDostFormSubmissions({ ...baseParams, page, limit }, getStoredToken())
+      fetchFn({ ...baseParams, page, limit }, getStoredToken())
     );
     setCopyLoading(false);
     if (!result.success) {
@@ -148,7 +197,7 @@ export default function CollegeDostFormSubmissions() {
         window.location.href = '/admin/login';
         return;
       }
-      setError(r?.message || 'Failed to load submissions for copy');
+      setError(r?.message || 'Failed to load records for copy');
       return;
     }
     setCopyRecords(result.rows || []);
@@ -158,14 +207,42 @@ export default function CollegeDostFormSubmissions() {
   return (
     <div className="max-w-[1400px] mx-auto px-1">
       <div className="mb-8">
-        <div className="flex items-center gap-3 mb-2">
+        <div className="flex items-center gap-3 mb-4">
           <div className="flex items-center justify-center w-12 h-12 rounded-xl bg-[#003366] text-white shadow-lg">
             <FiClipboard className="w-6 h-6" />
           </div>
           <div>
             <h1 className="text-2xl font-bold text-gray-900 tracking-tight">CollegeDost</h1>
-            <p className="text-sm text-gray-500 mt-0.5">Form submissions from /collegedost</p>
+            <p className="text-sm text-gray-500 mt-0.5">
+              Form submissions from /collegedost and meet attendance from /cdgxmeet
+            </p>
           </div>
+        </div>
+        <div className="flex flex-wrap gap-2">
+          <button
+            type="button"
+            onClick={() => handleTabChange('form')}
+            className={`inline-flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-medium transition-colors ${
+              activeTab === 'form'
+                ? 'bg-[#003366] text-white shadow-sm'
+                : 'bg-white border border-gray-200 text-gray-700 hover:bg-gray-50'
+            }`}
+          >
+            <FiClipboard className="w-4 h-4" />
+            Form submissions
+          </button>
+          <button
+            type="button"
+            onClick={() => handleTabChange('meet')}
+            className={`inline-flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-medium transition-colors ${
+              activeTab === 'meet'
+                ? 'bg-[#003366] text-white shadow-sm'
+                : 'bg-white border border-gray-200 text-gray-700 hover:bg-gray-50'
+            }`}
+          >
+            <FiVideo className="w-4 h-4" />
+            Meet attendance
+          </button>
         </div>
       </div>
 
@@ -178,7 +255,9 @@ export default function CollegeDostFormSubmissions() {
                 <FiUsers className="w-6 h-6" />
               </div>
               <div>
-                <p className="text-sm font-medium text-gray-500">Total submissions</p>
+                <p className="text-sm font-medium text-gray-500">
+                  {isMeetTab ? 'Total meet joins' : 'Total submissions'}
+                </p>
                 <p className="text-2xl font-bold text-gray-900">{pagination.total}</p>
               </div>
             </div>
@@ -218,13 +297,28 @@ export default function CollegeDostFormSubmissions() {
               className="py-2.5 px-4 rounded-xl border border-gray-300 focus:ring-2 focus:ring-[#003366]/20 outline-none text-sm min-w-[140px]"
               aria-label="To date"
             />
+            {isMeetTab && (
+              <label className="inline-flex items-center gap-2 cursor-pointer text-sm text-gray-700">
+                <input
+                  type="checkbox"
+                  checked={uniqueByMobile}
+                  onChange={(e) => {
+                    setUniqueByMobile(e.target.checked);
+                    setPagination((prev) => ({ ...prev, page: 1 }));
+                  }}
+                  className="rounded border-gray-300 text-primary-blue-500 focus:ring-primary-blue-500"
+                  aria-label="Unique by mobile"
+                />
+                Unique by mobile
+              </label>
+            )}
             <label className="inline-flex items-center gap-2 cursor-pointer text-sm text-gray-700 ml-2 pl-2 border-l border-gray-200">
               <input
                 type="checkbox"
                 checked={viewAll}
                 onChange={handleViewAllChange}
                 className="rounded border-gray-300 text-primary-blue-500 focus:ring-primary-blue-500"
-                aria-label="View all submissions in one list"
+                aria-label="View all in one list"
               />
               View all
             </label>
@@ -233,7 +327,7 @@ export default function CollegeDostFormSubmissions() {
               onClick={prepareCopyRecords}
               disabled={copyLoading}
               className="inline-flex items-center gap-1.5 ml-2 px-3 py-1.5 rounded-lg border border-gray-300 text-sm font-medium text-gray-700 hover:bg-gray-50 transition-colors disabled:opacity-60"
-              aria-label="Copy all submissions"
+              aria-label="Copy all records"
             >
               <FiCopy className="w-4 h-4" /> {copyLoading ? 'Preparing...' : 'Copy all'}
             </button>
@@ -259,11 +353,40 @@ export default function CollegeDostFormSubmissions() {
 
       <div className="rounded-2xl border border-gray-200 bg-white shadow-lg overflow-hidden">
         {loading ? (
-          <div className="p-12 text-center text-gray-500">Loading submissions…</div>
+          <div className="p-12 text-center text-gray-500">
+            {isMeetTab ? 'Loading meet attendance…' : 'Loading submissions…'}
+          </div>
         ) : records.length === 0 ? (
           <div className="p-12 text-center text-gray-500 flex flex-col items-center gap-2">
             <FiInbox className="w-10 h-10 text-gray-300" />
-            <p>No submissions found</p>
+            <p>{isMeetTab ? 'No meet attendance records found' : 'No submissions found'}</p>
+          </div>
+        ) : isMeetTab ? (
+          <div className="overflow-x-auto">
+            <table className="w-full text-sm">
+              <thead>
+                <tr className="bg-gray-50 border-b border-gray-200 text-left text-gray-600">
+                  <th className="px-5 py-3 font-semibold">Name</th>
+                  <th className="px-5 py-3 font-semibold">Mobile</th>
+                  <th className="px-5 py-3 font-semibold">Join time</th>
+                  <th className="px-5 py-3 font-semibold">Status</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-gray-100">
+                {records.map((row) => (
+                  <tr key={row.id} className="hover:bg-gray-50/80 transition-colors">
+                    <td className="px-5 py-3 font-medium text-gray-900">{row.name || '—'}</td>
+                    <td className="px-5 py-3 text-gray-700">{row.mobileNumber || '—'}</td>
+                    <td className="px-5 py-3 text-gray-600 whitespace-nowrap">{formatDate(row.timestamp)}</td>
+                    <td className="px-5 py-3">
+                      <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-800 capitalize">
+                        {row.attendanceStatus || 'joined'}
+                      </span>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
           </div>
         ) : (
           <div className="overflow-x-auto">
@@ -322,12 +445,12 @@ export default function CollegeDostFormSubmissions() {
       </div>
 
       <CopyToSheetsModal
-        fields={COPY_FIELDS}
+        fields={isMeetTab ? COPY_FIELDS_MEET : COPY_FIELDS_FORM}
         records={copyRecords}
-        getCellValue={getSubmissionCellValue}
+        getCellValue={isMeetTab ? getMeetCellValue : getFormCellValue}
         open={copyModalOpen}
         onClose={() => setCopyModalOpen(false)}
-        recordLabel="submissions"
+        recordLabel={isMeetTab ? 'attendees' : 'submissions'}
         dedupeByPhoneKey="mobileNumber"
         loading={copyLoading}
       />

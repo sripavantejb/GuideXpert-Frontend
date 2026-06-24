@@ -17,6 +17,7 @@ import IitCounsellingMeet from './pages/IitCounsellingMeet';
 import IitCounsellingMeetHindi from './pages/IitCounsellingMeetHindi';
 import IitFirstForm from './pages/IitFirstForm';
 import CollegeDostForm from './pages/CollegeDostForm';
+import CdgxMeet from './pages/CdgxMeet';
 import IitSecondForm from './pages/IitSecondForm';
 import TrainingMeeting from './pages/TrainingMeeting';
 import FeedbackForm from './pages/FeedbackForm';
@@ -270,6 +271,7 @@ function App() {
           <Route path="/iitfirstform" element={<IitFirstForm />} />
           <Route path="/Iitfirstform" element={<IitFirstForm />} />
           <Route path="/collegedost" element={<CollegeDostForm />} />
+          <Route path="/cdgxmeet" element={<CdgxMeet />} />
           <Route path="/iitsecondform" element={<IitSecondForm />} />
           <Route path="/Iitsecondform" element={<IitSecondForm />} />
           <Route path="/training" element={<TrainingMeeting />} />
