@@ -581,12 +581,25 @@ export const submitIitSecondForm = async (name, mobileNumber, careerGuidanceSupp
  * @param {string} name
  * @param {string} mobileNumber - 10 digits
  * @param {'yes'|'no'} interestedInNewColleges
- * @param {string|null} newAgeCollegePreference
+ * @param {string[]|null} newAgeCollegePreferences
+ * @param {string|null} newAgeCollegePreferenceOther
  */
-export const submitCollegeDostForm = async (name, mobileNumber, interestedInNewColleges, newAgeCollegePreference = null) => {
+export const submitCollegeDostForm = async (
+  name,
+  mobileNumber,
+  interestedInNewColleges,
+  newAgeCollegePreferences = null,
+  newAgeCollegePreferenceOther = null
+) => {
   return apiRequest('/college-dost-form/submit', {
     method: 'POST',
-    body: JSON.stringify({ name, mobileNumber, interestedInNewColleges, newAgeCollegePreference }),
+    body: JSON.stringify({
+      name,
+      mobileNumber,
+      interestedInNewColleges,
+      newAgeCollegePreferences,
+      newAgeCollegePreferenceOther,
+    }),
   });
 };
 

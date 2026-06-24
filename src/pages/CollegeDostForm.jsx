@@ -8,6 +8,7 @@ const NEW_AGE_COLLEGE_OPTIONS = [
   { value: 'niat', label: 'NIAT' },
   { value: 'scaler', label: 'Scaler' },
   { value: 'newton-school-of-technology', label: 'Newton School of technology' },
+  { value: 'others', label: 'Others' },
 ];
 
 function validateName(value) {
@@ -42,6 +43,9 @@ export default function CollegeDostForm() {
   const [verifying, setVerifying] = useState(false);
   const [submittingInterest, setSubmittingInterest] = useState(false);
   const [interestedInNewColleges, setInterestedInNewColleges] = useState(null);
+  const [selectedPreferences, setSelectedPreferences] = useState([]);
+  const [otherPreference, setOtherPreference] = useState('');
+  const [preferenceError, setPreferenceError] = useState('');
   const [showSuccessModal, setShowSuccessModal] = useState(false);
 
   const otpInputRefs = useRef([]);
@@ -218,13 +222,13 @@ export default function CollegeDostForm() {
     setStep(4);
   };
 
-  const handleSubmitForm = async (interest, preference) => {
+  const handleSubmitForm = async (interest, preferences, otherText) => {
     setSubmitError('');
     setSubmittingInterest(true);
     const phone = normalizedPhone();
 
     try {
-      const res = await submitCollegeDostForm(name.trim(), phone, interest, preference);
+      const res = await submitCollegeDostForm(name.trim(), phone, interest, preferences, otherText);
       if (!res.success) {
         setSubmitError(res.message || 'Could not save your response. Please try again.');
         setSubmittingInterest(false);
@@ -238,8 +242,33 @@ export default function CollegeDostForm() {
     }
   };
 
-  const handleSubmitPreference = (preference) => {
-    handleSubmitForm(interestedInNewColleges || 'yes', preference);
+  const togglePreference = (value) => {
+    setPreferenceError('');
+    setSubmitError('');
+    setSelectedPreferences((prev) => {
+      const isSelected = prev.includes(value);
+      if (value === 'others' && isSelected) {
+        setOtherPreference('');
+      }
+      return isSelected ? prev.filter((item) => item !== value) : [...prev, value];
+    });
+  };
+
+  const handleSubmitPreferences = () => {
+    if (!selectedPreferences.length) {
+      setPreferenceError('Please select at least one option.');
+      return;
+    }
+    if (selectedPreferences.includes('others') && otherPreference.trim().length < 2) {
+      setPreferenceError('Please specify your other preference.');
+      return;
+    }
+    setPreferenceError('');
+    handleSubmitForm(
+      interestedInNewColleges || 'yes',
+      selectedPreferences,
+      selectedPreferences.includes('others') ? otherPreference.trim() : null
+    );
   };
 
   return (
@@ -335,9 +364,10 @@ export default function CollegeDostForm() {
         {step === 4 && (
           <>
             <p className="text-xs font-semibold text-gray-500 uppercase tracking-wide mb-3">One more question</p>
-            <h2 className="text-xl sm:text-2xl font-bold text-gray-900 leading-snug mb-6 border-l-4 border-blue-600 pl-4 py-0.5">
+            <h2 className="text-xl sm:text-2xl font-bold text-gray-900 leading-snug mb-2 border-l-4 border-blue-600 pl-4 py-0.5">
               Your top preference in the new age college?
             </h2>
+            <p className="text-sm text-gray-600 mb-6">Select all that apply.</p>
           </>
         )}
 
@@ -499,17 +529,62 @@ export default function CollegeDostForm() {
 
         {step === 4 && (
           <div className="space-y-3">
-            {NEW_AGE_COLLEGE_OPTIONS.map((option) => (
-              <button
-                key={option.value}
-                type="button"
-                onClick={() => handleSubmitPreference(option.value)}
-                disabled={submittingInterest}
-                className="w-full py-3 px-4 bg-gray-100 hover:bg-blue-50 hover:border-blue-300 border border-gray-200 text-gray-900 font-medium rounded-lg transition text-left disabled:opacity-60 disabled:cursor-not-allowed"
-              >
-                {submittingInterest ? 'Submitting…' : option.label}
-              </button>
-            ))}
+            {NEW_AGE_COLLEGE_OPTIONS.map((option) => {
+              const selected = selectedPreferences.includes(option.value);
+              return (
+                <div key={option.value} className="space-y-2">
+                  <button
+                    type="button"
+                    onClick={() => togglePreference(option.value)}
+                    disabled={submittingInterest}
+                    className={`w-full py-3 px-4 border rounded-lg transition text-left font-medium disabled:opacity-60 disabled:cursor-not-allowed ${
+                      selected
+                        ? 'bg-blue-50 border-blue-500 text-blue-900'
+                        : 'bg-gray-100 hover:bg-blue-50 hover:border-blue-300 border-gray-200 text-gray-900'
+                    }`}
+                    aria-pressed={selected}
+                  >
+                    <span className="inline-flex items-center gap-3">
+                      <span
+                        className={`flex h-5 w-5 items-center justify-center rounded border ${
+                          selected ? 'border-blue-600 bg-blue-600 text-white' : 'border-gray-400 bg-white'
+                        }`}
+                        aria-hidden
+                      >
+                        {selected ? '✓' : ''}
+                      </span>
+                      {option.label}
+                    </span>
+                  </button>
+                  {option.value === 'others' && selected && (
+                    <input
+                      type="text"
+                      value={otherPreference}
+                      onChange={(e) => {
+                        setOtherPreference(e.target.value);
+                        setPreferenceError('');
+                      }}
+                      placeholder="Please specify"
+                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition"
+                      disabled={submittingInterest}
+                    />
+                  )}
+                </div>
+              );
+            })}
+            {preferenceError && (
+              <p className="text-sm text-red-600" role="alert">
+                {preferenceError}
+              </p>
+            )}
+            <button
+              type="button"
+              onClick={handleSubmitPreferences}
+              disabled={submittingInterest}
+              className="w-full py-3 px-4 bg-blue-700 hover:bg-blue-800 text-white font-medium rounded-lg transition disabled:opacity-60 disabled:cursor-not-allowed"
+            >
+              {submittingInterest ? 'Submitting…' : 'Submit'}
+            </button>
           </div>
         )}
 

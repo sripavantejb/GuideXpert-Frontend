@@ -45,13 +45,35 @@ const NEW_AGE_COLLEGE_LABELS = {
   niat: 'NIAT',
   scaler: 'Scaler',
   'newton-school-of-technology': 'Newton School of technology',
+  others: 'Others',
 };
+
+function formatCollegePreferences(row) {
+  const preferences = Array.isArray(row.newAgeCollegePreferences)
+    ? row.newAgeCollegePreferences
+    : row.newAgeCollegePreference
+      ? [row.newAgeCollegePreference]
+      : [];
+
+  if (!preferences.length) return '—';
+
+  return preferences
+    .map((value) => {
+      if (value === 'others') {
+        return row.newAgeCollegePreferenceOther
+          ? `Others: ${row.newAgeCollegePreferenceOther}`
+          : 'Others';
+      }
+      return NEW_AGE_COLLEGE_LABELS[value] || value;
+    })
+    .join(', ');
+}
 
 const COPY_FIELDS_FORM = [
   { key: 'name', label: 'Name' },
   { key: 'mobileNumber', label: 'Mobile' },
   { key: 'interestedInNewColleges', label: 'Interested in new age colleges' },
-  { key: 'newAgeCollegePreference', label: 'Top college preference' },
+  { key: 'newAgeCollegePreferences', label: 'Top college preferences' },
   { key: 'timestamp', label: 'Submitted' },
 ];
 
@@ -70,8 +92,8 @@ function getFormCellValue(row, key) {
     if (v === 'no') return 'No';
     return v == null || v === '' ? '' : String(v);
   }
-  if (key === 'newAgeCollegePreference') {
-    return NEW_AGE_COLLEGE_LABELS[v] || (v == null || v === '' ? '' : String(v));
+  if (key === 'newAgeCollegePreferences') {
+    return formatCollegePreferences(row);
   }
   if (v == null || v === '') return '';
   return String(v);
@@ -407,7 +429,7 @@ export default function CollegeDostFormSubmissions() {
                   <th className="px-5 py-3 font-semibold">Name</th>
                   <th className="px-5 py-3 font-semibold">Mobile</th>
                   <th className="px-5 py-3 font-semibold">Interested in new age colleges</th>
-                  <th className="px-5 py-3 font-semibold">Top college preference</th>
+                  <th className="px-5 py-3 font-semibold">Top college preferences</th>
                   <th className="px-5 py-3 font-semibold">Submitted at</th>
                 </tr>
               </thead>
@@ -420,7 +442,7 @@ export default function CollegeDostFormSubmissions() {
                       <InterestBadge value={row.interestedInNewColleges} />
                     </td>
                     <td className="px-5 py-3 text-gray-700">
-                      {NEW_AGE_COLLEGE_LABELS[row.newAgeCollegePreference] || '—'}
+                      {formatCollegePreferences(row)}
                     </td>
                     <td className="px-5 py-3 text-gray-600 whitespace-nowrap">{formatDate(row.timestamp)}</td>
                   </tr>
