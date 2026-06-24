@@ -1,5 +1,5 @@
 import { useState, useRef } from 'react';
-import { sendOtp, verifyOtp, submitCollegeDostForm, checkCollegeDostFormStatus } from '../utils/api';
+import { sendOtp, verifyOtp, submitCollegeDostForm, checkCollegeDostMeetStatus } from '../utils/api';
 
 const OTP_OCCUPATION = 'CollegeDost Form';
 
@@ -79,10 +79,10 @@ export default function CollegeDostForm() {
     setSuccessMessage('');
     setLoading(true);
 
-    const cleanPhone = mobileNumber.replace(/\D/g, '');
+    const cleanPhone = normalizedPhone();
 
     try {
-      const statusResult = await checkCollegeDostFormStatus(cleanPhone);
+      const statusResult = await checkCollegeDostMeetStatus(cleanPhone);
       if (statusResult.success && statusResult.exists) {
         if (statusResult.data?.name) {
           setName(statusResult.data.name);

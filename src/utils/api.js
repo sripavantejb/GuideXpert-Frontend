@@ -525,25 +525,29 @@ export const registerForCollegeDostMeet = async (name, mobileNumber) => {
 };
 
 /**
- * Check if a mobile number already has a CollegeDost meet or form record (skip OTP when true).
+ * Check if a mobile number already joined CollegeDost meet (/cdgxmeet).
+ * Used by /collegedost to skip OTP for returning meet attendees.
  * @param {string} mobileNumber - 10-digit mobile number
  */
 export const checkCollegeDostMeetStatus = async (mobileNumber) => {
   const digits = String(mobileNumber || '').replace(/\D/g, '').slice(-10);
-  return apiRequest(`/college-dost-meet/status?mobileNumber=${encodeURIComponent(digits)}`, {
+  const result = await apiRequest(`/college-dost-meet/status?mobileNumber=${encodeURIComponent(digits)}`, {
     method: 'GET',
   });
-};
-
-/**
- * Check if a mobile number already submitted the CollegeDost form (skip OTP when true).
- * @param {string} mobileNumber - 10-digit mobile number
- */
-export const checkCollegeDostFormStatus = async (mobileNumber) => {
-  const digits = String(mobileNumber || '').replace(/\D/g, '').slice(-10);
-  return apiRequest(`/college-dost-form/status?mobileNumber=${encodeURIComponent(digits)}`, {
-    method: 'GET',
-  });
+  if (!result.success) {
+    return {
+      success: false,
+      exists: false,
+      message: result.message,
+      status: result.status,
+    };
+  }
+  const body = result.data || {};
+  return {
+    success: true,
+    exists: Boolean(body.exists),
+    data: body.data,
+  };
 };
 
 /**
