@@ -1087,6 +1087,22 @@ export const adminDeleteBlog = async (id, token = getStoredToken()) => {
   return adminRequest(`/blogs/${encodeURIComponent(id)}`, { method: 'DELETE' }, token);
 };
 
+/** GET /admin/app-settings/sidebar — get admin sidebar organization config. */
+export const getSidebarConfig = async (token = getStoredToken()) => {
+  return adminRequest('/app-settings/sidebar', { method: 'GET' }, token);
+};
+
+/**
+ * PATCH /admin/app-settings/sidebar — update sidebar organization (super-admin only).
+ * @param {{ sectionsEnabled?: { counsellors?: boolean, students?: boolean }, overrides?: Record<string, string> }} config
+ */
+export const setSidebarConfig = async (config, token = getStoredToken()) => {
+  return adminRequest('/app-settings/sidebar', {
+    method: 'PATCH',
+    body: JSON.stringify(config && typeof config === 'object' ? config : {}),
+  }, token);
+};
+
 /** GET /admin/app-settings/osvi — get OSVI toggle state. */
 export const getOsviSetting = async (token = getStoredToken()) => {
   return adminRequest('/app-settings/osvi', { method: 'GET' }, token);

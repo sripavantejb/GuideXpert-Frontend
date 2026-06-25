@@ -1,5 +1,15 @@
 import { useRef, useState } from 'react';
 import ToolWorkspaceLayout from './components/ToolWorkspaceLayout';
+import {
+  swBtnPrimary,
+  swBtnSecondary,
+  swInsightsPanel,
+  swResultCard,
+  swResultsHighlight,
+  swSectionSubtitle,
+  swSectionTitle,
+  swWorkspaceTitle,
+} from './components/studentWorkspaceUi';
 
 const QUESTIONS = [
   'I prefer solving mathematical equations over writing essays.',
@@ -43,20 +53,20 @@ export default function CourseFitTestPage() {
         'Progress Indicator: Shows which question number you are on in the test flow.',
       ]}
       preview={
-        <div className="space-y-2 text-sm font-bold">
-          <p>Questions: 10 (demo set enabled)</p>
-          <p>Output: Top 3 course matches</p>
+        <div className="space-y-1 text-sm text-slate-600">
+          <p>Questions: <span className="font-semibold text-slate-900">10</span> (demo set)</p>
+          <p>Output: <span className="font-semibold text-slate-900">Top 3 course matches</span></p>
         </div>
       }
       results={
         result ? (
-          <section ref={resultsRef} className="rounded-[14px] border-2 border-black bg-[#c7f36b]/35 p-6 shadow-[4px_4px_0px_#000]">
-            <h2 className="text-2xl font-black text-[#0F172A]">Results Panel</h2>
-            <p className="mt-1 text-sm text-slate-600">How to read this result: recommendations are ranked by overall fit from your quiz responses.</p>
+          <section ref={resultsRef} className={swResultsHighlight}>
+            <h2 className={swSectionTitle}>Results</h2>
+            <p className={swSectionSubtitle}>Recommendations ranked by overall fit from your quiz responses.</p>
             <div className="mt-4 grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
               {result.map((course) => (
-                <article key={course} className="rounded-[12px] border-2 border-black bg-white p-4 shadow-[3px_3px_0px_#000]">
-                  <p className="text-sm font-black text-[#0F172A]">{course}</p>
+                <article key={course} className={swResultCard}>
+                  <p className="font-semibold text-slate-900">{course}</p>
                 </article>
               ))}
             </div>
@@ -65,8 +75,8 @@ export default function CourseFitTestPage() {
       }
       insights={
         result ? (
-          <section className="rounded-[14px] border-2 border-black bg-white p-6 shadow-[4px_4px_0px_#000]">
-            <h3 className="text-xl font-black text-[#0F172A]">Next Step Suggestions</h3>
+          <section className={swInsightsPanel}>
+            <h3 className={swSectionTitle}>Next steps</h3>
             <ul className="mt-3 list-disc space-y-2 pl-5 text-sm text-slate-600">
               <li>Pick one primary and one backup course path for applications.</li>
               <li>Review college curriculum depth for your top recommended courses.</li>
@@ -75,27 +85,19 @@ export default function CourseFitTestPage() {
         ) : null
       }
     >
-      <h2 className="text-2xl font-black text-[#0F172A]">Input Workspace</h2>
-      <p className="mt-1 text-sm text-slate-600">Click Start Test and answer each question to access your course-fit result.</p>
-      <div className="mt-5 rounded-[12px] border-2 border-black bg-slate-50 p-5">
-        <p className="text-xs font-black uppercase tracking-widest text-slate-500">
+      <h2 className={swWorkspaceTitle}>Course fit quiz</h2>
+      <p className={swSectionSubtitle}>Answer each question to access your course-fit result.</p>
+      <div className="mt-5 rounded-xl border border-slate-200 bg-slate-50 p-5">
+        <p className="text-xs font-medium uppercase tracking-wider text-slate-400">
           Question {Math.min(questionIndex + 1, QUESTIONS.length)} / 10
         </p>
-        <p className="mt-2 text-base font-semibold text-[#0F172A]">{QUESTIONS[questionIndex]}</p>
-        <div className="mt-4 flex flex-wrap gap-3">
-          <button
-            type="button"
-            onClick={handleAnswer}
-            className="rounded-[12px] border-2 border-black bg-white px-5 py-2 text-sm font-black shadow-[3px_3px_0px_#000] transition-all hover:-translate-y-0.5"
-          >
+        <p className="mt-3 text-base font-medium text-slate-900">{QUESTIONS[questionIndex]}</p>
+        <div className="mt-5 flex flex-wrap gap-3">
+          <button type="button" onClick={handleAnswer} className={swBtnSecondary}>
             Disagree
           </button>
-          <button
-            type="button"
-            onClick={handleAnswer}
-            className="rounded-[12px] border-2 border-black bg-[#c7f36b] px-5 py-2 text-sm font-black shadow-[3px_3px_0px_#000] transition-all hover:-translate-y-0.5"
-          >
-            {started ? 'Agree' : 'Start Test'}
+          <button type="button" onClick={handleAnswer} className={swBtnPrimary}>
+            {started ? 'Agree' : 'Start test'}
           </button>
         </div>
       </div>

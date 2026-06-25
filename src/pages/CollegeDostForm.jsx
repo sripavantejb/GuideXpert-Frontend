@@ -1,7 +1,15 @@
 import { useState, useRef } from 'react';
-import { sendOtp, verifyOtp, submitCollegeDostForm } from '../utils/api';
+import { sendOtp, verifyOtp, submitCollegeDostForm, checkCollegeDostMeetStatus } from '../utils/api';
 
 const OTP_OCCUPATION = 'CollegeDost Form';
+
+const NEW_AGE_COLLEGE_OPTIONS = [
+  { value: 'zenith-school-of-ai', label: 'Zenith School of AI' },
+  { value: 'niat', label: 'NIAT' },
+  { value: 'scaler', label: 'Scaler' },
+  { value: 'newton-school-of-technology', label: 'Newton School of technology' },
+  { value: 'others', label: 'Others' },
+];
 
 function validateName(value) {
   const trimmed = typeof value === 'string' ? value.trim() : '';
@@ -19,7 +27,7 @@ function validateMobile(value) {
 }
 
 /**
- * Public flow: name + mobile → OTP → interested in new colleges (yes/no).
+ * Public flow: name + mobile → OTP → interested in new age colleges (yes/no) → top preference (if yes).
  * Route: /collegedost
  */
 export default function CollegeDostForm() {
@@ -34,6 +42,10 @@ export default function CollegeDostForm() {
   const [loading, setLoading] = useState(false);
   const [verifying, setVerifying] = useState(false);
   const [submittingInterest, setSubmittingInterest] = useState(false);
+  const [interestedInNewColleges, setInterestedInNewColleges] = useState(null);
+  const [selectedPreferences, setSelectedPreferences] = useState([]);
+  const [otherPreference, setOtherPreference] = useState('');
+  const [preferenceError, setPreferenceError] = useState('');
   const [showSuccessModal, setShowSuccessModal] = useState(false);
 
   const otpInputRefs = useRef([]);
@@ -71,9 +83,18 @@ export default function CollegeDostForm() {
     setSuccessMessage('');
     setLoading(true);
 
-    const cleanPhone = mobileNumber.replace(/\D/g, '');
+    const cleanPhone = normalizedPhone();
 
     try {
+      const statusResult = await checkCollegeDostMeetStatus(cleanPhone);
+      if (statusResult.success && statusResult.exists) {
+        if (statusResult.data?.name) {
+          setName(statusResult.data.name);
+        }
+        setStep(3);
+        return;
+      }
+
       const result = await sendOtp(name.trim(), cleanPhone, OTP_OCCUPATION);
 
       if (result.success) {
@@ -191,13 +212,23 @@ export default function CollegeDostForm() {
     setSuccessMessage('');
   };
 
-  const handleSubmitInterest = async (interestedInNewColleges) => {
+  const handleInterestChoice = (choice) => {
+    setSubmitError('');
+    if (choice === 'no') {
+      handleSubmitForm('no', null);
+      return;
+    }
+    setInterestedInNewColleges('yes');
+    setStep(4);
+  };
+
+  const handleSubmitForm = async (interest, preferences, otherText) => {
     setSubmitError('');
     setSubmittingInterest(true);
     const phone = normalizedPhone();
 
     try {
-      const res = await submitCollegeDostForm(name.trim(), phone, interestedInNewColleges);
+      const res = await submitCollegeDostForm(name.trim(), phone, interest, preferences, otherText);
       if (!res.success) {
         setSubmitError(res.message || 'Could not save your response. Please try again.');
         setSubmittingInterest(false);
@@ -209,6 +240,35 @@ export default function CollegeDostForm() {
     } finally {
       setSubmittingInterest(false);
     }
+  };
+
+  const togglePreference = (value) => {
+    setPreferenceError('');
+    setSubmitError('');
+    setSelectedPreferences((prev) => {
+      const isSelected = prev.includes(value);
+      if (value === 'others' && isSelected) {
+        setOtherPreference('');
+      }
+      return isSelected ? prev.filter((item) => item !== value) : [...prev, value];
+    });
+  };
+
+  const handleSubmitPreferences = () => {
+    if (!selectedPreferences.length) {
+      setPreferenceError('Please select at least one option.');
+      return;
+    }
+    if (selectedPreferences.includes('others') && otherPreference.trim().length < 2) {
+      setPreferenceError('Please specify your other preference.');
+      return;
+    }
+    setPreferenceError('');
+    handleSubmitForm(
+      interestedInNewColleges || 'yes',
+      selectedPreferences,
+      selectedPreferences.includes('others') ? otherPreference.trim() : null
+    );
   };
 
   return (
@@ -242,11 +302,11 @@ export default function CollegeDostForm() {
         {step === 2 && (
           <div className="mb-4">
             <div className="flex items-center justify-between text-xs text-gray-500 mb-1">
-              <span>Step 2 of 3</span>
+              <span>Step 2 of 4</span>
               <span>OTP verification</span>
             </div>
             <div className="w-full bg-gray-200 rounded-full h-1.5">
-              <div className="bg-blue-700 h-1.5 rounded-full transition-all" style={{ width: '66%' }} />
+              <div className="bg-blue-700 h-1.5 rounded-full transition-all" style={{ width: '50%' }} />
             </div>
           </div>
         )}
@@ -254,8 +314,20 @@ export default function CollegeDostForm() {
         {step === 3 && (
           <div className="mb-4">
             <div className="flex items-center justify-between text-xs text-gray-500 mb-1">
-              <span>Step 3 of 3</span>
+              <span>Step 3 of 4</span>
               <span>Your interest</span>
+            </div>
+            <div className="w-full bg-gray-200 rounded-full h-1.5">
+              <div className="bg-blue-700 h-1.5 rounded-full transition-all" style={{ width: '75%' }} />
+            </div>
+          </div>
+        )}
+
+        {step === 4 && (
+          <div className="mb-4">
+            <div className="flex items-center justify-between text-xs text-gray-500 mb-1">
+              <span>Step 4 of 4</span>
+              <span>Your preference</span>
             </div>
             <div className="w-full bg-gray-200 rounded-full h-1.5">
               <div className="bg-blue-700 h-1.5 rounded-full transition-all" style={{ width: '100%' }} />
@@ -284,8 +356,18 @@ export default function CollegeDostForm() {
           <>
             <p className="text-xs font-semibold text-gray-500 uppercase tracking-wide mb-3">One quick question</p>
             <h2 className="text-xl sm:text-2xl font-bold text-gray-900 leading-snug mb-6 border-l-4 border-blue-600 pl-4 py-0.5">
-              Interested in new colleges?
+              Interested in new age colleges?
             </h2>
+          </>
+        )}
+
+        {step === 4 && (
+          <>
+            <p className="text-xs font-semibold text-gray-500 uppercase tracking-wide mb-3">One more question</p>
+            <h2 className="text-xl sm:text-2xl font-bold text-gray-900 leading-snug mb-2 border-l-4 border-blue-600 pl-4 py-0.5">
+              Your top preference in the new age college?
+            </h2>
+            <p className="text-sm text-gray-600 mb-6">Select all that apply.</p>
           </>
         )}
 
@@ -427,21 +509,82 @@ export default function CollegeDostForm() {
             <div className="flex gap-3">
               <button
                 type="button"
-                onClick={() => handleSubmitInterest('yes')}
+                onClick={() => handleInterestChoice('yes')}
                 disabled={submittingInterest}
                 className="flex-1 py-3 px-4 bg-blue-700 hover:bg-blue-800 text-white font-medium rounded-lg transition disabled:opacity-60 disabled:cursor-not-allowed"
               >
-                {submittingInterest ? 'Submitting…' : 'Yes'}
+                Yes
               </button>
               <button
                 type="button"
-                onClick={() => handleSubmitInterest('no')}
+                onClick={() => handleInterestChoice('no')}
                 disabled={submittingInterest}
                 className="flex-1 py-3 px-4 bg-gray-100 hover:bg-gray-200 text-gray-800 font-medium rounded-lg transition disabled:opacity-60 disabled:cursor-not-allowed"
               >
                 {submittingInterest ? 'Submitting…' : 'No'}
               </button>
             </div>
+          </div>
+        )}
+
+        {step === 4 && (
+          <div className="space-y-3">
+            {NEW_AGE_COLLEGE_OPTIONS.map((option) => {
+              const selected = selectedPreferences.includes(option.value);
+              return (
+                <div key={option.value} className="space-y-2">
+                  <button
+                    type="button"
+                    onClick={() => togglePreference(option.value)}
+                    disabled={submittingInterest}
+                    className={`w-full py-3 px-4 border rounded-lg transition text-left font-medium disabled:opacity-60 disabled:cursor-not-allowed ${
+                      selected
+                        ? 'bg-blue-50 border-blue-500 text-blue-900'
+                        : 'bg-gray-100 hover:bg-blue-50 hover:border-blue-300 border-gray-200 text-gray-900'
+                    }`}
+                    aria-pressed={selected}
+                  >
+                    <span className="inline-flex items-center gap-3">
+                      <span
+                        className={`flex h-5 w-5 items-center justify-center rounded border ${
+                          selected ? 'border-blue-600 bg-blue-600 text-white' : 'border-gray-400 bg-white'
+                        }`}
+                        aria-hidden
+                      >
+                        {selected ? '✓' : ''}
+                      </span>
+                      {option.label}
+                    </span>
+                  </button>
+                  {option.value === 'others' && selected && (
+                    <input
+                      type="text"
+                      value={otherPreference}
+                      onChange={(e) => {
+                        setOtherPreference(e.target.value);
+                        setPreferenceError('');
+                      }}
+                      placeholder="Please specify"
+                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition"
+                      disabled={submittingInterest}
+                    />
+                  )}
+                </div>
+              );
+            })}
+            {preferenceError && (
+              <p className="text-sm text-red-600" role="alert">
+                {preferenceError}
+              </p>
+            )}
+            <button
+              type="button"
+              onClick={handleSubmitPreferences}
+              disabled={submittingInterest}
+              className="w-full py-3 px-4 bg-blue-700 hover:bg-blue-800 text-white font-medium rounded-lg transition disabled:opacity-60 disabled:cursor-not-allowed"
+            >
+              {submittingInterest ? 'Submitting…' : 'Submit'}
+            </button>
           </div>
         )}
 

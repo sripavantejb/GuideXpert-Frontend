@@ -9,7 +9,44 @@ import {
 /**
  * CRM update form for BDA portal — same dropdowns/fields as admin lead drawer.
  */
-export default function BdaLeadCrmForm({ form, setForm, onSave, saving, saveMsg }) {
+export default function BdaLeadCrmForm({ form, setForm, onSave, saving, saveMsg, simplified = false }) {
+  if (simplified) {
+    return (
+      <div className="space-y-4 border-t border-gray-100 pt-4">
+        <p className="text-sm font-semibold text-gray-900">Update lead</p>
+        <div className="space-y-2">
+          <label className="text-xs font-medium text-gray-600">Lead status</label>
+          <input
+            type="text"
+            value={form.leadStatus || ''}
+            onChange={(e) => setForm((f) => ({ ...f, leadStatus: e.target.value }))}
+            className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm"
+            placeholder="Lead status"
+          />
+        </div>
+        <div className="space-y-2">
+          <label className="text-xs font-medium text-gray-600">Remark (required)</label>
+          <textarea
+            value={form.remark || ''}
+            onChange={(e) => setForm((f) => ({ ...f, remark: e.target.value }))}
+            rows={4}
+            className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm"
+            placeholder="Add call notes or follow-up details"
+          />
+        </div>
+        {saveMsg && <p className={`text-sm ${saveMsg === 'Saved' ? 'text-green-600' : 'text-red-600'}`}>{saveMsg}</p>}
+        <button
+          type="button"
+          disabled={saving}
+          onClick={onSave}
+          className="w-full py-2.5 rounded-lg bg-primary-blue text-white text-sm font-medium hover:opacity-90 disabled:opacity-50"
+        >
+          {saving ? 'Saving…' : 'Save update'}
+        </button>
+      </div>
+    );
+  }
+
   return (
     <div className="space-y-4 border-t border-gray-100 pt-4">
       <p className="text-sm font-semibold text-gray-900">Update lead (your assigned leads only)</p>

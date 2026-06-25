@@ -525,6 +525,32 @@ export const registerForCollegeDostMeet = async (name, mobileNumber) => {
 };
 
 /**
+ * Check if a mobile number already joined CollegeDost meet (/cdgxmeet).
+ * Used by /collegedost to skip OTP for returning meet attendees.
+ * @param {string} mobileNumber - 10-digit mobile number
+ */
+export const checkCollegeDostMeetStatus = async (mobileNumber) => {
+  const digits = String(mobileNumber || '').replace(/\D/g, '').slice(-10);
+  const result = await apiRequest(`/college-dost-meet/status?mobileNumber=${encodeURIComponent(digits)}`, {
+    method: 'GET',
+  });
+  if (!result.success) {
+    return {
+      success: false,
+      exists: false,
+      message: result.message,
+      status: result.status,
+    };
+  }
+  const body = result.data || {};
+  return {
+    success: true,
+    exists: Boolean(body.exists),
+    data: body.data,
+  };
+};
+
+/**
  * IIT first form: after OTP on the client, submit name, mobile, and free-text AI question answer.
  * @param {string} name
  * @param {string} mobileNumber - 10 digits
@@ -555,11 +581,25 @@ export const submitIitSecondForm = async (name, mobileNumber, careerGuidanceSupp
  * @param {string} name
  * @param {string} mobileNumber - 10 digits
  * @param {'yes'|'no'} interestedInNewColleges
+ * @param {string[]|null} newAgeCollegePreferences
+ * @param {string|null} newAgeCollegePreferenceOther
  */
-export const submitCollegeDostForm = async (name, mobileNumber, interestedInNewColleges) => {
+export const submitCollegeDostForm = async (
+  name,
+  mobileNumber,
+  interestedInNewColleges,
+  newAgeCollegePreferences = null,
+  newAgeCollegePreferenceOther = null
+) => {
   return apiRequest('/college-dost-form/submit', {
     method: 'POST',
-    body: JSON.stringify({ name, mobileNumber, interestedInNewColleges }),
+    body: JSON.stringify({
+      name,
+      mobileNumber,
+      interestedInNewColleges,
+      newAgeCollegePreferences,
+      newAgeCollegePreferenceOther,
+    }),
   });
 };
 

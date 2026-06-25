@@ -8,6 +8,7 @@ function refreshAdminsList(setAdmins) {
   });
 }
 import ManageAdminsSection from '../../components/Admin/ManageAdminsSection';
+import AdminSidebarSettingsSection from '../../components/Admin/AdminSidebarSettingsSection';
 
 const EMPTY_FORM = {
   username: '',
@@ -235,6 +236,8 @@ export default function Settings() {
     <div className="max-w-3xl mx-auto">
       <h2 className="text-xl font-semibold text-gray-800 mb-6">Settings</h2>
 
+      <AdminSidebarSettingsSection isSuperAdmin={isSuperAdmin} />
+
       <div className="bg-white rounded-lg border border-gray-200 shadow-sm p-6 mb-6">
         <h3 className="text-lg font-semibold text-gray-800 mb-1">Feature Toggles</h3>
         <p className="text-sm text-gray-500 mb-5">Control live features for the public-facing site. Only super admins can change these.</p>
@@ -322,7 +325,7 @@ export default function Settings() {
           </button>
         </form>
         <p className="text-sm text-gray-500 mt-6 pt-4 border-t border-gray-100">
-          Use <strong>Log out</strong> in the sidebar (bottom) to sign out.
+          Use <strong>Log out</strong> in the profile menu (top-right) to sign out.
         </p>
       </div>
 
@@ -330,7 +333,7 @@ export default function Settings() {
         <div className="bg-amber-50 border border-amber-200 rounded-lg p-4 text-sm text-amber-800 mb-6">
           <p className="font-medium mb-1">Only super admins can create and manage other admins.</p>
           <p className="mt-2 text-amber-700">
-            If you should have access, log out (sidebar bottom) and log in again to refresh your permissions. If you use a self-hosted backend, run <code className="px-1 py-0.5 bg-amber-100 rounded text-xs">node scripts/migrateExistingAdminsToSuperAdmin.js</code> from the backend folder first so existing admins become super admins.
+            If you should have access, log out (profile menu, top-right) and log in again to refresh your permissions. If you use a self-hosted backend, run <code className="px-1 py-0.5 bg-amber-100 rounded text-xs">node scripts/migrateExistingAdminsToSuperAdmin.js</code> from the backend folder first so existing admins become super admins.
           </p>
         </div>
       )}

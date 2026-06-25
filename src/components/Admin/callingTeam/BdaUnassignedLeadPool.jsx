@@ -7,8 +7,10 @@ import { bdaLeadFiltersToQuery } from '../../../constants/bdaLeadFilters';
 import {
   bulkMapFilteredLeadsToRespectiveBda,
   bulkMapLeadsToRespectiveBda,
+  getBdaAssignableLeads,
   getCallingTeamLeads,
 } from '../../../utils/callingTeamApi';
+import { BDA_LEAD_TYPES, DEFAULT_BDA_LEAD_TYPE } from '../../../constants/bdaLeadTypes';
 import { getLeadClassStatus } from '../../../utils/callingDataLeadMapper';
 
 const BULK_ASSIGN_MAX = 200;
@@ -55,8 +57,10 @@ export default function BdaUnassignedLeadPool({ appliedFilters, filterVersion, o
   const [mapConfirmOpen, setMapConfirmOpen] = useState(false);
   const [mapAllConfirmOpen, setMapAllConfirmOpen] = useState(false);
   const [mapping, setMapping] = useState(false);
+  const [leadType, setLeadType] = useState(DEFAULT_BDA_LEAD_TYPE);
 
-  const filtersReady = appliedFilters != null;
+  const isIitPool = leadType === 'iit_counselling';
+  const filtersReady = isIitPool ? appliedFilters != null : true;
 
   const load = useCallback(async () => {
     if (!filtersReady) {
@@ -68,22 +72,33 @@ export default function BdaUnassignedLeadPool({ appliedFilters, filterVersion, o
 
     setLoading(true);
     setError('');
-    const params = {
-      page,
-      limit: 25,
-      unassignedOnly: 'true',
-      ...bdaLeadFiltersToQuery(appliedFilters),
-    };
-    const res = await getCallingTeamLeads(params);
+    let res;
+    if (isIitPool) {
+      const params = {
+        page,
+        limit: 25,
+        unassignedOnly: 'true',
+        ...bdaLeadFiltersToQuery(appliedFilters),
+      };
+      res = await getCallingTeamLeads(params);
+    } else {
+      res = await getBdaAssignableLeads({
+        leadType,
+        page,
+        limit: 25,
+        unassignedOnly: 'true',
+        formCompleted: leadType === 'one_on_one' ? 'true' : undefined,
+      });
+    }
     if (res.success) {
-      setRows(res.data?.data || []);
-      setPagination(res.data?.pagination || { page: 1, totalPages: 1, total: 0 });
+      setRows(res.data?.data || res.data || []);
+      setPagination(res.data?.pagination || res.pagination || { page: 1, totalPages: 1, total: 0 });
       setSelected(new Set());
     } else {
       setError(res.message || 'Failed to load unassigned leads');
     }
     setLoading(false);
-  }, [page, appliedFilters, filtersReady]);
+  }, [page, appliedFilters, filtersReady, isIitPool, leadType]);
 
   useEffect(() => {
     load();
@@ -185,17 +200,43 @@ export default function BdaUnassignedLeadPool({ appliedFilters, filterVersion, o
 
   return (
     <div className="bg-white rounded-xl border border-gray-200 shadow-sm overflow-hidden">
+      <div className="px-4 py-3 border-b flex flex-wrap items-center gap-2">
+        {BDA_LEAD_TYPES.map((t) => (
+          <button
+            key={t.id}
+            type="button"
+            onClick={() => {
+              setLeadType(t.id);
+              setPage(1);
+              setSelected(new Set());
+            }}
+            className={`px-3 py-1.5 text-sm rounded-lg border ${
+              leadType === t.id
+                ? 'bg-primary-blue text-white border-primary-blue'
+                : 'bg-white text-gray-700 border-gray-200 hover:bg-gray-50'
+            }`}
+          >
+            {t.label}
+          </button>
+        ))}
+      </div>
       <div className="px-4 py-3 border-b flex flex-wrap items-start justify-between gap-3">
         <div>
           <h2 className="text-base font-semibold text-gray-900 m-0">
-            {keepExistingBda ? 'All filtered leads' : 'Filtered unassigned leads'}
+            {isIitPool
+              ? keepExistingBda
+                ? 'All filtered leads'
+                : 'Filtered unassigned leads'
+              : `Unassigned ${BDA_LEAD_TYPES.find((t) => t.id === leadType)?.label || 'leads'}`}
           </h2>
           <p className="text-sm text-gray-600 mt-1">
-            {keepExistingBda
-              ? meetFilterActive
-                ? `Leads in your ${meetLabel} filter are listed with their BDA. Use “Map all in meet filter” so every previously assigned lead stays with the same BDA.`
-                : 'Set Meet attendance (attended / not attended), Apply filters, then map all or selected leads to their respective BDA.'
-              : 'Unassigned leads only. Select rows and assign to a BDA.'}{' '}
+            {isIitPool
+              ? keepExistingBda
+                ? meetFilterActive
+                  ? `Leads in your ${meetLabel} filter are listed with their BDA. Use “Map all in meet filter” so every previously assigned lead stays with the same BDA.`
+                  : 'Set Meet attendance (attended / not attended), Apply filters, then map all or selected leads to their respective BDA.'
+                : 'Unassigned leads only. Select rows and assign to a BDA.'
+              : 'Unassigned leads for this category. Select rows and assign to a BDA.'}{' '}
             Max {BULK_ASSIGN_MAX} per action.
           </p>
         </div>
@@ -211,7 +252,7 @@ export default function BdaUnassignedLeadPool({ appliedFilters, filterVersion, o
       </div>
 
       <div className="px-4 py-3 border-b flex flex-wrap items-center gap-2 bg-gray-50/80">
-        {keepExistingBda ? (
+        {isIitPool && keepExistingBda ? (
           <>
             <button
               type="button"
@@ -495,12 +536,13 @@ export default function BdaUnassignedLeadPool({ appliedFilters, filterVersion, o
 
       <AssignToBdaModal
         open={assignOpen}
+        leadType={leadType}
         leadIds={
-          keepExistingBda
+          isIitPool && keepExistingBda
             ? unassignedIds
             : selectedIds.slice(0, BULK_ASSIGN_MAX)
         }
-        preferredLanguage={appliedFilters?.preferredLanguage || ''}
+        preferredLanguage={isIitPool ? appliedFilters?.preferredLanguage || '' : ''}
         onClose={() => setAssignOpen(false)}
         onSuccess={(data) => {
           setAssignOpen(false);

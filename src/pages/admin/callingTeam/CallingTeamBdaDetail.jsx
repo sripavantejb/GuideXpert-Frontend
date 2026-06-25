@@ -12,6 +12,7 @@ import {
   getBdaStatsById,
   updateBda,
 } from '../../../utils/callingTeamApi';
+import { BDA_LEAD_TYPES, DEFAULT_BDA_LEAD_TYPE } from '../../../constants/bdaLeadTypes';
 
 function formatDateTime(value) {
   if (!value) return '—';
@@ -43,6 +44,7 @@ export default function CallingTeamBdaDetail() {
   const [reassignLeadIds, setReassignLeadIds] = useState([]);
   const [transferModalOpen, setTransferModalOpen] = useState(false);
   const [actionMessage, setActionMessage] = useState('');
+  const [assignedLeadType, setAssignedLeadType] = useState(DEFAULT_BDA_LEAD_TYPE);
 
   const loadDetail = useCallback(async () => {
     setLoading(true);
@@ -57,14 +59,14 @@ export default function CallingTeamBdaDetail() {
 
   const loadLeads = useCallback(async (page = 1) => {
     setLeadsLoading(true);
-    const res = await getBdaAssignedLeads(id, { page, limit: 25 });
+    const res = await getBdaAssignedLeads(id, { page, limit: 25, leadType: assignedLeadType });
     if (res.success) {
       setLeads(res.data?.data || []);
       setPagination(res.data?.pagination || { page: 1, totalPages: 1 });
       setSelectedIds([]);
     }
     setLeadsLoading(false);
-  }, [id]);
+  }, [id, assignedLeadType]);
 
   useEffect(() => {
     loadDetail();
@@ -177,8 +179,25 @@ export default function CallingTeamBdaDetail() {
 
       <div className="grid lg:grid-cols-3 gap-6">
         <div className="lg:col-span-2 bg-white rounded-xl border overflow-hidden">
-          <div className="px-4 py-3 border-b flex flex-wrap items-center justify-between gap-2">
-            <span className="font-semibold">Assigned Leads</span>
+          <div className="px-4 py-3 border-b space-y-2">
+            <div className="flex flex-wrap gap-2">
+              {BDA_LEAD_TYPES.map((t) => (
+                <button
+                  key={t.id}
+                  type="button"
+                  onClick={() => setAssignedLeadType(t.id)}
+                  className={`px-3 py-1 text-sm rounded-lg border ${
+                    assignedLeadType === t.id
+                      ? 'bg-primary-blue text-white border-primary-blue'
+                      : 'bg-white text-gray-700 border-gray-200'
+                  }`}
+                >
+                  {t.label}
+                </button>
+              ))}
+            </div>
+            <div className="flex flex-wrap items-center justify-between gap-2">
+              <span className="font-semibold">Assigned Leads</span>
             {selectedIds.length > 0 && (
               <button
                 type="button"
@@ -188,6 +207,7 @@ export default function CallingTeamBdaDetail() {
                 Reassign selected ({selectedIds.length})
               </button>
             )}
+            </div>
           </div>
           {leadsLoading ? (
             <TableSkeleton rows={5} cols={6} />
@@ -250,6 +270,7 @@ export default function CallingTeamBdaDetail() {
         open={reassignModalOpen}
         leadIds={reassignLeadIds}
         mode="reassign"
+        leadType={assignedLeadType}
         excludeBdaId={id}
         preferredLanguage={bda?.language || ''}
         onClose={() => setReassignModalOpen(false)}

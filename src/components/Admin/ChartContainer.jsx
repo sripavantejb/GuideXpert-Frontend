@@ -7,10 +7,15 @@ export default function ChartContainer({
   children,
   loading,
   empty,
-  emptyMessage = 'No data available'
+  emptyMessage = 'No data available',
+  compact = false,
 }) {
   return (
-    <div className="min-w-0 rounded-2xl border border-primary-blue-200/70 bg-gradient-to-br from-white via-white to-primary-blue-50/30 p-4 lg:p-6 shadow-sm portal-card">
+    <div
+      className={`min-w-0 rounded-2xl border border-primary-blue-200/70 bg-gradient-to-br from-white via-white to-primary-blue-50/30 shadow-sm portal-card ${
+        compact ? 'p-2 lg:p-3' : 'p-4 lg:p-6'
+      }`}
+    >
       {(title || subtitle) && (
         <div className="mb-4 border-b border-primary-blue-100/80 pb-3">
           {title && <h3 className="text-sm font-semibold tracking-tight text-primary-navy">{title}</h3>}

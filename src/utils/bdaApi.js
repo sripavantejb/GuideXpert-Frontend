@@ -111,19 +111,19 @@ export async function getBdaLeads(params = {}) {
   return res;
 }
 
-export async function getBdaLead(id) {
-  return bdaRequest(`/leads/${id}`);
+export async function getBdaLead(id, leadType = 'iit_counselling') {
+  return bdaRequest(`/leads/${id}${toQuery({ leadType })}`);
 }
 
-export async function updateBdaLead(id, body) {
-  return bdaRequest(`/leads/${id}/update`, {
+export async function updateBdaLead(id, body, leadType = 'iit_counselling') {
+  return bdaRequest(`/leads/${id}/update${toQuery({ leadType })}`, {
     method: 'PATCH',
-    body: JSON.stringify(body),
+    body: JSON.stringify({ ...body, leadType }),
   });
 }
 
-export async function getBdaLeadHistory(id) {
-  return bdaRequest(`/leads/${id}/history`);
+export async function getBdaLeadHistory(id, leadType = 'iit_counselling') {
+  return bdaRequest(`/leads/${id}/history${toQuery({ leadType })}`);
 }
 
 export async function getBdaNotifications({ page = 1, limit = 20, unreadOnly = false } = {}) {

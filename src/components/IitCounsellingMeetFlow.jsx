@@ -26,6 +26,7 @@ function validateMobile(value) {
  * @param {string} props.joinHeading - step 1 title
  * @param {string} [props.joinDescription]
  * @param {string} props.idPrefix - unique HTML id prefix for inputs
+ * @param {(mobile: string) => Promise<{success: boolean, exists?: boolean, data?: object}>} [props.checkExistingFn]
  */
 export default function IitCounsellingMeetFlow({
   meetLink,
@@ -35,6 +36,7 @@ export default function IitCounsellingMeetFlow({
   joinHeading,
   joinDescription = 'Enter your details to receive an OTP.',
   idPrefix,
+  checkExistingFn,
 }) {
   const [step, setStep] = useState(1);
 
@@ -87,6 +89,18 @@ export default function IitCounsellingMeetFlow({
     const cleanPhone = mobileNumber.replace(/\D/g, '');
 
     try {
+      if (checkExistingFn) {
+        const statusResult = await checkExistingFn(cleanPhone);
+        if (statusResult.success && statusResult.exists) {
+          const displayName = (statusResult.data?.name || name).trim();
+          if (statusResult.data?.name) {
+            setName(statusResult.data.name);
+          }
+          await attemptJoinMeet(cleanPhone, displayName);
+          return;
+        }
+      }
+
       const result = await sendOtp(name.trim(), cleanPhone, otpOccupationLabel);
 
       if (result.success) {

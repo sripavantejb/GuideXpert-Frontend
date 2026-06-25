@@ -19,6 +19,7 @@ import {
   getBdaLeads,
   updateBdaLead,
 } from '../../utils/bdaApi';
+import { BDA_LEAD_TYPES, BDA_LEAD_TYPE_MAP, isIitLeadType } from '../../constants/bdaLeadTypes';
 import {
   formatDemoDateDisplay,
   getLeadClassStatus,
@@ -96,11 +97,13 @@ export default function BdaDashboard() {
     callbackNeeded: '',
   });
   const [drawerId, setDrawerId] = useState('');
+  const [drawerLeadType, setDrawerLeadType] = useState('iit_counselling');
   const [drawerLead, setDrawerLead] = useState(null);
   const [history, setHistory] = useState([]);
   const [form, setForm] = useState({});
   const [saving, setSaving] = useState(false);
   const [saveMsg, setSaveMsg] = useState('');
+  const [leadTypeFilter, setLeadTypeFilter] = useState('all');
 
   const loadStats = useCallback(async () => {
     const res = await getBdaDashboardStats();
@@ -110,7 +113,7 @@ export default function BdaDashboard() {
   const loadLeads = useCallback(async () => {
     setLoading(true);
     setError('');
-    const params = { page, limit, q, ...filters };
+    const params = { page, limit, q, leadType: leadTypeFilter, ...filters };
     if (filters.callbackNeeded === 'true') params.callbackNeeded = 'true';
     if (filters.callbackNeeded === 'false') params.callbackNeeded = 'false';
     const res = await getBdaLeads(params);
@@ -121,7 +124,7 @@ export default function BdaDashboard() {
       setError(res.message || 'Failed to load leads');
     }
     setLoading(false);
-  }, [page, limit, q, filters]);
+  }, [page, limit, q, filters, leadTypeFilter]);
 
   useEffect(() => {
     loadStats();
@@ -131,27 +134,38 @@ export default function BdaDashboard() {
     loadLeads();
   }, [loadLeads]);
 
-  const openDrawer = async (id) => {
+  const openDrawer = async (id, leadType = 'iit_counselling') => {
     setDrawerId(id);
+    setDrawerLeadType(leadType);
     setDrawerLead(null);
     setHistory([]);
     setSaveMsg('');
-    const [leadRes, histRes] = await Promise.all([getBdaLead(id), getBdaLeadHistory(id)]);
+    const [leadRes, histRes] = await Promise.all([
+      getBdaLead(id, leadType),
+      getBdaLeadHistory(id, leadType),
+    ]);
     if (leadRes.success) {
       const lead = leadRes.data?.data;
       setDrawerLead(lead);
-      setForm({
-        callStatus: lead.callStatus || 'not_called',
-        leadStatus: lead.leadStatus || '',
-        demoStatus: lead.demoStatus || 'not_scheduled',
-        niatStatus: lead.niatStatus || 'not_registered',
-        paymentStatus: lead.paymentStatus || 'not_paid',
-        callbackNeeded: !!lead.callbackNeeded,
-        callbackDate: toDateInput(lead.callbackDateTime),
-        callbackTime: toTimeInput(lead.callbackDateTime),
-        callbackNote: lead.callbackNote || '',
-        remark: '',
-      });
+      if (isIitLeadType(leadType)) {
+        setForm({
+          callStatus: lead.callStatus || 'not_called',
+          leadStatus: lead.leadStatus || '',
+          demoStatus: lead.demoStatus || 'not_scheduled',
+          niatStatus: lead.niatStatus || 'not_registered',
+          paymentStatus: lead.paymentStatus || 'not_paid',
+          callbackNeeded: !!lead.callbackNeeded,
+          callbackDate: toDateInput(lead.callbackDateTime),
+          callbackTime: toTimeInput(lead.callbackDateTime),
+          callbackNote: lead.callbackNote || '',
+          remark: '',
+        });
+      } else {
+        setForm({
+          leadStatus: lead.leadStatus || '',
+          remark: '',
+        });
+      }
     }
     if (histRes.success) setHistory(histRes.data?.data || []);
   };
@@ -171,23 +185,28 @@ export default function BdaDashboard() {
     }
     setSaving(true);
     setSaveMsg('');
-    const body = {
-      callStatus: form.callStatus,
-      leadStatus: form.leadStatus || undefined,
-      demoStatus: form.demoStatus,
-      niatStatus: form.niatStatus,
-      paymentStatus: form.paymentStatus,
-      callbackNeeded: form.callbackNeeded,
-      callbackDate: form.callbackNeeded ? form.callbackDate : undefined,
-      callbackTime: form.callbackNeeded ? form.callbackTime : undefined,
-      callbackNote: form.callbackNeeded ? form.callbackNote : undefined,
-      remark: form.remark.trim(),
-    };
-    const res = await updateBdaLead(drawerId, body);
+    const body = isIitLeadType(drawerLeadType)
+      ? {
+          callStatus: form.callStatus,
+          leadStatus: form.leadStatus || undefined,
+          demoStatus: form.demoStatus,
+          niatStatus: form.niatStatus,
+          paymentStatus: form.paymentStatus,
+          callbackNeeded: form.callbackNeeded,
+          callbackDate: form.callbackNeeded ? form.callbackDate : undefined,
+          callbackTime: form.callbackNeeded ? form.callbackTime : undefined,
+          callbackNote: form.callbackNeeded ? form.callbackNote : undefined,
+          remark: form.remark.trim(),
+        }
+      : {
+          leadStatus: form.leadStatus || undefined,
+          remark: form.remark.trim(),
+        };
+    const res = await updateBdaLead(drawerId, body, drawerLeadType);
     setSaving(false);
     if (res.success) {
       setSaveMsg('Saved');
-      await openDrawer(drawerId);
+      await openDrawer(drawerId, drawerLeadType);
       loadLeads();
       loadStats();
     } else {
@@ -195,8 +214,8 @@ export default function BdaDashboard() {
     }
   };
 
-  const handleNotificationLeadClick = useCallback((leadId) => {
-    openDrawerRef.current?.(leadId);
+  const handleNotificationLeadClick = useCallback((leadId, leadType = 'iit_counselling') => {
+    openDrawerRef.current?.(leadId, leadType);
   }, []);
 
   return (
@@ -233,6 +252,16 @@ export default function BdaDashboard() {
             <button type="button" onClick={loadLeads} className="p-2 rounded-lg border border-gray-200">
               <FiRefreshCw />
             </button>
+            <select
+              value={leadTypeFilter}
+              onChange={(e) => { setLeadTypeFilter(e.target.value); setPage(1); }}
+              className="border border-gray-200 rounded-lg px-2 py-2 text-sm"
+            >
+              <option value="all">All lead types</option>
+              {BDA_LEAD_TYPES.map((t) => (
+                <option key={t.id} value={t.id}>{t.label}</option>
+              ))}
+            </select>
             <select
               value={limit}
               onChange={(e) => { setLimit(Number(e.target.value)); setPage(1); }}
@@ -279,6 +308,7 @@ export default function BdaDashboard() {
           <table className="min-w-full text-sm">
             <thead className="bg-gray-50 text-left text-xs text-gray-600 uppercase">
               <tr>
+                <th className="px-3 py-2">Type</th>
                 <th className="px-3 py-2">Student</th>
                 <th className="px-3 py-2">Phone</th>
                 <th className="px-3 py-2">Current studying</th>
@@ -299,9 +329,9 @@ export default function BdaDashboard() {
             </thead>
             <tbody>
               {loading ? (
-                <tr><td colSpan={16} className="px-3 py-8 text-center text-gray-500">Loading…</td></tr>
+                <tr><td colSpan={17} className="px-3 py-8 text-center text-gray-500">Loading…</td></tr>
               ) : rows.length === 0 ? (
-                <tr><td colSpan={16} className="px-3 py-8 text-center text-gray-500">
+                <tr><td colSpan={17} className="px-3 py-8 text-center text-gray-500">
                   No assigned leads yet. Ask admin to split leads by your language in BDA Management.
                 </td></tr>
               ) : (
@@ -309,8 +339,11 @@ export default function BdaDashboard() {
                   <tr
                     key={row.id}
                     className="border-t border-gray-100 hover:bg-gray-50/80 cursor-pointer"
-                    onClick={() => openDrawer(row.id)}
+                    onClick={() => openDrawer(row.id, row.leadType || 'iit_counselling')}
                   >
+                    <td className="px-3 py-2 text-xs text-gray-600">
+                      {row.leadTypeLabel || BDA_LEAD_TYPE_MAP[row.leadType] || 'IIT Counselling'}
+                    </td>
                     <td className="px-3 py-2 font-medium">{row.fullName}</td>
                     <td className="px-3 py-2">{row.phone}</td>
                     <td
@@ -351,7 +384,7 @@ export default function BdaDashboard() {
                         type="button"
                         onClick={(e) => {
                           e.stopPropagation();
-                          openDrawer(row.id);
+                          openDrawer(row.id, row.leadType || 'iit_counselling');
                         }}
                         className="text-primary-blue text-sm font-medium"
                       >
@@ -384,6 +417,9 @@ export default function BdaDashboard() {
               <>
                 <h2 className="text-lg font-semibold">{drawerLead.fullName}</h2>
                 <p className="text-sm text-gray-600">{drawerLead.phone}</p>
+                <p className="text-xs text-gray-500 mt-1">
+                  {drawerLead.leadTypeLabel || BDA_LEAD_TYPE_MAP[drawerLeadType] || drawerLeadType}
+                </p>
                 <div className="mt-2 flex flex-wrap gap-2 text-xs">
                   {drawerLead.preferredLanguage && (
                     <span className={`px-2 py-0.5 rounded-full ${languageBadgeClass(drawerLead.preferredLanguage)}`}>
@@ -416,6 +452,7 @@ export default function BdaDashboard() {
                   onSave={handleSave}
                   saving={saving}
                   saveMsg={saveMsg}
+                  simplified={!isIitLeadType(drawerLeadType)}
                 />
 
                 <div className="mt-8 border-t pt-4">
