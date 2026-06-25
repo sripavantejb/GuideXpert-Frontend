@@ -34,6 +34,8 @@ import Overview from './pages/admin/Overview';
 import ExecutiveDashboard from './pages/admin/ExecutiveDashboard';
 import AlertsDashboard from './pages/admin/AlertsDashboard';
 import ReportsDashboard from './pages/admin/ReportsDashboard';
+import DemandIntelligenceDashboard from './pages/admin/DemandIntelligenceDashboard';
+import PredictionDashboard from './pages/admin/PredictionDashboard';
 import FunnelAnalytics from './pages/admin/FunnelAnalytics';
 import Leads from './pages/admin/Leads';
 import IitCounselling from './pages/admin/IitCounselling';
@@ -437,6 +439,8 @@ function App() {
             <Route path="executive-dashboard" element={<ExecutiveDashboard />} />
             <Route path="analytics/alerts" element={<AlertsDashboard />} />
             <Route path="analytics/reports" element={<ReportsDashboard />} />
+            <Route path="analytics/demand" element={<DemandIntelligenceDashboard />} />
+            <Route path="analytics/predictions" element={<PredictionDashboard />} />
             <Route path="funnel-analytics" element={<FunnelAnalytics />} />
             <Route path="certified-counsellors" element={<CertifiedCounsellors />} />
             <Route path="leads" element={<Leads />} />

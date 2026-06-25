@@ -2,7 +2,7 @@ import { createElement, useState, useMemo, useEffect } from 'react';
 import { useSidebarScrollbarActivity } from '../../hooks/useSidebarScrollbarActivity';
 import { Link, NavLink, Outlet, useLocation, useNavigate } from 'react-router-dom';
 import { HiMenu, HiX } from 'react-icons/hi';
-import { FiLayout, FiUsers, FiBarChart2, FiDownload, FiSettings, FiCalendar, FiClock, FiVideo, FiFileText, FiBell, FiLink, FiClipboard, FiMessageSquare, FiBookOpen, FiImage, FiPhone, FiLayers, FiTarget, FiUserPlus, FiSend, FiDatabase, FiHeadphones, FiChevronLeft, FiChevronRight, FiLogOut } from 'react-icons/fi';
+import { FiLayout, FiUsers, FiBarChart2, FiDownload, FiSettings, FiCalendar, FiClock, FiVideo, FiFileText, FiBell, FiLink, FiClipboard, FiMessageSquare, FiBookOpen, FiImage, FiPhone, FiLayers, FiTarget, FiUserPlus, FiSend, FiDatabase, FiHeadphones, FiChevronLeft, FiChevronRight, FiLogOut, FiGlobe } from 'react-icons/fi';
 import { useAuth } from '../../hooks/useAuth';
 import { AdminDashboardProvider } from '../../contexts/AdminDashboardContext';
 import { useAdminDateRange } from '../../hooks/useAdminDateRange';
@@ -16,6 +16,8 @@ const navItems = [
   { to: '/admin/executive-dashboard', label: 'Executive Dashboard', icon: FiBarChart2, sectionKey: 'funnel-analytics' },
   { to: '/admin/analytics/alerts', label: 'Smart Alerts', icon: FiBell, sectionKey: 'funnel-analytics' },
   { to: '/admin/analytics/reports', label: 'Executive Reports', icon: FiFileText, sectionKey: 'funnel-analytics' },
+  { to: '/admin/analytics/demand', label: 'Demand Intelligence', icon: FiGlobe, sectionKey: 'funnel-analytics' },
+  { to: '/admin/analytics/predictions', label: 'Conversion Prediction', icon: FiTarget, sectionKey: 'funnel-analytics' },
   { to: '/admin/funnel-analytics', label: 'Funnel Analytics', icon: FiBarChart2, sectionKey: 'funnel-analytics' },
   { to: '/admin/certified-counsellors', label: 'Certified Counsellors', icon: FiUsers, sectionKey: 'certified-counsellors' },
   { to: '/admin/leads', label: 'Lead Funnel', icon: FiUsers, sectionKey: 'leads' },

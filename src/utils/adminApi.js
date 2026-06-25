@@ -1321,3 +1321,48 @@ export const generateExecutiveReport = async (params = {}, token = getStoredToke
     token
   );
 };
+
+/** GET /admin/analytics/demand/summary */
+export const getDemandIntelligenceSummary = async (params = {}, token = getStoredToken()) => {
+  const search = new URLSearchParams();
+  if (params.window != null) search.set('window', String(params.window));
+  if (params.days != null) search.set('days', String(params.days));
+  const query = search.toString();
+  return adminRequest(`/analytics/demand/summary${query ? `?${query}` : ''}`, { method: 'GET' }, token);
+};
+
+/** GET /admin/analytics/predictions/:phone */
+export const getLeadPrediction = async (phone, params = {}, token = getStoredToken()) => {
+  const search = new URLSearchParams();
+  if (params.force) search.set('force', 'true');
+  const query = search.toString();
+  return adminRequest(
+    `/analytics/predictions/${encodeURIComponent(phone)}${query ? `?${query}` : ''}`,
+    { method: 'GET' },
+    token
+  );
+};
+
+/** GET /admin/analytics/predictions/portfolio */
+export const getPredictionPortfolio = async (params = {}, token = getStoredToken()) => {
+  const search = new URLSearchParams();
+  if (params.stage) search.set('stage', params.stage);
+  if (params.minScore != null && params.minScore !== '') search.set('minScore', String(params.minScore));
+  if (params.limit) search.set('limit', String(params.limit));
+  if (params.sortBy) search.set('sortBy', params.sortBy);
+  if (params.sinceDays) search.set('sinceDays', String(params.sinceDays));
+  const query = search.toString();
+  return adminRequest(`/analytics/predictions/portfolio${query ? `?${query}` : ''}`, { method: 'GET' }, token);
+};
+
+/** POST /admin/analytics/predictions/recompute */
+export const recomputePredictions = async (body = {}, token = getStoredToken()) => {
+  return adminRequest(
+    '/analytics/predictions/recompute',
+    {
+      method: 'POST',
+      body: JSON.stringify(body),
+    },
+    token
+  );
+};

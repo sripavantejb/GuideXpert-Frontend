@@ -8,6 +8,7 @@ import {
   formatConfidence,
   formatLeadDate,
 } from './leadIntelligenceUtils';
+import LeadPredictionSection from './LeadPredictionSection';
 
 function DetailField({ label, value }) {
   return (
@@ -113,6 +114,8 @@ export default function LeadDetailDrawer({ phone, onClose }) {
                   />
                 </dl>
               </section>
+
+              <LeadPredictionSection phone={phone} />
 
               <section className="rounded-2xl border border-slate-200/80 bg-slate-50/40 p-4">
                 <h3 className="mb-3 text-sm font-semibold tracking-tight text-slate-900">Recent Events</h3>
