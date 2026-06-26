@@ -1,5 +1,11 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import MobileOtpField from '../components/forms/MobileOtpField';
+import {
+  FieldError,
+  FormInput,
+  NeoField,
+  neoLabelClass,
+} from '../components/oneOnOneSession/FormControls';
 import { submitNatCampaignForm } from '../utils/api';
 
 const OTP_OCCUPATION = 'NAT Campaign';
@@ -11,6 +17,12 @@ const COLLEGE_OPTIONS = [
   { value: 'newton', label: 'Newton' },
   { value: 'others', label: 'Others' },
 ];
+
+const neoCheckboxClass =
+  'mt-0.5 h-4 w-4 shrink-0 rounded border-2 border-[#0F172A] accent-[#0F172A]';
+
+const neoCheckboxLabelClass =
+  'flex cursor-pointer items-start gap-3 rounded-[10px] border-2 border-[#0F172A] bg-white p-4 shadow-[2px_2px_0px_#0F172A] transition-all hover:-translate-y-0.5 hover:shadow-[3px_3px_0px_#0F172A] has-[:checked]:border-[#0F172A] has-[:checked]:bg-[#c7f36b] has-[:checked]:shadow-[3px_3px_0px_#0F172A]';
 
 function validateName(value) {
   const trimmed = typeof value === 'string' ? value.trim() : '';
@@ -27,8 +39,31 @@ function validateMobile(value) {
   return '';
 }
 
+function SuccessView() {
+  return (
+    <div className="rounded-[14px] border-2 border-[#0F172A] bg-white p-8 text-center shadow-[6px_6px_0px_#0F172A] sm:p-12">
+      <div
+        className="mx-auto mb-6 flex h-16 w-16 items-center justify-center rounded-full border-2 border-[#0F172A] bg-[#c7f36b] text-3xl shadow-[4px_4px_0px_#0F172A]"
+        aria-hidden
+      >
+        ✓
+      </div>
+      <p className="mb-3 inline-flex rounded border-2 border-emerald-800 bg-emerald-100 px-3 py-1 text-[10px] font-black uppercase tracking-widest text-emerald-900">
+        Submitted successfully
+      </p>
+      <h2 className="text-3xl font-black tracking-tight text-[#0F172A] sm:text-4xl">
+        Your response has been recorded
+      </h2>
+      <p className="mx-auto mt-4 max-w-lg text-sm font-medium leading-relaxed text-slate-600">
+        Thank you for sharing your interest in new age colleges. Our team will reach out if there are
+        relevant opportunities for you.
+      </p>
+    </div>
+  );
+}
+
 /**
- * Public Google Form-style flow: name + mobile OTP + new age college interest.
+ * Public flow: name + mobile OTP + new age college interest.
  * Route: /nat-campaign
  */
 export default function NatCampaignForm() {
@@ -40,7 +75,11 @@ export default function NatCampaignForm() {
   const [errors, setErrors] = useState({ name: '', mobileNumber: '', preferences: '' });
   const [submitError, setSubmitError] = useState('');
   const [submitting, setSubmitting] = useState(false);
-  const [showSuccessModal, setShowSuccessModal] = useState(false);
+  const [submitted, setSubmitted] = useState(false);
+
+  useEffect(() => {
+    document.title = 'NAT Campaign | GuideXpert';
+  }, []);
 
   const handleNameChange = (e) => {
     const v = e.target.value;
@@ -83,7 +122,7 @@ export default function NatCampaignForm() {
       return;
     }
     if (!otpVerified) {
-      setSubmitError('Please verify your mobile number with OTP.');
+      setSubmitError('Please verify your mobile number with OTP first.');
       return;
     }
 
@@ -102,150 +141,154 @@ export default function NatCampaignForm() {
         setSubmitError(res.message || 'Could not save your response. Please try again.');
         return;
       }
-      setShowSuccessModal(true);
+      setSubmitted(true);
+      window.scrollTo({ top: 0, behavior: 'smooth' });
     } catch {
-      setSubmitError('Network error. Please try again.');
+      setSubmitError('Connection issue. Please check your network and try again.');
     } finally {
       setSubmitting(false);
     }
   };
 
   return (
-    <div className="min-h-screen bg-[#f0ebf8] py-8 px-4">
-      {showSuccessModal ? (
-        <div
-          className="fixed inset-0 z-50 flex items-center justify-center bg-[#f0ebf8] p-4"
-          role="dialog"
-          aria-modal="true"
-          aria-labelledby="nat-success-title"
-        >
-          <div className="bg-white rounded-lg shadow-md max-w-sm w-full p-8 text-center border-t-[10px] border-[#673ab7]">
-            <div className="mx-auto mb-4 flex h-16 w-16 items-center justify-center rounded-full bg-green-100 text-green-700">
-              <svg className="h-9 w-9" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden>
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
-              </svg>
-            </div>
-            <h2 id="nat-success-title" className="text-xl font-normal text-gray-900 mb-2">
-              Your response has been recorded
-            </h2>
-            <p className="text-sm text-gray-600">Thank you for submitting the form.</p>
-          </div>
-        </div>
-      ) : (
-        <div className="max-w-[640px] mx-auto space-y-3">
-          <div className="bg-white rounded-lg shadow-sm border-t-[10px] border-[#673ab7] p-6 sm:p-8">
-            <h1 className="text-[32px] font-normal text-gray-900 leading-tight mb-2">NAT Campaign</h1>
-            <p className="text-sm text-gray-600">
-              Share your details and tell us which new age colleges interest you.
-            </p>
-          </div>
-
-          <form onSubmit={handleSubmit} className="space-y-3">
-            <div className="bg-white rounded-lg shadow-sm p-6 sm:p-8">
-              <label htmlFor="nat-name" className="block text-base text-gray-900 mb-1">
-                Name <span className="text-red-600">*</span>
-              </label>
-              <input
-                type="text"
-                id="nat-name"
-                value={name}
-                onChange={handleNameChange}
-                placeholder="Your answer"
-                className={`w-full border-0 border-b-2 bg-transparent px-0 py-2 text-sm outline-none transition focus:border-[#673ab7] ${
-                  errors.name ? 'border-red-500' : 'border-gray-300'
-                }`}
-                disabled={submitting}
-                autoComplete="name"
-              />
-              {errors.name && (
-                <p className="mt-2 text-xs text-red-600" role="alert">
-                  {errors.name}
-                </p>
-              )}
-            </div>
-
-            <div className="bg-white rounded-lg shadow-sm p-6 sm:p-8">
-              <MobileOtpField
-                label="Mobile Number"
-                fullName={name}
-                mobileNumber={mobileNumber}
-                onMobileChange={handleMobileChange}
-                error={errors.mobileNumber}
-                onVerifiedChange={setOtpVerified}
-                occupation={OTP_OCCUPATION}
-                className=""
-              />
-            </div>
-
-            <div className="bg-white rounded-lg shadow-sm p-6 sm:p-8">
-              <p className="text-base text-gray-900 mb-1">
-                Are you interested in new age colleges? <span className="text-red-600">*</span>
+    <div className="min-h-screen bg-[#F8FAFC] px-4 py-10 selection:bg-[#c7f36b] selection:text-[#0F172A] sm:px-6">
+      <div className="mx-auto max-w-4xl">
+        {submitted ? (
+          <SuccessView />
+        ) : (
+          <>
+            <div className="mb-6 rounded-[14px] border-2 border-[#0F172A] bg-[#0F172A] p-6 text-white shadow-[6px_6px_0px_#c7f36b]">
+              <p className="mb-2 inline-flex rounded border border-slate-600 bg-[#1E293B] px-2 py-1 font-mono text-[10px] font-bold uppercase tracking-widest text-slate-300">
+                NAT Campaign
               </p>
-              <p className="text-xs text-gray-500 mb-4">Select all that apply.</p>
-              <div className="space-y-3">
-                {COLLEGE_OPTIONS.map((option, index) => {
-                  const selected = selectedPreferences.includes(option.value);
-                  const letter = String.fromCharCode(65 + index);
-                  return (
-                    <div key={option.value} className="space-y-2">
-                      <label
-                        className={`flex items-start gap-3 cursor-pointer rounded-md px-2 py-2 -mx-2 transition hover:bg-gray-50 ${
-                          selected ? 'bg-[#f3e8fd]' : ''
-                        }`}
-                      >
-                        <input
-                          type="checkbox"
-                          checked={selected}
-                          onChange={() => togglePreference(option.value)}
-                          disabled={submitting}
-                          className="mt-1 h-4 w-4 accent-[#673ab7]"
-                        />
-                        <span className="text-sm text-gray-800">
-                          <span className="font-medium">{letter}.</span> {option.label}
-                        </span>
-                      </label>
-                      {option.value === 'others' && selected && (
-                        <input
-                          type="text"
-                          value={otherPreference}
-                          onChange={(e) => {
-                            setOtherPreference(e.target.value);
-                            setErrors((prev) => ({ ...prev, preferences: '' }));
-                          }}
-                          placeholder="Please specify"
-                          className="w-full border-0 border-b-2 border-gray-300 bg-transparent px-0 py-2 text-sm outline-none transition focus:border-[#673ab7] ml-7"
-                          disabled={submitting}
-                        />
-                      )}
+              <h1 className="text-3xl font-black tracking-tight text-white sm:text-4xl">
+                New Age Colleges Interest Form
+              </h1>
+              <p className="mt-2 text-sm font-medium text-slate-300">
+                Share your details and tell us which new age colleges interest you.
+              </p>
+              <p className="mt-1 text-sm font-medium text-slate-400">
+                Zenith School of AI, NIAT, Scaler, Newton, and more — help us understand your
+                preferences.
+              </p>
+              <ul className="mt-4 flex flex-wrap gap-2 text-xs font-bold uppercase tracking-wide text-slate-200">
+                <li className="rounded border border-slate-600 bg-[#1E293B] px-2 py-1">Quick form</li>
+                <li className="rounded border border-emerald-800 bg-emerald-950/60 px-2 py-1 text-emerald-100">
+                  OTP verified
+                </li>
+              </ul>
+            </div>
+
+            <form
+              onSubmit={handleSubmit}
+              className="rounded-[14px] border-2 border-[#0F172A] bg-white p-5 shadow-[6px_6px_0px_#0F172A] sm:p-7"
+              noValidate
+            >
+              <p className="mb-4 text-xs font-semibold text-slate-600">
+                Fields marked with <span className="text-red-700">*</span> are required.
+              </p>
+
+              <div className="grid grid-cols-1 gap-5 sm:grid-cols-2">
+                <NeoField label="1. Name" error={errors.name} className="sm:col-span-2" required>
+                  <FormInput
+                    id="nat-name"
+                    name="name"
+                    autoComplete="name"
+                    required
+                    value={name}
+                    onChange={handleNameChange}
+                    error={errors.name}
+                    placeholder="Full name"
+                    disabled={submitting}
+                  />
+                </NeoField>
+
+                <MobileOtpField
+                  label="2. Mobile Number"
+                  required
+                  fullName={name}
+                  mobileNumber={mobileNumber}
+                  onMobileChange={handleMobileChange}
+                  error={errors.mobileNumber}
+                  onVerifiedChange={setOtpVerified}
+                  occupation={OTP_OCCUPATION}
+                />
+
+                <div className="sm:col-span-2">
+                  <p className={neoLabelClass}>
+                    3. Are you interested in new age colleges? <span className="text-red-700">*</span>
+                  </p>
+                  <p className="mb-3 text-xs font-semibold text-slate-600">Select all that apply.</p>
+                  <div
+                    className={`rounded-[10px] border-2 bg-[#F8FAFC] p-3 ${
+                      errors.preferences ? 'border-red-800' : 'border-[#0F172A]'
+                    }`}
+                  >
+                    <div className="flex flex-col gap-2">
+                      {COLLEGE_OPTIONS.map((option, index) => {
+                        const selected = selectedPreferences.includes(option.value);
+                        const letter = String.fromCharCode(65 + index);
+                        return (
+                          <div key={option.value} className="space-y-2">
+                            <label className={neoCheckboxLabelClass}>
+                              <input
+                                type="checkbox"
+                                checked={selected}
+                                onChange={() => togglePreference(option.value)}
+                                disabled={submitting}
+                                className={neoCheckboxClass}
+                              />
+                              <span className="text-sm font-semibold text-[#0F172A]">
+                                <span className="font-black">{letter}.</span> {option.label}
+                              </span>
+                            </label>
+                            {option.value === 'others' && selected && (
+                              <div className="pl-2">
+                                <FormInput
+                                  id="nat-other-preference"
+                                  value={otherPreference}
+                                  onChange={(e) => {
+                                    setOtherPreference(e.target.value);
+                                    setErrors((prev) => ({ ...prev, preferences: '' }));
+                                  }}
+                                  placeholder="Please specify"
+                                  disabled={submitting}
+                                  error={errors.preferences && selected ? errors.preferences : ''}
+                                />
+                              </div>
+                            )}
+                          </div>
+                        );
+                      })}
                     </div>
-                  );
-                })}
+                  </div>
+                  <FieldError message={errors.preferences} />
+                </div>
               </div>
-              {errors.preferences && (
-                <p className="mt-2 text-xs text-red-600" role="alert">
-                  {errors.preferences}
+
+              {submitError ? (
+                <p className="mt-5 rounded-[10px] border-2 border-red-900 bg-red-100 px-4 py-3 text-sm font-bold text-red-900">
+                  {submitError}
                 </p>
-              )}
-            </div>
+              ) : null}
 
-            {submitError && (
-              <div className="p-3 rounded-lg border border-red-200 bg-red-50 text-red-700 text-sm" role="alert">
-                {submitError}
+              <div className="mt-8 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+                <p className="text-xs font-bold uppercase tracking-wide text-slate-500">
+                  We&apos;ll use your verified number to follow up if needed.
+                </p>
+                <button
+                  type="submit"
+                  disabled={submitting || !otpVerified}
+                  title={!otpVerified ? 'Verify your mobile number with OTP to submit' : undefined}
+                  className="rounded-[14px] border-2 border-[#0F172A] bg-[#c7f36b] px-6 py-3 text-sm font-black uppercase tracking-wide text-[#0F172A] shadow-[4px_4px_0px_#0F172A] transition-all hover:-translate-y-0.5 hover:bg-[#b0d95d] disabled:cursor-not-allowed disabled:opacity-70"
+                >
+                  {submitting ? 'Submitting…' : 'Submit Response'}
+                </button>
               </div>
-            )}
-
-            <div className="flex justify-end pt-2 pb-8">
-              <button
-                type="submit"
-                disabled={submitting}
-                className="px-6 py-2.5 bg-[#673ab7] hover:bg-[#5e35b1] text-white text-sm font-medium rounded transition disabled:opacity-60 disabled:cursor-not-allowed"
-              >
-                {submitting ? 'Submitting…' : 'Submit'}
-              </button>
-            </div>
-          </form>
-        </div>
-      )}
+            </form>
+          </>
+        )}
+      </div>
     </div>
   );
 }
