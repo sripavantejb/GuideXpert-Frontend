@@ -11,7 +11,7 @@ export const ADMIN_SECTION_OPTIONS = [
   { sectionKey: 'analytics', label: 'Analytics' },
   { sectionKey: 'meeting-attendance', label: 'User Productivity' },
   { sectionKey: 'iit-meet-attendance', label: 'IIT Meet Attendance' },
-  { sectionKey: 'nat-campaign', label: 'NAT Campaign' },
+  { sectionKey: 'nat-campaign', label: 'One on One IIT Session' },
   { sectionKey: 'export', label: 'Export Data' },
   { sectionKey: 'slots', label: 'Slots' },
   { sectionKey: 'training-form-responses', label: 'Training Form' },

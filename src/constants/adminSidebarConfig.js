@@ -70,7 +70,7 @@ export const SIDEBAR_SETTINGS_ITEMS = [
   { to: '/admin/iit-counselling-utm', label: 'IIT Counselling UTM' },
   { to: '/admin/organic-rank-leads', label: 'Organic rank leads' },
   { to: '/admin/iit-meet-attendance', label: 'IIT Meet Attendance' },
-  { to: '/admin/nat-campaign', label: 'NAT Campaign' },
+  { to: '/admin/nat-campaign', label: 'One on One IIT Session' },
   { to: '/admin/calling-team/bdas', label: 'BDA Management' },
   { to: '/admin/one-on-one-counseling', label: '1-on-1 Counseling' },
   { to: '/admin/guidance-slot-bookings', label: 'Guidance Slot Bookings' },

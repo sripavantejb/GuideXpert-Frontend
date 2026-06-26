@@ -8,7 +8,7 @@ import {
 } from '../components/oneOnOneSession/FormControls';
 import { submitNatCampaignForm } from '../utils/api';
 
-const OTP_OCCUPATION = 'NAT Campaign';
+const OTP_OCCUPATION = 'One on One IIT Session';
 
 const COLLEGE_OPTIONS = [
   { value: 'zenith-school-of-ai', label: 'Zenith School of AI' },
@@ -78,7 +78,7 @@ export default function NatCampaignForm() {
   const [submitted, setSubmitted] = useState(false);
 
   useEffect(() => {
-    document.title = 'NAT Campaign | GuideXpert';
+    document.title = 'One on One IIT Session | GuideXpert';
   }, []);
 
   const handleNameChange = (e) => {
@@ -159,10 +159,10 @@ export default function NatCampaignForm() {
           <>
             <div className="mb-6 rounded-[14px] border-2 border-[#0F172A] bg-[#0F172A] p-6 text-white shadow-[6px_6px_0px_#c7f36b]">
               <p className="mb-2 inline-flex rounded border border-slate-600 bg-[#1E293B] px-2 py-1 font-mono text-[10px] font-bold uppercase tracking-widest text-slate-300">
-                NAT Campaign
+                One on One IIT Session
               </p>
               <h1 className="text-3xl font-black tracking-tight text-white sm:text-4xl">
-                New Age Colleges Interest Form
+                One on One IIT Session
               </h1>
               <p className="mt-2 text-sm font-medium text-slate-300">
                 Share your details and tell us which new age colleges interest you.

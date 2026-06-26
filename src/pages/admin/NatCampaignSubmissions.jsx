@@ -101,7 +101,7 @@ export default function NatCampaignSubmissions() {
           window.location.href = '/admin/login';
           return;
         }
-        setError(result.message || 'Failed to load NAT Campaign submissions');
+        setError(result.message || 'Failed to load One on One IIT Session submissions');
         return;
       }
       const dataList = result.data?.data || [];
@@ -168,7 +168,7 @@ export default function NatCampaignSubmissions() {
             <FiClipboard className="w-6 h-6" />
           </div>
           <div>
-            <h1 className="text-2xl font-bold text-gray-900 tracking-tight">NAT Campaign</h1>
+            <h1 className="text-2xl font-bold text-gray-900 tracking-tight">One on One IIT Session</h1>
             <p className="text-sm text-gray-500 mt-0.5">Form submissions from /nat-campaign</p>
           </div>
         </div>
