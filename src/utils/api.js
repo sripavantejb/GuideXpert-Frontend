@@ -604,6 +604,30 @@ export const submitCollegeDostForm = async (
 };
 
 /**
+ * NAT campaign form: after OTP, submit name, mobile, and college preferences.
+ * @param {string} name
+ * @param {string} mobileNumber - 10 digits
+ * @param {string[]} collegePreferences
+ * @param {string|null} collegePreferenceOther
+ */
+export const submitNatCampaignForm = async (
+  name,
+  mobileNumber,
+  collegePreferences,
+  collegePreferenceOther = null
+) => {
+  return apiRequest('/nat-campaign/submit', {
+    method: 'POST',
+    body: JSON.stringify({
+      name,
+      mobileNumber,
+      collegePreferences,
+      collegePreferenceOther,
+    }),
+  });
+};
+
+/**
  * Register for training meeting (saves name and mobile to training attendance, then redirect to training Meet link)
  * @param {string} name - User's full name
  * @param {string} mobileNumber - 10-digit mobile number

@@ -501,6 +501,17 @@ export const getCollegeDostMeetAttendance = async (params = {}, token = getStore
   return adminRequest(`/college-dost-meet-attendance${query ? `?${query}` : ''}`, { method: 'GET' }, token);
 };
 
+export const getNatCampaignSubmissions = async (params = {}, token = getStoredToken()) => {
+  const search = new URLSearchParams();
+  if (params.page != null) search.set('page', params.page);
+  if (params.limit != null) search.set('limit', params.limit);
+  if (params.from) search.set('from', params.from);
+  if (params.to) search.set('to', params.to);
+  if (params.q) search.set('q', params.q);
+  const query = search.toString();
+  return adminRequest(`/nat-campaign-submissions${query ? `?${query}` : ''}`, { method: 'GET' }, token);
+};
+
 export const getTrainingAttendance = async (params = {}, token = getStoredToken()) => {
   const search = new URLSearchParams();
   if (params.page != null) search.set('page', params.page);

@@ -1,0 +1,76 @@
+/** Layout and design tokens for the students homepage */
+export const C360 = {
+  orange: '#f27921',
+  orangeDark: '#e06810',
+  orangeLight: '#fff4ed',
+  text: '#333333',
+  textMuted: '#666666',
+  textLight: '#999999',
+  border: '#e5e7eb',
+  bgPage: '#ffffff',
+  bgHero: '#eef2f7',
+  bgSection: '#f5f7fa',
+  bgSectionAlt: '#ffffff',
+  link: '#2563eb',
+  live: '#dc2626',
+};
+
+/** Shared layout classes for consistent vertical rhythm */
+export const LAYOUT = {
+  container: 'mx-auto max-w-[1140px] px-5 sm:px-6 lg:px-8',
+  section: 'border-b border-[#e8eaed] py-12 sm:py-16',
+  sectionCompact: 'border-b border-[#e8eaed] py-10 sm:py-12',
+  hubGrid: 'grid gap-10 lg:grid-cols-12 lg:gap-14',
+  hubSidebar: 'lg:col-span-4',
+  hubContent: 'min-w-0 lg:col-span-8',
+  card: 'rounded-xl border border-[#e5e7eb] bg-white p-6',
+  cardMuted: 'rounded-xl border border-[#e8eaed] bg-[#fafbfc] p-6',
+};
+
+export const NAV_CATEGORIES = [
+  { label: 'Rank predictors', to: '/students/rank-predictor' },
+  { label: 'College predictors', to: '/students/college-predictor' },
+  { label: 'Fit tests', to: '/students/tests' },
+  { label: 'Compare colleges', to: '/students/college-comparison' },
+  { label: 'Deadline manager', to: '/students/deadline-manager' },
+];
+
+export const FOOTER_COLUMNS = [
+  {
+    title: 'Entrance exams',
+    links: [
+      { label: 'JEE Main', to: '/students/rank-predictor/jeemainmarks' },
+      { label: 'JEE Advanced', to: '/students/rank-predictor/jeeadvanced' },
+      { label: 'AP EAMCET', to: '/students/rank-predictor/apeamcet' },
+      { label: 'TS EAMCET', to: '/students/rank-predictor/tseamcet' },
+      { label: 'KCET', to: '/students/rank-predictor/kcet' },
+      { label: 'MHT CET', to: '/students/rank-predictor/mhcet' },
+    ],
+  },
+  {
+    title: 'Workspace tools',
+    links: [
+      { label: 'Rank predictor hub', to: '/students/rank-predictor' },
+      { label: 'College predictor', to: '/students/college-predictor' },
+      { label: 'Branch predictor', to: '/students/branch-predictor' },
+      { label: 'College comparison', to: '/students/college-comparison' },
+      { label: 'Deadline manager', to: '/students/deadline-manager' },
+    ],
+  },
+  {
+    title: 'Assessments',
+    links: [
+      { label: 'Course fit test', to: '/students/course-fit-test' },
+      { label: 'College fit test', to: '/students/college-fit-test' },
+      { label: 'All fit tests', to: '/students/tests' },
+    ],
+  },
+  {
+    title: 'GuideXpert',
+    links: [
+      { label: 'Main website', to: '/' },
+      { label: 'Blogs', to: '/blogs' },
+      { label: 'Counsellor login', to: '/counsellor/login' },
+    ],
+  },
+];

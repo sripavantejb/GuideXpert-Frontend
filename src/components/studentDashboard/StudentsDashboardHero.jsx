@@ -1,73 +1,141 @@
-import { LuArrowRight } from 'react-icons/lu';
-import StudentsHeroIllustration from './StudentsHeroIllustration';
+import { useEffect, useState } from 'react';
+import { Link } from 'react-router-dom';
+import { FiSearch, FiX } from 'react-icons/fi';
+import { HOME_TAGLINE, HOME_SUBTITLE, POPULAR_PREDICTORS, HOME_BANNERS } from './careers360/careers360HomeData';
+import { LAYOUT } from './careers360/careers360Theme';
+import CollegeCampusImage from './landing/CollegeCampusImage';
 
-export default function StudentsDashboardHero({ onStartPrediction, onExploreTools }) {
+function HeroBannerCarousel() {
+  const [index, setIndex] = useState(0);
+
+  useEffect(() => {
+    const t = setInterval(() => setIndex((i) => (i + 1) % HOME_BANNERS.length), 4500);
+    return () => clearInterval(t);
+  }, []);
+
   return (
-    <section className="relative overflow-hidden bg-slate-900">
-      <div
-        className="pointer-events-none absolute inset-0"
-        aria-hidden
-        style={{
-          background:
-            'radial-gradient(ellipse 80% 60% at 50% -10%, rgba(199, 243, 107, 0.12), transparent), radial-gradient(ellipse 50% 40% at 100% 50%, rgba(59, 130, 246, 0.08), transparent)',
-        }}
-      />
-
-      <div className="relative mx-auto max-w-6xl px-4 py-16 sm:px-6 sm:py-20 lg:px-8 lg:py-24">
-        <div className="flex flex-col items-center gap-12 lg:flex-row lg:items-center lg:justify-between lg:gap-16">
-          <div className="min-w-0 flex-1 text-center lg:max-w-xl lg:text-left">
-            <p className="mb-4 inline-flex items-center rounded-full bg-white/10 px-3 py-1 text-xs font-medium text-emerald-300 ring-1 ring-white/10">
-              GuideXpert student workspace
-            </p>
-
-            <h1 className="text-3xl font-semibold leading-tight tracking-tight text-white sm:text-4xl lg:text-5xl">
-              Predict rank.
-              <br />
-              Compare colleges.
-              <br />
-              <span className="text-emerald-300">Find your fit.</span>
-            </h1>
-
-            <p className="mx-auto mt-5 max-w-lg text-base leading-relaxed text-slate-300 lg:mx-0 lg:text-lg">
-              Enter your marks or rank to discover best-fit colleges, branches, and admission chances — instantly.
-            </p>
-
-            <div className="mt-8 flex flex-col gap-3 sm:flex-row sm:justify-center lg:justify-start">
-              <button
-                type="button"
-                onClick={onStartPrediction}
-                className="inline-flex items-center justify-center gap-2 rounded-xl bg-emerald-400 px-6 py-3 text-sm font-semibold text-slate-900 transition hover:bg-emerald-300 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-400 focus-visible:ring-offset-2 focus-visible:ring-offset-slate-900"
-              >
-                Start prediction
-              </button>
-              <button
-                type="button"
-                onClick={onExploreTools}
-                className="inline-flex items-center justify-center gap-2 rounded-xl bg-white/10 px-6 py-3 text-sm font-semibold text-white ring-1 ring-white/20 transition hover:bg-white/15 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white/40 focus-visible:ring-offset-2 focus-visible:ring-offset-slate-900"
-              >
-                Explore tools <LuArrowRight className="h-4 w-4" />
-              </button>
+    <div className="mt-6 sm:mt-7">
+      <div className="overflow-hidden rounded-xl border border-[#e5e7eb] bg-white shadow-sm">
+        <Link to={HOME_BANNERS[index].to} className="group block">
+          <div className="relative aspect-[4.5/1] w-full overflow-hidden bg-[#eef2f7] sm:aspect-[5/1]">
+            <CollegeCampusImage
+              id={HOME_BANNERS[index].id}
+              name={HOME_BANNERS[index].title}
+              src={HOME_BANNERS[index].image}
+              className="h-full w-full transition duration-500 group-hover:scale-[1.02]"
+            />
+            <div className="absolute inset-0 bg-gradient-to-r from-black/55 via-black/25 to-transparent" />
+            <div className="absolute bottom-0 left-0 right-0 p-5 sm:p-7">
+              <p className="text-base font-bold text-white sm:text-lg">{HOME_BANNERS[index].title}</p>
+              <p className="mt-1 text-xs leading-relaxed text-white/90 sm:text-sm">{HOME_BANNERS[index].subtitle}</p>
             </div>
-
-            <dl className="mt-10 grid grid-cols-2 gap-6 border-t border-white/10 pt-8 sm:grid-cols-4">
-              {[
-                { value: '500+', label: 'Colleges' },
-                { value: '40k+', label: 'Cutoff records' },
-                { value: '10+', label: 'Smart tools' },
-                { value: 'AI', label: 'Fit tests' },
-              ].map((stat) => (
-                <div key={stat.label}>
-                  <dt className="text-xl font-semibold text-white sm:text-2xl">{stat.value}</dt>
-                  <dd className="mt-0.5 text-xs text-slate-400">{stat.label}</dd>
-                </div>
-              ))}
-            </dl>
           </div>
+        </Link>
+      </div>
+      <div className="mt-3 flex justify-center gap-2">
+        {HOME_BANNERS.map((b, i) => (
+          <button
+            key={b.id}
+            type="button"
+            aria-label={`Show ${b.title}`}
+            onClick={() => setIndex(i)}
+            className={`h-1.5 rounded-full transition-all ${
+              i === index ? 'w-6 bg-[#f27921]' : 'w-1.5 bg-[#ccc] hover:bg-[#aaa]'
+            }`}
+          />
+        ))}
+      </div>
+    </div>
+  );
+}
 
-          <div className="w-full min-w-0 flex-1 lg:max-w-[520px]">
-            <StudentsHeroIllustration />
-          </div>
+export default function StudentsDashboardHero({
+  searchTerm,
+  onSearchChange,
+  onSearchFocus,
+  onSearchBlur,
+  suggestions,
+  showSuggestions,
+  onSuggestionPick,
+  onClearSearch,
+}) {
+  const trending = POPULAR_PREDICTORS.filter((p) => p.trending).slice(0, 2);
+  const otherLinks = POPULAR_PREDICTORS.filter((p) => !trending.includes(p));
+
+  return (
+    <section className="-mt-4 border-b border-[#e8eaed] sm:-mt-5" style={{ backgroundColor: '#eef2f7' }}>
+      <div className={`${LAYOUT.container} pb-8 sm:pb-10`}>
+        <div className="mx-auto max-w-2xl text-center">
+          <h1 className="mt-0 text-2xl font-bold tracking-tight text-[#333] sm:text-[1.75rem] lg:text-3xl lg:leading-tight">
+            {HOME_TAGLINE}
+          </h1>
+          <p className="mt-2 text-sm leading-snug text-[#666]">{HOME_SUBTITLE}</p>
         </div>
+
+        <div className="relative mx-auto mt-5 max-w-xl sm:mt-6">
+          <FiSearch className="pointer-events-none absolute left-4 top-1/2 h-5 w-5 -translate-y-1/2 text-[#999]" />
+          <input
+            type="search"
+            value={searchTerm}
+            onFocus={onSearchFocus}
+            onBlur={onSearchBlur}
+            onChange={(e) => onSearchChange(e.target.value)}
+            placeholder="Search predictors, colleges, and tools"
+            aria-label="Search predictors, colleges, and tools"
+            className="w-full rounded-lg border border-[#d1d5db] bg-white py-3 pl-12 pr-12 text-sm text-[#333] shadow-sm placeholder:text-[#999] focus:border-[#f27921] focus:outline-none focus:ring-2 focus:ring-[#f27921]/20 sm:text-base"
+          />
+          {searchTerm ? (
+            <button
+              type="button"
+              onClick={onClearSearch}
+              className="absolute right-4 top-1/2 -translate-y-1/2 text-[#999] hover:text-[#555]"
+              aria-label="Clear search"
+            >
+              <FiX className="h-5 w-5" />
+            </button>
+          ) : null}
+          {showSuggestions && suggestions.length > 0 ? (
+            <ul className="absolute left-0 right-0 top-full z-50 mt-2 overflow-hidden rounded-lg border border-[#e5e7eb] bg-white py-1 shadow-lg">
+              {suggestions.map((sug) => (
+                <li key={sug}>
+                  <button
+                    type="button"
+                    onMouseDown={() => onSuggestionPick(sug)}
+                    className="w-full px-4 py-2.5 text-left text-sm text-[#444] hover:bg-[#fff4ed]"
+                  >
+                    {sug}
+                  </button>
+                </li>
+              ))}
+            </ul>
+          ) : null}
+        </div>
+
+        <div className="mx-auto mt-4 flex max-w-2xl flex-wrap items-center justify-center gap-x-4 gap-y-1.5">
+          {trending.map((item) => (
+            <Link
+              key={item.label}
+              to={item.to}
+              className="inline-flex items-center gap-1.5 text-sm font-medium text-[#333] hover:text-[#f27921]"
+            >
+              {item.label}
+              <span className="rounded bg-[#f27921] px-1.5 py-px text-[10px] font-semibold uppercase tracking-wide text-white">
+                trending
+              </span>
+            </Link>
+          ))}
+          {otherLinks.map((item) => (
+            <Link
+              key={item.label}
+              to={item.to}
+              className="text-sm text-[#555] hover:text-[#f27921] hover:underline"
+            >
+              {item.label}
+            </Link>
+          ))}
+        </div>
+
+        <HeroBannerCarousel />
       </div>
     </section>
   );
