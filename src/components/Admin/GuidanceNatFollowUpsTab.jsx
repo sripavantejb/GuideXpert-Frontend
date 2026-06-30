@@ -6,17 +6,71 @@ import { fetchAllPaginatedRows } from '../../utils/adminPagedFetch';
 import { getGuidanceNatFollowUps, getStoredToken, patchGuidanceNatFollowUp } from '../../utils/adminApi';
 import { useAuth } from '../../hooks/useAuth';
 import { useDebouncedValue } from '../../hooks/useDebouncedValue';
+import {
+  NAT_CAMPAIGN_OPTIONS,
+  NAT_CBA_NAME_OPTIONS,
+  NAT_CHANNEL_OPTIONS,
+  NAT_COUNSELLOR_BY_OPTIONS,
+  NAT_LANGUAGE_OPTIONS,
+  NAT_SESSION_STAGE_OPTIONS,
+} from '../../constants/natFollowUp';
+
+const fieldClass =
+  'box-border max-h-8 min-h-8 border border-gray-200 rounded-md bg-white px-2 py-0.5 text-xs text-gray-900 leading-none overflow-hidden focus:border-primary-navy focus:outline-none focus:ring-1 focus:ring-primary-navy/20 disabled:cursor-not-allowed disabled:opacity-60';
+
+const cellClass = 'px-3 py-1.5 align-top';
+const headClass =
+  'px-3 py-2 text-left text-[11px] font-semibold uppercase tracking-wide text-gray-500 whitespace-nowrap align-top';
+
+function formatPreferredColleges(row) {
+  if (!Array.isArray(row.preferredColleges) || row.preferredColleges.length === 0) return '';
+  return row.preferredColleges.join(', ');
+}
+
+function formatSlotLabel(row) {
+  if (!row.slot) return '';
+  return `${row.slot.sessionTitle} (${row.slot.slotDate}${row.slot.slotTime ? ` · ${row.slot.slotTime}` : ''})`;
+}
+
+function ClampedText({ text, maxWidth = 'max-w-[200px]', className = '' }) {
+  if (!text) {
+    return <span className="text-gray-400">—</span>;
+  }
+  return (
+    <span className={`block truncate text-xs leading-5 text-gray-700 ${maxWidth} ${className}`.trim()} title={text}>
+      {text}
+    </span>
+  );
+}
+
+function NatSelect({ value, options, disabled, onChange, minWidth = 'min-w-[110px]', className = '' }) {
+  return (
+    <select
+      value={value || ''}
+      disabled={disabled}
+      onChange={(e) => onChange(e.target.value)}
+      className={`${fieldClass} ${minWidth} ${className}`.trim()}
+    >
+      <option value="">—</option>
+      {options.map((opt) => (
+        <option key={opt} value={opt}>
+          {opt}
+        </option>
+      ))}
+    </select>
+  );
+}
 
 function BookingBadge({ confirmed, status }) {
   if (confirmed) {
     return (
-      <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-medium bg-emerald-100 text-emerald-800">
+      <span className="inline-flex items-center gap-1 rounded-full bg-emerald-50 px-2.5 py-1 text-xs font-semibold text-emerald-700 ring-1 ring-emerald-200">
         ✓ {status || 'Confirmed'}
       </span>
     );
   }
   return (
-    <span className="px-2 py-0.5 rounded-full text-xs font-medium bg-gray-100 text-gray-700">
+    <span className="inline-flex rounded-full bg-gray-100 px-2.5 py-1 text-xs font-medium text-gray-700">
       {status || '—'}
     </span>
   );
@@ -25,11 +79,15 @@ function BookingBadge({ confirmed, status }) {
 const NAT_COPY_FIELDS = [
   { key: 'studentName', label: 'Student' },
   { key: 'mobileNumber', label: 'Mobile' },
-  { key: 'natFormSubmitted', label: 'NAT form' },
-  { key: 'natCollegePreferences', label: 'NAT colleges' },
-  { key: 'natInitiated', label: 'NAT initiated' },
-  { key: 'natInterested', label: 'Interested' },
-  { key: 'natContactLater', label: 'Contact later' },
+  { key: 'natFollowUpDate', label: 'Date' },
+  { key: 'natChannel', label: 'Channel' },
+  { key: 'natCampaign', label: 'Campaign' },
+  { key: 'natLanguage', label: 'Language' },
+  { key: 'natCounsellorBy', label: 'Counsellor by' },
+  { key: 'natCounsellorName', label: 'Counsellor name' },
+  { key: 'natCbaName', label: 'CBA name' },
+  { key: 'natBeforeSessionStage', label: 'Before session stage' },
+  { key: 'natPresentStage', label: 'Present stage' },
   { key: 'natNotes', label: 'Notes' },
   { key: 'collegeBudget', label: 'Budget' },
   { key: 'parentOccupation', label: 'Parent occ.' },
@@ -50,15 +108,6 @@ function getNatCellValue(row, key) {
     return `${row.slot.sessionTitle} (${row.slot.slotDate}${row.slot.slotTime ? ` · ${row.slot.slotTime}` : ''})`;
   }
   if (key === 'counselorName') return row.counselor?.name || '';
-  if (key === 'natFormSubmitted') return row.natFormSubmitted ? 'Yes' : 'No';
-  if (key === 'natInitiated') return row.natInitiated ? 'Yes' : 'No';
-  if (key === 'natContactLater') return row.natContactLater ? 'Yes' : 'No';
-  if (key === 'natInterested') {
-    if (row.natInterested === 'yes') return 'Yes';
-    if (row.natInterested === 'no') return 'No';
-    if (row.natInterested === 'undecided') return 'Undecided';
-    return '';
-  }
   if (key === 'bookingStatus') {
     if (row.bookingConfirmed) return row.bookingStatus || 'Confirmed';
     return row.bookingStatus || '';
@@ -71,8 +120,6 @@ function buildNatQueryParams({
   page,
   limit,
   bookingFilter,
-  natFilter,
-  natFormFilter,
   bookingsSlotId,
   bookingsCounselorId,
   bookingsSlotDate,
@@ -83,8 +130,6 @@ function buildNatQueryParams({
     page,
     limit,
     bookingFilter: bookingFilter || undefined,
-    natFilter: natFilter || undefined,
-    natFormFilter: natFormFilter || undefined,
     selectedSlotId: bookingsSlotId || undefined,
     oneOnOneCounselorId: bookingsCounselorId || undefined,
     slotDate: bookingsSlotDate || undefined,
@@ -103,8 +148,6 @@ export default function GuidanceNatFollowUpsTab({ counselors, slotOptions }) {
   const [savingId, setSavingId] = useState(null);
   const [notesDraft, setNotesDraft] = useState({});
   const [bookingFilter, setBookingFilter] = useState('confirmed');
-  const [natFilter, setNatFilter] = useState('');
-  const [natFormFilter, setNatFormFilter] = useState('');
   const [bookingsCounselorId, setBookingsCounselorId] = useState('');
   const [bookingsSlotDate, setBookingsSlotDate] = useState('');
   const [bookingsSlotId, setBookingsSlotId] = useState('');
@@ -117,12 +160,18 @@ export default function GuidanceNatFollowUpsTab({ counselors, slotOptions }) {
   const [copyLoading, setCopyLoading] = useState(false);
   const [copyRecords, setCopyRecords] = useState([]);
 
+  const counsellorNameOptions = useMemo(
+    () =>
+      [...new Set(counselors.map((c) => c.name).filter(Boolean))].sort((a, b) =>
+        a.localeCompare(b)
+      ),
+    [counselors]
+  );
+
   const filtersActive = useMemo(
     () =>
       Boolean(
         bookingFilter ||
-          natFilter ||
-          natFormFilter ||
           bookingsCounselorId ||
           bookingsSlotDate ||
           bookingsSlotId ||
@@ -131,8 +180,6 @@ export default function GuidanceNatFollowUpsTab({ counselors, slotOptions }) {
       ),
     [
       bookingFilter,
-      natFilter,
-      natFormFilter,
       bookingsCounselorId,
       bookingsSlotDate,
       bookingsSlotId,
@@ -151,8 +198,6 @@ export default function GuidanceNatFollowUpsTab({ counselors, slotOptions }) {
         page,
         limit,
         bookingFilter,
-        natFilter,
-        natFormFilter,
         bookingsSlotId,
         bookingsCounselorId,
         bookingsSlotDate,
@@ -178,8 +223,6 @@ export default function GuidanceNatFollowUpsTab({ counselors, slotOptions }) {
     pagination.page,
     pagination.limit,
     bookingFilter,
-    natFilter,
-    natFormFilter,
     bookingsSlotId,
     bookingsCounselorId,
     bookingsSlotDate,
@@ -230,8 +273,6 @@ export default function GuidanceNatFollowUpsTab({ counselors, slotOptions }) {
       page: 1,
       limit: 25,
       bookingFilter,
-      natFilter,
-      natFormFilter,
       bookingsSlotId,
       bookingsCounselorId,
       bookingsSlotDate,
@@ -251,8 +292,8 @@ export default function GuidanceNatFollowUpsTab({ counselors, slotOptions }) {
   };
 
   return (
-    <>
-      <div className="flex flex-wrap items-center gap-2 bg-white rounded-xl border p-3">
+    <div className="space-y-4">
+      <div className="flex flex-wrap items-center gap-3 rounded-xl border border-gray-200 bg-white p-4 shadow-sm">
         <div className="relative min-w-[140px] flex-1">
           <FiSearch className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 w-4 h-4" />
           <input
@@ -263,7 +304,7 @@ export default function GuidanceNatFollowUpsTab({ counselors, slotOptions }) {
               setStudentSearch(e.target.value);
               setPagination((p) => ({ ...p, page: 1 }));
             }}
-            className="w-full border rounded-lg pl-9 pr-3 py-2 text-sm"
+            className="w-full rounded-lg border border-gray-200 bg-white py-2 pl-9 pr-3 text-sm shadow-sm focus:border-primary-navy focus:outline-none focus:ring-2 focus:ring-primary-navy/15"
           />
         </div>
         <input
@@ -274,7 +315,7 @@ export default function GuidanceNatFollowUpsTab({ counselors, slotOptions }) {
             setMobileSearch(e.target.value);
             setPagination((p) => ({ ...p, page: 1 }));
           }}
-          className="border rounded-lg px-3 py-2 text-sm min-w-[140px]"
+          className="min-w-[160px] rounded-lg border border-gray-200 bg-white px-3 py-2 text-sm shadow-sm focus:border-primary-navy focus:outline-none focus:ring-2 focus:ring-primary-navy/15"
         />
         <select
           value={bookingFilter}
@@ -282,7 +323,7 @@ export default function GuidanceNatFollowUpsTab({ counselors, slotOptions }) {
             setBookingFilter(e.target.value);
             setPagination((p) => ({ ...p, page: 1 }));
           }}
-          className="border rounded-lg px-3 py-2 text-sm"
+          className="rounded-lg border border-gray-200 bg-white px-3 py-2 text-sm shadow-sm focus:border-primary-navy focus:outline-none focus:ring-2 focus:ring-primary-navy/15"
         >
           <option value="confirmed">Confirmed bookings</option>
           <option value="">All bookings</option>
@@ -290,39 +331,12 @@ export default function GuidanceNatFollowUpsTab({ counselors, slotOptions }) {
           <option value="notBooked">Not booked</option>
         </select>
         <select
-          value={natFormFilter}
-          onChange={(e) => {
-            setNatFormFilter(e.target.value);
-            setPagination((p) => ({ ...p, page: 1 }));
-          }}
-          className="border rounded-lg px-3 py-2 text-sm"
-        >
-          <option value="">NAT form: all</option>
-          <option value="submitted">NAT form submitted</option>
-          <option value="notSubmitted">NAT form not submitted</option>
-        </select>
-        <select
-          value={natFilter}
-          onChange={(e) => {
-            setNatFilter(e.target.value);
-            setPagination((p) => ({ ...p, page: 1 }));
-          }}
-          className="border rounded-lg px-3 py-2 text-sm"
-        >
-          <option value="">NAT status: all</option>
-          <option value="initiated">NAT initiated</option>
-          <option value="notInitiated">NAT not initiated</option>
-          <option value="interestedYes">Interested: yes</option>
-          <option value="interestedNo">Interested: no</option>
-          <option value="contactLater">Contact later</option>
-        </select>
-        <select
           value={bookingsCounselorId}
           onChange={(e) => {
             setBookingsCounselorId(e.target.value);
             setPagination((p) => ({ ...p, page: 1 }));
           }}
-          className="border rounded-lg px-3 py-2 text-sm"
+          className="rounded-lg border border-gray-200 bg-white px-3 py-2 text-sm shadow-sm focus:border-primary-navy focus:outline-none focus:ring-2 focus:ring-primary-navy/15"
         >
           <option value="">All counselors</option>
           {counselors.map((c) => (
@@ -337,7 +351,7 @@ export default function GuidanceNatFollowUpsTab({ counselors, slotOptions }) {
             setBookingsSlotId(e.target.value);
             setPagination((p) => ({ ...p, page: 1 }));
           }}
-          className="border rounded-lg px-3 py-2 text-sm min-w-[160px]"
+          className="min-w-[180px] rounded-lg border border-gray-200 bg-white px-3 py-2 text-sm shadow-sm focus:border-primary-navy focus:outline-none focus:ring-2 focus:ring-primary-navy/15"
         >
           <option value="">All sessions</option>
           {slotOptions.map((s) => (
@@ -353,9 +367,14 @@ export default function GuidanceNatFollowUpsTab({ counselors, slotOptions }) {
             setBookingsSlotDate(e.target.value);
             setPagination((p) => ({ ...p, page: 1 }));
           }}
-          className="border rounded-lg px-3 py-2 text-sm"
+          className="rounded-lg border border-gray-200 bg-white px-3 py-2 text-sm shadow-sm focus:border-primary-navy focus:outline-none focus:ring-2 focus:ring-primary-navy/15"
         />
-        <button type="button" onClick={load} className="p-2 text-gray-600 hover:bg-gray-100 rounded-lg" aria-label="Refresh">
+        <button
+          type="button"
+          onClick={load}
+          className="rounded-lg border border-gray-200 p-2.5 text-gray-600 shadow-sm transition hover:bg-gray-50"
+          aria-label="Refresh"
+        >
           <FiRefreshCw />
         </button>
         {filtersActive ? (
@@ -363,8 +382,6 @@ export default function GuidanceNatFollowUpsTab({ counselors, slotOptions }) {
             type="button"
             onClick={() => {
               setBookingFilter('confirmed');
-              setNatFilter('');
-              setNatFormFilter('');
               setBookingsCounselorId('');
               setBookingsSlotDate('');
               setBookingsSlotId('');
@@ -380,13 +397,18 @@ export default function GuidanceNatFollowUpsTab({ counselors, slotOptions }) {
         ) : null}
       </div>
 
-      {error ? <p className="text-sm text-red-700 bg-red-50 px-3 py-2 rounded-lg">{error}</p> : null}
+      {error ? (
+        <p className="rounded-lg border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">{error}</p>
+      ) : null}
 
-      <div className="bg-white rounded-xl border overflow-x-auto">
-        <div className="flex flex-wrap items-center justify-between gap-2 border-b border-gray-200 px-4 py-3">
-          <p className="text-sm text-gray-600">
-            Page {pagination.page} of {pagination.totalPages} · {pagination.total} total
-          </p>
+      <div className="overflow-hidden rounded-xl border border-gray-200 bg-white shadow-sm">
+        <div className="flex flex-wrap items-center justify-between gap-3 border-b border-gray-200 bg-slate-50/80 px-4 py-3">
+          <div>
+            <p className="text-sm font-semibold text-gray-900">NAT follow-ups</p>
+            <p className="text-sm text-gray-500">
+              Page {pagination.page} of {pagination.totalPages} · {pagination.total} total
+            </p>
+          </div>
           <div className="flex items-center gap-3">
             <label className="inline-flex items-center gap-2 text-sm text-gray-700">
               <input
@@ -411,100 +433,148 @@ export default function GuidanceNatFollowUpsTab({ counselors, slotOptions }) {
             </button>
           </div>
         </div>
-        <table className="min-w-full text-sm">
-          <thead className="bg-gray-50">
+        <div className="overflow-x-auto">
+        <table className="min-w-full border-collapse text-sm [&_td]:align-top [&_th]:align-top">
+          <thead className="border-b border-gray-200 bg-slate-50">
             <tr>
-              <th className="px-3 py-2 text-left">Student</th>
-              <th className="px-3 py-2 text-left">Mobile</th>
-              <th className="px-3 py-2 text-left">Booking</th>
-              <th className="px-3 py-2 text-left">Slot</th>
-              <th className="px-3 py-2 text-left">Counselor</th>
-              <th className="px-3 py-2 text-left">NAT form</th>
-              <th className="px-3 py-2 text-left min-w-[140px]">NAT colleges</th>
-              <th className="px-3 py-2 text-left">NAT initiated</th>
-              <th className="px-3 py-2 text-left">Interested</th>
-              <th className="px-3 py-2 text-left">Contact later</th>
-              <th className="px-3 py-2 text-left min-w-[180px]">Notes</th>
-              <th className="px-3 py-2 text-left">Budget</th>
-              <th className="px-3 py-2 text-left">Parent occ.</th>
-              <th className="px-3 py-2 text-left min-w-[140px]">Preferred colleges</th>
+              <th className={`sticky left-0 z-10 bg-slate-50 ${headClass}`}>Student</th>
+              <th className={headClass}>Mobile</th>
+              <th className={headClass}>Date</th>
+              <th className={headClass}>Channel</th>
+              <th className={`${headClass} min-w-[180px]`}>Campaign</th>
+              <th className={headClass}>Language</th>
+              <th className={headClass}>Counsellor by</th>
+              <th className={`${headClass} min-w-[140px]`}>Counsellor name</th>
+              <th className={headClass}>CBA name</th>
+              <th className={`${headClass} min-w-[150px]`}>Before session</th>
+              <th className={`${headClass} min-w-[130px]`}>Present stage</th>
+              <th className={headClass}>Booking</th>
+              <th className={`${headClass} min-w-[200px]`}>Slot</th>
+              <th className={`${headClass} min-w-[140px]`}>Notes</th>
+              <th className={headClass}>Budget</th>
+              <th className={headClass}>Parent occ.</th>
+              <th className={`${headClass} min-w-[150px]`}>Preferred colleges</th>
             </tr>
           </thead>
           <tbody>
             {loading ? (
               <tr>
-                <td colSpan={14} className="p-8 text-center text-gray-500">
+                <td colSpan={17} className="p-8 text-center text-gray-500">
                   Loading…
                 </td>
               </tr>
             ) : rows.length === 0 ? (
               <tr>
-                <td colSpan={14} className="p-8 text-center text-gray-500">
+                <td colSpan={17} className="p-8 text-center text-gray-500">
                   No records match your filters.
                 </td>
               </tr>
             ) : (
-              rows.map((row) => (
-                <tr key={row.id} className="border-t align-top">
-                  <td className="px-3 py-2 font-medium">{row.studentName}</td>
-                  <td className="px-3 py-2">{row.mobileNumber}</td>
-                  <td className="px-3 py-2">
-                    <BookingBadge confirmed={row.bookingConfirmed} status={row.bookingStatus} />
+              rows.map((row, index) => (
+                <tr
+                  key={row.id}
+                  className={`border-t border-gray-100 hover:bg-slate-50/80 ${
+                    index % 2 === 1 ? 'bg-slate-50/50' : 'bg-white'
+                  }`}
+                >
+                  <td className={`sticky left-0 z-10 ${cellClass} whitespace-nowrap font-medium text-gray-900 shadow-[4px_0_6px_-4px_rgba(0,0,0,0.08)] ${
+                      index % 2 === 1 ? 'bg-slate-50' : 'bg-white'
+                    }`}
+                  >
+                    {row.studentName}
                   </td>
-                  <td className="px-3 py-2 text-xs">
-                    {row.slot
-                      ? `${row.slot.sessionTitle} (${row.slot.slotDate}${row.slot.slotTime ? ` · ${row.slot.slotTime}` : ''})`
-                      : '—'}
-                  </td>
-                  <td className="px-3 py-2">{row.counselor?.name || '—'}</td>
-                  <td className="px-3 py-2">
-                    <span
-                      className={`inline-flex px-2 py-0.5 rounded-full text-xs font-medium ${
-                        row.natFormSubmitted ? 'bg-emerald-100 text-emerald-800' : 'bg-gray-100 text-gray-600'
-                      }`}
-                    >
-                      {row.natFormSubmitted ? 'Yes' : 'No'}
-                    </span>
-                  </td>
-                  <td className="px-3 py-2 text-xs max-w-[200px]">{row.natCollegePreferences || '—'}</td>
-                  <td className="px-3 py-2">
-                    <select
-                      value={row.natInitiated ? 'yes' : 'no'}
-                      disabled={savingId === row.id}
-                      onChange={(e) => patchRow(row.id, { natInitiated: e.target.value === 'yes' })}
-                      className="border rounded-lg px-2 py-1 text-xs"
-                    >
-                      <option value="no">No</option>
-                      <option value="yes">Yes</option>
-                    </select>
-                  </td>
-                  <td className="px-3 py-2">
-                    <select
-                      value={row.natInterested || ''}
-                      disabled={savingId === row.id}
-                      onChange={(e) => patchRow(row.id, { natInterested: e.target.value })}
-                      className="border rounded-lg px-2 py-1 text-xs"
-                    >
-                      <option value="">—</option>
-                      <option value="yes">Yes</option>
-                      <option value="no">No</option>
-                      <option value="undecided">Undecided</option>
-                    </select>
-                  </td>
-                  <td className="px-3 py-2">
+                  <td className={`${cellClass} whitespace-nowrap text-gray-700`}>{row.mobileNumber}</td>
+                  <td className={cellClass}>
                     <input
-                      type="checkbox"
-                      checked={!!row.natContactLater}
+                      type="date"
+                      value={row.natFollowUpDate || ''}
                       disabled={savingId === row.id}
-                      onChange={(e) => patchRow(row.id, { natContactLater: e.target.checked })}
-                      className="rounded border-gray-300"
-                      aria-label="Contact later"
+                      onChange={(e) => patchRow(row.id, { natFollowUpDate: e.target.value })}
+                      className={`${fieldClass} min-w-[132px]`}
                     />
                   </td>
-                  <td className="px-3 py-2">
-                    <textarea
-                      rows={2}
-                      className="w-full min-w-[160px] border rounded-lg px-2 py-1 text-xs"
+                  <td className={cellClass}>
+                    <NatSelect
+                      value={row.natChannel}
+                      options={NAT_CHANNEL_OPTIONS}
+                      disabled={savingId === row.id}
+                      onChange={(value) => patchRow(row.id, { natChannel: value })}
+                    />
+                  </td>
+                  <td className={cellClass}>
+                    <NatSelect
+                      value={row.natCampaign}
+                      options={NAT_CAMPAIGN_OPTIONS}
+                      disabled={savingId === row.id}
+                      minWidth="min-w-[180px]"
+                      onChange={(value) => patchRow(row.id, { natCampaign: value })}
+                    />
+                  </td>
+                  <td className={cellClass}>
+                    <NatSelect
+                      value={row.natLanguage}
+                      options={NAT_LANGUAGE_OPTIONS}
+                      disabled={savingId === row.id}
+                      onChange={(value) => patchRow(row.id, { natLanguage: value })}
+                    />
+                  </td>
+                  <td className={cellClass}>
+                    <NatSelect
+                      value={row.natCounsellorBy}
+                      options={NAT_COUNSELLOR_BY_OPTIONS}
+                      disabled={savingId === row.id}
+                      onChange={(value) => patchRow(row.id, { natCounsellorBy: value })}
+                    />
+                  </td>
+                  <td className={cellClass}>
+                    <NatSelect
+                      value={row.natCounsellorName || row.counselor?.name || ''}
+                      options={
+                        row.natCounsellorName && !counsellorNameOptions.includes(row.natCounsellorName)
+                          ? [...counsellorNameOptions, row.natCounsellorName]
+                          : counsellorNameOptions
+                      }
+                      disabled={savingId === row.id}
+                      minWidth="min-w-[140px]"
+                      onChange={(value) => patchRow(row.id, { natCounsellorName: value })}
+                    />
+                  </td>
+                  <td className={cellClass}>
+                    <NatSelect
+                      value={row.natCbaName}
+                      options={NAT_CBA_NAME_OPTIONS}
+                      disabled={savingId === row.id}
+                      onChange={(value) => patchRow(row.id, { natCbaName: value })}
+                    />
+                  </td>
+                  <td className={cellClass}>
+                    <NatSelect
+                      value={row.natBeforeSessionStage}
+                      options={NAT_SESSION_STAGE_OPTIONS}
+                      disabled={savingId === row.id}
+                      minWidth="min-w-[150px]"
+                      onChange={(value) => patchRow(row.id, { natBeforeSessionStage: value })}
+                    />
+                  </td>
+                  <td className={cellClass}>
+                    <NatSelect
+                      value={row.natPresentStage}
+                      options={NAT_SESSION_STAGE_OPTIONS}
+                      disabled={savingId === row.id}
+                      minWidth="min-w-[140px]"
+                      onChange={(value) => patchRow(row.id, { natPresentStage: value })}
+                    />
+                  </td>
+                  <td className={cellClass}>
+                    <BookingBadge confirmed={row.bookingConfirmed} status={row.bookingStatus} />
+                  </td>
+                  <td className={`${cellClass} max-w-[200px]`}>
+                    <ClampedText text={formatSlotLabel(row)} maxWidth="max-w-[200px]" className="text-gray-600" />
+                  </td>
+                  <td className={cellClass}>
+                    <input
+                      type="text"
+                      className={`${fieldClass} block min-w-[140px] max-w-[200px]`}
                       value={notesDraft[row.id] ?? row.natNotes ?? ''}
                       onChange={(e) => setNotesDraft((d) => ({ ...d, [row.id]: e.target.value }))}
                       onBlur={() => {
@@ -515,31 +585,24 @@ export default function GuidanceNatFollowUpsTab({ counselors, slotOptions }) {
                       }}
                       placeholder="Add notes…"
                     />
-                    {notesDraft[row.id] !== undefined && notesDraft[row.id] !== (row.natNotes || '') ? (
-                      <button
-                        type="button"
-                        onClick={() => saveNotes(row.id)}
-                        disabled={savingId === row.id}
-                        className="mt-1 text-xs text-primary-navy font-medium"
-                      >
-                        Save notes
-                      </button>
-                    ) : null}
                   </td>
-                  <td className="px-3 py-2 text-xs">{row.collegeBudget || '—'}</td>
-                  <td className="px-3 py-2 text-xs">{row.parentOccupation || '—'}</td>
-                  <td className="px-3 py-2 text-xs max-w-[200px]">
-                    {Array.isArray(row.preferredColleges) && row.preferredColleges.length > 0
-                      ? row.preferredColleges.join(', ')
-                      : '—'}
+                  <td className={`${cellClass} max-w-[120px]`}>
+                    <ClampedText text={row.collegeBudget} maxWidth="max-w-[120px]" />
+                  </td>
+                  <td className={`${cellClass} max-w-[120px]`}>
+                    <ClampedText text={row.parentOccupation} maxWidth="max-w-[120px]" />
+                  </td>
+                  <td className={`${cellClass} max-w-[180px]`}>
+                    <ClampedText text={formatPreferredColleges(row)} maxWidth="max-w-[180px]" />
                   </td>
                 </tr>
               ))
             )}
           </tbody>
         </table>
+        </div>
         {!loading && !viewAll && pagination.totalPages > 1 ? (
-          <div className="flex items-center justify-between border-t border-gray-200 px-4 py-3">
+          <div className="flex items-center justify-between border-t border-gray-200 bg-slate-50/50 px-4 py-3">
             <p className="text-sm text-gray-600">
               Page {pagination.page} of {pagination.totalPages}
             </p>
@@ -577,6 +640,6 @@ export default function GuidanceNatFollowUpsTab({ counselors, slotOptions }) {
         dedupeByPhoneKey="mobileNumber"
         loading={copyLoading}
       />
-    </>
+    </div>
   );
 }
