@@ -69,6 +69,7 @@ const SLOT_COPY_FIELDS = [
 const BOOKING_COPY_FIELDS = [
   { key: 'studentName', label: 'Student' },
   { key: 'mobileNumber', label: 'Mobile' },
+  { key: 'createdAt', label: 'Form submitted' },
   { key: 'bookingStatus', label: 'Booking' },
   { key: 'collegeBudget', label: 'Budget' },
   { key: 'parentOccupation', label: 'Parent occ.' },
@@ -86,6 +87,21 @@ function getSlotCellValue(row, key) {
   return row[key] == null ? '' : String(row[key]);
 }
 
+function formatFormSubmittedAt(value) {
+  if (!value) return '—';
+  const d = new Date(value);
+  if (Number.isNaN(d.getTime())) return '—';
+  return d.toLocaleString('en-IN', {
+    timeZone: 'Asia/Kolkata',
+    day: '2-digit',
+    month: 'short',
+    year: 'numeric',
+    hour: '2-digit',
+    minute: '2-digit',
+    hour12: true,
+  });
+}
+
 function getBookingCellValue(row, key) {
   if (key === 'preferredColleges') {
     return Array.isArray(row.preferredColleges) && row.preferredColleges.length > 0
@@ -97,6 +113,7 @@ function getBookingCellValue(row, key) {
     return `${row.slot.sessionTitle} (${row.slot.slotDate}${row.slot.slotTime ? ` · ${row.slot.slotTime}` : ''})`;
   }
   if (key === 'counselorName') return row.counselor?.name || '';
+  if (key === 'createdAt') return formatFormSubmittedAt(row.createdAt);
   if (key === 'bookingStatus') {
     if (row.bookingConfirmed) return row.bookingStatus || 'Confirmed';
     return row.bookingStatus || 'Not Booked';
@@ -851,6 +868,7 @@ export default function GuidanceSlotBookings() {
                 <tr>
                   <th className="px-3 py-2 text-left">Student</th>
                   <th className="px-3 py-2 text-left">Mobile</th>
+                  <th className="px-3 py-2 text-left whitespace-nowrap">Form submitted</th>
                   <th className="px-3 py-2 text-left">Booking</th>
                   <th className="px-3 py-2 text-left">Budget</th>
                   <th className="px-3 py-2 text-left">Parent occ.</th>
@@ -866,13 +884,13 @@ export default function GuidanceSlotBookings() {
               <tbody>
                 {loading ? (
                   <tr>
-                    <td colSpan={12} className="p-8 text-center text-gray-500">
+                    <td colSpan={13} className="p-8 text-center text-gray-500">
                       Loading…
                     </td>
                   </tr>
                 ) : bookings.length === 0 ? (
                   <tr>
-                    <td colSpan={12} className="p-8 text-center text-gray-500">
+                    <td colSpan={13} className="p-8 text-center text-gray-500">
                       {bookingsFilterActive ? 'No bookings match your filters.' : 'No bookings yet.'}
                     </td>
                   </tr>
@@ -881,6 +899,9 @@ export default function GuidanceSlotBookings() {
                   <tr key={b.id} className="border-t">
                     <td className="px-3 py-2">{b.studentName}</td>
                     <td className="px-3 py-2">{b.mobileNumber}</td>
+                    <td className="px-3 py-2 text-xs whitespace-nowrap text-gray-600">
+                      {formatFormSubmittedAt(b.createdAt)}
+                    </td>
                     <td className="px-3 py-2">
                       <BookingBadge confirmed={b.bookingConfirmed} status={b.bookingStatus} />
                     </td>

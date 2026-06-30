@@ -1,48 +1,42 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { FiBookOpen, FiCalendar, FiUsers } from 'react-icons/fi';
 import { useOneOnOneCounselorAuth } from '../../contexts/OneOnOneCounselorAuthContext';
-import { oocStats } from '../../utils/oneOnOneCounselorApi';
+import { oocListBookings, oocStats } from '../../utils/oneOnOneCounselorApi';
+import { buildNatSummaryFromBookings } from '../../utils/natFollowUpSummary';
 
-function NatSummaryRow({ label, count, names, highlight }) {
+function StageCountCard({ label, count, names, highlight }) {
   const nameList = Array.isArray(names) ? names : [];
   return (
     <div
-      className={`rounded-lg border px-3 py-2.5 ${
-        highlight ? 'border-[#0f2744]/20 bg-[#0f2744]/5' : 'border-slate-100 bg-slate-50/80'
+      className={`rounded-xl border p-3 ${
+        highlight ? 'border-amber-200 bg-amber-50/80' : 'border-slate-200 bg-white'
       }`}
     >
-      <div className="flex flex-wrap items-baseline justify-between gap-2">
-        <p className="text-sm font-semibold text-slate-800">{label}</p>
-        <p className="text-xl font-bold tabular-nums text-[#0f2744]">{count ?? 0}</p>
-      </div>
+      <p className="text-2xl font-bold tabular-nums text-[#0f2744]">{count ?? 0}</p>
+      <p className="mt-1 text-xs font-semibold leading-snug text-slate-700">{label}</p>
       {nameList.length > 0 ? (
-        <p className="mt-1.5 text-sm text-slate-600 leading-relaxed">{nameList.join(', ')}</p>
-      ) : (
-        <p className="mt-1.5 text-sm text-slate-400">No students</p>
-      )}
+        <p className="mt-2 text-xs text-slate-500 leading-relaxed line-clamp-3" title={nameList.join(', ')}>
+          {nameList.join(', ')}
+        </p>
+      ) : null}
     </div>
   );
 }
 
-function NatSummarySection({ title, rows, highlightUnset }) {
-  const items = Array.isArray(rows) ? rows : [];
-  if (!items.length) return null;
-
+function FieldCountRow({ label, count, names }) {
+  const nameList = Array.isArray(names) ? names : [];
   return (
-    <div className="space-y-2">
-      <h3 className="text-sm font-bold uppercase tracking-wide text-slate-500">{title}</h3>
-      <div className="grid gap-2 sm:grid-cols-2 lg:grid-cols-3">
-        {items.map((row) => (
-          <NatSummaryRow
-            key={`${title}-${row.label}`}
-            label={row.label}
-            count={row.count}
-            names={row.names}
-            highlight={highlightUnset && row.label === 'Not set' && row.count > 0}
-          />
-        ))}
+    <div className="flex flex-wrap items-start justify-between gap-2 rounded-lg border border-slate-100 bg-slate-50/80 px-3 py-2">
+      <div className="min-w-0 flex-1">
+        <p className="text-sm font-medium text-slate-800">{label}</p>
+        {nameList.length > 0 ? (
+          <p className="mt-1 text-xs text-slate-500 leading-relaxed">{nameList.join(', ')}</p>
+        ) : (
+          <p className="mt-1 text-xs text-slate-400">No students</p>
+        )}
       </div>
+      <p className="text-lg font-bold tabular-nums text-[#0f2744]">{count ?? 0}</p>
     </div>
   );
 }
@@ -67,11 +61,43 @@ export default function OneOnOneCounselorDashboard() {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    setLoading(true);
-    oocStats().then((res) => {
-      setLoading(false);
-      if (res.success) setStats(res.data?.data);
-    });
+    let cancelled = false;
+
+    async function load() {
+      setLoading(true);
+      const res = await oocStats();
+      if (cancelled) return;
+
+      if (!res.success) {
+        setLoading(false);
+        return;
+      }
+
+      const data = res.data?.data || {};
+      let nat = data.nat;
+      const bookingCount = data.bookingCount ?? 0;
+      const natStudents = Array.isArray(nat?.students) ? nat.students : [];
+
+      if (bookingCount > 0 && natStudents.length === 0) {
+        const bookRes = await oocListBookings({
+          page: 1,
+          limit: Math.min(Math.max(bookingCount, 25), 500),
+        });
+        if (!cancelled && bookRes.success && Array.isArray(bookRes.data?.data)) {
+          nat = buildNatSummaryFromBookings(bookRes.data.data);
+        }
+      }
+
+      if (!cancelled) {
+        setStats({ ...data, nat });
+        setLoading(false);
+      }
+    }
+
+    load();
+    return () => {
+      cancelled = true;
+    };
   }, []);
 
   const cards = [
@@ -83,17 +109,23 @@ export default function OneOnOneCounselorDashboard() {
 
   const nat = stats?.nat;
   const students = Array.isArray(nat?.students) ? nat.students : [];
-  const totalConfirmed = nat?.totalConfirmed ?? students.length ?? 0;
+  const totalConfirmed = nat?.totalConfirmed ?? students.length ?? stats?.bookingCount ?? 0;
 
-  const natSections = [
-    { title: 'Before session stage', rows: nat?.byBeforeSessionStage, highlightUnset: true },
-    { title: 'Present stage', rows: nat?.byPresentStage, highlightUnset: true },
-    { title: 'Channel', rows: nat?.byChannel, highlightUnset: false },
-    { title: 'Campaign', rows: nat?.byCampaign, highlightUnset: false },
-    { title: 'Language', rows: nat?.byLanguage, highlightUnset: false },
-    { title: 'Counsellor by', rows: nat?.byCounsellorBy, highlightUnset: false },
-    { title: 'CBA name', rows: nat?.byCbaName, highlightUnset: false },
-  ];
+  const beforeStages = useMemo(() => nat?.byBeforeSessionStage || [], [nat]);
+  const presentStages = useMemo(() => nat?.byPresentStage || [], [nat]);
+
+  const fieldSections = useMemo(
+    () => [
+      { title: 'Channel', rows: nat?.byChannel || [] },
+      { title: 'Campaign', rows: nat?.byCampaign || [] },
+      { title: 'Language', rows: nat?.byLanguage || [] },
+      { title: 'Counsellor by', rows: nat?.byCounsellorBy || [] },
+      { title: 'CBA name', rows: nat?.byCbaName || [] },
+    ],
+    [nat]
+  );
+
+  const hasNatData = totalConfirmed > 0 && students.length > 0;
 
   return (
     <div className="p-6 md:p-8 space-y-6">
@@ -119,14 +151,14 @@ export default function OneOnOneCounselorDashboard() {
         ))}
       </div>
 
-      <section className="rounded-xl border border-slate-200 bg-white p-5 shadow-sm space-y-5">
+      <section className="rounded-xl border border-slate-200 bg-white p-5 shadow-sm space-y-6">
         <div className="flex flex-wrap items-start justify-between gap-3">
           <div className="flex items-center gap-2">
             <FiUsers className="text-[#0f2744]" aria-hidden />
             <div>
               <h2 className="text-lg font-bold text-slate-900">NAT follow-up</h2>
               <p className="text-sm text-slate-500">
-                Confirmed bookings assigned to you. Names only — contact admin for full details.
+                Confirmed bookings and stage counts for your students. Names only — contact admin for full details.
               </p>
             </div>
           </div>
@@ -140,25 +172,60 @@ export default function OneOnOneCounselorDashboard() {
 
         {loading ? (
           <p className="text-sm text-slate-500">Loading NAT summary…</p>
-        ) : !nat ? (
-          <p className="text-sm text-slate-500">NAT summary is not available yet. Please refresh in a moment.</p>
-        ) : totalConfirmed === 0 ? (
+        ) : !hasNatData ? (
           <p className="text-sm text-slate-500">No confirmed bookings assigned to you yet.</p>
         ) : (
           <>
-            {natSections.map((section) => (
-              <NatSummarySection
-                key={section.title}
-                title={section.title}
-                rows={section.rows}
-                highlightUnset={section.highlightUnset}
-              />
-            ))}
+            <div className="space-y-3">
+              <h3 className="text-sm font-bold uppercase tracking-wide text-slate-500">Before session stage</h3>
+              <div className="grid gap-3 grid-cols-2 sm:grid-cols-3 lg:grid-cols-4">
+                {beforeStages.map((row) => (
+                  <StageCountCard
+                    key={`before-${row.label}`}
+                    label={row.label}
+                    count={row.count}
+                    names={row.names}
+                    highlight={row.label === 'Not set' && row.count > 0}
+                  />
+                ))}
+              </div>
+            </div>
+
+            <div className="space-y-3">
+              <h3 className="text-sm font-bold uppercase tracking-wide text-slate-500">Present stage</h3>
+              <div className="grid gap-3 grid-cols-2 sm:grid-cols-3 lg:grid-cols-4">
+                {presentStages.map((row) => (
+                  <StageCountCard
+                    key={`present-${row.label}`}
+                    label={row.label}
+                    count={row.count}
+                    names={row.names}
+                    highlight={row.label === 'Not set' && row.count > 0}
+                  />
+                ))}
+              </div>
+            </div>
+
+            <div className="grid gap-5 lg:grid-cols-2">
+              {fieldSections.map((section) => (
+                <div key={section.title} className="space-y-2">
+                  <h3 className="text-sm font-bold uppercase tracking-wide text-slate-500">{section.title}</h3>
+                  <div className="space-y-2">
+                    {section.rows.map((row) => (
+                      <FieldCountRow
+                        key={`${section.title}-${row.label}`}
+                        label={row.label}
+                        count={row.count}
+                        names={row.names}
+                      />
+                    ))}
+                  </div>
+                </div>
+              ))}
+            </div>
 
             <div className="space-y-2">
-              <h3 className="text-sm font-bold uppercase tracking-wide text-slate-500">
-                All confirmed students
-              </h3>
+              <h3 className="text-sm font-bold uppercase tracking-wide text-slate-500">All confirmed students</h3>
               <div className="overflow-x-auto rounded-lg border border-slate-200">
                 <table className="min-w-full text-sm">
                   <thead className="bg-slate-50 border-b border-slate-200">
