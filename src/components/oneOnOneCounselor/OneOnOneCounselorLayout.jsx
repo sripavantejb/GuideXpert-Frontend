@@ -2,6 +2,9 @@ import { NavLink, Outlet, useNavigate } from 'react-router-dom';
 import { FiBookOpen, FiCalendar, FiLayout, FiLogOut, FiUser } from 'react-icons/fi';
 import { useOneOnOneCounselorAuth } from '../../contexts/OneOnOneCounselorAuthContext';
 
+const GUIDEXPERT_LOGO_URL =
+  'https://res.cloudinary.com/dfqdb1xws/image/upload/v1773394005/GuideXpert_Logo_inbaz5.png';
+
 const nav = [
   { to: '/one-on-one-counselor/dashboard', label: 'Dashboard', icon: FiLayout },
   { to: '/one-on-one-counselor/slots', label: 'My Slots', icon: FiCalendar },
@@ -19,13 +22,19 @@ export default function OneOnOneCounselorLayout() {
   };
 
   return (
-    <div className="min-h-screen bg-slate-50 flex">
-      <aside className="w-64 bg-[#0f2744] text-white flex flex-col shrink-0">
-        <div className="p-5 border-b border-white/10">
-          <p className="font-semibold">GuideXpert</p>
-          <p className="text-xs text-white/70 mt-1">One-on-One Counselor</p>
+    <div className="min-h-screen bg-slate-50">
+      <aside className="fixed inset-y-0 left-0 z-30 flex h-screen w-64 flex-col bg-[#0f2744] text-white">
+        <div className="shrink-0 border-b border-white/10 p-5">
+          <img
+            src={GUIDEXPERT_LOGO_URL}
+            alt="GuideXpert"
+            className="h-8 w-auto max-w-[140px] object-contain object-left"
+          />
+          <p className="mt-2 text-[0.5625rem] font-semibold uppercase tracking-wider text-white/60">
+            One-on-One Counselor
+          </p>
         </div>
-        <nav className="flex-1 p-3 space-y-1">
+        <nav className="flex-1 space-y-1 overflow-y-auto p-3">
           {nav.map(({ to, label, icon: Icon }) => (
             <NavLink
               key={to}
@@ -41,8 +50,8 @@ export default function OneOnOneCounselorLayout() {
             </NavLink>
           ))}
         </nav>
-        <div className="p-4 border-t border-white/10">
-          <p className="text-sm font-medium truncate">{user?.name}</p>
+        <div className="shrink-0 border-t border-white/10 p-4">
+          <p className="truncate text-sm font-medium">{user?.name}</p>
           <button
             type="button"
             onClick={handleLogout}
@@ -52,7 +61,7 @@ export default function OneOnOneCounselorLayout() {
           </button>
         </div>
       </aside>
-      <main className="flex-1 overflow-auto">
+      <main className="ml-64 min-h-screen overflow-x-auto">
         <Outlet />
       </main>
     </div>

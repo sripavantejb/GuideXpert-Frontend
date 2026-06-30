@@ -660,6 +660,21 @@ export const getGuidanceBookings = async (params = {}, token = getStoredToken())
   return adminRequest(`/guidance-bookings${query ? `?${query}` : ''}`, { method: 'GET' }, token);
 };
 
+export const getGuidanceNatFollowUps = async (params = {}, token = getStoredToken()) => {
+  const search = new URLSearchParams();
+  Object.entries(params).forEach(([k, v]) => {
+    if (v !== undefined && v !== null && v !== '') search.set(k, String(v));
+  });
+  const query = search.toString();
+  return adminRequest(`/guidance-nat-follow-ups${query ? `?${query}` : ''}`, { method: 'GET' }, token);
+};
+
+export const patchGuidanceNatFollowUp = async (id, body, token = getStoredToken()) =>
+  adminRequest(`/guidance-nat-follow-ups/${encodeURIComponent(id)}`, {
+    method: 'PATCH',
+    body: JSON.stringify(body),
+  }, token);
+
 export const cancelGuidanceBooking = async (id, token = getStoredToken()) =>
   adminRequest(`/guidance-bookings/${encodeURIComponent(id)}/cancel`, { method: 'POST' }, token);
 

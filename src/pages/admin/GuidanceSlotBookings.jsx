@@ -17,6 +17,7 @@ import {
 import { useAuth } from '../../hooks/useAuth';
 import { useDebouncedValue } from '../../hooks/useDebouncedValue';
 import GuidanceReminderSlotStatus from '../../components/Admin/GuidanceReminderSlotStatus';
+import GuidanceNatFollowUpsTab from '../../components/Admin/GuidanceNatFollowUpsTab';
 
 const EMPTY_SLOT = {
   sessionTitle: '',
@@ -304,6 +305,8 @@ export default function GuidanceSlotBookings() {
     else if (tab === 'bookings') {
       loadAllSlotsForFilters();
       loadBookings();
+    } else if (tab === 'nat') {
+      loadAllSlotsForFilters();
     }
   }, [tab, loadSlots, loadBookings, loadAllSlotsForFilters]);
 
@@ -505,6 +508,13 @@ export default function GuidanceSlotBookings() {
             className={`px-4 py-2 rounded-lg text-sm font-medium ${tab === 'bookings' ? 'bg-primary-navy text-white' : 'bg-gray-100'}`}
           >
             Bookings
+          </button>
+          <button
+            type="button"
+            onClick={() => setTab('nat')}
+            className={`px-4 py-2 rounded-lg text-sm font-medium ${tab === 'nat' ? 'bg-primary-navy text-white' : 'bg-gray-100'}`}
+          >
+            NAT
           </button>
           <button
             type="button"
@@ -940,6 +950,8 @@ export default function GuidanceSlotBookings() {
             ) : null}
           </div>
         </>
+      ) : tab === 'nat' ? (
+        <GuidanceNatFollowUpsTab counselors={counselors} slotOptions={slots} />
       ) : (
         <GuidanceReminderSlotStatus
           slotDate={reminderDate}
