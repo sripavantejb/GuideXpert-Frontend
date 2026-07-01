@@ -2,7 +2,7 @@ import { createElement, useState, useMemo, useEffect, useCallback, useRef } from
 import { useSidebarScrollbarActivity } from '../../hooks/useSidebarScrollbarActivity';
 import { Link, NavLink, Outlet, useLocation, useNavigate } from 'react-router-dom';
 import { HiMenu, HiX } from 'react-icons/hi';
-import { FiLayout, FiUsers, FiBarChart2, FiDownload, FiSettings, FiCalendar, FiClock, FiVideo, FiFileText, FiBell, FiLink, FiClipboard, FiMessageSquare, FiBookOpen, FiImage, FiPhone, FiLayers, FiTarget, FiUserPlus, FiSend, FiDatabase, FiHeadphones, FiChevronLeft, FiChevronRight, FiLogOut, FiGlobe } from 'react-icons/fi';
+import { FiLayout, FiUsers, FiBarChart2, FiDownload, FiSettings, FiCalendar, FiClock, FiVideo, FiFileText, FiBell, FiLink, FiClipboard, FiMessageSquare, FiBookOpen, FiImage, FiPhone, FiLayers, FiTarget, FiUserPlus, FiSend, FiDatabase, FiHeadphones, FiChevronLeft, FiChevronRight, FiLogOut, FiGlobe, FiTrendingUp } from 'react-icons/fi';
 import { useAuth } from '../../hooks/useAuth';
 import { AdminDashboardProvider } from '../../contexts/AdminDashboardContext';
 import { useAdminDateRange } from '../../hooks/useAdminDateRange';
@@ -38,6 +38,7 @@ const navItems = [
   { to: '/admin/slots', label: 'Slots', icon: FiCalendar, sectionKey: 'slots', sidebarPlacement: 'counsellors' },
   { to: '/admin/demo-meet-schedule', label: 'Demo meet schedule', icon: FiClock, sectionKey: 'slots', sidebarPlacement: 'counsellors' },
   { to: '/admin/training-form-responses', label: 'Training Form', icon: FiClipboard, sectionKey: 'training-form-responses', sidebarPlacement: 'counsellors' },
+  { to: '/admin/nurturing', label: 'Nurturing', icon: FiTrendingUp, sectionKey: 'nurturing', sidebarPlacement: 'counsellors' },
   { to: '/admin/college-dost', label: 'CollegeDost', icon: FiClipboard, sectionKey: 'college-dost', sidebarPlacement: 'counsellors' },
   { to: '/admin/training-feedback', label: 'Activation Form', icon: FiMessageSquare, sectionKey: 'training-feedback', sidebarPlacement: 'counsellors' },
   { to: '/admin/counsellor-support-requests', label: 'Counsellor Support', icon: FiMessageSquare, sectionKey: 'training-feedback', sidebarPlacement: 'counsellors' },

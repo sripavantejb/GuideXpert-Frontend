@@ -23,6 +23,7 @@ import IitSecondForm from './pages/IitSecondForm';
 import TrainingMeeting from './pages/TrainingMeeting';
 import FeedbackForm from './pages/FeedbackForm';
 import TrainingForm from './pages/TrainingForm';
+import ProgressCheckInForm from './pages/ProgressCheckInForm';
 import AssessmentForm from './pages/AssessmentForm';
 import AssessmentForm2 from './pages/AssessmentForm2';
 import AssessmentForm3 from './pages/AssessmentForm3';
@@ -55,6 +56,7 @@ import AssessmentResults from './pages/admin/AssessmentResults';
 import TrainingFeedback from './pages/admin/TrainingFeedback';
 import CounsellorSupportRequests from './pages/admin/CounsellorSupportRequests';
 import TrainingFormResponses from './pages/admin/TrainingFormResponses';
+import NurturingDashboard from './pages/admin/NurturingDashboard';
 import CollegeDostFormSubmissions from './pages/admin/CollegeDostFormSubmissions';
 import NatCampaignSubmissions from './pages/admin/NatCampaignSubmissions';
 import OneOnOneCounselingLeads from './pages/admin/OneOnOneCounselingLeads';
@@ -437,6 +439,7 @@ function App() {
           </Route>
           <Route path="/activationform" element={<FeedbackForm />} />
           <Route path="/training-form" element={<TrainingForm />} />
+          <Route path="/progress-check-in" element={<ProgressCheckInForm />} />
           <Route path="/assessment" element={<AssessmentForm />} />
           <Route path="/assessment-2" element={<AssessmentForm2 />} />
           <Route path="/assessment-3" element={<AssessmentForm3 />} />
@@ -482,6 +485,7 @@ function App() {
             <Route path="training-feedback" element={<TrainingFeedback />} />
             <Route path="counsellor-support-requests" element={<CounsellorSupportRequests />} />
             <Route path="training-form-responses" element={<TrainingFormResponses />} />
+            <Route path="nurturing" element={<NurturingDashboard />} />
             <Route path="college-dost" element={<CollegeDostFormSubmissions />} />
             <Route path="nat-campaign" element={<NatCampaignSubmissions />} />
             <Route path="one-on-one-counseling" element={<OneOnOneCounselingLeads />} />

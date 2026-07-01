@@ -734,6 +734,43 @@ export const checkTrainingFormSubmitted = async (phone) => {
 };
 
 /**
+ * Submit progress check-in form after implementation videos.
+ */
+export const submitProgressCheckIn = async (payload) => {
+  return apiRequest('/progress-check-in', {
+    method: 'POST',
+    body: JSON.stringify(payload),
+  });
+};
+
+/**
+ * Check if this mobile already submitted the progress check-in form.
+ */
+export const checkProgressCheckInSubmitted = async (phone) => {
+  const digits = String(phone ?? '')
+    .replace(/\D/g, '')
+    .slice(-10)
+    .slice(0, 10);
+  if (digits.length !== 10) {
+    return { success: false, submitted: false, message: 'Valid 10-digit mobile required' };
+  }
+  const result = await apiRequest(`/progress-check-in/check/${encodeURIComponent(digits)}`, {
+    method: 'GET',
+  });
+  if (!result.success) {
+    return {
+      success: false,
+      submitted: false,
+      message: result.message,
+      status: result.status,
+    };
+  }
+  const body = result.data;
+  const submitted = typeof body?.submitted === 'boolean' ? body.submitted : false;
+  return { success: true, submitted };
+};
+
+/**
  * Check if mobile number is eligible for poster download (exists in training feedbacks).
  * @param {string} mobileNumber - 10-digit mobile number
  * @returns {Promise<{success: boolean, eligible?: boolean, message?: string, data?: Object, status?: number}>}
