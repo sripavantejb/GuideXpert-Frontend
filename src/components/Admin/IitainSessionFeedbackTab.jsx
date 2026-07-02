@@ -16,7 +16,6 @@ const COPY_FIELDS = [
   { key: 'counselorName', label: 'Counselor' },
   { key: 'studentName', label: 'Student' },
   { key: 'registeredForNat', label: 'NAT registered' },
-  { key: 'registeredForNad', label: 'NAD registered' },
   { key: 'sessionSummary', label: 'Session summary' },
   { key: 'sessionRecordingLink', label: 'Recording link' },
 ];
@@ -55,7 +54,7 @@ function YesNoBadge({ value }) {
 
 function getCellValue(row, key) {
   if (key === 'createdAt') return formatDateTime(row.createdAt);
-  if (key === 'registeredForNat' || key === 'registeredForNad') {
+  if (key === 'registeredForNat') {
     return row[key] === true ? 'Yes' : row[key] === false ? 'No' : '';
   }
   const v = row[key];
@@ -70,7 +69,6 @@ function buildQueryParams({
   q,
   counselorName,
   registeredForNat,
-  registeredForNad,
 }) {
   const params = { page, limit };
   if (from) params.from = from;
@@ -78,7 +76,6 @@ function buildQueryParams({
   if (q) params.q = q;
   if (counselorName) params.counselorName = counselorName;
   if (registeredForNat) params.registeredForNat = registeredForNat;
-  if (registeredForNad) params.registeredForNad = registeredForNad;
   return params;
 }
 
@@ -98,7 +95,6 @@ export default function IitainSessionFeedbackTab({ counselors = [] }) {
   const [search, setSearch] = useState('');
   const [counselorFilter, setCounselorFilter] = useState('');
   const [natFilter, setNatFilter] = useState('');
-  const [nadFilter, setNadFilter] = useState('');
 
   const [copyOpen, setCopyOpen] = useState(false);
   const [copyRows, setCopyRows] = useState([]);
@@ -123,7 +119,6 @@ export default function IitainSessionFeedbackTab({ counselors = [] }) {
         q: debouncedSearch,
         counselorName: counselorFilter,
         registeredForNat: natFilter,
-        registeredForNad: nadFilter,
       });
       const res = await getIitainSessionFeedbackSubmissions(params, token);
       if (!res.success) {
@@ -148,7 +143,6 @@ export default function IitainSessionFeedbackTab({ counselors = [] }) {
     debouncedSearch,
     counselorFilter,
     natFilter,
-    nadFilter,
     token,
     logout,
   ]);
@@ -168,7 +162,6 @@ export default function IitainSessionFeedbackTab({ counselors = [] }) {
     setSearch('');
     setCounselorFilter('');
     setNatFilter('');
-    setNadFilter('');
     setPagination((prev) => ({ ...prev, page: 1 }));
   };
 
@@ -181,7 +174,6 @@ export default function IitainSessionFeedbackTab({ counselors = [] }) {
       q: debouncedSearch,
       counselorName: counselorFilter,
       registeredForNat: natFilter,
-      registeredForNad: nadFilter,
     });
     const result = await fetchAllPaginatedRows((page, limit) =>
       getIitainSessionFeedbackSubmissions({ ...baseParams, page, limit }, token)
@@ -206,7 +198,7 @@ export default function IitainSessionFeedbackTab({ counselors = [] }) {
   return (
     <div className="space-y-4">
       {stats ? (
-        <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-5">
+        <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
           <div className="rounded-xl border bg-white p-4">
             <p className="text-xs font-medium uppercase tracking-wide text-gray-500">Total</p>
             <p className="mt-1 text-2xl font-bold text-gray-900">{stats.total ?? 0}</p>
@@ -218,14 +210,6 @@ export default function IitainSessionFeedbackTab({ counselors = [] }) {
           <div className="rounded-xl border bg-white p-4">
             <p className="text-xs font-medium uppercase tracking-wide text-gray-500">NAT — No</p>
             <p className="mt-1 text-2xl font-bold text-gray-700">{stats.registeredForNatNo ?? 0}</p>
-          </div>
-          <div className="rounded-xl border bg-white p-4">
-            <p className="text-xs font-medium uppercase tracking-wide text-gray-500">NAD — Yes</p>
-            <p className="mt-1 text-2xl font-bold text-emerald-700">{stats.registeredForNadYes ?? 0}</p>
-          </div>
-          <div className="rounded-xl border bg-white p-4">
-            <p className="text-xs font-medium uppercase tracking-wide text-gray-500">NAD — No</p>
-            <p className="mt-1 text-2xl font-bold text-gray-700">{stats.registeredForNadNo ?? 0}</p>
           </div>
         </div>
       ) : null}
@@ -304,21 +288,6 @@ export default function IitainSessionFeedbackTab({ counselors = [] }) {
             <option value="no">No</option>
           </select>
         </div>
-        <div>
-          <label className="mb-1 block text-xs font-medium text-gray-600">NAD</label>
-          <select
-            value={nadFilter}
-            onChange={(e) => {
-              setNadFilter(e.target.value);
-              setPagination((prev) => ({ ...prev, page: 1 }));
-            }}
-            className="rounded-lg border border-gray-200 px-3 py-2 text-sm"
-          >
-            <option value="">All</option>
-            <option value="yes">Yes</option>
-            <option value="no">No</option>
-          </select>
-        </div>
         <button
           type="button"
           onClick={clearFilters}
@@ -354,7 +323,6 @@ export default function IitainSessionFeedbackTab({ counselors = [] }) {
               <th className={headClass}>Counselor</th>
               <th className={headClass}>Student</th>
               <th className={headClass}>NAT</th>
-              <th className={headClass}>NAD</th>
               <th className={headClass}>Session summary</th>
               <th className={headClass}>Recording</th>
             </tr>
@@ -362,13 +330,13 @@ export default function IitainSessionFeedbackTab({ counselors = [] }) {
           <tbody className="divide-y divide-gray-100">
             {loading && rows.length === 0 ? (
               <tr>
-                <td colSpan={7} className="px-3 py-8 text-center text-sm text-gray-500">
+                <td colSpan={6} className="px-3 py-8 text-center text-sm text-gray-500">
                   Loading…
                 </td>
               </tr>
             ) : rows.length === 0 ? (
               <tr>
-                <td colSpan={7} className="px-3 py-8 text-center text-sm text-gray-500">
+                <td colSpan={6} className="px-3 py-8 text-center text-sm text-gray-500">
                   No submissions yet.
                 </td>
               </tr>
@@ -382,9 +350,6 @@ export default function IitainSessionFeedbackTab({ counselors = [] }) {
                   <td className={cellClass}>{row.studentName || '—'}</td>
                   <td className={cellClass}>
                     <YesNoBadge value={row.registeredForNat} />
-                  </td>
-                  <td className={cellClass}>
-                    <YesNoBadge value={row.registeredForNad} />
                   </td>
                   <td className={`${cellClass} max-w-[280px]`}>
                     <span className="block text-xs leading-5 text-gray-700" title={row.sessionSummary}>

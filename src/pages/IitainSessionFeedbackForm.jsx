@@ -40,7 +40,7 @@ function validateSessionSummary(value) {
 
 function validateRecordingLink(value) {
   const t = typeof value === 'string' ? value.trim() : '';
-  if (!t) return '';
+  if (!t) return 'Required';
   try {
     const url = new URL(t);
     if (url.protocol !== 'http:' && url.protocol !== 'https:') {
@@ -102,7 +102,6 @@ export default function IitainSessionFeedbackForm() {
   const [counselorName, setCounselorName] = useState('');
   const [studentName, setStudentName] = useState('');
   const [registeredForNat, setRegisteredForNat] = useState('');
-  const [registeredForNad, setRegisteredForNad] = useState('');
   const [sessionSummary, setSessionSummary] = useState('');
   const [sessionRecordingLink, setSessionRecordingLink] = useState('');
   const [counselors, setCounselors] = useState([]);
@@ -149,7 +148,6 @@ export default function IitainSessionFeedbackForm() {
       counselorName: counselorName ? '' : 'Select a counselor',
       studentName: validateName(studentName),
       registeredForNat: validateYesNo(registeredForNat),
-      registeredForNad: validateYesNo(registeredForNad),
       sessionSummary: validateSessionSummary(sessionSummary),
       sessionRecordingLink: validateRecordingLink(sessionRecordingLink),
     };
@@ -171,9 +169,8 @@ export default function IitainSessionFeedbackForm() {
         counselorName,
         studentName: studentName.trim(),
         registeredForNat,
-        registeredForNad,
         sessionSummary: sessionSummary.trim(),
-        sessionRecordingLink: sessionRecordingLink.trim() || undefined,
+        sessionRecordingLink: sessionRecordingLink.trim(),
       });
       if (result.success) {
         setModalType(MODAL_SUCCESS);
@@ -335,48 +332,29 @@ export default function IitainSessionFeedbackForm() {
 
               <SectionCard
                 title="2. Registration status"
-                description="Did the student register for NAT or NAD after this session?"
+                description="Did the student register for NAT after this session?"
               >
-                <div className="space-y-5">
-                  <div>
-                    <p className="mb-2 text-sm font-medium text-slate-700">
-                      Did they register for NAT? <span className="text-amber-600">*</span>
-                    </p>
-                    <RadioGroup
-                      name="registeredForNat"
-                      options={YES_NO_OPTIONS}
-                      value={registeredForNat}
-                      onChange={(v) => {
-                        setRegisteredForNat(v);
-                        setError('registeredForNat', '');
-                      }}
-                      disabled={formDisabled}
-                      error={errors.registeredForNat}
-                    />
-                  </div>
-
-                  <div>
-                    <p className="mb-2 text-sm font-medium text-slate-700">
-                      Did they register for NAD? <span className="text-amber-600">*</span>
-                    </p>
-                    <RadioGroup
-                      name="registeredForNad"
-                      options={YES_NO_OPTIONS}
-                      value={registeredForNad}
-                      onChange={(v) => {
-                        setRegisteredForNad(v);
-                        setError('registeredForNad', '');
-                      }}
-                      disabled={formDisabled}
-                      error={errors.registeredForNad}
-                    />
-                  </div>
+                <div>
+                  <p className="mb-2 text-sm font-medium text-slate-700">
+                    Did they register for NAT? <span className="text-amber-600">*</span>
+                  </p>
+                  <RadioGroup
+                    name="registeredForNat"
+                    options={YES_NO_OPTIONS}
+                    value={registeredForNat}
+                    onChange={(v) => {
+                      setRegisteredForNat(v);
+                      setError('registeredForNat', '');
+                    }}
+                    disabled={formDisabled}
+                    error={errors.registeredForNat}
+                  />
                 </div>
               </SectionCard>
 
               <SectionCard
                 title="3. Session details"
-                description="Summarize what happened in the session and share the recording link if available."
+                description="Summarize what happened in the session and share the recording link."
               >
                 <div className="space-y-4">
                   <div>
@@ -403,7 +381,7 @@ export default function IitainSessionFeedbackForm() {
 
                   <div>
                     <label htmlFor="isf-recording" className="mb-1.5 block text-sm font-medium text-slate-700">
-                      Session recording link
+                      Session recording link <span className="text-amber-600">*</span>
                     </label>
                     <input
                       type="url"
@@ -417,11 +395,12 @@ export default function IitainSessionFeedbackForm() {
                       placeholder="https://..."
                       className={`${inputBase} ${errors.sessionRecordingLink ? inputError : 'border-slate-200'}`}
                       disabled={formDisabled}
+                      required
                     />
                     {errors.sessionRecordingLink ? (
                       <p className="mt-1.5 text-xs text-amber-700">{errors.sessionRecordingLink}</p>
                     ) : (
-                      <p className="mt-1.5 text-xs text-slate-500">Optional — paste a Google Drive, Meet, or other recording URL.</p>
+                      <p className="mt-1.5 text-xs text-slate-500">Paste a Google Drive, Meet, or other recording URL.</p>
                     )}
                   </div>
                 </div>

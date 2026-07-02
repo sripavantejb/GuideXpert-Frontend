@@ -570,7 +570,6 @@ export const getIitainSessionFeedbackSubmissions = async (params = {}, token = g
   if (params.q) search.set('q', params.q);
   if (params.counselorName) search.set('counselorName', params.counselorName);
   if (params.registeredForNat) search.set('registeredForNat', params.registeredForNat);
-  if (params.registeredForNad) search.set('registeredForNad', params.registeredForNad);
   const query = search.toString();
   return adminRequest(`/iitain-session-feedback${query ? `?${query}` : ''}`, { method: 'GET' }, token);
 };
