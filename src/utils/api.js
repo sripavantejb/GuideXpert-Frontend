@@ -771,6 +771,26 @@ export const checkProgressCheckInSubmitted = async (phone) => {
 };
 
 /**
+ * Load counselor names for IITain session feedback form dropdown.
+ */
+export const getIitainSessionFeedbackCounselors = async () => {
+  const result = await apiRequest('/iitain-session-feedback/counselors', { method: 'GET' });
+  if (!result.success) return result;
+  const data = Array.isArray(result.data?.data) ? result.data.data : result.data;
+  return { success: true, data: Array.isArray(data) ? data : [] };
+};
+
+/**
+ * Submit IITain session feedback form.
+ */
+export const submitIitainSessionFeedback = async (payload) => {
+  return apiRequest('/iitain-session-feedback', {
+    method: 'POST',
+    body: JSON.stringify(payload),
+  });
+};
+
+/**
  * Check if mobile number is eligible for poster download (exists in training feedbacks).
  * @param {string} mobileNumber - 10-digit mobile number
  * @returns {Promise<{success: boolean, eligible?: boolean, message?: string, data?: Object, status?: number}>}

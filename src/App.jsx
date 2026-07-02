@@ -24,6 +24,7 @@ import TrainingMeeting from './pages/TrainingMeeting';
 import FeedbackForm from './pages/FeedbackForm';
 import TrainingForm from './pages/TrainingForm';
 import ProgressCheckInForm from './pages/ProgressCheckInForm';
+import IitainSessionFeedbackForm from './pages/IitainSessionFeedbackForm';
 import AssessmentForm from './pages/AssessmentForm';
 import AssessmentForm2 from './pages/AssessmentForm2';
 import AssessmentForm3 from './pages/AssessmentForm3';
@@ -440,6 +441,7 @@ function App() {
           <Route path="/activationform" element={<FeedbackForm />} />
           <Route path="/training-form" element={<TrainingForm />} />
           <Route path="/progress-check-in" element={<ProgressCheckInForm />} />
+          <Route path="/iitain-session-feedback" element={<IitainSessionFeedbackForm />} />
           <Route path="/assessment" element={<AssessmentForm />} />
           <Route path="/assessment-2" element={<AssessmentForm2 />} />
           <Route path="/assessment-3" element={<AssessmentForm3 />} />

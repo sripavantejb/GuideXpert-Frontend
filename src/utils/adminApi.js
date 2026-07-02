@@ -561,6 +561,20 @@ export const getNurturingSubmissions = async (params = {}, token = getStoredToke
   return adminRequest(`/nurturing${query ? `?${query}` : ''}`, { method: 'GET' }, token);
 };
 
+export const getIitainSessionFeedbackSubmissions = async (params = {}, token = getStoredToken()) => {
+  const search = new URLSearchParams();
+  if (params.page != null) search.set('page', params.page);
+  if (params.limit != null) search.set('limit', params.limit);
+  if (params.from) search.set('from', params.from);
+  if (params.to) search.set('to', params.to);
+  if (params.q) search.set('q', params.q);
+  if (params.counselorName) search.set('counselorName', params.counselorName);
+  if (params.registeredForNat) search.set('registeredForNat', params.registeredForNat);
+  if (params.registeredForNad) search.set('registeredForNad', params.registeredForNad);
+  const query = search.toString();
+  return adminRequest(`/iitain-session-feedback${query ? `?${query}` : ''}`, { method: 'GET' }, token);
+};
+
 export const getOneOnOneCounselingLeads = async (params = {}, token = getStoredToken()) => {
   const search = new URLSearchParams();
   if (params.page != null) search.set('page', params.page);

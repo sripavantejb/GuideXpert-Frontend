@@ -18,6 +18,7 @@ import { useAuth } from '../../hooks/useAuth';
 import { useDebouncedValue } from '../../hooks/useDebouncedValue';
 import GuidanceReminderSlotStatus from '../../components/Admin/GuidanceReminderSlotStatus';
 import GuidanceNatFollowUpsTab from '../../components/Admin/GuidanceNatFollowUpsTab';
+import IitainSessionFeedbackTab from '../../components/Admin/IitainSessionFeedbackTab';
 
 const EMPTY_SLOT = {
   sessionTitle: '',
@@ -540,6 +541,13 @@ export default function GuidanceSlotBookings() {
           >
             Reminders
           </button>
+          <button
+            type="button"
+            onClick={() => setTab('iitain-feedback')}
+            className={`px-4 py-2 rounded-lg text-sm font-medium ${tab === 'iitain-feedback' ? 'bg-primary-navy text-white' : 'bg-gray-100'}`}
+          >
+            Session feedback (IITain)
+          </button>
         </div>
       </div>
 
@@ -973,6 +981,8 @@ export default function GuidanceSlotBookings() {
         </>
       ) : tab === 'nat' ? (
         <GuidanceNatFollowUpsTab counselors={counselors} slotOptions={slots} />
+      ) : tab === 'iitain-feedback' ? (
+        <IitainSessionFeedbackTab counselors={counselors} />
       ) : (
         <GuidanceReminderSlotStatus
           slotDate={reminderDate}
