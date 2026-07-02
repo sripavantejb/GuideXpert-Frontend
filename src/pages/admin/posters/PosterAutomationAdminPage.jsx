@@ -31,6 +31,12 @@ import PosterElementToolbar from './PosterElementToolbar';
 import { normalizeHexForCss, normalizeOverlayFieldColors } from '../../../utils/posterColor';
 import { buildOverlayFieldPayload } from '../../../utils/posterTemplatePayload';
 import { trackPosterDownloadBeacon } from '../../../utils/api';
+import {
+  MAX_POSTER_SVG_BYTES,
+  MAX_POSTER_SVG_CHARS,
+  formatPosterSvgLimitLabel,
+  formatPosterSvgSizeMb,
+} from '../../../utils/posterSvgLimits';
 
 function normalizeRouteClient(route) {
   let s = String(route ?? '').trim();
@@ -374,17 +380,23 @@ export default function PosterAutomationAdminPage() {
       setError('SVG template must contain an <svg> root.');
       return { success: false };
     }
+    let svgNorm = svgForCheck;
+    if (svgNorm.charCodeAt(0) === 0xfeff) svgNorm = svgNorm.slice(1);
+    svgNorm = svgNorm.trim();
+    if (!svgNorm.length) {
+      setError('SVG template became empty after normalization. Re-upload the file.');
+      return { success: false };
+    }
+    if (svgNorm.length > MAX_POSTER_SVG_CHARS) {
+      setError(
+        `SVG template exceeds ${formatPosterSvgLimitLabel()} (${formatPosterSvgSizeMb(svgNorm.length)} MB). Simplify the file or reduce embedded images.`
+      );
+      return { success: false };
+    }
 
     setSaving(true);
     setError('');
     try {
-      let svgNorm = svgForCheck;
-      if (svgNorm.charCodeAt(0) === 0xfeff) svgNorm = svgNorm.slice(1);
-      svgNorm = svgNorm.trim();
-      if (!svgNorm.length) {
-        setError('SVG template became empty after normalization. Re-upload the file.');
-        return { success: false };
-      }
       const payload = {
         name: draft.name.trim(),
         description: String(draft.description ?? '').trim().slice(0, 500),
@@ -624,6 +636,12 @@ export default function PosterAutomationAdminPage() {
       setError('Please choose a file.');
       return;
     }
+    if (file.size > MAX_POSTER_SVG_BYTES) {
+      setError(
+        `SVG file is too large (${formatPosterSvgSizeMb(file.size)} MB). Maximum size is ${formatPosterSvgLimitLabel()}.`
+      );
+      return;
+    }
     const lower = (file.name || '').toLowerCase();
     const mimeOk =
       file.type === 'image/svg+xml' ||
@@ -638,7 +656,22 @@ export default function PosterAutomationAdminPage() {
     reader.onload = () => {
       let text = typeof reader.result === 'string' ? reader.result : '';
       if (text.charCodeAt(0) === 0xfeff) text = text.slice(1);
-      setDraft((d) => ({ ...d, svgTemplate: text.trim() }));
+      text = text.trim();
+      if (!text.length) {
+        setError('SVG file is empty after reading. Try exporting again from your design tool.');
+        return;
+      }
+      if (text.length > MAX_POSTER_SVG_CHARS) {
+        setError(
+          `SVG markup exceeds ${formatPosterSvgLimitLabel()} (${formatPosterSvgSizeMb(text.length)} MB). Simplify the file or reduce embedded images.`
+        );
+        return;
+      }
+      if (!/<svg[\s>/]/i.test(text)) {
+        setError('SVG file must contain a root <svg> element.');
+        return;
+      }
+      setDraft((d) => ({ ...d, svgTemplate: text }));
       setError('');
     };
     reader.onerror = () => setError('Failed to read file.');
@@ -1019,6 +1052,7 @@ export default function PosterAutomationAdminPage() {
                   <FiUpload className="h-4 w-4 text-gray-500" aria-hidden />
                   Upload SVG
                 </button>
+                <span className="text-xs text-gray-500 sm:ml-1">Up to {formatPosterSvgLimitLabel()}</span>
                 <button
                   type="button"
                   onClick={handleExportPng}
