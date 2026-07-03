@@ -108,25 +108,15 @@ function formatDayLabel(date, todayStr) {
   return date.toLocaleDateString('en-IN', { weekday: 'long', day: 'numeric', month: 'short' });
 }
 
-function getTomorrowDateStr(todayStr) {
-  const today = parseISODate(todayStr);
-  const tomorrow = new Date(today);
-  tomorrow.setDate(tomorrow.getDate() + 1);
-  return toISODate(tomorrow);
-}
-
 function buildSlotDayOptions(now = new Date()) {
   const ist = getISTParts(now);
   const todayStr = istDateString(ist);
-  const tomorrowStr = getTomorrowDateStr(todayStr);
   const nowMinutes = ist.hour * 60 + ist.minute;
 
   return getNextTwoSlotDays(now).map((day) => {
     const dateStr = toISODate(day);
     const isToday = dateStr === todayStr;
-    const isTomorrow = dateStr === tomorrowStr;
     const slots = SLOT_TIMES.filter(({ value }) => {
-      if (isTomorrow && value === '15:00') return false;
       if (!isToday) return true;
       const [h, m] = value.split(':').map(Number);
       return h * 60 + m > nowMinutes;
