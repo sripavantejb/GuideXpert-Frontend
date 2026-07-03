@@ -673,6 +673,21 @@ export const getGuidanceReminderStatus = async (params = {}, token = getStoredTo
   return adminRequest(`/guidance-reminder-status${query ? `?${query}` : ''}`, { method: 'GET' }, token);
 };
 
+export const getGuidanceNatFollowUps = async (params = {}, token = getStoredToken()) => {
+  const search = new URLSearchParams();
+  Object.entries(params).forEach(([k, v]) => {
+    if (v !== undefined && v !== null && v !== '') search.set(k, String(v));
+  });
+  const query = search.toString();
+  return adminRequest(`/guidance-nat-follow-ups${query ? `?${query}` : ''}`, { method: 'GET' }, token);
+};
+
+export const patchGuidanceNatFollowUp = async (id, body, token = getStoredToken()) =>
+  adminRequest(`/guidance-nat-follow-ups/${encodeURIComponent(id)}`, {
+    method: 'PATCH',
+    body: JSON.stringify(body),
+  }, token);
+
 export const getCounsellorSupportRequests = async (params = {}, token = getStoredToken()) => {
   const search = new URLSearchParams();
   if (params.page != null) search.set('page', params.page);
