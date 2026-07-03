@@ -501,17 +501,6 @@ export const getCollegeDostMeetAttendance = async (params = {}, token = getStore
   return adminRequest(`/college-dost-meet-attendance${query ? `?${query}` : ''}`, { method: 'GET' }, token);
 };
 
-export const getNatCampaignSubmissions = async (params = {}, token = getStoredToken()) => {
-  const search = new URLSearchParams();
-  if (params.page != null) search.set('page', params.page);
-  if (params.limit != null) search.set('limit', params.limit);
-  if (params.from) search.set('from', params.from);
-  if (params.to) search.set('to', params.to);
-  if (params.q) search.set('q', params.q);
-  const query = search.toString();
-  return adminRequest(`/nat-campaign-submissions${query ? `?${query}` : ''}`, { method: 'GET' }, token);
-};
-
 export const getTrainingAttendance = async (params = {}, token = getStoredToken()) => {
   const search = new URLSearchParams();
   if (params.page != null) search.set('page', params.page);
@@ -548,17 +537,6 @@ export const getTrainingFormResponses = async (params = {}, token = getStoredTok
   if (params.sessionRating != null) search.set('sessionRating', params.sessionRating);
   const query = search.toString();
   return adminRequest(`/training-form-responses${query ? `?${query}` : ''}`, { method: 'GET' }, token);
-};
-
-export const getNurturingSubmissions = async (params = {}, token = getStoredToken()) => {
-  const search = new URLSearchParams();
-  if (params.page != null) search.set('page', params.page);
-  if (params.limit != null) search.set('limit', params.limit);
-  if (params.from) search.set('from', params.from);
-  if (params.to) search.set('to', params.to);
-  if (params.q) search.set('q', params.q);
-  const query = search.toString();
-  return adminRequest(`/nurturing${query ? `?${query}` : ''}`, { method: 'GET' }, token);
 };
 
 export const getIitainSessionFeedbackSubmissions = async (params = {}, token = getStoredToken()) => {
@@ -683,21 +661,6 @@ export const getGuidanceBookings = async (params = {}, token = getStoredToken())
   const query = search.toString();
   return adminRequest(`/guidance-bookings${query ? `?${query}` : ''}`, { method: 'GET' }, token);
 };
-
-export const getGuidanceNatFollowUps = async (params = {}, token = getStoredToken()) => {
-  const search = new URLSearchParams();
-  Object.entries(params).forEach(([k, v]) => {
-    if (v !== undefined && v !== null && v !== '') search.set(k, String(v));
-  });
-  const query = search.toString();
-  return adminRequest(`/guidance-nat-follow-ups${query ? `?${query}` : ''}`, { method: 'GET' }, token);
-};
-
-export const patchGuidanceNatFollowUp = async (id, body, token = getStoredToken()) =>
-  adminRequest(`/guidance-nat-follow-ups/${encodeURIComponent(id)}`, {
-    method: 'PATCH',
-    body: JSON.stringify(body),
-  }, token);
 
 export const cancelGuidanceBooking = async (id, token = getStoredToken()) =>
   adminRequest(`/guidance-bookings/${encodeURIComponent(id)}/cancel`, { method: 'POST' }, token);
