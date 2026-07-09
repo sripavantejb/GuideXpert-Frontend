@@ -88,6 +88,7 @@ const COPY_FIELDS_SECOND_FORM = [
   { key: 'mobileNumber', label: 'Mobile Number' },
   { key: 'timestamp', label: 'Submitted' },
   { key: 'careerGuidanceSupport', label: 'Career guidance support' },
+  { key: 'language', label: 'Language' },
 ];
 
 function getAttendanceCellValue(row, key) {
@@ -677,7 +678,7 @@ export default function IitMeetAttendance() {
                     <th className="px-5 py-4 text-xs font-bold text-gray-600 uppercase tracking-wider">
                       {isFormVariant ? 'Response' : 'Status'}
                     </th>
-                    {meetVariant === 'firstForm' && (
+                    {(meetVariant === 'firstForm' || meetVariant === 'secondForm') && (
                       <th className="px-5 py-4 text-xs font-bold text-gray-600 uppercase tracking-wider">
                         Language
                       </th>
@@ -733,7 +734,7 @@ export default function IitMeetAttendance() {
                             </span>
                           )}
                         </td>
-                        {meetVariant === 'firstForm' && (
+                        {(meetVariant === 'firstForm' || meetVariant === 'secondForm') && (
                           <td className="px-5 py-4">
                             <span className="text-sm text-gray-700 font-medium">
                               {row.language || '—'}
