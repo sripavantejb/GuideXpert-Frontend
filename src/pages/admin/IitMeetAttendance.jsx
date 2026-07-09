@@ -80,6 +80,7 @@ const COPY_FIELDS_FIRST_FORM = [
   { key: 'mobileNumber', label: 'Mobile Number' },
   { key: 'timestamp', label: 'Submitted' },
   { key: 'interestedInAiLearning', label: 'Response (AI question)' },
+  { key: 'language', label: 'Language' },
 ];
 
 const COPY_FIELDS_SECOND_FORM = [
@@ -676,6 +677,11 @@ export default function IitMeetAttendance() {
                     <th className="px-5 py-4 text-xs font-bold text-gray-600 uppercase tracking-wider">
                       {isFormVariant ? 'Response' : 'Status'}
                     </th>
+                    {meetVariant === 'firstForm' && (
+                      <th className="px-5 py-4 text-xs font-bold text-gray-600 uppercase tracking-wider">
+                        Language
+                      </th>
+                    )}
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-gray-100">
@@ -727,6 +733,13 @@ export default function IitMeetAttendance() {
                             </span>
                           )}
                         </td>
+                        {meetVariant === 'firstForm' && (
+                          <td className="px-5 py-4">
+                            <span className="text-sm text-gray-700 font-medium">
+                              {row.language || '—'}
+                            </span>
+                          </td>
+                        )}
                       </tr>
                     ))
                   )}
