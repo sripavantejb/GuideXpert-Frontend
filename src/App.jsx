@@ -142,6 +142,7 @@ const SettingsPage = lazy(() => import('./pages/webinar/SettingsPage'));
 const CertificatesPage = lazy(() => import('./pages/webinar/CertificatesPage'));
 const CertificateViewPage = lazy(() => import('./pages/CertificateViewPage'));
 const StudentsDashboard = lazy(() => import('./pages/StudentsDashboard'));
+const StudentsWorkspaceLayout = lazy(() => import('./components/studentDashboard/StudentsWorkspaceLayout'));
 const IitCounsellingPage = lazy(() => import('./pages/IitCounsellingPage'));
 const RankPredictorToolPage = lazy(() => import('./pages/studentsTools/RankPredictorPage'));
 const StudentExamPredictorPage = lazy(() => import('./pages/studentsTools/StudentExamPredictorPage'));
@@ -313,98 +314,107 @@ function App() {
                   </div>
                 }
               >
-                <StudentsDashboard />
+                <StudentsWorkspaceLayout />
               </Suspense>
             }
-          />
-          <Route
-            path="/students/rank-predictor"
-            element={
-              <Suspense fallback={<div className="flex min-h-screen items-center justify-center bg-slate-50 text-slate-500"><div className="animate-pulse text-sm font-medium">Loading…</div></div>}>
-                <RankPredictorToolPage />
-              </Suspense>
-            }
-          />
-          <Route
-            path="/students/rank-predictor/:examId"
-            element={
-              <Suspense fallback={<div className="flex min-h-screen items-center justify-center bg-slate-50 text-slate-500"><div className="animate-pulse text-sm font-medium">Loading…</div></div>}>
-                <StudentExamPredictorPage />
-              </Suspense>
-            }
-          />
-          <Route
-            path="/students/predictors"
-            element={
-              <Suspense fallback={<div className="flex min-h-screen items-center justify-center bg-slate-50 text-slate-500"><div className="animate-pulse text-sm font-medium">Loading…</div></div>}>
-                <PredictorsHubPage />
-              </Suspense>
-            }
-          />
-          <Route
-            path="/students/tests"
-            element={
-              <Suspense fallback={<div className="flex min-h-screen items-center justify-center bg-slate-50 text-slate-500"><div className="animate-pulse text-sm font-medium">Loading…</div></div>}>
-                <TestsHubPage />
-              </Suspense>
-            }
-          />
-          <Route
-            path="/students/college-predictor"
-            element={
-              <Suspense fallback={<div className="flex min-h-screen items-center justify-center bg-slate-50 text-slate-500"><div className="animate-pulse text-sm font-medium">Loading…</div></div>}>
-                <CollegePredictorToolPage />
-              </Suspense>
-            }
-          />
-          <Route
-            path="/students/branch-predictor"
-            element={
-              <Suspense fallback={<div className="flex min-h-screen items-center justify-center bg-slate-50 text-slate-500"><div className="animate-pulse text-sm font-medium">Loading…</div></div>}>
-                <BranchPredictorToolPage />
-              </Suspense>
-            }
-          />
-          <Route
-            path="/students/course-fit-test"
-            element={
-              <Suspense fallback={<div className="flex min-h-screen items-center justify-center bg-slate-50 text-slate-500"><div className="animate-pulse text-sm font-medium">Loading…</div></div>}>
-                <CourseFitTestToolPage />
-              </Suspense>
-            }
-          />
-          <Route
-            path="/students/college-fit-test"
-            element={
-              <Suspense fallback={<div className="flex min-h-screen items-center justify-center bg-slate-50 text-slate-500"><div className="animate-pulse text-sm font-medium">Loading…</div></div>}>
-                <CollegeFitTestToolPage />
-              </Suspense>
-            }
-          />
-          <Route
-            path="/students/college-comparison"
-            element={
-              <Suspense fallback={<div className="flex min-h-screen items-center justify-center bg-slate-50 text-slate-500"><div className="animate-pulse text-sm font-medium">Loading…</div></div>}>
-                <CollegeComparisonToolPage />
-              </Suspense>
-            }
-          />
-          <Route
-            path="/students/exam-predictor"
-            element={
-              <Suspense fallback={<div className="flex min-h-screen items-center justify-center bg-slate-50 text-slate-500"><div className="animate-pulse text-sm font-medium">Loading…</div></div>}>
-                <ExamPredictorToolPage />
-              </Suspense>
-            }
-          />
-          <Route
-            path="/students/deadline-manager"
-            element={
-              <Suspense fallback={<div className="flex min-h-screen items-center justify-center bg-slate-50 text-slate-500"><div className="animate-pulse text-sm font-medium">Loading…</div></div>}>
-                <DeadlineManagerToolPage />
-              </Suspense>
-            }
-          />
+          >
+            <Route
+              index
+              element={
+                <Suspense fallback={<div className="flex min-h-screen items-center justify-center bg-slate-50 text-slate-500"><div className="animate-pulse text-sm font-medium">Loading…</div></div>}>
+                  <StudentsDashboard />
+                </Suspense>
+              }
+            />
+            <Route
+              path="rank-predictor"
+              element={
+                <Suspense fallback={<div className="flex min-h-screen items-center justify-center bg-slate-50 text-slate-500"><div className="animate-pulse text-sm font-medium">Loading…</div></div>}>
+                  <RankPredictorToolPage />
+                </Suspense>
+              }
+            />
+            <Route
+              path="rank-predictor/:examId"
+              element={
+                <Suspense fallback={<div className="flex min-h-screen items-center justify-center bg-slate-50 text-slate-500"><div className="animate-pulse text-sm font-medium">Loading…</div></div>}>
+                  <StudentExamPredictorPage />
+                </Suspense>
+              }
+            />
+            <Route
+              path="predictors"
+              element={
+                <Suspense fallback={<div className="flex min-h-screen items-center justify-center bg-slate-50 text-slate-500"><div className="animate-pulse text-sm font-medium">Loading…</div></div>}>
+                  <PredictorsHubPage />
+                </Suspense>
+              }
+            />
+            <Route
+              path="tests"
+              element={
+                <Suspense fallback={<div className="flex min-h-screen items-center justify-center bg-slate-50 text-slate-500"><div className="animate-pulse text-sm font-medium">Loading…</div></div>}>
+                  <TestsHubPage />
+                </Suspense>
+              }
+            />
+            <Route
+              path="college-predictor"
+              element={
+                <Suspense fallback={<div className="flex min-h-screen items-center justify-center bg-slate-50 text-slate-500"><div className="animate-pulse text-sm font-medium">Loading…</div></div>}>
+                  <CollegePredictorToolPage />
+                </Suspense>
+              }
+            />
+            <Route
+              path="branch-predictor"
+              element={
+                <Suspense fallback={<div className="flex min-h-screen items-center justify-center bg-slate-50 text-slate-500"><div className="animate-pulse text-sm font-medium">Loading…</div></div>}>
+                  <BranchPredictorToolPage />
+                </Suspense>
+              }
+            />
+            <Route
+              path="course-fit-test"
+              element={
+                <Suspense fallback={<div className="flex min-h-screen items-center justify-center bg-slate-50 text-slate-500"><div className="animate-pulse text-sm font-medium">Loading…</div></div>}>
+                  <CourseFitTestToolPage />
+                </Suspense>
+              }
+            />
+            <Route
+              path="college-fit-test"
+              element={
+                <Suspense fallback={<div className="flex min-h-screen items-center justify-center bg-slate-50 text-slate-500"><div className="animate-pulse text-sm font-medium">Loading…</div></div>}>
+                  <CollegeFitTestToolPage />
+                </Suspense>
+              }
+            />
+            <Route
+              path="college-comparison"
+              element={
+                <Suspense fallback={<div className="flex min-h-screen items-center justify-center bg-slate-50 text-slate-500"><div className="animate-pulse text-sm font-medium">Loading…</div></div>}>
+                  <CollegeComparisonToolPage />
+                </Suspense>
+              }
+            />
+            <Route
+              path="exam-predictor"
+              element={
+                <Suspense fallback={<div className="flex min-h-screen items-center justify-center bg-slate-50 text-slate-500"><div className="animate-pulse text-sm font-medium">Loading…</div></div>}>
+                  <ExamPredictorToolPage />
+                </Suspense>
+              }
+            />
+            <Route
+              path="deadline-manager"
+              element={
+                <Suspense fallback={<div className="flex min-h-screen items-center justify-center bg-slate-50 text-slate-500"><div className="animate-pulse text-sm font-medium">Loading…</div></div>}>
+                  <DeadlineManagerToolPage />
+                </Suspense>
+              }
+            />
+          </Route>
           <Route path="/blogs" element={<BlogsPage />} />
           <Route path="/blogs/:id" element={<BlogDetails />} />
           <Route path="/blog" element={<Navigate to="/blogs" replace />} />

@@ -3,15 +3,15 @@ import { ADMISSION_PREDICTOR_TOOLS, FIT_TEST_TOOLS, COMPARE_TOOLS } from '../../
 import { TRENDING_COLLEGES } from '../landing/landingPageData';
 import { WORKSPACE_IMAGES } from './studentWorkspaceImages';
 
-export const HOME_TAGLINE = 'Plan admissions with clarity';
+export const HOME_TAGLINE = 'Empowering Students Building Futures';
 export const HOME_SUBTITLE =
   'Rank predictors, college shortlists, and fit tests — one workspace for Indian entrance exams.';
 
 export const POPULAR_PREDICTORS = [
-  { label: 'JEE Main rank', to: '/students/rank-predictor/jeemainmarks', trending: true },
-  { label: 'AP EAMCET colleges', to: '/students/college-predictor', trending: true },
-  { label: 'TS EAMCET rank', to: '/students/rank-predictor/tseamcet', trending: false },
-  { label: 'College shortlist', to: '/students/college-predictor', trending: false },
+  { label: 'JEE Main College Predictor', to: '/students/college-predictor', popular: true },
+  { label: 'NEET College Predictor', to: '/students/college-predictor', popular: true },
+  { label: 'JEE Main Rank Predictor', to: '/students/rank-predictor/jeemainmarks', popular: false },
+  { label: 'AP EAMCET Rank', to: '/students/rank-predictor/apeamcet', popular: false },
 ];
 
 export const HOME_BANNERS = [
@@ -35,6 +35,43 @@ export const HOME_BANNERS = [
     subtitle: 'Tech-focused pathways with industry-aligned programs',
     to: '/students/college-predictor',
     image: WORKSPACE_IMAGES.bannerNiat,
+  },
+];
+
+/** Right-side hero feature carousel cards */
+export const HERO_FEATURE_SLIDES = [
+  {
+    id: 'college-opportunities',
+    title: 'Turn Your Score into College Opportunities',
+    description:
+      'Predict your admission chances across colleges based on exam performance, category, and preferences.',
+    cta: 'Explore College Predictors',
+    to: '/students/college-predictor',
+    accent: 'from-[#1e3a5f] via-[#2d1b4e] to-[#3b1868]',
+    badge: 'Verified Data',
+    widget: 'Cutoff Trend',
+  },
+  {
+    id: 'rank-clarity',
+    title: 'Know Your Rank Before the Result',
+    description:
+      'Estimate ranks from marks using historical data across JEE Main, EAMCET, KCET, and more.',
+    cta: 'Open Rank Predictors',
+    to: '/students/rank-predictor',
+    accent: 'from-[#0f2847] via-[#1a3a5c] to-[#243b6b]',
+    badge: 'Live Models',
+    widget: 'Rank Range',
+  },
+  {
+    id: 'fit-path',
+    title: 'Find Courses That Match You',
+    description:
+      'Run fit tests to map interests and strengths to engineering, science, and campus options.',
+    cta: 'Try Fit Tests',
+    to: '/students/tests',
+    accent: 'from-[#1a2744] via-[#2a1f4d] to-[#4a1d6a]',
+    badge: 'Personalized',
+    widget: 'Fit Score',
   },
 ];
 

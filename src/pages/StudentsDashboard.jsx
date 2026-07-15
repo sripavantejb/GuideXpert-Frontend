@@ -1,8 +1,7 @@
 import { useEffect, useMemo } from 'react';
-import { useLocation } from 'react-router-dom';
+import { useLocation, useOutletContext } from 'react-router-dom';
 import StudentsDashboardHero from '../components/studentDashboard/StudentsDashboardHero';
 import Careers360StyleHome from '../components/studentDashboard/careers360/Careers360StyleHome';
-import { useStudentWorkspaceSearch } from '../components/studentDashboard/StudentWorkspaceSearchContext';
 import { readOrganicRankLeadSnapshot } from '../utils/organicRankLeadLocal';
 import {
   getAllWorkspaceTools,
@@ -19,7 +18,7 @@ export default function StudentsDashboard() {
     showSuggestions,
     setShowSuggestions,
     onClearSearch,
-  } = useStudentWorkspaceSearch();
+  } = useOutletContext();
 
   useEffect(() => {
     if (location.state?.searchTerm) {

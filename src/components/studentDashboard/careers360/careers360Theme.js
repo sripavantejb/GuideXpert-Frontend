@@ -28,11 +28,12 @@ export const LAYOUT = {
 };
 
 export const NAV_CATEGORIES = [
-  { label: 'Rank predictors', to: '/students/rank-predictor' },
-  { label: 'College predictors', to: '/students/college-predictor' },
-  { label: 'Fit tests', to: '/students/tests' },
-  { label: 'Compare colleges', to: '/students/college-comparison' },
-  { label: 'Deadline manager', to: '/students/deadline-manager' },
+  { label: 'Rank Predictors', to: '/students/rank-predictor' },
+  { label: 'College Predictors', to: '/students/college-predictor' },
+  { label: 'Fit Tests', to: '/students/tests' },
+  { label: 'Compare', to: '/students/college-comparison' },
+  { label: 'Deadlines', to: '/students/deadline-manager' },
+  { label: 'More', to: '/students/predictors' },
 ];
 
 export const FOOTER_COLUMNS = [

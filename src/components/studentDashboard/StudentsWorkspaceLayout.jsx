@@ -1,13 +1,11 @@
+import { useMemo, useState } from 'react';
 import { Outlet, useLocation, useNavigate } from 'react-router-dom';
 import Careers360Navbar from './careers360/Careers360Navbar';
 import Careers360Footer from './careers360/Careers360Footer';
-import {
-  StudentWorkspaceSearchProvider,
-  useStudentWorkspaceSearch,
-} from './StudentWorkspaceSearchContext';
 
-function StudentsWorkspaceLayoutInner() {
-  const { searchTerm, setSearchTerm, showSuggestions, setShowSuggestions } = useStudentWorkspaceSearch();
+export default function StudentsWorkspaceLayout() {
+  const [searchTerm, setSearchTerm] = useState('');
+  const [showSuggestions, setShowSuggestions] = useState(false);
   const location = useLocation();
   const navigate = useNavigate();
 
@@ -19,6 +17,17 @@ function StudentsWorkspaceLayoutInner() {
     navigate('/students', { state: { searchTerm: query } });
   };
 
+  const outletContext = useMemo(
+    () => ({
+      searchTerm,
+      setSearchTerm,
+      showSuggestions,
+      setShowSuggestions,
+      onClearSearch: () => setSearchTerm(''),
+    }),
+    [searchTerm, showSuggestions]
+  );
+
   return (
     <div className="flex min-h-screen flex-col bg-white font-sans text-[#333]">
       <Careers360Navbar
@@ -28,16 +37,8 @@ function StudentsWorkspaceLayoutInner() {
         onSearchBlur={() => setTimeout(() => setShowSuggestions(false), 200)}
         onSearchKeyDown={handleSearchKeyDown}
       />
-      <Outlet />
+      <Outlet context={outletContext} />
       <Careers360Footer />
     </div>
-  );
-}
-
-export default function StudentsWorkspaceLayout() {
-  return (
-    <StudentWorkspaceSearchProvider>
-      <StudentsWorkspaceLayoutInner />
-    </StudentWorkspaceSearchProvider>
   );
 }
