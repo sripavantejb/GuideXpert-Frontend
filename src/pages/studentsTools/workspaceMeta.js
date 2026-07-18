@@ -27,6 +27,7 @@ const DEFAULT_HERO = { Icon: FiLayers, accent: 'orange' };
 export function getHeroMeta(pathname) {
   if (HERO_META_BY_PATH[pathname]) return HERO_META_BY_PATH[pathname];
   if (pathname.startsWith('/students/rank-predictor/')) return HERO_META_BY_PATH['/students/rank-predictor'];
+  if (pathname.startsWith('/students/college-predictor/')) return HERO_META_BY_PATH['/students/college-predictor'];
   return DEFAULT_HERO;
 }
 
