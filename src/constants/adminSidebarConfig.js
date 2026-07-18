@@ -44,6 +44,7 @@ export const DEFAULT_ROUTE_PLACEMENTS = {
   '/admin/ai-calls': 'students',
   '/admin/iit-ai-calls-summary': 'students',
   '/admin/whatsapp-ops': 'students',
+  '/admin/conversation-recovery': 'students',
   '/admin/lead-intelligence': 'students',
   '/admin/human-copilot': 'students',
 };
@@ -81,6 +82,7 @@ export const SIDEBAR_SETTINGS_ITEMS = [
   { to: '/admin/ai-calls', label: 'AI Calls' },
   { to: '/admin/iit-ai-calls-summary', label: 'IITian AI Calls Summary' },
   { to: '/admin/whatsapp-ops', label: 'WhatsApp ops' },
+  { to: '/admin/conversation-recovery', label: 'Conversation Recovery' },
   { to: '/admin/lead-intelligence', label: 'Chatbot Lead Intelligence' },
   { to: '/admin/human-copilot', label: 'Human Copilot' },
 ];

@@ -100,6 +100,16 @@ import WhatsAppOpsWebhooks from './pages/admin/whatsapp-ops/WhatsAppOpsWebhooks'
 import WhatsAppOpsFailures from './pages/admin/whatsapp-ops/WhatsAppOpsFailures';
 import WhatsAppOpsLogs from './pages/admin/whatsapp-ops/WhatsAppOpsLogs';
 import WhatsAppOpsSettings from './pages/admin/whatsapp-ops/WhatsAppOpsSettings';
+import ConversationRecoveryLayout from './pages/admin/conversation-recovery/ConversationRecoveryLayout';
+import ConversationRecoveryOverview from './pages/admin/conversation-recovery/ConversationRecoveryOverview';
+import ConversationRecoveryFunnel from './pages/admin/conversation-recovery/ConversationRecoveryFunnel';
+import ConversationRecoveryDaily from './pages/admin/conversation-recovery/ConversationRecoveryDaily';
+import ConversationRecoveryStudents from './pages/admin/conversation-recovery/ConversationRecoveryStudents';
+import ConversationRecoveryDelivery from './pages/admin/conversation-recovery/ConversationRecoveryDelivery';
+import ConversationRecoveryConfig from './pages/admin/conversation-recovery/ConversationRecoveryConfig';
+import ConversationRecoveryHealth from './pages/admin/conversation-recovery/ConversationRecoveryHealth';
+import ConversationRecoveryAlerts from './pages/admin/conversation-recovery/ConversationRecoveryAlerts';
+import ConversationRecoveryAudit from './pages/admin/conversation-recovery/ConversationRecoveryAudit';
 import PosterPublicPage from './pages/PosterPublicPage';
 import CounsellorLogin from './pages/counsellor/CounsellorLogin';
 import WebinarLogin from './pages/webinar/WebinarLogin';
@@ -521,6 +531,18 @@ function App() {
               <Route path="failures" element={<WhatsAppOpsFailures />} />
               <Route path="logs" element={<WhatsAppOpsLogs />} />
               <Route path="settings" element={<WhatsAppOpsSettings />} />
+            </Route>
+            <Route path="conversation-recovery" element={<ConversationRecoveryLayout />}>
+              <Route index element={<Navigate to="overview" replace />} />
+              <Route path="overview" element={<ConversationRecoveryOverview />} />
+              <Route path="health" element={<ConversationRecoveryHealth />} />
+              <Route path="funnel" element={<ConversationRecoveryFunnel />} />
+              <Route path="daily" element={<ConversationRecoveryDaily />} />
+              <Route path="students" element={<ConversationRecoveryStudents />} />
+              <Route path="delivery" element={<ConversationRecoveryDelivery />} />
+              <Route path="alerts" element={<ConversationRecoveryAlerts />} />
+              <Route path="audit" element={<ConversationRecoveryAudit />} />
+              <Route path="config" element={<ConversationRecoveryConfig />} />
             </Route>
           </Route>
 
