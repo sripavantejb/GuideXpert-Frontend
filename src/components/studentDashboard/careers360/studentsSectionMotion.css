@@ -1,0 +1,239 @@
+/* GIF-like loop motion for /students section vectors */
+
+@keyframes gx-float-y {
+  0%,
+  100% {
+    transform: translateY(0);
+  }
+  50% {
+    transform: translateY(-8px);
+  }
+}
+
+@keyframes gx-float-y-soft {
+  0%,
+  100% {
+    transform: translateY(0);
+  }
+  50% {
+    transform: translateY(-4px);
+  }
+}
+
+@keyframes gx-pulse-soft {
+  0%,
+  100% {
+    opacity: 0.45;
+    transform: scale(1);
+  }
+  50% {
+    opacity: 0.85;
+    transform: scale(1.06);
+  }
+}
+
+@keyframes gx-bar-grow {
+  0%,
+  100% {
+    transform: scaleY(0.55);
+  }
+  50% {
+    transform: scaleY(1);
+  }
+}
+
+@keyframes gx-dash-flow {
+  to {
+    stroke-dashoffset: -24;
+  }
+}
+
+@keyframes gx-spin-slow {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+@keyframes gx-orbit {
+  0% {
+    transform: rotate(0deg) translateX(18px) rotate(0deg);
+  }
+  100% {
+    transform: rotate(360deg) translateX(18px) rotate(-360deg);
+  }
+}
+
+@keyframes gx-check-pop {
+  0%,
+  100% {
+    transform: scale(0.85);
+    opacity: 0.55;
+  }
+  40% {
+    transform: scale(1.12);
+    opacity: 1;
+  }
+  70% {
+    transform: scale(1);
+    opacity: 1;
+  }
+}
+
+@keyframes gx-wiggle {
+  0%,
+  100% {
+    transform: rotate(-2deg);
+  }
+  50% {
+    transform: rotate(2deg);
+  }
+}
+
+@keyframes gx-shimmer-x {
+  0% {
+    transform: translateX(-30%);
+    opacity: 0;
+  }
+  40% {
+    opacity: 0.55;
+  }
+  100% {
+    transform: translateX(130%);
+    opacity: 0;
+  }
+}
+
+@keyframes gx-ring-draw {
+  0% {
+    stroke-dashoffset: 120;
+  }
+  50% {
+    stroke-dashoffset: 28;
+  }
+  100% {
+    stroke-dashoffset: 120;
+  }
+}
+
+@keyframes gx-bounce-dot {
+  0%,
+  80%,
+  100% {
+    transform: translateY(0);
+    opacity: 0.45;
+  }
+  40% {
+    transform: translateY(-6px);
+    opacity: 1;
+  }
+}
+
+.gx-anim-float,
+.gx-anim-float-soft,
+.gx-anim-pulse,
+.gx-anim-bar,
+.gx-anim-spin,
+.gx-anim-orbit,
+.gx-anim-check,
+.gx-anim-wiggle,
+.gx-anim-shimmer,
+.gx-anim-dot {
+  transform-box: fill-box;
+  transform-origin: center;
+}
+
+.gx-anim-bar {
+  transform-origin: bottom center;
+}
+
+.gx-anim-float {
+  animation: gx-float-y 3.2s ease-in-out infinite;
+}
+
+.gx-anim-float-soft {
+  animation: gx-float-y-soft 2.8s ease-in-out infinite;
+}
+
+.gx-anim-pulse {
+  animation: gx-pulse-soft 2.4s ease-in-out infinite;
+  transform-origin: center;
+}
+
+.gx-anim-bar {
+  animation: gx-bar-grow 2.2s ease-in-out infinite;
+}
+
+.gx-anim-dash {
+  stroke-dasharray: 6 6;
+  animation: gx-dash-flow 1.2s linear infinite;
+}
+
+.gx-anim-spin {
+  animation: gx-spin-slow 12s linear infinite;
+  transform-origin: center;
+}
+
+.gx-anim-orbit {
+  animation: gx-orbit 4.5s linear infinite;
+  transform-origin: center;
+}
+
+.gx-anim-check {
+  animation: gx-check-pop 2.6s ease-in-out infinite;
+  transform-origin: center;
+}
+
+.gx-anim-wiggle {
+  animation: gx-wiggle 3s ease-in-out infinite;
+  transform-origin: center;
+}
+
+.gx-anim-shimmer {
+  animation: gx-shimmer-x 2.8s ease-in-out infinite;
+}
+
+.gx-anim-ring {
+  stroke-dasharray: 120;
+  animation: gx-ring-draw 3s ease-in-out infinite;
+}
+
+.gx-anim-dot {
+  animation: gx-bounce-dot 1.4s ease-in-out infinite;
+}
+
+.gx-anim-dot-delay-1 {
+  animation-delay: 0.16s;
+}
+
+.gx-anim-dot-delay-2 {
+  animation-delay: 0.32s;
+}
+
+.gx-anim-delay-1 {
+  animation-delay: 0.2s;
+}
+
+.gx-anim-delay-2 {
+  animation-delay: 0.4s;
+}
+
+.gx-anim-delay-3 {
+  animation-delay: 0.6s;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .gx-anim-float,
+  .gx-anim-float-soft,
+  .gx-anim-pulse,
+  .gx-anim-bar,
+  .gx-anim-dash,
+  .gx-anim-spin,
+  .gx-anim-orbit,
+  .gx-anim-check,
+  .gx-anim-wiggle,
+  .gx-anim-shimmer,
+  .gx-anim-ring,
+  .gx-anim-dot {
+    animation: none !important;
+  }
+}
