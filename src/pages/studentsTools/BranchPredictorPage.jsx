@@ -362,7 +362,7 @@ export default function BranchPredictorPage() {
       howItWorks={[
         'Your exam, category, and rank are matched against historical college cutoffs.',
         'Colleges are loaded from the same predictor service used for College Predictor.',
-        'Branch chances are estimated by comparing your rank with each branch cutoff.',
+        'Branch chances are estimated by comparing your rank with each branch cutoff from the predictor.'
       ]}
       results={
         hasSearched ? (
