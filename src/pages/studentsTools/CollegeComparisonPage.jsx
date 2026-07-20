@@ -2,20 +2,20 @@ import { useRef, useState } from 'react';
 import { FiColumns } from 'react-icons/fi';
 import ToolWorkspaceLayout from './components/ToolWorkspaceLayout';
 import {
+  ADMISSION_PREDICTOR_TOOLS,
+  FIT_TEST_TOOLS,
+} from '../../constants/studentWorkspaceTools';
+import {
   swBtnPrimary,
   swError,
   swInsightsPanel,
   swInput,
   swLabel,
   swMetricBetter,
-  swPreviewLabel,
-  swProgressBar,
-  swProgressTrack,
   swResultCard,
   swResultsHighlight,
   swSectionSubtitle,
   swSectionTitle,
-  swWorkspaceTitle,
 } from './components/studentWorkspaceUi';
 
 function VsBadge({ className = '' }) {
@@ -27,6 +27,13 @@ function VsBadge({ className = '' }) {
     </span>
   );
 }
+
+const RELATED = [
+  ...ADMISSION_PREDICTOR_TOOLS.filter((t) =>
+    ['college-predictor', 'branch-predictor', 'exam-predictor'].includes(t.id)
+  ),
+  ...FIT_TEST_TOOLS.filter((t) => t.id === 'college-fit'),
+];
 
 export default function CollegeComparisonPage() {
   const [a, setA] = useState('');
@@ -68,42 +75,12 @@ export default function CollegeComparisonPage() {
     <ToolWorkspaceLayout
       title="College Comparison"
       subtitle="Compare two institutions side-by-side and identify the stronger value choice."
-      compactHero
       howItWorks={[
         'Core metrics are evaluated side-by-side for both institutions.',
         'Each metric highlights the stronger value based on predefined rules.',
         'The matrix helps you make a balanced decision across outcomes and cost.',
       ]}
-      whatThisToolDoes={[
-        'Provides a quick VS view across packages, placements, fees, and ranking.',
-        'Highlights better-value metrics to support final college decision making.',
-      ]}
-      inputGuide={[
-        'Institution A: First college you want to evaluate.',
-        'Institution B: Second college for direct comparison.',
-      ]}
-      preview={
-        <div className="space-y-4 text-sm">
-          <div className="flex items-center justify-between gap-3">
-            <div>
-              <p className={swPreviewLabel}>Comparison mode</p>
-              <p className="mt-0.5 font-semibold text-[#041e30]">VS matrix</p>
-            </div>
-            <span className="flex h-10 w-10 items-center justify-center rounded-xl bg-[#041e30] text-white">
-              <FiColumns className="h-4 w-4" aria-hidden />
-            </span>
-          </div>
-          <div>
-            <div className="flex justify-between text-xs text-[#5a6570]">
-              <span>Package delta (demo)</span>
-              <span className="font-semibold text-[#041e30]">A leads</span>
-            </div>
-            <div className={`mt-1.5 ${swProgressTrack}`}>
-              <div className={swProgressBar} style={{ width: '62%' }} />
-            </div>
-          </div>
-        </div>
-      }
+      relatedTools={RELATED}
       results={
         result ? (
           <section ref={resultsRef} tabIndex={-1} className={swResultsHighlight}>
@@ -216,14 +193,49 @@ export default function CollegeComparisonPage() {
           </section>
         ) : null
       }
+      afterHero={
+        !result ? (
+          <section className="rounded-2xl border border-[#e4e9f0] bg-white/90 px-6 py-8 sm:px-8 sm:py-10">
+            <div className="flex flex-col gap-6 sm:flex-row sm:items-start sm:justify-between">
+              <div className="max-w-xl">
+                <p className="text-[11px] font-semibold uppercase tracking-[0.16em] text-[#f27921]">
+                  How comparison works
+                </p>
+                <h2 className={`mt-2 ${swSectionTitle}`}>A clearer side-by-side view</h2>
+                <p className={swSectionSubtitle}>
+                  Enter two colleges above to see packages, placements, fees, and rankings in one matrix —
+                  then use the suggestions below for predictors that deepen your shortlist.
+                </p>
+              </div>
+              <div className="flex h-14 w-14 shrink-0 items-center justify-center rounded-2xl bg-[#041e30] text-white">
+                <FiColumns className="h-6 w-6" aria-hidden />
+              </div>
+            </div>
+            <div className="mt-8 grid gap-5 sm:grid-cols-3">
+              {[
+                { label: 'Packages & placements', detail: 'Spot which campus leads on outcomes.' },
+                { label: 'Fees & ranking', detail: 'Balance cost against reputation signals.' },
+                { label: 'Decision-ready', detail: 'Highlight the stronger value on each row.' },
+              ].map((item) => (
+                <div key={item.label} className="rounded-xl bg-[#f7f9fc] px-4 py-4">
+                  <p className="text-sm font-semibold text-[#041e30]">{item.label}</p>
+                  <p className="mt-1.5 text-sm leading-relaxed text-[#5a6570]">{item.detail}</p>
+                </div>
+              ))}
+            </div>
+          </section>
+        ) : null
+      }
     >
       <div>
-        <h2 className={swWorkspaceTitle}>Enter both institutions</h2>
-        <p className={swSectionSubtitle}>We’ll compare packages, placements, fees, and ranking side by side.</p>
+        <h2 className="text-lg font-bold text-[#111827] sm:text-xl">Enter both institutions</h2>
+        <p className="mt-1.5 text-sm leading-relaxed text-[#6b7280]">
+          We’ll compare packages, placements, fees, and ranking side by side.
+        </p>
       </div>
 
-      <form className="mt-6 space-y-6" onSubmit={onSubmit} noValidate>
-        <div className="flex flex-col gap-6 md:grid md:grid-cols-[1fr_auto_1fr] md:items-end md:gap-4">
+      <form className="mt-8 space-y-7" onSubmit={onSubmit} noValidate>
+        <div className="flex flex-col gap-7 md:grid md:grid-cols-[1fr_auto_1fr] md:items-end md:gap-5">
           <label className={`block min-w-0 ${swLabel}`}>
             Institution A
             <input
@@ -237,7 +249,7 @@ export default function CollegeComparisonPage() {
             {errors.a ? <span className={swError}>{errors.a}</span> : null}
           </label>
 
-          <div className="flex justify-center md:pb-1">
+          <div className="flex justify-center md:pb-1.5">
             <VsBadge />
           </div>
 
@@ -255,7 +267,7 @@ export default function CollegeComparisonPage() {
           </label>
         </div>
 
-        <button type="submit" className={`${swBtnPrimary} w-full md:w-auto`}>
+        <button type="submit" className={`${swBtnPrimary} w-full`}>
           Run comparison
         </button>
       </form>

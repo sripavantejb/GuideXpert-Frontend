@@ -9,6 +9,7 @@ import {
 } from 'react-icons/fi';
 import { LAYOUT } from '../../../components/studentDashboard/careers360/careers360Theme';
 import { swPageShell } from './studentWorkspaceUi';
+import RelatedToolsSection from './RelatedToolsSection';
 
 const FEATURE_ICONS = [FiLayers, FiFilter, FiTarget];
 const FEATURE_ICON_STYLES = [
@@ -31,8 +32,8 @@ const BREADCRUMB_CATEGORY = {
     to: '/students/college-predictor',
   },
   '/students/college-comparison': {
-    label: 'College Predictors',
-    to: '/students/college-predictor',
+    label: 'Compare',
+    to: '/students/college-comparison',
   },
   '/students/rank-predictor': {
     label: 'Rank Predictors',
@@ -87,6 +88,8 @@ export default function ToolWorkspaceLayout({
   insights,
   whatThisToolDoes,
   trustBadge = 'Trusted by 500K+ Students',
+  relatedTools,
+  showRelatedTools = true,
   // Kept for call-site compatibility; content moved into hero features / form card
   preview: _preview,
   inputGuide: _inputGuide,
@@ -96,6 +99,7 @@ export default function ToolWorkspaceLayout({
   const { pathname } = useLocation();
   const category = resolveBreadcrumbCategory(pathname);
   const features = featureItems({ howItWorks, whatThisToolDoes });
+  const hasBelowHero = Boolean(afterHero || results || insights || showRelatedTools);
 
   return (
     <main className={`${swPageShell} !bg-[#f3f5f8]`}>
@@ -109,9 +113,9 @@ export default function ToolWorkspaceLayout({
           aria-hidden
         />
 
-        <div className={`relative ${LAYOUT.container} py-8 sm:py-10 lg:py-12`}>
+        <div className={`relative ${LAYOUT.container} py-10 sm:py-12 lg:py-16`}>
           <nav
-            className="sw-fade-up mb-8 flex flex-wrap items-center gap-1.5 text-[13px] !text-white/70"
+            className="sw-fade-up mb-10 flex flex-wrap items-center gap-1.5 text-[13px] !text-white/70"
             aria-label="Breadcrumb"
           >
             <Link
@@ -129,10 +133,10 @@ export default function ToolWorkspaceLayout({
             <span className="font-medium !text-white">{title}</span>
           </nav>
 
-          <div className="grid items-start gap-8 lg:grid-cols-[minmax(0,1.05fr)_minmax(320px,0.95fr)] lg:gap-10 xl:gap-14">
-            <div className="sw-fade-up min-w-0 text-white">
+          <div className="grid items-center gap-10 lg:grid-cols-[minmax(0,1.05fr)_minmax(340px,0.95fr)] lg:gap-12 xl:gap-16">
+            <div className="sw-fade-up min-w-0 text-white lg:pr-4">
               {trustBadge ? (
-                <p className="mb-4 inline-flex items-center gap-1.5 rounded-full bg-[#16a34a]/20 px-3 py-1 text-xs font-semibold !text-[#86efac] ring-1 ring-[#4ade80]/35">
+                <p className="mb-5 inline-flex items-center gap-1.5 rounded-full bg-[#16a34a]/20 px-3.5 py-1.5 text-xs font-semibold !text-[#86efac] ring-1 ring-[#4ade80]/35">
                   <FiCheck className="h-3.5 w-3.5" strokeWidth={3} aria-hidden />
                   {trustBadge}
                 </p>
@@ -142,27 +146,27 @@ export default function ToolWorkspaceLayout({
                 {title}
               </h1>
               {subtitle ? (
-                <p className="mt-3 max-w-xl text-[15px] leading-relaxed !text-white/80 sm:text-base">
+                <p className="mt-4 max-w-xl text-[15px] leading-relaxed !text-white/80 sm:text-base">
                   {subtitle}
                 </p>
               ) : null}
 
-              <ul className="mt-8 space-y-4">
+              <ul className="mt-10 space-y-5">
                 {features.map((feature, index) => {
                   const Icon = FEATURE_ICONS[index % FEATURE_ICONS.length];
                   const iconStyle = FEATURE_ICON_STYLES[index % FEATURE_ICON_STYLES.length];
                   return (
-                    <li key={feature.title} className="flex gap-3.5">
+                    <li key={feature.title} className="flex gap-4">
                       <span
-                        className={`mt-0.5 flex h-10 w-10 shrink-0 items-center justify-center rounded-lg ${iconStyle}`}
+                        className={`mt-0.5 flex h-11 w-11 shrink-0 items-center justify-center rounded-xl ${iconStyle}`}
                       >
                         <Icon className="h-4 w-4" aria-hidden />
                       </span>
-                      <div className="min-w-0 pt-0.5">
+                      <div className="min-w-0 pt-1">
                         <p className="text-sm font-semibold !text-white sm:text-[15px]">
                           {feature.title}
                         </p>
-                        <p className="mt-0.5 text-sm leading-relaxed !text-white/65">
+                        <p className="mt-1 text-sm leading-relaxed !text-white/65">
                           {feature.detail}
                         </p>
                       </div>
@@ -173,7 +177,7 @@ export default function ToolWorkspaceLayout({
             </div>
 
             <div className="sw-fade-up sw-fade-up-delay-1 min-w-0">
-              <div className="rounded-2xl border border-white/40 bg-[#f7f8fb] p-5 shadow-[0_24px_60px_-28px_rgba(0,0,0,0.55)] sm:p-7">
+              <div className="rounded-2xl border border-white/40 bg-[#f7f8fb] p-6 shadow-[0_24px_60px_-28px_rgba(0,0,0,0.55)] sm:p-8">
                 {children}
               </div>
             </div>
@@ -181,13 +185,16 @@ export default function ToolWorkspaceLayout({
         </div>
       </section>
 
-      {(afterHero || results || insights) && (
-        <div className={`${LAYOUT.container} space-y-8 py-10 sm:space-y-10 sm:py-12`}>
+      {hasBelowHero ? (
+        <div className={`${LAYOUT.container} space-y-12 py-12 sm:space-y-14 sm:py-16 lg:py-20`}>
           {afterHero}
           {results}
           {insights}
+          {showRelatedTools ? (
+            <RelatedToolsSection tools={relatedTools} />
+          ) : null}
         </div>
-      )}
+      ) : null}
     </main>
   );
 }
