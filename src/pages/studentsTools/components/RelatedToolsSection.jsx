@@ -18,6 +18,7 @@ const SUGGESTION_POOL = [
 /**
  * Suggested tools for the current route (excludes the page you’re on).
  * Pass `tools` to override the default pool.
+ * Used under tool heroes to lengthen the page with related predictors.
  */
 export function getRelatedTools(pathname, { limit = 4, tools } = {}) {
   const pool = tools || SUGGESTION_POOL;
