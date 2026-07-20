@@ -3,7 +3,7 @@ import { Link, useLocation } from 'react-router-dom';
 import { LuArrowRight, LuSearch, LuRocket, LuZap, LuScale, LuGraduationCap, LuMapPin, LuCalendar } from 'react-icons/lu';
 import { swSectionSubtitle, swSectionTitle } from './studentWorkspaceUi';
 
-/** Static suggestions — avoid module-init side effects from exam helpers. */
+/** Static suggestions — avoid module-init side effects from exam helpers. Redeploy marker. */
 const DEFAULT_SUGGESTIONS = [
   {
     title: 'College Predictor',
