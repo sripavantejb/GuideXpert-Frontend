@@ -21,15 +21,15 @@ const FEATURE_ICON_STYLES = [
 const BREADCRUMB_CATEGORY = {
   '/students/college-predictor': {
     label: 'College Predictors',
-    to: '/students/college-predictor',
+    to: '/students/predictors',
   },
   '/students/branch-predictor': {
     label: 'College Predictors',
-    to: '/students/college-predictor',
+    to: '/students/predictors',
   },
   '/students/exam-predictor': {
     label: 'College Predictors',
-    to: '/students/college-predictor',
+    to: '/students/predictors',
   },
   '/students/college-comparison': {
     label: 'Compare',
@@ -133,7 +133,7 @@ export default function ToolWorkspaceLayout({
             <span className="font-medium !text-white">{title}</span>
           </nav>
 
-          <div className="grid items-center gap-10 lg:grid-cols-[minmax(0,1.05fr)_minmax(340px,0.95fr)] lg:gap-12 xl:gap-16">
+          <div className="grid items-start gap-10 lg:grid-cols-[minmax(0,1.1fr)_minmax(0,24rem)] xl:grid-cols-[minmax(0,1.15fr)_minmax(0,26rem)] lg:gap-12 xl:gap-16">
             <div className="sw-fade-up min-w-0 text-white lg:pr-4">
               {trustBadge ? (
                 <p className="mb-5 inline-flex items-center gap-1.5 rounded-full bg-[#16a34a]/20 px-3.5 py-1.5 text-xs font-semibold !text-[#86efac] ring-1 ring-[#4ade80]/35">
@@ -176,9 +176,9 @@ export default function ToolWorkspaceLayout({
               </ul>
             </div>
 
-            <div className="sw-fade-up sw-fade-up-delay-1 min-w-0">
-              <div className="rounded-2xl border border-white/40 bg-[#f7f8fb] p-6 shadow-[0_24px_60px_-28px_rgba(0,0,0,0.55)] sm:p-8">
-                {children}
+            <div className="sw-fade-up sw-fade-up-delay-1 w-full min-w-0 max-w-full justify-self-stretch lg:justify-self-end">
+              <div className="w-full min-w-0 max-w-full rounded-2xl border border-white/40 bg-[#f7f8fb] p-6 shadow-[0_24px_60px_-28px_rgba(0,0,0,0.55)] sm:p-8">
+                <div className="w-full min-w-0 max-w-full">{children}</div>
               </div>
             </div>
           </div>

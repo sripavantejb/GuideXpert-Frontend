@@ -152,7 +152,7 @@ export default function BranchPredictorPage() {
           />
           {errors.rank ? <span className={swError}>{errors.rank}</span> : null}
         </label>
-        <button type="submit" className={`${swBtnPrimary} w-full`}>
+        <button type="submit" className={swBtnPrimary}>
           Predict My Branches
         </button>
       </form>

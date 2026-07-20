@@ -102,6 +102,27 @@
   background-attachment: scroll, scroll, scroll;
 }
 
+/* Global `section { padding }` in this stylesheet must not crush tool layouts */
+.student-tool-page-shell section {
+  padding-top: 0;
+  padding-bottom: 0;
+}
+
+.student-tool-page-shell label {
+  display: block;
+  width: 100%;
+  min-width: 0;
+  max-width: 100%;
+}
+
+.student-tool-page-shell input,
+.student-tool-page-shell select,
+.student-tool-page-shell textarea,
+.student-tool-page-shell button {
+  max-width: 100%;
+  box-sizing: border-box;
+}
+
 @media (min-width: 768px) {
   .student-tool-page-shell {
     background-attachment: fixed, fixed, fixed;

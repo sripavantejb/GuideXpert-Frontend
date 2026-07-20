@@ -1,10 +1,7 @@
 import { useRef, useState } from 'react';
 import { FiColumns } from 'react-icons/fi';
+import { LuSearch, LuRocket, LuZap, LuMapPin } from 'react-icons/lu';
 import ToolWorkspaceLayout from './components/ToolWorkspaceLayout';
-import {
-  ADMISSION_PREDICTOR_TOOLS,
-  FIT_TEST_TOOLS,
-} from '../../constants/studentWorkspaceTools';
 import {
   swBtnPrimary,
   swError,
@@ -29,10 +26,34 @@ function VsBadge({ className = '' }) {
 }
 
 const RELATED = [
-  ...ADMISSION_PREDICTOR_TOOLS.filter((t) =>
-    ['college-predictor', 'branch-predictor', 'exam-predictor'].includes(t.id)
-  ),
-  ...FIT_TEST_TOOLS.filter((t) => t.id === 'college-fit'),
+  {
+    title: 'College Predictor',
+    description: 'Shortlist colleges that match your rank, category, and preferences.',
+    to: '/students/college-predictor',
+    icon: LuSearch,
+    iconClass: 'bg-rose-50 text-rose-600',
+  },
+  {
+    title: 'Branch Predictor',
+    description: 'See which branches you can get at your target institutions.',
+    to: '/students/branch-predictor',
+    icon: LuRocket,
+    iconClass: 'bg-violet-50 text-violet-600',
+  },
+  {
+    title: 'Exam Predictor',
+    description: 'Suggest suitable exams based on your profile and strengths.',
+    to: '/students/exam-predictor',
+    icon: LuZap,
+    iconClass: 'bg-amber-50 text-amber-600',
+  },
+  {
+    title: 'College Fit Test',
+    description: 'Find campuses that match your lifestyle, budget, and goals.',
+    to: '/students/college-fit-test',
+    icon: LuMapPin,
+    iconClass: 'bg-sky-50 text-sky-600',
+  },
 ];
 
 export default function CollegeComparisonPage() {
@@ -267,7 +288,7 @@ export default function CollegeComparisonPage() {
           </label>
         </div>
 
-        <button type="submit" className={`${swBtnPrimary} w-full`}>
+        <button type="submit" className={swBtnPrimary}>
           Run comparison
         </button>
       </form>

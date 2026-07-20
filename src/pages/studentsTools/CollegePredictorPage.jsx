@@ -480,7 +480,7 @@ export default function CollegePredictorPage() {
           />
         ) : null}
 
-        <button type="submit" className={`${swBtnPrimary} w-full`} disabled={loading}>
+        <button type="submit" className={swBtnPrimary} disabled={loading}>
           {loading ? (
             <>
               <FiLoader className="h-4 w-4 animate-spin" aria-hidden />
