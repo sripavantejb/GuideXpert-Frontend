@@ -1,120 +1,193 @@
-import { useLocation } from 'react-router-dom';
-import { FiZap, FiLayers, FiCheckSquare, FiEdit3 } from 'react-icons/fi';
-import { getHeroMeta, HERO_ACCENT_STYLES } from '../workspaceMeta';
+import { Link, useLocation } from 'react-router-dom';
 import {
-  swCard,
-  swContainer,
-  swHeroEyebrow,
-  swPageShell,
-  swPageSubtitle,
-  swPageTitle,
-  swSectionSubtitle,
-  swSectionTitle,
-} from './studentWorkspaceUi';
+  FiHome,
+  FiCheck,
+  FiFilter,
+  FiLayers,
+  FiTarget,
+  FiChevronRight,
+} from 'react-icons/fi';
+import { LAYOUT } from '../../../components/studentDashboard/careers360/careers360Theme';
+import { swPageShell } from './studentWorkspaceUi';
 
-function HelpList({ title, items, icon: Icon }) {
-  return (
-    <div className={`${swCard} min-w-0`}>
-      <h3 className="mb-4 flex items-center gap-3 text-base font-bold text-[#333]">
-        <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-[#fff4ed] text-[#f27921]">
-          <Icon className="h-4 w-4" aria-hidden />
-        </span>
-        {title}
-      </h3>
-      <ul className="space-y-2 text-sm text-[#666]">
-        {items.map((item) => (
-          <li key={item} className="rounded-lg bg-[#fafbfc] px-3 py-2.5 leading-relaxed">
-            {item}
-          </li>
-        ))}
-      </ul>
-    </div>
-  );
+const FEATURE_ICONS = [FiLayers, FiFilter, FiTarget];
+const FEATURE_ICON_STYLES = [
+  'bg-[#fce7f3] text-[#be185d]',
+  'bg-[#dbeafe] text-[#1d4ed8]',
+  'bg-[#ffedd5] text-[#c2410c]',
+];
+
+const BREADCRUMB_CATEGORY = {
+  '/students/college-predictor': {
+    label: 'College Predictors',
+    to: '/students/college-predictor',
+  },
+  '/students/branch-predictor': {
+    label: 'College Predictors',
+    to: '/students/college-predictor',
+  },
+  '/students/exam-predictor': {
+    label: 'College Predictors',
+    to: '/students/college-predictor',
+  },
+  '/students/college-comparison': {
+    label: 'College Predictors',
+    to: '/students/college-predictor',
+  },
+  '/students/rank-predictor': {
+    label: 'Rank Predictors',
+    to: '/students/rank-predictor',
+  },
+  '/students/course-fit-test': { label: 'Fit Tests', to: '/students/tests' },
+  '/students/college-fit-test': { label: 'Fit Tests', to: '/students/tests' },
+  '/students/deadline-manager': {
+    label: 'Deadlines',
+    to: '/students/deadline-manager',
+  },
+};
+
+function resolveBreadcrumbCategory(pathname) {
+  if (BREADCRUMB_CATEGORY[pathname]) return BREADCRUMB_CATEGORY[pathname];
+  if (pathname.startsWith('/students/rank-predictor/')) {
+    return BREADCRUMB_CATEGORY['/students/rank-predictor'];
+  }
+  return { label: 'Predictors & Tools', to: '/students/predictors' };
+}
+
+function featureItems({ howItWorks, whatThisToolDoes }) {
+  const defaultTitles = ['Detailed Criteria', 'Personalized Report', 'Comprehensive Coverage'];
+
+  if (howItWorks?.length) {
+    return howItWorks.slice(0, 3).map((text, index) => ({
+      title: defaultTitles[index] || `Highlight ${index + 1}`,
+      detail: text,
+    }));
+  }
+  if (whatThisToolDoes?.length) {
+    return whatThisToolDoes.slice(0, 3).map((text, index) => {
+      const [head, ...rest] = text.split(/[.!]/);
+      const title = head?.trim() || defaultTitles[index];
+      const detail = rest.join('.').trim() || text;
+      return { title, detail };
+    });
+  }
+  return [
+    { title: 'Detailed Criteria', detail: 'Rank, quota & category based.' },
+    { title: 'Personalized Report', detail: 'Filter by branch, fees, location & more.' },
+    { title: 'Comprehensive Coverage', detail: 'All India & state-level colleges.' },
+  ];
 }
 
 export default function ToolWorkspaceLayout({
   title,
   subtitle,
   howItWorks,
-  preview,
   children,
   results,
   insights,
   whatThisToolDoes,
-  inputGuide,
-  compactHero = false,
+  trustBadge = 'Trusted by 500K+ Students',
+  // Kept for call-site compatibility; content moved into hero features / form card
+  preview: _preview,
+  inputGuide: _inputGuide,
+  compactHero: _compactHero,
   afterHero = null,
 }) {
   const { pathname } = useLocation();
-  const { Icon: HeroIcon, accent } = getHeroMeta(pathname);
-  const heroAccentClass = HERO_ACCENT_STYLES[accent] || HERO_ACCENT_STYLES.orange;
+  const category = resolveBreadcrumbCategory(pathname);
+  const features = featureItems({ howItWorks, whatThisToolDoes });
 
   return (
-    <main className={swPageShell}>
-      <div className={swContainer}>
-        <header className="mb-8">
-          <p className={swHeroEyebrow}>GuideXpert tool</p>
-          <div className={`mt-3 ${compactHero ? 'space-y-4' : 'grid gap-8 lg:grid-cols-[minmax(0,1fr)_minmax(0,280px)] lg:items-start'}`}>
-            <div className="flex gap-4">
-              <div className={`flex h-12 w-12 shrink-0 items-center justify-center rounded-xl sm:h-14 sm:w-14 ${heroAccentClass}`}>
-                <HeroIcon className="h-6 w-6 sm:h-7 sm:w-7" strokeWidth={2} aria-hidden />
-              </div>
-              <div className="min-w-0">
-                <h1 className={swPageTitle}>{title}</h1>
-                <p className={swPageSubtitle}>{subtitle}</p>
-              </div>
+    <main className={`${swPageShell} !bg-[#f3f5f8]`}>
+      <section className="sw-c360-tool-hero relative overflow-hidden !py-0">
+        <div
+          className="pointer-events-none absolute inset-0 opacity-40"
+          style={{
+            backgroundImage:
+              'radial-gradient(circle at 18% 22%, rgba(242,121,33,0.18), transparent 42%), radial-gradient(circle at 82% 18%, rgba(56,189,248,0.12), transparent 38%)',
+          }}
+          aria-hidden
+        />
+
+        <div className={`relative ${LAYOUT.container} py-8 sm:py-10 lg:py-12`}>
+          <nav
+            className="sw-fade-up mb-8 flex flex-wrap items-center gap-1.5 text-[13px] !text-white/70"
+            aria-label="Breadcrumb"
+          >
+            <Link
+              to="/students"
+              className="inline-flex items-center gap-1 !text-white/70 transition hover:!text-white"
+            >
+              <FiHome className="h-3.5 w-3.5" aria-hidden />
+              <span className="sr-only">Home</span>
+            </Link>
+            <FiChevronRight className="h-3.5 w-3.5 opacity-50" aria-hidden />
+            <Link to={category.to} className="!text-white/70 transition hover:!text-white">
+              {category.label}
+            </Link>
+            <FiChevronRight className="h-3.5 w-3.5 opacity-50" aria-hidden />
+            <span className="font-medium !text-white">{title}</span>
+          </nav>
+
+          <div className="grid items-start gap-8 lg:grid-cols-[minmax(0,1.05fr)_minmax(320px,0.95fr)] lg:gap-10 xl:gap-14">
+            <div className="sw-fade-up min-w-0 text-white">
+              {trustBadge ? (
+                <p className="mb-4 inline-flex items-center gap-1.5 rounded-full bg-[#16a34a]/20 px-3 py-1 text-xs font-semibold !text-[#86efac] ring-1 ring-[#4ade80]/35">
+                  <FiCheck className="h-3.5 w-3.5" strokeWidth={3} aria-hidden />
+                  {trustBadge}
+                </p>
+              ) : null}
+
+              <h1 className="font-sw-display text-[1.85rem] font-bold leading-[1.15] tracking-tight !text-white sm:text-4xl lg:text-[2.55rem]">
+                {title}
+              </h1>
+              {subtitle ? (
+                <p className="mt-3 max-w-xl text-[15px] leading-relaxed !text-white/80 sm:text-base">
+                  {subtitle}
+                </p>
+              ) : null}
+
+              <ul className="mt-8 space-y-4">
+                {features.map((feature, index) => {
+                  const Icon = FEATURE_ICONS[index % FEATURE_ICONS.length];
+                  const iconStyle = FEATURE_ICON_STYLES[index % FEATURE_ICON_STYLES.length];
+                  return (
+                    <li key={feature.title} className="flex gap-3.5">
+                      <span
+                        className={`mt-0.5 flex h-10 w-10 shrink-0 items-center justify-center rounded-lg ${iconStyle}`}
+                      >
+                        <Icon className="h-4 w-4" aria-hidden />
+                      </span>
+                      <div className="min-w-0 pt-0.5">
+                        <p className="text-sm font-semibold !text-white sm:text-[15px]">
+                          {feature.title}
+                        </p>
+                        <p className="mt-0.5 text-sm leading-relaxed !text-white/65">
+                          {feature.detail}
+                        </p>
+                      </div>
+                    </li>
+                  );
+                })}
+              </ul>
             </div>
 
-            {!compactHero && preview ? (
-              <div className="rounded-xl border border-[#e5e7eb] bg-white p-4 shadow-sm sm:p-5">
-                <div className="mb-3 flex items-center gap-2 text-[#999]">
-                  <FiZap className="h-3.5 w-3.5 shrink-0" aria-hidden />
-                  <p className="text-xs font-semibold uppercase tracking-wide">Preview</p>
-                </div>
-                <div className="text-[#333]">{preview}</div>
+            <div className="sw-fade-up sw-fade-up-delay-1 min-w-0">
+              <div className="rounded-2xl border border-white/40 bg-[#f7f8fb] p-5 shadow-[0_24px_60px_-28px_rgba(0,0,0,0.55)] sm:p-7">
+                {children}
               </div>
-            ) : null}
+            </div>
           </div>
-        </header>
+        </div>
+      </section>
 
-        {afterHero}
-
-        <div className="space-y-6">
-          <section className={swCard}>
-            <div className="mb-6 flex items-start gap-4">
-              <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-[#fff4ed] text-[#f27921]">
-                <FiLayers className="h-5 w-5" aria-hidden />
-              </span>
-              <div>
-                <h2 className={swSectionTitle}>How this tool works</h2>
-                <p className={swSectionSubtitle}>Simple explanation of how recommendations are generated.</p>
-              </div>
-            </div>
-            <ol className="space-y-3">
-              {howItWorks?.map((item, index) => (
-                <li key={item} className="flex min-w-0 gap-3 sm:gap-4">
-                  <span
-                    className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-[#eef2f7] text-sm font-semibold text-[#444]"
-                    aria-hidden
-                  >
-                    {index + 1}
-                  </span>
-                  <span className="min-w-0 pt-0.5 text-sm leading-relaxed text-[#666] sm:text-base">{item}</span>
-                </li>
-              ))}
-            </ol>
-            <div className="mt-8 grid gap-5 lg:grid-cols-2">
-              <HelpList title="What this tool does" items={whatThisToolDoes} icon={FiCheckSquare} />
-              <HelpList title="What each input means" items={inputGuide} icon={FiEdit3} />
-            </div>
-          </section>
-
-          <section className={swCard}>{children}</section>
-
+      {(afterHero || results || insights) && (
+        <div className={`${LAYOUT.container} space-y-8 py-10 sm:space-y-10 sm:py-12`}>
+          {afterHero}
           {results}
           {insights}
         </div>
-      </div>
+      )}
     </main>
   );
 }

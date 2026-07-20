@@ -113,21 +113,21 @@ export default function ExamPredictorPage() {
       results={
         result ? (
           <section ref={resultsRef} tabIndex={-1} className={swResultsPanel}>
-            <h2 className={swSectionTitle}>Results</h2>
+            <h2 className={swSectionTitle}>Prediction results</h2>
             {result.message && <p className={swSectionSubtitle}>{result.message}</p>}
-            <div className="mt-5 grid gap-4 sm:grid-cols-2">
-              <div className={swResultCard}>
-                <p className="text-xs font-medium uppercase tracking-wider text-slate-400">
+            <div className="mt-6 grid gap-4 sm:grid-cols-2">
+              <div className={`${swResultCard} bg-gradient-to-br from-[#fff9f4] to-white`}>
+                <p className="text-[11px] font-bold uppercase tracking-[0.14em] text-[#8a94a0]">
                   {result.metricLabel || 'Predicted value'}
                 </p>
-                <p className="mt-1 text-3xl font-semibold tabular-nums text-slate-900">
+                <p className="mt-2 font-sw-display text-3xl font-bold tabular-nums text-[#041e30] sm:text-4xl">
                   {result.predictedValue != null ? result.predictedValue.toLocaleString() : '—'}
                 </p>
               </div>
               {result.range && (
                 <div className={swResultCard}>
-                  <p className="text-xs font-medium uppercase tracking-wider text-slate-400">Range</p>
-                  <p className="mt-1 text-xl font-semibold tabular-nums text-slate-900">
+                  <p className="text-[11px] font-bold uppercase tracking-[0.14em] text-[#8a94a0]">Likely range</p>
+                  <p className="mt-2 font-sw-display text-xl font-bold tabular-nums text-[#041e30]">
                     {result.range.low?.toLocaleString()} – {result.range.high?.toLocaleString()}
                   </p>
                 </div>
@@ -140,9 +140,15 @@ export default function ExamPredictorPage() {
         result ? (
           <section className={swInsightsPanel}>
             <h3 className={swSectionTitle}>Next steps</h3>
-            <ul className="mt-3 list-disc space-y-2 pl-5 text-sm text-slate-600">
-              <li>Compare this prediction with the College Predictor to shortlist matching institutions.</li>
-              <li>Try different score inputs to see how small improvements affect your predicted rank.</li>
+            <ul className="mt-4 space-y-2.5 text-sm text-[#5a6570]">
+              <li className="flex gap-2.5">
+                <span className="mt-2 h-1 w-1 shrink-0 rounded-full bg-[#f27921]" aria-hidden />
+                Compare this prediction with the College Predictor to shortlist matching institutions.
+              </li>
+              <li className="flex gap-2.5">
+                <span className="mt-2 h-1 w-1 shrink-0 rounded-full bg-[#f27921]" aria-hidden />
+                Try different score inputs to see how small improvements affect your predicted rank.
+              </li>
             </ul>
           </section>
         ) : null

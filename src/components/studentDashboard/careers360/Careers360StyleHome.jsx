@@ -5,10 +5,36 @@ import { Careers360DataSection } from './Careers360DataSection';
 import { Careers360PredictionSection, Careers360OtherProducts } from './Careers360PredictionSection';
 import Careers360ImpactSection, { Careers360CommunityCTA } from './Careers360ImpactSection';
 import Careers360ExamStrip from './Careers360Shared';
+import StudentSuccessCarousel from '../landing/StudentSuccessCarousel';
 import { ToolCard } from '../landing/LandingWorkspaceSections';
 import { getSectionTheme } from '../workspaceSectionThemes';
 import { WORKSPACE_SECTIONS } from '../../../constants/studentWorkspaceTools';
 import { LAYOUT } from './careers360Theme';
+import './studentsSectionMotion.css';
+
+function ResumeLeadIcon() {
+  return (
+    <svg viewBox="0 0 56 56" className="h-12 w-12 shrink-0" fill="none" aria-hidden>
+      <rect width="56" height="56" rx="14" fill="#fff4ed" />
+      <rect x="14" y="16" width="28" height="24" rx="6" fill="#fff" stroke="#f27921" strokeOpacity="0.35" />
+      {[0, 1, 2, 3].map((i) => (
+        <rect
+          key={i}
+          x={18 + i * 6}
+          y={34 - (10 + i * 3)}
+          width="4"
+          height={10 + i * 3}
+          rx="1"
+          fill="#f27921"
+          className={`gx-anim-bar${i % 3 ? ` gx-anim-delay-${i % 3}` : ''}`}
+          style={{ transformOrigin: 'bottom' }}
+        />
+      ))}
+      <circle cx="40" cy="18" r="6" fill="#f27921" className="gx-anim-pulse" />
+      <path d="M38 18h4M40 16v4" stroke="#fff" strokeWidth="1.4" strokeLinecap="round" />
+    </svg>
+  );
+}
 
 function OrganicLeadCard({ organicLead }) {
   if (!organicLead) return null;
@@ -16,11 +42,14 @@ function OrganicLeadCard({ organicLead }) {
     <section className="border-b border-[#ffe0cc] bg-[#fff8f3] py-6">
       <div className={LAYOUT.container}>
         <div className="flex flex-col gap-5 rounded-xl border border-[#ffd4b8] bg-white p-6 sm:flex-row sm:items-center sm:justify-between">
-          <div>
-            <p className="text-xs font-semibold uppercase tracking-wide text-[#f27921]">Continue where you left off</p>
-            <p className="mt-1.5 font-semibold text-[#333]">
-              {organicLead.examName} · score {organicLead.score}
-            </p>
+          <div className="flex items-start gap-4">
+            <ResumeLeadIcon />
+            <div>
+              <p className="text-xs font-semibold uppercase tracking-wide text-[#f27921]">Continue where you left off</p>
+              <p className="mt-1.5 font-semibold text-[#333]">
+                {organicLead.examName} · score {organicLead.score}
+              </p>
+            </div>
           </div>
           <Link
             to={
@@ -99,7 +128,6 @@ export default function Careers360StyleHome({
     <div id="student-workspace" className="bg-white">
       <Careers360ExamStrip />
       <OrganicLeadCard organicLead={organicLead} />
-      <Careers360NewsSection />
 
       {hasSearch ? (
         <SearchResultsPanel
@@ -109,11 +137,13 @@ export default function Careers360StyleHome({
         />
       ) : (
         <>
-          <Careers360CounsellingSection />
-          <Careers360DataSection />
           <Careers360PredictionSection />
-          <Careers360OtherProducts />
+          <Careers360CounsellingSection />
           <Careers360ImpactSection />
+          <StudentSuccessCarousel />
+          <Careers360NewsSection />
+          <Careers360DataSection />
+          <Careers360OtherProducts />
           <Careers360CommunityCTA />
         </>
       )}

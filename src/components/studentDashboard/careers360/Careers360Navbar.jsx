@@ -184,11 +184,11 @@ export default function Careers360Navbar({
               <FiBriefcase className="h-5 w-5" />
             </Link>
             <Link
-              to="/students/rank-predictor"
+              to="/counsellor/login"
               className="rounded-md px-4 py-2 text-sm font-semibold text-white shadow-sm transition hover:opacity-90"
               style={{ backgroundColor: C360.orange }}
             >
-              Get started
+              Login
             </Link>
             <button
               type="button"

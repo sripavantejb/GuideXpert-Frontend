@@ -11,17 +11,17 @@ import {
 } from './components/studentWorkspaceUi';
 
 const SAMPLE_DEADLINES = [
-  { exam: 'JEE Main Session 2', phase: 'Registration', date: 'Coming soon', urgent: false },
-  { exam: 'AP EAMCET', phase: 'Application', date: 'Coming soon', urgent: false },
-  { exam: 'KCET', phase: 'Counseling Round 1', date: 'Coming soon', urgent: false },
-  { exam: 'MHT CET', phase: 'Result Declaration', date: 'Coming soon', urgent: false },
+  { exam: 'JEE Main Session 2', phase: 'Registration window', date: 'Coming soon', status: 'Scheduled' },
+  { exam: 'AP EAMCET', phase: 'Application', date: 'Coming soon', status: 'Scheduled' },
+  { exam: 'KCET', phase: 'Counseling Round 1', date: 'Coming soon', status: 'Scheduled' },
+  { exam: 'MHT CET', phase: 'Result declaration', date: 'Coming soon', status: 'Scheduled' },
 ];
 
 export default function DeadlineManagerPage() {
   return (
     <ToolWorkspaceLayout
       title="Deadline Manager"
-      subtitle="Track important exam registrations, application windows, and counseling round deadlines in one place."
+      subtitle="Track registrations, application windows, and counseling rounds in one calm, reliable view."
       compactHero
       howItWorks={[
         'Exam and admission deadlines are aggregated from official sources.',
@@ -29,32 +29,31 @@ export default function DeadlineManagerPage() {
         'Upcoming deadlines are highlighted to help you plan ahead.',
       ]}
       whatThisToolDoes={[
-        'Shows all important exam and admission deadlines at a glance.',
-        'Helps you stay on top of registration windows, result dates, and counseling rounds.',
+        'Shows important exam and admission deadlines at a glance.',
+        'Helps you stay on top of registration windows, results, and counseling rounds.',
       ]}
       inputGuide={[
-        'No input needed — deadlines are automatically tracked and displayed.',
-        'Check back regularly as new deadlines are added throughout the admission cycle.',
+        'No input needed — deadlines are tracked and displayed automatically.',
+        'Check back regularly as new deadlines are added through the admission cycle.',
       ]}
       preview={
-        <div className="space-y-3 text-sm">
+        <div className="space-y-4 text-sm">
           <div className="flex items-center gap-2">
-            <span className="flex h-6 w-6 items-center justify-center rounded-lg bg-sky-50 text-sky-600">
-              <FiClock className="h-3.5 w-3.5" aria-hidden />
+            <span className="flex h-8 w-8 items-center justify-center rounded-lg bg-[#e8f1f8] text-[#0b3a5c]">
+              <FiClock className="h-4 w-4" aria-hidden />
             </span>
-            <p className={swPreviewLabel}>Deadline tracker</p>
-          </div>
-          <div>
-            <p className={swPreviewLabel}>Tracked exams</p>
-            <p className="mt-0.5 text-xl font-semibold tabular-nums text-slate-900">{SAMPLE_DEADLINES.length}</p>
-          </div>
-          <div>
-            <div className="flex justify-between text-xs text-slate-500">
-              <span>Status</span>
-              <span className="text-slate-700">Updating</span>
+            <div>
+              <p className={swPreviewLabel}>Tracked exams</p>
+              <p className="font-semibold tabular-nums text-[#041e30]">{SAMPLE_DEADLINES.length} active tracks</p>
             </div>
-            <div className={`mt-1.5 ${swProgressTrack}`}>
-              <div className={swProgressBar} style={{ width: '33%' }} />
+          </div>
+          <div>
+            <div className="flex justify-between text-xs text-[#5a6570]">
+              <span>Live feed status</span>
+              <span className="font-semibold text-[#041e30]">Integrating</span>
+            </div>
+            <div className={`mt-2 ${swProgressTrack}`}>
+              <div className={swProgressBar} style={{ width: '38%' }} />
             </div>
           </div>
         </div>
@@ -63,31 +62,41 @@ export default function DeadlineManagerPage() {
       insights={null}
     >
       <h2 className={swWorkspaceTitle}>Upcoming deadlines</h2>
-      <p className={swSectionSubtitle}>Key exam and admission dates you should keep an eye on.</p>
+      <p className={swSectionSubtitle}>Priority dates across major exams — official live sync is on the way.</p>
 
-      <div className="mt-5 space-y-3">
+      <div className="mt-6 space-y-3">
         {SAMPLE_DEADLINES.map((d) => (
-          <div key={`${d.exam}-${d.phase}`} className={`${swResultCard} flex items-start gap-4`}>
-            <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-emerald-50 text-emerald-600">
+          <div
+            key={`${d.exam}-${d.phase}`}
+            className={`${swResultCard} flex flex-col gap-4 sm:flex-row sm:items-center`}
+          >
+            <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl bg-[#041e30] text-white">
               <FiCalendar className="h-5 w-5" aria-hidden />
             </div>
             <div className="min-w-0 flex-1">
-              <h3 className="text-sm font-semibold text-slate-900">{d.exam}</h3>
-              <p className="mt-0.5 text-xs text-slate-500">{d.phase}</p>
+              <h3 className="font-sw-display text-base font-bold text-[#041e30]">
+                {d.exam}
+              </h3>
+              <p className="mt-0.5 text-sm text-[#5a6570]">{d.phase}</p>
             </div>
-            <div className="flex shrink-0 items-center gap-1.5 rounded-full bg-slate-100 px-2.5 py-1">
-              <FiBell className="h-3 w-3 text-slate-400" aria-hidden />
-              <span className="text-xs font-medium text-slate-600">{d.date}</span>
+            <div className="flex shrink-0 items-center gap-2 self-start rounded-xl border border-[#e4e9f0] bg-[#f8fafc] px-3 py-2 sm:self-auto">
+              <FiBell className="h-3.5 w-3.5 text-[#f27921]" aria-hidden />
+              <span className="text-xs font-semibold text-[#2c3640]">{d.date}</span>
             </div>
           </div>
         ))}
       </div>
 
-      <div className={`mt-6 ${swEmptyState}`}>
-        <FiClock className="mx-auto h-8 w-8 text-slate-400" />
-        <p className="mt-2 text-sm font-medium text-slate-600">Live deadline data coming soon</p>
-        <p className="mt-1 text-xs text-slate-400">
-          Dates will be automatically pulled from official exam portals once integrated.
+      <div className={`mt-8 ${swEmptyState}`}>
+        <div className="mx-auto flex h-14 w-14 items-center justify-center rounded-2xl bg-[#eef2f7] text-[#041e30]">
+          <FiClock className="h-6 w-6" aria-hidden />
+        </div>
+        <p className="mt-4 font-sw-display text-base font-bold text-[#041e30]">
+          Live deadline data coming soon
+        </p>
+        <p className="mx-auto mt-2 max-w-md text-sm leading-relaxed text-[#5a6570]">
+          Dates will be pulled from official exam portals once integration is complete — this list is a preview of the
+          layout.
         </p>
       </div>
     </ToolWorkspaceLayout>

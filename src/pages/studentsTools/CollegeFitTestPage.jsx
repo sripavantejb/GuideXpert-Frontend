@@ -6,6 +6,8 @@ import {
   swInsightsPanel,
   swInput,
   swLabel,
+  swProgressBar,
+  swProgressTrack,
   swResultCard,
   swResultsHighlight,
   swSectionSubtitle,
@@ -15,8 +17,8 @@ import {
 } from './components/studentWorkspaceUi';
 
 const SUGGESTIONS = [
-  { name: 'SRM Institute', avgPackage: '8.5 LPA', placementRate: '89%', fees: '14L' },
-  { name: 'Amrita University', avgPackage: '7.8 LPA', placementRate: '86%', fees: '12L' },
+  { name: 'SRM Institute', avgPackage: '8.5 LPA', placementRate: '89%', fees: '14L', fit: 91 },
+  { name: 'Amrita University', avgPackage: '7.8 LPA', placementRate: '86%', fees: '12L', fit: 87 },
 ];
 
 export default function CollegeFitTestPage() {
@@ -42,7 +44,7 @@ export default function CollegeFitTestPage() {
   return (
     <ToolWorkspaceLayout
       title="College Fit Test"
-      subtitle="Filter colleges by budget, campus expectations, and placement priorities."
+      subtitle="Filter colleges by budget, campus expectations, city preference, and placement priority."
       compactHero
       howItWorks={[
         'Your fee, campus, and city preferences define the fit baseline.',
@@ -51,7 +53,7 @@ export default function CollegeFitTestPage() {
       ]}
       whatThisToolDoes={[
         'Finds colleges that match your fee comfort, location, and placement expectations.',
-        'Improves shortlisting quality by combining personal fit and outcome metrics.',
+        'Improves shortlisting by combining personal fit and outcome metrics.',
       ]}
       inputGuide={[
         'Fee Budget: Your approximate total affordable cost range.',
@@ -60,23 +62,47 @@ export default function CollegeFitTestPage() {
         'Placement Priority: Importance weight for placements in recommendations.',
       ]}
       preview={
-        <div className="space-y-1 text-sm text-slate-600">
-          <p>Recommended colleges: <span className="font-semibold text-slate-900">8</span></p>
-          <p>Placement-focused matches: <span className="font-semibold text-slate-900">4</span></p>
+        <div className="space-y-2 text-sm">
+          <p className="text-[11px] font-semibold uppercase tracking-[0.14em] text-[#8a94a0]">Typical shortlist</p>
+          <p className="font-semibold text-[#041e30]">8 colleges · 4 placement-led</p>
+          <p className="text-[#5a6570]">Weighted by your priority slider</p>
         </div>
       }
       results={
         results.length ? (
           <section ref={resultsRef} className={swResultsHighlight}>
-            <h2 className={swSectionTitle}>Results</h2>
-            <p className={swSectionSubtitle}>Recommendations prioritize your chosen criteria.</p>
-            <div className="mt-4 grid gap-4 md:grid-cols-2">
+            <h2 className={swSectionTitle}>Recommended colleges</h2>
+            <p className={swSectionSubtitle}>Ordered by overall fit with your stated preferences.</p>
+            <div className="mt-6 grid gap-4 md:grid-cols-2">
               {results.map((college) => (
                 <article key={college.name} className={swResultCard}>
-                  <h3 className="font-semibold text-slate-900">{college.name}</h3>
-                  <p className="mt-2 text-sm text-slate-600">Average package: {college.avgPackage}</p>
-                  <p className="text-sm text-slate-600">Placement rate: {college.placementRate}</p>
-                  <p className="text-sm text-slate-600">Fees: {college.fees}</p>
+                  <div className="flex items-start justify-between gap-3">
+                    <h3 className="font-sw-display text-lg font-bold text-[#041e30]">
+                      {college.name}
+                    </h3>
+                    <span className="rounded-lg bg-[#fff4ed] px-2.5 py-1 text-[11px] font-bold tabular-nums text-[#c45a0c]">
+                      {college.fit}% fit
+                    </span>
+                  </div>
+                  <dl className="mt-4 grid grid-cols-3 gap-3 text-center">
+                    <div className="rounded-xl bg-[#f8fafc] px-2 py-3">
+                      <dt className="text-[10px] font-semibold uppercase tracking-wide text-[#8a94a0]">Package</dt>
+                      <dd className="mt-1 text-sm font-bold text-[#041e30]">{college.avgPackage}</dd>
+                    </div>
+                    <div className="rounded-xl bg-[#f8fafc] px-2 py-3">
+                      <dt className="text-[10px] font-semibold uppercase tracking-wide text-[#8a94a0]">Placement</dt>
+                      <dd className="mt-1 text-sm font-bold text-[#041e30]">{college.placementRate}</dd>
+                    </div>
+                    <div className="rounded-xl bg-[#f8fafc] px-2 py-3">
+                      <dt className="text-[10px] font-semibold uppercase tracking-wide text-[#8a94a0]">Fees</dt>
+                      <dd className="mt-1 text-sm font-bold text-[#041e30]">{college.fees}</dd>
+                    </div>
+                  </dl>
+                  <div className="mt-4">
+                    <div className={swProgressTrack}>
+                      <div className={swProgressBar} style={{ width: `${college.fit}%` }} />
+                    </div>
+                  </div>
                 </article>
               ))}
             </div>
@@ -87,16 +113,23 @@ export default function CollegeFitTestPage() {
         results.length ? (
           <section className={swInsightsPanel}>
             <h3 className={swSectionTitle}>Next steps</h3>
-            <ul className="mt-3 list-disc space-y-2 pl-5 text-sm text-slate-600">
-              <li>For high placement priority, compare avg package against fee burden ratio.</li>
-              <li>Check campus and city lifestyle fit before finalizing applications.</li>
+            <ul className="mt-4 space-y-2.5 text-sm text-[#5a6570]">
+              <li className="flex gap-2.5">
+                <span className="mt-2 h-1 w-1 shrink-0 rounded-full bg-[#f27921]" aria-hidden />
+                For high placement priority, compare avg package against fee burden ratio.
+              </li>
+              <li className="flex gap-2.5">
+                <span className="mt-2 h-1 w-1 shrink-0 rounded-full bg-[#f27921]" aria-hidden />
+                Check campus and city lifestyle fit before finalizing applications.
+              </li>
             </ul>
           </section>
         ) : null
       }
     >
       <h2 className={swWorkspaceTitle}>Your preferences</h2>
-      <form className="mt-5 grid gap-4 sm:grid-cols-2" onSubmit={onSubmit}>
+      <p className={swSectionSubtitle}>Set budget, campus, city, and how much placements matter.</p>
+      <form className="mt-6 grid gap-5 sm:grid-cols-2" onSubmit={onSubmit} noValidate>
         <label className={swLabel}>
           Fee budget
           <select value={form.fee} onChange={(e) => onChange('fee', e.target.value)} className={swSelect}>
@@ -118,23 +151,33 @@ export default function CollegeFitTestPage() {
         </label>
         <label className={swLabel}>
           City preference
-          <input value={form.city} onChange={(e) => onChange('city', e.target.value)} className={swInput} />
+          <input
+            value={form.city}
+            onChange={(e) => onChange('city', e.target.value)}
+            className={swInput}
+            placeholder="e.g. Chennai"
+          />
           {errors.city ? <span className={swError}>{errors.city}</span> : null}
         </label>
         <label className={swLabel}>
-          Placement priority ({form.placement}%)
+          Placement priority
+          <div className="mt-3 flex items-center justify-between text-xs font-semibold text-[#5a6570]">
+            <span>Flexible</span>
+            <span className="tabular-nums text-[#041e30]">{form.placement}%</span>
+            <span>Critical</span>
+          </div>
           <input
             type="range"
             min="0"
             max="100"
             value={form.placement}
             onChange={(e) => onChange('placement', Number(e.target.value))}
-            className="mt-3 w-full accent-emerald-600"
+            className="mt-2 w-full accent-[#f27921]"
           />
         </label>
         <div className="sm:col-span-2">
           <button type="submit" className={swBtnPrimary}>
-            Process criteria
+            Find matching colleges
           </button>
         </div>
       </form>

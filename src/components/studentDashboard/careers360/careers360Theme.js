@@ -17,10 +17,11 @@ export const C360 = {
 
 /** Shared layout classes for consistent vertical rhythm */
 export const LAYOUT = {
-  container: 'mx-auto max-w-[1140px] px-5 sm:px-6 lg:px-8',
+  /* Wider on laptops/desktops so side gutters don’t feel empty */
+  container: 'mx-auto w-full max-w-[1280px] px-5 sm:px-6 lg:max-w-[1360px] lg:px-8 xl:max-w-[1440px] xl:px-10',
   section: 'border-b border-[#e8eaed] py-12 sm:py-16',
   sectionCompact: 'border-b border-[#e8eaed] py-10 sm:py-12',
-  hubGrid: 'grid gap-10 lg:grid-cols-12 lg:gap-14',
+  hubGrid: 'grid gap-10 lg:grid-cols-12 lg:gap-12 xl:gap-14',
   hubSidebar: 'lg:col-span-4',
   hubContent: 'min-w-0 lg:col-span-8',
   card: 'rounded-xl border border-[#e5e7eb] bg-white p-6',

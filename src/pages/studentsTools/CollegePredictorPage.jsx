@@ -1,80 +1,496 @@
-import { Link } from 'react-router-dom';
-import { LuArrowRight } from 'react-icons/lu';
+import { useMemo, useRef, useState } from 'react';
+import { FiAlertCircle, FiLoader } from 'react-icons/fi';
+import ToolWorkspaceLayout from './components/ToolWorkspaceLayout';
+import { CollegeCard } from '../../components/Counsellor/CollegePredictor';
+import { getPredictedCollegesPublic } from '../../utils/api';
+import { formatPredictorClientError } from '../../utils/collegePredictorErrors';
 import {
-  FiBookOpen,
-  FiZap,
-  FiBarChart2,
-  FiTarget,
-  FiCpu,
-  FiAward,
-  FiActivity,
-  FiTrendingUp,
-  FiFileText,
-  FiGrid,
-} from 'react-icons/fi';
-import { ENTRANCE_EXAMS } from '../../constants/collegePredictorOptions';
+  ENTRANCE_EXAMS,
+  RESERVATION_CATEGORIES,
+  WBJEE_QUOTA_ALL_INDIA,
+  WBJEE_QUOTA_OPTIONS,
+  getEntranceExamMeta,
+  getJeeReservationCategoryCodes,
+  getWbjeeReservationCategoryCode,
+  rankToCutoff,
+} from '../../constants/collegePredictorOptions';
 import {
-  swContainer,
-  swHeroEyebrow,
-  swHubCard,
-  swLinkCta,
-  swPageShell,
-  swPageSubtitle,
-  swPageTitle,
+  INDIAN_STATES_OPTIONS,
+  MHT_CET_STATE_LEVEL_RESERVATION_OPTIONS,
+  mhtCetApiAdmissionCategory,
+  normalizeMhtReservationCodeForApi,
+} from '../../constants/mhtCetOptions';
+import { percentileToMhtCutoffRange } from '../../utils/mhtCetPercentile';
+import {
+  swBtnPrimary,
+  swBtnSecondary,
+  swError,
+  swErrorBox,
+  swLabel,
+  swSelect,
+  swInput,
+  swSectionSubtitle,
+  swSectionTitle,
 } from './components/studentWorkspaceUi';
 
-const EXAM_ICON_MAP = {
-  KCET: { Icon: FiCpu, iconClass: 'bg-sky-50 text-sky-600' },
-  MHT_CET: { Icon: FiActivity, iconClass: 'bg-rose-50 text-rose-600' },
-  KEAM: { Icon: FiAward, iconClass: 'bg-orange-50 text-orange-600' },
-  AP_EAMCET: { Icon: FiBookOpen, iconClass: 'bg-sky-50 text-sky-600' },
-  TS_EAMCET: { Icon: FiFileText, iconClass: 'bg-orange-50 text-orange-600' },
-  TNEA: { Icon: FiTrendingUp, iconClass: 'bg-sky-50 text-sky-600' },
-  JEE: { Icon: FiZap, iconClass: 'bg-rose-50 text-rose-600' },
-  WBJEE: { Icon: FiGrid, iconClass: 'bg-violet-50 text-violet-600' },
+const PAGE_SIZE = 10;
+const RESULT_CARD_ACCENT = 'green';
+
+const ERROR_MESSAGES = {
+  INVALID_ENTRANCE_EXAM_NAME_ENUM:
+    'This exam is not enabled on the predictor service yet. Try another exam or try again later.',
+  INVALID_ADMISSION_CATEGORY_NAME_ENUM: 'Invalid admission category. Please select a valid option.',
+  INVALID_RESERVATION_CATEGORY_CODE: 'Invalid category. Please select a valid option.',
+  INVALID_CUTOFF_RANGE: 'Invalid rank range. Please check your rank.',
+  INVALID_INPUT_FORMAT: 'Please check your inputs and try again.',
+  SERVICE_UNAVAILABLE: 'Predictor service is temporarily unavailable. Please try again later.',
+  UPSTREAM_ERROR: 'The predictor service returned an error. Please try again.',
 };
 
-const DEFAULT_ICON = { Icon: FiBarChart2, iconClass: 'bg-orange-50 text-orange-600' };
+function getErrorMessage(errData, fallbackMessage) {
+  return formatPredictorClientError(ERROR_MESSAGES, errData, fallbackMessage, {
+    preferResponseFirst: true,
+  });
+}
 
-const examCards = ENTRANCE_EXAMS.filter((e) => e.supported !== false).map((exam) => ({
-  ...exam,
-  ...(EXAM_ICON_MAP[exam.value] || DEFAULT_ICON),
-}));
+function categoryOptionsForExam(examMeta) {
+  if (!examMeta) return RESERVATION_CATEGORIES;
+  if (examMeta.value === 'MHT_CET') return MHT_CET_STATE_LEVEL_RESERVATION_OPTIONS;
+  if (Array.isArray(examMeta.reservationOptions) && examMeta.reservationOptions.length) {
+    return examMeta.reservationOptions;
+  }
+  return RESERVATION_CATEGORIES;
+}
+
+function admissionOptionsForExam(examMeta) {
+  if (!examMeta?.admissionCategories?.length) return [];
+  if (examMeta.hideAdmissionField) return [];
+  return examMeta.admissionCategories;
+}
+
+function defaultCategory(examMeta) {
+  return examMeta?.defaultReservationCode || categoryOptionsForExam(examMeta)[0]?.value || '';
+}
+
+function defaultAdmission(examMeta) {
+  return examMeta?.admissionCategories?.[0]?.value || 'DEFAULT';
+}
+
+function SelectField({ label, value, onChange, options, placeholder, error, disabled }) {
+  return (
+    <label className={swLabel}>
+      {label}
+      <select
+        value={value}
+        onChange={(e) => onChange(e.target.value)}
+        disabled={disabled}
+        className={`${swSelect} ${!value ? 'text-[#9aa3ae]' : ''}`}
+      >
+        <option value="">{placeholder}</option>
+        {options.map((o) => (
+          <option key={o.value} value={o.value}>
+            {o.label}
+          </option>
+        ))}
+      </select>
+      {error ? <span className={swError}>{error}</span> : null}
+    </label>
+  );
+}
 
 export default function CollegePredictorPage() {
-  return (
-    <main className={swPageShell}>
-      <div className={swContainer}>
-        <header className="mb-8">
-          <p className={swHeroEyebrow}>College predictors</p>
-          <h1 className={`mt-2 ${swPageTitle}`}>Choose your exam</h1>
-          <p className={swPageSubtitle}>
-            Select an entrance exam, enter your profile, verify your phone, then see college matches.
-          </p>
-        </header>
+  const [exam, setExam] = useState('JEE');
+  const examMeta = useMemo(() => getEntranceExamMeta(exam), [exam]);
+  const catOptions = useMemo(() => categoryOptionsForExam(examMeta), [examMeta]);
+  const admOptions = useMemo(() => admissionOptionsForExam(examMeta), [examMeta]);
+  const isMht = exam === 'MHT_CET';
+  const isJee = exam === 'JEE';
+  const isWbjee = exam === 'WBJEE';
 
-        <section className="grid grid-cols-1 gap-5 sm:grid-cols-2 lg:grid-cols-3">
-          {examCards.map((exam) => {
-            const ExamIcon = exam.Icon;
-            return (
-              <Link
-                key={exam.value}
-                to={`/students/college-predictor/${exam.value}`}
-                className={swHubCard}
-              >
-                <div className={`mb-4 flex h-11 w-11 items-center justify-center rounded-xl ${exam.iconClass}`}>
-                  <ExamIcon className="h-5 w-5" strokeWidth={2.25} aria-hidden />
-                </div>
-                <h3 className="text-lg font-bold text-[#333]">{exam.label}</h3>
-                <p className="mt-2 flex-1 text-sm leading-relaxed text-[#666]">{exam.description}</p>
-                <span className={swLinkCta}>
-                  Predict now <LuArrowRight className="h-4 w-4" aria-hidden />
-                </span>
-              </Link>
-            );
-          })}
-        </section>
+  const [form, setForm] = useState(() => ({
+    rank: '',
+    percentile: '',
+    category: 'OPEN',
+    admission: 'DEFAULT',
+    state: '',
+    gender: 'male',
+    quota: WBJEE_QUOTA_ALL_INDIA,
+  }));
+  const [errors, setErrors] = useState({});
+  const [apiError, setApiError] = useState(null);
+  const [loading, setLoading] = useState(false);
+  const [loadingMore, setLoadingMore] = useState(false);
+  const [colleges, setColleges] = useState([]);
+  const [totalCount, setTotalCount] = useState(0);
+  const [offset, setOffset] = useState(0);
+  const [hasSearched, setHasSearched] = useState(false);
+  const resultsRef = useRef(null);
+
+  const onExamChange = (nextExam) => {
+    const meta = getEntranceExamMeta(nextExam);
+    setExam(nextExam);
+    setForm((prev) => ({
+      ...prev,
+      category: defaultCategory(meta),
+      admission: defaultAdmission(meta),
+      rank: '',
+      percentile: '',
+    }));
+    setErrors({});
+    setApiError(null);
+    setColleges([]);
+    setTotalCount(0);
+    setHasSearched(false);
+  };
+
+  const onChange = (key, value) => setForm((prev) => ({ ...prev, [key]: value }));
+
+  const validate = () => {
+    const next = {};
+    if (!exam) next.exam = 'Select an exam.';
+    if (!form.category) next.category = 'Category is required.';
+    if (!form.state) next.state = 'Home state is required.';
+    if (isMht) {
+      const p = Number(form.percentile);
+      if (!form.percentile || Number.isNaN(p) || p <= 0 || p > 100) {
+        next.percentile = 'Enter a valid percentile (0–100).';
+      }
+    } else if (isWbjee) {
+      const r = Number(form.rank);
+      if (!form.rank || Number.isNaN(r) || r < 1 || !Number.isInteger(r)) {
+        next.rank = 'Enter a valid WBJEE / JEE Main rank.';
+      }
+    } else {
+      const r = Number(form.rank);
+      if (!form.rank || Number.isNaN(r) || r < 1 || !Number.isInteger(r)) {
+        next.rank = 'Enter a valid rank.';
+      }
+    }
+    if (isJee && !form.gender) next.gender = 'Select gender.';
+    if (admOptions.length && !form.admission) next.admission = 'Select admission category.';
+    setErrors(next);
+    return Object.keys(next).length === 0;
+  };
+
+  const buildPayload = (pageOffset) => {
+    const apiExam = examMeta?.apiValue ?? exam;
+    const admission = form.admission || defaultAdmission(examMeta);
+
+    if (isJee) {
+      const apiExamMain = examMeta?.jeeMainApiExam || 'JEE_MAINS_2024';
+      const [cutoff_from, cutoff_to] = rankToCutoff(Number(form.rank));
+      const reservation_category_codes = getJeeReservationCategoryCodes(
+        apiExamMain,
+        form.gender,
+        form.category
+      );
+      return {
+        offset: pageOffset,
+        limit: PAGE_SIZE,
+        exam: apiExamMain,
+        entrance_exam_name_enum: apiExamMain,
+        admission_category_name_enum: 'DEFAULT',
+        cutoff_from,
+        cutoff_to,
+        reservation_category_codes,
+        branch_codes: [],
+        districts: [],
+        sort_order: 'ASC',
+      };
+    }
+
+    if (isMht) {
+      const [cutoff_from, cutoff_to] = percentileToMhtCutoffRange(Number(form.percentile));
+      const code = normalizeMhtReservationCodeForApi('STATE_LEVEL', form.category);
+      return {
+        offset: pageOffset,
+        limit: PAGE_SIZE,
+        exam: apiExam,
+        entrance_exam_name_enum: apiExam,
+        admission_category_name_enum: mhtCetApiAdmissionCategory('STATE_LEVEL'),
+        cutoff_from,
+        cutoff_to,
+        reservation_category_codes: code ? [code] : [form.category],
+        branch_codes: [],
+        districts: [],
+        sort_order: 'ASC',
+      };
+    }
+
+    if (isWbjee) {
+      const apiExamWb = examMeta?.wbjeeApiExam || 'WBJEE_2024';
+      const [cutoff_from, cutoff_to] = rankToCutoff(Number(form.rank));
+      const resCode = getWbjeeReservationCategoryCode(form.category, form.quota);
+      return {
+        offset: pageOffset,
+        limit: PAGE_SIZE,
+        exam: apiExamWb,
+        entrance_exam_name_enum: apiExamWb,
+        admission_category_name_enum: 'DEFAULT',
+        cutoff_from,
+        cutoff_to,
+        reservation_category_codes: resCode ? [resCode] : [form.category],
+        branch_codes: [],
+        districts: [],
+        sort_order: 'ASC',
+        quota: form.quota,
+      };
+    }
+
+    const [cutoff_from, cutoff_to] = rankToCutoff(Number(form.rank));
+    return {
+      offset: pageOffset,
+      limit: PAGE_SIZE,
+      exam: apiExam,
+      entrance_exam_name_enum: apiExam,
+      admission_category_name_enum: admission,
+      cutoff_from,
+      cutoff_to,
+      reservation_category_codes: [form.category],
+      branch_codes: [],
+      districts: [],
+      sort_order: 'ASC',
+    };
+  };
+
+  const fetchColleges = async (pageOffset = 0, append = false) => {
+    append ? setLoadingMore(true) : setLoading(true);
+    setApiError(null);
+
+    const payload = buildPayload(pageOffset);
+    const res = await getPredictedCollegesPublic(payload);
+
+    append ? setLoadingMore(false) : setLoading(false);
+    setHasSearched(true);
+
+    if (!res.success) {
+      setApiError(getErrorMessage(res.data || {}, res.message));
+      if (!append) {
+        setColleges([]);
+        setTotalCount(0);
+      }
+      return;
+    }
+
+    const data = res.data || {};
+    const list = data.colleges || [];
+    setOffset(pageOffset);
+    setTotalCount(Number(data.total_no_of_colleges) || list.length);
+    setColleges((prev) => (append ? [...prev, ...list] : list));
+
+    if (!append) {
+      setTimeout(() => resultsRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' }), 80);
+    }
+  };
+
+  const onSubmit = async (event) => {
+    event.preventDefault();
+    if (!validate()) return;
+    setColleges([]);
+    setOffset(0);
+    await fetchColleges(0, false);
+  };
+
+  const onLoadMore = async () => {
+    const nextOffset = offset + PAGE_SIZE;
+    await fetchColleges(nextOffset, true);
+  };
+
+  const rankLabel = isMht
+    ? 'Expected percentile'
+    : examMeta?.rankFieldLabel || 'Expected rank';
+  const categoryLabel = examMeta?.reservationFieldLabel || 'Category / caste group';
+  const admissionLabel = examMeta?.admissionFieldLabel || 'Counselling / region';
+
+  return (
+    <ToolWorkspaceLayout
+      title="College Predictor"
+      subtitle="Get precise college predictions powered by multi-year cut-off trends"
+      howItWorks={[
+        'Your rank and category are compared with historical opening and closing ranks.',
+        'Home state and counselling filters narrow the college pool to relevant options.',
+        'Each match is tagged using estimated admission probability from live cutoffs.',
+      ]}
+      results={
+        hasSearched ? (
+          <section ref={resultsRef} tabIndex={-1} className="space-y-5">
+            <div>
+              <h2 className={swSectionTitle}>Predicted colleges</h2>
+              <p className={swSectionSubtitle}>
+                {loading
+                  ? 'Fetching matches…'
+                  : totalCount > 0
+                    ? `Showing ${colleges.length} of ${totalCount} colleges for ${examMeta?.label || exam}.`
+                    : 'No colleges matched these filters. Try adjusting rank or category.'}
+              </p>
+            </div>
+
+            {apiError ? (
+              <div className={`${swErrorBox} flex items-start gap-2`}>
+                <FiAlertCircle className="mt-0.5 h-4 w-4 shrink-0" aria-hidden />
+                <span>{apiError}</span>
+              </div>
+            ) : null}
+
+            <div className="space-y-4">
+              {colleges.map((college, index) => (
+                <CollegeCard
+                  key={college.college_id || `${college.college_name}-${index}`}
+                  college={college}
+                  accentKey={RESULT_CARD_ACCENT}
+                  index={index + 1}
+                />
+              ))}
+            </div>
+
+            {!loading && colleges.length > 0 && colleges.length < totalCount ? (
+              <div className="flex justify-center pt-2">
+                <button
+                  type="button"
+                  className={swBtnSecondary}
+                  onClick={onLoadMore}
+                  disabled={loadingMore}
+                >
+                  {loadingMore ? (
+                    <>
+                      <FiLoader className="h-4 w-4 animate-spin" aria-hidden />
+                      Loading…
+                    </>
+                  ) : (
+                    'Load more colleges'
+                  )}
+                </button>
+              </div>
+            ) : null}
+          </section>
+        ) : null
+      }
+    >
+      <div>
+        <h2 className="text-lg font-bold text-[#111827] sm:text-xl">Enter exam details</h2>
+        <p className="mt-1 text-sm text-[#6b7280]">
+          Get personalized college recommendations in seconds!
+        </p>
       </div>
-    </main>
+
+      <form className="mt-6 space-y-4" onSubmit={onSubmit} noValidate>
+        <SelectField
+          label="Select exam / counselling"
+          value={exam}
+          onChange={onExamChange}
+          options={ENTRANCE_EXAMS.filter((e) => e.supported !== false).map((e) => ({
+            value: e.value,
+            label: e.label,
+          }))}
+          placeholder="Select exam"
+          error={errors.exam}
+        />
+
+        {admOptions.length ? (
+          <SelectField
+            label={admissionLabel}
+            value={form.admission}
+            onChange={(v) => onChange('admission', v)}
+            options={admOptions}
+            placeholder={`Select ${admissionLabel.toLowerCase()}`}
+            error={errors.admission}
+          />
+        ) : null}
+
+        <SelectField
+          label="Home state"
+          value={form.state}
+          onChange={(v) => onChange('state', v)}
+          options={INDIAN_STATES_OPTIONS}
+          placeholder="Select your home state"
+          error={errors.state}
+        />
+
+        {isMht ? (
+          <label className={swLabel}>
+            {rankLabel}
+            <input
+              type="number"
+              inputMode="decimal"
+              step="0.01"
+              placeholder="e.g. 92.5"
+              value={form.percentile}
+              onChange={(e) => onChange('percentile', e.target.value)}
+              className={swInput}
+            />
+            {errors.percentile ? <span className={swError}>{errors.percentile}</span> : null}
+          </label>
+        ) : (
+          <label className={swLabel}>
+            {rankLabel}
+            <input
+              type="number"
+              inputMode="numeric"
+              placeholder="e.g. 12430"
+              value={form.rank}
+              onChange={(e) => onChange('rank', e.target.value)}
+              className={swInput}
+            />
+            {errors.rank ? <span className={swError}>{errors.rank}</span> : null}
+          </label>
+        )}
+
+        <SelectField
+          label={categoryLabel}
+          value={form.category}
+          onChange={(v) => onChange('category', v)}
+          options={catOptions}
+          placeholder="Select category"
+          error={errors.category}
+        />
+
+        {(isJee || isWbjee) && (
+          <div>
+            <p className={`${swLabel} mb-2`}>Gender</p>
+            <div className="grid grid-cols-2 gap-2 rounded-xl border border-[#d0d7e1] bg-white p-1">
+              {['female', 'male'].map((g) => {
+                const active = form.gender === g;
+                return (
+                  <button
+                    key={g}
+                    type="button"
+                    onClick={() => onChange('gender', g)}
+                    className={`rounded-lg py-2.5 text-sm font-semibold capitalize transition ${
+                      active
+                        ? 'bg-[#2563eb] text-white shadow-sm'
+                        : 'text-[#5a6570] hover:bg-[#f3f5f8]'
+                    }`}
+                  >
+                    {g}
+                  </button>
+                );
+              })}
+            </div>
+            {errors.gender ? <span className={swError}>{errors.gender}</span> : null}
+          </div>
+        )}
+
+        {isWbjee ? (
+          <SelectField
+            label="Quota"
+            value={form.quota}
+            onChange={(v) => onChange('quota', v)}
+            options={WBJEE_QUOTA_OPTIONS}
+            placeholder="Select quota"
+          />
+        ) : null}
+
+        <button type="submit" className={`${swBtnPrimary} w-full`} disabled={loading}>
+          {loading ? (
+            <>
+              <FiLoader className="h-4 w-4 animate-spin" aria-hidden />
+              Predicting…
+            </>
+          ) : (
+            'Predict My Colleges'
+          )}
+        </button>
+      </form>
+    </ToolWorkspaceLayout>
   );
 }

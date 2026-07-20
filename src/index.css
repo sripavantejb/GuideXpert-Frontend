@@ -62,13 +62,14 @@
 /* Homepage hero gradient – single source of truth for landing and assessment pages */
 :root {
   --gradient-home-hero: linear-gradient(to bottom right, #e8f0fa 0%, #eef4fa 25%, #f2f4f8 50%, #f5f4f2 75%, #f7f4eb 100%);
-  /* Student tool detail pages – pale lime band + dotted pale blue (match dashboard tool grid family) */
-  --gx-student-tool-lime: #f9fff2;
-  --gx-student-tool-blue: #f0f5ff;
-  --gx-student-tool-dot: #d0d9f0;
-  --gx-student-tool-dot-lime: #c8dcc0;
-  /* One neutral dot for split-page shell (reads on mint + blue) */
-  --gx-student-tool-page-dot: rgba(15, 23, 42, 0.055);
+  /* Student tool workspace – GuideXpert navy mist + orange accent */
+  --gx-student-tool-lime: #f4f8fc;
+  --gx-student-tool-blue: #eaf0f7;
+  --gx-student-tool-dot: rgba(4, 30, 48, 0.07);
+  --gx-student-tool-dot-lime: rgba(4, 30, 48, 0.05);
+  --gx-student-tool-page-dot: rgba(4, 30, 48, 0.06);
+  --font-sw-display: 'Sora', 'Satoshi', system-ui, sans-serif;
+  --font-sw-body: 'Source Sans 3', 'Satoshi', system-ui, sans-serif;
 }
 
 .student-tool-surface-lime {
@@ -78,39 +79,116 @@
 .student-tool-surface-lime-dots {
   background-color: var(--gx-student-tool-lime);
   background-image: radial-gradient(var(--gx-student-tool-dot-lime) 1px, transparent 1px);
-  background-size: 20px 20px;
+  background-size: 22px 22px;
 }
 
 .student-tool-surface-blue-dots {
   background-color: var(--gx-student-tool-blue);
   background-image: radial-gradient(var(--gx-student-tool-dot) 1px, transparent 1px);
-  background-size: 20px 20px;
+  background-size: 22px 22px;
 }
 
 /**
- * Student tool / hub pages: mint top + pale blue bottom with same dot grid.
- * Mobile: scroll attachment avoids janky fixed backgrounds on iOS/Android.
- * md+: fixed keeps the split aligned to the viewport.
+ * Student tool / hub pages: soft GuideXpert blue atmosphere + fine grid.
  */
 .student-tool-page-shell {
-  background-color: var(--gx-student-tool-blue);
+  background-color: #eef3f8;
   background-image:
-    radial-gradient(var(--gx-student-tool-page-dot) 1px, transparent 1px),
-    linear-gradient(
-      to bottom,
-      var(--gx-student-tool-lime) 0%,
-      var(--gx-student-tool-lime) 50%,
-      var(--gx-student-tool-blue) 50%,
-      var(--gx-student-tool-blue) 100%
-    );
-  background-size: 20px 20px, 100% 100%;
-  background-repeat: repeat, no-repeat;
-  background-attachment: scroll, scroll;
+    radial-gradient(ellipse 80% 50% at 10% -10%, rgba(242, 121, 33, 0.08), transparent 55%),
+    radial-gradient(ellipse 70% 45% at 95% 5%, rgba(4, 30, 48, 0.08), transparent 50%),
+    radial-gradient(var(--gx-student-tool-page-dot) 1px, transparent 1px);
+  background-size: auto, auto, 22px 22px;
+  background-repeat: no-repeat, no-repeat, repeat;
+  background-attachment: scroll, scroll, scroll;
 }
 
 @media (min-width: 768px) {
   .student-tool-page-shell {
-    background-attachment: fixed, fixed;
+    background-attachment: fixed, fixed, fixed;
+  }
+}
+
+.sw-tool-hero-band {
+  background:
+    linear-gradient(180deg, rgba(255, 255, 255, 0.72) 0%, rgba(238, 243, 248, 0.35) 100%),
+    radial-gradient(ellipse 90% 80% at 0% 0%, rgba(242, 121, 33, 0.07), transparent 55%);
+}
+
+/* Careers360-style dark predictor hero (ToolWorkspaceLayout / hubs) */
+.sw-c360-tool-hero {
+  background:
+    linear-gradient(
+      115deg,
+      #1a1240 0%,
+      #1c2858 28%,
+      #163a5c 52%,
+      #0f4550 78%,
+      #0c3a42 100%
+    );
+}
+
+.sw-preview-panel {
+  animation: sw-panel-in 0.55s ease-out both;
+}
+
+.sw-panel {
+  backdrop-filter: blur(6px);
+}
+
+.sw-results-glow {
+  box-shadow: 0 16px 40px -28px rgba(242, 121, 33, 0.35);
+}
+
+.sw-fade-up {
+  animation: sw-fade-up 0.55s cubic-bezier(0.22, 1, 0.36, 1) both;
+}
+
+.font-sw-display {
+  font-family: var(--font-sw-display);
+}
+
+.font-sw-body {
+  font-family: var(--font-sw-body);
+}
+
+.sw-fade-up-delay-1 {
+  animation-delay: 0.06s;
+}
+
+.sw-fade-up-delay-2 {
+  animation-delay: 0.12s;
+}
+
+.sw-fade-up-delay-3 {
+  animation-delay: 0.18s;
+}
+
+@keyframes sw-fade-up {
+  from {
+    opacity: 0;
+    transform: translateY(14px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes sw-panel-in {
+  from {
+    opacity: 0;
+    transform: translateY(10px) scale(0.98);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .sw-fade-up,
+  .sw-preview-panel {
+    animation: none;
   }
 }
 

@@ -1,80 +1,41 @@
-import { Link } from 'react-router-dom';
-import { LuArrowRight } from 'react-icons/lu';
-import {
-  FiBookOpen,
-  FiZap,
-  FiBarChart2,
-  FiTarget,
-  FiCpu,
-  FiAward,
-  FiActivity,
-  FiTrendingUp,
-  FiFileText,
-  FiGrid,
-} from 'react-icons/fi';
+import { FiBookOpen, FiZap, FiBarChart2, FiTarget, FiCpu, FiAward, FiActivity, FiTrendingUp, FiFileText, FiGrid } from 'react-icons/fi';
 import { getRankPredictorExams } from '../../utils/rankPredictor';
-import {
-  swContainer,
-  swHeroEyebrow,
-  swHubCard,
-  swLinkCta,
-  swPageShell,
-  swPageSubtitle,
-  swPageTitle,
-} from './components/studentWorkspaceUi';
+import HubPageLayout from './components/HubPageLayout';
 
 const EXAM_ICON_MAP = {
-  apeamcet: { Icon: FiBookOpen, iconClass: 'bg-sky-50 text-sky-600' },
-  jeeadvanced: { Icon: FiZap, iconClass: 'bg-rose-50 text-rose-600' },
-  jeemainpercentile: { Icon: FiBarChart2, iconClass: 'bg-orange-50 text-orange-600' },
-  jeemainmarks: { Icon: FiTarget, iconClass: 'bg-rose-50 text-rose-600' },
-  kcet: { Icon: FiCpu, iconClass: 'bg-sky-50 text-sky-600' },
-  keam: { Icon: FiAward, iconClass: 'bg-orange-50 text-orange-600' },
-  mhcet: { Icon: FiActivity, iconClass: 'bg-rose-50 text-rose-600' },
-  tnea: { Icon: FiTrendingUp, iconClass: 'bg-sky-50 text-sky-600' },
-  tseamcet: { Icon: FiFileText, iconClass: 'bg-orange-50 text-orange-600' },
-  wbjee: { Icon: FiGrid, iconClass: 'bg-violet-50 text-violet-600' },
+  apeamcet: { Icon: FiBookOpen, iconClass: 'bg-[#e8f1f8] text-[#0b3a5c]' },
+  jeeadvanced: { Icon: FiZap, iconClass: 'bg-[#fff4ed] text-[#f27921]' },
+  jeemainpercentile: { Icon: FiBarChart2, iconClass: 'bg-[#041e30] text-white' },
+  jeemainmarks: { Icon: FiTarget, iconClass: 'bg-[#fff4ed] text-[#e06810]' },
+  kcet: { Icon: FiCpu, iconClass: 'bg-[#eef2f7] text-[#041e30]' },
+  keam: { Icon: FiAward, iconClass: 'bg-[#fff8ed] text-[#c45a0c]' },
+  mhcet: { Icon: FiActivity, iconClass: 'bg-[#fff4ed] text-[#f27921]' },
+  tnea: { Icon: FiTrendingUp, iconClass: 'bg-[#e8f1f8] text-[#0b3a5c]' },
+  tseamcet: { Icon: FiFileText, iconClass: 'bg-[#fff8ed] text-[#c45a0c]' },
+  wbjee: { Icon: FiGrid, iconClass: 'bg-[#eef2f7] text-[#041e30]' },
 };
 
-const DEFAULT_ICON = { Icon: FiBarChart2, iconClass: 'bg-orange-50 text-orange-600' };
-
-const examCards = getRankPredictorExams().map((exam) => ({
-  ...exam,
-  ...(EXAM_ICON_MAP[exam.id] || DEFAULT_ICON),
-}));
+const DEFAULT_ICON = { Icon: FiBarChart2, iconClass: 'bg-[#fff4ed] text-[#f27921]' };
 
 export default function RankPredictorPage() {
-  return (
-    <main className={swPageShell}>
-      <div className={swContainer}>
-        <header className="mb-8">
-          <p className={swHeroEyebrow}>Rank predictors</p>
-          <h1 className={`mt-2 ${swPageTitle}`}>Choose your exam</h1>
-          <p className={swPageSubtitle}>Select an exam to estimate rank from your marks.</p>
-        </header>
+  const cards = getRankPredictorExams().map((exam) => {
+    const meta = EXAM_ICON_MAP[exam.id] || DEFAULT_ICON;
+    return {
+      to: `/students/rank-predictor/${exam.id}`,
+      title: exam.name,
+      description: exam.description,
+      icon: meta.Icon,
+      iconClass: meta.iconClass,
+      cta: 'Predict now',
+    };
+  });
 
-        <section className="grid grid-cols-1 gap-5 sm:grid-cols-2 lg:grid-cols-3">
-          {examCards.map((exam) => {
-            const ExamIcon = exam.Icon;
-            return (
-              <Link
-                key={exam.id}
-                to={`/students/rank-predictor/${exam.id}`}
-                className={swHubCard}
-              >
-                <div className={`mb-4 flex h-11 w-11 items-center justify-center rounded-xl ${exam.iconClass}`}>
-                  <ExamIcon className="h-5 w-5" strokeWidth={2.25} aria-hidden />
-                </div>
-                <h3 className="text-lg font-bold text-[#333]">{exam.name}</h3>
-                <p className="mt-2 flex-1 text-sm leading-relaxed text-[#666]">{exam.description}</p>
-                <span className={swLinkCta}>
-                  Predict now <LuArrowRight className="h-4 w-4" aria-hidden />
-                </span>
-              </Link>
-            );
-          })}
-        </section>
-      </div>
-    </main>
+  return (
+    <HubPageLayout
+      eyebrow="Rank predictors"
+      title="Choose your exam"
+      subtitle="Select an entrance exam to estimate rank from your marks — built on historical score patterns."
+      cards={cards}
+    />
   );
 }

@@ -3,11 +3,11 @@ import { FiColumns } from 'react-icons/fi';
 import ToolWorkspaceLayout from './components/ToolWorkspaceLayout';
 import {
   swBtnPrimary,
-  swBtnTag,
   swError,
   swInsightsPanel,
   swInput,
   swLabel,
+  swMetricBetter,
   swPreviewLabel,
   swProgressBar,
   swProgressTrack,
@@ -21,7 +21,7 @@ import {
 function VsBadge({ className = '' }) {
   return (
     <span
-      className={`inline-flex shrink-0 items-center justify-center rounded-full bg-emerald-100 px-3 py-1 text-xs font-semibold uppercase tracking-wider text-emerald-800 ${className}`}
+      className={`inline-flex shrink-0 items-center justify-center rounded-full bg-[#041e30] px-3.5 py-1.5 text-[11px] font-bold uppercase tracking-[0.16em] text-white ${className}`}
     >
       VS
     </span>
@@ -87,16 +87,16 @@ export default function CollegeComparisonPage() {
           <div className="flex items-center justify-between gap-3">
             <div>
               <p className={swPreviewLabel}>Comparison mode</p>
-              <p className="mt-0.5 font-semibold text-slate-900">VS matrix</p>
+              <p className="mt-0.5 font-semibold text-[#041e30]">VS matrix</p>
             </div>
-            <span className="flex h-9 w-9 items-center justify-center rounded-lg bg-indigo-50 text-indigo-600">
+            <span className="flex h-10 w-10 items-center justify-center rounded-xl bg-[#041e30] text-white">
               <FiColumns className="h-4 w-4" aria-hidden />
             </span>
           </div>
           <div>
-            <div className="flex justify-between text-xs text-slate-500">
+            <div className="flex justify-between text-xs text-[#5a6570]">
               <span>Package delta (demo)</span>
-              <span className="text-slate-700">A leads</span>
+              <span className="font-semibold text-[#041e30]">A leads</span>
             </div>
             <div className={`mt-1.5 ${swProgressTrack}`}>
               <div className={swProgressBar} style={{ width: '62%' }} />
@@ -109,13 +109,19 @@ export default function CollegeComparisonPage() {
           <section ref={resultsRef} tabIndex={-1} className={swResultsHighlight}>
             <h2 className={swSectionTitle}>Comparison results</h2>
             <p className={swSectionSubtitle}>Highlighted values show the stronger option for each metric.</p>
-            <div className={`mt-5 ${swResultCard}`}>
-              <div className="mb-4 flex flex-wrap items-center justify-center gap-3 text-center">
-                <span className="max-w-48 truncate font-medium text-slate-900" title={result.institutionA}>
+            <div className={`mt-6 ${swResultCard}`}>
+              <div className="mb-5 flex flex-wrap items-center justify-center gap-3 text-center">
+                <span
+                  className="max-w-48 truncate font-sw-display text-base font-bold text-[#041e30]"
+                  title={result.institutionA}
+                >
                   {result.institutionA}
                 </span>
                 <VsBadge />
-                <span className="max-w-48 truncate font-medium text-slate-900" title={result.institutionB}>
+                <span
+                  className="max-w-48 truncate font-sw-display text-base font-bold text-[#041e30]"
+                  title={result.institutionB}
+                >
                   {result.institutionB}
                 </span>
               </div>
@@ -123,30 +129,38 @@ export default function CollegeComparisonPage() {
               <div className="hidden overflow-x-auto md:block">
                 <table className="w-full text-sm">
                   <thead>
-                    <tr className="border-b border-slate-200 text-left">
-                      <th className="px-3 py-2.5 text-xs font-medium uppercase tracking-wider text-slate-400">Metric</th>
-                      <th className="max-w-40 px-3 py-2.5 text-xs font-medium uppercase tracking-wider text-slate-400" title={result.institutionA}>
+                    <tr className="border-b border-[#e4e9f0] text-left">
+                      <th className="px-3 py-3 text-[11px] font-bold uppercase tracking-[0.14em] text-[#8a94a0]">
+                        Metric
+                      </th>
+                      <th
+                        className="max-w-40 px-3 py-3 text-[11px] font-bold uppercase tracking-[0.14em] text-[#8a94a0]"
+                        title={result.institutionA}
+                      >
                         {truncateLabel(result.institutionA, 18)}
                       </th>
-                      <th className="max-w-40 px-3 py-2.5 text-xs font-medium uppercase tracking-wider text-slate-400" title={result.institutionB}>
+                      <th
+                        className="max-w-40 px-3 py-3 text-[11px] font-bold uppercase tracking-[0.14em] text-[#8a94a0]"
+                        title={result.institutionB}
+                      >
                         {truncateLabel(result.institutionB, 18)}
                       </th>
                     </tr>
                   </thead>
                   <tbody>
                     {result.rows.map((row) => (
-                      <tr key={row.metric} className="border-b border-slate-100">
-                        <td className="px-3 py-2.5 font-medium text-slate-900">{row.metric}</td>
-                        <td className={`px-3 py-2.5 ${row.better === 'a' ? 'bg-emerald-50 font-semibold text-emerald-800' : 'text-slate-600'}`}>
+                      <tr key={row.metric} className="border-b border-[#f0f3f7]">
+                        <td className="px-3 py-3.5 font-semibold text-[#041e30]">{row.metric}</td>
+                        <td className={`px-3 py-3.5 ${row.better === 'a' ? 'bg-[#fff4ed] font-semibold text-[#c45a0c]' : 'text-[#5a6570]'}`}>
                           <span className="inline-flex flex-wrap items-center gap-1.5">
                             {row.aValue}
-                            {row.better === 'a' ? <span className={swBtnTag}>Better</span> : null}
+                            {row.better === 'a' ? <span className={swMetricBetter}>Better</span> : null}
                           </span>
                         </td>
-                        <td className={`px-3 py-2.5 ${row.better === 'b' ? 'bg-emerald-50 font-semibold text-emerald-800' : 'text-slate-600'}`}>
+                        <td className={`px-3 py-3.5 ${row.better === 'b' ? 'bg-[#fff4ed] font-semibold text-[#c45a0c]' : 'text-[#5a6570]'}`}>
                           <span className="inline-flex flex-wrap items-center gap-1.5">
                             {row.bValue}
-                            {row.better === 'b' ? <span className={swBtnTag}>Better</span> : null}
+                            {row.better === 'b' ? <span className={swMetricBetter}>Better</span> : null}
                           </span>
                         </td>
                       </tr>
@@ -157,16 +171,24 @@ export default function CollegeComparisonPage() {
 
               <ul className="space-y-3 md:hidden" aria-label="Comparison by metric">
                 {result.rows.map((row) => (
-                  <li key={row.metric} className="rounded-xl bg-slate-50 p-3">
-                    <p className="text-xs font-medium uppercase tracking-wider text-slate-400">{row.metric}</p>
-                    <div className="mt-2 flex items-center justify-between gap-2">
-                      <div className={`min-w-0 flex-1 rounded-lg px-2 py-1.5 text-center text-sm ${row.better === 'a' ? 'bg-emerald-50 font-semibold' : 'bg-white'}`}>
-                        <span className="block text-[10px] uppercase text-slate-400">A</span>
+                  <li key={row.metric} className="rounded-xl bg-[#f8fafc] p-3.5">
+                    <p className="text-[11px] font-bold uppercase tracking-[0.14em] text-[#8a94a0]">{row.metric}</p>
+                    <div className="mt-2.5 flex items-center justify-between gap-2">
+                      <div
+                        className={`min-w-0 flex-1 rounded-xl px-2 py-2 text-center text-sm ${
+                          row.better === 'a' ? 'bg-[#fff4ed] font-semibold text-[#c45a0c]' : 'bg-white'
+                        }`}
+                      >
+                        <span className="block text-[10px] uppercase text-[#8a94a0]">A</span>
                         <span className="tabular-nums">{row.aValue}</span>
                       </div>
                       <VsBadge className="scale-90" />
-                      <div className={`min-w-0 flex-1 rounded-lg px-2 py-1.5 text-center text-sm ${row.better === 'b' ? 'bg-emerald-50 font-semibold' : 'bg-white'}`}>
-                        <span className="block text-[10px] uppercase text-slate-400">B</span>
+                      <div
+                        className={`min-w-0 flex-1 rounded-xl px-2 py-2 text-center text-sm ${
+                          row.better === 'b' ? 'bg-[#fff4ed] font-semibold text-[#c45a0c]' : 'bg-white'
+                        }`}
+                      >
+                        <span className="block text-[10px] uppercase text-[#8a94a0]">B</span>
                         <span className="tabular-nums">{row.bValue}</span>
                       </div>
                     </div>
@@ -181,9 +203,15 @@ export default function CollegeComparisonPage() {
         result ? (
           <section className={swInsightsPanel}>
             <h3 className={swSectionTitle}>Next steps</h3>
-            <ul className="mt-3 space-y-2 text-sm text-slate-600">
-              <li>If budget is tight, prioritize the lower-fee option unless the package gap is large.</li>
-              <li>Use this matrix together with branch preference and campus fit for your final choice.</li>
+            <ul className="mt-4 space-y-2.5 text-sm text-[#5a6570]">
+              <li className="flex gap-2.5">
+                <span className="mt-2 h-1 w-1 shrink-0 rounded-full bg-[#f27921]" aria-hidden />
+                If budget is tight, prioritize the lower-fee option unless the package gap is large.
+              </li>
+              <li className="flex gap-2.5">
+                <span className="mt-2 h-1 w-1 shrink-0 rounded-full bg-[#f27921]" aria-hidden />
+                Use this matrix with branch preference and campus fit for your final choice.
+              </li>
             </ul>
           </section>
         ) : null
