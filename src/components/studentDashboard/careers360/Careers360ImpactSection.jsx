@@ -5,6 +5,12 @@ import { OUTCOME_IMAGES } from './studentWorkspaceImages';
 import { LAYOUT } from './careers360Theme';
 import { STUDENT_OUTCOMES } from '../landing/landingPageData';
 import CollegeCampusImage from '../landing/CollegeCampusImage';
+import {
+  ImpactAccentVector,
+  SectionDecorDots,
+} from './SectionIllustrations';
+import PixarLottie from './PixarLottie';
+import { STUDENT_LOTTIES } from './studentsAnimations';
 
 export default function Careers360ImpactSection() {
   const [index, setIndex] = useState(0);
@@ -19,11 +25,22 @@ export default function Careers360ImpactSection() {
   const outcomeImage = OUTCOME_IMAGES[outcome.id];
 
   return (
-    <section className={`${LAYOUT.section} bg-[#f5f7fa]`}>
+    <section className={`${LAYOUT.section} relative overflow-hidden bg-[#f5f7fa]`}>
+      <SectionDecorDots className="absolute right-6 top-8 h-16 w-16 opacity-40" />
       <div className={LAYOUT.container}>
-        <div className="mb-8 max-w-2xl">
-          <h2 className="text-xl font-bold text-[#333] sm:text-2xl">{title}</h2>
-          <p className="mt-3 text-sm leading-relaxed text-[#666]">{description}</p>
+        <div className="mb-8 flex max-w-3xl items-start gap-4">
+          <div className="hidden h-20 w-20 shrink-0 overflow-hidden rounded-xl border border-[#e8eaed] bg-white sm:block">
+            <PixarLottie
+              src={STUDENT_LOTTIES.success}
+              label="Student success animation"
+              className="h-full w-full"
+            />
+          </div>
+          <ImpactAccentVector className="mt-0.5 h-14 w-14 shrink-0 sm:hidden" />
+          <div>
+            <h2 className="text-xl font-bold text-[#333] sm:text-2xl">{title}</h2>
+            <p className="mt-3 text-sm leading-relaxed text-[#666]">{description}</p>
+          </div>
         </div>
 
         <div className={`${LAYOUT.card} overflow-hidden p-0`}>
@@ -36,6 +53,10 @@ export default function Careers360ImpactSection() {
                 className="absolute inset-0 h-full w-full"
                 imgClassName="h-full w-full object-cover"
               />
+              <div className="pointer-events-none absolute inset-0 bg-gradient-to-tr from-[#1e3a5f]/35 via-transparent to-[#f27921]/15" />
+              <div className="absolute bottom-4 left-4 rounded-lg border border-white/30 bg-white/15 px-3 py-1.5 text-xs font-semibold text-white backdrop-blur-md">
+                Verified outcome
+              </div>
             </div>
 
             <div className="flex flex-col justify-center gap-5 p-6 sm:p-8">
@@ -92,10 +113,18 @@ export function Careers360CommunityCTA() {
   const { title, description, cta } = SECTION_COPY.helpCta;
 
   return (
-    <section className={`${LAYOUT.sectionCompact} bg-white`}>
+    <section className={`${LAYOUT.sectionCompact} relative overflow-hidden bg-white`}>
+      <SectionDecorDots className="absolute bottom-2 right-8 h-14 w-14 opacity-40" />
       <div className={LAYOUT.container}>
-        <div className={`${LAYOUT.cardMuted} flex flex-col items-start justify-between gap-6 sm:flex-row sm:items-center`}>
-          <div className="max-w-xl">
+        <div className={`${LAYOUT.cardMuted} flex flex-col items-stretch gap-6 overflow-hidden sm:flex-row sm:items-center`}>
+          <div className="mx-auto h-36 w-36 shrink-0 overflow-hidden rounded-xl border border-[#e8eaed] bg-white sm:mx-0 sm:h-40 sm:w-44">
+            <PixarLottie
+              src={STUDENT_LOTTIES.cta}
+              label="Graduation celebration animation"
+              className="h-full w-full"
+            />
+          </div>
+          <div className="min-w-0 flex-1">
             <h2 className="text-lg font-bold text-[#333] sm:text-xl">{title}</h2>
             <p className="mt-2 text-sm leading-relaxed text-[#666]">{description}</p>
           </div>

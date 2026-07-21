@@ -260,7 +260,7 @@ export const verifyOtp = async (phone, otp, options = {}) => {
  * @param {string} whatsappNumber - WhatsApp phone number
  * @param {string} occupation - User's occupation
  * @param {{ utm_source?: string, utm_medium?: string, utm_campaign?: string, utm_content?: string }} [utm] - Optional first-touch UTM data
- * @param {{ rankPredictorLead?: { examId: string, score: number, difficulty?: string }, collegePredictorLead?: { exam: string, filterSnapshot?: string } }} [options] - Optional predictor snapshots (organic leads)
+ * @param {{ rankPredictorLead?: { examId: string, score: number, difficulty?: string } }} [options] - Optional rank predictor snapshot (organic leads)
  * @returns {Promise<{success: boolean, message?: string, status?: number}>}
  */
 export const saveStep1 = async (fullName, whatsappNumber, occupation, utm, options = {}) => {
@@ -278,9 +278,6 @@ export const saveStep1 = async (fullName, whatsappNumber, occupation, utm, optio
   }
   if (options.rankPredictorLead && typeof options.rankPredictorLead === 'object') {
     payload.rankPredictorLead = options.rankPredictorLead;
-  }
-  if (options.collegePredictorLead && typeof options.collegePredictorLead === 'object') {
-    payload.collegePredictorLead = options.collegePredictorLead;
   }
   return apiRequest('/save-step1', {
     method: 'POST',
@@ -353,28 +350,6 @@ export const saveRankPredictorPrediction = async (phone, payload) => {
     ...(payload.message ? { message: payload.message } : {}),
   };
   return apiRequest('/save-rank-predictor-prediction', {
-    method: 'POST',
-    body: JSON.stringify(body),
-  });
-};
-
-/**
- * Persist college predictor match count on the lead (organic student flow).
- * POST /save-college-predictor-prediction
- * @param {string} phone - 10-digit normalized phone
- * @param {{ exam: string, matchCount?: number }} payload
- */
-export const saveCollegePredictorPrediction = async (phone, payload) => {
-  const digits = String(phone || '').replace(/\D/g, '');
-  const p = digits.length >= 10 ? digits.slice(-10) : digits;
-  const body = {
-    phone: p,
-    exam: payload.exam,
-    ...(payload.matchCount !== undefined && payload.matchCount !== null
-      ? { matchCount: payload.matchCount }
-      : {}),
-  };
-  return apiRequest('/save-college-predictor-prediction', {
     method: 'POST',
     body: JSON.stringify(body),
   });

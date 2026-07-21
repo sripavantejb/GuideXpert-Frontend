@@ -33,7 +33,6 @@ export const DEFAULT_ROUTE_PLACEMENTS = {
   '/admin/blogs': 'counsellors',
   '/admin/iit-counselling': 'students',
   '/admin/iit-counselling-utm': 'students',
-  '/admin/organic-predictor-leads': 'students',
   '/admin/organic-rank-leads': 'students',
   '/admin/iit-meet-attendance': 'students',
   '/admin/nat-campaign': 'students',
@@ -44,7 +43,6 @@ export const DEFAULT_ROUTE_PLACEMENTS = {
   '/admin/ai-calls': 'students',
   '/admin/iit-ai-calls-summary': 'students',
   '/admin/whatsapp-ops': 'students',
-  '/admin/conversation-recovery': 'students',
   '/admin/lead-intelligence': 'students',
   '/admin/human-copilot': 'students',
 };
@@ -72,7 +70,7 @@ export const SIDEBAR_SETTINGS_ITEMS = [
   { to: '/admin/blogs', label: 'Blog Management' },
   { to: '/admin/iit-counselling', label: 'IIT Counselling' },
   { to: '/admin/iit-counselling-utm', label: 'IIT Counselling UTM' },
-  { to: '/admin/organic-predictor-leads', label: 'Predictor leads' },
+  { to: '/admin/organic-rank-leads', label: 'Organic rank leads' },
   { to: '/admin/iit-meet-attendance', label: 'IIT Meet Attendance' },
   { to: '/admin/nat-campaign', label: 'One on One IIT Session' },
   { to: '/admin/calling-team/bdas', label: 'BDA Management' },
@@ -82,7 +80,6 @@ export const SIDEBAR_SETTINGS_ITEMS = [
   { to: '/admin/ai-calls', label: 'AI Calls' },
   { to: '/admin/iit-ai-calls-summary', label: 'IITian AI Calls Summary' },
   { to: '/admin/whatsapp-ops', label: 'WhatsApp ops' },
-  { to: '/admin/conversation-recovery', label: 'Conversation Recovery' },
   { to: '/admin/lead-intelligence', label: 'Chatbot Lead Intelligence' },
   { to: '/admin/human-copilot', label: 'Human Copilot' },
 ];

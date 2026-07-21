@@ -40,11 +40,11 @@ export const ADMISSION_PREDICTOR_TOOLS = [
   {
     id: 'college-predictor',
     title: 'College Predictor',
-    description: 'Shortlist colleges by exam, rank, category, and preferences after phone verification.',
+    description: 'Shortlist colleges that match your rank, category, and preferences.',
     to: '/students/college-predictor',
     icon: LuSearch,
     iconClass: 'bg-rose-50 text-rose-600',
-    tags: ['college', 'predictor', 'admission', 'cutoff', 'matches', 'state', 'category', 'kcet', 'jee', 'eamcet'],
+    tags: ['college', 'predictor', 'admission', 'cutoff', 'matches', 'state', 'category'],
   },
   {
     id: 'branch-predictor',

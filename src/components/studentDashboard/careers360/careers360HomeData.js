@@ -144,13 +144,13 @@ export const SECTION_COPY = {
       'Explore institutes and entrance exams available in your workspace. Use these as starting points before running a predictor.',
   },
   predictors: {
-    title: 'Rank & college predictors',
+    title: 'Tools that turn scores into decisions',
     description:
-      'Estimate ranks from marks and build college shortlists from historical cutoffs. Treat outputs as planning aids — verify with official notices.',
+      'Each predictor answers a different admissions question—rank first, then colleges and branches—so you move from uncertainty to a clear plan.',
   },
   moreTools: {
-    title: 'More workspace tools',
-    description: 'Compare options, track deadlines, and run fit tests alongside predictors.',
+    title: 'Alongside your predictions',
+    description: 'Compare colleges, track deadlines, and run fit tests when you need more than a shortlist.',
   },
   outcomes: {
     title: 'Student outcomes',

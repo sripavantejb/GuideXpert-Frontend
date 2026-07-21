@@ -18,7 +18,6 @@ import {
 } from '../../utils/rankPredictorLeadConstants';
 import { saveOrganicRankLeadSnapshot } from '../../utils/organicRankLeadLocal';
 import ResultCard from './ResultCard';
-import PredictorOtpDigitInputs from './PredictorOtpDigitInputs';
 import {
   swBtnGhost,
   swBtnPrimary,
@@ -460,7 +459,7 @@ export default function RankPredictorWithLeadGate({
         </button>
       </div>
       <p className={isStudent ? 'text-sm font-medium text-slate-600' : 'text-sm text-gray-600'}>
-        Enter your name and mobile to receive an OTP. After verification, your rank prediction will load automatically.
+        Enter your details to receive an OTP. After verification, your rank prediction will load automatically.
       </p>
       <label className={isStudent ? `block ${swLabel}` : 'block'}>
         <span className={isStudent ? '' : 'text-sm font-medium text-gray-700'}>Full name</span>
@@ -527,15 +526,6 @@ export default function RankPredictorWithLeadGate({
             <p className={isStudent ? `mb-2 ${swPreviewLabel}` : 'mb-2 text-sm font-medium text-gray-700'}>
               Enter 6-digit OTP
             </p>
-            {isStudent ? (
-              <PredictorOtpDigitInputs
-                otp={otp}
-                onChange={(next) => {
-                  setOtp(next);
-                  setOtpError('');
-                }}
-              />
-            ) : (
             <div className="flex gap-2">
               {otp.map((digit, i) => (
                 <input
@@ -550,12 +540,15 @@ export default function RankPredictorWithLeadGate({
                   onChange={(e) => handleOtpChange(i, e.target.value)}
                   onKeyDown={(e) => handleOtpKeyDown(i, e)}
                   onPaste={i === 0 ? handleOtpPaste : undefined}
-                  className="h-11 w-10 rounded-lg border border-gray-300 text-center text-lg font-semibold"
+                  className={
+                    isStudent
+                      ? swOtpInput
+                      : 'h-11 w-10 rounded-lg border border-gray-300 text-center text-lg font-semibold'
+                  }
                   aria-label={`Digit ${i + 1}`}
                 />
               ))}
             </div>
-            )}
           </div>
           {otpError && (
             <p className={isStudent ? 'text-sm font-semibold text-red-700' : 'text-sm text-red-700'}>{otpError}</p>

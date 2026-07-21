@@ -1,6 +1,7 @@
 import { useEffect, useMemo } from 'react';
 import { useLocation, useOutletContext } from 'react-router-dom';
 import StudentsDashboardHero from '../components/studentDashboard/StudentsDashboardHero';
+import CounsellingInviteStrip from '../components/studentDashboard/CounsellingInviteStrip';
 import Careers360StyleHome from '../components/studentDashboard/careers360/Careers360StyleHome';
 import { readOrganicRankLeadSnapshot } from '../utils/organicRankLeadLocal';
 import {
@@ -69,6 +70,7 @@ export default function StudentsDashboard() {
 
   return (
     <>
+      <CounsellingInviteStrip />
       <StudentsDashboardHero {...searchProps} />
       <Careers360StyleHome
         organicLead={organicLead}

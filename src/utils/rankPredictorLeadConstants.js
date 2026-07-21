@@ -1,4 +1,3 @@
-/** @see collegePredictorLeadConstants.js for the parallel college-predictor organic lead tags. */
 /** UTM tagging for rank-predictor organic leads (admin list filter: utm_content exact match). */
 export const RANK_PREDICTOR_LEAD_UTM = {
   utm_source: 'student_tool',

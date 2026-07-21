@@ -577,21 +577,6 @@ export default function Leads({ organicOnly = false }) {
                             <dd className="text-gray-900">{formatDate(detailLead.rankPredictorLead.predictedAt)}</dd>
                           </div>
                         ) : null}
-                        {detailLead.collegePredictorLead?.exam ? (
-                          <div>
-                            <dt className="text-gray-500">College predictor</dt>
-                            <dd className="text-gray-900 wrap-break-word">
-                              {[
-                                detailLead.collegePredictorLead.exam,
-                                detailLead.collegePredictorLead.matchCount != null
-                                  ? `${detailLead.collegePredictorLead.matchCount} matches`
-                                  : null,
-                              ]
-                                .filter(Boolean)
-                                .join(' · ')}
-                            </dd>
-                          </div>
-                        ) : null}
                         <div><dt className="text-gray-500">Email</dt><dd className="text-gray-900">{detailLead.email || '—'}</dd></div>
                         <div><dt className="text-gray-500">Status</dt><dd><span className={`inline-flex px-2 py-0.5 rounded text-xs font-medium ${detailLead.applicationStatus === 'completed' ? 'bg-green-100 text-green-800' : detailLead.applicationStatus === 'registered' ? 'bg-blue-100 text-blue-800' : 'bg-amber-100 text-amber-800'}`}>{detailLead.applicationStatus || '—'}</span></dd></div>
                         <div><dt className="text-gray-500">Step</dt><dd className="text-gray-900">{detailLead.currentStep ?? '—'}</dd></div>

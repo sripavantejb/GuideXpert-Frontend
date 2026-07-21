@@ -3,7 +3,6 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { FiChevronDown, FiMapPin, FiBookOpen, FiStar, FiBarChart2 } from 'react-icons/fi';
 import { getAccentClasses } from '../../../constants/examCardConfig';
 import BranchSection from './BranchSection';
-import { formatRank } from './reservationCategoryDisplay';
 
 const expandMotion = {
   initial: { height: 0, opacity: 0 },
@@ -82,26 +81,16 @@ export default function CollegeCard({ college, accentKey, index }) {
                 {branchCount} branch{branchCount !== 1 ? 'es' : ''}
               </span>
             )}
+            {topCutoff != null && (
+              <span className={`inline-flex items-center gap-1 text-xs font-medium px-2 py-1 rounded-md ${accent.badge}`}>
+                <FiBarChart2 className="w-3 h-3" />
+                Best cutoff: {topCutoff}
+              </span>
+            )}
           </div>
         </div>
 
-        <div className="shrink-0 flex items-center gap-3">
-          {topCutoff != null && (
-            <div className="hidden sm:flex flex-col items-end text-right">
-              <span className="text-[0.625rem] font-semibold uppercase tracking-wider text-slate-400">
-                Best cutoff
-              </span>
-              <span className="text-xl font-bold tabular-nums text-slate-900 leading-none">
-                {formatRank(topCutoff)}
-              </span>
-            </div>
-          )}
-          {topCutoff != null && (
-            <span className={`sm:hidden inline-flex items-center gap-1 text-xs font-semibold px-2 py-1 rounded-md ${accent.badge}`}>
-              <FiBarChart2 className="w-3 h-3" />
-              {formatRank(topCutoff)}
-            </span>
-          )}
+        <div className="shrink-0 mt-1">
           <div className="w-8 h-8 rounded-lg flex items-center justify-center bg-gray-50 group-hover:bg-gray-100 transition-colors">
             <FiChevronDown
               className={`w-4 h-4 text-gray-400 transition-transform duration-300 ${expanded ? 'rotate-180' : ''}`}
@@ -116,8 +105,8 @@ export default function CollegeCard({ college, accentKey, index }) {
             <div className={`px-5 sm:px-6 pb-5 sm:pb-6 border-t ${accent.divider}`}>
               <div className="flex items-center gap-2 mt-4 mb-3">
                 <div className={`w-1 h-4 rounded-full ${accent.leftStrip.replace('border-l-4 ', '').replace('border-', 'bg-')}`} />
-                <p className="text-xs font-semibold text-slate-500 uppercase tracking-wider">
-                  Branches &amp; ranks
+                <p className="text-xs font-semibold text-gray-500 uppercase tracking-wider">
+                  Branches &amp; Cutoffs
                 </p>
               </div>
               <BranchSection branches={college.branches} />

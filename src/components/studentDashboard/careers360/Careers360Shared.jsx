@@ -2,12 +2,26 @@ import { Link } from 'react-router-dom';
 import { LuArrowRight, LuChevronRight } from 'react-icons/lu';
 import { EXAM_STRIP_LINKS } from './careers360HomeData';
 import { C360, LAYOUT } from './careers360Theme';
+import './studentsSectionMotion.css';
+
+function ExamStripMark() {
+  return (
+    <svg viewBox="0 0 20 20" className="mr-2 h-4 w-4 shrink-0" fill="none" aria-hidden>
+      <circle cx="10" cy="10" r="8" className="gx-anim-spin" stroke="#f27921" strokeWidth="1.5" strokeDasharray="3 3" fill="none" />
+      <circle cx="10" cy="10" r="2.5" fill="#f27921" className="gx-anim-pulse" />
+    </svg>
+  );
+}
 
 export default function Careers360ExamStrip() {
   return (
     <div className="border-b border-[#e8eaed] bg-white">
       <div className={LAYOUT.container}>
-        <div className="flex gap-1 overflow-x-auto py-3 [-ms-overflow-style:none] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
+        <div className="flex items-center gap-1 overflow-x-auto py-3 [-ms-overflow-style:none] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
+          <span className="mr-1 flex shrink-0 items-center text-[11px] font-semibold uppercase tracking-wide text-[#999]">
+            <ExamStripMark />
+            Exams
+          </span>
           {EXAM_STRIP_LINKS.map((item) => (
             <Link
               key={`${item.label}-${item.to}`}
@@ -64,7 +78,7 @@ export function SectionViewAll({ to, label = 'See all' }) {
   );
 }
 
-export function HubSectionShell({ title, description, children, id, variant = 'white' }) {
+export function HubSectionShell({ title, description, children, id, variant = 'white', sidebarExtra }) {
   const bg = variant === 'gray' ? C360.bgSection : C360.bgSectionAlt;
 
   return (
@@ -76,6 +90,7 @@ export function HubSectionShell({ title, description, children, id, variant = 'w
             {description ? (
               <p className="mt-4 text-sm leading-relaxed text-[#666] sm:text-[15px]">{description}</p>
             ) : null}
+            {sidebarExtra}
           </div>
           <div className={LAYOUT.hubContent}>{children}</div>
         </div>
