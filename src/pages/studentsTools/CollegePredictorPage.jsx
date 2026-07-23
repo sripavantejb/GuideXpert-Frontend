@@ -311,6 +311,36 @@ export default function CollegePredictorPage() {
         'Home state and counselling filters narrow the college pool to relevant options.',
         'Each match is tagged using estimated admission probability from live cutoffs.',
       ]}
+      whatThisToolDoes={[
+        'Predicts colleges you can realistically target based on exam rank, category, and counselling filters.',
+        'Uses multi-year cutoff trends so shortlists stay grounded in recent admission data.',
+        'Helps you prioritize likely, borderline, and reach options before preference filling.',
+      ]}
+      inputGuide={[
+        'Exam: Choose the entrance exam you appeared for or plan to appear.',
+        `${rankLabel}: Enter your expected or actual ${rankLabel.toLowerCase()}.`,
+        `${categoryLabel}: Select the reservation / category used in counselling.`,
+        `${admissionLabel}: Pick the counselling region or home-state filter when available.`,
+      ]}
+      preview={
+        <div className="space-y-3 text-sm text-[#5a6570]">
+          <p className="font-semibold text-[#041e30]">Best used for</p>
+          <ul className="space-y-2">
+            <li className="flex gap-2">
+              <span className="mt-2 h-1.5 w-1.5 shrink-0 rounded-full bg-[#f27921]" aria-hidden />
+              Building a first college shortlist after rank prediction
+            </li>
+            <li className="flex gap-2">
+              <span className="mt-2 h-1.5 w-1.5 shrink-0 rounded-full bg-[#f27921]" aria-hidden />
+              Comparing category / region impact on matches
+            </li>
+            <li className="flex gap-2">
+              <span className="mt-2 h-1.5 w-1.5 shrink-0 rounded-full bg-[#f27921]" aria-hidden />
+              Planning counselling preference order
+            </li>
+          </ul>
+        </div>
+      }
       results={
         hasSearched ? (
           <section ref={resultsRef} tabIndex={-1} className="space-y-5">
@@ -362,6 +392,29 @@ export default function CollegePredictorPage() {
                 </button>
               </div>
             ) : null}
+          </section>
+        ) : null
+      }
+      insights={
+        hasSearched && !loading && colleges.length > 0 ? (
+          <section className="rounded-2xl border border-dashed border-[#cfd7e2] bg-[#f4f7fb]/70 p-6 sm:p-7">
+            <h3 className="font-sw-display text-lg font-bold tracking-tight text-[#041e30] sm:text-xl">
+              Next steps
+            </h3>
+            <ul className="mt-4 space-y-2.5 text-sm text-[#5a6570]">
+              <li className="flex gap-2.5">
+                <span className="mt-2 h-1 w-1 shrink-0 rounded-full bg-[#f27921]" aria-hidden />
+                Move strong matches into College Comparison to weigh fees, placements, and location.
+              </li>
+              <li className="flex gap-2.5">
+                <span className="mt-2 h-1 w-1 shrink-0 rounded-full bg-[#f27921]" aria-hidden />
+                Use Branch Predictor on a shortlisted college to check realistic branch chances.
+              </li>
+              <li className="flex gap-2.5">
+                <span className="mt-2 h-1 w-1 shrink-0 rounded-full bg-[#f27921]" aria-hidden />
+                Keep a mix of likely, borderline, and stretch colleges in your preference list.
+              </li>
+            </ul>
           </section>
         ) : null
       }

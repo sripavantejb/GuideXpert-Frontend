@@ -101,6 +101,35 @@ export default function CollegeComparisonPage() {
         'Each metric highlights the stronger value based on predefined rules.',
         'The matrix helps you make a balanced decision across outcomes and cost.',
       ]}
+      whatThisToolDoes={[
+        'Compares two colleges on placements, fees, rankings, and other key metrics.',
+        'Highlights the stronger option per metric so trade-offs are easier to see.',
+        'Supports final shortlisting after College Predictor and Branch Predictor.',
+      ]}
+      inputGuide={[
+        'College A: Enter or select the first institution you want to compare.',
+        'College B: Enter or select the second institution.',
+        'Review the results matrix — highlighted cells mark the stronger value.',
+      ]}
+      preview={
+        <div className="space-y-3 text-sm text-[#5a6570]">
+          <p className="font-semibold text-[#041e30]">Comparison covers</p>
+          <ul className="space-y-2">
+            <li className="flex gap-2">
+              <span className="mt-2 h-1.5 w-1.5 shrink-0 rounded-full bg-[#f27921]" aria-hidden />
+              Fees and ROI signals
+            </li>
+            <li className="flex gap-2">
+              <span className="mt-2 h-1.5 w-1.5 shrink-0 rounded-full bg-[#f27921]" aria-hidden />
+              Placement and ranking metrics
+            </li>
+            <li className="flex gap-2">
+              <span className="mt-2 h-1.5 w-1.5 shrink-0 rounded-full bg-[#f27921]" aria-hidden />
+              Side-by-side decision matrix
+            </li>
+          </ul>
+        </div>
+      }
       relatedTools={RELATED}
       results={
         result ? (

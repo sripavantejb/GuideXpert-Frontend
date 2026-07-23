@@ -362,8 +362,39 @@ export default function BranchPredictorPage() {
       howItWorks={[
         'Your exam, category, and rank are matched against historical college cutoffs.',
         'Colleges are loaded from the same predictor service used for College Predictor.',
-        'Branch chances are estimated by comparing your rank with each branch cutoff from the predictor.'
+        'Branch chances are estimated by comparing your rank with each branch cutoff from the predictor.',
       ]}
+      whatThisToolDoes={[
+        'Estimates branch-level chances inside a selected college using live cutoff data.',
+        'Helps you decide core vs emerging branches for the same rank and category.',
+        'Works with the same exam filters as College Predictor for consistent shortlisting.',
+      ]}
+      inputGuide={[
+        'Exam: Select the entrance exam used for counselling.',
+        `${rankLabel}: Enter your expected or actual ${rankLabel.toLowerCase()}.`,
+        `${categoryLabel}: Choose the reservation / category that applies to you.`,
+        `${admissionLabel}: Apply counselling or home-state filters when shown.`,
+        'College: After prediction, pick a college to view branch-wise outlook.',
+      ]}
+      preview={
+        <div className="space-y-3 text-sm text-[#5a6570]">
+          <p className="font-semibold text-[#041e30]">You will see</p>
+          <ul className="space-y-2">
+            <li className="flex gap-2">
+              <span className="mt-2 h-1.5 w-1.5 shrink-0 rounded-full bg-[#f27921]" aria-hidden />
+              High / medium / low branch chances
+            </li>
+            <li className="flex gap-2">
+              <span className="mt-2 h-1.5 w-1.5 shrink-0 rounded-full bg-[#f27921]" aria-hidden />
+              Cutoff rank comparison for each branch
+            </li>
+            <li className="flex gap-2">
+              <span className="mt-2 h-1.5 w-1.5 shrink-0 rounded-full bg-[#f27921]" aria-hidden />
+              Relative likelihood bars to compare options quickly
+            </li>
+          </ul>
+        </div>
+      }
       results={
         hasSearched ? (
           <section ref={resultsRef} tabIndex={-1} className="space-y-5">

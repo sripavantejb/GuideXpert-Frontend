@@ -6,9 +6,16 @@ import {
   FiLayers,
   FiTarget,
   FiChevronRight,
+  FiInfo,
+  FiList,
 } from 'react-icons/fi';
 import { LAYOUT } from '../../../components/studentDashboard/careers360/careers360Theme';
-import { swPageShell } from './studentWorkspaceUi';
+import {
+  swPageShell,
+  swSectionTitle,
+  swSectionSubtitle,
+  swCard,
+} from './studentWorkspaceUi';
 import RelatedToolsSection from './RelatedToolsSection';
 
 const FEATURE_ICONS = [FiLayers, FiFilter, FiTarget];
@@ -59,14 +66,22 @@ function featureItems({ howItWorks, whatThisToolDoes }) {
   const defaultTitles = ['Detailed Criteria', 'Personalized Report', 'Comprehensive Coverage'];
 
   if (howItWorks?.length) {
-    return howItWorks.slice(0, 3).map((text, index) => ({
-      title: defaultTitles[index] || `Highlight ${index + 1}`,
-      detail: text,
-    }));
+    return howItWorks.slice(0, 3).map((item, index) => {
+      if (item && typeof item === 'object') {
+        return {
+          title: item.title || defaultTitles[index] || `Highlight ${index + 1}`,
+          detail: item.detail || item.description || '',
+        };
+      }
+      return {
+        title: defaultTitles[index] || `Highlight ${index + 1}`,
+        detail: item,
+      };
+    });
   }
   if (whatThisToolDoes?.length) {
     return whatThisToolDoes.slice(0, 3).map((text, index) => {
-      const [head, ...rest] = text.split(/[.!]/);
+      const [head, ...rest] = String(text).split(/[.!]/);
       const title = head?.trim() || defaultTitles[index];
       const detail = rest.join('.').trim() || text;
       return { title, detail };
@@ -77,6 +92,80 @@ function featureItems({ howItWorks, whatThisToolDoes }) {
     { title: 'Personalized Report', detail: 'Filter by branch, fees, location & more.' },
     { title: 'Comprehensive Coverage', detail: 'All India & state-level colleges.' },
   ];
+}
+
+function ToolInfoSection({ whatThisToolDoes, inputGuide, preview }) {
+  const hasWhat = Array.isArray(whatThisToolDoes) && whatThisToolDoes.length > 0;
+  const hasGuide = Array.isArray(inputGuide) && inputGuide.length > 0;
+  const hasPreview = Boolean(preview);
+  if (!hasWhat && !hasGuide && !hasPreview) return null;
+
+  return (
+    <section className={`${swCard} space-y-8`} aria-labelledby="tool-info-heading">
+      <div>
+        <p className="text-[11px] font-semibold uppercase tracking-[0.16em] text-[#f27921]">
+          Tool guide
+        </p>
+        <h2 id="tool-info-heading" className={swSectionTitle}>
+          About this predictor
+        </h2>
+        <p className={swSectionSubtitle}>
+          Quick context on what this tool covers and how to fill the form for better results.
+        </p>
+      </div>
+
+      <div
+        className={`grid gap-6 ${
+          hasPreview ? 'lg:grid-cols-[minmax(0,1.2fr)_minmax(0,18rem)]' : 'lg:grid-cols-2'
+        }`}
+      >
+        <div className="space-y-6">
+          {hasWhat ? (
+            <div>
+              <h3 className="inline-flex items-center gap-2 text-sm font-semibold text-[#041e30]">
+                <FiInfo className="h-4 w-4 text-[#f27921]" aria-hidden />
+                What this tool does
+              </h3>
+              <ul className="mt-3 space-y-2.5">
+                {whatThisToolDoes.map((item) => (
+                  <li key={item} className="flex gap-2.5 text-sm leading-relaxed text-[#5a6570]">
+                    <span className="mt-2 h-1.5 w-1.5 shrink-0 rounded-full bg-[#f27921]" aria-hidden />
+                    <span>{item}</span>
+                  </li>
+                ))}
+              </ul>
+            </div>
+          ) : null}
+
+          {hasGuide ? (
+            <div>
+              <h3 className="inline-flex items-center gap-2 text-sm font-semibold text-[#041e30]">
+                <FiList className="h-4 w-4 text-[#f27921]" aria-hidden />
+                How to fill the inputs
+              </h3>
+              <ul className="mt-3 space-y-2.5">
+                {inputGuide.map((item) => (
+                  <li key={item} className="flex gap-2.5 text-sm leading-relaxed text-[#5a6570]">
+                    <span className="mt-2 h-1.5 w-1.5 shrink-0 rounded-full bg-[#1d4ed8]" aria-hidden />
+                    <span>{item}</span>
+                  </li>
+                ))}
+              </ul>
+            </div>
+          ) : null}
+        </div>
+
+        {hasPreview ? (
+          <aside className="rounded-xl border border-[#e4e9f0] bg-[#f7f9fc] p-5">
+            <p className="text-[11px] font-semibold uppercase tracking-[0.14em] text-[#8a94a0]">
+              Snapshot
+            </p>
+            <div className="mt-3">{preview}</div>
+          </aside>
+        ) : null}
+      </div>
+    </section>
+  );
 }
 
 export default function ToolWorkspaceLayout({
@@ -90,16 +179,28 @@ export default function ToolWorkspaceLayout({
   trustBadge = 'Trusted by 500K+ Students',
   relatedTools,
   showRelatedTools = true,
-  // Kept for call-site compatibility; content moved into hero features / form card
-  preview: _preview,
-  inputGuide: _inputGuide,
+  preview = null,
+  inputGuide = null,
   compactHero: _compactHero,
   afterHero = null,
 }) {
   const { pathname } = useLocation();
   const category = resolveBreadcrumbCategory(pathname);
   const features = featureItems({ howItWorks, whatThisToolDoes });
-  const hasBelowHero = Boolean(afterHero || results || insights || showRelatedTools);
+  const hasInfo =
+    (Array.isArray(whatThisToolDoes) && whatThisToolDoes.length > 0) ||
+    (Array.isArray(inputGuide) && inputGuide.length > 0) ||
+    Boolean(preview);
+  const infoSection = hasInfo ? (
+    <ToolInfoSection
+      whatThisToolDoes={whatThisToolDoes}
+      inputGuide={inputGuide}
+      preview={preview}
+    />
+  ) : null;
+  const hasBelowHero = Boolean(
+    afterHero || infoSection || results || insights || showRelatedTools
+  );
 
   return (
     <main className={`${swPageShell} !bg-[#f3f5f8]`}>
@@ -156,7 +257,7 @@ export default function ToolWorkspaceLayout({
                   const Icon = FEATURE_ICONS[index % FEATURE_ICONS.length];
                   const iconStyle = FEATURE_ICON_STYLES[index % FEATURE_ICON_STYLES.length];
                   return (
-                    <li key={feature.title} className="flex gap-4">
+                    <li key={`${feature.title}-${index}`} className="flex gap-4">
                       <span
                         className={`mt-0.5 flex h-11 w-11 shrink-0 items-center justify-center rounded-xl ${iconStyle}`}
                       >
@@ -188,6 +289,7 @@ export default function ToolWorkspaceLayout({
       {hasBelowHero ? (
         <div className={`${LAYOUT.container} space-y-12 py-12 sm:space-y-14 sm:py-16 lg:py-20`}>
           {afterHero}
+          {infoSection}
           {results}
           {insights}
           {showRelatedTools ? (
