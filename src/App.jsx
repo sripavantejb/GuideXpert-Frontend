@@ -8,6 +8,7 @@ import { setBdaToken, setBdaUser } from './utils/bdaApi';
 import BdaLogin from './pages/bda/BdaLogin';
 import BdaDashboard from './pages/bda/BdaDashboard';
 import { WebinarAuthProvider, useWebinarAuth } from './contexts/WebinarAuthContext';
+import { StudentAuthProvider } from './contexts/StudentAuthContext';
 import { CounsellorProfileProvider } from './contexts/CounsellorProfileContext';
 import { CounsellorTrainingProvider } from './contexts/CounsellorTrainingContext';
 import LandingPage from './pages/LandingPage';
@@ -40,6 +41,8 @@ import DemandIntelligenceDashboard from './pages/admin/DemandIntelligenceDashboa
 import PredictionDashboard from './pages/admin/PredictionDashboard';
 import FunnelAnalytics from './pages/admin/FunnelAnalytics';
 import Leads from './pages/admin/Leads';
+import OrganicPredictorLeads from './pages/admin/OrganicPredictorLeads';
+import StudentLogins from './pages/admin/StudentLogins';
 import IitCounselling from './pages/admin/IitCounselling';
 import IitCounsellingUtm from './pages/admin/IitCounsellingUtm';
 import Analytics from './pages/admin/Analytics';
@@ -155,6 +158,7 @@ const ExamPredictorToolPage = lazy(() => import('./pages/studentsTools/ExamPredi
 const DeadlineManagerToolPage = lazy(() => import('./pages/studentsTools/DeadlineManagerPage'));
 const PredictorsHubPage = lazy(() => import('./pages/studentsTools/PredictorsHubPage'));
 const TestsHubPage = lazy(() => import('./pages/studentsTools/TestsHubPage'));
+const StudentLoginPage = lazy(() => import('./pages/studentsTools/StudentLogin'));
 import CollegePredictorPage from './pages/CollegePredictorPage';
 import RankPredictorHome from './pages/RankPredictorHome';
 import ExamPredictor from './pages/ExamPredictor';
@@ -254,6 +258,7 @@ function App() {
       <AuthProvider>
         <CounsellorAuthProvider>
           <WebinarAuthProvider>
+            <StudentAuthProvider>
             <SessionExpiryRedirects />
             <Routes>
           <Route path="/" element={<LandingPage />} />
@@ -304,6 +309,20 @@ function App() {
           <Route path="/one-on-one-session" element={<OneOnOneSessionPage />} />
           <Route path="/guidance-booking-confirmation" element={<GuidanceBookingConfirmation />} />
           <Route path="/guidance-session-meet" element={<GuidanceSessionMeet />} />
+          <Route
+            path="/students/login"
+            element={
+              <Suspense
+                fallback={
+                  <div className="flex min-h-screen items-center justify-center bg-slate-50 text-slate-500">
+                    <div className="animate-pulse text-sm font-medium">Loading…</div>
+                  </div>
+                }
+              >
+                <StudentLoginPage />
+              </Suspense>
+            }
+          />
           <Route
             path="/students"
             element={
@@ -466,6 +485,8 @@ function App() {
             <Route path="calling-team/bdas/:id" element={<CallingTeamBdaDetail />} />
             <Route path="calling-data" element={<CallingData />} />
             <Route path="organic-rank-leads" element={<Leads organicOnly />} />
+            <Route path="organic-predictor-leads" element={<OrganicPredictorLeads />} />
+            <Route path="student-logins" element={<StudentLogins />} />
             <Route path="lead-status" element={<LeadStatus />} />
             <Route path="analytics" element={<Analytics />} />
             <Route path="slots" element={<Slots />} />
@@ -597,6 +618,7 @@ function App() {
 
           <Route path="*" element={<Navigate to="/" replace />} />
             </Routes>
+            </StudentAuthProvider>
           </WebinarAuthProvider>
         </CounsellorAuthProvider>
       </AuthProvider>

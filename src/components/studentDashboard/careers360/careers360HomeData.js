@@ -38,42 +38,16 @@ export const HOME_BANNERS = [
   },
 ];
 
-/** Right-side hero feature carousel cards */
-export const HERO_FEATURE_SLIDES = [
-  {
-    id: 'college-opportunities',
-    title: 'Turn Your Score into College Opportunities',
-    description:
-      'Predict your admission chances across colleges based on exam performance, category, and preferences.',
-    cta: 'Explore College Predictors',
-    to: '/students/college-predictor',
-    accent: 'from-[#1e3a5f] via-[#2d1b4e] to-[#3b1868]',
-    badge: 'Verified Data',
-    widget: 'Cutoff Trend',
-  },
-  {
-    id: 'rank-clarity',
-    title: 'Know Your Rank Before the Result',
-    description:
-      'Estimate ranks from marks using historical data across JEE Main, EAMCET, KCET, and more.',
-    cta: 'Open Rank Predictors',
-    to: '/students/rank-predictor',
-    accent: 'from-[#0f2847] via-[#1a3a5c] to-[#243b6b]',
-    badge: 'Live Models',
-    widget: 'Rank Range',
-  },
-  {
-    id: 'fit-path',
-    title: 'Find Courses That Match You',
-    description:
-      'Run fit tests to map interests and strengths to engineering, science, and campus options.',
-    cta: 'Try Fit Tests',
-    to: '/students/tests',
-    accent: 'from-[#1a2744] via-[#2a1f4d] to-[#4a1d6a]',
-    badge: 'Personalized',
-    widget: 'Fit Score',
-  },
-];
+/** Fixed right-side hero counselling card */
+export const HERO_COUNSELLING_CARD = {
+  id: 'iitian-counselling',
+  badge: 'Free session',
+  title: 'Free IITian One-on-One Counselling',
+  description:
+    'Want to join a free IITian one-on-one counselling session? Book your free slot today and get personalised guidance.',
+  cta: 'Book free',
+  to: '/one-on-one-session',
+};
 
 export const WORKSPACE_UPDATES = [
   {

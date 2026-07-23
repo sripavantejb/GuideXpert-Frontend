@@ -229,10 +229,10 @@ export const sendOtp = async (fullName, whatsappNumber, occupation, options = {}
 };
 
 /**
- * Verify OTP code. Same method as registration form; for counsellor login pass { counsellorLogin: true }, for webinar pass { webinarLogin: true } to get token in response.
+ * Verify OTP code. Same method as registration form; for counsellor login pass { counsellorLogin: true }, for webinar pass { webinarLogin: true }, for student workspace pass { studentLogin: true } to get token in response.
  * @param {string} phone - Phone number
  * @param {string} otp - 6-digit OTP code
- * @param {{ counsellorLogin?: boolean, webinarLogin?: boolean }} [options] - counsellorLogin or webinarLogin: true for token + user on success
+ * @param {{ counsellorLogin?: boolean, webinarLogin?: boolean, studentLogin?: boolean, fullName?: string }} [options]
  * @returns {Promise<{success: boolean, message?: string, data?: { verified?: boolean, allowedAccess?: boolean, token?: string, user?: object }, status?: number}>}
  */
 export const verifyOtp = async (phone, otp, options = {}) => {
@@ -247,6 +247,12 @@ export const verifyOtp = async (phone, otp, options = {}) => {
   }
   if (options.webinarLogin === true) {
     body.webinarLogin = true;
+  }
+  if (options.studentLogin === true) {
+    body.studentLogin = true;
+  }
+  if (options.fullName != null && String(options.fullName).trim()) {
+    body.fullName = String(options.fullName).trim();
   }
   return apiRequest('/verify-otp', {
     method: 'POST',

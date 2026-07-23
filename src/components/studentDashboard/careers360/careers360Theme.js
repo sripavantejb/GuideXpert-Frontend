@@ -72,6 +72,7 @@ export const FOOTER_COLUMNS = [
     links: [
       { label: 'Main website', to: '/' },
       { label: 'Blogs', to: '/blogs' },
+      { label: 'Student login', to: '/students/login' },
       { label: 'Counsellor login', to: '/counsellor/login' },
     ],
   },

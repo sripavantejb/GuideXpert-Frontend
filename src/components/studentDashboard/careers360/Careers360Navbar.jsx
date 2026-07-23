@@ -15,6 +15,7 @@ import {
 } from 'react-icons/fi';
 import { LuGraduationCap, LuScale } from 'react-icons/lu';
 import { getWorkspaceMegaMenus } from '../../../constants/studentWorkspaceNavMenus';
+import { useStudentAuth } from '../../../contexts/StudentAuthContext';
 import { C360, LAYOUT } from './careers360Theme';
 
 const LOGO_URL =
@@ -115,6 +116,7 @@ export default function Careers360Navbar({
   onSearchBlur,
   onSearchKeyDown,
 }) {
+  const { isAuthenticated, user, logout } = useStudentAuth();
   const [mobileOpen, setMobileOpen] = useState(false);
   const [openMenuKey, setOpenMenuKey] = useState(null);
   const [activePanelByMenu, setActivePanelByMenu] = useState({});
@@ -183,13 +185,28 @@ export default function Careers360Navbar({
             >
               <FiBriefcase className="h-5 w-5" />
             </Link>
-            <Link
-              to="/counsellor/login"
-              className="rounded-md px-4 py-2 text-sm font-semibold text-white shadow-sm transition hover:opacity-90"
-              style={{ backgroundColor: C360.orange }}
-            >
-              Login
-            </Link>
+            {isAuthenticated ? (
+              <div className="flex items-center gap-2">
+                <span className="hidden max-w-[9rem] truncate text-sm font-medium text-[#333] sm:inline">
+                  {user?.name || 'Student'}
+                </span>
+                <button
+                  type="button"
+                  onClick={logout}
+                  className="rounded-md border border-[#d8dce6] bg-white px-3 py-2 text-sm font-semibold text-[#444] transition hover:border-[#f27921]/50 hover:text-[#f27921]"
+                >
+                  Logout
+                </button>
+              </div>
+            ) : (
+              <Link
+                to="/students/login"
+                className="rounded-md px-4 py-2 text-sm font-semibold text-white shadow-sm transition hover:opacity-90"
+                style={{ backgroundColor: C360.orange }}
+              >
+                Login
+              </Link>
+            )}
             <button
               type="button"
               className="ml-1 flex h-10 w-10 items-center justify-center rounded-lg text-[#444] hover:bg-[#f5f6f8] lg:hidden"
@@ -211,7 +228,7 @@ export default function Careers360Navbar({
         <div className="border-b border-[#eceef2]">
           <div className={LAYOUT.container}>
             <nav
-              className="flex items-stretch gap-0.5 overflow-x-auto [-ms-overflow-style:none] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden"
+              className="flex items-stretch justify-center gap-0.5 overflow-x-auto [-ms-overflow-style:none] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden"
               aria-label="Workspace categories"
             >
               {menus.map((menu) => {

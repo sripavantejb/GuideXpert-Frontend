@@ -50,6 +50,8 @@ const navItems = [
   { to: '/admin/iit-counselling', label: 'IIT Counselling', icon: FiClipboard, sectionKey: 'iit-counselling', sidebarPlacement: 'students' },
   { to: '/admin/iit-counselling-utm', label: 'IIT Counselling UTM', icon: FiLink, sectionKey: 'iit-counselling', sidebarPlacement: 'students' },
   { to: '/admin/organic-rank-leads', label: 'Organic rank leads', icon: FiTarget, sectionKey: 'leads', sidebarPlacement: 'students' },
+  { to: '/admin/organic-predictor-leads', label: 'Student predictor users', icon: FiTarget, sectionKey: 'leads', sidebarPlacement: 'students' },
+  { to: '/admin/student-logins', label: 'Student logins', icon: FiUsers, sectionKey: 'leads', sidebarPlacement: 'students' },
   { to: '/admin/iit-meet-attendance', label: 'IIT Meet Attendance', icon: FiVideo, sectionKey: 'iit-meet-attendance', sidebarPlacement: 'students' },
   { to: '/admin/calling-team/bdas', label: 'BDA Management', icon: FiUserPlus, sectionKey: 'calling-team', sidebarPlacement: 'students' },
   { to: '/admin/one-on-one-counseling', label: '1-on-1 Counseling', icon: FiUsers, sectionKey: 'one-on-one-counseling', sidebarPlacement: 'students' },
