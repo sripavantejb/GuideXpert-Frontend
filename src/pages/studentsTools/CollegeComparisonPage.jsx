@@ -2,6 +2,9 @@ import { useRef, useState } from 'react';
 import { FiColumns } from 'react-icons/fi';
 import { LuSearch, LuRocket, LuZap, LuMapPin } from 'react-icons/lu';
 import ToolWorkspaceLayout from './components/ToolWorkspaceLayout';
+import ToolFactsPreview from './components/ToolFactsPreview';
+import { useStudentAuth } from '../../contexts/StudentAuthContext';
+import { useRequireLoginToUse } from '../../components/studentAuth/RequireStudentAuth';
 import {
   swBtnPrimary,
   swError,
@@ -57,6 +60,8 @@ const RELATED = [
 ];
 
 export default function CollegeComparisonPage() {
+  const { savePrediction } = useStudentAuth() || {};
+  const requireLoginToUse = useRequireLoginToUse();
   const [a, setA] = useState('');
   const [b, setB] = useState('');
   const [errors, setErrors] = useState({});
@@ -65,20 +70,29 @@ export default function CollegeComparisonPage() {
 
   const onSubmit = (event) => {
     event.preventDefault();
+    if (!requireLoginToUse()) return;
     const nextErrors = {};
     if (!a) nextErrors.a = 'Institution A is required.';
     if (!b) nextErrors.b = 'Institution B is required.';
     setErrors(nextErrors);
     if (Object.keys(nextErrors).length > 0) return;
+    const rows = [
+      { metric: 'Average Package', aValue: '8.5 LPA', bValue: '7.2 LPA', better: 'a' },
+      { metric: 'Placement %', aValue: '91%', bValue: '86%', better: 'a' },
+      { metric: 'Fees', aValue: '14L', bValue: '11L', better: 'b' },
+      { metric: 'Ranking', aValue: '24', bValue: '31', better: 'a' },
+    ];
     setResult({
       institutionA: a,
       institutionB: b,
-      rows: [
-        { metric: 'Average Package', aValue: '8.5 LPA', bValue: '7.2 LPA', better: 'a' },
-        { metric: 'Placement %', aValue: '91%', bValue: '86%', better: 'a' },
-        { metric: 'Fees', aValue: '14L', bValue: '11L', better: 'b' },
-        { metric: 'Ranking', aValue: '24', bValue: '31', better: 'a' },
-      ],
+      rows,
+    });
+    savePrediction?.({
+      type: 'college_comparison',
+      tool: 'College Comparison',
+      title: 'Compared colleges',
+      summary: `${a} vs ${b}`,
+      payload: { institutionA: a, institutionB: b, rows },
     });
     setTimeout(() => {
       resultsRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' });
@@ -112,23 +126,18 @@ export default function CollegeComparisonPage() {
         'Review the results matrix — highlighted cells mark the stronger value.',
       ]}
       preview={
-        <div className="space-y-3 text-sm text-[#5a6570]">
-          <p className="font-semibold text-[#041e30]">Comparison covers</p>
-          <ul className="space-y-2">
-            <li className="flex gap-2">
-              <span className="mt-2 h-1.5 w-1.5 shrink-0 rounded-full bg-[#f27921]" aria-hidden />
-              Fees and ROI signals
-            </li>
-            <li className="flex gap-2">
-              <span className="mt-2 h-1.5 w-1.5 shrink-0 rounded-full bg-[#f27921]" aria-hidden />
-              Placement and ranking metrics
-            </li>
-            <li className="flex gap-2">
-              <span className="mt-2 h-1.5 w-1.5 shrink-0 rounded-full bg-[#f27921]" aria-hidden />
-              Side-by-side decision matrix
-            </li>
-          </ul>
-        </div>
+        <ToolFactsPreview
+          icon={FiColumns}
+          iconClass="bg-[#e8f1f8] text-[#0b3a5c]"
+          name="College Comparison"
+          metricLabel="Comparison covers"
+          metricValue="Side-by-side"
+          points={[
+            'Fees and ROI signals',
+            'Placement and ranking metrics',
+            'Decision matrix with stronger-value highlights',
+          ]}
+        />
       }
       relatedTools={RELATED}
       results={

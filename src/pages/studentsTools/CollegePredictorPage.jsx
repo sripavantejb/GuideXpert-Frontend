@@ -1,10 +1,12 @@
 import { useMemo, useRef, useState } from 'react';
-import { FiAlertCircle, FiLoader } from 'react-icons/fi';
+import { FiAlertCircle, FiLoader, FiSearch } from 'react-icons/fi';
 import ToolWorkspaceLayout from './components/ToolWorkspaceLayout';
+import ToolFactsPreview from './components/ToolFactsPreview';
 import { CollegeCard } from '../../components/Counsellor/CollegePredictor';
 import { getPredictedCollegesPublic } from '../../utils/api';
 import { formatPredictorClientError } from '../../utils/collegePredictorErrors';
 import { useStudentAuth } from '../../contexts/StudentAuthContext';
+import { useRequireLoginToUse } from '../../components/studentAuth/RequireStudentAuth';
 import {
   ENTRANCE_EXAMS,
   RESERVATION_CATEGORIES,
@@ -101,6 +103,7 @@ function SelectField({ label, value, onChange, options, placeholder, error, disa
 
 export default function CollegePredictorPage() {
   const { savePrediction } = useStudentAuth() || {};
+  const requireLoginToUse = useRequireLoginToUse();
   const [exam, setExam] = useState('JEE');
   const examMeta = useMemo(() => getEntranceExamMeta(exam), [exam]);
   const catOptions = useMemo(() => categoryOptionsForExam(examMeta), [examMeta]);
@@ -281,11 +284,30 @@ export default function CollegePredictorPage() {
     setColleges((prev) => (append ? [...prev, ...list] : list));
 
     if (!append && res.success) {
+      const total = Number(data.total_no_of_colleges) || list.length;
       savePrediction?.({
         type: 'college_predictor',
         tool: 'College Predictor',
         title: 'Used College Predictor',
-        summary: 'Ran a college prediction',
+        summary: [
+          examMeta?.label || exam,
+          isMht ? `percentile ${form.percentile}` : `rank ${form.rank}`,
+          form.category,
+          `${total} colleges`,
+        ]
+          .filter(Boolean)
+          .join(' · '),
+        payload: {
+          exam,
+          rank: form.rank || null,
+          percentile: form.percentile || null,
+          category: form.category,
+          admission: form.admission,
+          gender: form.gender,
+          quota: form.quota,
+          totalColleges: total,
+          sampleColleges: list.slice(0, 5).map((c) => c.college_name || c.name || c.collegeName).filter(Boolean),
+        },
       });
     }
 
@@ -296,6 +318,7 @@ export default function CollegePredictorPage() {
 
   const onSubmit = async (event) => {
     event.preventDefault();
+    if (!requireLoginToUse()) return;
     if (!validate()) return;
     setColleges([]);
     setOffset(0);
@@ -349,23 +372,18 @@ export default function CollegePredictorPage() {
         `${admissionLabel}: Pick the counselling region or home-state filter when available.`,
       ]}
       preview={
-        <div className="space-y-3 text-sm text-[#5a6570]">
-          <p className="font-semibold text-[#041e30]">Best used for</p>
-          <ul className="space-y-2">
-            <li className="flex gap-2">
-              <span className="mt-2 h-1.5 w-1.5 shrink-0 rounded-full bg-[#f27921]" aria-hidden />
-              Building a first college shortlist after rank prediction
-            </li>
-            <li className="flex gap-2">
-              <span className="mt-2 h-1.5 w-1.5 shrink-0 rounded-full bg-[#f27921]" aria-hidden />
-              Comparing category / region impact on matches
-            </li>
-            <li className="flex gap-2">
-              <span className="mt-2 h-1.5 w-1.5 shrink-0 rounded-full bg-[#f27921]" aria-hidden />
-              Planning counselling preference order
-            </li>
-          </ul>
-        </div>
+        <ToolFactsPreview
+          icon={FiSearch}
+          iconClass="bg-[#fff4ed] text-[#f27921]"
+          name="College Predictor"
+          metricLabel="Best used for"
+          metricValue="Shortlist"
+          points={[
+            'Building a first college list after rank prediction',
+            'Comparing category and region impact on matches',
+            'Planning counselling preference order',
+          ]}
+        />
       }
       results={
         hasSearched ? (

@@ -1,6 +1,9 @@
 import { useRef, useState } from 'react';
+import { FiMapPin } from 'react-icons/fi';
 import ToolWorkspaceLayout from './components/ToolWorkspaceLayout';
+import ToolFactsPreview from './components/ToolFactsPreview';
 import { useStudentAuth } from '../../contexts/StudentAuthContext';
+import { useRequireLoginToUse } from '../../components/studentAuth/RequireStudentAuth';
 import {
   swBtnPrimary,
   swError,
@@ -25,6 +28,7 @@ const SUGGESTIONS = [
 
 export default function CollegeFitTestPage() {
   const { savePrediction } = useStudentAuth() || {};
+  const requireLoginToUse = useRequireLoginToUse();
   const [form, setForm] = useState({ fee: '', campus: '', city: '', placement: 70 });
   const [errors, setErrors] = useState({});
   const [results, setResults] = useState([]);
@@ -34,6 +38,7 @@ export default function CollegeFitTestPage() {
 
   const onSubmit = (event) => {
     event.preventDefault();
+    if (!requireLoginToUse()) return;
     const nextErrors = {};
     if (!form.fee) nextErrors.fee = 'Fee budget is required.';
     if (!form.campus) nextErrors.campus = 'Campus size is required.';
@@ -72,11 +77,14 @@ export default function CollegeFitTestPage() {
         'Placement Priority: Importance weight for placements in recommendations.',
       ]}
       preview={
-        <div className="space-y-2 text-sm">
-          <p className="text-[11px] font-semibold uppercase tracking-[0.14em] text-[#8a94a0]">Typical shortlist</p>
-          <p className="font-semibold text-[#041e30]">8 colleges · 4 placement-led</p>
-          <p className="text-[#5a6570]">Weighted by your priority slider</p>
-        </div>
+        <ToolFactsPreview
+          icon={FiMapPin}
+          iconClass="bg-[#e8f1f8] text-[#0b3a5c]"
+          name="College Fit Test"
+          metricLabel="Typical shortlist"
+          metricValue="8 colleges"
+          points={['4 placement-led options', 'Weighted by your priority slider']}
+        />
       }
       results={
         results.length ? (

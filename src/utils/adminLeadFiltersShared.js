@@ -9,6 +9,28 @@ export const ALL_SLOT_IDS = [
 
 export const ALLOWED_APPLICATION_STATUSES = ['in_progress', 'registered', 'completed'];
 
+/** Student workspace tool activity filters (matches studentActivityHistory.type). */
+export const STUDENT_ACTIVITY_TYPE_OPTIONS = [
+  { value: '', label: 'All tools & actions' },
+  { value: 'auth', label: 'Login / signup' },
+  { value: 'login', label: 'Login only' },
+  { value: 'signup', label: 'Signup only' },
+  { value: 'rank_predictor', label: 'Rank Predictor' },
+  { value: 'college_predictor', label: 'College Predictor' },
+  { value: 'branch_predictor', label: 'Branch Predictor' },
+  { value: 'exam_predictor', label: 'Exam Predictor' },
+  { value: 'college_fit_test', label: 'College Fit Test' },
+  { value: 'course_fit_test', label: 'Course Fit Test' },
+  { value: 'college_comparison', label: 'College Comparison' },
+  { value: 'deadline_manager', label: 'Deadline Manager' },
+  { value: 'profile_update', label: 'Profile updates' },
+  { value: 'counselling_booking', label: 'Counselling bookings' },
+];
+
+export const ALLOWED_STUDENT_ACTIVITY_TYPES = STUDENT_ACTIVITY_TYPE_OPTIONS
+  .map((o) => o.value)
+  .filter(Boolean);
+
 export function defaultLeadListFilters() {
   return {
     applicationStatus: '',
@@ -21,6 +43,7 @@ export function defaultLeadListFilters() {
     selectedSlot: '',
     slotDate: '',
     utm_content: '',
+    activityType: '',
     q: '',
   };
 }
@@ -33,6 +56,8 @@ export function leadListFiltersFromSearchParams(searchParams) {
   const otp = searchParams.get('otpVerified') || '';
   const slotB = searchParams.get('slotBooked') || '';
   const q = searchParams.get('q') || '';
+  const activityTypeRaw = searchParams.get('activityType') || '';
+  const activityType = ALLOWED_STUDENT_ACTIVITY_TYPES.includes(activityTypeRaw) ? activityTypeRaw : '';
   const demoAttendedRaw = searchParams.get('demoAttended') || '';
   const demoAttended = ['true', 'false'].includes(demoAttendedRaw) ? demoAttendedRaw : '';
   const assessmentWritten = searchParams.get('assessmentWritten') === 'true' ? 'true' : '';
@@ -50,6 +75,7 @@ export function leadListFiltersFromSearchParams(searchParams) {
     selectedSlot: slot,
     slotDate,
     utm_content: utm,
+    activityType,
     q,
   };
 }
@@ -68,6 +94,7 @@ export function leadListFiltersToApiParams(filters) {
     ...(f.selectedSlot && { selectedSlot: f.selectedSlot }),
     ...(f.slotDate && { slotDate: f.slotDate }),
     ...(f.utm_content && { utm_content: f.utm_content }),
+    ...(f.activityType && { activityType: f.activityType }),
     ...(f.q && { q: f.q }),
   };
 }
@@ -85,6 +112,7 @@ export function leadListFiltersToSearchParams(filters) {
   if (filters.selectedSlot) search.set('selectedSlot', filters.selectedSlot);
   if (filters.slotDate) search.set('slotDate', filters.slotDate);
   if (filters.utm_content) search.set('utm_content', filters.utm_content);
+  if (filters.activityType) search.set('activityType', filters.activityType);
   if (filters.q) search.set('q', filters.q);
   return search;
 }
@@ -102,6 +130,7 @@ export function countActiveLeadFilters(filters) {
   if (f.selectedSlot) n += 1;
   if (f.slotDate) n += 1;
   if (f.utm_content) n += 1;
+  if (f.activityType) n += 1;
   if (f.q) n += 1;
   return n;
 }

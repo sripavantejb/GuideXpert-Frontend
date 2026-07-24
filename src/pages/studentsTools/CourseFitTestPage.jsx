@@ -1,6 +1,9 @@
 import { useRef, useState } from 'react';
+import { LuGraduationCap } from 'react-icons/lu';
 import ToolWorkspaceLayout from './components/ToolWorkspaceLayout';
+import ToolFactsPreview from './components/ToolFactsPreview';
 import { useStudentAuth } from '../../contexts/StudentAuthContext';
+import { useRequireLoginToUse } from '../../components/studentAuth/RequireStudentAuth';
 import {
   swBtnPrimary,
   swBtnSecondary,
@@ -30,6 +33,7 @@ const RESULT_META = [
 
 export default function CourseFitTestPage() {
   const { savePrediction } = useStudentAuth() || {};
+  const requireLoginToUse = useRequireLoginToUse();
   const [started, setStarted] = useState(false);
   const [questionIndex, setQuestionIndex] = useState(0);
   const [result, setResult] = useState(null);
@@ -38,6 +42,7 @@ export default function CourseFitTestPage() {
   const progressPct = started ? Math.round(((questionIndex + (result ? 1 : 0)) / QUESTIONS.length) * 100) : 0;
 
   const handleAnswer = () => {
+    if (!requireLoginToUse()) return;
     if (!started) setStarted(true);
     if (questionIndex < QUESTIONS.length - 1) {
       setQuestionIndex((prev) => prev + 1);
@@ -73,16 +78,14 @@ export default function CourseFitTestPage() {
         'Progress Indicator: Shows which question number you are on in the test flow.',
       ]}
       preview={
-        <div className="space-y-3 text-sm">
-          <div>
-            <p className="text-[11px] font-semibold uppercase tracking-[0.14em] text-[#8a94a0]">Format</p>
-            <p className="mt-1 font-semibold text-[#041e30]">{QUESTIONS.length} preference prompts</p>
-          </div>
-          <div>
-            <p className="text-[11px] font-semibold uppercase tracking-[0.14em] text-[#8a94a0]">Output</p>
-            <p className="mt-1 font-semibold text-[#041e30]">Top 3 course matches with fit %</p>
-          </div>
-        </div>
+        <ToolFactsPreview
+          icon={LuGraduationCap}
+          iconClass="bg-[#eef2f7] text-[#041e30]"
+          name="Course Fit Test"
+          metricLabel="Format"
+          metricValue={`${QUESTIONS.length} prompts`}
+          points={['Agree / disagree preference flow', 'Top 3 course matches with fit %']}
+        />
       }
       results={
         result ? (

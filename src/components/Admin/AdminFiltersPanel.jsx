@@ -5,6 +5,7 @@ import { useAdminDateRange } from '../../hooks/useAdminDateRange';
 import {
   ALL_SLOT_IDS,
   ALLOWED_APPLICATION_STATUSES,
+  STUDENT_ACTIVITY_TYPE_OPTIONS,
   leadListFiltersToSearchParams,
 } from '../../utils/adminLeadFiltersShared';
 
@@ -52,9 +53,15 @@ export default function AdminFiltersPanel({ open, onClose }) {
     setSearchDraft(leadListFilters.q || '');
   }, [leadListFilters.q]);
 
+  const isLeadListPage =
+    location.pathname === '/admin/leads' ||
+    location.pathname === '/admin/student-workspace-leads' ||
+    location.pathname === '/admin/organic-rank-leads';
+  const isStudentWorkspaceLeads = location.pathname === '/admin/student-workspace-leads';
+
   const commitLeadFilters = (next) => {
     setLeadListFilters(next);
-    if (location.pathname === '/admin/leads') {
+    if (isLeadListPage) {
       setSearchParams(leadListFiltersToSearchParams(next), { replace: true });
     }
   };
@@ -78,14 +85,14 @@ export default function AdminFiltersPanel({ open, onClose }) {
       setLeadListFilters((prev) => {
         if ((prev.q || '') === searchDraft) return prev;
         const next = { ...prev, q: searchDraft };
-        if (location.pathname === '/admin/leads') {
+        if (isLeadListPage) {
           setSearchParams(leadListFiltersToSearchParams(next), { replace: true });
         }
         return next;
       });
     }, 350);
     return () => clearTimeout(t);
-  }, [searchDraft, location.pathname, setLeadListFilters, setSearchParams]);
+  }, [searchDraft, isLeadListPage, setLeadListFilters, setSearchParams]);
 
   const exportQuery = () => {
     const sp = new URLSearchParams();
@@ -287,8 +294,36 @@ export default function AdminFiltersPanel({ open, onClose }) {
                 onChange={(e) => patchLead({ utm_content: e.target.value })}
                 placeholder="utm_content"
                 className={fieldInputClass}
+                disabled={isStudentWorkspaceLeads}
               />
+              {isStudentWorkspaceLeads ? (
+                <p className="mt-1.5 text-xs text-gray-500">
+                  Locked to student workspace leads on this page.
+                </p>
+              ) : null}
             </div>
+            {isStudentWorkspaceLeads ? (
+              <div>
+                <label htmlFor="panel-activity-type" className={fieldLabelClass}>
+                  Tool / action
+                </label>
+                <select
+                  id="panel-activity-type"
+                  value={leadListFilters.activityType || ''}
+                  onChange={(e) => patchLead({ activityType: e.target.value })}
+                  className={fieldInputClass}
+                >
+                  {STUDENT_ACTIVITY_TYPE_OPTIONS.map((opt) => (
+                    <option key={opt.value || 'all'} value={opt.value}>
+                      {opt.label}
+                    </option>
+                  ))}
+                </select>
+                <p className="mt-1.5 text-xs text-gray-500">
+                  Show leads who used Rank Predictor, College Predictor, logged in, and more.
+                </p>
+              </div>
+            ) : null}
             <button
               type="button"
               onClick={() => {
@@ -302,7 +337,8 @@ export default function AdminFiltersPanel({ open, onClose }) {
                   trainingFormFilled: '',
                   selectedSlot: '',
                   slotDate: '',
-                  utm_content: '',
+                  utm_content: isStudentWorkspaceLeads ? leadListFilters.utm_content : '',
+                  activityType: '',
                   q: '',
                 };
                 setSearchDraft('');

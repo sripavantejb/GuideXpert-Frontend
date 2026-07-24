@@ -1,18 +1,18 @@
 import { useRef, useState } from 'react';
 import { FiZap } from 'react-icons/fi';
 import ToolWorkspaceLayout from './components/ToolWorkspaceLayout';
+import ToolFactsPreview from './components/ToolFactsPreview';
 import { getRankPredictorExams, getExamConfig } from '../../utils/rankPredictor';
 import { predictRankPublic } from '../../utils/api';
 import { useStudentAuth } from '../../contexts/StudentAuthContext';
+import { useRequireLoginToUse } from '../../components/studentAuth/RequireStudentAuth';
 import {
-  swBtnChip,
   swBtnPrimary,
   swError,
   swErrorBox,
   swInsightsPanel,
   swInput,
   swLabel,
-  swPreviewLabel,
   swResultCard,
   swResultsPanel,
   swSectionSubtitle,
@@ -26,6 +26,7 @@ const exams = getRankPredictorExams();
 
 export default function ExamPredictorPage() {
   const { savePrediction } = useStudentAuth() || {};
+  const requireLoginToUse = useRequireLoginToUse();
   const [examId, setExamId] = useState('');
   const [score, setScore] = useState('');
   const [difficulty, setDifficulty] = useState('Moderate');
@@ -39,6 +40,7 @@ export default function ExamPredictorPage() {
 
   const handleSubmit = async (event) => {
     event.preventDefault();
+    if (!requireLoginToUse()) return;
     const nextErrors = {};
     if (!examId) nextErrors.exam = 'Please select an exam.';
     if (score === '') nextErrors.score = 'Please enter your score.';
@@ -104,22 +106,16 @@ export default function ExamPredictorPage() {
         'Difficulty (MHT CET only): Select the paper difficulty for more accurate percentile prediction.',
       ]}
       preview={
-        <div className="space-y-3 text-sm">
-          <div className="flex items-center gap-2">
-            <span className="flex h-6 w-6 items-center justify-center rounded-lg bg-amber-50 text-amber-600">
-              <FiZap className="h-3.5 w-3.5" aria-hidden />
-            </span>
-            <p className={swPreviewLabel}>{exams.length} exams supported</p>
-          </div>
-          <div className="flex flex-wrap gap-1.5">
-            {exams.slice(0, 5).map((e) => (
-              <span key={e.id} className={swBtnChip}>
-                {e.name}
-              </span>
-            ))}
-            {exams.length > 5 && <span className={swBtnChip}>+{exams.length - 5} more</span>}
-          </div>
-        </div>
+        <ToolFactsPreview
+          icon={FiZap}
+          iconClass="bg-[#fff8ed] text-[#c45a0c]"
+          name="Exam Predictor"
+          metricLabel="Coverage"
+          metricValue={`${exams.length} exams`}
+          points={exams.slice(0, 4).map((e) => e.name).concat(
+            exams.length > 4 ? [`+${exams.length - 4} more supported`] : []
+          )}
+        />
       }
       results={
         result ? (

@@ -2,13 +2,11 @@ import { useEffect, useState } from 'react';
 import { useOutletContext } from 'react-router-dom';
 import { FiClock, FiCalendar, FiBell, FiUserCheck } from 'react-icons/fi';
 import ToolWorkspaceLayout from './components/ToolWorkspaceLayout';
+import ToolFactsPreview from './components/ToolFactsPreview';
 import {
   swEmptyState,
   swFormSubtitle,
   swFormTitle,
-  swPreviewLabel,
-  swProgressBar,
-  swProgressTrack,
   swResultCard,
 } from './components/studentWorkspaceUi';
 import { useStudentAuthRequired } from '../../contexts/StudentAuthContext';
@@ -36,7 +34,7 @@ function formatWhen(iso) {
 }
 
 export default function DeadlineManagerPage() {
-  const { session } = useStudentAuthRequired();
+  const { session, savePrediction } = useStudentAuthRequired();
   const { openOneOnOneBooking } = useOutletContext() || {};
   const [bookings, setBookings] = useState([]);
   const [bookingsLoading, setBookingsLoading] = useState(true);
@@ -52,13 +50,24 @@ export default function DeadlineManagerPage() {
       setBookingsLoading(true);
       const res = await getMyOneOnOneBookings(session.phone);
       if (cancelled) return;
-      setBookings(res.success ? res.data?.data?.items || [] : []);
+      const items = res.success ? res.data?.data?.items || [] : [];
+      setBookings(items);
       setBookingsLoading(false);
+      savePrediction?.({
+        type: 'deadline_manager',
+        tool: 'Deadline Manager',
+        title: 'Opened Deadline Manager',
+        summary: `${items.length} counselling booking${items.length === 1 ? '' : 's'} shown`,
+        payload: {
+          bookingCount: items.length,
+          bookingIds: items.slice(0, 10).map((b) => b.id).filter(Boolean),
+        },
+      });
     })();
     return () => {
       cancelled = true;
     };
-  }, [session?.phone]);
+  }, [session?.phone, savePrediction]);
 
   return (
     <ToolWorkspaceLayout
@@ -79,28 +88,18 @@ export default function DeadlineManagerPage() {
         'Check back regularly as new deadlines are added through the admission cycle.',
       ]}
       preview={
-        <div className="space-y-4 text-sm">
-          <div className="flex items-center gap-2">
-            <span className="flex h-8 w-8 items-center justify-center rounded-lg bg-[#e8f1f8] text-[#0b3a5c]">
-              <FiClock className="h-4 w-4" aria-hidden />
-            </span>
-            <div>
-              <p className={swPreviewLabel}>Reminders tracked</p>
-              <p className="font-semibold tabular-nums text-[#041e30]">
-                {SAMPLE_DEADLINES.length + bookings.length} items
-              </p>
-            </div>
-          </div>
-          <div>
-            <div className="flex justify-between text-xs text-[#5a6570]">
-              <span>Live feed status</span>
-              <span className="font-semibold text-[#041e30]">Integrating</span>
-            </div>
-            <div className={`mt-2 ${swProgressTrack}`}>
-              <div className={swProgressBar} style={{ width: '38%' }} />
-            </div>
-          </div>
-        </div>
+        <ToolFactsPreview
+          icon={FiClock}
+          iconClass="bg-[#e8f1f8] text-[#0b3a5c]"
+          name="Deadline Manager"
+          metricLabel="Reminders tracked"
+          metricValue={`${SAMPLE_DEADLINES.length + bookings.length} items`}
+          points={[
+            'Counselling session bookings',
+            'Exam and admission deadline tracks',
+            'Live official sync coming soon',
+          ]}
+        />
       }
       results={null}
       insights={null}

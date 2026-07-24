@@ -12,6 +12,7 @@ import {
   leadListFiltersFromSearchParams,
   leadListFiltersToSearchParams,
   leadListFiltersToApiParams,
+  STUDENT_ACTIVITY_TYPE_OPTIONS,
 } from '../../utils/adminLeadFiltersShared';
 import { copyTextToClipboard } from '../../utils/clipboard';
 import { ADMIN_VIEW_ALL_LIMIT } from '../../constants/adminListLimits';
@@ -469,6 +470,39 @@ export default function Leads({ organicOnly = false, studentWorkspaceOnly = fals
             <FiCopy className="w-4 h-4" /> {copyLoading ? 'Preparing...' : 'Copy'}
           </button>
         </div>
+        {studentWorkspaceOnly ? (
+          <div className="mt-3 flex flex-wrap gap-2" role="group" aria-label="Filter by tool or action">
+            {STUDENT_ACTIVITY_TYPE_OPTIONS.filter((o) =>
+              ['', 'auth', 'rank_predictor', 'college_predictor', 'branch_predictor', 'exam_predictor', 'college_comparison', 'deadline_manager'].includes(
+                o.value
+              )
+            ).map((opt) => {
+              const active = (leadListFilters.activityType || '') === opt.value;
+              return (
+                <button
+                  key={opt.value || 'all'}
+                  type="button"
+                  onClick={() => {
+                    setLeadListFilters((prev) => {
+                      const next = { ...prev, activityType: opt.value };
+                      const forUrl = scopedUtm ? { ...next, utm_content: scopedUtm } : next;
+                      setSearchParams(leadListFiltersToSearchParams(forUrl), { replace: true });
+                      return next;
+                    });
+                    setPagination((prev) => ({ ...prev, page: 1 }));
+                  }}
+                  className={`rounded-full px-3 py-1.5 text-xs font-semibold transition ${
+                    active
+                      ? 'bg-primary-navy text-white shadow-sm'
+                      : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+                  }`}
+                >
+                  {opt.label}
+                </button>
+              );
+            })}
+          </div>
+        ) : null}
       </div>
 
       {error && (
@@ -649,6 +683,13 @@ export default function Leads({ organicOnly = false, studentWorkspaceOnly = fals
                                 <div key={`${a.createdAt || idx}-${a.title}`} className="rounded border border-gray-100 bg-gray-50 px-2.5 py-2 text-xs text-gray-800">
                                   <p className="font-semibold text-gray-900">{a.tool || a.type}: {a.title}</p>
                                   {a.summary ? <p className="mt-0.5 text-gray-600">{a.summary}</p> : null}
+                                  {a.payload ? (
+                                    <pre className="mt-1 max-h-28 overflow-auto whitespace-pre-wrap break-words rounded bg-white/80 p-1.5 font-mono text-[10px] text-gray-500">
+                                      {typeof a.payload === 'string'
+                                        ? a.payload
+                                        : JSON.stringify(a.payload, null, 2)}
+                                    </pre>
+                                  ) : null}
                                   {a.createdAt ? <p className="mt-0.5 text-gray-400">{formatDate(a.createdAt)}</p> : null}
                                 </div>
                               ))}

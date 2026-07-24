@@ -143,6 +143,7 @@ export const getAdminLeads = async (params = {}, token = getStoredToken()) => {
   if (params.slotDate && typeof params.slotDate === 'string' && params.slotDate.trim()) search.set('slotDate', params.slotDate);
   if (params.q) search.set('q', params.q);
   if (params.utm_content) search.set('utm_content', params.utm_content);
+  if (params.activityType) search.set('activityType', params.activityType);
   search.set('_t', String(Date.now()));
   const query = search.toString();
   return adminRequest(`/leads?${query}`, { method: 'GET' }, token);

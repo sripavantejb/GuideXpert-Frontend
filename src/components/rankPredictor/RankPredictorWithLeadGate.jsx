@@ -16,6 +16,10 @@ import {
   RANK_PREDICTOR_LEAD_OCCUPATION,
   RANK_PREDICTOR_LEAD_UTM,
 } from '../../utils/rankPredictorLeadConstants';
+import {
+  STUDENT_WORKSPACE_LEAD_UTM,
+  STUDENT_WORKSPACE_OCCUPATION,
+} from '../../utils/studentWorkspaceLeadConstants';
 import { saveOrganicRankLeadSnapshot } from '../../utils/organicRankLeadLocal';
 import ResultCard from './ResultCard';
 import { useStudentAuth } from '../../contexts/StudentAuthContext';
@@ -157,13 +161,15 @@ export default function RankPredictorWithLeadGate({
           const leadName = String(
             studentAuth.profile?.fullName || studentAuth.session.fullName || ''
           ).trim();
+          // Keep student_workspace_login UTM so the lead stays on Student workspace leads
           if (leadName.length >= 2) {
             await saveStep1(
               leadName,
               studentAuth.session.phone,
-              RANK_PREDICTOR_LEAD_OCCUPATION,
-              leadUtm,
+              STUDENT_WORKSPACE_OCCUPATION,
+              STUDENT_WORKSPACE_LEAD_UTM,
               {
+                loginOnly: true,
                 rankPredictorLead: {
                   examId: exam.id,
                   score: scoreValue,
@@ -203,6 +209,13 @@ export default function RankPredictorWithLeadGate({
     setNumericScore(validation.value);
     if (isCounsellor || alreadyLoggedIn) {
       await runDirectPrediction(validation.value);
+      return;
+    }
+    // Student workspace: page stays visible; side OTP popup gates usage
+    if (isStudent) {
+      studentAuth?.openAuthModal?.('login', {
+        pendingPath: `${window.location.pathname}${window.location.search || ''}`,
+      });
       return;
     }
     setWizardStep('lead');

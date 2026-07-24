@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from 'react';
 import { FiX } from 'react-icons/fi';
-import { sendOtp, verifyOtp, saveStep1, saveStep2 } from '../../utils/api';
+import { sendOtp, verifyOtp, saveStep1, saveStep2, saveStudentActivity } from '../../utils/api';
 import { STUDYING_OPTIONS, getStudentProfile, normalizePhone } from '../../utils/studentProfileStore';
 import { useStudentAuthRequired } from '../../contexts/StudentAuthContext';
 import {
@@ -198,6 +198,43 @@ export default function StudentAuthModal() {
         setStep('details');
         return;
       }
+
+      const profileSnap = {
+        age: ageVal ? Number(ageVal) : null,
+        currentlyStudying: studying || undefined,
+        city: cityVal || undefined,
+      };
+
+      // Send login/signup + profile to admin Student workspace leads
+      saveStudentActivity(
+        phoneNorm,
+        {
+          type: isSignup ? 'signup' : 'login',
+          tool: 'Student auth',
+          title: isSignup ? 'Signed up for student workspace' : 'Logged in to student workspace',
+          summary: [
+            name,
+            profileSnap.age != null ? `age ${profileSnap.age}` : null,
+            profileSnap.currentlyStudying,
+            profileSnap.city,
+          ]
+            .filter(Boolean)
+            .join(' · '),
+          payload: {
+            mode: isSignup ? 'signup' : 'login',
+            fullName: name,
+            phone: phoneNorm,
+            ...profileSnap,
+          },
+        },
+        isSignup || profileSnap.age != null || profileSnap.currentlyStudying || profileSnap.city
+          ? {
+              age: profileSnap.age,
+              currentlyStudying: profileSnap.currentlyStudying,
+              city: profileSnap.city,
+            }
+          : undefined
+      ).catch(() => {});
 
       completeAuth({
         phone: phoneNorm,

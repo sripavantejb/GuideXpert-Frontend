@@ -1,9 +1,11 @@
 import { useMemo, useRef, useState } from 'react';
-import { FiAlertCircle, FiLoader } from 'react-icons/fi';
+import { FiAlertCircle, FiLoader, FiGitBranch } from 'react-icons/fi';
 import ToolWorkspaceLayout from './components/ToolWorkspaceLayout';
+import ToolFactsPreview from './components/ToolFactsPreview';
 import { getPredictedCollegesPublic } from '../../utils/api';
 import { formatPredictorClientError } from '../../utils/collegePredictorErrors';
 import { useStudentAuth } from '../../contexts/StudentAuthContext';
+import { useRequireLoginToUse } from '../../components/studentAuth/RequireStudentAuth';
 import {
   ENTRANCE_EXAMS,
   RESERVATION_CATEGORIES,
@@ -143,6 +145,7 @@ function SelectField({ label, value, onChange, options, placeholder, error, disa
 
 export default function BranchPredictorPage() {
   const { savePrediction } = useStudentAuth() || {};
+  const requireLoginToUse = useRequireLoginToUse();
   const [exam, setExam] = useState('JEE');
   const examMeta = useMemo(() => getEntranceExamMeta(exam), [exam]);
   const catOptions = useMemo(() => categoryOptionsForExam(examMeta), [examMeta]);
@@ -310,6 +313,7 @@ export default function BranchPredictorPage() {
 
   const onSubmit = async (event) => {
     event.preventDefault();
+    if (!requireLoginToUse()) return;
     if (!validate()) return;
 
     setLoading(true);
@@ -334,7 +338,25 @@ export default function BranchPredictorPage() {
       type: 'branch_predictor',
       tool: 'Branch Predictor',
       title: 'Used Branch Predictor',
-      summary: 'Ran a branch prediction',
+      summary: [
+        examMeta?.label || exam,
+        isMht ? `percentile ${form.percentile}` : `rank ${form.rank}`,
+        form.category,
+        `${list.length} colleges`,
+      ]
+        .filter(Boolean)
+        .join(' · '),
+      payload: {
+        exam,
+        rank: form.rank || null,
+        percentile: form.percentile || null,
+        category: form.category,
+        admission: form.admission,
+        gender: form.gender,
+        quota: form.quota,
+        collegeId: form.collegeId || null,
+        collegeCount: list.length,
+      },
     });
 
     if (!list.length) {
@@ -400,23 +422,18 @@ export default function BranchPredictorPage() {
         'College: After prediction, pick a college to view branch-wise outlook.',
       ]}
       preview={
-        <div className="space-y-3 text-sm text-[#5a6570]">
-          <p className="font-semibold text-[#041e30]">You will see</p>
-          <ul className="space-y-2">
-            <li className="flex gap-2">
-              <span className="mt-2 h-1.5 w-1.5 shrink-0 rounded-full bg-[#f27921]" aria-hidden />
-              High / medium / low branch chances
-            </li>
-            <li className="flex gap-2">
-              <span className="mt-2 h-1.5 w-1.5 shrink-0 rounded-full bg-[#f27921]" aria-hidden />
-              Cutoff rank comparison for each branch
-            </li>
-            <li className="flex gap-2">
-              <span className="mt-2 h-1.5 w-1.5 shrink-0 rounded-full bg-[#f27921]" aria-hidden />
-              Relative likelihood bars to compare options quickly
-            </li>
-          </ul>
-        </div>
+        <ToolFactsPreview
+          icon={FiGitBranch}
+          iconClass="bg-[#eef2f7] text-[#041e30]"
+          name="Branch Predictor"
+          metricLabel="You will see"
+          metricValue="Chance bands"
+          points={[
+            'High / medium / low branch chances',
+            'Cutoff rank comparison for each branch',
+            'Relative likelihood bars to compare options',
+          ]}
+        />
       }
       results={
         hasSearched ? (
