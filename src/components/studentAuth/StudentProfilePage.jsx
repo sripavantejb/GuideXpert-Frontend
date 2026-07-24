@@ -2,7 +2,7 @@ import { Link } from 'react-router-dom';
 import { FiLogOut, FiUser } from 'react-icons/fi';
 import { useStudentAuthRequired } from '../../contexts/StudentAuthContext';
 import { studyingLabel } from '../../utils/studentProfileStore';
-import ToolWorkspaceLayout from '../pages/studentsTools/components/ToolWorkspaceLayout';
+import ToolWorkspaceLayout from '../../pages/studentsTools/components/ToolWorkspaceLayout';
 import {
   swBtnSecondary,
   swEmptyState,
@@ -15,7 +15,7 @@ import {
   swSectionTitle,
   swSelect,
   swBtnPrimary,
-} from '../pages/studentsTools/components/studentWorkspaceUi';
+} from '../../pages/studentsTools/components/studentWorkspaceUi';
 import { STUDYING_OPTIONS } from '../../utils/studentProfileStore';
 import { useState } from 'react';
 import RequireStudentAuth from './RequireStudentAuth';
