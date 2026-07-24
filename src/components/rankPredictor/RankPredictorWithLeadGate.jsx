@@ -154,13 +154,24 @@ export default function RankPredictorWithLeadGate({
 
       if (alreadyLoggedIn && studentAuth?.session?.phone) {
         try {
-          await saveStep1(
-            studentAuth.profile?.fullName || studentAuth.session.fullName || 'Student',
-            studentAuth.session.phone,
-            RANK_PREDICTOR_LEAD_OCCUPATION,
-            leadUtm,
-            { rankPredictorLead: { examId: exam.id, score: scoreValue, ...(exam.requiresDifficulty ? { difficulty } : {}) } }
-          );
+          const leadName = String(
+            studentAuth.profile?.fullName || studentAuth.session.fullName || ''
+          ).trim();
+          if (leadName.length >= 2) {
+            await saveStep1(
+              leadName,
+              studentAuth.session.phone,
+              RANK_PREDICTOR_LEAD_OCCUPATION,
+              leadUtm,
+              {
+                rankPredictorLead: {
+                  examId: exam.id,
+                  score: scoreValue,
+                  ...(exam.requiresDifficulty ? { difficulty } : {}),
+                },
+              }
+            );
+          }
           await saveRankPredictorPrediction(studentAuth.session.phone, {
             examId: exam.id,
             predictedValue: normalized.predictedValue,

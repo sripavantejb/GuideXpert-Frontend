@@ -52,13 +52,11 @@ export default function StudentAuthModal() {
     setError('');
     setInfo('');
     setLoading(false);
-    if (authModalMode === 'signup') {
-      setFullName('');
-      setPhone('');
-      setAge('');
-      setCurrentlyStudying('');
-      setCity('');
-    }
+    setFullName('');
+    setPhone('');
+    setAge('');
+    setCurrentlyStudying('');
+    setCity('');
   }, [authModalOpen, authModalMode]);
 
   useEffect(() => {
@@ -91,11 +89,12 @@ export default function StudentAuthModal() {
     let cityVal = city.trim();
     let profileOptions;
 
+    if (name.length < 2) {
+      setError('Enter your full name.');
+      return;
+    }
+
     if (isSignup) {
-      if (name.length < 2) {
-        setError('Enter your full name.');
-        return;
-      }
       const ageNum = Number(ageVal);
       if (!ageVal || Number.isNaN(ageNum) || ageNum < 10 || ageNum > 80) {
         setError('Enter a valid age (10–80).');
@@ -114,14 +113,12 @@ export default function StudentAuthModal() {
         },
       };
     } else {
-      // Login: mobile + OTP only — reuse local profile name if present
+      // Login: name + mobile + OTP — merge local profile extras when present
       const existing = getStudentProfile(phoneNorm);
       if (existing) {
-        name = existing.fullName || 'Student';
-        ageVal = existing.age != null ? String(existing.age) : '';
-        studying = existing.currentlyStudying || '';
-        cityVal = existing.city || '';
-        setFullName(name);
+        ageVal = existing.age != null ? String(existing.age) : ageVal;
+        studying = existing.currentlyStudying || studying;
+        cityVal = existing.city || cityVal;
         if (existing.age != null) setAge(String(existing.age));
         if (existing.currentlyStudying) setCurrentlyStudying(existing.currentlyStudying);
         if (existing.city) setCity(existing.city);
@@ -132,20 +129,18 @@ export default function StudentAuthModal() {
             city: existing.city,
           },
         };
-      } else {
-        name = 'Student';
       }
     }
 
     setLoading(true);
     try {
-      const sendRes = await sendOtp(name || 'Student', phoneNorm, STUDENT_WORKSPACE_OCCUPATION);
+      const sendRes = await sendOtp(name, phoneNorm, STUDENT_WORKSPACE_OCCUPATION);
       if (!sendRes.success) {
         setError(sendRes.message || 'Could not send OTP. Try again.');
         return;
       }
       await saveStep1(
-        name || 'Student',
+        name,
         phoneNorm,
         STUDENT_WORKSPACE_OCCUPATION,
         STUDENT_WORKSPACE_LEAD_UTM,
@@ -191,14 +186,18 @@ export default function StudentAuthModal() {
       if (!isSignup) {
         const existing = getStudentProfile(phoneNorm);
         if (existing) {
-          name = existing.fullName || name;
+          name = name.length >= 2 ? name : existing.fullName || name;
           ageVal = existing.age != null ? String(existing.age) : ageVal;
           studying = existing.currentlyStudying || studying;
           cityVal = existing.city || cityVal;
         }
       }
 
-      if (name.length < 2) name = 'Student';
+      if (name.length < 2) {
+        setError('Enter your full name.');
+        setStep('details');
+        return;
+      }
 
       completeAuth({
         phone: phoneNorm,
@@ -258,7 +257,7 @@ export default function StudentAuthModal() {
             <p className="mt-1 text-sm text-[#5a6570]">
               {isSignup
                 ? 'Tell us about yourself — we save predictions to your profile and admin leads.'
-                : 'Enter your mobile number. We’ll send a one-time password to continue.'}
+                : 'Enter your name and mobile number. We’ll send a one-time password to continue.'}
             </p>
           </div>
           <button
@@ -274,18 +273,19 @@ export default function StudentAuthModal() {
         <div className="max-h-[min(70vh,520px)] overflow-y-auto px-4 py-4 sm:px-5 sm:py-5">
           {step === 'details' ? (
             <form className="space-y-4" onSubmit={handleSendOtp}>
+              <label className={swLabel}>
+                Full name
+                <input
+                  className={swInput}
+                  value={fullName}
+                  onChange={(e) => setFullName(e.target.value)}
+                  autoComplete="name"
+                  placeholder="Your name"
+                />
+              </label>
+
               {isSignup ? (
                 <>
-                  <label className={swLabel}>
-                    Full name
-                    <input
-                      className={swInput}
-                      value={fullName}
-                      onChange={(e) => setFullName(e.target.value)}
-                      autoComplete="name"
-                      placeholder="Your name"
-                    />
-                  </label>
                   <label className={swLabel}>
                     Age
                     <input

@@ -12,8 +12,6 @@ import {
 import { LAYOUT } from '../../../components/studentDashboard/careers360/careers360Theme';
 import {
   swPageShell,
-  swSectionTitle,
-  swSectionSubtitle,
   swCard,
 } from './studentWorkspaceUi';
 import RelatedToolsSection from './RelatedToolsSection';
@@ -145,73 +143,113 @@ function BreadcrumbNav({ category, title }) {
   );
 }
 
+function splitGuideItem(item) {
+  const text = String(item || '').trim();
+  const match = text.match(/^([^:]{1,48}):\s+(.+)$/);
+  if (match) {
+    return { label: match[1].trim(), detail: match[2].trim() };
+  }
+  return { label: null, detail: text };
+}
+
 function ToolInfoSection({ whatThisToolDoes, inputGuide, preview }) {
   const hasWhat = Array.isArray(whatThisToolDoes) && whatThisToolDoes.length > 0;
   const hasGuide = Array.isArray(inputGuide) && inputGuide.length > 0;
   const hasPreview = Boolean(preview);
   if (!hasWhat && !hasGuide && !hasPreview) return null;
 
+  const columns = [hasWhat, hasGuide, hasPreview].filter(Boolean).length;
+
   return (
-    <section className={`${swCard} space-y-8`} aria-labelledby="tool-info-heading">
-      <div>
+    <section
+      className={`${swCard} !p-0 overflow-hidden`}
+      aria-labelledby="tool-info-heading"
+    >
+      <header className="border-b border-[#e8edf3] bg-[#f8fafc] px-6 py-5 sm:px-8 sm:py-6">
         <p className="text-[11px] font-semibold uppercase tracking-[0.16em] text-[#f27921]">
           Tool guide
         </p>
-        <h2 id="tool-info-heading" className={swSectionTitle}>
+        <h2
+          id="tool-info-heading"
+          className="mt-2 font-sw-display text-xl font-bold tracking-tight text-[#041e30] sm:text-[1.35rem]"
+        >
           About this predictor
         </h2>
-        <p className={swSectionSubtitle}>
+        <p className="mt-2 max-w-2xl text-sm leading-relaxed text-[#5a6570]">
           Quick context on what this tool covers and how to fill the form for better results.
         </p>
-      </div>
+      </header>
 
       <div
-        className={`grid gap-6 ${
-          hasPreview ? 'lg:grid-cols-[minmax(0,1.2fr)_minmax(0,18rem)]' : 'lg:grid-cols-2'
+        className={`grid divide-y divide-[#e8edf3] lg:divide-x lg:divide-y-0 ${
+          columns === 3
+            ? 'lg:grid-cols-[minmax(0,1.15fr)_minmax(0,1.15fr)_minmax(0,16rem)]'
+            : columns === 2
+              ? 'lg:grid-cols-2'
+              : 'lg:grid-cols-1'
         }`}
       >
-        <div className="space-y-6">
-          {hasWhat ? (
-            <div>
-              <h3 className="inline-flex items-center gap-2 text-sm font-semibold text-[#041e30]">
-                <FiInfo className="h-4 w-4 text-[#f27921]" aria-hidden />
-                What this tool does
-              </h3>
-              <ul className="mt-3 space-y-2.5">
-                {whatThisToolDoes.map((item) => (
-                  <li key={item} className="flex gap-2.5 text-sm leading-relaxed text-[#5a6570]">
-                    <span className="mt-2 h-1.5 w-1.5 shrink-0 rounded-full bg-[#f27921]" aria-hidden />
-                    <span>{item}</span>
-                  </li>
-                ))}
-              </ul>
-            </div>
-          ) : null}
+        {hasWhat ? (
+          <div className="px-6 py-6 sm:px-8 sm:py-7">
+            <h3 className="flex items-center gap-2.5 text-[13px] font-semibold tracking-tight text-[#041e30]">
+              <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-[#fff4ed] text-[#f27921]">
+                <FiInfo className="h-4 w-4" aria-hidden />
+              </span>
+              What this tool does
+            </h3>
+            <ul className="mt-5 space-y-3.5">
+              {whatThisToolDoes.map((item) => (
+                <li key={item} className="flex gap-3">
+                  <span
+                    className="mt-[7px] h-1.5 w-1.5 shrink-0 rounded-full bg-[#f27921]"
+                    aria-hidden
+                  />
+                  <p className="min-w-0 text-sm leading-[1.65] text-[#4a5563]">{item}</p>
+                </li>
+              ))}
+            </ul>
+          </div>
+        ) : null}
 
-          {hasGuide ? (
-            <div>
-              <h3 className="inline-flex items-center gap-2 text-sm font-semibold text-[#041e30]">
-                <FiList className="h-4 w-4 text-[#f27921]" aria-hidden />
-                How to fill the inputs
-              </h3>
-              <ul className="mt-3 space-y-2.5">
-                {inputGuide.map((item) => (
-                  <li key={item} className="flex gap-2.5 text-sm leading-relaxed text-[#5a6570]">
-                    <span className="mt-2 h-1.5 w-1.5 shrink-0 rounded-full bg-[#1d4ed8]" aria-hidden />
-                    <span>{item}</span>
+        {hasGuide ? (
+          <div className="px-6 py-6 sm:px-8 sm:py-7">
+            <h3 className="flex items-center gap-2.5 text-[13px] font-semibold tracking-tight text-[#041e30]">
+              <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-[#eff6ff] text-[#1d4ed8]">
+                <FiList className="h-4 w-4" aria-hidden />
+              </span>
+              How to fill the inputs
+            </h3>
+            <ol className="mt-5 space-y-4">
+              {inputGuide.map((item, index) => {
+                const { label, detail } = splitGuideItem(item);
+                return (
+                  <li key={item} className="flex gap-3">
+                    <span className="mt-0.5 flex h-6 w-6 shrink-0 items-center justify-center rounded-md bg-[#eef2f7] text-[11px] font-bold tabular-nums text-[#5a6570]">
+                      {index + 1}
+                    </span>
+                    <div className="min-w-0 pt-0.5">
+                      {label ? (
+                        <>
+                          <p className="text-sm font-semibold text-[#041e30]">{label}</p>
+                          <p className="mt-1 text-sm leading-[1.65] text-[#4a5563]">{detail}</p>
+                        </>
+                      ) : (
+                        <p className="text-sm leading-[1.65] text-[#4a5563]">{detail}</p>
+                      )}
+                    </div>
                   </li>
-                ))}
-              </ul>
-            </div>
-          ) : null}
-        </div>
+                );
+              })}
+            </ol>
+          </div>
+        ) : null}
 
         {hasPreview ? (
-          <aside className="rounded-xl border border-[#e4e9f0] bg-[#f7f9fc] p-5">
+          <aside className="bg-[#f8fafc] px-6 py-6 sm:px-7 sm:py-7">
             <p className="text-[11px] font-semibold uppercase tracking-[0.14em] text-[#8a94a0]">
               Snapshot
             </p>
-            <div className="mt-3">{preview}</div>
+            <div className="mt-4">{preview}</div>
           </aside>
         ) : null}
       </div>
