@@ -18,6 +18,12 @@ import { LuGraduationCap, LuScale } from 'react-icons/lu';
 import { getWorkspaceMegaMenus } from '../../../constants/studentWorkspaceNavMenus';
 import { C360, LAYOUT } from './careers360Theme';
 import { useStudentAuthRequired } from '../../../contexts/StudentAuthContext';
+import StudentUpdatesBell from '../StudentUpdatesBell';
+import { getStudentWorkspaceUpdatesFeed, getStudentLiveActivityFeed } from '../../../utils/api';
+import {
+  countUnreadUpdates,
+  markUpdatesSeen,
+} from '../../../utils/studentWorkspaceUpdates';
 
 const LOGO_URL =
   'https://res.cloudinary.com/dfqdb1xws/image/upload/v1773394627/GuideXpert_Logo_2_icepsv.png';
@@ -120,6 +126,11 @@ export default function Careers360Navbar({
   const [mobileOpen, setMobileOpen] = useState(false);
   const [openMenuKey, setOpenMenuKey] = useState(null);
   const [activePanelByMenu, setActivePanelByMenu] = useState({});
+  const [updatesOpen, setUpdatesOpen] = useState(false);
+  const [updates, setUpdates] = useState([]);
+  const [updatesLoading, setUpdatesLoading] = useState(true);
+  const [unreadCount, setUnreadCount] = useState(0);
+  const [liveItems, setLiveItems] = useState([]);
   const { pathname } = useLocation();
   const { isAuthenticated, openAuthModal, session, profile } = useStudentAuthRequired();
 
@@ -129,11 +140,54 @@ export default function Careers360Navbar({
   const closeActions = useCallback(() => {
     setMobileOpen(false);
     setOpenMenuKey(null);
+    setUpdatesOpen(false);
   }, []);
 
   useEffect(() => {
     closeActions();
   }, [pathname, closeActions]);
+
+  useEffect(() => {
+    let cancelled = false;
+    (async () => {
+      setUpdatesLoading(true);
+      const res = await getStudentWorkspaceUpdatesFeed({ placement: 'navbar', limit: 12 });
+      if (cancelled) return;
+      const items = res.success ? res.data?.data?.items || [] : [];
+      setUpdates(items);
+      setUnreadCount(countUnreadUpdates(items));
+      setUpdatesLoading(false);
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, []);
+
+  useEffect(() => {
+    let cancelled = false;
+    const loadLive = async () => {
+      const res = await getStudentLiveActivityFeed({ limit: 10, sinceHours: 48 });
+      if (cancelled) return;
+      setLiveItems(res.success ? res.data?.data?.items || [] : []);
+    };
+    loadLive();
+    const poll = window.setInterval(loadLive, 15_000);
+    return () => {
+      cancelled = true;
+      window.clearInterval(poll);
+    };
+  }, []);
+
+  const handleUpdatesToggle = () => {
+    setUpdatesOpen((prev) => {
+      const next = !prev;
+      if (next) {
+        markUpdatesSeen(updates.map((u) => u.id));
+        setUnreadCount(0);
+      }
+      return next;
+    });
+  };
 
   const openMenu = menus.find((m) => m.key === openMenuKey);
 
@@ -146,8 +200,20 @@ export default function Careers360Navbar({
     });
   };
 
+  const menuOpen = Boolean(openMenu) || mobileOpen;
+
   return (
-    <header className="sticky top-0 z-50 bg-white shadow-[0_1px_0_#e8eaed]" role="banner">
+    <>
+      {menuOpen ? (
+        <button
+          type="button"
+          aria-label="Close menu"
+          className="fixed inset-0 z-40 bg-[#041e30]/25 backdrop-blur-[3px] transition-opacity"
+          onClick={closeActions}
+        />
+      ) : null}
+
+      <header className="sticky top-0 z-50 bg-white shadow-[0_1px_0_#e8eaed]" role="banner">
       <div className="border-b border-[#eceef2]">
         <div className={`${LAYOUT.container} flex h-[3.75rem] items-center gap-4 lg:h-16 lg:gap-6`}>
           <Link to="/students" className="shrink-0" aria-label="GuideXpert students workspace">
@@ -171,6 +237,20 @@ export default function Careers360Navbar({
           </div>
 
           <div className="ml-auto flex items-center gap-1 sm:gap-2">
+            <StudentUpdatesBell
+              items={updates}
+              liveItems={liveItems}
+              unreadCount={unreadCount}
+              open={updatesOpen}
+              loading={updatesLoading}
+              onToggle={handleUpdatesToggle}
+              onClose={() => setUpdatesOpen(false)}
+              onOpenItem={(item) => {
+                markUpdatesSeen([item.id]);
+                setUnreadCount((c) => Math.max(0, c - 1));
+                setUpdatesOpen(false);
+              }}
+            />
             <Link
               to="/students/rank-predictor"
               className="hidden h-9 w-9 items-center justify-center rounded-full text-[#666] transition hover:bg-[#f5f6f8] hover:text-[#333] sm:inline-flex"
@@ -227,7 +307,7 @@ export default function Careers360Navbar({
         <div className="border-b border-[#eceef2]">
           <div className={LAYOUT.container}>
             <nav
-              className="flex items-stretch gap-0.5 overflow-x-auto [-ms-overflow-style:none] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden"
+              className="flex items-stretch justify-center gap-1 overflow-x-auto [-ms-overflow-style:none] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden xl:gap-2"
               aria-label="Workspace categories"
             >
               {menus.map((menu) => {
@@ -317,5 +397,6 @@ export default function Careers360Navbar({
         </div>
       ) : null}
     </header>
+    </>
   );
 }

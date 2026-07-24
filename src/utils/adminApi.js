@@ -1410,3 +1410,58 @@ export const recomputePredictions = async (body = {}, token = getStoredToken()) 
     token
   );
 };
+
+/** Student workspace education updates (admin) */
+export const getStudentWorkspaceUpdates = async (params = {}, token = getStoredToken()) => {
+  const search = new URLSearchParams();
+  if (params.status) search.set('status', params.status);
+  const query = search.toString();
+  return adminRequest(`/student-workspace-updates${query ? `?${query}` : ''}`, { method: 'GET' }, token);
+};
+
+export const getStudentWorkspaceUpdateById = async (id, token = getStoredToken()) =>
+  adminRequest(`/student-workspace-updates/${encodeURIComponent(id)}`, { method: 'GET' }, token);
+
+export const createStudentWorkspaceUpdate = async (body, token = getStoredToken()) =>
+  adminRequest('/student-workspace-updates', { method: 'POST', body: JSON.stringify(body) }, token);
+
+export const updateStudentWorkspaceUpdate = async (id, body, token = getStoredToken()) =>
+  adminRequest(`/student-workspace-updates/${encodeURIComponent(id)}`, {
+    method: 'PATCH',
+    body: JSON.stringify(body),
+  }, token);
+
+export const deleteStudentWorkspaceUpdate = async (id, token = getStoredToken()) =>
+  adminRequest(`/student-workspace-updates/${encodeURIComponent(id)}`, { method: 'DELETE' }, token);
+
+export const publishStudentWorkspaceUpdate = async (id, token = getStoredToken()) =>
+  adminRequest(`/student-workspace-updates/${encodeURIComponent(id)}/publish`, { method: 'POST' }, token);
+
+export const unpublishStudentWorkspaceUpdate = async (id, token = getStoredToken()) =>
+  adminRequest(`/student-workspace-updates/${encodeURIComponent(id)}/unpublish`, { method: 'POST' }, token);
+
+/** Student testimonials (admin) */
+export const getStudentTestimonials = async (params = {}, token = getStoredToken()) => {
+  const search = new URLSearchParams();
+  if (params.status) search.set('status', params.status);
+  const query = search.toString();
+  return adminRequest(`/student-testimonials${query ? `?${query}` : ''}`, { method: 'GET' }, token);
+};
+
+export const createStudentTestimonial = async (body, token = getStoredToken()) =>
+  adminRequest('/student-testimonials', { method: 'POST', body: JSON.stringify(body) }, token);
+
+export const updateStudentTestimonial = async (id, body, token = getStoredToken()) =>
+  adminRequest(`/student-testimonials/${encodeURIComponent(id)}`, {
+    method: 'PATCH',
+    body: JSON.stringify(body),
+  }, token);
+
+export const deleteStudentTestimonial = async (id, token = getStoredToken()) =>
+  adminRequest(`/student-testimonials/${encodeURIComponent(id)}`, { method: 'DELETE' }, token);
+
+export const publishStudentTestimonial = async (id, token = getStoredToken()) =>
+  adminRequest(`/student-testimonials/${encodeURIComponent(id)}/publish`, { method: 'POST' }, token);
+
+export const unpublishStudentTestimonial = async (id, token = getStoredToken()) =>
+  adminRequest(`/student-testimonials/${encodeURIComponent(id)}/unpublish`, { method: 'POST' }, token);

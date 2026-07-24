@@ -78,6 +78,8 @@ import OneOnOneCounselorSlots from './pages/oneOnOneCounselor/OneOnOneCounselorS
 import OneOnOneCounselorBookings from './pages/oneOnOneCounselor/OneOnOneCounselorBookings';
 import OneOnOneCounselorProfile from './pages/oneOnOneCounselor/OneOnOneCounselorProfile';
 import Announcements from './pages/admin/Announcements';
+import StudentWorkspaceUpdatesAdmin from './pages/admin/StudentWorkspaceUpdatesAdmin';
+import StudentTestimonialsAdmin from './pages/admin/StudentTestimonialsAdmin';
 import WebinarProgressAdmin from './pages/admin/WebinarProgress';
 import BulkCertificateDownload from './pages/admin/BulkCertificateDownload';
 import OsviCalls from './pages/admin/OsviCalls';
@@ -158,6 +160,7 @@ const DeadlineManagerToolPage = lazy(() => import('./pages/studentsTools/Deadlin
 const PredictorsHubPage = lazy(() => import('./pages/studentsTools/PredictorsHubPage'));
 const TestsHubPage = lazy(() => import('./pages/studentsTools/TestsHubPage'));
 const StudentProfilePage = lazy(() => import('./components/studentAuth/StudentProfilePage'));
+const StudentUpdatesPage = lazy(() => import('./pages/studentsTools/StudentUpdatesPage'));
 import CollegePredictorPage from './pages/CollegePredictorPage';
 import RankPredictorHome from './pages/RankPredictorHome';
 import ExamPredictor from './pages/ExamPredictor';
@@ -373,6 +376,14 @@ function App() {
               }
             />
             <Route
+              path="updates"
+              element={
+                <Suspense fallback={<div className="flex min-h-screen items-center justify-center bg-slate-50 text-slate-500"><div className="animate-pulse text-sm font-medium">Loading…</div></div>}>
+                  <StudentUpdatesPage />
+                </Suspense>
+              }
+            />
+            <Route
               path="college-predictor"
               element={
                 <RequireStudentAuth title="Login to use College Predictor">
@@ -521,6 +532,8 @@ function App() {
             <Route path="assessment-2-results" element={<Navigate to="/admin/assessment-results?type=2" replace />} />
             <Route path="assessment-3-results" element={<Navigate to="/admin/assessment-results?type=3" replace />} />
             <Route path="announcements" element={<Announcements />} />
+            <Route path="student-workspace-updates" element={<StudentWorkspaceUpdatesAdmin />} />
+            <Route path="student-testimonials" element={<StudentTestimonialsAdmin />} />
             <Route path="webinar-progress" element={<WebinarProgressAdmin />} />
             <Route path="bulk-certificates" element={<BulkCertificateDownload />} />
             <Route path="blogs" element={<AdminBlog />} />

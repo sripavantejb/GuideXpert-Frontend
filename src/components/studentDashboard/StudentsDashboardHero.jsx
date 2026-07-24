@@ -1,7 +1,6 @@
-import { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
-import { AnimatePresence, motion } from 'framer-motion';
-import { FiArrowRight, FiCalendar, FiCheck, FiSearch, FiX } from 'react-icons/fi';
+import { motion } from 'framer-motion';
+import { FiCalendar, FiCheck, FiSearch, FiX } from 'react-icons/fi';
 import {
   HOME_TAGLINE,
   HERO_FEATURE_SLIDES,
@@ -12,113 +11,75 @@ import { LAYOUT } from './careers360/careers360Theme';
 import { useCountUp } from './landing/useCountUp';
 import { fadeUp, staggerContainer, defaultViewport, smoothTransition } from './landing/motion';
 import ShinyText from '../UI/ShinyText';
+import HeroLiveActivityToasts from './HeroLiveActivityToasts';
 
-function HeroFeatureCarousel() {
-  const [index, setIndex] = useState(0);
+const HERO_COUNSELLING_CARD =
+  HERO_FEATURE_SLIDES.find((s) => s.id === 'iitian-counselling') || HERO_FEATURE_SLIDES[0];
 
-  useEffect(() => {
-    const t = setInterval(() => setIndex((i) => (i + 1) % HERO_FEATURE_SLIDES.length), 4800);
-    return () => clearInterval(t);
-  }, []);
-
-  const slide = HERO_FEATURE_SLIDES[index];
-  const CtaIcon = slide.ctaIcon === 'calendar' ? FiCalendar : FiArrowRight;
-  const isCounsellingCard = slide.id === 'iitian-counselling';
+function HeroCounsellingCard({ onBookClick }) {
+  const slide = HERO_COUNSELLING_CARD;
 
   return (
-    <div className="relative w-full">
-      <div className="relative min-h-[280px] sm:min-h-[300px]">
-        <AnimatePresence mode="wait">
-          <motion.div
-            key={slide.id}
-            className={`absolute inset-0 overflow-hidden rounded-2xl bg-gradient-to-br p-6 shadow-lg sm:p-8 ${slide.accent}`}
-            initial={{ opacity: 0, y: 14 }}
-            animate={{ opacity: 1, y: 0 }}
-            exit={{ opacity: 0, y: -10 }}
-            transition={smoothTransition}
-          >
-            <div className="pointer-events-none absolute inset-0 overflow-hidden" aria-hidden>
-              <div className="absolute -right-8 -top-10 h-40 w-40 rounded-full bg-white/5 blur-2xl" />
-              <div className="absolute -bottom-16 left-1/3 h-48 w-48 rounded-full bg-[#f27921]/20 blur-3xl" />
-            </div>
-            <div className="relative z-10 flex h-full max-w-lg flex-col">
-              <span className="inline-flex w-fit items-center gap-1.5 rounded-lg border border-white/20 bg-white/10 px-2.5 py-1.5 text-[11px] font-medium text-white backdrop-blur-md">
-                <span className="flex h-4 w-4 items-center justify-center rounded-full bg-emerald-400/90 text-[#0f172a]">
-                  <FiCheck className="h-2.5 w-2.5" strokeWidth={3} />
-                </span>
-                {slide.badge}
-              </span>
-              <h2 className="mt-4 text-xl font-bold leading-snug tracking-tight text-white sm:text-2xl">
-                {isCounsellingCard ? (
-                  <ShinyText
-                    text={slide.title}
-                    speed={2.4}
-                    delay={0.35}
-                    color="#ffffff"
-                    shineColor="#ffd7b0"
-                    spread={110}
-                    direction="left"
-                    className="font-bold"
-                  />
-                ) : (
-                  slide.title
-                )}
-              </h2>
-              <p className="mt-3 text-sm leading-relaxed text-white/80">
-                {isCounsellingCard ? (
-                  <ShinyText
-                    text={slide.description}
-                    speed={2.6}
-                    delay={0.4}
-                    color="#e8eaf2"
-                    shineColor="#ffffff"
-                    spread={100}
-                    direction="left"
-                    className="leading-relaxed"
-                  />
-                ) : (
-                  slide.description
-                )}
-              </p>
-              <Link
-                to={slide.to}
-                className="mt-6 inline-flex w-fit items-center gap-2 rounded-lg bg-[#f27921] px-4 py-2.5 text-sm font-semibold text-white shadow-md transition hover:bg-[#e06810]"
-              >
-                <CtaIcon className="h-4 w-4" aria-hidden />
-                {isCounsellingCard ? (
-                  <ShinyText
-                    text={slide.cta}
-                    speed={2.2}
-                    delay={0.55}
-                    color="#ffffff"
-                    shineColor="#ffe4c8"
-                    spread={110}
-                    direction="left"
-                    className="font-semibold"
-                  />
-                ) : (
-                  slide.cta
-                )}
-              </Link>
-            </div>
-          </motion.div>
-        </AnimatePresence>
+    <motion.div
+      className={`relative min-h-[280px] overflow-hidden rounded-2xl bg-gradient-to-br p-6 shadow-lg sm:min-h-[300px] sm:p-8 ${slide.accent}`}
+      initial={{ opacity: 0, y: 14 }}
+      animate={{ opacity: 1, y: 0 }}
+      transition={smoothTransition}
+    >
+      <div className="pointer-events-none absolute inset-0 overflow-hidden" aria-hidden>
+        <div className="absolute -right-8 -top-10 h-40 w-40 rounded-full bg-white/5 blur-2xl" />
+        <div className="absolute -bottom-16 left-1/3 h-48 w-48 rounded-full bg-[#f27921]/20 blur-3xl" />
       </div>
-      <div className="mt-3.5 flex justify-center gap-2">
-        {HERO_FEATURE_SLIDES.map((s, i) => (
-          <button
-            key={s.id}
-            type="button"
-            aria-label={`Show ${s.title}`}
-            aria-current={i === index ? 'true' : undefined}
-            onClick={() => setIndex(i)}
-            className={`h-1.5 rounded-full transition-all ${
-              i === index ? 'w-6 bg-[#f27921]' : 'w-1.5 bg-[#c5c9d4] hover:bg-[#a8adb8]'
-            }`}
+      <div className="relative z-10 flex h-full max-w-lg flex-col">
+        <span className="inline-flex w-fit items-center gap-1.5 rounded-lg border border-white/20 bg-white/10 px-2.5 py-1.5 text-[11px] font-medium text-white backdrop-blur-md">
+          <span className="flex h-4 w-4 items-center justify-center rounded-full bg-emerald-400/90 text-[#0f172a]">
+            <FiCheck className="h-2.5 w-2.5" strokeWidth={3} />
+          </span>
+          {slide.badge}
+        </span>
+        <h2 className="mt-4 text-xl font-bold leading-snug tracking-tight text-white sm:text-2xl">
+          <ShinyText
+            text={slide.title}
+            speed={2.4}
+            delay={0.35}
+            color="#ffffff"
+            shineColor="#ffd7b0"
+            spread={110}
+            direction="left"
+            className="font-bold"
           />
-        ))}
+        </h2>
+        <p className="mt-3 text-sm leading-relaxed text-white/80">
+          <ShinyText
+            text={slide.description}
+            speed={2.6}
+            delay={0.4}
+            color="#e8eaf2"
+            shineColor="#ffffff"
+            spread={100}
+            direction="left"
+            className="leading-relaxed"
+          />
+        </p>
+        <button
+          type="button"
+          onClick={onBookClick}
+          className="mt-6 inline-flex w-fit items-center gap-2 rounded-lg bg-[#f27921] px-4 py-2.5 text-sm font-semibold text-white shadow-md transition hover:bg-[#e06810]"
+        >
+          <FiCalendar className="h-4 w-4" aria-hidden />
+          <ShinyText
+            text={slide.cta}
+            speed={2.2}
+            delay={0.55}
+            color="#ffffff"
+            shineColor="#ffe4c8"
+            spread={110}
+            direction="left"
+            className="font-semibold"
+          />
+        </button>
       </div>
-    </div>
+    </motion.div>
   );
 }
 
@@ -175,18 +136,19 @@ export default function StudentsDashboardHero({
   showSuggestions,
   onSuggestionPick,
   onClearSearch,
+  onBookCounselling,
 }) {
   const popular = POPULAR_PREDICTORS.filter((p) => p.popular).slice(0, 2);
 
   return (
     <section
-      className="border-b border-[#e8eaed]"
+      className="relative overflow-hidden border-b border-[#e8eaed]"
       style={{
         background:
           'linear-gradient(165deg, #f3f0f8 0%, #eef1f8 42%, #f7f8fc 72%, #ffffff 100%)',
       }}
     >
-      <div className={`${LAYOUT.container} py-8 sm:py-10 lg:py-12`}>
+      <div className={`${LAYOUT.container} relative py-8 sm:py-10 lg:py-12`}>
         <div className="grid items-center gap-8 lg:grid-cols-2 lg:gap-10 xl:gap-12">
           <div className="min-w-0">
             <motion.h1
@@ -268,8 +230,12 @@ export default function StudentsDashboardHero({
           </div>
 
           <div className="min-w-0 w-full lg:max-w-none">
-            <HeroFeatureCarousel />
+            <HeroCounsellingCard onBookClick={onBookCounselling} />
           </div>
+        </div>
+
+        <div className="relative mt-8 min-h-[3.5rem] sm:mt-10">
+          <HeroLiveActivityToasts />
         </div>
       </div>
     </section>

@@ -5,23 +5,55 @@ import { STUDENT_OUTCOMES } from './landingPageData';
 import SectionBackdrop from './SectionBackdrop';
 import Reveal from './Reveal';
 import { LAYOUT } from '../careers360/careers360Theme';
+import { getStudentTestimonialsFeed } from '../../../utils/api';
 
 const INTERVAL_MS = 5000;
 
+function normalizeItems(apiItems) {
+  if (!Array.isArray(apiItems) || !apiItems.length) return null;
+  return apiItems.map((item) => ({
+    id: item.id,
+    studentName: item.studentName || '',
+    quote: item.quote || '',
+    rank: item.rank,
+    exam: item.exam,
+    colleges: Array.isArray(item.colleges) ? item.colleges : [],
+    accuracy: item.accuracy ?? 95,
+  }));
+}
+
 export default function StudentSuccessCarousel() {
+  const [items, setItems] = useState(STUDENT_OUTCOMES);
   const [index, setIndex] = useState(0);
   const [paused, setPaused] = useState(false);
   const timerRef = useRef(null);
 
   useEffect(() => {
-    if (paused) return undefined;
+    let cancelled = false;
+    (async () => {
+      const res = await getStudentTestimonialsFeed({ limit: 20 });
+      if (cancelled) return;
+      const live = normalizeItems(res.success ? res.data?.data?.items : null);
+      if (live?.length) {
+        setItems(live);
+        setIndex(0);
+      }
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, []);
+
+  useEffect(() => {
+    if (paused || items.length <= 1) return undefined;
     timerRef.current = setInterval(() => {
-      setIndex((i) => (i + 1) % STUDENT_OUTCOMES.length);
+      setIndex((i) => (i + 1) % items.length);
     }, INTERVAL_MS);
     return () => clearInterval(timerRef.current);
-  }, [paused]);
+  }, [paused, items.length]);
 
-  const outcome = STUDENT_OUTCOMES[index];
+  const outcome = items[index] || items[0];
+  if (!outcome) return null;
 
   return (
     <section
@@ -62,8 +94,13 @@ export default function StudentSuccessCarousel() {
             >
               <div className="flex items-start justify-between gap-4">
                 <div>
-                  <p className="text-xs font-semibold uppercase tracking-wider text-[#999]">Student rank</p>
+                  <p className="text-xs font-semibold uppercase tracking-wider text-[#999]">
+                    Student rank
+                  </p>
                   <p className="mt-1 text-2xl font-bold text-[#1a1a1a]">{outcome.rank}</p>
+                  {outcome.studentName ? (
+                    <p className="mt-1 text-sm font-medium text-[#666]">{outcome.studentName}</p>
+                  ) : null}
                 </div>
                 <span className="inline-flex items-center gap-1.5 rounded-full bg-[#fff4ed] px-3 py-1 text-xs font-semibold text-[#f27921]">
                   <LuTrendingUp className="h-3.5 w-3.5" aria-hidden />
@@ -71,12 +108,22 @@ export default function StudentSuccessCarousel() {
                 </span>
               </div>
 
-              <p className="mt-6 text-xs font-semibold uppercase tracking-wider text-[#999]">Exam type</p>
+              <p className="mt-6 text-xs font-semibold uppercase tracking-wider text-[#999]">
+                Exam type
+              </p>
               <p className="mt-1 font-medium text-[#444]">{outcome.exam}</p>
 
-              <p className="mt-6 text-xs font-semibold uppercase tracking-wider text-[#999]">Predicted colleges</p>
+              {outcome.quote ? (
+                <p className="mt-5 text-sm italic leading-relaxed text-[#555]">
+                  &ldquo;{outcome.quote}&rdquo;
+                </p>
+              ) : null}
+
+              <p className="mt-6 text-xs font-semibold uppercase tracking-wider text-[#999]">
+                Predicted colleges
+              </p>
               <ul className="mt-2 space-y-2">
-                {outcome.colleges.map((college) => (
+                {(outcome.colleges || []).map((college) => (
                   <li key={college} className="flex items-center gap-2 text-sm font-medium text-[#333]">
                     <LuGraduationCap className="h-4 w-4 shrink-0 text-[#f27921]" aria-hidden />
                     {college}
@@ -88,7 +135,7 @@ export default function StudentSuccessCarousel() {
         </div>
 
         <div className="mt-6 flex justify-center gap-2" role="tablist" aria-label="Success story slides">
-          {STUDENT_OUTCOMES.map((item, i) => (
+          {items.map((item, i) => (
             <button
               key={item.id}
               type="button"

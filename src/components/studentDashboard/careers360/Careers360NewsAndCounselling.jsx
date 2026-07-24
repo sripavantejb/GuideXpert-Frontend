@@ -1,4 +1,5 @@
 import { Link } from 'react-router-dom';
+import { useEffect, useState } from 'react';
 import { SECTION_COPY, WORKSPACE_UPDATES } from './careers360HomeData';
 import { SectionViewAll } from './Careers360Shared';
 import { LAYOUT } from './careers360Theme';
@@ -8,9 +9,39 @@ import {
   NewsHeaderVector,
   SectionDecorDots,
 } from './SectionIllustrations';
+import { getStudentWorkspaceUpdatesFeed } from '../../../utils/api';
+import { formatUpdateDate } from '../../../utils/studentWorkspaceUpdates';
+
+function normalizeHomeItems(apiItems) {
+  if (!Array.isArray(apiItems) || apiItems.length === 0) return null;
+  return apiItems.map((item) => ({
+    id: item.id,
+    tag: item.tag || item.category,
+    title: item.title,
+    date: formatUpdateDate(item.publishedAt),
+    to: item.linkUrl || '/students/updates',
+    image: item.imageUrl || '',
+    imageId: `live-update-${item.id}`,
+    external: /^https?:\/\//i.test(item.linkUrl || ''),
+  }));
+}
 
 export function Careers360NewsSection() {
   const { title, subtitle } = SECTION_COPY.updates;
+  const [items, setItems] = useState(WORKSPACE_UPDATES);
+
+  useEffect(() => {
+    let cancelled = false;
+    (async () => {
+      const res = await getStudentWorkspaceUpdatesFeed({ placement: 'home', limit: 8 });
+      if (cancelled) return;
+      const live = normalizeHomeItems(res.success ? res.data?.data?.items : null);
+      if (live?.length) setItems(live);
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, []);
 
   return (
     <section className={`${LAYOUT.sectionCompact} relative overflow-hidden bg-white`}>
@@ -24,15 +55,12 @@ export function Careers360NewsSection() {
               <p className="mt-1 text-sm text-[#666]">{subtitle}</p>
             </div>
           </div>
-          <SectionViewAll to="/students/rank-predictor" label="All tools" />
+          <SectionViewAll to="/students/updates" label="All updates" />
         </div>
         <ul className="divide-y divide-[#eee] rounded-xl border border-[#e8eaed]">
-          {WORKSPACE_UPDATES.map((item) => (
-            <li key={item.id}>
-              <Link
-                to={item.to}
-                className="flex gap-5 px-4 py-5 transition hover:bg-[#fafbfc] sm:items-center sm:px-5"
-              >
+          {items.map((item) => {
+            const body = (
+              <>
                 <div className="relative h-14 w-20 shrink-0 overflow-hidden rounded-md bg-[#eef2f7] sm:h-[4.5rem] sm:w-24">
                   {item.image ? (
                     <CollegeCampusImage
@@ -64,16 +92,38 @@ export function Careers360NewsSection() {
                   </div>
                 </div>
                 <span className="hidden shrink-0 text-xs text-[#999] sm:block">{item.date}</span>
-              </Link>
-            </li>
-          ))}
+              </>
+            );
+
+            return (
+              <li key={item.id}>
+                {item.external ? (
+                  <a
+                    href={item.to}
+                    target="_blank"
+                    rel="noreferrer"
+                    className="flex gap-5 px-4 py-5 transition hover:bg-[#fafbfc] sm:items-center sm:px-5"
+                  >
+                    {body}
+                  </a>
+                ) : (
+                  <Link
+                    to={item.to}
+                    className="flex gap-5 px-4 py-5 transition hover:bg-[#fafbfc] sm:items-center sm:px-5"
+                  >
+                    {body}
+                  </Link>
+                )}
+              </li>
+            );
+          })}
         </ul>
       </div>
     </section>
   );
 }
 
-export function Careers360CounsellingSection() {
+export function Careers360CounsellingSection({ onBookCounselling }) {
   return (
     <section
       id="career-counselling"
@@ -114,12 +164,13 @@ export function Careers360CounsellingSection() {
           </ul>
 
           <div className="mt-9 flex flex-col items-center gap-3 lg:items-start">
-            <Link
-              to="/one-on-one-session"
+            <button
+              type="button"
+              onClick={onBookCounselling}
               className="inline-flex items-center justify-center rounded-lg bg-[#f27921] px-7 py-3.5 text-sm font-semibold text-white shadow-sm transition hover:bg-[#e06810]"
             >
               Book free IITian 1-on-1 counselling
-            </Link>
+            </button>
             <p className="text-xs text-[#888]">100% free · Live session with an IITian mentor</p>
           </div>
         </div>

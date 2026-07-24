@@ -3,6 +3,7 @@ import { FiAlertCircle, FiLoader } from 'react-icons/fi';
 import ToolWorkspaceLayout from './components/ToolWorkspaceLayout';
 import { getPredictedCollegesPublic } from '../../utils/api';
 import { formatPredictorClientError } from '../../utils/collegePredictorErrors';
+import { useStudentAuth } from '../../contexts/StudentAuthContext';
 import {
   ENTRANCE_EXAMS,
   RESERVATION_CATEGORIES,
@@ -141,6 +142,7 @@ function SelectField({ label, value, onChange, options, placeholder, error, disa
 }
 
 export default function BranchPredictorPage() {
+  const { savePrediction } = useStudentAuth() || {};
   const [exam, setExam] = useState('JEE');
   const examMeta = useMemo(() => getEntranceExamMeta(exam), [exam]);
   const catOptions = useMemo(() => categoryOptionsForExam(examMeta), [examMeta]);
@@ -328,6 +330,12 @@ export default function BranchPredictorPage() {
 
     const list = res.data?.colleges || [];
     setColleges(list);
+    savePrediction?.({
+      type: 'branch_predictor',
+      tool: 'Branch Predictor',
+      title: 'Used Branch Predictor',
+      summary: 'Ran a branch prediction',
+    });
 
     if (!list.length) {
       setSelectedCollege(null);
@@ -359,10 +367,25 @@ export default function BranchPredictorPage() {
     <ToolWorkspaceLayout
       title="Branch Predictor"
       subtitle="Pick your exam and college to estimate realistic branch opportunities from live cutoffs."
+      compactHero
+      trustBadge="Trusted by 500K+ students"
+      trustSubline="Built on multi-year cutoff trends"
       howItWorks={[
-        'Your exam, category, and rank are matched against historical college cutoffs.',
-        'Colleges are loaded from the same predictor service used for College Predictor.',
-        'Branch chances are estimated by comparing your rank with each branch cutoff from the predictor.',
+        {
+          title: 'Match criteria',
+          detail:
+            'Your exam, category, and rank are matched against historical college cutoffs.',
+        },
+        {
+          title: 'Apply filters',
+          detail:
+            'Colleges are loaded from the same predictor service used for College Predictor.',
+        },
+        {
+          title: 'Score chances',
+          detail:
+            'Branch chances are estimated by comparing your rank with each branch cutoff.',
+        },
       ]}
       whatThisToolDoes={[
         'Estimates branch-level chances inside a selected college using live cutoff data.',

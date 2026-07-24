@@ -33,6 +33,8 @@ export const ADMIN_SECTION_OPTIONS = [
   { sectionKey: 'ai-calls', label: 'AI Calls' },
   { sectionKey: 'iit-ai-calls-summary', label: 'IITian AI Calls Summary' },
   { sectionKey: 'whatsapp-ops', label: 'WhatsApp ops' },
+  { sectionKey: 'student-workspace-updates', label: 'Student education updates' },
+  { sectionKey: 'student-testimonials', label: 'Student testimonials' },
   { sectionKey: 'settings', label: 'Settings' },
 ];
 
@@ -81,6 +83,8 @@ export const ADMIN_SECTION_GROUPS = [
       'whatsapp-ops',
       'lead-intelligence',
       'human-copilot',
+      'student-workspace-updates',
+      'student-testimonials',
     ],
   },
   {

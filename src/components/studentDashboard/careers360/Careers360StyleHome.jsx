@@ -123,6 +123,7 @@ export default function Careers360StyleHome({
   filteredTools,
   filteredBySection,
   onClearSearch,
+  onBookCounselling,
 }) {
   return (
     <div id="student-workspace" className="bg-white">
@@ -138,7 +139,7 @@ export default function Careers360StyleHome({
       ) : (
         <>
           <Careers360PredictionSection />
-          <Careers360CounsellingSection />
+          <Careers360CounsellingSection onBookCounselling={onBookCounselling} />
           <Careers360ImpactSection />
           <StudentSuccessCarousel />
           <Careers360NewsSection />

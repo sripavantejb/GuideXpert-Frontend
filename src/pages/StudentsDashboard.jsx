@@ -18,6 +18,7 @@ export default function StudentsDashboard() {
     showSuggestions,
     setShowSuggestions,
     onClearSearch,
+    openOneOnOneBooking,
   } = useOutletContext();
 
   useEffect(() => {
@@ -69,13 +70,14 @@ export default function StudentsDashboard() {
 
   return (
     <>
-      <StudentsDashboardHero {...searchProps} />
+      <StudentsDashboardHero {...searchProps} onBookCounselling={openOneOnOneBooking} />
       <Careers360StyleHome
         organicLead={organicLead}
         hasSearch={hasSearch}
         filteredTools={filteredTools}
         filteredBySection={filteredBySection}
         onClearSearch={onClearSearch}
+        onBookCounselling={openOneOnOneBooking}
       />
     </>
   );

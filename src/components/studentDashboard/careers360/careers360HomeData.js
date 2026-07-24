@@ -38,7 +38,7 @@ export const HOME_BANNERS = [
   },
 ];
 
-/** Right-side hero feature carousel cards */
+/** Fixed right-side hero counselling card */
 export const HERO_FEATURE_SLIDES = [
   {
     id: 'iitian-counselling',
@@ -50,36 +50,6 @@ export const HERO_FEATURE_SLIDES = [
     accent: 'from-[#1a2744] via-[#2a1f4d] to-[#4a1d6a]',
     badge: 'Free session',
     ctaIcon: 'calendar',
-  },
-  {
-    id: 'college-opportunities',
-    title: 'Turn Your Score into College Opportunities',
-    description:
-      'Predict your admission chances across colleges based on exam performance, category, and preferences.',
-    cta: 'Explore College Predictors',
-    to: '/students/college-predictor',
-    accent: 'from-[#1e3a5f] via-[#2d1b4e] to-[#3b1868]',
-    badge: 'Verified Data',
-  },
-  {
-    id: 'rank-clarity',
-    title: 'Know Your Rank Before the Result',
-    description:
-      'Estimate ranks from marks using historical data across JEE Main, EAMCET, KCET, and more.',
-    cta: 'Open Rank Predictors',
-    to: '/students/rank-predictor',
-    accent: 'from-[#0f2847] via-[#1a3a5c] to-[#243b6b]',
-    badge: 'Live Models',
-  },
-  {
-    id: 'fit-path',
-    title: 'Find Courses That Match You',
-    description:
-      'Run fit tests to map interests and strengths to engineering, science, and campus options.',
-    cta: 'Try Fit Tests',
-    to: '/students/tests',
-    accent: 'from-[#1a2744] via-[#2a1f4d] to-[#4a1d6a]',
-    badge: 'Personalized',
   },
 ];
 
@@ -145,8 +115,8 @@ export const DATA_STATS = [
 
 export const SECTION_COPY = {
   updates: {
-    title: 'Workspace updates',
-    subtitle: 'New predictors, data refreshes, and tools on GuideXpert',
+    title: 'Education updates',
+    subtitle: 'Exam news, admission windows, deadlines, and tool refreshes',
   },
   guidance: {
     title: 'Guidance & discovery',

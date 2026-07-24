@@ -4,6 +4,7 @@ import ToolWorkspaceLayout from './components/ToolWorkspaceLayout';
 import { CollegeCard } from '../../components/Counsellor/CollegePredictor';
 import { getPredictedCollegesPublic } from '../../utils/api';
 import { formatPredictorClientError } from '../../utils/collegePredictorErrors';
+import { useStudentAuth } from '../../contexts/StudentAuthContext';
 import {
   ENTRANCE_EXAMS,
   RESERVATION_CATEGORIES,
@@ -99,6 +100,7 @@ function SelectField({ label, value, onChange, options, placeholder, error, disa
 }
 
 export default function CollegePredictorPage() {
+  const { savePrediction } = useStudentAuth() || {};
   const [exam, setExam] = useState('JEE');
   const examMeta = useMemo(() => getEntranceExamMeta(exam), [exam]);
   const catOptions = useMemo(() => categoryOptionsForExam(examMeta), [examMeta]);
@@ -278,6 +280,15 @@ export default function CollegePredictorPage() {
     setTotalCount(Number(data.total_no_of_colleges) || list.length);
     setColleges((prev) => (append ? [...prev, ...list] : list));
 
+    if (!append && res.success) {
+      savePrediction?.({
+        type: 'college_predictor',
+        tool: 'College Predictor',
+        title: 'Used College Predictor',
+        summary: 'Ran a college prediction',
+      });
+    }
+
     if (!append) {
       setTimeout(() => resultsRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' }), 80);
     }
@@ -306,10 +317,25 @@ export default function CollegePredictorPage() {
     <ToolWorkspaceLayout
       title="College Predictor"
       subtitle="Get precise college predictions powered by multi-year cut-off trends"
+      compactHero
+      trustBadge="Trusted by 500K+ students"
+      trustSubline="Built on multi-year cutoff trends"
       howItWorks={[
-        'Your rank and category are compared with historical opening and closing ranks.',
-        'Home state and counselling filters narrow the college pool to relevant options.',
-        'Each match is tagged using estimated admission probability from live cutoffs.',
+        {
+          title: 'Match criteria',
+          detail:
+            'Your rank and category are compared with historical opening and closing ranks.',
+        },
+        {
+          title: 'Apply filters',
+          detail:
+            'Home state and counselling filters narrow the college pool to relevant options.',
+        },
+        {
+          title: 'Score chances',
+          detail:
+            'Each match is tagged using estimated admission probability from live cutoffs.',
+        },
       ]}
       whatThisToolDoes={[
         'Predicts colleges you can realistically target based on exam rank, category, and counselling filters.',

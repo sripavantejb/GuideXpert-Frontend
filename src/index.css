@@ -176,9 +176,10 @@
 .sw-gx-form-rail {
   border: 1px solid rgba(255, 255, 255, 0.35);
   border-left: 3px solid #f27921;
-  background: var(--gx-tool-form-rail);
+  background: #ffffff;
   box-shadow: 0 22px 50px -28px rgba(0, 0, 0, 0.55);
   padding: 1.35rem 1.25rem 1.5rem;
+  border-radius: 0.75rem;
 }
 
 @media (min-width: 640px) {
@@ -193,13 +194,15 @@
   border: 1px solid rgba(255, 255, 255, 0.18);
   background: rgba(255, 255, 255, 0.08);
   backdrop-filter: blur(8px);
+  border-radius: 0.75rem;
 }
 
 .sw-gx-signal-step {
   display: grid;
   grid-template-columns: auto 1fr;
   gap: 0.85rem 1rem;
-  padding: 1.15rem 1.2rem;
+  align-items: start;
+  padding: 1.25rem 1.25rem;
   border-bottom: 1px solid rgba(255, 255, 255, 0.12);
 }
 
@@ -213,12 +216,6 @@
 
 .sw-gx-signal-step .sw-gx-step-detail {
   color: rgba(255, 255, 255, 0.68);
-}
-
-@media (min-width: 1024px) {
-  .sw-gx-signal-steps {
-    border-radius: 0;
-  }
 }
 
 .sw-preview-panel {

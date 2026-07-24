@@ -1,14 +1,19 @@
-import { useMemo, useState } from 'react';
+import { useMemo, useState, useCallback } from 'react';
 import { Outlet, useLocation, useNavigate } from 'react-router-dom';
 import Careers360Navbar from './careers360/Careers360Navbar';
 import Careers360Footer from './careers360/Careers360Footer';
 import StudentAuthModal from '../studentAuth/StudentAuthModal';
+import OneOnOneSessionModal from '../oneOnOneSession/OneOnOneSessionModal';
 
 export default function StudentsWorkspaceLayout() {
   const [searchTerm, setSearchTerm] = useState('');
   const [showSuggestions, setShowSuggestions] = useState(false);
+  const [oneOnOneBookingOpen, setOneOnOneBookingOpen] = useState(false);
   const location = useLocation();
   const navigate = useNavigate();
+
+  const openOneOnOneBooking = useCallback(() => setOneOnOneBookingOpen(true), []);
+  const closeOneOnOneBooking = useCallback(() => setOneOnOneBookingOpen(false), []);
 
   const handleSearchKeyDown = (e) => {
     if (e.key !== 'Enter' || location.pathname === '/students') return;
@@ -25,8 +30,9 @@ export default function StudentsWorkspaceLayout() {
       showSuggestions,
       setShowSuggestions,
       onClearSearch: () => setSearchTerm(''),
+      openOneOnOneBooking,
     }),
-    [searchTerm, showSuggestions]
+    [searchTerm, showSuggestions, openOneOnOneBooking]
   );
 
   return (
@@ -41,6 +47,7 @@ export default function StudentsWorkspaceLayout() {
       <Outlet context={outletContext} />
       <Careers360Footer />
       <StudentAuthModal />
+      <OneOnOneSessionModal open={oneOnOneBookingOpen} onClose={closeOneOnOneBooking} />
     </div>
   );
 }

@@ -1160,3 +1160,38 @@ export const predictRankPublic = async (payload) => {
     data: result?.data?.data || result.data,
   };
 };
+
+/** Public student workspace education updates feed */
+export const getStudentWorkspaceUpdatesFeed = async (params = {}) => {
+  const search = new URLSearchParams();
+  if (params.placement) search.set('placement', params.placement);
+  if (params.limit) search.set('limit', String(params.limit));
+  const query = search.toString();
+  return apiRequest(`/student-workspace-updates${query ? `?${query}` : ''}`, { method: 'GET' });
+};
+
+/** Live social-proof feed for hero toasts (name + tool only) */
+export const getStudentLiveActivityFeed = async (params = {}) => {
+  const search = new URLSearchParams();
+  if (params.limit) search.set('limit', String(params.limit));
+  if (params.sinceHours) search.set('sinceHours', String(params.sinceHours));
+  const query = search.toString();
+  return apiRequest(`/student-live-activity${query ? `?${query}` : ''}`, { method: 'GET' });
+};
+
+/** Public student testimonials for home carousel */
+export const getStudentTestimonialsFeed = async (params = {}) => {
+  const search = new URLSearchParams();
+  if (params.limit) search.set('limit', String(params.limit));
+  const query = search.toString();
+  return apiRequest(`/student-testimonials${query ? `?${query}` : ''}`, { method: 'GET' });
+};
+
+/** Student's own 1-on-1 counselling bookings (by phone) */
+export const getMyOneOnOneBookings = async (phone) => {
+  const digits = String(phone || '').replace(/\D/g, '');
+  const p = digits.length >= 10 ? digits.slice(-10) : digits;
+  return apiRequest(`/one-on-one-counseling/my-bookings?phone=${encodeURIComponent(p)}`, {
+    method: 'GET',
+  });
+};
