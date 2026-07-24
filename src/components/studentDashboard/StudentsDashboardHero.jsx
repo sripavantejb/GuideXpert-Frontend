@@ -11,6 +11,7 @@ import {
 import { LAYOUT } from './careers360/careers360Theme';
 import { useCountUp } from './landing/useCountUp';
 import { fadeUp, staggerContainer, defaultViewport, smoothTransition } from './landing/motion';
+import ShinyText from '../UI/ShinyText';
 
 function HeroFeatureCarousel() {
   const [index, setIndex] = useState(0);
@@ -22,6 +23,7 @@ function HeroFeatureCarousel() {
 
   const slide = HERO_FEATURE_SLIDES[index];
   const CtaIcon = slide.ctaIcon === 'calendar' ? FiCalendar : FiArrowRight;
+  const isCounsellingCard = slide.id === 'iitian-counselling';
 
   return (
     <div className="relative w-full">
@@ -47,15 +49,56 @@ function HeroFeatureCarousel() {
                 {slide.badge}
               </span>
               <h2 className="mt-4 text-xl font-bold leading-snug tracking-tight text-white sm:text-2xl">
-                {slide.title}
+                {isCounsellingCard ? (
+                  <ShinyText
+                    text={slide.title}
+                    speed={2.4}
+                    delay={0.35}
+                    color="#ffffff"
+                    shineColor="#ffd7b0"
+                    spread={110}
+                    direction="left"
+                    className="font-bold"
+                  />
+                ) : (
+                  slide.title
+                )}
               </h2>
-              <p className="mt-3 text-sm leading-relaxed text-white/80">{slide.description}</p>
+              <p className="mt-3 text-sm leading-relaxed text-white/80">
+                {isCounsellingCard ? (
+                  <ShinyText
+                    text={slide.description}
+                    speed={2.6}
+                    delay={0.4}
+                    color="#e8eaf2"
+                    shineColor="#ffffff"
+                    spread={100}
+                    direction="left"
+                    className="leading-relaxed"
+                  />
+                ) : (
+                  slide.description
+                )}
+              </p>
               <Link
                 to={slide.to}
                 className="mt-6 inline-flex w-fit items-center gap-2 rounded-lg bg-[#f27921] px-4 py-2.5 text-sm font-semibold text-white shadow-md transition hover:bg-[#e06810]"
               >
                 <CtaIcon className="h-4 w-4" aria-hidden />
-                {slide.cta}
+                {isCounsellingCard ? (
+                  <ShinyText
+                    text={slide.cta}
+                    speed={2.2}
+                    delay={0.55}
+                    color="#ffffff"
+                    shineColor="#ffe4c8"
+                    spread={110}
+                    direction="left"
+                    className="font-semibold"
+                  />
+                ) : (
+                  slide.cta
+                )}
               </Link>
             </div>
           </motion.div>
