@@ -1,12 +1,12 @@
 import { Link } from 'react-router-dom';
 import { FiChevronRight, FiHome } from 'react-icons/fi';
 import { useEffect, useState } from 'react';
-import { LAYOUT } from '../components/studentDashboard/careers360/careers360Theme';
-import { getStudentWorkspaceUpdatesFeed } from '../utils/api';
+import { LAYOUT } from '../../components/studentDashboard/careers360/careers360Theme';
+import { getStudentWorkspaceUpdatesFeed } from '../../utils/api';
 import {
   formatUpdateDate,
   markUpdatesSeen,
-} from '../utils/studentWorkspaceUpdates';
+} from '../../utils/studentWorkspaceUpdates';
 
 export default function StudentUpdatesPage() {
   const [items, setItems] = useState([]);
