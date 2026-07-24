@@ -11,12 +11,13 @@ import {
   FiMenu,
   FiSearch,
   FiTarget,
+  FiUser,
   FiX,
 } from 'react-icons/fi';
 import { LuGraduationCap, LuScale } from 'react-icons/lu';
 import { getWorkspaceMegaMenus } from '../../../constants/studentWorkspaceNavMenus';
-import { useStudentAuth } from '../../../contexts/StudentAuthContext';
 import { C360, LAYOUT } from './careers360Theme';
+import { useStudentAuthRequired } from '../../../contexts/StudentAuthContext';
 
 const LOGO_URL =
   'https://res.cloudinary.com/dfqdb1xws/image/upload/v1773394627/GuideXpert_Logo_2_icepsv.png';
@@ -116,13 +117,14 @@ export default function Careers360Navbar({
   onSearchBlur,
   onSearchKeyDown,
 }) {
-  const { isAuthenticated, user, logout } = useStudentAuth();
   const [mobileOpen, setMobileOpen] = useState(false);
   const [openMenuKey, setOpenMenuKey] = useState(null);
   const [activePanelByMenu, setActivePanelByMenu] = useState({});
   const { pathname } = useLocation();
+  const { isAuthenticated, openAuthModal, session, profile } = useStudentAuthRequired();
 
   const menus = useMemo(() => getWorkspaceMegaMenus(), []);
+  const displayName = profile?.fullName || session?.fullName || 'Profile';
 
   const closeActions = useCallback(() => {
     setMobileOpen(false);
@@ -186,26 +188,23 @@ export default function Careers360Navbar({
               <FiBriefcase className="h-5 w-5" />
             </Link>
             {isAuthenticated ? (
-              <div className="flex items-center gap-2">
-                <span className="hidden max-w-[9rem] truncate text-sm font-medium text-[#333] sm:inline">
-                  {user?.name || 'Student'}
-                </span>
-                <button
-                  type="button"
-                  onClick={logout}
-                  className="rounded-md border border-[#d8dce6] bg-white px-3 py-2 text-sm font-semibold text-[#444] transition hover:border-[#f27921]/50 hover:text-[#f27921]"
-                >
-                  Logout
-                </button>
-              </div>
-            ) : (
               <Link
-                to="/students/login"
+                to="/students/profile"
+                className="inline-flex items-center gap-2 rounded-md border border-[#d0d7e1] bg-white px-3 py-2 text-sm font-semibold text-[#041e30] transition hover:border-[#f27921]/50 hover:bg-[#fff8f3]"
+                title="My profile"
+              >
+                <FiUser className="h-4 w-4 text-[#f27921]" aria-hidden />
+                <span className="hidden max-w-[7rem] truncate sm:inline">{displayName}</span>
+              </Link>
+            ) : (
+              <button
+                type="button"
+                onClick={() => openAuthModal('login')}
                 className="rounded-md px-4 py-2 text-sm font-semibold text-white shadow-sm transition hover:opacity-90"
                 style={{ backgroundColor: C360.orange }}
               >
                 Login
-              </Link>
+              </button>
             )}
             <button
               type="button"
@@ -228,7 +227,7 @@ export default function Careers360Navbar({
         <div className="border-b border-[#eceef2]">
           <div className={LAYOUT.container}>
             <nav
-              className="flex items-stretch justify-center gap-0.5 overflow-x-auto [-ms-overflow-style:none] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden"
+              className="flex items-stretch gap-0.5 overflow-x-auto [-ms-overflow-style:none] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden"
               aria-label="Workspace categories"
             >
               {menus.map((menu) => {

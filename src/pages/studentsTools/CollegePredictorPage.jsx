@@ -4,6 +4,7 @@ import ToolWorkspaceLayout from './components/ToolWorkspaceLayout';
 import { CollegeCard } from '../../components/Counsellor/CollegePredictor';
 import { getPredictedCollegesPublic } from '../../utils/api';
 import { formatPredictorClientError } from '../../utils/collegePredictorErrors';
+import { useStudentAuth } from '../../contexts/StudentAuthContext';
 import {
   ENTRANCE_EXAMS,
   RESERVATION_CATEGORIES,
@@ -26,6 +27,8 @@ import {
   swBtnSecondary,
   swError,
   swErrorBox,
+  swFormSubtitle,
+  swFormTitle,
   swLabel,
   swSelect,
   swInput,
@@ -99,6 +102,7 @@ function SelectField({ label, value, onChange, options, placeholder, error, disa
 }
 
 export default function CollegePredictorPage() {
+  const { savePrediction } = useStudentAuth() || {};
   const [exam, setExam] = useState('JEE');
   const examMeta = useMemo(() => getEntranceExamMeta(exam), [exam]);
   const catOptions = useMemo(() => categoryOptionsForExam(examMeta), [examMeta]);
@@ -278,6 +282,24 @@ export default function CollegePredictorPage() {
     setTotalCount(Number(data.total_no_of_colleges) || list.length);
     setColleges((prev) => (append ? [...prev, ...list] : list));
 
+    if (!append && savePrediction) {
+      const rankOrPct = isMht ? form.percentile : form.rank;
+      savePrediction({
+        type: 'college_predictor',
+        tool: 'College Predictor',
+        title: `${examMeta?.label || exam} college shortlist`,
+        summary: `${list.length} of ${Number(data.total_no_of_colleges) || list.length} colleges · ${isMht ? 'percentile' : 'rank'} ${rankOrPct} · ${form.category}`,
+        payload: {
+          exam,
+          rankOrPct,
+          category: form.category,
+          state: form.state,
+          totalCount: Number(data.total_no_of_colleges) || list.length,
+          sample: list.slice(0, 5).map((c) => c.college_name),
+        },
+      });
+    }
+
     if (!append) {
       setTimeout(() => resultsRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' }), 80);
     }
@@ -311,36 +333,6 @@ export default function CollegePredictorPage() {
         'Home state and counselling filters narrow the college pool to relevant options.',
         'Each match is tagged using estimated admission probability from live cutoffs.',
       ]}
-      whatThisToolDoes={[
-        'Predicts colleges you can realistically target based on exam rank, category, and counselling filters.',
-        'Uses multi-year cutoff trends so shortlists stay grounded in recent admission data.',
-        'Helps you prioritize likely, borderline, and reach options before preference filling.',
-      ]}
-      inputGuide={[
-        'Exam: Choose the entrance exam you appeared for or plan to appear.',
-        `${rankLabel}: Enter your expected or actual ${rankLabel.toLowerCase()}.`,
-        `${categoryLabel}: Select the reservation / category used in counselling.`,
-        `${admissionLabel}: Pick the counselling region or home-state filter when available.`,
-      ]}
-      preview={
-        <div className="space-y-3 text-sm text-[#5a6570]">
-          <p className="font-semibold text-[#041e30]">Best used for</p>
-          <ul className="space-y-2">
-            <li className="flex gap-2">
-              <span className="mt-2 h-1.5 w-1.5 shrink-0 rounded-full bg-[#f27921]" aria-hidden />
-              Building a first college shortlist after rank prediction
-            </li>
-            <li className="flex gap-2">
-              <span className="mt-2 h-1.5 w-1.5 shrink-0 rounded-full bg-[#f27921]" aria-hidden />
-              Comparing category / region impact on matches
-            </li>
-            <li className="flex gap-2">
-              <span className="mt-2 h-1.5 w-1.5 shrink-0 rounded-full bg-[#f27921]" aria-hidden />
-              Planning counselling preference order
-            </li>
-          </ul>
-        </div>
-      }
       results={
         hasSearched ? (
           <section ref={resultsRef} tabIndex={-1} className="space-y-5">
@@ -395,34 +387,11 @@ export default function CollegePredictorPage() {
           </section>
         ) : null
       }
-      insights={
-        hasSearched && !loading && colleges.length > 0 ? (
-          <section className="rounded-2xl border border-dashed border-[#cfd7e2] bg-[#f4f7fb]/70 p-6 sm:p-7">
-            <h3 className="font-sw-display text-lg font-bold tracking-tight text-[#041e30] sm:text-xl">
-              Next steps
-            </h3>
-            <ul className="mt-4 space-y-2.5 text-sm text-[#5a6570]">
-              <li className="flex gap-2.5">
-                <span className="mt-2 h-1 w-1 shrink-0 rounded-full bg-[#f27921]" aria-hidden />
-                Move strong matches into College Comparison to weigh fees, placements, and location.
-              </li>
-              <li className="flex gap-2.5">
-                <span className="mt-2 h-1 w-1 shrink-0 rounded-full bg-[#f27921]" aria-hidden />
-                Use Branch Predictor on a shortlisted college to check realistic branch chances.
-              </li>
-              <li className="flex gap-2.5">
-                <span className="mt-2 h-1 w-1 shrink-0 rounded-full bg-[#f27921]" aria-hidden />
-                Keep a mix of likely, borderline, and stretch colleges in your preference list.
-              </li>
-            </ul>
-          </section>
-        ) : null
-      }
     >
       <div>
-        <h2 className="text-lg font-bold text-[#111827] sm:text-xl">Enter exam details</h2>
-        <p className="mt-1 text-sm text-[#6b7280]">
-          Get personalized college recommendations in seconds!
+        <h2 className={swFormTitle}>Enter exam details</h2>
+        <p className={swFormSubtitle}>
+          Rank, state, and category — we map them to live cutoff bands.
         </p>
       </div>
 
@@ -500,7 +469,7 @@ export default function CollegePredictorPage() {
         {(isJee || isWbjee) && (
           <div>
             <p className={`${swLabel} mb-2`}>Gender</p>
-            <div className="grid grid-cols-2 gap-2 rounded-xl border border-[#d0d7e1] bg-white p-1">
+            <div className="grid grid-cols-2 gap-2 border border-[#d0d7e1] bg-[#fbfcfe] p-1">
               {['female', 'male'].map((g) => {
                 const active = form.gender === g;
                 return (
@@ -508,10 +477,10 @@ export default function CollegePredictorPage() {
                     key={g}
                     type="button"
                     onClick={() => onChange('gender', g)}
-                    className={`rounded-lg py-2.5 text-sm font-semibold capitalize transition ${
+                    className={`rounded-md py-2.5 text-sm font-semibold capitalize transition ${
                       active
-                        ? 'bg-[#2563eb] text-white shadow-sm'
-                        : 'text-[#5a6570] hover:bg-[#f3f5f8]'
+                        ? 'bg-[#041e30] text-white'
+                        : 'text-[#5a6570] hover:bg-white'
                     }`}
                   >
                     {g}

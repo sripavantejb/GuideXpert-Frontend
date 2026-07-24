@@ -1,38 +1,43 @@
+import { FiBookOpen, FiZap, FiBarChart2, FiTarget, FiCpu, FiAward, FiActivity, FiTrendingUp, FiFileText, FiGrid } from 'react-icons/fi';
 import { getRankPredictorExams } from '../utils/rankPredictor';
-import ExamList from '../components/rankPredictor/ExamList';
+import HubPageLayout from './studentsTools/components/HubPageLayout';
 
-const EXAM_ICONS = {
-  apeamcet: '📘',
-  jeeadvanced: '🚀',
-  jeemainpercentile: '📊',
-  jeemainmarks: '🎯',
-  kcet: '🧠',
-  keam: '🏛️',
-  mhcet: '⚡',
-  tnea: '📐',
-  tseamcet: '🧮',
-  wbjee: '🌉',
-  icet: '📗',
+const EXAM_ICON_MAP = {
+  apeamcet: { Icon: FiBookOpen, iconClass: 'bg-[#e8f1f8] text-[#0b3a5c]' },
+  jeeadvanced: { Icon: FiZap, iconClass: 'bg-[#fff4ed] text-[#f27921]' },
+  jeemainpercentile: { Icon: FiBarChart2, iconClass: 'bg-[#041e30] text-white' },
+  jeemainmarks: { Icon: FiTarget, iconClass: 'bg-[#fff4ed] text-[#e06810]' },
+  kcet: { Icon: FiCpu, iconClass: 'bg-[#eef2f7] text-[#041e30]' },
+  keam: { Icon: FiAward, iconClass: 'bg-[#fff8ed] text-[#c45a0c]' },
+  mhcet: { Icon: FiActivity, iconClass: 'bg-[#fff4ed] text-[#f27921]' },
+  tnea: { Icon: FiTrendingUp, iconClass: 'bg-[#e8f1f8] text-[#0b3a5c]' },
+  tseamcet: { Icon: FiFileText, iconClass: 'bg-[#fff8ed] text-[#c45a0c]' },
+  wbjee: { Icon: FiGrid, iconClass: 'bg-[#eef2f7] text-[#041e30]' },
 };
 
+const DEFAULT_ICON = { Icon: FiBarChart2, iconClass: 'bg-[#fff4ed] text-[#f27921]' };
+
 function RankPredictorHome() {
-  const exams = getRankPredictorExams().map((exam) => ({
-    ...exam,
-    icon: EXAM_ICONS[exam.id] || '📝',
-  }));
+  const cards = getRankPredictorExams().map((exam) => {
+    const meta = EXAM_ICON_MAP[exam.id] || DEFAULT_ICON;
+    return {
+      to: `/rank-predictor/${exam.id}`,
+      title: exam.name,
+      description: exam.description,
+      icon: meta.Icon,
+      iconClass: meta.iconClass,
+      cta: 'Predict now',
+    };
+  });
 
   return (
-    <div className="min-h-screen bg-gray-50">
-      <div className="mx-auto min-w-0 max-w-7xl px-4 py-8 sm:px-6 sm:py-10 lg:px-8">
-        <div className="mb-6 sm:mb-8">
-          <h1 className="text-2xl font-extrabold tracking-tight text-gray-900 sm:text-3xl md:text-4xl">Rank Predictor</h1>
-          <p className="mt-2 max-w-2xl text-sm text-gray-600 sm:text-base">
-            Choose your exam to estimate rank from your marks.
-          </p>
-        </div>
-        <ExamList exams={exams} />
-      </div>
-    </div>
+    <HubPageLayout
+      eyebrow="Rank predictors"
+      title="Choose your exam"
+      subtitle="Select an entrance exam to estimate rank from your marks — built on historical score patterns."
+      cards={cards}
+      homeTo="/"
+    />
   );
 }
 

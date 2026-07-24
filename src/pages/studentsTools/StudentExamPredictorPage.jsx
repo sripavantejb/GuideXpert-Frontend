@@ -22,7 +22,8 @@ import {
   swResultsPanel,
   swSectionSubtitle,
   swSectionTitle,
-  swWorkspaceTitle,
+  swFormTitle,
+  swFormSubtitle,
 } from './components/studentWorkspaceUi';
 
 const EXAM_ICON_MAP = {
@@ -147,8 +148,8 @@ export default function StudentExamPredictorPage() {
               <ExamIcon className="h-5 w-5" strokeWidth={2.5} aria-hidden />
             </div>
             <div>
-              <h2 className={swWorkspaceTitle}>{exam.title || `${exam.name} Predictor`}</h2>
-              <p className={swSectionSubtitle}>
+              <h2 className={swFormTitle}>{exam.title || `${exam.name} Predictor`}</h2>
+              <p className={swFormSubtitle}>
                 Enter your score, verify your phone, then see your prediction.
               </p>
             </div>

@@ -229,10 +229,10 @@ export const sendOtp = async (fullName, whatsappNumber, occupation, options = {}
 };
 
 /**
- * Verify OTP code. Same method as registration form; for counsellor login pass { counsellorLogin: true }, for webinar pass { webinarLogin: true }, for student workspace pass { studentLogin: true } to get token in response.
+ * Verify OTP code. Same method as registration form; for counsellor login pass { counsellorLogin: true }, for webinar pass { webinarLogin: true } to get token in response.
  * @param {string} phone - Phone number
  * @param {string} otp - 6-digit OTP code
- * @param {{ counsellorLogin?: boolean, webinarLogin?: boolean, studentLogin?: boolean, fullName?: string }} [options]
+ * @param {{ counsellorLogin?: boolean, webinarLogin?: boolean }} [options] - counsellorLogin or webinarLogin: true for token + user on success
  * @returns {Promise<{success: boolean, message?: string, data?: { verified?: boolean, allowedAccess?: boolean, token?: string, user?: object }, status?: number}>}
  */
 export const verifyOtp = async (phone, otp, options = {}) => {
@@ -248,12 +248,6 @@ export const verifyOtp = async (phone, otp, options = {}) => {
   if (options.webinarLogin === true) {
     body.webinarLogin = true;
   }
-  if (options.studentLogin === true) {
-    body.studentLogin = true;
-  }
-  if (options.fullName != null && String(options.fullName).trim()) {
-    body.fullName = String(options.fullName).trim();
-  }
   return apiRequest('/verify-otp', {
     method: 'POST',
     body: JSON.stringify(body),
@@ -266,7 +260,7 @@ export const verifyOtp = async (phone, otp, options = {}) => {
  * @param {string} whatsappNumber - WhatsApp phone number
  * @param {string} occupation - User's occupation
  * @param {{ utm_source?: string, utm_medium?: string, utm_campaign?: string, utm_content?: string }} [utm] - Optional first-touch UTM data
- * @param {{ rankPredictorLead?: { examId: string, score: number, difficulty?: string } }} [options] - Optional rank predictor snapshot (organic leads)
+ * @param {{ rankPredictorLead?: { examId: string, score: number, difficulty?: string }, studentProfile?: { age?: number, currentlyStudying?: string, city?: string } }} [options]
  * @returns {Promise<{success: boolean, message?: string, status?: number}>}
  */
 export const saveStep1 = async (fullName, whatsappNumber, occupation, utm, options = {}) => {
@@ -284,6 +278,12 @@ export const saveStep1 = async (fullName, whatsappNumber, occupation, utm, optio
   }
   if (options.rankPredictorLead && typeof options.rankPredictorLead === 'object') {
     payload.rankPredictorLead = options.rankPredictorLead;
+  }
+  if (options.studentProfile && typeof options.studentProfile === 'object') {
+    payload.studentProfile = options.studentProfile;
+  }
+  if (options.loginOnly === true) {
+    payload.loginOnly = true;
   }
   return apiRequest('/save-step1', {
     method: 'POST',
@@ -356,6 +356,36 @@ export const saveRankPredictorPrediction = async (phone, payload) => {
     ...(payload.message ? { message: payload.message } : {}),
   };
   return apiRequest('/save-rank-predictor-prediction', {
+    method: 'POST',
+    body: JSON.stringify(body),
+  });
+};
+
+/**
+ * Persist student workspace tool activity for admin lead tracking.
+ * POST /save-student-activity
+ * @param {string} phone
+ * @param {{ type: string, tool?: string, title: string, summary?: string, examId?: string, payload?: object }} activity
+ * @param {{ age?: number, currentlyStudying?: string, city?: string }} [studentProfile]
+ */
+export const saveStudentActivity = async (phone, activity, studentProfile) => {
+  const digits = String(phone || '').replace(/\D/g, '');
+  const p = digits.length >= 10 ? digits.slice(-10) : digits;
+  const body = {
+    phone: p,
+    activity: {
+      type: activity.type,
+      tool: activity.tool,
+      title: activity.title,
+      summary: activity.summary,
+      examId: activity.examId,
+      payload: activity.payload,
+    },
+  };
+  if (studentProfile && typeof studentProfile === 'object') {
+    body.studentProfile = studentProfile;
+  }
+  return apiRequest('/save-student-activity', {
     method: 'POST',
     body: JSON.stringify(body),
   });

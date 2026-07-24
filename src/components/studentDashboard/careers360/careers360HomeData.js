@@ -41,17 +41,6 @@ export const HOME_BANNERS = [
 /** Right-side hero feature carousel cards */
 export const HERO_FEATURE_SLIDES = [
   {
-    id: 'iitian-counselling',
-    title: 'Free IITian One-on-One Counselling',
-    description:
-      'Want to join a free IITian one-on-one counselling session? Book your free slot today and get personalised guidance.',
-    cta: 'Book free',
-    to: '/one-on-one-session',
-    accent: 'from-[#1a2744] via-[#2a1f4d] to-[#4a1d6a]',
-    badge: 'Free session',
-    ctaIcon: 'calendar',
-  },
-  {
     id: 'college-opportunities',
     title: 'Turn Your Score into College Opportunities',
     description:
@@ -60,6 +49,7 @@ export const HERO_FEATURE_SLIDES = [
     to: '/students/college-predictor',
     accent: 'from-[#1e3a5f] via-[#2d1b4e] to-[#3b1868]',
     badge: 'Verified Data',
+    widget: 'Cutoff Trend',
   },
   {
     id: 'rank-clarity',
@@ -70,6 +60,7 @@ export const HERO_FEATURE_SLIDES = [
     to: '/students/rank-predictor',
     accent: 'from-[#0f2847] via-[#1a3a5c] to-[#243b6b]',
     badge: 'Live Models',
+    widget: 'Rank Range',
   },
   {
     id: 'fit-path',
@@ -80,14 +71,8 @@ export const HERO_FEATURE_SLIDES = [
     to: '/students/tests',
     accent: 'from-[#1a2744] via-[#2a1f4d] to-[#4a1d6a]',
     badge: 'Personalized',
+    widget: 'Fit Score',
   },
-];
-
-/** Animated trust metrics shown in the students hero */
-export const HERO_TRUST_STATS = [
-  { value: 1000, suffix: '+', label: 'Successfully guided students' },
-  { value: 50, suffix: '+', label: 'IITians' },
-  { value: 1000, suffix: '+', label: 'Counsellors' },
 ];
 
 export const WORKSPACE_UPDATES = [

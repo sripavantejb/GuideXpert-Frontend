@@ -3,6 +3,7 @@ import { FiAlertCircle, FiLoader } from 'react-icons/fi';
 import ToolWorkspaceLayout from './components/ToolWorkspaceLayout';
 import { getPredictedCollegesPublic } from '../../utils/api';
 import { formatPredictorClientError } from '../../utils/collegePredictorErrors';
+import { useStudentAuth } from '../../contexts/StudentAuthContext';
 import {
   ENTRANCE_EXAMS,
   RESERVATION_CATEGORIES,
@@ -23,6 +24,8 @@ import {
   swBtnPrimary,
   swError,
   swErrorBox,
+  swFormSubtitle,
+  swFormTitle,
   swInput,
   swLabel,
   swProgressBar,
@@ -141,6 +144,7 @@ function SelectField({ label, value, onChange, options, placeholder, error, disa
 }
 
 export default function BranchPredictorPage() {
+  const { savePrediction } = useStudentAuth() || {};
   const [exam, setExam] = useState('JEE');
   const examMeta = useMemo(() => getEntranceExamMeta(exam), [exam]);
   const catOptions = useMemo(() => categoryOptionsForExam(examMeta), [examMeta]);
@@ -344,7 +348,20 @@ export default function BranchPredictorPage() {
     onChange('collegeId', id);
     setSelectedCollege(preferred);
     const score = isMht ? form.percentile : form.rank;
-    setBranches(mapBranches(preferred, score));
+    const mapped = mapBranches(preferred, score);
+    setBranches(mapped);
+    savePrediction?.({
+      type: 'branch_predictor',
+      tool: 'Branch Predictor',
+      title: `Branches at ${preferred.college_name || 'college'}`,
+      summary: `${mapped.length} branch options · ${examMeta?.label || exam}`,
+      payload: {
+        exam,
+        college: preferred.college_name,
+        score,
+        branches: mapped.slice(0, 8),
+      },
+    });
 
     setTimeout(() => resultsRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' }), 80);
   };
@@ -362,39 +379,8 @@ export default function BranchPredictorPage() {
       howItWorks={[
         'Your exam, category, and rank are matched against historical college cutoffs.',
         'Colleges are loaded from the same predictor service used for College Predictor.',
-        'Branch chances are estimated by comparing your rank with each branch cutoff from the predictor.',
+        'Branch chances are estimated by comparing your rank with each branch cutoff from the predictor.'
       ]}
-      whatThisToolDoes={[
-        'Estimates branch-level chances inside a selected college using live cutoff data.',
-        'Helps you decide core vs emerging branches for the same rank and category.',
-        'Works with the same exam filters as College Predictor for consistent shortlisting.',
-      ]}
-      inputGuide={[
-        'Exam: Select the entrance exam used for counselling.',
-        `${rankLabel}: Enter your expected or actual ${rankLabel.toLowerCase()}.`,
-        `${categoryLabel}: Choose the reservation / category that applies to you.`,
-        `${admissionLabel}: Apply counselling or home-state filters when shown.`,
-        'College: After prediction, pick a college to view branch-wise outlook.',
-      ]}
-      preview={
-        <div className="space-y-3 text-sm text-[#5a6570]">
-          <p className="font-semibold text-[#041e30]">You will see</p>
-          <ul className="space-y-2">
-            <li className="flex gap-2">
-              <span className="mt-2 h-1.5 w-1.5 shrink-0 rounded-full bg-[#f27921]" aria-hidden />
-              High / medium / low branch chances
-            </li>
-            <li className="flex gap-2">
-              <span className="mt-2 h-1.5 w-1.5 shrink-0 rounded-full bg-[#f27921]" aria-hidden />
-              Cutoff rank comparison for each branch
-            </li>
-            <li className="flex gap-2">
-              <span className="mt-2 h-1.5 w-1.5 shrink-0 rounded-full bg-[#f27921]" aria-hidden />
-              Relative likelihood bars to compare options quickly
-            </li>
-          </ul>
-        </div>
-      }
       results={
         hasSearched ? (
           <section ref={resultsRef} tabIndex={-1} className="space-y-5">
@@ -488,8 +474,8 @@ export default function BranchPredictorPage() {
       }
     >
       <div>
-        <h2 className="text-lg font-bold text-[#111827] sm:text-xl">Enter branch prediction details</h2>
-        <p className="mt-1 text-sm text-[#6b7280]">
+        <h2 className={swFormTitle}>Enter branch prediction details</h2>
+        <p className={swFormSubtitle}>
           Choose exam and filters, then predict to load colleges and branch chances.
         </p>
       </div>
@@ -559,7 +545,7 @@ export default function BranchPredictorPage() {
         {(isJee || isWbjee) && (
           <div>
             <p className={`${swLabel} mb-2`}>Gender</p>
-            <div className="grid grid-cols-2 gap-2 rounded-xl border border-[#d0d7e1] bg-white p-1">
+            <div className="grid grid-cols-2 gap-2 border border-[#d0d7e1] bg-[#fbfcfe] p-1">
               {['female', 'male'].map((g) => {
                 const active = form.gender === g;
                 return (
@@ -567,10 +553,10 @@ export default function BranchPredictorPage() {
                     key={g}
                     type="button"
                     onClick={() => onChange('gender', g)}
-                    className={`rounded-lg py-2.5 text-sm font-semibold capitalize transition ${
+                    className={`rounded-md py-2.5 text-sm font-semibold capitalize transition ${
                       active
-                        ? 'bg-[#2563eb] text-white shadow-sm'
-                        : 'text-[#5a6570] hover:bg-[#f3f5f8]'
+                        ? 'bg-[#041e30] text-white'
+                        : 'text-[#5a6570] hover:bg-white'
                     }`}
                   >
                     {g}

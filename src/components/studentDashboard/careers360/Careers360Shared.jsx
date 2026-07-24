@@ -17,7 +17,7 @@ export default function Careers360ExamStrip() {
   return (
     <div className="border-b border-[#e8eaed] bg-white">
       <div className={LAYOUT.container}>
-        <div className="flex items-center justify-center gap-1 overflow-x-auto py-3 [-ms-overflow-style:none] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
+        <div className="flex items-center gap-1 overflow-x-auto py-3 [-ms-overflow-style:none] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
           <span className="mr-1 flex shrink-0 items-center text-[11px] font-semibold uppercase tracking-wide text-[#999]">
             <ExamStripMark />
             Exams

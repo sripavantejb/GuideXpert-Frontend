@@ -148,18 +148,6 @@ export const getAdminLeads = async (params = {}, token = getStoredToken()) => {
   return adminRequest(`/leads?${query}`, { method: 'GET' }, token);
 };
 
-export const getStudentLogins = async (params = {}, token = getStoredToken()) => {
-  const search = new URLSearchParams();
-  if (params.page != null) search.set('page', params.page);
-  if (params.limit != null) search.set('limit', params.limit);
-  if (params.from) search.set('from', params.from);
-  if (params.to) search.set('to', params.to);
-  if (params.q) search.set('q', params.q);
-  if (params.source) search.set('source', params.source);
-  search.set('_t', String(Date.now()));
-  return adminRequest(`/student-logins?${search.toString()}`, { method: 'GET' }, token);
-};
-
 export const getAdminStats = async (params = {}, token = getStoredToken()) => {
   const search = new URLSearchParams();
   if (params.from) search.set('from', params.from);

@@ -1,5 +1,6 @@
 import { useRef, useState } from 'react';
 import ToolWorkspaceLayout from './components/ToolWorkspaceLayout';
+import { useStudentAuth } from '../../contexts/StudentAuthContext';
 import {
   swBtnPrimary,
   swError,
@@ -13,7 +14,8 @@ import {
   swSectionSubtitle,
   swSectionTitle,
   swSelect,
-  swWorkspaceTitle,
+  swFormTitle,
+  swFormSubtitle,
 } from './components/studentWorkspaceUi';
 
 const SUGGESTIONS = [
@@ -22,6 +24,7 @@ const SUGGESTIONS = [
 ];
 
 export default function CollegeFitTestPage() {
+  const { savePrediction } = useStudentAuth() || {};
   const [form, setForm] = useState({ fee: '', campus: '', city: '', placement: 70 });
   const [errors, setErrors] = useState({});
   const [results, setResults] = useState([]);
@@ -38,6 +41,13 @@ export default function CollegeFitTestPage() {
     setErrors(nextErrors);
     if (Object.keys(nextErrors).length > 0) return;
     setResults(SUGGESTIONS);
+    savePrediction?.({
+      type: 'college_fit_test',
+      tool: 'College Fit Test',
+      title: 'College fit shortlist',
+      summary: SUGGESTIONS.map((c) => `${c.name} (${c.fit}%)`).join(' · '),
+      payload: { form, matches: SUGGESTIONS },
+    });
     setTimeout(() => resultsRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' }), 60);
   };
 
@@ -127,9 +137,9 @@ export default function CollegeFitTestPage() {
         ) : null
       }
     >
-      <h2 className={swWorkspaceTitle}>Your preferences</h2>
-      <p className={swSectionSubtitle}>Set budget, campus, city, and how much placements matter.</p>
-      <form className="mt-6 grid gap-5 sm:grid-cols-2" onSubmit={onSubmit} noValidate>
+      <h2 className={swFormTitle}>Your preferences</h2>
+      <p className={swFormSubtitle}>Set budget, campus, city, and how much placements matter.</p>
+      <form className="mt-6 space-y-4" onSubmit={onSubmit} noValidate>
         <label className={swLabel}>
           Fee budget
           <select value={form.fee} onChange={(e) => onChange('fee', e.target.value)} className={swSelect}>
@@ -175,7 +185,7 @@ export default function CollegeFitTestPage() {
             className="mt-2 w-full accent-[#f27921]"
           />
         </label>
-        <div className="sm:col-span-2">
+        <div>
           <button type="submit" className={swBtnPrimary}>
             Find matching colleges
           </button>

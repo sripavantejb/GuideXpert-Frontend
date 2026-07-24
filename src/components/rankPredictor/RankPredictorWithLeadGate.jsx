@@ -18,6 +18,7 @@ import {
 } from '../../utils/rankPredictorLeadConstants';
 import { saveOrganicRankLeadSnapshot } from '../../utils/organicRankLeadLocal';
 import ResultCard from './ResultCard';
+import { useStudentAuth } from '../../contexts/StudentAuthContext';
 import {
   swBtnGhost,
   swBtnPrimary,
@@ -43,6 +44,8 @@ export default function RankPredictorWithLeadGate({
   const isStudent = variant === 'student';
   /** Logged-in counsellor portal: predict from score only (no OTP / lead capture). */
   const isCounsellor = variant === 'counsellor';
+  const studentAuth = useStudentAuth();
+  const alreadyLoggedIn = Boolean(isStudent && studentAuth?.isAuthenticated);
 
   const [wizardStep, setWizardStep] = useState(/** @type {'marks' | 'lead' | 'result'} */ ('marks'));
   const [score, setScore] = useState('');
@@ -88,6 +91,36 @@ export default function RankPredictorWithLeadGate({
     onResultChange(null);
   };
 
+  const persistToStudentProfile = (normalized, scoreValue) => {
+    if (!studentAuth?.savePrediction) return;
+    const rangeText =
+      normalized.range && typeof normalized.range === 'object'
+        ? `${normalized.range.low ?? ''} – ${normalized.range.high ?? ''}`
+        : normalized.range
+          ? String(normalized.range)
+          : '';
+    studentAuth.savePrediction({
+      type: 'rank_predictor',
+      tool: 'Rank Predictor',
+      examId: exam.id,
+      title: `${exam.name} prediction`,
+      summary: [
+        normalized.metricLabel || 'Predicted',
+        normalized.predictedValue != null ? String(normalized.predictedValue) : null,
+        rangeText ? `range ${rangeText}` : null,
+        scoreValue != null ? `score ${scoreValue}` : null,
+      ]
+        .filter(Boolean)
+        .join(' · '),
+      payload: {
+        examId: exam.id,
+        examName: exam.name,
+        score: scoreValue,
+        ...normalized,
+      },
+    });
+  };
+
   const runDirectPrediction = async (scoreValue) => {
     setPredicting(true);
     setMarksError('');
@@ -117,6 +150,29 @@ export default function RankPredictorWithLeadGate({
         message: normalized.message,
         metricLabel: normalized.metricLabel,
       });
+      persistToStudentProfile(normalized, scoreValue);
+
+      if (alreadyLoggedIn && studentAuth?.session?.phone) {
+        try {
+          await saveStep1(
+            studentAuth.profile?.fullName || studentAuth.session.fullName || 'Student',
+            studentAuth.session.phone,
+            RANK_PREDICTOR_LEAD_OCCUPATION,
+            leadUtm,
+            { rankPredictorLead: { examId: exam.id, score: scoreValue, ...(exam.requiresDifficulty ? { difficulty } : {}) } }
+          );
+          await saveRankPredictorPrediction(studentAuth.session.phone, {
+            examId: exam.id,
+            predictedValue: normalized.predictedValue,
+            range: normalized.range,
+            metricLabel: normalized.metricLabel,
+            message: normalized.message,
+          });
+        } catch {
+          /* CRM sync best-effort */
+        }
+      }
+
       setTimeout(() => resultsRef?.current?.scrollIntoView({ behavior: 'smooth', block: 'start' }), 60);
     } catch (err) {
       setMarksError(err.message || 'Something went wrong.');
@@ -134,7 +190,7 @@ export default function RankPredictorWithLeadGate({
       return;
     }
     setNumericScore(validation.value);
-    if (isCounsellor) {
+    if (isCounsellor || alreadyLoggedIn) {
       await runDirectPrediction(validation.value);
       return;
     }
@@ -280,6 +336,7 @@ export default function RankPredictorWithLeadGate({
       };
       onResultChange(normalized);
       setWizardStep('result');
+      persistToStudentProfile(normalized, numericScore);
       if (isStudent) {
         const phoneDigits = normalizePhoneDigits(phone);
         saveOrganicRankLeadSnapshot({
@@ -353,7 +410,7 @@ export default function RankPredictorWithLeadGate({
 
   const marksForm = (
     <form
-      className={isStudent ? 'grid gap-4 sm:grid-cols-2' : 'min-w-0 rounded-2xl border border-gray-200 bg-white p-4 shadow-sm sm:p-6'}
+      className={isStudent ? 'space-y-4' : 'min-w-0 rounded-2xl border border-gray-200 bg-white p-4 shadow-sm sm:p-6'}
       onSubmit={handleMarksNext}
     >
       {!isStudent && (
@@ -419,7 +476,7 @@ export default function RankPredictorWithLeadGate({
         </label>
       )}
 
-      <div className={isStudent ? 'sm:col-span-2' : 'mt-5'}>
+      <div className={isStudent ? '' : 'mt-5'}>
         {marksError && (
           <p className={isStudent ? `mb-3 ${swErrorBox}` : 'mb-3 rounded-lg bg-red-50 p-3 text-sm text-red-700'}>
             {marksError}

@@ -1,5 +1,6 @@
 import { useRef, useState } from 'react';
 import ToolWorkspaceLayout from './components/ToolWorkspaceLayout';
+import { useStudentAuth } from '../../contexts/StudentAuthContext';
 import {
   swBtnPrimary,
   swBtnSecondary,
@@ -10,7 +11,8 @@ import {
   swResultsHighlight,
   swSectionSubtitle,
   swSectionTitle,
-  swWorkspaceTitle,
+  swFormTitle,
+  swFormSubtitle,
 } from './components/studentWorkspaceUi';
 
 const QUESTIONS = [
@@ -27,6 +29,7 @@ const RESULT_META = [
 ];
 
 export default function CourseFitTestPage() {
+  const { savePrediction } = useStudentAuth() || {};
   const [started, setStarted] = useState(false);
   const [questionIndex, setQuestionIndex] = useState(0);
   const [result, setResult] = useState(null);
@@ -41,6 +44,13 @@ export default function CourseFitTestPage() {
       return;
     }
     setResult(RESULT_META);
+    savePrediction?.({
+      type: 'course_fit_test',
+      tool: 'Course Fit Test',
+      title: 'Course fit recommendations',
+      summary: RESULT_META.map((r) => `${r.name} (${r.fit}%)`).join(' · '),
+      payload: { matches: RESULT_META },
+    });
     setTimeout(() => resultsRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' }), 60);
   };
 
@@ -124,8 +134,8 @@ export default function CourseFitTestPage() {
     >
       <div className="flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
         <div>
-          <h2 className={swWorkspaceTitle}>Course fit quiz</h2>
-          <p className={swSectionSubtitle}>Answer honestly — there are no right or wrong choices.</p>
+          <h2 className={swFormTitle}>Course fit quiz</h2>
+          <p className={swFormSubtitle}>Answer honestly — there are no right or wrong choices.</p>
         </div>
         <p className="text-xs font-semibold uppercase tracking-[0.14em] text-[#8a94a0]">
           {started ? `Question ${questionIndex + 1} of ${QUESTIONS.length}` : 'Ready to begin'}
@@ -138,11 +148,11 @@ export default function CourseFitTestPage() {
         </div>
       </div>
 
-      <div className="mt-6 rounded-2xl border border-[#e4e9f0] bg-gradient-to-br from-[#f8fafc] to-white p-6 sm:p-8">
-        <p className="text-[15px] font-semibold leading-relaxed text-[#041e30] sm:text-lg">
+      <div className="mt-6 border border-[#e4e9f0] bg-[#fbfcfe] p-5 sm:p-6">
+        <p className="text-[15px] font-semibold leading-relaxed text-[#041e30] sm:text-base">
           {QUESTIONS[questionIndex]}
         </p>
-        <div className="mt-7 flex flex-wrap gap-3">
+        <div className="mt-6 flex flex-wrap gap-3">
           {started ? (
             <button type="button" onClick={handleAnswer} className={swBtnSecondary}>
               Disagree

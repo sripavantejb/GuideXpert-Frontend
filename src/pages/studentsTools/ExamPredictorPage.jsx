@@ -3,6 +3,7 @@ import { FiZap } from 'react-icons/fi';
 import ToolWorkspaceLayout from './components/ToolWorkspaceLayout';
 import { getRankPredictorExams, getExamConfig } from '../../utils/rankPredictor';
 import { predictRankPublic } from '../../utils/api';
+import { useStudentAuth } from '../../contexts/StudentAuthContext';
 import {
   swBtnChip,
   swBtnPrimary,
@@ -17,12 +18,14 @@ import {
   swSectionSubtitle,
   swSectionTitle,
   swSelect,
-  swWorkspaceTitle,
+  swFormTitle,
+  swFormSubtitle,
 } from './components/studentWorkspaceUi';
 
 const exams = getRankPredictorExams();
 
 export default function ExamPredictorPage() {
+  const { savePrediction } = useStudentAuth() || {};
   const [examId, setExamId] = useState('');
   const [score, setScore] = useState('');
   const [difficulty, setDifficulty] = useState('Moderate');
@@ -62,6 +65,14 @@ export default function ExamPredictorPage() {
         range: predicted.range,
         message: predicted.message,
         metricLabel: predicted.metricLabel,
+      });
+      savePrediction?.({
+        type: 'exam_predictor',
+        tool: 'Exam Predictor',
+        examId,
+        title: `${selectedExam?.name || examId} score prediction`,
+        summary: `${predicted.metricLabel || 'Result'}: ${predicted.predictedValue ?? '—'}`,
+        payload: { examId, score: Number(score), ...predicted },
       });
       setTimeout(() => {
         resultsRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' });
@@ -154,10 +165,10 @@ export default function ExamPredictorPage() {
         ) : null
       }
     >
-      <h2 className={swWorkspaceTitle}>Enter your score</h2>
-      <p className={swSectionSubtitle}>Select an exam and enter your score to get an instant prediction.</p>
+      <h2 className={swFormTitle}>Enter your score</h2>
+      <p className={swFormSubtitle}>Select an exam and enter your score to get an instant prediction.</p>
 
-      <form className="mt-5 grid gap-4 sm:grid-cols-2" onSubmit={handleSubmit}>
+      <form className="mt-5 space-y-4" onSubmit={handleSubmit}>
         <label className={swLabel}>
           Exam
           <select
@@ -216,7 +227,7 @@ export default function ExamPredictorPage() {
           </label>
         )}
 
-        <div className="sm:col-span-2">
+        <div>
           {apiError && <p className={`mb-3 ${swErrorBox}`}>{apiError}</p>}
           <button type="submit" disabled={loading} className={swBtnPrimary}>
             {loading ? 'Predicting…' : 'Predict now'}

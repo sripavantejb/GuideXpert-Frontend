@@ -17,6 +17,7 @@ import { copyTextToClipboard } from '../../utils/clipboard';
 import { ADMIN_VIEW_ALL_LIMIT } from '../../constants/adminListLimits';
 import { fetchAllPaginatedRows } from '../../utils/adminPagedFetch';
 import { RANK_PREDICTOR_LEAD_UTM } from '../../utils/rankPredictorLeadConstants';
+import { STUDENT_WORKSPACE_LEAD_UTM } from '../../utils/studentWorkspaceLeadConstants';
 
 function formatDate(d) {
   if (!d) return '—';
@@ -131,11 +132,44 @@ function getLeadCellValue(lead, key) {
   return String(v);
 }
 
+function formatStudentProfile(lead) {
+  const p = lead?.studentProfile;
+  if (!p || typeof p !== 'object') return '';
+  const parts = [];
+  if (p.age != null) parts.push(`Age ${p.age}`);
+  if (p.currentlyStudying) parts.push(p.currentlyStudying);
+  if (p.city) parts.push(p.city);
+  return parts.join(' · ');
+}
+
+function formatStudentActivityPreview(lead) {
+  const list = Array.isArray(lead?.studentActivityHistory) ? lead.studentActivityHistory : [];
+  const count = lead?.studentActivityCount ?? list.length;
+  if (!count) return { display: '—', title: '' };
+  const latest = list[0];
+  const latestLabel = latest
+    ? [latest.tool || latest.type, latest.title].filter(Boolean).join(': ')
+    : '';
+  const display = latestLabel
+    ? `${count} · ${latestLabel.length > 60 ? `${latestLabel.slice(0, 57)}…` : latestLabel}`
+    : `${count} activities`;
+  const title = list
+    .slice(0, 10)
+    .map((a) => `${a.tool || a.type}: ${a.title}${a.summary ? ` (${a.summary})` : ''}`)
+    .join('\n');
+  return { display, title };
+}
+
 /**
- * @param {{ organicOnly?: boolean }} props - When true, list is scoped to student rank predictor organic leads (utm_content).
+ * @param {{ organicOnly?: boolean, studentWorkspaceOnly?: boolean }} props
  */
-export default function Leads({ organicOnly = false }) {
-  const leadTableColCount = organicOnly ? 15 : 14;
+export default function Leads({ organicOnly = false, studentWorkspaceOnly = false }) {
+  const scopedUtm = organicOnly
+    ? RANK_PREDICTOR_LEAD_UTM.utm_content
+    : studentWorkspaceOnly
+      ? STUDENT_WORKSPACE_LEAD_UTM.utm_content
+      : null;
+  const leadTableColCount = organicOnly ? 15 : studentWorkspaceOnly ? 16 : 14;
   const { logout } = useAuth();
   const { dateRange, leadListFilters, setLeadListFilters } = useAdminDateRange();
   const [searchParams, setSearchParams] = useSearchParams();
@@ -169,14 +203,14 @@ export default function Leads({ organicOnly = false }) {
     const raw = searchParams.toString();
     if (!raw) return;
     const parsed = leadListFiltersFromSearchParams(searchParams);
-    if (organicOnly) {
-      setLeadListFilters({ ...parsed, utm_content: RANK_PREDICTOR_LEAD_UTM.utm_content });
+    if (scopedUtm) {
+      setLeadListFilters({ ...parsed, utm_content: scopedUtm });
     } else {
       setLeadListFilters(parsed);
     }
     setSearchDraft(parsed.q || '');
     setPagination((prev) => ({ ...prev, page: 1 }));
-  }, [searchParams, setLeadListFilters, organicOnly]);
+  }, [searchParams, setLeadListFilters, scopedUtm]);
   /* eslint-enable react-hooks/set-state-in-effect */
 
   const openLeadDetail = (leadId) => {
@@ -281,14 +315,14 @@ export default function Leads({ organicOnly = false }) {
       setLeadListFilters((prev) => {
         if ((prev.q || '') === searchDraft) return prev;
         const next = { ...prev, q: searchDraft };
-        const forUrl = organicOnly ? { ...next, utm_content: RANK_PREDICTOR_LEAD_UTM.utm_content } : next;
+        const forUrl = scopedUtm ? { ...next, utm_content: scopedUtm } : next;
         setSearchParams(leadListFiltersToSearchParams(forUrl), { replace: true });
         setPagination((p) => ({ ...p, page: 1 }));
         return next;
       });
     }, 300);
     return () => clearTimeout(t);
-  }, [searchDraft, setLeadListFilters, setSearchParams, organicOnly]);
+  }, [searchDraft, setLeadListFilters, setSearchParams, scopedUtm]);
 
   useEffect(() => {
     cancelledRef.current = false;
@@ -302,7 +336,7 @@ export default function Leads({ organicOnly = false }) {
       ...(dateRange.from && { from: dateRange.from }),
       ...(dateRange.to && { to: dateRange.to }),
       ...leadListFiltersToApiParams(leadListFilters),
-      ...(organicOnly ? { utm_content: RANK_PREDICTOR_LEAD_UTM.utm_content } : {}),
+      ...(scopedUtm ? { utm_content: scopedUtm } : {}),
     };
     const tick = queueMicrotask || ((fn) => setTimeout(fn, 0));
     tick(() => {
@@ -330,7 +364,7 @@ export default function Leads({ organicOnly = false }) {
     return () => {
       cancelledRef.current = true;
     };
-  }, [viewAll, pagination.page, dateRange.from, dateRange.to, leadListFilters, logout, organicOnly]);
+  }, [viewAll, pagination.page, dateRange.from, dateRange.to, leadListFilters, logout, scopedUtm]);
 
   const goToPage = (p) => {
     const next = Math.max(1, Math.min(p, pagination.totalPages));
@@ -344,7 +378,7 @@ export default function Leads({ organicOnly = false }) {
       ...(dateRange.from && { from: dateRange.from }),
       ...(dateRange.to && { to: dateRange.to }),
       ...leadListFiltersToApiParams(leadListFilters),
-      ...(organicOnly ? { utm_content: RANK_PREDICTOR_LEAD_UTM.utm_content } : {}),
+      ...(scopedUtm ? { utm_content: scopedUtm } : {}),
     };
     const result = await fetchAllPaginatedRows((page, limit) =>
       getAdminLeads({ ...baseParams, page, limit }, getStoredToken())
@@ -364,7 +398,11 @@ export default function Leads({ organicOnly = false }) {
     setCopyModalOpen(true);
   };
 
-  const pageTitle = organicOnly ? 'Organic rank predictor leads' : 'Leads';
+  const pageTitle = organicOnly
+    ? 'Organic rank predictor leads'
+    : studentWorkspaceOnly
+      ? 'Student workspace leads'
+      : 'Leads';
 
   return (
     <div className="max-w-[1400px] mx-auto px-1">
@@ -387,6 +425,12 @@ export default function Leads({ organicOnly = false }) {
                 <strong className="font-medium text-gray-800">Filters</strong> in the header. Search below updates the same query as the panel.
               </>
             )
+            : studentWorkspaceOnly
+              ? (
+                <>
+                  Students who signed up / logged in via the <strong className="font-medium text-gray-800">GuideXpert tools</strong> workspace (OTP). Profile details and every tool prediction appear in the lead detail.
+                </>
+              )
             : (
               <>
                 Date range and lead filters (status, OTP, slot, influencer, etc.) are in <strong className="font-medium text-gray-800">Filters</strong> in the header. Search below updates the same query as the panel.
@@ -449,6 +493,16 @@ export default function Leads({ organicOnly = false }) {
                       Rank prediction
                     </th>
                   ) : null}
+                  {studentWorkspaceOnly ? (
+                    <>
+                      <th className="px-3 py-2 font-semibold text-gray-700 text-xs uppercase tracking-wider min-w-[120px]">
+                        Profile
+                      </th>
+                      <th className="px-3 py-2 font-semibold text-gray-700 text-xs uppercase tracking-wider min-w-[140px]">
+                        Activity
+                      </th>
+                    </>
+                  ) : null}
                   <th className="px-3 py-2 font-semibold text-gray-700 text-xs uppercase tracking-wider text-center">OTP</th>
                   <th className="px-3 py-2 font-semibold text-gray-700 text-xs uppercase tracking-wider text-center whitespace-nowrap">Slot</th>
                   <th className="px-3 py-2 font-semibold text-gray-700 text-xs uppercase tracking-wider">Status</th>
@@ -472,6 +526,8 @@ export default function Leads({ organicOnly = false }) {
                 ) : (
                   leads.map((lead, i) => {
                     const predPreview = organicOnly ? rankPredictionTablePreview(lead) : null;
+                    const activityPreview = studentWorkspaceOnly ? formatStudentActivityPreview(lead) : null;
+                    const profileLabel = studentWorkspaceOnly ? formatStudentProfile(lead) || '—' : null;
                     return (
                     <tr
                       key={lead.id}
@@ -487,6 +543,17 @@ export default function Leads({ organicOnly = false }) {
                         >
                           {predPreview.display}
                         </td>
+                      ) : null}
+                      {studentWorkspaceOnly ? (
+                        <>
+                          <td className="px-3 py-2 align-middle text-xs text-gray-700">{profileLabel}</td>
+                          <td
+                            className="px-3 py-2 align-middle max-w-[min(280px,28vw)] text-xs text-gray-700"
+                            title={activityPreview?.title || ''}
+                          >
+                            {activityPreview?.display || '—'}
+                          </td>
+                        </>
                       ) : null}
                       <td className="px-3 py-2 align-middle text-center text-sm">{lead.otpVerified ? 'Yes' : 'No'}</td>
                       <td className="px-3 py-2 align-middle text-center whitespace-nowrap text-gray-600 text-sm">{slotLabel(lead)}</td>
@@ -568,6 +635,26 @@ export default function Leads({ organicOnly = false }) {
                           )}
                         </div>
                         <div><dt className="text-gray-500">Occupation</dt><dd className="text-gray-900">{detailLead.occupation || '—'}</dd></div>
+                        {formatStudentProfile(detailLead) ? (
+                          <div>
+                            <dt className="text-gray-500">Student profile</dt>
+                            <dd className="text-gray-900">{formatStudentProfile(detailLead)}</dd>
+                          </div>
+                        ) : null}
+                        {Array.isArray(detailLead.studentActivityHistory) && detailLead.studentActivityHistory.length > 0 ? (
+                          <div>
+                            <dt className="text-gray-500 mb-1">Tool activity ({detailLead.studentActivityCount || detailLead.studentActivityHistory.length})</dt>
+                            <dd className="space-y-2">
+                              {detailLead.studentActivityHistory.slice(0, 20).map((a, idx) => (
+                                <div key={`${a.createdAt || idx}-${a.title}`} className="rounded border border-gray-100 bg-gray-50 px-2.5 py-2 text-xs text-gray-800">
+                                  <p className="font-semibold text-gray-900">{a.tool || a.type}: {a.title}</p>
+                                  {a.summary ? <p className="mt-0.5 text-gray-600">{a.summary}</p> : null}
+                                  {a.createdAt ? <p className="mt-0.5 text-gray-400">{formatDate(a.createdAt)}</p> : null}
+                                </div>
+                              ))}
+                            </dd>
+                          </div>
+                        ) : null}
                         {formatRankPredictorLead(detailLead) ? (
                           <div><dt className="text-gray-500">Rank predictor</dt><dd className="text-gray-900 wrap-break-word">{formatRankPredictorLead(detailLead)}</dd></div>
                         ) : null}

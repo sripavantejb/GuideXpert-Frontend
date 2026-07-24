@@ -13,6 +13,10 @@ export const C360 = {
   bgSectionAlt: '#ffffff',
   link: '#2563eb',
   live: '#dc2626',
+  /** Deep teal/navy tool hero (Career360-style atmosphere) */
+  bgToolHero: '#0f4550',
+  bgToolHeroFrom: '#1a1240',
+  bgToolHeroTo: '#0c3a42',
 };
 
 /** Shared layout classes for consistent vertical rhythm */
@@ -72,7 +76,6 @@ export const FOOTER_COLUMNS = [
     links: [
       { label: 'Main website', to: '/' },
       { label: 'Blogs', to: '/blogs' },
-      { label: 'Student login', to: '/students/login' },
       { label: 'Counsellor login', to: '/counsellor/login' },
     ],
   },

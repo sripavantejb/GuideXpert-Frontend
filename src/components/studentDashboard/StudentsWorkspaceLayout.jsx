@@ -2,6 +2,7 @@ import { useMemo, useState } from 'react';
 import { Outlet, useLocation, useNavigate } from 'react-router-dom';
 import Careers360Navbar from './careers360/Careers360Navbar';
 import Careers360Footer from './careers360/Careers360Footer';
+import StudentAuthModal from '../studentAuth/StudentAuthModal';
 
 export default function StudentsWorkspaceLayout() {
   const [searchTerm, setSearchTerm] = useState('');
@@ -39,6 +40,7 @@ export default function StudentsWorkspaceLayout() {
       />
       <Outlet context={outletContext} />
       <Careers360Footer />
+      <StudentAuthModal />
     </div>
   );
 }

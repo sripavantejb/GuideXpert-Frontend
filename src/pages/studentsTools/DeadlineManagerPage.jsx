@@ -2,12 +2,12 @@ import { FiClock, FiCalendar, FiBell } from 'react-icons/fi';
 import ToolWorkspaceLayout from './components/ToolWorkspaceLayout';
 import {
   swEmptyState,
+  swFormSubtitle,
+  swFormTitle,
   swPreviewLabel,
   swProgressBar,
   swProgressTrack,
   swResultCard,
-  swSectionSubtitle,
-  swWorkspaceTitle,
 } from './components/studentWorkspaceUi';
 
 const SAMPLE_DEADLINES = [
@@ -61,8 +61,8 @@ export default function DeadlineManagerPage() {
       results={null}
       insights={null}
     >
-      <h2 className={swWorkspaceTitle}>Upcoming deadlines</h2>
-      <p className={swSectionSubtitle}>Priority dates across major exams — official live sync is on the way.</p>
+      <h2 className={swFormTitle}>Upcoming deadlines</h2>
+      <p className={swFormSubtitle}>Priority dates across major exams — official live sync is on the way.</p>
 
       <div className="mt-6 space-y-3">
         {SAMPLE_DEADLINES.map((d) => (

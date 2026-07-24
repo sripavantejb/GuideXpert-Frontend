@@ -2,9 +2,12 @@ import { useRef, useState } from 'react';
 import { FiColumns } from 'react-icons/fi';
 import { LuSearch, LuRocket, LuZap, LuMapPin } from 'react-icons/lu';
 import ToolWorkspaceLayout from './components/ToolWorkspaceLayout';
+import { useStudentAuth } from '../../contexts/StudentAuthContext';
 import {
   swBtnPrimary,
   swError,
+  swFormSubtitle,
+  swFormTitle,
   swInsightsPanel,
   swInput,
   swLabel,
@@ -57,6 +60,7 @@ const RELATED = [
 ];
 
 export default function CollegeComparisonPage() {
+  const { savePrediction } = useStudentAuth() || {};
   const [a, setA] = useState('');
   const [b, setB] = useState('');
   const [errors, setErrors] = useState({});
@@ -70,7 +74,7 @@ export default function CollegeComparisonPage() {
     if (!b) nextErrors.b = 'Institution B is required.';
     setErrors(nextErrors);
     if (Object.keys(nextErrors).length > 0) return;
-    setResult({
+    const nextResult = {
       institutionA: a,
       institutionB: b,
       rows: [
@@ -79,6 +83,14 @@ export default function CollegeComparisonPage() {
         { metric: 'Fees', aValue: '14L', bValue: '11L', better: 'b' },
         { metric: 'Ranking', aValue: '24', bValue: '31', better: 'a' },
       ],
+    };
+    setResult(nextResult);
+    savePrediction?.({
+      type: 'college_comparison',
+      tool: 'College Comparison',
+      title: `${a} vs ${b}`,
+      summary: 'Side-by-side comparison saved to your profile.',
+      payload: nextResult,
     });
     setTimeout(() => {
       resultsRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' });
@@ -101,35 +113,6 @@ export default function CollegeComparisonPage() {
         'Each metric highlights the stronger value based on predefined rules.',
         'The matrix helps you make a balanced decision across outcomes and cost.',
       ]}
-      whatThisToolDoes={[
-        'Compares two colleges on placements, fees, rankings, and other key metrics.',
-        'Highlights the stronger option per metric so trade-offs are easier to see.',
-        'Supports final shortlisting after College Predictor and Branch Predictor.',
-      ]}
-      inputGuide={[
-        'College A: Enter or select the first institution you want to compare.',
-        'College B: Enter or select the second institution.',
-        'Review the results matrix — highlighted cells mark the stronger value.',
-      ]}
-      preview={
-        <div className="space-y-3 text-sm text-[#5a6570]">
-          <p className="font-semibold text-[#041e30]">Comparison covers</p>
-          <ul className="space-y-2">
-            <li className="flex gap-2">
-              <span className="mt-2 h-1.5 w-1.5 shrink-0 rounded-full bg-[#f27921]" aria-hidden />
-              Fees and ROI signals
-            </li>
-            <li className="flex gap-2">
-              <span className="mt-2 h-1.5 w-1.5 shrink-0 rounded-full bg-[#f27921]" aria-hidden />
-              Placement and ranking metrics
-            </li>
-            <li className="flex gap-2">
-              <span className="mt-2 h-1.5 w-1.5 shrink-0 rounded-full bg-[#f27921]" aria-hidden />
-              Side-by-side decision matrix
-            </li>
-          </ul>
-        </div>
-      }
       relatedTools={RELATED}
       results={
         result ? (
@@ -278,8 +261,8 @@ export default function CollegeComparisonPage() {
       }
     >
       <div>
-        <h2 className="text-lg font-bold text-[#111827] sm:text-xl">Enter both institutions</h2>
-        <p className="mt-1.5 text-sm leading-relaxed text-[#6b7280]">
+        <h2 className={swFormTitle}>Enter both institutions</h2>
+        <p className={swFormSubtitle}>
           We’ll compare packages, placements, fees, and ranking side by side.
         </p>
       </div>

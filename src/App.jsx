@@ -9,6 +9,7 @@ import BdaLogin from './pages/bda/BdaLogin';
 import BdaDashboard from './pages/bda/BdaDashboard';
 import { WebinarAuthProvider, useWebinarAuth } from './contexts/WebinarAuthContext';
 import { StudentAuthProvider } from './contexts/StudentAuthContext';
+import RequireStudentAuth from './components/studentAuth/RequireStudentAuth';
 import { CounsellorProfileProvider } from './contexts/CounsellorProfileContext';
 import { CounsellorTrainingProvider } from './contexts/CounsellorTrainingContext';
 import LandingPage from './pages/LandingPage';
@@ -41,8 +42,6 @@ import DemandIntelligenceDashboard from './pages/admin/DemandIntelligenceDashboa
 import PredictionDashboard from './pages/admin/PredictionDashboard';
 import FunnelAnalytics from './pages/admin/FunnelAnalytics';
 import Leads from './pages/admin/Leads';
-import OrganicPredictorLeads from './pages/admin/OrganicPredictorLeads';
-import StudentLogins from './pages/admin/StudentLogins';
 import IitCounselling from './pages/admin/IitCounselling';
 import IitCounsellingUtm from './pages/admin/IitCounsellingUtm';
 import Analytics from './pages/admin/Analytics';
@@ -158,7 +157,7 @@ const ExamPredictorToolPage = lazy(() => import('./pages/studentsTools/ExamPredi
 const DeadlineManagerToolPage = lazy(() => import('./pages/studentsTools/DeadlineManagerPage'));
 const PredictorsHubPage = lazy(() => import('./pages/studentsTools/PredictorsHubPage'));
 const TestsHubPage = lazy(() => import('./pages/studentsTools/TestsHubPage'));
-const StudentLoginPage = lazy(() => import('./pages/studentsTools/StudentLogin'));
+const StudentProfilePage = lazy(() => import('./components/studentAuth/StudentProfilePage'));
 import CollegePredictorPage from './pages/CollegePredictorPage';
 import RankPredictorHome from './pages/RankPredictorHome';
 import ExamPredictor from './pages/ExamPredictor';
@@ -310,20 +309,6 @@ function App() {
           <Route path="/guidance-booking-confirmation" element={<GuidanceBookingConfirmation />} />
           <Route path="/guidance-session-meet" element={<GuidanceSessionMeet />} />
           <Route
-            path="/students/login"
-            element={
-              <Suspense
-                fallback={
-                  <div className="flex min-h-screen items-center justify-center bg-slate-50 text-slate-500">
-                    <div className="animate-pulse text-sm font-medium">Loading…</div>
-                  </div>
-                }
-              >
-                <StudentLoginPage />
-              </Suspense>
-            }
-          />
-          <Route
             path="/students"
             element={
               <Suspense
@@ -356,9 +341,11 @@ function App() {
             <Route
               path="rank-predictor/:examId"
               element={
-                <Suspense fallback={<div className="flex min-h-screen items-center justify-center bg-slate-50 text-slate-500"><div className="animate-pulse text-sm font-medium">Loading…</div></div>}>
-                  <StudentExamPredictorPage />
-                </Suspense>
+                <RequireStudentAuth title="Login to use Rank Predictor">
+                  <Suspense fallback={<div className="flex min-h-screen items-center justify-center bg-slate-50 text-slate-500"><div className="animate-pulse text-sm font-medium">Loading…</div></div>}>
+                    <StudentExamPredictorPage />
+                  </Suspense>
+                </RequireStudentAuth>
               }
             />
             <Route
@@ -378,59 +365,81 @@ function App() {
               }
             />
             <Route
-              path="college-predictor"
+              path="profile"
               element={
                 <Suspense fallback={<div className="flex min-h-screen items-center justify-center bg-slate-50 text-slate-500"><div className="animate-pulse text-sm font-medium">Loading…</div></div>}>
-                  <CollegePredictorToolPage />
+                  <StudentProfilePage />
                 </Suspense>
+              }
+            />
+            <Route
+              path="college-predictor"
+              element={
+                <RequireStudentAuth title="Login to use College Predictor">
+                  <Suspense fallback={<div className="flex min-h-screen items-center justify-center bg-slate-50 text-slate-500"><div className="animate-pulse text-sm font-medium">Loading…</div></div>}>
+                    <CollegePredictorToolPage />
+                  </Suspense>
+                </RequireStudentAuth>
               }
             />
             <Route
               path="branch-predictor"
               element={
-                <Suspense fallback={<div className="flex min-h-screen items-center justify-center bg-slate-50 text-slate-500"><div className="animate-pulse text-sm font-medium">Loading…</div></div>}>
-                  <BranchPredictorToolPage />
-                </Suspense>
+                <RequireStudentAuth title="Login to use Branch Predictor">
+                  <Suspense fallback={<div className="flex min-h-screen items-center justify-center bg-slate-50 text-slate-500"><div className="animate-pulse text-sm font-medium">Loading…</div></div>}>
+                    <BranchPredictorToolPage />
+                  </Suspense>
+                </RequireStudentAuth>
               }
             />
             <Route
               path="course-fit-test"
               element={
-                <Suspense fallback={<div className="flex min-h-screen items-center justify-center bg-slate-50 text-slate-500"><div className="animate-pulse text-sm font-medium">Loading…</div></div>}>
-                  <CourseFitTestToolPage />
-                </Suspense>
+                <RequireStudentAuth title="Login to take Course Fit Test">
+                  <Suspense fallback={<div className="flex min-h-screen items-center justify-center bg-slate-50 text-slate-500"><div className="animate-pulse text-sm font-medium">Loading…</div></div>}>
+                    <CourseFitTestToolPage />
+                  </Suspense>
+                </RequireStudentAuth>
               }
             />
             <Route
               path="college-fit-test"
               element={
-                <Suspense fallback={<div className="flex min-h-screen items-center justify-center bg-slate-50 text-slate-500"><div className="animate-pulse text-sm font-medium">Loading…</div></div>}>
-                  <CollegeFitTestToolPage />
-                </Suspense>
+                <RequireStudentAuth title="Login to take College Fit Test">
+                  <Suspense fallback={<div className="flex min-h-screen items-center justify-center bg-slate-50 text-slate-500"><div className="animate-pulse text-sm font-medium">Loading…</div></div>}>
+                    <CollegeFitTestToolPage />
+                  </Suspense>
+                </RequireStudentAuth>
               }
             />
             <Route
               path="college-comparison"
               element={
-                <Suspense fallback={<div className="flex min-h-screen items-center justify-center bg-slate-50 text-slate-500"><div className="animate-pulse text-sm font-medium">Loading…</div></div>}>
-                  <CollegeComparisonToolPage />
-                </Suspense>
+                <RequireStudentAuth title="Login to compare colleges">
+                  <Suspense fallback={<div className="flex min-h-screen items-center justify-center bg-slate-50 text-slate-500"><div className="animate-pulse text-sm font-medium">Loading…</div></div>}>
+                    <CollegeComparisonToolPage />
+                  </Suspense>
+                </RequireStudentAuth>
               }
             />
             <Route
               path="exam-predictor"
               element={
-                <Suspense fallback={<div className="flex min-h-screen items-center justify-center bg-slate-50 text-slate-500"><div className="animate-pulse text-sm font-medium">Loading…</div></div>}>
-                  <ExamPredictorToolPage />
-                </Suspense>
+                <RequireStudentAuth title="Login to use Exam Predictor">
+                  <Suspense fallback={<div className="flex min-h-screen items-center justify-center bg-slate-50 text-slate-500"><div className="animate-pulse text-sm font-medium">Loading…</div></div>}>
+                    <ExamPredictorToolPage />
+                  </Suspense>
+                </RequireStudentAuth>
               }
             />
             <Route
               path="deadline-manager"
               element={
-                <Suspense fallback={<div className="flex min-h-screen items-center justify-center bg-slate-50 text-slate-500"><div className="animate-pulse text-sm font-medium">Loading…</div></div>}>
-                  <DeadlineManagerToolPage />
-                </Suspense>
+                <RequireStudentAuth title="Login to use Deadline Manager">
+                  <Suspense fallback={<div className="flex min-h-screen items-center justify-center bg-slate-50 text-slate-500"><div className="animate-pulse text-sm font-medium">Loading…</div></div>}>
+                    <DeadlineManagerToolPage />
+                  </Suspense>
+                </RequireStudentAuth>
               }
             />
           </Route>
@@ -485,8 +494,7 @@ function App() {
             <Route path="calling-team/bdas/:id" element={<CallingTeamBdaDetail />} />
             <Route path="calling-data" element={<CallingData />} />
             <Route path="organic-rank-leads" element={<Leads organicOnly />} />
-            <Route path="organic-predictor-leads" element={<OrganicPredictorLeads />} />
-            <Route path="student-logins" element={<StudentLogins />} />
+            <Route path="student-workspace-leads" element={<Leads studentWorkspaceOnly />} />
             <Route path="lead-status" element={<LeadStatus />} />
             <Route path="analytics" element={<Analytics />} />
             <Route path="slots" element={<Slots />} />
