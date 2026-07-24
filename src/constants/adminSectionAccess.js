@@ -33,8 +33,10 @@ export const ADMIN_SECTION_OPTIONS = [
   { sectionKey: 'ai-calls', label: 'AI Calls' },
   { sectionKey: 'iit-ai-calls-summary', label: 'IITian AI Calls Summary' },
   { sectionKey: 'whatsapp-ops', label: 'WhatsApp ops' },
-  { sectionKey: 'student-workspace-updates', label: 'Student education updates' },
-  { sectionKey: 'student-testimonials', label: 'Student testimonials' },
+  { sectionKey: 'student-workspace', label: 'Student panel' },
+  // Legacy keys — still valid for existing admin grants; prefer student-workspace for new access
+  { sectionKey: 'student-workspace-updates', label: 'Student panel (updates, legacy)' },
+  { sectionKey: 'student-testimonials', label: 'Student panel (testimonials, legacy)' },
   { sectionKey: 'settings', label: 'Settings' },
 ];
 
@@ -83,8 +85,7 @@ export const ADMIN_SECTION_GROUPS = [
       'whatsapp-ops',
       'lead-intelligence',
       'human-copilot',
-      'student-workspace-updates',
-      'student-testimonials',
+      'student-workspace',
     ],
   },
   {
@@ -93,6 +94,11 @@ export const ADMIN_SECTION_GROUPS = [
     sectionKeys: ['settings'],
   },
 ];
+
+/** Keys shown in Manage Admins UI (hide legacy aliases). */
+export const ADMIN_SECTION_OPTIONS_FOR_UI = ADMIN_SECTION_OPTIONS.filter(
+  (o) => o.sectionKey !== 'student-workspace-updates' && o.sectionKey !== 'student-testimonials'
+);
 
 const labelByKey = Object.fromEntries(ADMIN_SECTION_OPTIONS.map((o) => [o.sectionKey, o.label]));
 

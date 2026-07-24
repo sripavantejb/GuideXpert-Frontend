@@ -61,8 +61,7 @@ const navItems = [
   { to: '/admin/whatsapp-ops', label: 'WhatsApp ops', icon: FiSend, sectionKey: 'whatsapp-ops', sidebarPlacement: 'students' },
   { to: '/admin/lead-intelligence', label: 'Chatbot Lead Intelligence', icon: FiMessageSquare, sectionKey: 'lead-intelligence', sidebarPlacement: 'students' },
   { to: '/admin/human-copilot', label: 'Human Copilot', icon: FiHeadphones, sectionKey: 'human-copilot', sidebarPlacement: 'students' },
-  { to: '/admin/student-workspace-updates', label: 'Student education updates', icon: FiBell, sectionKey: 'student-workspace-updates', sidebarPlacement: 'students' },
-  { to: '/admin/student-testimonials', label: 'Student testimonials', icon: FiUsers, sectionKey: 'student-testimonials', sidebarPlacement: 'students' },
+  { to: '/admin/student-panel', label: 'Student panel', icon: FiLayers, sectionKey: 'student-workspace', sidebarPlacement: 'students' },
   { to: '/admin/calling-team', label: 'Calling Team', icon: FiPhone, sectionKey: 'calling-team', hideInSidebar: true },
   { to: '/admin/calling-data', label: 'Calling Data', icon: FiDatabase, sectionKey: 'calling-data', hideInSidebar: true },
   { to: '/admin/calling-team/leads', label: 'Calling Team Leads', icon: FiUsers, sectionKey: 'calling-team', hideInSidebar: true },
@@ -73,6 +72,8 @@ const navItems = [
   { to: SETTINGS_ROUTE, label: 'Settings', icon: FiSettings, sectionKey: 'settings', hideInSidebar: true },
 ];
 
+const STUDENT_PANEL_LEGACY_KEYS = ['student-workspace-updates', 'student-testimonials'];
+
 function getVisibleNavItems(user) {
   if (!user) return [];
   if (user.isSuperAdmin === true) return navItems;
@@ -81,6 +82,12 @@ function getVisibleNavItems(user) {
   const set = new Set(access);
   return navItems.filter((item) => {
     if (set.has(item.sectionKey)) return true;
+    if (
+      item.sectionKey === 'student-workspace' &&
+      STUDENT_PANEL_LEGACY_KEYS.some((key) => set.has(key))
+    ) {
+      return true;
+    }
     return false;
   });
 }
@@ -282,6 +289,9 @@ export default function AdminLayout() {
     currentPath === '/admin/' ||
     allowedPaths.has(currentPath) ||
     currentPath.startsWith('/admin/whatsapp-ops') ||
+    currentPath.startsWith('/admin/student-panel') ||
+    currentPath.startsWith('/admin/student-workspace-updates') ||
+    currentPath.startsWith('/admin/student-testimonials') ||
     currentPath.startsWith('/admin/calling-team') ||
     currentPath.startsWith('/admin/calling-data') ||
     currentPath.startsWith('/admin/ai-calls') ||

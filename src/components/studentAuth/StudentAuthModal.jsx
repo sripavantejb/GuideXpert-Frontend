@@ -67,11 +67,8 @@ export default function StudentAuthModal() {
       if (e.key === 'Escape') closeAuthModal();
     };
     window.addEventListener('keydown', onKey);
-    const prev = document.body.style.overflow;
-    document.body.style.overflow = 'hidden';
     return () => {
       window.removeEventListener('keydown', onKey);
-      document.body.style.overflow = prev;
     };
   }, [authModalOpen, closeAuthModal]);
 
@@ -243,20 +240,19 @@ export default function StudentAuthModal() {
   };
 
   return (
-    <div className="fixed inset-0 z-[80] flex items-end justify-center sm:items-center" role="dialog" aria-modal="true" aria-labelledby="student-auth-title">
-      <button
-        type="button"
-        className="absolute inset-0 bg-[#041e30]/55 backdrop-blur-[2px]"
-        aria-label="Close login"
-        onClick={closeAuthModal}
-      />
-      <div className="relative z-10 w-full max-w-md overflow-hidden border border-white/20 bg-white shadow-[0_24px_60px_-20px_rgba(0,0,0,0.45)] sm:mx-4 sm:rounded-none">
-        <div className="flex items-start justify-between gap-3 border-b border-[#e4e9f0] bg-[#f7f8fb] px-5 py-4">
-          <div>
+    <div
+      className="pointer-events-none fixed inset-x-0 bottom-0 z-[80] flex justify-end p-3 sm:inset-x-auto sm:bottom-5 sm:right-5 sm:left-auto sm:p-0"
+      role="dialog"
+      aria-modal="false"
+      aria-labelledby="student-auth-title"
+    >
+      <div className="pointer-events-auto w-full max-w-md overflow-hidden rounded-2xl border border-[#e4e9f0] bg-white shadow-[0_20px_50px_-18px_rgba(4,30,48,0.45)] sm:w-[380px]">
+        <div className="flex items-start justify-between gap-3 border-b border-[#e4e9f0] bg-[#f7f8fb] px-4 py-3.5 sm:px-5">
+          <div className="min-w-0">
             <p className="font-sw-display text-[11px] font-semibold uppercase tracking-[0.18em] text-[#f27921]">
               GuideXpert
             </p>
-            <h2 id="student-auth-title" className="mt-1 font-sw-display text-xl font-bold text-[#041e30]">
+            <h2 id="student-auth-title" className="mt-1 font-sw-display text-lg font-bold text-[#041e30] sm:text-xl">
               {isSignup ? 'Create your student profile' : 'Login with mobile OTP'}
             </h2>
             <p className="mt-1 text-sm text-[#5a6570]">
@@ -268,14 +264,14 @@ export default function StudentAuthModal() {
           <button
             type="button"
             onClick={closeAuthModal}
-            className="flex h-9 w-9 shrink-0 items-center justify-center text-[#5a6570] hover:bg-white hover:text-[#041e30]"
-            aria-label="Close"
+            className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg text-[#5a6570] hover:bg-white hover:text-[#041e30]"
+            aria-label="Close login"
           >
             <FiX className="h-5 w-5" />
           </button>
         </div>
 
-        <div className="px-5 py-5">
+        <div className="max-h-[min(70vh,520px)] overflow-y-auto px-4 py-4 sm:px-5 sm:py-5">
           {step === 'details' ? (
             <form className="space-y-4" onSubmit={handleSendOtp}>
               {isSignup ? (

@@ -80,6 +80,7 @@ import OneOnOneCounselorProfile from './pages/oneOnOneCounselor/OneOnOneCounselo
 import Announcements from './pages/admin/Announcements';
 import StudentWorkspaceUpdatesAdmin from './pages/admin/StudentWorkspaceUpdatesAdmin';
 import StudentTestimonialsAdmin from './pages/admin/StudentTestimonialsAdmin';
+import StudentPanelAdminLayout from './pages/admin/student-panel/StudentPanelAdminLayout';
 import WebinarProgressAdmin from './pages/admin/WebinarProgress';
 import BulkCertificateDownload from './pages/admin/BulkCertificateDownload';
 import OsviCalls from './pages/admin/OsviCalls';
@@ -532,8 +533,13 @@ function App() {
             <Route path="assessment-2-results" element={<Navigate to="/admin/assessment-results?type=2" replace />} />
             <Route path="assessment-3-results" element={<Navigate to="/admin/assessment-results?type=3" replace />} />
             <Route path="announcements" element={<Announcements />} />
-            <Route path="student-workspace-updates" element={<StudentWorkspaceUpdatesAdmin />} />
-            <Route path="student-testimonials" element={<StudentTestimonialsAdmin />} />
+            <Route path="student-workspace-updates" element={<Navigate to="/admin/student-panel/updates" replace />} />
+            <Route path="student-testimonials" element={<Navigate to="/admin/student-panel/testimonials" replace />} />
+            <Route path="student-panel" element={<StudentPanelAdminLayout />}>
+              <Route index element={<Navigate to="updates" replace />} />
+              <Route path="updates" element={<StudentWorkspaceUpdatesAdmin />} />
+              <Route path="testimonials" element={<StudentTestimonialsAdmin />} />
+            </Route>
             <Route path="webinar-progress" element={<WebinarProgressAdmin />} />
             <Route path="bulk-certificates" element={<BulkCertificateDownload />} />
             <Route path="blogs" element={<AdminBlog />} />

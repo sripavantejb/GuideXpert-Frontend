@@ -46,8 +46,7 @@ export const DEFAULT_ROUTE_PLACEMENTS = {
   '/admin/whatsapp-ops': 'students',
   '/admin/lead-intelligence': 'students',
   '/admin/human-copilot': 'students',
-  '/admin/student-workspace-updates': 'students',
-  '/admin/student-testimonials': 'students',
+  '/admin/student-panel': 'students',
 };
 
 /** Labels for settings UI (sidebar-visible routes). */
@@ -86,8 +85,7 @@ export const SIDEBAR_SETTINGS_ITEMS = [
   { to: '/admin/whatsapp-ops', label: 'WhatsApp ops' },
   { to: '/admin/lead-intelligence', label: 'Chatbot Lead Intelligence' },
   { to: '/admin/human-copilot', label: 'Human Copilot' },
-  { to: '/admin/student-workspace-updates', label: 'Student education updates' },
-  { to: '/admin/student-testimonials', label: 'Student testimonials' },
+  { to: '/admin/student-panel', label: 'Student panel' },
 ];
 
 export function getDefaultSidebarConfig() {
