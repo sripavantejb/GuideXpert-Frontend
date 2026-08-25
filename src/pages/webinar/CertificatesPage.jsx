@@ -20,6 +20,7 @@ import {
 import {
   openCommunityRedirectPlaceholder,
   navigatePlaceholderToCommunity,
+  navigatePlaceholderToOnboardedCommunity,
   closeCommunityRedirectPlaceholder,
 } from '../../utils/whatsappCommunityInvite';
 import { FiDownload, FiAward, FiExternalLink, FiCheckCircle, FiUser, FiCalendar, FiHash } from 'react-icons/fi';
@@ -36,7 +37,7 @@ const OCCUPATION_OPTIONS = [
   'Teachers',
   'Working professionals',
   'Graduation completed',
-  'Housewives (graduated)',
+  'House wife (graduated)',
   'Others',
 ];
 
@@ -315,6 +316,7 @@ export default function CertificatesPage() {
       return;
     }
     setSubmittingForm(true);
+    const communityTab = openCommunityRedirectPlaceholder();
     try {
       const payload = {
         name: name.trim(),
@@ -330,13 +332,21 @@ export default function CertificatesPage() {
         anythingToConvey: anythingToConvey.trim().slice(0, 1000) || undefined,
       };
       const result = await submitTrainingFeedback(payload);
-      if (!result.success) {
+      const alreadySubmitted = result.data?.code === 'ALREADY_SUBMITTED' || result.code === 'ALREADY_SUBMITTED';
+      if (!result.success && !alreadySubmitted) {
+        closeCommunityRedirectPlaceholder(communityTab);
         setSubmitError(result.message || 'Unable to submit at the moment. Please try again.');
         return;
       }
-      setActivationSuccess('Activation form submitted successfully. Verifying status...');
+      navigatePlaceholderToOnboardedCommunity(communityTab);
+      setActivationSuccess(
+        alreadySubmitted
+          ? 'Activation form already on file. Join the counsellor community tab, then continue here to download your certificate.'
+          : 'Activation form submitted successfully. Join the counsellor community tab, then continue here to download your certificate.'
+      );
       await verifyActivationEligibility();
     } catch {
+      closeCommunityRedirectPlaceholder(communityTab);
       setSubmitError('Connection issue. Please check your network and try again.');
     } finally {
       setSubmittingForm(false);

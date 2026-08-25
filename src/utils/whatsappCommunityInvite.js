@@ -6,6 +6,10 @@
 export const WHATSAPP_COMMUNITY_INVITE_URL =
   'https://chat.whatsapp.com/IlmA9oghb7xG9mVG1Cx1Mi';
 
+/** Certified Counsellors 2026-27 (Onboarded) — after activation form. */
+export const WHATSAPP_ONBOARDED_COMMUNITY_INVITE_URL =
+  'https://chat.whatsapp.com/J2CtxkhLUk4BdsErplPCki';
+
 /**
  * Call synchronously from a click handler before any await.
  * @returns {Window|null}
@@ -19,28 +23,41 @@ export function openCommunityRedirectPlaceholder() {
  * @param {Window|null} placeholderWindow
  */
 export function navigatePlaceholderToCommunity(placeholderWindow) {
+  navigatePlaceholderToUrl(placeholderWindow, WHATSAPP_COMMUNITY_INVITE_URL);
+}
+
+export function navigatePlaceholderToOnboardedCommunity(placeholderWindow) {
+  navigatePlaceholderToUrl(placeholderWindow, WHATSAPP_ONBOARDED_COMMUNITY_INVITE_URL);
+}
+
+function navigatePlaceholderToUrl(placeholderWindow, url) {
   if (!placeholderWindow || placeholderWindow.closed) {
-    openCommunityInviteFallback();
+    openCommunityInviteFallback(url);
     return;
   }
   try {
-    placeholderWindow.location.replace(WHATSAPP_COMMUNITY_INVITE_URL);
+    placeholderWindow.location.replace(url);
   } catch {
     try {
       placeholderWindow.close();
     } catch (_) {}
-    openCommunityInviteFallback();
+    openCommunityInviteFallback(url);
   }
 }
 
 /**
  * If opening the placeholder failed or redirect failed, try direct navigation.
  */
-export function openCommunityInviteFallback() {
-  const w = window.open(WHATSAPP_COMMUNITY_INVITE_URL, '_blank', 'noopener,noreferrer');
+export function openCommunityInviteFallback(url = WHATSAPP_COMMUNITY_INVITE_URL) {
+  const w = window.open(url, '_blank', 'noopener,noreferrer');
   if (!w) {
-    window.location.assign(WHATSAPP_COMMUNITY_INVITE_URL);
+    window.location.assign(url);
   }
+}
+
+/** Same-tab redirect after public activation form submit. */
+export function redirectToOnboardedCommunity() {
+  window.location.assign(WHATSAPP_ONBOARDED_COMMUNITY_INVITE_URL);
 }
 
 /**

@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { submitTrainingFeedback } from '../utils/api';
+import { redirectToOnboardedCommunity } from '../utils/whatsappCommunityInvite';
 
 const EDUCATION_OPTIONS = [
   'Diploma',
@@ -14,7 +15,7 @@ const OCCUPATION_OPTIONS = [
   'Teachers',
   'Working professionals',
   'Graduation completed',
-  'Housewives (graduated)',
+  'House wife (graduated)',
   'Others',
 ];
 
@@ -159,12 +160,13 @@ export default function FeedbackForm() {
         anythingToConvey: anythingToConvey.trim().slice(0, 1000) || undefined
       };
       const result = await submitTrainingFeedback(payload);
-      if (result.success) {
-        setModalType(MODAL_SUCCESS);
-      } else if (result.data?.code === 'NOT_COMPLETED_TRAINING') {
+      const alreadySubmitted = result.data?.code === 'ALREADY_SUBMITTED' || result.code === 'ALREADY_SUBMITTED';
+      if (result.success || alreadySubmitted) {
+        redirectToOnboardedCommunity();
+        return;
+      }
+      if (result.data?.code === 'NOT_COMPLETED_TRAINING') {
         setModalType(MODAL_NOT_COMPLETED);
-      } else if (result.data?.code === 'ALREADY_SUBMITTED') {
-        setModalType(MODAL_ALREADY_SUBMITTED);
       } else {
         setSubmitError(result.message || 'Unable to submit at the moment. Please try again.');
       }
