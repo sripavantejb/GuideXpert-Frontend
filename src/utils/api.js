@@ -522,6 +522,24 @@ export const registerForOrientationMeeting = async (name, mobileNumber) => {
 };
 
 /**
+ * /activationcounsellorsgmeet: eligibility is activation form only (26-27 or 25-26).
+ * Attendance is stored in a separate collection from /meet.
+ */
+export const checkActivationCounsellorMeetEligibility = async (mobileNumber) => {
+  return apiRequest('/activation-counsellor-meet/eligibility', {
+    method: 'POST',
+    body: JSON.stringify({ mobileNumber }),
+  });
+};
+
+export const registerForActivationCounsellorMeeting = async (name, mobileNumber) => {
+  return apiRequest('/activation-counsellor-meet/register', {
+    method: 'POST',
+    body: JSON.stringify({ name, mobileNumber }),
+  });
+};
+
+/**
  * Register for the /iitcounsellingmeet attendance flow.
  * Has NO booking / time-window check on the server: the IIT counselling meet
  * is open to anyone who can verify their phone via OTP.

@@ -34,6 +34,7 @@ const navItems = [
   { to: '/admin/leads', label: 'Lead Funnel', icon: FiUsers, sectionKey: 'leads', sidebarPlacement: 'counsellors' },
   { to: '/admin/analytics', label: 'Analytics', icon: FiBarChart2, sectionKey: 'analytics', sidebarPlacement: 'counsellors' },
   { to: '/admin/meeting-attendance', label: 'User Productivity', icon: FiVideo, sectionKey: 'meeting-attendance', sidebarPlacement: 'counsellors' },
+  { to: '/admin/activation-counsellor-meet-attendance', label: 'Activation counsellor Meet attendance', icon: FiVideo, sectionKey: 'meeting-attendance', sidebarPlacement: 'counsellors' },
   { to: '/admin/export', label: 'Export Data', icon: FiDownload, sectionKey: 'export', sidebarPlacement: 'counsellors' },
   { to: '/admin/slots', label: 'Slots', icon: FiCalendar, sectionKey: 'slots', sidebarPlacement: 'counsellors' },
   { to: '/admin/demo-meet-schedule', label: 'Demo meet schedule', icon: FiClock, sectionKey: 'slots', sidebarPlacement: 'counsellors' },

@@ -2,10 +2,12 @@ import { useState, useRef, useEffect, useCallback } from 'react';
 import {
   registerForMeeting,
   registerForOrientationMeeting,
+  registerForActivationCounsellorMeeting,
   sendOtp,
   verifyOtp,
   checkMeetingDemoEligibility,
   checkOrientationMeetEligibility,
+  checkActivationCounsellorMeetEligibility,
 } from '../utils/api';
 
 const DEFAULT_GOOGLE_MEET_LINK = 'https://meet.google.com/rgk-pwrg-jze';
@@ -39,6 +41,12 @@ export default function MeetingRegistration({
   variant = 'demo',
 }) {
   const isDemo = variant === 'demo';
+  const isActivationCounsellor = variant === 'activation-counsellor';
+  const otpOccupation = isDemo
+    ? 'Meeting Attendee'
+    : isActivationCounsellor
+      ? 'Activation Counsellor Meet Attendee'
+      : 'Orientation Attendee';
   const [step, setStep] = useState(1);
 
   const [name, setName] = useState('');
@@ -70,9 +78,15 @@ export default function MeetingRegistration({
       try {
         const reg = isDemo
           ? await registerForMeeting(displayName, phone)
-          : await registerForOrientationMeeting(displayName, phone);
+          : isActivationCounsellor
+            ? await registerForActivationCounsellorMeeting(displayName, phone)
+            : await registerForOrientationMeeting(displayName, phone);
         if (!reg.success) {
           joiningRef.current = false;
+          if (reg.status === 403 && isActivationCounsellor) {
+            setSubmitError(reg.message || 'You are not eligible to join this meet. Complete the activation form first.');
+            return;
+          }
           if (reg.status === 403 && isDemo) {
             const nested = reg.data?.data;
             if (nested?.status) {
@@ -95,7 +109,7 @@ export default function MeetingRegistration({
         setSubmitError('Network error. Please try again.');
       }
     },
-    [redirectMeetUrl, isDemo]
+    [redirectMeetUrl, isDemo, isActivationCounsellor]
   );
 
   const recheckEligibilityAndJoin = useCallback(async () => {
@@ -194,7 +208,7 @@ export default function MeetingRegistration({
     const cleanPhone = mobileNumber.replace(/\D/g, '');
 
     try {
-      const result = await sendOtp(name.trim(), cleanPhone, isDemo ? 'Meeting Attendee' : 'Orientation Attendee');
+      const result = await sendOtp(name.trim(), cleanPhone, otpOccupation);
 
       if (result.success) {
         setSuccessMessage('OTP sent successfully to your mobile number');
@@ -269,7 +283,9 @@ export default function MeetingRegistration({
 
         const eligResult = isDemo
           ? await checkMeetingDemoEligibility(phone)
-          : await checkOrientationMeetEligibility(phone);
+          : isActivationCounsellor
+            ? await checkActivationCounsellorMeetEligibility(phone)
+            : await checkOrientationMeetEligibility(phone);
         const elig = eligibilityFromResponse(eligResult);
 
         if (!eligResult.success || !elig) {
@@ -324,7 +340,7 @@ export default function MeetingRegistration({
     const phone = normalizedPhone();
 
     try {
-      const result = await sendOtp(name.trim(), phone, isDemo ? 'Meeting Attendee' : 'Orientation Attendee');
+      const result = await sendOtp(name.trim(), phone, otpOccupation);
 
       if (result.success) {
         setSuccessMessage('OTP resent successfully');
@@ -470,7 +486,11 @@ export default function MeetingRegistration({
         <div className="text-center mb-6">
           <h1 className="text-2xl font-bold text-gray-900">GuideXpert</h1>
           <p className="text-gray-600 mt-1">
-            {isDemo ? 'Join Google Meet Session' : 'Orientation Google Meet'}
+            {isDemo
+              ? 'Join Google Meet Session'
+              : isActivationCounsellor
+                ? 'Activation counsellor Google Meet'
+                : 'Orientation Google Meet'}
           </p>
         </div>
 
@@ -489,7 +509,7 @@ export default function MeetingRegistration({
         {step === 1 && (
           <>
             <h2 className="text-lg font-semibold text-gray-900 mb-1">
-              {isDemo ? 'Register for Meet' : 'Register for orientation meet'}
+              {isDemo || isActivationCounsellor ? 'Register for Meet' : 'Register for orientation meet'}
             </h2>
             <p className="text-sm text-gray-600 mb-6">
               {isDemo

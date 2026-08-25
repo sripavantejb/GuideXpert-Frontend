@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef } from 'react';
 import { FiCopy } from 'react-icons/fi';
-import { getMeetingAttendance, getTrainingAttendance, getStoredToken } from '../../utils/adminApi';
+import { getMeetingAttendance, getTrainingAttendance, getActivationCounsellorMeetAttendance, getStoredToken } from '../../utils/adminApi';
 import { useAuth } from '../../hooks/useAuth';
 import TableSkeleton from '../../components/UI/TableSkeleton';
 import CopyToSheetsModal from '../../components/Admin/CopyToSheetsModal';
@@ -59,6 +59,11 @@ function getEmptyMessage({ mode, selectedDate, rangeFrom, rangeTo, query, attend
       ? 'No orientation meet attendance found for the selected filters'
       : 'No orientation meet attendance yet — records appear when users complete /orientation.';
   }
+  if (attendanceType === 'activation-counsellor') {
+    return hasFilter
+      ? 'No activation counsellor meet attendance found for the selected filters'
+      : 'No attendance yet — records appear when users complete /activationcounsellorsgmeet.';
+  }
   return hasFilter ? 'No attendance found for the selected filters' : 'No attendance records yet';
 }
 
@@ -76,7 +81,8 @@ function getAttendanceCellValue(row, key) {
   return String(v);
 }
 
-export default function MeetingAttendance() {
+export default function MeetingAttendance({ source = 'user-productivity' }) {
+  const isActivationCounsellorMeet = source === 'activation-counsellor';
   const { logout } = useAuth();
   const [records, setRecords] = useState([]);
   const [pagination, setPagination] = useState({ page: 1, limit: 50, total: 0, totalPages: 1 });
@@ -90,7 +96,9 @@ export default function MeetingAttendance() {
   const [query, setQuery] = useState('');
   const [viewYear, setViewYear] = useState(() => new Date().getFullYear());
   const [viewMonth, setViewMonth] = useState(() => new Date().getMonth());
-  const [attendanceType, setAttendanceType] = useState('demo');
+  const [attendanceType, setAttendanceType] = useState(
+    isActivationCounsellorMeet ? 'activation-counsellor' : 'demo'
+  );
   const [viewAll, setViewAll] = useState(false);
   const [copyModalOpen, setCopyModalOpen] = useState(false);
   const [copyLoading, setCopyLoading] = useState(false);
@@ -131,7 +139,9 @@ export default function MeetingAttendance() {
     const apiCall =
       attendanceType === 'training'
         ? getTrainingAttendance(params, getStoredToken())
-        : getMeetingAttendance(meetingParams, getStoredToken());
+        : attendanceType === 'activation-counsellor'
+          ? getActivationCounsellorMeetAttendance(params, getStoredToken())
+          : getMeetingAttendance(meetingParams, getStoredToken());
 
     apiCall.then((result) => {
       if (cancelledRef.current) return;
@@ -149,7 +159,9 @@ export default function MeetingAttendance() {
               ? 'Failed to load training attendance'
               : attendanceType === 'orientation'
                 ? 'Failed to load orientation meet attendance'
-                : 'Failed to load meeting attendance')
+                : attendanceType === 'activation-counsellor'
+                  ? 'Failed to load activation counsellor meet attendance'
+                  : 'Failed to load meeting attendance')
         );
         return;
       }
@@ -273,6 +285,9 @@ export default function MeetingAttendance() {
       if (attendanceType === 'training') {
         return getTrainingAttendance(params, getStoredToken());
       }
+      if (attendanceType === 'activation-counsellor') {
+        return getActivationCounsellorMeetAttendance(params, getStoredToken());
+      }
       const meetingParams =
         attendanceType === 'orientation'
           ? { ...params, meetType: 'orientation' }
@@ -293,7 +308,9 @@ export default function MeetingAttendance() {
             ? 'Failed to load training attendance for copy'
             : attendanceType === 'orientation'
               ? 'Failed to load orientation meet attendance for copy'
-              : 'Failed to load meeting attendance for copy')
+              : attendanceType === 'activation-counsellor'
+                ? 'Failed to load activation counsellor meet attendance for copy'
+                : 'Failed to load meeting attendance for copy')
       );
       return;
     }
@@ -307,16 +324,25 @@ export default function MeetingAttendance() {
       <div className="mb-8">
         <div className="flex flex-wrap items-center justify-between gap-4">
           <div>
-            <h1 className="text-2xl font-bold text-gray-900 tracking-tight">Meeting Attendance</h1>
+            <h1 className="text-2xl font-bold text-gray-900 tracking-tight">
+              {isActivationCounsellorMeet ? 'Activation counsellor Meet attendance' : 'Meeting Attendance'}
+            </h1>
             <p className="mt-1 text-sm text-gray-500">
-              Track and analyze{' '}
-              {attendanceType === 'demo'
-                ? 'demo'
-                : attendanceType === 'orientation'
-                  ? 'orientation'
-                  : 'training'}{' '}
-              meeting attendance with smart deduplication
+              {isActivationCounsellorMeet
+                ? 'Track and analyze activation counsellor Google Meet attendance with smart deduplication'
+                : (
+                  <>
+                    Track and analyze{' '}
+                    {attendanceType === 'demo'
+                      ? 'demo'
+                      : attendanceType === 'orientation'
+                        ? 'orientation'
+                        : 'training'}{' '}
+                    meeting attendance with smart deduplication
+                  </>
+                )}
             </p>
+            {!isActivationCounsellorMeet && (
             <div className="mt-3 flex flex-wrap items-center gap-1 p-0.5 bg-gray-100 rounded-lg shadow-sm w-fit max-w-full">
               <button
                 type="button"
@@ -352,6 +378,7 @@ export default function MeetingAttendance() {
                 Training
               </button>
             </div>
+            )}
           </div>
           <button
             type="button"
@@ -383,6 +410,17 @@ export default function MeetingAttendance() {
           </svg>
           <p className="text-sm text-primary-blue-800">
             Orientation meet attendance appears when users complete the flow at <code className="text-xs bg-white/80 px-1 rounded">/orientation</code> after submitting the activation form.
+          </p>
+        </div>
+      )}
+
+      {attendanceType === 'activation-counsellor' && !loading && records.length === 0 && !query && !(mode === 'single' && selectedDate) && !(mode === 'range' && (rangeFrom || rangeTo)) && (
+        <div className="mb-6 p-4 rounded-xl bg-primary-blue-50 border border-primary-blue-200 flex items-center gap-3">
+          <svg className="w-5 h-5 text-primary-blue-600 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+          </svg>
+          <p className="text-sm text-primary-blue-800">
+            Attendance appears when users complete the flow at <code className="text-xs bg-white/80 px-1 rounded">/activationcounsellorsgmeet</code> after submitting the activation form.
           </p>
         </div>
       )}

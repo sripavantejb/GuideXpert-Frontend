@@ -16,6 +16,7 @@ import { CounsellorTrainingProvider } from './contexts/CounsellorTrainingContext
 import LandingPage from './pages/LandingPage';
 import AdminLogin from './pages/AdminLogin';
 import MeetingRegistration from './pages/MeetingRegistration';
+import ActivationCounsellorsGmeet from './pages/ActivationCounsellorsGmeet';
 import IitCounsellingMeet from './pages/IitCounsellingMeet';
 import IitCounsellingMeetHindi from './pages/IitCounsellingMeetHindi';
 import IitFirstForm from './pages/IitFirstForm';
@@ -276,6 +277,7 @@ function App() {
           <Route path="/meet" element={<MeetingRegistration />} />
           <Route path="/meet1" element={<MeetingRegistration redirectMeetUrl="https://meet.google.com/ryt-wtjh-gep" />} />
           <Route path="/meet2" element={<MeetingRegistration redirectMeetUrl="https://meet.google.com/izo-wyts-sas" />} />
+          <Route path="/activationcounsellorsgmeet" element={<ActivationCounsellorsGmeet />} />
           <Route
             path="/orientation"
             element={
@@ -539,6 +541,10 @@ function App() {
             <Route path="settings" element={<Settings />} />
             <Route path="system-prompt" element={<SystemPrompt />} />
             <Route path="meeting-attendance" element={<MeetingAttendance />} />
+            <Route
+              path="activation-counsellor-meet-attendance"
+              element={<MeetingAttendance source="activation-counsellor" />}
+            />
             <Route path="iit-meet-attendance" element={<IitMeetAttendance />} />
             <Route path="training-feedback" element={<TrainingFeedback />} />
             <Route path="certified-counsellors-26-27" element={<TrainingFeedback cohort="26-27" />} />
