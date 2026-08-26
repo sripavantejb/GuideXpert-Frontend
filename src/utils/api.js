@@ -539,6 +539,13 @@ export const registerForActivationCounsellorMeeting = async (name, mobileNumber)
   });
 };
 
+export const submitProForm = async (payload) => {
+  return apiRequest('/pro-form/submit', {
+    method: 'POST',
+    body: JSON.stringify(payload),
+  });
+};
+
 /**
  * Register for the /iitcounsellingmeet attendance flow.
  * Has NO booking / time-window check on the server: the IIT counselling meet

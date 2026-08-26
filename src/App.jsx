@@ -25,6 +25,7 @@ import CdgxMeet from './pages/CdgxMeet';
 import IitSecondForm from './pages/IitSecondForm';
 import TrainingMeeting from './pages/TrainingMeeting';
 import FeedbackForm from './pages/FeedbackForm';
+import ProForm from './pages/ProForm';
 import TrainingForm from './pages/TrainingForm';
 import ProgressCheckInForm from './pages/ProgressCheckInForm';
 import IitainSessionFeedbackForm from './pages/IitainSessionFeedbackForm';
@@ -53,6 +54,7 @@ import Export from './pages/admin/Export';
 import Settings from './pages/admin/Settings';
 import SystemPrompt from './pages/admin/SystemPrompt';
 import MeetingAttendance from './pages/admin/MeetingAttendance';
+import ProData from './pages/admin/ProData';
 import IitMeetAttendance from './pages/admin/IitMeetAttendance';
 import InfluencerTracking from './pages/admin/InfluencerTracking';
 import InfluencerCreate from './pages/admin/InfluencerCreate';
@@ -495,6 +497,7 @@ function App() {
             <Route path="certificates" element={<Suspense fallback={<div className="p-4 animate-pulse text-gray-500">Loading...</div>}><CertificatesPage /></Suspense>} />
           </Route>
           <Route path="/activationform" element={<FeedbackForm />} />
+          <Route path="/proform" element={<ProForm />} />
           <Route path="/training-form" element={<TrainingForm />} />
           <Route path="/progress-check-in" element={<ProgressCheckInForm />} />
           <Route path="/iitain-session-feedback" element={<IitainSessionFeedbackForm />} />
@@ -545,6 +548,7 @@ function App() {
               path="activation-counsellor-meet-attendance"
               element={<MeetingAttendance source="activation-counsellor" />}
             />
+            <Route path="pro-data" element={<ProData />} />
             <Route path="iit-meet-attendance" element={<IitMeetAttendance />} />
             <Route path="training-feedback" element={<TrainingFeedback />} />
             <Route path="certified-counsellors-26-27" element={<TrainingFeedback cohort="26-27" />} />
