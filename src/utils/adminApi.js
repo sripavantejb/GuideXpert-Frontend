@@ -40,7 +40,9 @@ async function adminRequest(endpoint, options = {}, token = getStoredToken()) {
         notifyAdminUnauthorized({ endpoint, status: 401 });
       }
       const fallbackMessage =
-        response.status === 405
+        response.status === 413
+          ? 'File is too large for a single upload. Retrying in smaller parts…'
+          : response.status === 405
           ? 'API route blocked (405). Redeploy the frontend with /api proxy rules or set VITE_API_URL to the backend /api URL.'
           : 'Request failed';
       return {
@@ -1609,7 +1611,8 @@ export const unpublishStudentTestimonial = async (id, token = getStoredToken()) 
 
 /** Student resources (admin) */
 export const RESOURCE_CHUNK_SIZE = 2 * 1024 * 1024;
-export const RESOURCE_DIRECT_MAX_SIZE = 10 * 1024 * 1024;
+// Vercel functions reject bodies over ~4.5MB. Base64 JSON is ~33% larger than the PDF.
+export const RESOURCE_DIRECT_MAX_SIZE = 2 * 1024 * 1024;
 
 function isPdfUploadFile(file) {
   if (!file) return false;
@@ -1676,38 +1679,10 @@ export const uploadStudentResourceChunk = async (formData, token = getStoredToke
 export const completeStudentResourceUpload = async (body, token = getStoredToken()) =>
   adminRequest('/resources/upload/complete', { method: 'POST', body: JSON.stringify(body) }, token);
 
-export async function uploadStudentResourcePdf(
+async function uploadStudentResourcePdfChunked(
   file,
   { title = '', description = '', onProgress, token = getStoredToken() } = {}
 ) {
-  if (!isPdfUploadFile(file)) {
-    return { success: false, message: 'Please select a valid PDF file (.pdf)' };
-  }
-  if (file.size > 20 * 1024 * 1024) {
-    return { success: false, message: 'PDF must be 20MB or smaller' };
-  }
-
-  onProgress?.(0.05);
-
-  if (file.size <= RESOURCE_DIRECT_MAX_SIZE) {
-    const fileBase64 = await readFileAsBase64(file);
-    onProgress?.(0.6);
-    const directRes = await uploadStudentResourceDirect(
-      {
-        fileName: file.name,
-        fileSize: file.size,
-        mimeType: file.type || 'application/pdf',
-        fileBase64,
-        title,
-        description,
-      },
-      token
-    );
-    onProgress?.(1);
-    if (!directRes.success) return directRes;
-    return { success: true, data: directRes.data?.data || directRes.data };
-  }
-
   const totalChunks = Math.ceil(file.size / RESOURCE_CHUNK_SIZE);
   const initRes = await initStudentResourceUpload(
     {
@@ -1740,6 +1715,44 @@ export async function uploadStudentResourcePdf(
   onProgress?.(1);
   if (!completeRes.success) return completeRes;
   return { success: true, data: completeRes.data?.data || completeRes.data };
+}
+
+export async function uploadStudentResourcePdf(
+  file,
+  { title = '', description = '', onProgress, token = getStoredToken() } = {}
+) {
+  if (!isPdfUploadFile(file)) {
+    return { success: false, message: 'Please select a valid PDF file (.pdf)' };
+  }
+  if (file.size > 20 * 1024 * 1024) {
+    return { success: false, message: 'PDF must be 20MB or smaller' };
+  }
+
+  onProgress?.(0.05);
+
+  if (file.size <= RESOURCE_DIRECT_MAX_SIZE) {
+    const fileBase64 = await readFileAsBase64(file);
+    onProgress?.(0.6);
+    const directRes = await uploadStudentResourceDirect(
+      {
+        fileName: file.name,
+        fileSize: file.size,
+        mimeType: file.type || 'application/pdf',
+        fileBase64,
+        title,
+        description,
+      },
+      token
+    );
+    if (directRes.success) {
+      onProgress?.(1);
+      return { success: true, data: directRes.data?.data || directRes.data };
+    }
+    if (directRes.status !== 413) return directRes;
+    onProgress?.(0.08);
+  }
+
+  return uploadStudentResourcePdfChunked(file, { title, description, onProgress, token });
 }
 
 export const updateStudentResource = async (id, body, token = getStoredToken()) =>

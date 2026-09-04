@@ -364,7 +364,7 @@ export default function ResourcesAdmin() {
                   Upload new PDF
                 </h2>
                 <p className="mt-1 text-sm text-slate-500">
-                  Files up to 10MB upload in one step. Larger files (up to 20MB) use chunked upload automatically.
+                  PDFs up to 20MB. Files larger than 2MB upload in small parts automatically.
                 </p>
               </div>
 
