@@ -11,6 +11,7 @@ import LeadChatHeader from './LeadChatHeader';
 import LeadChatTranscript from './LeadChatTranscript';
 import LeadDetailPanel from './LeadDetailPanel';
 import LeadDetailsSidebar, { LeadDetailsHeader } from './LeadDetailsSidebar';
+import LeadDirectoryTable from './LeadDirectoryTable';
 import LeadFilters, { LeadSearchHeader } from './LeadFilters';
 import LeadOverviewHero from './LeadOverviewHero';
 import LeadsTable from './LeadsTable';
@@ -275,6 +276,21 @@ export default function LeadIntelligenceDashboard() {
           </aside>
         </div>
       </section>
+
+      <LeadDirectoryTable
+        items={items}
+        total={total}
+        page={page}
+        limit={limit}
+        loading={listLoading}
+        error={listError}
+        selectedPhone={selectedPhone}
+        hasActiveFilters={hasActiveFilters}
+        onRetry={retryList}
+        onSelectPhone={handleSelectPhone}
+        onPageChange={setPage}
+        onClearFilters={clearFilters}
+      />
 
       {selectedPhone ? (
         <section className="fixed inset-0 z-40 flex flex-col overflow-hidden bg-white pt-14 xl:hidden">

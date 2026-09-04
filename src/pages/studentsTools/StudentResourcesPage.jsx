@@ -1,5 +1,5 @@
 import { Link, useNavigate, useParams } from 'react-router-dom';
-import { FiChevronRight, FiDownload, FiFileText, FiHome, FiX } from 'react-icons/fi';
+import { FiChevronRight, FiDownload, FiFileText, FiHome, FiSearch, FiX } from 'react-icons/fi';
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { LAYOUT } from '../../components/studentDashboard/careers360/careers360Theme';
 import { getStudentResourcesFeed } from '../../utils/api';
@@ -28,6 +28,7 @@ export default function StudentResourcesPage() {
 
   const [items, setItems] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [searchQuery, setSearchQuery] = useState('');
   const [selectedResource, setSelectedResource] = useState(null);
   const focusedCardRef = useRef(null);
 
@@ -57,6 +58,16 @@ export default function StudentResourcesPage() {
   }, [items, focusKey, focusKeyLower]);
 
   const slugNotFound = spotlightActive && !loading && !focusedItem;
+
+  const filteredItems = useMemo(() => {
+    const q = searchQuery.trim().toLowerCase();
+    if (!q) return items;
+    return items.filter((item) => {
+      const title = String(item.title || '').toLowerCase();
+      const description = String(item.description || '').toLowerCase();
+      return title.includes(q) || description.includes(q);
+    });
+  }, [items, searchQuery]);
 
   useEffect(() => {
     setSelectedResource(null);
@@ -120,6 +131,29 @@ export default function StudentResourcesPage() {
               Download preparation guides and study PDFs. Verify your mobile number with OTP before
               each download.
             </p>
+            {!spotlightActive ? (
+              <div className="relative mt-5 max-w-xl">
+                <FiSearch className="pointer-events-none absolute left-3.5 top-1/2 h-4 w-4 -translate-y-1/2 text-[#94a3b8]" />
+                <input
+                  type="text"
+                  value={searchQuery}
+                  onChange={(e) => setSearchQuery(e.target.value)}
+                  placeholder="Search guides and PDFs"
+                  aria-label="Search guides and PDFs"
+                  className="w-full rounded-xl border border-[#e8eaed] bg-[#f8fafc] py-2.5 pl-10 pr-10 text-sm text-[#0f172a] placeholder:text-[#94a3b8] outline-none transition focus:border-[#f27921]/50 focus:bg-white focus:ring-2 focus:ring-[#f27921]/20"
+                />
+                {searchQuery ? (
+                  <button
+                    type="button"
+                    onClick={() => setSearchQuery('')}
+                    className="absolute right-2.5 top-1/2 -translate-y-1/2 rounded-md p-1 text-[#94a3b8] hover:bg-[#e8eaed] hover:text-[#0f172a]"
+                    aria-label="Clear search"
+                  >
+                    <FiX className="h-4 w-4" />
+                  </button>
+                ) : null}
+              </div>
+            ) : null}
           </div>
         </div>
 
@@ -153,9 +187,24 @@ export default function StudentResourcesPage() {
               <p className="mt-3 text-sm font-medium text-[#64748b]">No resources available yet.</p>
               <p className="mt-1 text-xs text-[#94a3b8]">Check back soon for new guides and PDFs.</p>
             </div>
+          ) : filteredItems.length === 0 ? (
+            <div className="rounded-2xl border border-dashed border-[#dce3ec] bg-white px-6 py-14 text-center">
+              <FiSearch className="mx-auto h-10 w-10 text-[#cbd5e1]" />
+              <p className="mt-3 text-sm font-medium text-[#64748b]">No matching resources</p>
+              <p className="mt-1 text-xs text-[#94a3b8]">
+                Nothing matched “{searchQuery.trim()}”. Try a different title.
+              </p>
+              <button
+                type="button"
+                onClick={() => setSearchQuery('')}
+                className="mt-4 inline-flex items-center justify-center rounded-lg border border-[#e8eaed] bg-white px-4 py-2 text-sm font-semibold text-[#0f172a] hover:bg-[#f8fafc]"
+              >
+                Clear search
+              </button>
+            </div>
           ) : (
             <ul className="grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-3">
-              {items.map((item) => {
+              {filteredItems.map((item) => {
                 const isFocused =
                   spotlightActive &&
                   focusedItem &&
