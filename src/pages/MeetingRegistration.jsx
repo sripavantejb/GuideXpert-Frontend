@@ -82,29 +82,24 @@ export default function MeetingRegistration({
             ? await registerForActivationCounsellorMeeting(displayName, phone)
             : await registerForOrientationMeeting(displayName, phone);
         if (!reg.success) {
+          if (isDemo) {
+            window.location.href = redirectMeetUrl;
+            return;
+          }
           joiningRef.current = false;
           if (reg.status === 403 && isActivationCounsellor) {
             setSubmitError(reg.message || 'You are not eligible to join this meet. Complete the activation form first.');
             return;
-          }
-          if (reg.status === 403 && isDemo) {
-            const nested = reg.data?.data;
-            if (nested?.status) {
-              setMeetGateModal({
-                status: nested.status,
-                message: reg.message || 'You cannot join the meet at this time.',
-                slotStartLabel: nested.slotStartLabel,
-                joinOpensAtLabel: nested.joinOpensAtLabel,
-                slotEndLabel: nested.slotEndLabel,
-              });
-              return;
-            }
           }
           setSubmitError(reg.message || 'Could not complete meeting registration. Please try again.');
           return;
         }
         window.location.href = redirectMeetUrl;
       } catch {
+        if (isDemo) {
+          window.location.href = redirectMeetUrl;
+          return;
+        }
         joiningRef.current = false;
         setSubmitError('Network error. Please try again.');
       }
@@ -277,22 +272,24 @@ export default function MeetingRegistration({
       const result = await verifyOtp(phone, otpString);
 
       if (result.success && result.data?.verified === true) {
-        setSuccessMessage(
-          isDemo ? 'OTP verified. Checking your demo slot...' : 'OTP verified. Checking activation…'
-        );
+        if (isDemo) {
+          setSuccessMessage('OTP verified! Joining the meet...');
+          setVerifying(false);
+          await attemptJoinMeet(phone, name.trim());
+          return;
+        }
 
-        const eligResult = isDemo
-          ? await checkMeetingDemoEligibility(phone)
-          : isActivationCounsellor
-            ? await checkActivationCounsellorMeetEligibility(phone)
-            : await checkOrientationMeetEligibility(phone);
+        setSuccessMessage('OTP verified. Checking activation…');
+
+        const eligResult = isActivationCounsellor
+          ? await checkActivationCounsellorMeetEligibility(phone)
+          : await checkOrientationMeetEligibility(phone);
         const elig = eligibilityFromResponse(eligResult);
 
         if (!eligResult.success || !elig) {
           setSuccessMessage('');
           setOtpError(
-            eligResult.message ||
-              (isDemo ? 'Could not verify your demo slot. Please try again.' : 'Could not verify activation. Please try again.')
+            eligResult.message || 'Could not verify activation. Please try again.'
           );
           setVerifying(false);
           return;
@@ -306,17 +303,7 @@ export default function MeetingRegistration({
         }
 
         setSuccessMessage('');
-        if (isDemo) {
-          setMeetGateModal({
-            status: elig.status,
-            message: elig.message || 'You cannot join the meet at this time.',
-            slotStartLabel: elig.slotStartLabel,
-            joinOpensAtLabel: elig.joinOpensAtLabel,
-            slotEndLabel: elig.slotEndLabel,
-          });
-        } else {
-          setOtpError(elig.message || 'You are not eligible to join this meet. Complete the activation form first.');
-        }
+        setOtpError(elig.message || 'You are not eligible to join this meet. Complete the activation form first.');
       } else {
         const errorMessage = result.message || 'Invalid or expired OTP. Please try again.';
         setOtpError(errorMessage);
